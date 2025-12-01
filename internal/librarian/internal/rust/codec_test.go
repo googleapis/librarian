@@ -342,6 +342,124 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with title override",
+			library: &config.Library{
+				Name: "google-cloud-apps-script-type-gmail",
+				Rust: &config.RustCrate{
+					TitleOverride: "Google Apps Script Types",
+				},
+			},
+			channel: &config.Channel{
+				Path: "google/apps/script/type/gmail",
+			},
+			googleapisDir: "/tmp/googleapis",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					SpecificationSource: "google/apps/script/type/gmail",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+					"title-override":  "Google Apps Script Types",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-apps-script-type-gmail",
+				},
+			},
+		},
+		{
+			name: "with description override",
+			library: &config.Library{
+				Name: "google-cloud-longrunning",
+				Rust: &config.RustCrate{
+					DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
+				},
+			},
+			channel: &config.Channel{
+				Path:          "google/longrunning",
+				ServiceConfig: "google/longrunning/longrunning.yaml",
+			},
+			googleapisDir: "/tmp/googleapis",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/longrunning/longrunning.yaml",
+					SpecificationSource: "google/longrunning",
+				},
+				Source: map[string]string{
+					"googleapis-root":      "/tmp/googleapis",
+					"description-override": "Defines types and an abstract service to handle long-running operations.",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-longrunning",
+				},
+			},
+		},
+		{
+			name: "with skipped ids",
+			library: &config.Library{
+				Name: "google-cloud-spanner-admin-database-v1",
+				Rust: &config.RustCrate{
+					SkippedIds: []string{
+						".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation",
+						".google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest",
+						".google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
+					},
+				},
+			},
+			channel: &config.Channel{
+				Path:          "google/spanner/admin/database/v1",
+				ServiceConfig: "google/spanner/admin/database/v1/spanner.yaml",
+			},
+			googleapisDir: "/tmp/googleapis",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/spanner/admin/database/v1/spanner.yaml",
+					SpecificationSource: "google/spanner/admin/database/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-spanner-admin-database-v1",
+				},
+			},
+		},
+		{
+			name: "with name overrides",
+			library: &config.Library{
+				Name: "google-cloud-storageinsights-v1",
+				Rust: &config.RustCrate{
+					NameOverrides: ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
+				},
+			},
+			channel: &config.Channel{
+				Path:          "google/cloud/storageinsights/v1",
+				ServiceConfig: "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
+			},
+			googleapisDir: "/tmp/googleapis",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
+					SpecificationSource: "google/cloud/storageinsights/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-storageinsights-v1",
+					"name-overrides":        ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir)

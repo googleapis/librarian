@@ -31,6 +31,16 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		source["discovery-root"] = discoveryDir
 		source["roots"] = "discovery,googleapis"
 	}
+	if library.Rust != nil && library.Rust.TitleOverride != "" {
+		source["title-override"] = library.Rust.TitleOverride
+	}
+	if library.Rust != nil && library.Rust.DescriptionOverride != "" {
+		source["description-override"] = library.Rust.DescriptionOverride
+	}
+	if library.Rust != nil && len(library.Rust.SkippedIds) > 0 {
+		source["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
+	}
+
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
@@ -41,7 +51,6 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		Source: source,
 		Codec:  buildCodec(library),
 	}
-
 	if library.Rust != nil {
 		if len(library.Rust.DocumentationOverrides) > 0 {
 			sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
@@ -124,7 +133,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.GenerateSetterSamples {
 		codec["generate-setter-samples"] = "true"
 	}
-
+	if rust.NameOverrides != "" {
+		codec["name-overrides"] = rust.NameOverrides
+	}
 	for _, dep := range rust.PackageDependencies {
 		codec["package:"+dep.Name] = formatPackageDependency(dep)
 	}
