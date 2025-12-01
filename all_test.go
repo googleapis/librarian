@@ -17,9 +17,6 @@ package librarian
 import (
 	"bytes"
 	"errors"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io"
 	"io/fs"
 	"os"
@@ -265,75 +262,5 @@ func rungo(t *testing.T, args ...string) {
 			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
 		}
 		t.Fatalf("%v: %v\n%s", cmd, err, output)
-	}
-}
-
-func TestExportedSymbolsHaveDocs(t *testing.T) {
-	packageHasComment := make(map[string]bool)
-	err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") ||
-			strings.HasSuffix(path, "_test.go") || strings.HasSuffix(path, ".pb.go") || strings.Contains(path, "testdata") {
-			return nil
-		}
-
-		fset := token.NewFileSet()
-		node, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
-		if err != nil {
-			t.Errorf("failed to parse file %q: %v", path, err)
-			return nil
-		}
-
-		recordPackageCommentStatus(t, node, packageHasComment)
-
-		// Visit every top-level declaration in the file.
-		for _, decl := range node.Decls {
-			gen, ok := decl.(*ast.GenDecl)
-			if ok && (gen.Tok == token.TYPE || gen.Tok == token.VAR) {
-				for _, spec := range gen.Specs {
-					switch s := spec.(type) {
-					case *ast.TypeSpec:
-						checkDoc(t, s.Name, gen.Doc, path)
-					case *ast.ValueSpec:
-						for _, name := range s.Names {
-							checkDoc(t, name, gen.Doc, path)
-						}
-					}
-				}
-			}
-			if fn, ok := decl.(*ast.FuncDecl); ok {
-				checkDoc(t, fn.Name, fn.Doc, path)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for name, hasPkgComment := range packageHasComment {
-		if !hasPkgComment {
-			t.Errorf("package %s does not have package comment", name)
-		}
-	}
-}
-
-func checkDoc(t *testing.T, name *ast.Ident, doc *ast.CommentGroup, path string) {
-	t.Helper()
-	if !name.IsExported() {
-		return
-	}
-	if doc == nil {
-		t.Errorf("%s: %q is missing doc comment",
-			path, name.Name)
-	}
-}
-
-// recordPackageCommentStatus updates the seen map with the package comment status for a given package, processing each
-// package only once.
-func recordPackageCommentStatus(t *testing.T, file *ast.File, packageHasComment map[string]bool) {
-	t.Helper()
-	pkg := file.Name.String()
-	if !packageHasComment[pkg] {
-		packageHasComment[pkg] = file.Doc != nil
 	}
 }

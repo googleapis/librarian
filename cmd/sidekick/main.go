@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command sidekick is a code generator for Google Cloud client libraries.
 package main
 
 import (
