@@ -21,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -56,7 +57,7 @@ func generateCommand() *cli.Command {
 }
 
 func runGenerate(ctx context.Context, all bool, libraryName string) error {
-	cfg, err := config.Read(librarianConfigPath)
+	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return err
 	}

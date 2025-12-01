@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestConfig(t *testing.T) {
@@ -29,15 +30,15 @@ func TestConfig(t *testing.T) {
 		{"bigtable", "testdata/bigtableadmin_gapic.yaml"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			want, err := Read(test.file)
+			want, err := yaml.Read[Config](test.file)
 			if err != nil {
 				t.Fatal(err)
 			}
 			tmpfile := t.TempDir() + "/test_gapic.yaml"
-			if err := want.Write(tmpfile); err != nil {
+			if err := yaml.Write(tmpfile, want); err != nil {
 				t.Fatal(err)
 			}
-			got, err := Read(tmpfile)
+			got, err := yaml.Read[Config](tmpfile)
 			if err != nil {
 				t.Fatal(err)
 			}

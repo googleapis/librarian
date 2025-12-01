@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -86,7 +87,7 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if err := rustrelease.UpdateCargoVersion(path, newVersion); err != nil {
 			return err
 		}
-		library, err := cfg.LibraryByName(manifest.Package.Name)
+		library, err := libraryByName(cfg.Libraries, manifest.Package.Name)
 		if err != nil {
 			return err
 		}
@@ -100,4 +101,19 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		return nil, fmt.Errorf("library %q not found", name)
 	}
 	return cfg, nil
+}
+
+var errLibraryNotFound = errors.New("library not found")
+
+// libraryByName returns a library with the given name.
+func libraryByName(libraries []*config.Library, name string) (*config.Library, error) {
+	if libraries == nil {
+		return nil, errLibraryNotFound
+	}
+	for _, library := range libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+	return nil, errLibraryNotFound
 }

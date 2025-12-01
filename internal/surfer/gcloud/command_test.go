@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestCommandYAML(t *testing.T) {
@@ -55,14 +55,12 @@ func TestCommandYAML(t *testing.T) {
 				return
 			}
 
-			var commands []*Command
-			if err := yaml.Unmarshal(data, &commands); err != nil {
+			commands, err := yaml.Unmarshal[[]*Command](data)
+			if err != nil {
 				t.Fatalf("failed to unmarshal YAML: %v", err)
 			}
-			var got bytes.Buffer
-			enc := yaml.NewEncoder(&got)
-			enc.SetIndent(2)
-			if err := enc.Encode(commands); err != nil {
+			got, err := yaml.Marshal(commands)
+			if err != nil {
 				t.Fatalf("failed to marshal struct to YAML: %v", err)
 			}
 
@@ -81,7 +79,7 @@ func TestCommandYAML(t *testing.T) {
 
 			want := strings.Join(lines[index:], "\n")
 
-			if diff := cmp.Diff(want, got.String()); diff != "" {
+			if diff := cmp.Diff(want, string(got)); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})

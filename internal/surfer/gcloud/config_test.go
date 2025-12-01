@@ -15,26 +15,23 @@
 package gcloud
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestReadGcloudConfig(t *testing.T) {
-	cfg, err := readGcloudConfig("testdata/parallelstore/gcloud.yaml")
+	cfg, err := yaml.Read[Config]("testdata/parallelstore/gcloud.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var got bytes.Buffer
-	enc := yaml.NewEncoder(&got)
-	enc.SetIndent(2)
-	if err := enc.Encode(cfg); err != nil {
+	got, err := yaml.Marshal(cfg)
+	if err != nil {
 		t.Fatalf("failed to marshal struct to YAML: %v", err)
 	}
 
@@ -52,7 +49,7 @@ func TestReadGcloudConfig(t *testing.T) {
 		}
 	}
 	want := fmt.Sprintf("service_name: %s\n%s", cfg.ServiceName, strings.Join(lines[index:], "\n"))
-	if diff := cmp.Diff(want, got.String()); diff != "" {
+	if diff := cmp.Diff(want, string(got)); diff != "" {
 		t.Errorf("mismatch(-want, +got)\n%s", diff)
 	}
 }

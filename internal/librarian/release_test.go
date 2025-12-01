@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestReleaseCommand(t *testing.T) {
@@ -82,7 +83,7 @@ libraries:
 			}
 
 			if test.wantVersions != nil {
-				cfg, err := config.Read(configPath)
+				cfg, err := yaml.Read[config.Config](configPath)
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     https://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package yaml
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 type RefString string
 
 // MarshalYAML implements the yaml.Marshaler interface.
-func (r RefString) MarshalYAML() (interface{}, error) {
+func (r RefString) MarshalYAML() (any, error) {
 	node := &yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Tag:   "!REF",

@@ -16,16 +16,6 @@
 // librarian.yaml configuration files.
 package config
 
-import (
-	"errors"
-	"fmt"
-	"os"
-
-	"gopkg.in/yaml.v3"
-)
-
-var errLibraryNotFound = errors.New("library not found")
-
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
@@ -141,51 +131,4 @@ type Channel struct {
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
-}
-
-// Read reads the configuration from a librarian.yaml file.
-func Read(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-	var c Config
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-	return &c, nil
-}
-
-// Write writes config to the file at path.
-func (c *Config) Write(path string) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open config file: %w", err)
-	}
-	defer f.Close()
-
-	enc := yaml.NewEncoder(f)
-	enc.SetIndent(2)
-	if err := enc.Encode(c); err != nil {
-		return fmt.Errorf("failed to encode config: %w", err)
-	}
-	if err := enc.Close(); err != nil {
-		return fmt.Errorf("failed to close encoder: %w", err)
-	}
-	return nil
-}
-
-// LibraryByName returns a library with the given name.
-func (c *Config) LibraryByName(name string) (*Library, error) {
-	if c.Libraries == nil {
-		return nil, errLibraryNotFound
-	}
-
-	for _, library := range c.Libraries {
-		if library.Name == name {
-			return library, nil
-		}
-	}
-
-	return nil, errLibraryNotFound
 }
