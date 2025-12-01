@@ -133,7 +133,7 @@ type Library struct {
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// Channel describes an Channel to include in a library.
+// Channel describes a Channel to include in a library.
 type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
