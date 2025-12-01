@@ -69,8 +69,8 @@ type Source struct {
 
 // Default contains default settings for all libraries.
 type Default struct {
-	// Output is the directory where generated code is written. For example,
-	// for Rust this is src/generated.
+	// Output is the directory where code is written. For example, for Rust
+	// this is src/generated.
 	Output string `yaml:"output,omitempty"`
 
 	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
@@ -91,11 +91,9 @@ type Library struct {
 	// Name is the library name, such as "secretmanager" or "storage".
 	Name string `yaml:"name"`
 
-	// Channels lists the Channels to include in this library.
+	// Channel specifies which googleapis Channel to generate from (for generated
+	// libraries).
 	Channels []*Channel `yaml:"channels,omitempty"`
-
-	// Version is the library version.
-	Version string `yaml:"version,omitempty"`
 
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
@@ -106,24 +104,30 @@ type Library struct {
 	// SkipPublish disables publishing for this library.
 	SkipPublish bool `yaml:"skip_publish,omitempty"`
 
-	// Output is the directory where generated code is written.
+	// Output is the directory where code is written. This overrides
+	// Default.Output.
 	Output string `yaml:"output,omitempty"`
+
+	// Version is the library version.
+	Version string `yaml:"version,omitempty"`
+
+	// CopyrightYear is the copyright year for the library.
+	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
 	// Keep lists files and directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
 
-	// CopyrightYear is the copyright year for the library.
-	CopyrightYear string `yaml:"copyright_year,omitempty"`
+	// ReleaseLevel is the release level, such as "stable" or "preview". This
+	// overrides Default.ReleaseLevel.
+	ReleaseLevel string `yaml:"release_level,omitempty"`
 
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
+	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
-
-	// ReleaseLevel is either "stable" or "preview".
-	ReleaseLevel string `yaml:"release_level,omitempty"`
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
@@ -139,7 +143,7 @@ type Channel struct {
 	ServiceConfig string `yaml:"service_config,omitempty"`
 }
 
-// Read reads a [Config] from the file at path.
+// Read reads the configuration from a librarian.yaml file.
 func Read(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
