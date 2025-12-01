@@ -895,9 +895,11 @@ type OneOf struct {
 	Codec any
 }
 
-// Resource is a fundamental building block of an API, representing an individually-named entity (a "noun").
+// Resource is a fundamental building block of an API, representing an
+// individually-named entity (a "noun").
 //
-// Resources are typically organized into a hierarchy, where each node is either a simple resource or a collection of resources.
+// Resources are typically organized into a hierarchy, where each node is either a simple resource or a
+// collection of resources.
 // This definition is based on AIP-121 (https://google.aip.dev/121).
 type Resource struct {
 	// Type identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
@@ -907,7 +909,8 @@ type Resource struct {
 	// defining the structure of its unique identifier. For example, a pattern
 	// might be `["publishers", "{publisher}", "shelves", "{shelf}"]`.
 	// These patterns are used to construct and parse resource names.
-	// TODO(https://github.com/googleapis/librarian/issues/3090): Pattern field in Resource struct should be []PathSegment
+	// TODO(https://github.com/googleapis/librarian/issues/3090): Pattern field in Resource struct
+	// should be []PathSegment
 	Pattern []string
 	// Plural is the plural form of the resource name.
 	// For example, for a "Book" resource, Plural would be "books".
