@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"github.com/googleapis/librarian/internal/semver"
+	legacysemver "github.com/googleapis/librarian/internal/semver"
 )
 
 func TestShouldIncludeForRelease(t *testing.T) {

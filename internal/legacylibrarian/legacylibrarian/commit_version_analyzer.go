@@ -22,7 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"github.com/googleapis/librarian/internal/semver"
+	legacysemver "github.com/googleapis/librarian/internal/semver"
 )
 
 // getConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the

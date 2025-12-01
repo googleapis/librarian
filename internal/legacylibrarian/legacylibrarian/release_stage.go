@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacydocker"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"github.com/googleapis/librarian/internal/semver"
+	legacysemver "github.com/googleapis/librarian/internal/semver"
 )
 
 type stageRunner struct {
