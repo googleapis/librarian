@@ -28,10 +28,10 @@ var errLibraryNotFound = errors.New("library not found")
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
-	// Language is the language for this workspace.
+	// Language is the language for this workspace (go, python, rust).
 	Language string `yaml:"language"`
 
-	// Repo is the repository path, such as "googleapis/google-cloud-python".
+	// Repo is the repository name, such as "googleapis/google-cloud-python".
 	Repo string `yaml:"repo,omitempty"`
 
 	// Sources references external source repositories.

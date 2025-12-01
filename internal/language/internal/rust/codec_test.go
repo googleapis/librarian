@@ -26,7 +26,7 @@ func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		library       *config.Library
-		api           *config.Channel
+		channel       *config.Channel
 		googleapisDir string
 		discoveryDir  string
 		want          *sidekickconfig.Config
@@ -36,7 +36,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-storage",
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -63,7 +63,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Version:      "0.1.0",
 				ReleaseLevel: "preview",
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -91,7 +91,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Name:          "google-cloud-storage",
 				CopyrightYear: "2024",
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -133,7 +133,7 @@ func TestToSidekickConfig(t *testing.T) {
 					TemplateOverride:          "custom-template",
 				},
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -172,7 +172,7 @@ func TestToSidekickConfig(t *testing.T) {
 				SkipPublish: true,
 				Rust:        &config.RustCrate{},
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -212,7 +212,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -247,7 +247,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -287,7 +287,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
@@ -319,7 +319,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
 			},
-			api: &config.Channel{
+			channel: &config.Channel{
 				Path:          "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 			},
@@ -344,7 +344,7 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := toSidekickConfig(test.library, test.api, test.googleapisDir, test.discoveryDir)
+			got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

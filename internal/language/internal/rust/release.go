@@ -54,12 +54,6 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		return name == pkgName
 	}
 
-	// Build a map of library names to library pointers for quick lookup.
-	libByName := make(map[string]*config.Library)
-	for _, lib := range cfg.Libraries {
-		libByName[lib.Name] = lib
-	}
-
 	var found bool
 	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

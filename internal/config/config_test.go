@@ -36,8 +36,8 @@ func TestRead(t *testing.T) {
 				SHA256: "67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212",
 			},
 			Googleapis: &Source{
-				Commit: "ded7ed1e4cce7c165c56a417572cebea9bc1d82c",
-				SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
+				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
 			},
 		},
 		Default: &Default{
@@ -58,14 +58,14 @@ func TestRead(t *testing.T) {
 		Libraries: []*Library{
 			{
 				Name:    "google-cloud-secretmanager-v1",
-				Version: "0.1.0",
+				Version: "1.2.3",
 				Channels: []*Channel{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
 			},
 			{
 				Name:    "google-cloud-storage-v2",
-				Version: "0.2.0",
+				Version: "2.3.4",
 				Channels: []*Channel{
 					{Path: "google/cloud/storage/v2"},
 				},
