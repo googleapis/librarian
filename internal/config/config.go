@@ -157,9 +157,7 @@ type Library struct {
 // Channel contains information about an API channel.
 type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
-	// libraries). Can be a string (protobuf Path path) or an APIObject (for
-	// discovery APIs). If both Path and APIs are empty, this is a handwritten
-	// library.
+	// libraries).
 	Path string `yaml:"channel,omitempty"`
 
 	// ServiceConfig is the path to the service config file.
