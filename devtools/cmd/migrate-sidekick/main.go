@@ -422,9 +422,16 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 }
 
 // deriveLibraryName derives a library name from an API path.
-// For Rust: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
+// For Rust: see go/cloud-rust:on-crate-names.
 func deriveLibraryName(apiPath string) string {
-	return strings.ReplaceAll(apiPath, "/", "-")
+	trimmedPath := strings.TrimPrefix(apiPath, "google/")
+	trimmedPath = strings.TrimPrefix(trimmedPath, "cloud/")
+	trimmedPath = strings.TrimPrefix(trimmedPath, "devtools/")
+	if strings.HasPrefix(trimmedPath, "api/apikeys/") {
+		trimmedPath = strings.TrimPrefix(trimmedPath, "api/")
+	}
+
+	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
 }
 
 // buildConfig builds the complete config from libraries.
