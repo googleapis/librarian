@@ -896,6 +896,7 @@ type OneOf struct {
 }
 
 // Resource is a fundamental building block of an API, representing an individually-named entity (a "noun").
+//
 // Resources are typically organized into a hierarchy, where each node is either a simple resource or a collection of resources.
 // This definition is based on AIP-121 (https://google.aip.dev/121).
 type Resource struct {
