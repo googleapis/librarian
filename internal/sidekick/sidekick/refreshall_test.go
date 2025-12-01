@@ -14,10 +14,13 @@
 
 package sidekick
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestRefreshAll(t *testing.T) {
-	if err := Run([]string{"refresh-all", "-dry-run", "true"}); err != nil {
+	if err := Run(context.Background(), []string{"refresh-all", "-dry-run", "true"}); err != nil {
 		t.Fatal(err)
 	}
 }

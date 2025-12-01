@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -46,7 +47,7 @@ directories from the name of the service config YAML file.
 
 // rustGenerate takes some state and applies it to a template to create a client
 // library.
-func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
+func rustGenerate(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
 	if cmdLine.SpecificationSource == "" {
 		cmdLine.SpecificationSource = path.Dir(cmdLine.ServiceConfig)
 	}
@@ -62,7 +63,7 @@ func rustGenerate(rootConfig *config.Config, cmdLine *CommandLine) error {
 		return err
 	}
 	slog.Info("generating new library code and adding it to git")
-	if err := generate(rootConfig, cmdLine); err != nil {
+	if err := generate(ctx, rootConfig, cmdLine); err != nil {
 		return err
 	}
 	return PostGenerate(cmdLine.Output)

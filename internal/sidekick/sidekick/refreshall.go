@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -43,7 +44,7 @@ Reruns the generator for all client libraries, using the configuration parameter
 		addAltName("refreshAll")
 }
 
-func overrideSources(rootConfig *config.Config) (*config.Config, error) {
+func overrideSources(ctx context.Context, rootConfig *config.Config) (*config.Config, error) {
 	override := *rootConfig
 	override.Codec = maps.Clone(rootConfig.Codec)
 	override.Source = maps.Clone(rootConfig.Source)
@@ -52,7 +53,7 @@ func overrideSources(rootConfig *config.Config) (*config.Config, error) {
 		if _, ok := rootConfig.Source[root]; !ok {
 			continue
 		}
-		source, err := makeSourceRoot(rootConfig, configPrefix)
+		source, err := makeSourceRoot(ctx, rootConfig, configPrefix)
 		if err != nil {
 			return nil, err
 		}
@@ -64,8 +65,8 @@ func overrideSources(rootConfig *config.Config) (*config.Config, error) {
 	return &override, nil
 }
 
-func refreshAll(rootConfig *config.Config, cmdLine *CommandLine) error {
-	override, err := overrideSources(rootConfig)
+func refreshAll(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
+	override, err := overrideSources(ctx, rootConfig)
 	if err != nil {
 		return err
 	}

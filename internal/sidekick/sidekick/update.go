@@ -15,6 +15,8 @@
 package sidekick
 
 import (
+	"context"
+
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -30,7 +32,7 @@ This command will update the googleapis-root and googleapis-sha256 fields in the
 	)
 }
 
-func update(rootConfig *config.Config, cmdLine *CommandLine) error {
+func update(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
 	if err := config.UpdateRootConfig(rootConfig, cmdLine.UpdatedRoot); err != nil {
 		return err
 	}
@@ -39,5 +41,5 @@ func update(rootConfig *config.Config, cmdLine *CommandLine) error {
 	if err != nil {
 		return err
 	}
-	return refreshAll(rootConfig, cmdLine)
+	return refreshAll(ctx, rootConfig, cmdLine)
 }

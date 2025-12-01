@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"slices"
@@ -25,7 +26,7 @@ import (
 
 // command is an implementation of a sidekick command, like 'sidekick generate'.
 type command struct {
-	action           func(rootConfig *config.Config, cmdLine *CommandLine) error
+	action           func(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error
 	usageLine        string
 	altNames         []string
 	shortDescription string
@@ -117,11 +118,11 @@ func (c *command) visitAllFlags(fn func(f *flag.Flag)) {
 }
 
 // run executes the command's action, if it has one.
-func (c *command) run(rootConfig *config.Config, cmdLine *CommandLine) error {
+func (c *command) run(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
 	if c.action == nil {
 		return fmt.Errorf("command %s is not runnable", c.longName())
 	}
-	return c.action(rootConfig, cmdLine)
+	return c.action(ctx, rootConfig, cmdLine)
 }
 
 // parseCmdLine parses the command line arguments and returns a CommandLine struct.
@@ -156,7 +157,7 @@ func newCommand(
 	shortDescription string,
 	longDescription string,
 	parent *command,
-	action func(rootConfig *config.Config, cmdLine *CommandLine) error,
+	action func(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error,
 ) *command {
 	if len(usageLine) == 0 {
 		panic("command usage line cannot be empty")

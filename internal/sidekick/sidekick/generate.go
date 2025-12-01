@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"time"
@@ -38,7 +39,7 @@ Uses the configuration provided in the command line arguments, and saves it in a
 
 // generate takes some state and applies it to a template to create a client
 // library.
-func generate(rootConfig *config.Config, cmdLine *CommandLine) error {
+func generate(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
 	local := config.Config{
 		General: config.GeneralConfig{
 			Language:            cmdLine.Language,
@@ -58,11 +59,11 @@ func generate(rootConfig *config.Config, cmdLine *CommandLine) error {
 		return err
 	}
 
-	override, err := overrideSources(rootConfig)
+	override, err := overrideSources(ctx, rootConfig)
 	if err != nil {
 		return err
 	}
 
 	// Load the .sidekick.toml file and refresh the code.
-	return refresh(override, cmdLine)
+	return refresh(ctx, override, cmdLine)
 }

@@ -16,6 +16,7 @@
 package sidekick
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -55,7 +56,7 @@ var cmdSidekick = newCommand(
 	})
 
 // Run is the entry point for the sidekick logic. It expects args to be the command line arguments, minus the program name.
-func Run(args []string) error {
+func Run(ctx context.Context, args []string) error {
 	if len(args) < 1 {
 		cmdSidekick.printUsage()
 		return fmt.Errorf("no command given")
@@ -88,7 +89,7 @@ func Run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return runCommand(cmd, cmdLine)
+	return runCommand(ctx, cmd, cmdLine)
 }
 
 func newNotFoundError(bestMatch *command, allArgs []string, unusedArgs []string, msg string) error {
@@ -102,7 +103,7 @@ func newNotFoundError(bestMatch *command, allArgs []string, unusedArgs []string,
 		validHelp)
 }
 
-func runCommand(cmd *command, cmdLine *CommandLine) error {
+func runCommand(ctx context.Context, cmd *command, cmdLine *CommandLine) error {
 	if cmdLine.ProjectRoot != "" {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -120,5 +121,5 @@ func runCommand(cmd *command, cmdLine *CommandLine) error {
 		return fmt.Errorf("could not load configuration: %w", err)
 	}
 
-	return cmd.run(config, cmdLine)
+	return cmd.run(ctx, config, cmdLine)
 }

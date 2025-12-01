@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"path"
 	"testing"
 
@@ -64,7 +65,7 @@ func TestRustProstConvert(t *testing.T) {
 			cmdLine.Codec[k] = v
 		}
 		cmdGenerate, _, _ := cmdSidekick.lookup([]string{"generate"})
-		if err := runCommand(cmdGenerate, cmdLine); err != nil {
+		if err := runCommand(context.Background(), cmdGenerate, cmdLine); err != nil {
 			t.Fatal(err)
 		}
 	}

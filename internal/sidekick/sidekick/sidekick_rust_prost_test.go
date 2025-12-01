@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"os"
 	"path"
 	"testing"
@@ -46,7 +47,7 @@ func TestRustProstFromProtobuf(t *testing.T) {
 		},
 	}
 	cmdGenerate, _, _ := cmdSidekick.lookup([]string{"generate"})
-	if err := runCommand(cmdGenerate, cmdLine); err != nil {
+	if err := runCommand(context.Background(), cmdGenerate, cmdLine); err != nil {
 		t.Fatal(err)
 	}
 

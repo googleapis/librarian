@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -35,7 +36,7 @@ func TestExistingDirectory(t *testing.T) {
 			"googleapis-root": tmp,
 		},
 	}
-	root, err := makeSourceRoot(&rootConfig, "googleapis")
+	root, err := makeSourceRoot(context.Background(), &rootConfig, "googleapis")
 	if err != nil {
 		t.Error(err)
 	}
@@ -50,7 +51,7 @@ func TestValidateConfig(t *testing.T) {
 			"googleapis-root": "https://unused",
 		},
 	}
-	_, err := makeSourceRoot(&rootConfig, "googleapis")
+	_, err := makeSourceRoot(context.Background(), &rootConfig, "googleapis")
 	if err == nil {
 		t.Errorf("expected error when missing `googleapis-sha256")
 	}
@@ -84,7 +85,7 @@ func TestWithDownload(t *testing.T) {
 			"cachedir":          testDir,
 		},
 	}
-	got, err := makeSourceRoot(rootConfig, "googleapis")
+	got, err := makeSourceRoot(context.Background(), rootConfig, "googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +119,7 @@ func TestTargetExists(t *testing.T) {
 	if err := os.MkdirAll(path.Join(downloads, sha256), 0755); err != nil {
 		t.Fatal(err)
 	}
-	got, err := makeSourceRoot(rootConfig, "googleapis")
+	got, err := makeSourceRoot(context.Background(), rootConfig, "googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}

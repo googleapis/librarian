@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"testing"
 
 	cmdtest "github.com/googleapis/librarian/internal/command"
@@ -31,7 +32,7 @@ func TestRustBumpVersions(t *testing.T) {
 		},
 	}
 	cmdLine := &CommandLine{}
-	if err := rustBumpVersions(config, cmdLine); err == nil {
+	if err := rustBumpVersions(context.Background(), config, cmdLine); err == nil {
 		t.Errorf("expected an error with invalid git command")
 	}
 }

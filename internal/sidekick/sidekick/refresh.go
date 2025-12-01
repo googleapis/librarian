@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"fmt"
 	"path"
 
@@ -41,8 +42,8 @@ Reruns the generator for a single client library, using the configuration parame
 
 // refresh reruns the generator in one directory, using the configuration
 // parameters saved in its `.sidekick.toml` file.
-func refresh(rootConfig *config.Config, cmdLine *CommandLine) error {
-	override, err := overrideSources(rootConfig)
+func refresh(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
+	override, err := overrideSources(ctx, rootConfig)
 	if err != nil {
 		return err
 	}

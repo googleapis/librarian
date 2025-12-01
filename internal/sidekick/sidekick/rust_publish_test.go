@@ -15,6 +15,7 @@
 package sidekick
 
 import (
+	"context"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
@@ -31,7 +32,7 @@ func TestRustPublish(t *testing.T) {
 	cmdLine := &CommandLine{
 		DryRun: true,
 	}
-	if err := rustPublish(config, cmdLine); err == nil {
+	if err := rustPublish(context.Background(), config, cmdLine); err == nil {
 		t.Errorf("expected an error with invalid git command")
 	}
 }
