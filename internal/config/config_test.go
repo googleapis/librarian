@@ -106,7 +106,7 @@ func TestLibraryByName(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Errorf("FindByName(%q): %v", test.libraryName, err)
+				t.Errorf("LibraryByName(%q): %v", test.libraryName, err)
 				return
 			}
 

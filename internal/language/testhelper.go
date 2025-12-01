@@ -40,7 +40,7 @@ func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error)
 			return cfg, nil
 		}
 	}
-	return cfg, nil
+	return nil, fmt.Errorf("library %q not found", name)
 }
 
 func testGenerate(library *config.Library) error {
