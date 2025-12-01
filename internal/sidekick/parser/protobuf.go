@@ -578,7 +578,9 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	}
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/3036): This function needs to be made more robust. For methods that operate on
+// TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
+// to be made more robust. For methods that operate on
+//
 // collections (e.g., a `List` method), the `(google.api.resource_reference)`
 // annotation often uses the `type` field to refer to the *parent* resource
 // (e.g., `cloudresourcemanager.googleapis.com/Project`). The actual resource
