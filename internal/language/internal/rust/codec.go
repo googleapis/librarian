@@ -26,7 +26,7 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		"googleapis-root": googleapisDir,
 	}
 	specFormat := "protobuf"
-	if channel.Format == "discovery" {
+	if library.SpecificationFormat == "discovery" {
 		specFormat = "disco"
 		source["discovery-root"] = discoveryDir
 		source["roots"] = "discovery,googleapis"

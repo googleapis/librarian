@@ -147,6 +147,10 @@ type Library struct {
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
+	// SpecificationFormat specifies the API specification format. Valid values
+	// are "protobuf" (default) or "discovery".
+	SpecificationFormat string `yaml:"specification_format,omitempty"`
+
 	// Transport overrides the default transport.
 	Transport string `yaml:"transport,omitempty"`
 
@@ -162,10 +166,6 @@ type Channel struct {
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
-
-	// Format specifies the API specification format.
-	// Valid values are "protobuf" (default) or "discovery".
-	Format string `yaml:"format,omitempty"`
 }
 
 // LibraryGenerate contains per-library generate configuration.

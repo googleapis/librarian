@@ -16,6 +16,7 @@ package rust
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -38,17 +39,15 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	for _, channel := range library.Channels {
-		sidekickConfig := toSidekickConfig(library, channel, googleapisDir, discoveryDir)
-		model, err := parser.CreateModel(sidekickConfig)
-		if err != nil {
-			return err
-		}
-		if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
-			return err
-		}
+	if len(library.Channels) != 1 {
+		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
-	return nil
+	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir)
+	model, err := parser.CreateModel(sidekickConfig)
+	if err != nil {
+		return err
+	}
+	return sidekickrust.Generate(model, library.Output, sidekickConfig)
 }
 
 func sourceDir(source *config.Source, repo string) (string, error) {
