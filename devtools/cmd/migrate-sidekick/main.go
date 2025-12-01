@@ -528,13 +528,3 @@ func getGitCommit(repoPath string) (string, error) {
 	// HEAD is a direct commit hash
 	return head, nil
 }
-
-// contains checks if a slice contains a string.
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
