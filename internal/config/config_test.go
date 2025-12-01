@@ -15,6 +15,7 @@
 package config
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
