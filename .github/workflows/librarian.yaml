@@ -26,14 +26,15 @@ jobs:
           go-version-file: "go.mod"
       - name: Display Go version
         run: go version
-      - name: Install tools
+      - name: Install Go tools
+        run: go install tool
+      - name: Install protoc
         run: |
           set -e
           curl -fSSL -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
           cd /usr/local
           sudo unzip -x /tmp/protoc.zip
           protoc --version
-          go install tool
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage report
@@ -42,7 +43,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
   create-issue-on-failure:
     runs-on: ubuntu-24.04
-    needs: [test, e2e-test]
+    needs: [test]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Create an issue for push event to main
