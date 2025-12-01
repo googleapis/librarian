@@ -1947,8 +1947,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 
 		field := msg.Fields[0] // simple_field
-		if field.ResourceReference != nil {
-			t.Errorf("Expected simple_field to have nil ResourceReference, got %v", field.ResourceReference)
+		if field.IsResourceReference() {
+			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference)
 		}
 	})
 }

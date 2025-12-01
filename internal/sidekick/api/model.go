@@ -907,6 +907,7 @@ type Resource struct {
 	// defining the structure of its unique identifier. For example, a pattern
 	// might be `["publishers", "{publisher}", "shelves", "{shelf}"]`.
 	// These patterns are used to construct and parse resource names.
+	// TODO(https://github.com/googleapis/librarian/issues/3090): Pattern field in Resource struct should be []PathSegment
 	Pattern []string
 	// Plural is the plural form of the resource name.
 	// For example, for a "Book" resource, Plural would be "books".
