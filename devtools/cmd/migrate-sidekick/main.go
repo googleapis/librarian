@@ -36,6 +36,12 @@ const (
 )
 
 var (
+	// gitDir is the directory stores git configuration.
+	// Define it as a variable, rather than a const because we don't want to
+	// commit a .git directory. The directory is overwritten in the tests.
+	gitDir              = ".git"
+	errBranchNotFound   = errors.New("branch not found")
+	errHeadNotFound     = errors.New("HEAD not found")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
 )
@@ -507,20 +513,20 @@ func buildConfig(libraries map[string]*config.Library, googleapisPath string, ro
 // getGitCommit gets the current git commit hash from a repository.
 func getGitCommit(repoPath string) (string, error) {
 	// Read .git/HEAD to get current commit
-	headPath := filepath.Join(repoPath, ".git", "HEAD")
+	headPath := filepath.Join(repoPath, gitDir, "HEAD")
 	data, err := os.ReadFile(headPath)
 	if err != nil {
-		return "", err
+		return "", errHeadNotFound
 	}
 
 	head := strings.TrimSpace(string(data))
 	if strings.HasPrefix(head, "ref: ") {
 		// HEAD points to a branch
 		refPath := strings.TrimPrefix(head, "ref: ")
-		refFullPath := filepath.Join(repoPath, ".git", refPath)
+		refFullPath := filepath.Join(repoPath, gitDir, refPath)
 		commitData, err := os.ReadFile(refFullPath)
 		if err != nil {
-			return "", err
+			return "", errBranchNotFound
 		}
 		return strings.TrimSpace(string(commitData)), nil
 	}

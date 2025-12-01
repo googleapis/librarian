@@ -23,6 +23,7 @@ import (
 )
 
 func TestReadRootSidekick(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -63,6 +64,7 @@ func TestReadRootSidekick(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := readRootSidekick(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -83,6 +85,7 @@ func TestReadRootSidekick(t *testing.T) {
 }
 
 func TestFindSidekickFiles(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -104,6 +107,7 @@ func TestFindSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := findSidekickFiles(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -124,6 +128,7 @@ func TestFindSidekickFiles(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name string
 		api  string
@@ -161,7 +166,59 @@ func TestDeriveLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := deriveLibraryName(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetGitCommit(t *testing.T) {
+	t.Parallel()
+	gitDir = "test-git"
+	for _, test := range []struct {
+		name    string
+		path    string
+		want    string
+		wantErr error
+	}{
+		{
+			name: "direct_commit_sha",
+			path: "testdata/get-git-commit/direct-commit-sha",
+			want: "1234567abcdefg",
+		},
+		{
+			name: "branch_sha",
+			path: "testdata/get-git-commit/branch",
+			want: "95bdc62f7448ffb183aada62de1be5a704e54a8c",
+		},
+		{
+			name:    "no_head",
+			path:    "testdata/get-git-commit/no-head",
+			wantErr: errHeadNotFound,
+		},
+		{
+			name:    "branch_not_found",
+			path:    "testdata/get-git-commit/branch-not-found",
+			wantErr: errBranchNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := getGitCommit(test.path)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("got error %v, want nil", err)
+				return
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
