@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config represents the librarian.yaml configuration.
+// Package config provides types and functions for reading and writing
+// librarian.yaml configuration files.
 package config
+
+import (
+	"errors"
+)
+
+var errLibraryNotFound = errors.New("library not found")
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
@@ -130,4 +137,19 @@ type Channel struct {
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
+}
+
+// LibraryByName returns a library with the given name.
+func (c *Config) LibraryByName(name string) (*Library, error) {
+	if c.Libraries == nil {
+		return nil, errLibraryNotFound
+	}
+
+	for _, library := range c.Libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+
+	return nil, errLibraryNotFound
 }

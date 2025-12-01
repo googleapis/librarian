@@ -97,3 +97,71 @@ func TestWrite(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestLibraryByName(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		config      *Config
+		want        *Library
+		wantErr     error
+	}{
+		{
+			name:        "find_a_library",
+			libraryName: "example-library",
+			config: &Config{
+				Libraries: []*Library{
+					{
+						Name: "example-library",
+					},
+					{
+						Name: "another-library",
+					},
+				},
+			},
+			want: &Library{
+				Name: "example-library",
+			},
+		},
+		{
+			name:        "no_library_in_config",
+			libraryName: "example-library",
+			config:      &Config{},
+			wantErr:     errLibraryNotFound,
+		},
+		{
+			name:        "does_not_find_a_library",
+			libraryName: "non-existent-library",
+			config: &Config{
+				Libraries: []*Library{
+					{
+						Name: "example-library",
+					},
+					{
+						Name: "another-library",
+					},
+				},
+			},
+			wantErr: errLibraryNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := test.config.LibraryByName(test.libraryName)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("LibraryByName(%q): %v", test.libraryName, err)
+				return
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
