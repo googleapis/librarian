@@ -15,6 +15,7 @@
 package migrate_sidekick
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -31,6 +32,8 @@ import (
 const (
 	sidekickFile = ".sidekick.toml"
 )
+
+var errSidekickNotFound = errors.New(".sidekick.toml not found")
 
 // RootSidekickConfig represents the structure of the root .sidekick.toml file.
 type RootSidekickConfig struct {
@@ -145,7 +148,7 @@ func readRootSidekick(repoPath string) (*RootDefaults, error) {
 	rootPath := filepath.Join(repoPath, sidekickFile)
 	data, err := os.ReadFile(rootPath)
 	if err != nil {
-		return nil, err
+		return nil, errSidekickNotFound
 	}
 
 	// Parse as generic map to handle the dynamic package keys
