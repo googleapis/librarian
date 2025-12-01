@@ -299,7 +299,8 @@ const (
 	unreserved = alpha + digit + "-._~"
 )
 
-// parseLiteral validates that the provided string conforms to the LITERAL definition, and returns a Literal type if it does.
+// parseLiteral validates that the provided string conforms to the LITERAL
+// definition, and returns a Literal type if it does.
 func parseLiteral(literal string) (*Literal, int, error) {
 	var pos int
 	for pos < len(literal) {

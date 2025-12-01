@@ -30,3 +30,20 @@ linters:
     - unparam
     - unused
     - usetesting
+  settings:
+    godoclint:
+      default: all
+      options:
+        max-len:
+          length: 120
+  exclusions:
+    rules:
+      - path: _test\.go$
+        linters:
+          - godoclint
+      - path: internal/sidekick/sample/
+        linters:
+          - godoclint
+      - path: internal/legacylibrarian/
+        linters:
+          - godoclint
