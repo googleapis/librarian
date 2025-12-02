@@ -152,6 +152,14 @@ func TestReadSidekickFiles(t *testing.T) {
 					},
 					Version:       "1.1.0",
 					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						RustDefault: config.RustDefault{
+							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+						},
+						PerServiceFeatures:    true,
+						GenerateSetterSamples: true,
+						NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
+					},
 				},
 				"google-cloud-sql-v1": {
 					Name: "google-cloud-sql-v1",
