@@ -354,6 +354,67 @@ func TestBuildConfig(t *testing.T) {
 				Default: &config.Default{Output: "src/generated/", Rust: &config.RustDefault{}},
 			},
 		},
+		{
+			name:         "copy_libraries",
+			rootDefaults: &RootDefaults{},
+			libraries: map[string]*config.Library{
+				"google-cloud-security-publicca-v1": {
+					Name: "google-cloud-security-publicca-v1",
+					Channels: []*config.Channel{
+						{
+							Path:          "google/cloud/security/publicca/v1",
+							ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+						},
+					},
+					Version:       "1.1.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						RustDefault: config.RustDefault{
+							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+						},
+						PerServiceFeatures:    true,
+						GenerateSetterSamples: true,
+						NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
+					},
+				},
+				"skipped": {
+					Name: "google-cloud-sql-v1",
+					Channels: []*config.Channel{
+						{
+							Path:          "google/cloud/sql/v1",
+							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
+						},
+					},
+					SkipPublish: true,
+					Version:     "1.2.0",
+				},
+			},
+			want: &config.Config{
+				Language: "rust",
+				Default:  &config.Default{Output: "src/generated/", Rust: &config.RustDefault{}},
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-security-publicca-v1",
+						Channels: []*config.Channel{
+							{
+								Path:          "google/cloud/security/publicca/v1",
+								ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+							},
+						},
+						Version:       "1.1.0",
+						CopyrightYear: "2025",
+						Rust: &config.RustCrate{
+							RustDefault: config.RustDefault{
+								DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+							},
+							PerServiceFeatures:    true,
+							GenerateSetterSamples: true,
+							NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
