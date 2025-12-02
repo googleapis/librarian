@@ -33,7 +33,7 @@ type Version struct {
 	// its version (e.g., ".").
 	PrereleaseSeparator string
 	// PrereleaseNumber is the numeric part of the pre-release string (e.g., "1", "21").
-	PrereleaseNumber string
+	PrereleaseNumber int
 }
 
 // semverRegex defines format for semantic version.
@@ -78,13 +78,20 @@ func Parse(versionString string) (*Version, error) {
 		if i := strings.LastIndex(prerelease, "."); i != -1 {
 			v.Prerelease = prerelease[:i]
 			v.PrereleaseSeparator = "."
-			v.PrereleaseNumber = prerelease[i+1:]
+			v.PrereleaseNumber, err = strconv.Atoi(prerelease[i+1:])
+			if err != nil {
+				return nil, fmt.Errorf("invalid prerelease number: %w", err)
+			}
 		} else {
 			re := regexp.MustCompile(`^(.*?)(\d+)$`)
 			matches := re.FindStringSubmatch(prerelease)
 			if len(matches) == 3 {
 				v.Prerelease = matches[1]
-				v.PrereleaseNumber = matches[2]
+				v.PrereleaseNumber, err = strconv.Atoi(matches[2])
+				if err != nil {
+					// This should not happen if the regex is correct.
+					return nil, fmt.Errorf("invalid prerelease number: %w", err)
+				}
 			} else {
 				v.Prerelease = prerelease
 			}
@@ -143,26 +150,52 @@ func (v *Version) Compare(other *Version) int {
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
-		version += "-" + v.Prerelease + v.PrereleaseSeparator + v.PrereleaseNumber
+		version += "-" + v.Prerelease
+		if v.PrereleaseNumber > 0 {
+			version += v.PrereleaseSeparator + strconv.Itoa(v.PrereleaseNumber)
+		}
 	}
 	return version
 }
 
 // incrementPrerelease increments the pre-release version number, or appends
 // one if it doesn't exist.
-func (v *Version) incrementPrerelease() error {
-	if v.PrereleaseNumber == "" {
+func (v *Version) incrementPrerelease() {
+	if v.PrereleaseNumber == 0 {
 		v.PrereleaseSeparator = "."
-		v.PrereleaseNumber = "1"
-		return nil
 	}
-	num, err := strconv.Atoi(v.PrereleaseNumber)
-	if err != nil {
-		// This should not happen if Parse is correct.
-		return fmt.Errorf("invalid prerelease version: %w", err)
+	v.PrereleaseNumber += 1
+}
+
+func (v *Version) bump(highestChange ChangeLevel) {
+	if v.Prerelease != "" {
+		// Only bump the prerelease version number.
+		v.incrementPrerelease()
+		return
 	}
-	v.PrereleaseNumber = strconv.Itoa(num + 1)
-	return nil
+
+	// Bump the version core.
+	if v.Major == 0 {
+		// breaking change and feat result in minor bump for pre-1.0.0
+		if highestChange == Major || highestChange == Minor {
+			v.Minor++
+			v.Patch = 0
+		} else {
+			v.Patch++
+		}
+	} else {
+		switch highestChange {
+		case Major:
+			v.Major++
+			v.Minor = 0
+			v.Patch = 0
+		case Minor:
+			v.Minor++
+			v.Patch = 0
+		case Patch:
+			v.Patch++
+		}
+	}
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
@@ -218,36 +251,7 @@ func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error
 		return "", fmt.Errorf("failed to parse current version: %w", err)
 	}
 
-	// Handle prerelease versions
-	if currentSemVer.Prerelease != "" {
-		if err := currentSemVer.incrementPrerelease(); err != nil {
-			return "", err
-		}
-		return currentSemVer.String(), nil
-	}
-
-	// Handle standard versions
-	if currentSemVer.Major == 0 {
-		// breaking change and feat result in minor bump for pre-1.0.0
-		if highestChange == Major || highestChange == Minor {
-			currentSemVer.Minor++
-			currentSemVer.Patch = 0
-		} else {
-			currentSemVer.Patch++
-		}
-	} else {
-		switch highestChange {
-		case Major:
-			currentSemVer.Major++
-			currentSemVer.Minor = 0
-			currentSemVer.Patch = 0
-		case Minor:
-			currentSemVer.Minor++
-			currentSemVer.Patch = 0
-		case Patch:
-			currentSemVer.Patch++
-		}
-	}
+	currentSemVer.bump(highestChange)
 
 	return currentSemVer.String(), nil
 }
