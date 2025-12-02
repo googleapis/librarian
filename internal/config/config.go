@@ -84,7 +84,8 @@ type Default struct {
 
 // Library represents a library configuration.
 type Library struct {
-	// Name is the library name, such as "secretmanager" or "storage".
+	// Name is the library name, such as "secretmanager" or "storage". It is
+	// listed first so it appears at the top of each library entry in YAML.
 	Name string `yaml:"name"`
 
 	// Channel specifies which googleapis Channel to generate from (for generated

@@ -102,7 +102,8 @@ type RustCrate struct {
 
 // RustPackageDependency represents a package dependency configuration.
 type RustPackageDependency struct {
-	// Name is the dependency name.
+	// Name is the dependency name. It is listed first so it appears at the top
+	// of each dependency entry in YAML.
 	Name string `yaml:"name"`
 
 	// Ignore prevents this package from being mapped to an external crate.
