@@ -30,21 +30,20 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
     required this.{{Codec.Name}},
     {{/Codec.FieldBehaviorRequired}}
     {{^Codec.FieldBehaviorRequired}}
-    {{#Codec.IsRequiredBytes}}
-    Uint8List? {{Codec.Name}},
-    {{/Codec.IsRequiredBytes}}
-    {{^Codec.IsRequiredBytes}}
+    {{#Codec.ConstDefault}}
     this.{{Codec.Name}}{{#Codec.DefaultValue}} = {{{Codec.DefaultValue}}}{{/Codec.DefaultValue}},
-    {{/Codec.IsRequiredBytes}}
+    {{/Codec.ConstDefault}}
+    {{^Codec.ConstDefault}}
+    {{{Codec.Type}}}? {{Codec.Name}},
+    {{/Codec.ConstDefault}}
     {{/Codec.FieldBehaviorRequired}}
   {{/Fields}}
   }{{/Codec.HasFields}}) : 
     {{#Fields}}
-    {{#Codec.IsRequiredBytes}}
+    {{^Codec.ConstDefault}}
     {{Codec.Name}} = {{Codec.Name}} ?? {{{Codec.DefaultValue}}},
-    {{/Codec.IsRequiredBytes}}
+    {{/Codec.ConstDefault}}
     {{/Fields}}
-  
   super(fullyQualifiedName){{Codec.ConstructorBody}}
 
   {{#Codec.HasCustomEncoding}}
