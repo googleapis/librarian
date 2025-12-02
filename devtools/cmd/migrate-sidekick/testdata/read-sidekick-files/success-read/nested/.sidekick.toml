@@ -27,3 +27,5 @@ disabled-clippy-warnings  = "doc_lazy_continuation"
 has-veneer                = 'true'
 routing-required          = 'true'
 include-grpc-only-methods = 'true'
+post-process-protos = 'example post processing'
+detailed-tracing-attributes = 'true'

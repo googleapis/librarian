@@ -82,7 +82,7 @@ type RustCrate struct {
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
-	PostProcessProtos bool `yaml:"post_process_protos,omitempty"`
+	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`

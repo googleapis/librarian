@@ -359,8 +359,8 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
 		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
-		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(bool)
-		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(bool)
+		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
+		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(string)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 
 		// Parse package dependencies
@@ -420,7 +420,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
 			GenerateSetterSamples:     strToBool(generateSetterSamples),
 			PostProcessProtos:         postProcessProtos,
-			DetailedTracingAttributes: detailedTracingAttributes,
+			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
 			PaginationOverrides:       paginationOverrides,
 			NameOverrides:             nameOverrides,
 		}
