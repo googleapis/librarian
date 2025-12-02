@@ -39,9 +39,6 @@ type RustCrate struct {
 	// TitleOverride overrides the crate title.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
-	// DescriptionOverride overrides the crate description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// PackageNameOverride overrides the package name.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 

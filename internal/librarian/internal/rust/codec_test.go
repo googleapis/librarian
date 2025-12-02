@@ -372,10 +372,8 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with description override",
 			library: &config.Library{
-				Name: "google-cloud-longrunning",
-				Rust: &config.RustCrate{
-					DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
-				},
+				Name:                "google-cloud-longrunning",
+				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
 			},
 			channel: &config.Channel{
 				Path:          "google/longrunning",
