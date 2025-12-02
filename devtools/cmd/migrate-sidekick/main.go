@@ -341,6 +341,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		titleOverride, _ := sidekick.Source["title-override"].(string)
 		descriptionOverride, _ := sidekick.Source["description-override"].(string)
 		roots, _ := sidekick.Source["roots"].(string)
+		includeList, _ := sidekick.Source["include-list"].(string)
+		includeIds, _ := sidekick.Source["include-ids"].(string)
+		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
 
 		// Parse Rust-specific configuration from sidekick.toml codec section
 		disabledRustdocWarnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
@@ -349,15 +352,12 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		templateOverride, _ := sidekick.Codec["template-override"].(string)
 		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
 		rootName, _ := sidekick.Codec["root-name"].(string)
-		defaultFeatures, _ := sidekick.Codec["default-features"].([]string)
-		extraModules, _ := sidekick.Codec["extra-modules"].([]string)
-		includeList, _ := sidekick.Codec["include-list"].([]string)
-		includeIds, _ := sidekick.Codec["include-ids"].([]string)
-		skippedIds, _ := sidekick.Codec["skipped-ids"].([]string)
-		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].([]string)
-		hasVeneer, _ := sidekick.Codec["has-veneer"].(bool)
-		routingRequired, _ := sidekick.Codec["routing-required"].(bool)
-		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(bool)
+		defaultFeatures, _ := sidekick.Codec["default-features"].(string)
+		extraModules, _ := sidekick.Codec["extra-modules"].(string)
+		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].(string)
+		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
+		routingRequired, _ := sidekick.Codec["routing-required"].(string)
+		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
 		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(bool)
 		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(bool)
@@ -409,15 +409,15 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
 			Roots:                     strToSlice(roots),
-			DefaultFeatures:           defaultFeatures,
-			ExtraModules:              extraModules,
-			IncludeList:               includeList,
-			IncludedIds:               includeIds,
-			SkippedIds:                skippedIds,
-			DisabledClippyWarnings:    disabledClippyWarnings,
-			HasVeneer:                 hasVeneer,
-			RoutingRequired:           routingRequired,
-			IncludeGrpcOnlyMethods:    includeGrpcOnlyMethods,
+			DefaultFeatures:           strToSlice(defaultFeatures),
+			ExtraModules:              strToSlice(extraModules),
+			IncludeList:               strToSlice(includeList),
+			IncludedIds:               strToSlice(includeIds),
+			SkippedIds:                strToSlice(skippedIds),
+			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings),
+			HasVeneer:                 strToBool(hasVeneer),
+			RoutingRequired:           strToBool(routingRequired),
+			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
 			GenerateSetterSamples:     strToBool(generateSetterSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: detailedTracingAttributes,

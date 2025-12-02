@@ -6,6 +6,9 @@ service-config = 'google/cloud/security/publicca/v1/publicca_v1.yaml'
 title-override = 'Google Apps Script Types'
 description-override = 'Description override'
 roots = 'discovery,googleapis'
+include-list = "api.proto,source_context.proto,type.proto,descriptor.proto"
+include-ids = ".google.iam.v2.Resource"
+skipped-ids = ".google.iam.v1.ResourcePolicyMember"
 
 [codec]
 version        = '1.1.0'
@@ -18,3 +21,9 @@ module-path           = 'crate'
 template-override     = 'templates/mod'
 package-name-override = 'google-cloud-security-publicca-v1'
 root-name         = 'conformance-root'
+default-features          = 'instances,projects'
+extra-modules             = 'errors,operation'
+disabled-clippy-warnings  = "doc_lazy_continuation"
+has-veneer                = 'true'
+routing-required          = 'true'
+include-grpc-only-methods = 'true'
