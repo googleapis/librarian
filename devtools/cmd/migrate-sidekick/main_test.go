@@ -127,6 +127,43 @@ func TestFindSidekickFiles(t *testing.T) {
 	}
 }
 
+func TestReadSidekickFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		files   []string
+		want    map[string]*config.Library
+		wantErr error
+	}{
+		{
+			name: "read_sidekick_files",
+			files: []string{
+				"testdata/success-read/.sidekick.toml",
+				"testdata/success-read/nested/.sidekick.toml",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := readSidekickFiles(test.files)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("got error %v, want nil", err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestDeriveLibraryName(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

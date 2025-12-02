@@ -289,6 +289,8 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		if apiPath == "" {
 			continue
 		}
+		// Get Service config
+		serviceConfig := sidekick.General.ServiceConfig
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
@@ -317,16 +319,11 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			libraries[libraryName] = lib
 		}
 
-		// Add API path
-		//if len(lib.Channels) == 0 {
-		//	lib.Channel = apiPath
-		//} else if lib.Channel != "" && lib.Channel != apiPath {
-		//	// Convert to multi-API library
-		//	lib.Channels = []string{lib.Channel, apiPath}
-		//	lib.Channel = ""
-		//} else if len(lib.Channels) > 0 && !contains(lib.Channels, apiPath) {
-		//	lib.Channels = append(lib.Channels, apiPath)
-		//}
+		// Add channels
+		lib.Channels = append(lib.Channels, &config.Channel{
+			Path:          apiPath,
+			ServiceConfig: serviceConfig,
+		})
 
 		// Set version from Cargo.toml (more authoritative than sidekick)
 		if cargo.Package.Version != "" {
@@ -336,12 +333,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		}
 
 		// Set publish disabled from Cargo.toml
-		//if publishValue, ok := cargo.Package.Publish.(bool); ok && !publishValue {
-		//	if lib.Publish == nil {
-		//		lib.Publish = &config.LibraryPublish{}
-		//	}
-		//	lib.Publish.Disabled = true
-		//}
+		if publishValue, ok := cargo.Package.Publish.(bool); ok && !publishValue {
+			lib.SkipPublish = true
+		}
 
 		// Parse library-level configuration
 		if copyrightYear, ok := sidekick.Codec["copyright-year"].(string); ok && copyrightYear != "" {
@@ -355,7 +349,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 
 		// Parse package dependencies
-		var packageDeps []config.RustPackageDependency
+		var packageDeps []*config.RustPackageDependency
 		for key, value := range sidekick.Codec {
 			if !strings.HasPrefix(key, "package:") {
 				continue
@@ -368,7 +362,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 
 			dep := parsePackageDependency(pkgName, pkgSpec)
 			if dep != nil {
-				packageDeps = append(packageDeps, *dep)
+				packageDeps = append(packageDeps, dep)
 			}
 		}
 
@@ -404,9 +398,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			}
 
 			// Package dependencies
-			//if len(packageDeps) > 0 {
-			//	lib.Rust.PackageDependencies = packageDeps
-			//}
+			if len(packageDeps) > 0 {
+				lib.Rust.PackageDependencies = packageDeps
+			}
 
 			// Generate setter samples
 			if generateSetterSamples == "true" {
