@@ -15,7 +15,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -97,13 +96,13 @@ type CargoConfig struct {
 }
 
 func main() {
-	if err := run(context.Background(), os.Args[1:]); err != nil {
+	if err := run(os.Args[1:]); err != nil {
 		slog.Error("migrate-sidekick failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, args []string) error {
+func run(args []string) error {
 	if len(args) == 0 || args[0] != "migrate-sidekick" {
 		return errCommandNotFound
 	}
