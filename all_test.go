@@ -16,8 +16,8 @@ package librarian
 
 import (
 	"bytes"
-	"errors"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -26,16 +26,13 @@ func TestGolangCILint(t *testing.T) {
 }
 
 func TestGoImports(t *testing.T) {
-	cmd := exec.Command("go", "tool", "goimports", "-d", ".")
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("goimports failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
+	// goimports -d exits 0 on failure, so check stdout instead.
+	out, err := exec.Command("go", "tool", "goimports", "-d", ".").CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if stdout.Len() > 0 {
-		t.Errorf("goimports found unformatted files:\n%s", stdout.String())
+	if len(out) > 0 {
+		t.Fatalf("goimports -d .:\n%s", out)
 	}
 }
 
@@ -44,27 +41,17 @@ func TestGoModTidy(t *testing.T) {
 }
 
 func TestYAMLFormat(t *testing.T) {
-	cmd := exec.Command("go", "tool", "yamlfmt", "-lint", ".")
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("yamlfmt failed to run: %v\nStdout:\n%s\nStderr:\n%s", err, stdout.String(), stderr.String())
-	}
-	if stdout.Len() > 0 {
-		t.Errorf("yamlfmt found unformatted files:\n%s", stdout.String())
-	}
+	rungo(t, "tool", "yamlfmt", "-lint", ".")
 }
 
 func rungo(t *testing.T, args ...string) {
 	t.Helper()
 
+	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("go", args...)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		if ee := (*exec.ExitError)(nil); errors.As(err, &ee) && len(ee.Stderr) > 0 {
-			t.Fatalf("%v: %v\n%s", cmd, err, ee.Stderr)
-		}
-		t.Fatalf("%v: %v\n%s", cmd, err, output)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("go %s: %v\nStdout:\n%s\nStderr:\n%s", strings.Join(args, " "), err, stdout.String(), stderr.String())
 	}
 }
