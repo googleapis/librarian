@@ -66,6 +66,7 @@ type SidekickConfig struct {
 		SpecificationSource string `toml:"specification-source"`
 		ServiceConfig       string `toml:"service-config"`
 	} `toml:"general"`
+	Source              map[string]interface{} `toml:"source"`
 	Codec               map[string]interface{} `toml:"codec"` // Use map to capture all fields including package:*
 	PaginationOverrides []struct {
 		ID        string `toml:"id"`
@@ -336,13 +337,15 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			lib.CopyrightYear = copyrightYear
 		}
 
+		// Parse Rust-specific configuration from sidekick.toml source section
+		titleOverride, _ := sidekick.Source["title-override"].(string)
+		descriptionOverride, _ := sidekick.Source["description-override"].(string)
+
 		// Parse Rust-specific configuration from sidekick.toml codec section
 		disabledRustdocWarnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
 		perServiceFeatures, _ := sidekick.Codec["per-service-features"].(string)
 		modulePath, _ := sidekick.Codec["module-path"].(string)
 		templateOverride, _ := sidekick.Codec["template-override"].(string)
-		titleOverride, _ := sidekick.Codec["title-override"].(string)
-		descriptionOverride, _ := sidekick.Codec["description-override"].(string)
 		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
 		rootName, _ := sidekick.Codec["root-name"].(string)
 		roots, _ := sidekick.Codec["roots"].([]string)

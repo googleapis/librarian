@@ -2,6 +2,10 @@
 specification-source = 'google/cloud/security/publicca/v1'
 service-config = 'google/cloud/security/publicca/v1/publicca_v1.yaml'
 
+[source]
+title-override = 'Google Apps Script Types'
+description-override = 'Description override'
+
 [codec]
 version        = '1.1.0'
 copyright-year = '2025'
@@ -9,3 +13,7 @@ per-service-features      = 'true'
 disabled-rustdoc-warnings = "bare_urls,broken_intra_doc_links,redundant_explicit_links"
 generate-setter-samples = 'true'
 name-overrides            = '.google.cloud.security/publicca.v1.Storage=StorageControl'
+module-path           = 'crate'
+template-override     = 'templates/mod'
+package-name-override = 'google-cloud-security-publicca-v1'
+root-name         = 'conformance-root'
