@@ -22,6 +22,12 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestRun(t *testing.T) {
+	if err := run(); err == nil || !errors.Is(err, errRepoNotFound) {
+		t.Error(err)
+	}
+}
+
 func TestReadRootSidekick(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

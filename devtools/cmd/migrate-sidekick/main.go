@@ -43,6 +43,7 @@ var (
 	gitDir              = ".git"
 	errBranchNotFound   = errors.New("branch not found")
 	errHeadNotFound     = errors.New("HEAD not found")
+	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
 )
@@ -89,13 +90,6 @@ type CargoConfig struct {
 	} `toml:"package"`
 }
 
-func main() {
-	if err := run(); err != nil {
-		slog.Error("migrate-sidekick command failed", "err", err)
-		os.Exit(1)
-	}
-}
-
 func run() error {
 	var (
 		repoPath       string
@@ -109,7 +103,7 @@ func run() error {
 	flag.Parse()
 
 	if repoPath == "" {
-		return fmt.Errorf("-repo flag is required")
+		return errRepoNotFound
 	}
 
 	slog.Info("Reading sidekick.toml...", "path", repoPath)
@@ -470,7 +464,7 @@ func buildConfig(libraries map[string]*config.Library, googleapisPath string, ro
 		if len(lib.Channels) > 0 {
 			apiPath = lib.Channels[0].Path
 		}
-		
+
 		// Derive expected library name from API path
 		expectedName := deriveLibraryName(apiPath)
 		nameMatchesConvention := lib.Name == expectedName
