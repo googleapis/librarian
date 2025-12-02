@@ -98,6 +98,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
 				return nil
 			}
+			lib = fillDefaults(lib, cfg.Default)
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
