@@ -18,12 +18,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
+
+const googleapisRepo = "github.com/googleapis/googleapis"
 
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
@@ -71,21 +78,30 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
-	var errs []error
 	for _, lib := range cfg.Libraries {
-		if err := generate(ctx, cfg.Language, lib, cfg.Sources); err != nil {
-			errs = append(errs, err)
+		if err := generateLibrary(ctx, cfg, lib.Name); err != nil {
+			return err
 		}
-	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
 	}
 	return nil
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
+	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
+	if err != nil {
+		return err
+	}
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
+			for _, api := range lib.Channels {
+				if api.ServiceConfig == "" {
+					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
+					if err != nil {
+						return err
+					}
+					api.ServiceConfig = serviceConfig
+				}
+			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
@@ -98,15 +114,58 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	case "testhelper":
 		err = testGenerate(library)
 	case "rust":
+		keep := append(library.Keep, "Cargo.toml")
+		if err := cleanOutput(library.Output, keep); err != nil {
+			return err
+		}
 		err = rust.Generate(ctx, library, sources)
 	default:
 		err = fmt.Errorf("generate not implemented for %q", language)
 	}
-
 	if err != nil {
 		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
 		return err
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
 	return nil
+}
+
+func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, error) {
+	if sources == nil || sources.Googleapis == nil {
+		return "", errors.New("googleapis source is required")
+	}
+	if sources.Googleapis.Dir != "" {
+		return sources.Googleapis.Dir, nil
+	}
+	return fetch.RepoDir(ctx, googleapisRepo, sources.Googleapis.Commit, sources.Googleapis.SHA256)
+}
+
+// cleanOutput removes all files in dir except those in keep. The keep list
+// should contain paths relative to dir. It returns an error if any file in
+// keep does not exist.
+func cleanOutput(dir string, keep []string) error {
+	keepSet := make(map[string]bool)
+	for _, k := range keep {
+		path := filepath.Join(dir, k)
+		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("%s: file %q in keep list does not exist", dir, k)
+		}
+		keepSet[k] = true
+	}
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if keepSet[rel] {
+			return nil
+		}
+		return os.Remove(path)
+	})
 }

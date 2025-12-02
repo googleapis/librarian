@@ -26,15 +26,24 @@ import (
 
 func TestGenerate(t *testing.T) {
 	cmdtest.RequireCommand(t, "protoc")
+	cmdtest.RequireCommand(t, "rustfmt")
+	cmdtest.RequireCommand(t, "taplo")
 	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	outDir := t.TempDir()
+	// Change to testdata directory so cargo fmt can find Cargo.toml
+	workspaceDir, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := filepath.Join(workspaceDir, "google-cloud-secretmanager-v1")
+	t.Cleanup(func() { os.RemoveAll(outDir) })
+	t.Chdir(workspaceDir)
 	googleapisDir := filepath.Join(testdataDir, "googleapis")
 	library := &config.Library{
-		Name:          "secretmanager",
+		Name:          "google-cloud-secretmanager-v1",
 		Version:       "0.1.0",
 		Output:        outDir,
 		ReleaseLevel:  "preview",
@@ -43,6 +52,15 @@ func TestGenerate(t *testing.T) {
 			{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		Rust: &config.RustCrate{
+			RustDefault: config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+				},
 			},
 		},
 	}
@@ -58,7 +76,7 @@ func TestGenerate(t *testing.T) {
 		want string
 	}{
 		{filepath.Join(outDir, "Cargo.toml"), "name"},
-		{filepath.Join(outDir, "Cargo.toml"), "secretmanager"},
+		{filepath.Join(outDir, "Cargo.toml"), "google-cloud-secretmanager-v1"},
 		{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 		{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},

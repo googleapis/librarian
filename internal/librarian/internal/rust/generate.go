@@ -17,7 +17,9 @@ package rust
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -47,7 +49,16 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	return sidekickrust.Generate(model, library.Output, sidekickConfig)
+	if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
+		return err
+	}
+	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
+		return err
+	}
+	if err := command.Run("cargo", "fmt", "-p", library.Name); err != nil {
+		return err
+	}
+	return nil
 }
 
 func sourceDir(ctx context.Context, source *config.Source, repo string) (string, error) {

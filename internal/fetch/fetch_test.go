@@ -53,13 +53,23 @@ func TestRepoFromTarballLink(t *testing.T) {
 
 func TestRepoFromTarballLinkErrors(t *testing.T) {
 	for _, test := range []struct {
+		name        string
 		tarballLink string
 	}{
-		{tarballLink: "too-short"},
+		{
+			name:        "URL path does not match prefix",
+			tarballLink: "too-short",
+		},
+		{
+			name:        "URL path has only one component after prefix removal",
+			tarballLink: testGitHubDn + "/org",
+		},
 	} {
-		if got, err := RepoFromTarballLink(testGitHubDn, test.tarballLink); err == nil {
-			t.Errorf("expected an error, got=%v", got)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			if got, err := RepoFromTarballLink(testGitHubDn, test.tarballLink); err == nil {
+				t.Errorf("expected an error, got=%v", got)
+			}
+		})
 	}
 }
 
@@ -379,4 +389,181 @@ func createTestTarball(t *testing.T, topLevelDir string, files map[string]string
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+func TestExtractTarballErrors(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		tarballPath func(t *testing.T) string // Function to create the test file
+		dest        func(t *testing.T) string
+		wantErr     bool
+	}{
+		{
+			name: "tarball does not exist",
+			tarballPath: func(t *testing.T) string {
+				return "non-existent-file.tar.gz"
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: true,
+		},
+		{
+			name: "not a gzip file",
+			tarballPath: func(t *testing.T) string {
+				p := path.Join(t.TempDir(), "file.txt")
+				if err := os.WriteFile(p, []byte("not a tarball"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: true,
+		},
+		{
+			name: "gzipped but not a tar file",
+			tarballPath: func(t *testing.T) string {
+				var buf bytes.Buffer
+				gw := gzip.NewWriter(&buf)
+				if _, err := gw.Write([]byte("not a tar file")); err != nil {
+					t.Fatal(err)
+				}
+				if err := gw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				p := path.Join(t.TempDir(), "file.gz")
+				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: true,
+		},
+		{
+			name: "destination is a file",
+			tarballPath: func(t *testing.T) string {
+				tarballData := createTestTarball(t, "repo-abc123", map[string]string{"file.txt": "content"})
+				p := path.Join(t.TempDir(), "test.tar.gz")
+				if err := os.WriteFile(p, tarballData, 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				p := path.Join(t.TempDir(), "destfile")
+				if err := os.WriteFile(p, []byte("i am a file"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := ExtractTarball(test.tarballPath(t), test.dest(t))
+			if (err != nil) != test.wantErr {
+				t.Errorf("ExtractTarball() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDownloadTarballErrors(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		target  func(t *testing.T) string
+		url     func(t *testing.T) string
+		sha     string
+		wantErr bool
+	}{
+		{
+			name: "http fails after 3 retries",
+			target: func(t *testing.T) string {
+				return path.Join(t.TempDir(), "target")
+			},
+			url: func(t *testing.T) string {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+				}))
+				t.Cleanup(server.Close)
+				return server.URL
+			},
+			sha:     "any-sha",
+			wantErr: true,
+		}, {
+			name: "cannot create parent directory",
+			target: func(t *testing.T) string {
+				// Create a read-only directory to trigger a permission error.
+				readOnlyDir := path.Join(t.TempDir(), "read-only")
+				if err := os.Mkdir(readOnlyDir, 0555); err != nil { // Read and execute only
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					// Restore permissions so the temp dir can be cleaned up.
+					os.Chmod(readOnlyDir, 0755)
+				})
+				return path.Join(readOnlyDir, "subdir", "target")
+			},
+			url: func(t *testing.T) string {
+				return "https://any-url"
+			},
+			sha:     "any-sha",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaultBackoff = time.Millisecond
+			t.Cleanup(func() {
+				defaultBackoff = 10 * time.Second
+			})
+			err := DownloadTarball(context.Background(), test.target(t), test.url(t), test.sha)
+			if (err != nil) != test.wantErr {
+				t.Errorf("DownloadTarball() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDownloadTarballRetry(t *testing.T) {
+	t.Run("succeeds after a few retries", func(t *testing.T) {
+		// Set a short backoff for this test to speed up retries.
+		defaultBackoff = time.Millisecond
+		t.Cleanup(func() {
+			defaultBackoff = 10 * time.Second
+		})
+		testDir := t.TempDir()
+		tarball := makeTestContents(t)
+		var requestCount int
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestCount++
+			if requestCount < 3 {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write(tarball.Contents)
+		}))
+		defer server.Close()
+
+		target := path.Join(testDir, "target-file")
+		if err := DownloadTarball(t.Context(), target, server.URL+"/test.tar.gz", tarball.Sha256); err != nil {
+			t.Fatal(err)
+		}
+
+		if requestCount != 3 {
+			t.Errorf("expected 3 requests, got %d", requestCount)
+		}
+		got, err := os.ReadFile(target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(tarball.Contents, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }

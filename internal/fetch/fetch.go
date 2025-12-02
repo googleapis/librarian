@@ -30,7 +30,10 @@ import (
 	"time"
 )
 
-var errChecksumMismatch = errors.New("checksum mismatch")
+var (
+	errChecksumMismatch = errors.New("checksum mismatch")
+	defaultBackoff      = 10 * time.Second
+)
 
 // Endpoints defines the endpoints used to access GitHub.
 type Endpoints struct {
@@ -161,12 +164,11 @@ func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) er
 // path. It retries up to 3 times with exponential backoff on failure.
 func downloadTarball(ctx context.Context, target, source string) error {
 	var err error
-	backoff := 10 * time.Second
 	for i := range 3 {
 		if i > 0 {
 			select {
-			case <-time.After(backoff):
-				backoff *= 2
+			case <-time.After(defaultBackoff):
+				defaultBackoff *= 2
 			case <-ctx.Done():
 				return ctx.Err()
 			}

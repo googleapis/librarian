@@ -1,0 +1,58 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+type: google.api.Service
+config_version: 3
+name: speech.googleapis.com
+title: Cloud Speech-to-Text API
+apis:
+  - name: google.cloud.speech.v1.Adaptation
+  - name: google.cloud.speech.v1.Speech
+  - name: google.longrunning.Operations
+types:
+  - name: google.cloud.speech.v1.LongRunningRecognizeMetadata
+  - name: google.cloud.speech.v1.LongRunningRecognizeResponse
+documentation:
+  summary: Converts audio to text by applying powerful neural network models.
+  overview: |-
+    # Introduction
+
+    Google Cloud Speech API provides speech recognition as a service.
+backend:
+  rules:
+    - selector: 'google.cloud.speech.v1.Adaptation.*'
+      deadline: 355.0
+    - selector: 'google.cloud.speech.v1.Speech.*'
+      deadline: 355.0
+    - selector: 'google.longrunning.Operations.*'
+      deadline: 355.0
+http:
+  rules:
+    - selector: google.longrunning.Operations.GetOperation
+      get: '/v1/operations/{name=**}'
+    - selector: google.longrunning.Operations.ListOperations
+      get: /v1/operations
+authentication:
+  rules:
+    - selector: 'google.cloud.speech.v1.Adaptation.*'
+      oauth:
+        canonical_scopes: |-
+          https://www.googleapis.com/auth/cloud-platform
+    - selector: 'google.cloud.speech.v1.Speech.*'
+      oauth:
+        canonical_scopes: |-
+          https://www.googleapis.com/auth/cloud-platform
+    - selector: 'google.longrunning.Operations.*'
+      oauth:
+        canonical_scopes: |-
+          https://www.googleapis.com/auth/cloud-platform
