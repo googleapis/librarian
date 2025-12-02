@@ -5,6 +5,7 @@ service-config = 'google/cloud/security/publicca/v1/publicca_v1.yaml'
 [source]
 title-override = 'Google Apps Script Types'
 description-override = 'Description override'
+roots = 'discovery,googleapis'
 
 [codec]
 version        = '1.1.0'

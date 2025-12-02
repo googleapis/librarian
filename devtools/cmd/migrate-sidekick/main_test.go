@@ -169,6 +169,7 @@ func TestReadSidekickFiles(t *testing.T) {
 						DescriptionOverride:   "Description override",
 						PackageNameOverride:   "google-cloud-security-publicca-v1",
 						RootName:              "conformance-root",
+						Roots:                 []string{"discovery", "googleapis"},
 						GenerateSetterSamples: true,
 						NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
 					},
