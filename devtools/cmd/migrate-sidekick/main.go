@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -40,6 +41,7 @@ var (
 	// commit a .git directory. The directory is overwritten in the tests.
 	gitDir              = ".git"
 	errBranchNotFound   = errors.New("branch not found")
+	errCommandNotFound  = errors.New("command not found")
 	errHeadNotFound     = errors.New("HEAD not found")
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
@@ -94,12 +96,22 @@ type CargoConfig struct {
 	} `toml:"package"`
 }
 
-func run() error {
+func main() {
+	if err := run(context.Background(), os.Args[1:]); err != nil {
+		slog.Error("migrate-sidekick failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context, args []string) error {
 	var (
 		repoPath       string
 		outputPath     string
 		googleapisPath string
 	)
+	if len(args) == 0 || args[0] != "migrate-sidekick" {
+		return errCommandNotFound
+	}
 
 	flag.StringVar(&repoPath, "repo", "", "Path to the google-cloud-rust repository (required)")
 	flag.StringVar(&outputPath, "output", "", "Output file path (default: stdout)")
@@ -546,11 +558,7 @@ func getGitCommit(repoPath string) (string, error) {
 }
 
 func strToBool(s string) bool {
-	if s == "true" {
-		return true
-	}
-
-	return false
+	return s == "true"
 }
 
 func strToSlice(s string) []string {
