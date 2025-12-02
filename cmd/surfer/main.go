@@ -25,7 +25,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	if err := surfer.Run(ctx, os.Args[1:]); err != nil {
+	if err := surfer.Run(ctx, os.Args...); err != nil {
 		log.Fatal(err)
 	}
 }
