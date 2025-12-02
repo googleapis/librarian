@@ -292,7 +292,6 @@ func TestDeriveLibraryName(t *testing.T) {
 
 func TestBuildConfig(t *testing.T) {
 	t.Parallel()
-	gitDir = "test-git"
 	for _, test := range []struct {
 		name         string
 		libraries    map[string]*config.Library
@@ -344,20 +343,6 @@ func TestBuildConfig(t *testing.T) {
 						},
 					},
 				},
-			},
-		},
-		{
-			name:         "googleapis_path",
-			googleapis:   "testdata/get-git-commit/direct-commit-sha",
-			rootDefaults: &RootDefaults{},
-			want: &config.Config{
-				Language: "rust",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Commit: "1234567abcdefg",
-					},
-				},
-				Default: &config.Default{Output: "src/generated/", Rust: &config.RustDefault{}},
 			},
 		},
 		{

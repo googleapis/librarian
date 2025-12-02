@@ -337,9 +337,27 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		}
 
 		// Parse Rust-specific configuration from sidekick.toml codec section
-		perServiceFeatures, _ := sidekick.Codec["per-service-features"].(string)
 		disabledRustdocWarnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		perServiceFeatures, _ := sidekick.Codec["per-service-features"].(string)
+		modulePath, _ := sidekick.Codec["module-path"].(string)
+		templateOverride, _ := sidekick.Codec["template-override"].(string)
+		titleOverride, _ := sidekick.Codec["title-override"].(string)
+		descriptionOverride, _ := sidekick.Codec["description-override"].(string)
+		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
+		rootName, _ := sidekick.Codec["root-name"].(string)
+		roots, _ := sidekick.Codec["roots"].([]string)
+		defaultFeatures, _ := sidekick.Codec["default-features"].([]string)
+		extraModules, _ := sidekick.Codec["extra-modules"].([]string)
+		includeList, _ := sidekick.Codec["include-list"].([]string)
+		includeIds, _ := sidekick.Codec["include-ids"].([]string)
+		skippedIds, _ := sidekick.Codec["skipped-ids"].([]string)
+		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].([]string)
+		hasVeneer, _ := sidekick.Codec["has-veneer"].(bool)
+		routingRequired, _ := sidekick.Codec["routing-required"].(bool)
+		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(bool)
 		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
+		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(bool)
+		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(bool)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 
 		// Parse package dependencies
@@ -375,41 +393,33 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		}
 
 		// Set Rust-specific configuration
-		if perServiceFeatures != "" || disabledRustdocWarnings != "" || len(packageDeps) > 0 ||
-			generateSetterSamples != "" || len(paginationOverrides) > 0 || nameOverrides != "" {
-			if lib.Rust == nil {
-				lib.Rust = &config.RustCrate{}
-			}
-
-			// Per-service features
-			if perServiceFeatures == "true" {
-				lib.Rust.PerServiceFeatures = true
-			}
-
-			// Disabled rustdoc warnings (comma-separated string)
-			if disabledRustdocWarnings != "" {
-				lib.Rust.DisabledRustdocWarnings = strings.Split(disabledRustdocWarnings, ",")
-			}
-
-			// Package dependencies
-			if len(packageDeps) > 0 {
-				lib.Rust.PackageDependencies = packageDeps
-			}
-
-			// Generate setter samples
-			if generateSetterSamples == "true" {
-				lib.Rust.GenerateSetterSamples = true
-			}
-
-			// Pagination overrides
-			if len(paginationOverrides) > 0 {
-				lib.Rust.PaginationOverrides = paginationOverrides
-			}
-
-			// Name overrides (codec-level, for renaming types/services)
-			if nameOverrides != "" {
-				lib.Rust.NameOverrides = nameOverrides
-			}
+		lib.Rust = &config.RustCrate{
+			RustDefault: config.RustDefault{
+				PackageDependencies:     packageDeps,
+				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
+			},
+			PerServiceFeatures:        strToBool(perServiceFeatures),
+			ModulePath:                modulePath,
+			TemplateOverride:          templateOverride,
+			TitleOverride:             titleOverride,
+			DescriptionOverride:       descriptionOverride,
+			PackageNameOverride:       packageNameOverride,
+			RootName:                  rootName,
+			Roots:                     roots,
+			DefaultFeatures:           defaultFeatures,
+			ExtraModules:              extraModules,
+			IncludeList:               includeList,
+			IncludedIds:               includeIds,
+			SkippedIds:                skippedIds,
+			DisabledClippyWarnings:    disabledClippyWarnings,
+			HasVeneer:                 hasVeneer,
+			RoutingRequired:           routingRequired,
+			IncludeGrpcOnlyMethods:    includeGrpcOnlyMethods,
+			GenerateSetterSamples:     strToBool(generateSetterSamples),
+			PostProcessProtos:         postProcessProtos,
+			DetailedTracingAttributes: detailedTracingAttributes,
+			PaginationOverrides:       paginationOverrides,
+			NameOverrides:             nameOverrides,
 		}
 	}
 
@@ -516,4 +526,20 @@ func getGitCommit(repoPath string) (string, error) {
 
 	// HEAD is a direct commit hash
 	return head, nil
+}
+
+func strToBool(s string) bool {
+	if s == "true" {
+		return true
+	}
+
+	return false
+}
+
+func strToSlice(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	return strings.Split(s, ",")
 }
