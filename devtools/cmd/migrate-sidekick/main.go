@@ -27,8 +27,9 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
-	"gopkg.in/yaml.v3"
+	yamlv3 "gopkg.in/yaml.v3"
 )
 
 const (
@@ -137,7 +138,7 @@ func run() error {
 	// Write output
 	if outputPath == "" {
 		// Write to stdout
-		enc := yaml.NewEncoder(os.Stdout)
+		enc := yamlv3.NewEncoder(os.Stdout)
 		enc.SetIndent(2)
 		defer enc.Close()
 
@@ -145,7 +146,7 @@ func run() error {
 			return fmt.Errorf("failed to encode config: %w", err)
 		}
 	} else {
-		if err := cfg.Write(outputPath); err != nil {
+		if err := yaml.Write(outputPath, cfg); err != nil {
 			return fmt.Errorf("failed to write config: %w", err)
 		}
 		slog.Info("Wrote config to output file", "path", outputPath)
