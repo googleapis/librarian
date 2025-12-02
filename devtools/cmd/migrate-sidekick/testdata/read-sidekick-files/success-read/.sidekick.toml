@@ -9,3 +9,5 @@ item-field = 'items'
 [codec]
 version        = '1.2.0'
 copyright-year = '2025'
+'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
+'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'

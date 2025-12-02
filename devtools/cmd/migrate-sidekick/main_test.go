@@ -165,6 +165,23 @@ func TestReadSidekickFiles(t *testing.T) {
 					Version:       "1.2.0",
 					CopyrightYear: "2025",
 					Rust: &config.RustCrate{
+						RustDefault: config.RustDefault{
+							PackageDependencies: []*config.RustPackageDependency{
+								{
+									Feature: "_internal-http-client",
+									Name:    "gaxi",
+									Package: "google-cloud-gax-internal",
+									Source:  "internal",
+									UsedIf:  "services",
+								},
+								{
+									ForceUsed: true,
+									Name:      "lazy_static",
+									Package:   "lazy_static",
+									UsedIf:    "services",
+								},
+							},
+						},
 						PaginationOverrides: []config.RustPaginationOverride{
 							{
 								ID:        ".google.cloud.sql.v1.SqlInstancesService.List",
