@@ -41,7 +41,6 @@ var (
 	// commit a .git directory. The directory is overwritten in the tests.
 	gitDir              = ".git"
 	errBranchNotFound   = errors.New("branch not found")
-	errCommandNotFound  = errors.New("command not found")
 	errHeadNotFound     = errors.New("HEAD not found")
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
@@ -84,15 +83,11 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 || args[0] != "migrate-sidekick" {
-		return errCommandNotFound
-	}
-
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
 	outputPath := flagSet.String("output", "", "Output file path (default: stdout)")
 	googleapisPath := flagSet.String("googleapis", "", "Path to googleapis repository")
-	if err := flagSet.Parse(args[1:]); err != nil {
+	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
 
