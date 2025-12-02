@@ -214,6 +214,13 @@ func TestReadSidekickFiles(t *testing.T) {
 								},
 							},
 						},
+						DocumentationOverrides: []config.RustDocumentationOverride{
+							{
+								ID:      ".google.api.ProjectProperties",
+								Match:   "example match",
+								Replace: "example replace",
+							},
+						},
 						PaginationOverrides: []config.RustPaginationOverride{
 							{
 								ID:        ".google.cloud.sql.v1.SqlInstancesService.List",

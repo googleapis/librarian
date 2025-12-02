@@ -66,8 +66,13 @@ type SidekickConfig struct {
 		SpecificationSource string `toml:"specification-source"`
 		ServiceConfig       string `toml:"service-config"`
 	} `toml:"general"`
-	Source              map[string]interface{} `toml:"source"`
-	Codec               map[string]interface{} `toml:"codec"` // Use map to capture all fields including package:*
+	Source                 map[string]interface{} `toml:"source"`
+	Codec                  map[string]interface{} `toml:"codec"`
+	DocumentationOverrides []struct {
+		ID      string `toml:"id"`
+		Match   string `toml:"match"`
+		Replace string `toml:"replace"`
+	} `toml:"documentation-overrides"`
 	PaginationOverrides []struct {
 		ID        string `toml:"id"`
 		ItemField string `toml:"item-field"`
@@ -386,6 +391,16 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			return packageDeps[i].Name < packageDeps[j].Name
 		})
 
+		// Parse documentation overrides
+		var documentationOverrides []config.RustDocumentationOverride
+		for _, do := range sidekick.DocumentationOverrides {
+			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
+				ID:      do.ID,
+				Match:   do.Match,
+				Replace: do.Replace,
+			})
+		}
+
 		// Parse pagination overrides
 		var paginationOverrides []config.RustPaginationOverride
 		for _, po := range sidekick.PaginationOverrides {
@@ -421,6 +436,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			GenerateSetterSamples:     strToBool(generateSetterSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
+			DocumentationOverrides:    documentationOverrides,
 			PaginationOverrides:       paginationOverrides,
 			NameOverrides:             nameOverrides,
 		}
