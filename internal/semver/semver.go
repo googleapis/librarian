@@ -33,7 +33,7 @@ type Version struct {
 	// its version (e.g., ".").
 	PrereleaseSeparator string
 	// PrereleaseNumber is the numeric part of the pre-release string (e.g., "1", "21").
-	PrereleaseNumber int
+	PrereleaseNumber *int
 }
 
 // semverRegex defines format for semantic version.
@@ -41,7 +41,7 @@ type Version struct {
 // It uses named capture groups for major, minor, patch, and prerelease.
 var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
 
-// unsegmentedPrereleaseRegexp exracts the prerelease number, if present, in the
+// unsegmentedPrereleaseRegexp extracts the prerelease number, if present, in the
 // prerelease portion of the SemVer version parsed by [semverRegex].
 var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
@@ -82,19 +82,21 @@ func Parse(versionString string) (*Version, error) {
 		if i := strings.LastIndex(prerelease, "."); i != -1 {
 			v.Prerelease = prerelease[:i]
 			v.PrereleaseSeparator = "."
-			v.PrereleaseNumber, err = strconv.Atoi(prerelease[i+1:])
+			num, err := strconv.Atoi(prerelease[i+1:])
 			if err != nil {
 				return nil, fmt.Errorf("invalid prerelease number: %w", err)
 			}
+			v.PrereleaseNumber = &num
 		} else {
 			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
 			if len(matches) == 3 {
 				v.Prerelease = matches[1]
-				v.PrereleaseNumber, err = strconv.Atoi(matches[2])
+				num, err := strconv.Atoi(matches[2])
 				if err != nil {
 					// This should not happen if the regex is correct.
 					return nil, fmt.Errorf("invalid prerelease number: %w", err)
 				}
+				v.PrereleaseNumber = &num
 			} else {
 				v.Prerelease = prerelease
 			}
@@ -140,11 +142,21 @@ func (v *Version) Compare(other *Version) int {
 		return 1
 	}
 	// prerelease number (e.g. "alpha1" vs "alpha2")
-	if v.PrereleaseNumber < other.PrereleaseNumber {
+	// Note: Lack of prerelease number is considered lower precedence than
+	// the same prerelease when it has a number - https://semver.org/#spec-item-11.
+	if v.PrereleaseNumber == nil && other.PrereleaseNumber != nil {
 		return -1
 	}
-	if v.PrereleaseNumber > other.PrereleaseNumber {
+	if v.PrereleaseNumber != nil && other.PrereleaseNumber == nil {
 		return 1
+	}
+	if v.PrereleaseNumber != nil && other.PrereleaseNumber != nil {
+		if *v.PrereleaseNumber < *other.PrereleaseNumber {
+			return -1
+		}
+		if *v.PrereleaseNumber > *other.PrereleaseNumber {
+			return 1
+		}
 	}
 	return 0
 }
@@ -154,8 +166,8 @@ func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
 		version += "-" + v.Prerelease
-		if v.PrereleaseNumber > 0 {
-			version += v.PrereleaseSeparator + strconv.Itoa(v.PrereleaseNumber)
+		if v.PrereleaseNumber != nil {
+			version += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
 		}
 	}
 	return version
@@ -164,10 +176,11 @@ func (v *Version) String() string {
 // incrementPrerelease increments the pre-release version number, or appends
 // one if it doesn't exist.
 func (v *Version) incrementPrerelease() {
-	if v.PrereleaseNumber == 0 {
+	if v.PrereleaseNumber == nil {
 		v.PrereleaseSeparator = "."
+		v.PrereleaseNumber = new(int)
 	}
-	v.PrereleaseNumber += 1
+	*v.PrereleaseNumber++
 }
 
 func (v *Version) bump(highestChange ChangeLevel) {

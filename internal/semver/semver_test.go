@@ -21,6 +21,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func ptr(i int) *int {
+	return &i
+}
+
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
 		name          string
@@ -53,7 +57,7 @@ func TestParse(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    1,
+				PrereleaseNumber:    ptr(1),
 			},
 		},
 		{
@@ -64,7 +68,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: 21,
+				PrereleaseNumber: ptr(21),
 			},
 		},
 		{
@@ -134,7 +138,7 @@ func TestVersion_String(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    1,
+				PrereleaseNumber:    ptr(1),
 			},
 			expected: "1.2.3-alpha.1",
 		},
@@ -145,7 +149,7 @@ func TestVersion_String(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: 21,
+				PrereleaseNumber: ptr(21),
 			},
 			expected: "1.2.3-beta21",
 		},
