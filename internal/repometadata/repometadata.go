@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package repometadata represents the data in .repo-metadata.json files,
+// and the ability to create those files from other Librarian configuration.
 package repometadata
 
 import (
@@ -70,8 +72,9 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 }
 
-// GenerateRepoMetadata generates the .repo-metadata.json file by parsing the service YAML.
-func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, outdir string, apiPaths []string) error {
+// GenerateRepoMetadata generates the .repo-metadata.json file by parsing the
+// service YAML.
+func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, outdir string, channels []string) error {
 	svcCfg, err := serviceconfig.Read(serviceConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to read service config: %w", err)
@@ -81,13 +84,11 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 	// but with the ability to override.
 	defaultVersion := library.DefaultVersionOverride
 	if defaultVersion == "" {
-		defaultVersion = selectDefaultVersion(apiPaths)
+		defaultVersion = selectDefaultVersion(channels)
 	}
 
-	// Build client documentation URL based on language
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(svcCfg.GetName()))
 
-	// Create metadata
 	metadata := &RepoMetadata{
 		APIID:               svcCfg.GetName(),
 		NamePretty:          cleanTitle(svcCfg.GetTitle()),
@@ -100,7 +101,6 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		DefaultVersion:      defaultVersion,
 	}
 
-	// Add optional fields if available
 	if svcCfg.GetPublishing() != nil {
 		publishing := svcCfg.GetPublishing()
 		if publishing.GetDocumentationUri() != "" {
@@ -119,11 +119,6 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 	} else if svcCfg.GetDocumentation() != nil && svcCfg.GetDocumentation().GetSummary() != "" {
 		// Fall back to service YAML documentation
 		metadata.APIDescription = strings.TrimSpace(svcCfg.GetDocumentation().GetSummary())
-	}
-
-	// Set default release level if not specified
-	if metadata.ReleaseLevel == "" {
-		metadata.ReleaseLevel = "stable"
 	}
 
 	// Write metadata file
@@ -153,19 +148,22 @@ func buildClientDocURL(language, serviceName string) string {
 	}
 }
 
-// selectDefaultVersion selects the best default version from a list of API paths.
-// It prefers stable versions (v1, v2) over beta/alpha versions (v1beta1, v1alpha1).
-// Among stable versions, it selects the highest. Among beta versions, it selects the highest.
-func selectDefaultVersion(apiPaths []string) string {
-	if len(apiPaths) == 0 {
+// selectDefaultVersion selects the best default version from a list of
+// channels. It prefers stable versions (v1, v2) over beta/alpha versions
+// (v1beta1, v1alpha1). Among stable versions, it selects the highest.
+// Among beta versions, it selects the highest.
+func selectDefaultVersion(channels []string) string {
+	if len(channels) == 0 {
 		return ""
 	}
 
-	var stableVersions []string
-	var betaVersions []string
+	var (
+		stableVersions []string
+		betaVersions   []string
+	)
 
-	for _, apiPath := range apiPaths {
-		version := deriveVersionComponent(apiPath)
+	for _, channel := range channels {
+		version := deriveVersionComponent(channel)
 		if version == "" {
 			continue
 		}
@@ -190,7 +188,7 @@ func selectDefaultVersion(apiPaths []string) string {
 // isStableVersion returns true if the version is stable (e.g., v1, v2) and not beta/alpha.
 func isStableVersion(version string) bool {
 	// Strip the "v" prefix
-	if !strings.HasPrefix(version, "v") {
+	if !strings.HasPrefix(version, "v") || len(version) < 2 {
 		return false
 	}
 	versionNum := strings.TrimPrefix(version, "v")
@@ -225,14 +223,11 @@ func selectHighestVersion(versions []string) string {
 	return highest
 }
 
-// deriveVersionComponent extracts the version from an API path.
+// deriveVersionComponent extracts the version from a channel.
 // Example: "google/cloud/secretmanager/v1" -> "v1".
-func deriveVersionComponent(apiPath string) string {
-	parts := strings.Split(apiPath, "/")
-	if len(parts) == 0 {
-		return ""
-	}
-	lastPart := parts[len(parts)-1]
+func deriveVersionComponent(channel string) string {
+	lastIdx := strings.LastIndex(channel, "/")
+	lastPart := channel[lastIdx+1:]
 	// Check if it looks like a version (v1, v1beta1, etc.)
 	if strings.HasPrefix(lastPart, "v") {
 		return lastPart
@@ -244,8 +239,8 @@ func deriveVersionComponent(apiPath string) string {
 // Example: "https://cloud.google.com/secret-manager/docs/overview" -> "https://cloud.google.com/secret-manager/"
 func extractBaseProductURL(docURI string) string {
 	// Strip off /docs/* suffix to get base product URL
-	if idx := strings.Index(docURI, "/docs/"); idx != -1 {
-		return docURI[:idx+1]
+	if base, _, found := strings.Cut(docURI, "/docs/"); found {
+		return base + "/"
 	}
 	// If no /docs/ found, return as-is
 	return docURI
@@ -262,9 +257,6 @@ func cleanTitle(title string) string {
 // extractNameFromAPIID extracts the service name from the API ID.
 // Example: "secretmanager.googleapis.com" -> "secretmanager".
 func extractNameFromAPIID(apiID string) string {
-	parts := strings.SplitN(apiID, ".", 2)
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return apiID
+	name, _, _ := strings.Cut(apiID, ".")
+	return name
 }

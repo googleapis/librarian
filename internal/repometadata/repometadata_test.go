@@ -169,7 +169,7 @@ publishing:
 func TestSelectDefaultVersion(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		apiPaths []string
+		channels []string
 		want     string
 	}{
 		{
@@ -207,13 +207,22 @@ func TestSelectDefaultVersion(t *testing.T) {
 			"v1",
 		},
 		{
+			"just v doesn't count as stable",
+			[]string{
+				"google/cloud/secretmanager/v",
+				"google/cloud/secretmanager/v1beta2",
+				"google/cloud/secrets/v1beta1",
+			},
+			"v1beta2",
+		},
+		{
 			"empty",
 			[]string{},
 			"",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := selectDefaultVersion(test.apiPaths)
+			got := selectDefaultVersion(test.channels)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
@@ -224,7 +233,7 @@ func TestSelectDefaultVersion(t *testing.T) {
 func TestDeriveVersionComponent(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		apiPath string
+		channel string
 		want    string
 	}{
 		{"v1", "google/cloud/secretmanager/v1", "v1"},
@@ -234,7 +243,7 @@ func TestDeriveVersionComponent(t *testing.T) {
 		{"empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveVersionComponent(test.apiPath)
+			got := deriveVersionComponent(test.channel)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
