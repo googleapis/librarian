@@ -216,6 +216,22 @@ func TestSelectDefaultVersion(t *testing.T) {
 			"v1beta2",
 		},
 		{
+			"mix of non-versioned and versioned",
+			[]string{
+				"google/cloud/logging/type",
+				"google/cloud/logging/v1",
+				"google/cloud/logging/v1beta",
+			},
+			"v1",
+		},
+		{
+			"no numeric versions",
+			[]string{
+				"google/cloud/logging/type",
+			},
+			"",
+		},
+		{
 			"empty",
 			[]string{},
 			"",
@@ -319,6 +335,41 @@ func TestExtractBaseProductURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractBaseProductURL(test.docURI)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestBuildClientDocURL(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		language    string
+		serviceName string
+		want        string
+	}{
+		{
+			name:        "python",
+			language:    "python",
+			serviceName: "secretmanager",
+			want:        "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+		},
+		{
+			name:        "rust",
+			language:    "rust",
+			serviceName: "secretmanager",
+			want:        "https://docs.rs/google-cloud-secretmanager/latest",
+		},
+		{
+			name:        "unknown language",
+			language:    "vb",
+			serviceName: "secretmanager",
+			want:        "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildClientDocURL(test.language, test.serviceName)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
