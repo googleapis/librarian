@@ -377,7 +377,7 @@ func TestCompare(t *testing.T) {
 		},
 		{
 			// Note: This is SemVer compliant, but may seem odd in practice.
-			name:     "greater prerelease version core than non-prerelease verison core",
+			name:     "greater prerelease version core than non-prerelease version core",
 			versionA: "1.2.3-alpha1",
 			versionB: "1.2.0",
 			want:     1,

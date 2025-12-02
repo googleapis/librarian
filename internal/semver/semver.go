@@ -41,6 +41,10 @@ type Version struct {
 // It uses named capture groups for major, minor, patch, and prerelease.
 var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
 
+// unsegmentedPrereleaseRegexp exracts the prerelease number, if present, in the
+// prerelease portion of the SemVer version parsed by [semverRegex].
+var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
+
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
 	matches := semverRegex.FindStringSubmatch(versionString)
@@ -83,8 +87,7 @@ func Parse(versionString string) (*Version, error) {
 				return nil, fmt.Errorf("invalid prerelease number: %w", err)
 			}
 		} else {
-			re := regexp.MustCompile(`^(.*?)(\d+)$`)
-			matches := re.FindStringSubmatch(prerelease)
+			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
 			if len(matches) == 3 {
 				v.Prerelease = matches[1]
 				v.PrereleaseNumber, err = strconv.Atoi(matches[2])
