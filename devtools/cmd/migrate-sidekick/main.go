@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -353,8 +354,8 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			})
 		}
 
-		// Set Rust-specific configuration
-		lib.Rust = &config.RustCrate{
+		// Set Rust-specific configuration only if there's actual config
+		rustCrate := &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
 				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
@@ -382,6 +383,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			DocumentationOverrides:    documentationOverrides,
 			PaginationOverrides:       paginationOverrides,
 			NameOverrides:             nameOverrides,
+		}
+		if !isEmptyRustCrate(rustCrate) {
+			lib.Rust = rustCrate
 		}
 	}
 
@@ -520,4 +524,8 @@ func strToSlice(s string) []string {
 	}
 
 	return strings.Split(s, ",")
+}
+
+func isEmptyRustCrate(r *config.RustCrate) bool {
+	return reflect.DeepEqual(r, &config.RustCrate{})
 }
