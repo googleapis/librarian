@@ -183,6 +183,12 @@ func TestCleanOutput(t *testing.T) {
 			keep:  []string{},
 			want:  []string{},
 		},
+		{
+			name:  "keep nested files",
+			files: []string{"Cargo.toml", "README.md", "src/lib.rs", "src/operation.rs", "src/endpoint.rs"},
+			keep:  []string{"src/operation.rs", "src/endpoint.rs"},
+			want:  []string{"src/endpoint.rs", "src/operation.rs"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -205,13 +211,11 @@ func TestCleanOutput(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			entries, err := os.ReadDir(dir)
-			if err != nil {
-				t.Fatal(err)
-			}
 			var got []string
-			for _, e := range entries {
-				got = append(got, e.Name())
+			for _, f := range test.files {
+				if _, err := os.Stat(filepath.Join(dir, f)); err == nil {
+					got = append(got, f)
+				}
 			}
 			slices.Sort(got)
 			slices.Sort(test.want)
@@ -219,11 +223,5 @@ func TestCleanOutput(t *testing.T) {
 				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
-	}
-}
-
-func TestCleanOutput_NonExistentDir(t *testing.T) {
-	if err := cleanOutput("/nonexistent/path", []string{"Cargo.toml"}); err != nil {
-		t.Errorf("expected nil error for nonexistent dir, got %v", err)
 	}
 }

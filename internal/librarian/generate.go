@@ -140,34 +140,32 @@ func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, e
 	return fetch.RepoDir(ctx, googleapisRepo, sources.Googleapis.Commit, sources.Googleapis.SHA256)
 }
 
-// cleanOutput removes all files and directories in dir except those in keep.
-// It returns an error if any file in keep does not exist.
+// cleanOutput removes all files in dir except those in keep. The keep list
+// should contain paths relative to dir. It returns an error if any file in
+// keep does not exist.
 func cleanOutput(dir string, keep []string) error {
-	entries, err := os.ReadDir(dir)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	existing := make(map[string]bool)
-	for _, e := range entries {
-		existing[e.Name()] = true
-	}
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
-		if !existing[k] {
+		path := filepath.Join(dir, k)
+		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("%s: file %q in keep list does not exist", dir, k)
 		}
 		keepSet[k] = true
 	}
-	for _, e := range entries {
-		if keepSet[e.Name()] {
-			continue
-		}
-		if err := os.RemoveAll(filepath.Join(dir, e.Name())); err != nil {
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
 			return err
 		}
-	}
-	return nil
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if keepSet[rel] {
+			return nil
+		}
+		return os.Remove(path)
+	})
 }
