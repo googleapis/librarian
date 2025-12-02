@@ -26,12 +26,11 @@ func TestGolangCILint(t *testing.T) {
 }
 
 func TestGoImports(t *testing.T) {
-	// goimports -d exits 0 on failure, so check stdout instead.
-	out, err := exec.Command("go", "tool", "goimports", "-d", ".").CombinedOutput()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(out) > 0 {
+	// goimports -d exits 0 even when it finds unformatted files, so check
+	// stdout instead. Only stdout is checked because stderr may contain
+	// download progress messages. See
+	// https://github.com/googleapis/librarian/pull/2915.
+	if out := rungo(t, "tool", "goimports", "-d", "."); out != "" {
 		t.Fatalf("goimports -d .:\n%s", out)
 	}
 }
@@ -44,7 +43,7 @@ func TestYAMLFormat(t *testing.T) {
 	rungo(t, "tool", "yamlfmt", "-lint", ".")
 }
 
-func rungo(t *testing.T, args ...string) {
+func rungo(t *testing.T, args ...string) string {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
@@ -54,4 +53,5 @@ func rungo(t *testing.T, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("go %s: %v\nStdout:\n%s\nStderr:\n%s", strings.Join(args, " "), err, stdout.String(), stderr.String())
 	}
+	return stdout.String()
 }
