@@ -14,6 +14,8 @@
 
 package gcloud
 
+import "github.com/googleapis/librarian/internal/yaml"
+
 // Command is a single gcloud command.
 type Command struct {
 	ReleaseTracks []ReleaseTrack   `yaml:"release_tracks,omitempty"`
@@ -41,7 +43,7 @@ type Param struct {
 	IsPositional         bool              `yaml:"is_positional,omitempty"`
 	IsPrimaryResource    bool              `yaml:"is_primary_resource,omitempty"`
 	RequestIdField       string            `yaml:"request_id_field,omitempty"`
-	ResourceSpec         RefString         `yaml:"resource_spec,omitempty"`
+	ResourceSpec         yaml.RefString    `yaml:"resource_spec,omitempty"`
 	Required             bool              `yaml:"required,omitempty"`
 	ResourceMethodParams map[string]string `yaml:"resource_method_params,omitempty"`
 	Spec                 []*FieldSpec      `yaml:"spec,omitempty"`

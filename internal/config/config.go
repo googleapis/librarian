@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
-	"os"
-
-	"gopkg.in/yaml.v3"
 )
 
 var errLibraryNotFound = errors.New("library not found")
@@ -143,38 +139,6 @@ type Channel struct {
 	ServiceConfig string `yaml:"service_config,omitempty"`
 }
 
-// Read reads the configuration from a librarian.yaml file.
-func Read(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-	var c Config
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-	return &c, nil
-}
-
-// Write writes config to the file at path.
-func (c *Config) Write(path string) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open config file: %w", err)
-	}
-	defer f.Close()
-
-	enc := yaml.NewEncoder(f)
-	enc.SetIndent(2)
-	if err := enc.Encode(c); err != nil {
-		return fmt.Errorf("failed to encode config: %w", err)
-	}
-	if err := enc.Close(); err != nil {
-		return fmt.Errorf("failed to close encoder: %w", err)
-	}
-	return nil
-}
-
 // LibraryByName returns a library with the given name.
 func (c *Config) LibraryByName(name string) (*Library, error) {
 	if c.Libraries == nil {
@@ -188,4 +152,53 @@ func (c *Config) LibraryByName(name string) (*Library, error) {
 	}
 
 	return nil, errLibraryNotFound
+}
+
+// Fill populates empty library fields from the provided defaults.
+func (lib *Library) Fill(d *Default) {
+	if d == nil {
+		return
+	}
+	if lib.Output == "" {
+		lib.Output = d.Output
+	}
+	if lib.ReleaseLevel == "" {
+		lib.ReleaseLevel = d.ReleaseLevel
+	}
+	if d.Rust != nil {
+		lib.fillRust(d)
+	}
+}
+
+// fillRust() populates empty fields in `lib.Rust` from the provided default.
+func (lib *Library) fillRust(d *Default) {
+	if lib.Rust == nil {
+		lib.Rust = &RustCrate{}
+	}
+	lib.Rust.PackageDependencies = mergePackageDependencies(
+		d.Rust.PackageDependencies,
+		lib.Rust.PackageDependencies,
+	)
+	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
+		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
+	}
+}
+
+// mergePackageDependencies merges default and library package dependencies,
+// with library dependencies taking precedence for duplicates.
+func mergePackageDependencies(defaults, lib []*RustPackageDependency) []*RustPackageDependency {
+	seen := make(map[string]bool)
+	var result []*RustPackageDependency
+	for _, dep := range lib {
+		seen[dep.Name] = true
+		result = append(result, dep)
+	}
+	for _, dep := range defaults {
+		if seen[dep.Name] {
+			continue
+		}
+		copied := *dep
+		result = append(result, &copied)
+	}
+	return result
 }

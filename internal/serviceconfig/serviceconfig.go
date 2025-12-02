@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/googleapis/librarian/internal/yaml"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v3"
 )
 
 // Type aliases for genproto service config types.
@@ -46,8 +46,8 @@ func Read(serviceConfigPath string) (*Service, error) {
 		return nil, fmt.Errorf("error reading service config [%s]: %w", serviceConfigPath, err)
 	}
 
-	var yamlData interface{}
-	if err := yaml.Unmarshal(y, &yamlData); err != nil {
+	yamlData, err := yaml.Unmarshal[any](y)
+	if err != nil {
 		return nil, fmt.Errorf("error parsing YAML [%s]: %w", serviceConfigPath, err)
 	}
 	j, err := json.Marshal(yamlData)

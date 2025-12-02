@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package yaml
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 type RefString string
 
 // MarshalYAML implements the yaml.Marshaler interface.
-func (r RefString) MarshalYAML() (interface{}, error) {
+func (r RefString) MarshalYAML() (any, error) {
 	node := &yaml.Node{
 		Kind:  yaml.ScalarNode,
 		Tag:   "!REF",

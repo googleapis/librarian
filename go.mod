@@ -13,6 +13,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
 	github.com/google/uuid v1.6.0
+	github.com/google/yamlfmt v0.20.0
 	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pb33f/libopenapi v0.25.9
@@ -134,7 +135,6 @@ require (
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/yamlfmt v0.20.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect

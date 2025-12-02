@@ -17,16 +17,15 @@ package gcloud
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates gcloud commands for a service.
 func Generate(ctx context.Context, googleapis, gcloudconfig, output string) error {
-	cfg, err := readGcloudConfig(gcloudconfig)
+	cfg, err := yaml.Read[Config](gcloudconfig)
 	if err != nil {
 		return err
 	}
@@ -49,18 +48,4 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 	// gcloud command generation logic
 	_, _ = model, cfg
 	return nil
-}
-
-// readGcloudConfig loads the gcloud configuration from a gcloud.yaml file.
-func readGcloudConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read gcloud config file: %w", err)
-	}
-
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse gcloud config YAML: %w", err)
-	}
-	return &cfg, nil
 }

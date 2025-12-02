@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -61,7 +62,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return errBothLibraryAndAllFlag
 	}
 
-	cfg, err := config.Read(librarianConfigPath)
+	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return cfg.Write(librarianConfigPath)
+	return yaml.Write(librarianConfigPath, cfg)
 }
 
 func releaseAll(cfg *config.Config) (*config.Config, error) {

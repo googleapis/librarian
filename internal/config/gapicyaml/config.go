@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +19,6 @@
 //
 // The <service>_gapic.yaml files are used by the Java GAPIC generator.
 package gapicyaml
-
-import (
-	"fmt"
-	"os"
-
-	"gopkg.in/yaml.v3"
-)
 
 // Config represents the top-level structure of a GAPIC YAML configuration file.
 type Config struct {
@@ -88,35 +81,4 @@ type BatchDescriptor struct {
 	BatchedField        string   `yaml:"batched_field,omitempty"`
 	DiscriminatorFields []string `yaml:"discriminator_fields,omitempty"`
 	SubresponseField    string   `yaml:"subresponse_field,omitempty"`
-}
-
-// Read reads the GAPIC YAML configuration from a file.
-func Read(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read gapic yaml file: %w", err)
-	}
-
-	var c Config
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal gapic yaml: %w", err)
-	}
-	return &c, nil
-}
-
-// Write writes the GAPIC YAML configuration to a file.
-func (c *Config) Write(path string) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open gapic yaml file: %w", err)
-	}
-	defer f.Close()
-
-	enc := yaml.NewEncoder(f)
-	enc.SetIndent(2)
-	defer enc.Close()
-	if err := enc.Encode(c); err != nil {
-		return fmt.Errorf("failed to marshal gapic yaml: %w", err)
-	}
-	return nil
 }
