@@ -34,6 +34,8 @@ func TestReadRootSidekick(t *testing.T) {
 			name: "success",
 			path: "testdata/root-sidekick/success",
 			want: &config.Default{
+				Output:       "src/generated/",
+				ReleaseLevel: "stable",
 				Rust: &config.RustDefault{
 					DisabledRustdocWarnings: []string{
 						"redundant_explicit_links",
