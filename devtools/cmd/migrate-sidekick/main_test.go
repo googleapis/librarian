@@ -138,9 +138,56 @@ func TestReadSidekickFiles(t *testing.T) {
 		{
 			name: "read_sidekick_files",
 			files: []string{
-				"testdata/success-read/.sidekick.toml",
-				"testdata/success-read/nested/.sidekick.toml",
+				"testdata/read-sidekick-files/success-read/.sidekick.toml",
+				"testdata/read-sidekick-files/success-read/nested/.sidekick.toml",
 			},
+			want: map[string]*config.Library{
+				"google-cloud-security-publicca-v1": {
+					Name: "google-cloud-security-publicca-v1",
+					Channels: []*config.Channel{
+						{
+							Path:          "google/cloud/security/publicca/v1",
+							ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+						},
+					},
+					Version:       "1.1.0",
+					CopyrightYear: "2025",
+				},
+				"google-cloud-sql-v1": {
+					Name: "google-cloud-sql-v1",
+					Channels: []*config.Channel{
+						{
+							Path:          "google/cloud/sql/v1",
+							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
+						},
+					},
+					SkipPublish:   true,
+					Version:       "1.2.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						PaginationOverrides: []config.RustPaginationOverride{
+							{
+								ID:        ".google.cloud.sql.v1.SqlInstancesService.List",
+								ItemField: "items",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "no_api_path",
+			files: []string{
+				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
+			},
+			want: map[string]*config.Library{},
+		},
+		{
+			name: "no_package_name",
+			files: []string{
+				"testdata/read-sidekick-files/no-package-name/.sidekick.toml",
+			},
+			want: map[string]*config.Library{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
