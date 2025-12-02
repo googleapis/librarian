@@ -27,33 +27,38 @@ func TestReadRootSidekick(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		path    string
-		want    *config.Default
+		want    *config.Config
 		wantErr error
 	}{
 		{
 			name: "success",
 			path: "testdata/root-sidekick/success",
-			want: &config.Default{
-				Output:       "src/generated/",
-				ReleaseLevel: "stable",
-				Rust: &config.RustDefault{
-					DisabledRustdocWarnings: []string{
-						"redundant_explicit_links",
-						"broken_intra_doc_links",
-					},
-					PackageDependencies: []*config.RustPackageDependency{
-						{
-							Feature: "_internal-http-client",
-							Name:    "gaxi",
-							Package: "google-cloud-gax-internal",
-							Source:  "internal",
-							UsedIf:  "services",
+			want: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085"},
+				},
+				Default: &config.Default{
+					Output:       "src/generated/",
+					ReleaseLevel: "stable",
+					Rust: &config.RustDefault{
+						DisabledRustdocWarnings: []string{
+							"redundant_explicit_links",
+							"broken_intra_doc_links",
 						},
-						{
-							Name:      "lazy_static",
-							Package:   "lazy_static",
-							UsedIf:    "services",
-							ForceUsed: true,
+						PackageDependencies: []*config.RustPackageDependency{
+							{
+								Feature: "_internal-http-client",
+								Name:    "gaxi",
+								Package: "google-cloud-gax-internal",
+								Source:  "internal",
+								UsedIf:  "services",
+							},
+							{
+								Name:      "lazy_static",
+								Package:   "lazy_static",
+								UsedIf:    "services",
+								ForceUsed: true,
+							},
 						},
 					},
 				},
@@ -314,23 +319,23 @@ func TestDeriveLibraryName(t *testing.T) {
 func TestBuildConfig(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		libraries  map[string]*config.Library
-		googleapis string
-		defaults   *config.Default
-		want       *config.Config
-		wantErr    error
+		name      string
+		libraries map[string]*config.Library
+		defaults  *config.Config
+		want      *config.Config
+		wantErr   error
 	}{
 		{
 			name: "rust_defaults",
-			defaults: &config.Default{
-				Output: "src/generated/",
-				Rust: &config.RustDefault{
-					DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+			defaults: &config.Config{
+				Default: &config.Default{
+					Output: "src/generated/",
+					Rust: &config.RustDefault{
+						DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+					},
 				},
 			},
 			want: &config.Config{
-				Language: "rust",
 				Default: &config.Default{
 					Output: "src/generated/",
 					Rust: &config.RustDefault{
@@ -341,7 +346,7 @@ func TestBuildConfig(t *testing.T) {
 		},
 		{
 			name:     "copy_libraries",
-			defaults: &config.Default{},
+			defaults: &config.Config{},
 			libraries: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
@@ -375,8 +380,6 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 			want: &config.Config{
-				Language: "rust",
-				Default:  &config.Default{},
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-security-publicca-v1",
@@ -403,58 +406,7 @@ func TestBuildConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := buildConfig(test.libraries, test.googleapis, test.defaults)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetGitCommit(t *testing.T) {
-	t.Parallel()
-	gitDir = "test-git"
-	for _, test := range []struct {
-		name    string
-		path    string
-		want    string
-		wantErr error
-	}{
-		{
-			name: "direct_commit_sha",
-			path: "testdata/get-git-commit/direct-commit-sha",
-			want: "1234567abcdefg",
-		},
-		{
-			name: "branch_sha",
-			path: "testdata/get-git-commit/branch",
-			want: "95bdc62f7448ffb183aada62de1be5a704e54a8c",
-		},
-		{
-			name:    "no_head",
-			path:    "testdata/get-git-commit/no-head",
-			wantErr: errHeadNotFound,
-		},
-		{
-			name:    "branch_not_found",
-			path:    "testdata/get-git-commit/branch-not-found",
-			wantErr: errBranchNotFound,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := getGitCommit(test.path)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Errorf("got error %v, want %v", err, test.wantErr)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("got error %v, want nil", err)
-				return
-			}
+			got := buildConfig(test.libraries, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

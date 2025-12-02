@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main provides a tool to migrate .sidekick.toml to librarian configuration.
+// Command migrate-sidekick is a tool for migrating .sidekick.toml to librarian configuration.
 package main
 
 import (
@@ -36,13 +36,7 @@ const (
 )
 
 var (
-	// gitDir is the directory stores git configuration.
-	// Define it as a variable, rather than a const because we don't want to
-	// commit a .git directory. The directory is overwritten in the tests.
-	gitDir              = ".git"
-	errBranchNotFound   = errors.New("branch not found")
 	errCommandNotFound  = errors.New("command not found")
-	errHeadNotFound     = errors.New("HEAD not found")
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
@@ -91,7 +85,6 @@ func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
 	outputPath := flagSet.String("output", "", "Output file path (default: stdout)")
-	googleapisPath := flagSet.String("googleapis", "", "Path to googleapis repository")
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -103,7 +96,7 @@ func run(args []string) error {
 	slog.Info("Reading sidekick.toml...", "path", repoPath)
 
 	// Read root .sidekick.toml for defaults
-	rootDefaults, err := readRootSidekick(*repoPath)
+	defaults, err := readRootSidekick(*repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
 	}
@@ -121,7 +114,7 @@ func run(args []string) error {
 	}
 
 	// Build config
-	cfg := buildConfig(libraries, *googleapisPath, rootDefaults)
+	cfg := buildConfig(libraries, defaults)
 
 	// Write output
 	if *outputPath == "" {
@@ -144,7 +137,7 @@ func run(args []string) error {
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
-func readRootSidekick(repoPath string) (*config.Default, error) {
+func readRootSidekick(repoPath string) (*config.Config, error) {
 	rootPath := filepath.Join(repoPath, sidekickFile)
 	data, err := os.ReadFile(rootPath)
 	if err != nil {
@@ -159,19 +152,28 @@ func readRootSidekick(repoPath string) (*config.Default, error) {
 
 	releaseLevel, _ := sidekick.Codec["release-level"].(string)
 	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+	googleapisCommitSHA, _ := sidekick.Source["googleapis-sha256"].(string)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
-	defaults := &config.Default{
-		Output:       "src/generated/",
-		ReleaseLevel: releaseLevel,
-		Rust: &config.RustDefault{
-			PackageDependencies:     packageDependencies,
-			DisabledRustdocWarnings: strToSlice(warnings),
+
+	cfg := &config.Config{
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: googleapisCommitSHA,
+			},
+		},
+		Default: &config.Default{
+			Output:       "src/generated/",
+			ReleaseLevel: releaseLevel,
+			Rust: &config.RustDefault{
+				PackageDependencies:     packageDependencies,
+				DisabledRustdocWarnings: strToSlice(warnings),
+			},
 		},
 	}
 
-	return defaults, nil
+	return cfg, nil
 }
 
 // parsePackageDependency parses a package dependency spec.
@@ -402,25 +404,8 @@ func deriveLibraryName(apiPath string) string {
 }
 
 // buildConfig builds the complete config from libraries.
-func buildConfig(libraries map[string]*config.Library, googleapisPath string, defaults *config.Default) *config.Config {
-	cfg := &config.Config{
-		Language: "rust",
-		Default:  defaults,
-	}
-
-	// Add googleapis source if provided
-	if googleapisPath != "" {
-		// Try to get the current commit
-		commit, err := getGitCommit(googleapisPath)
-		if err == nil {
-			cfg.Sources = &config.Sources{
-				Googleapis: &config.Source{
-					Commit: commit,
-				},
-			}
-		}
-	}
-
+func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
+	cfg := defaults
 	// Convert libraries map to sorted slice, applying new schema logic
 	var libList []*config.Library
 
@@ -457,31 +442,6 @@ func buildConfig(libraries map[string]*config.Library, googleapisPath string, de
 	cfg.Libraries = libList
 
 	return cfg
-}
-
-// getGitCommit gets the current git commit hash from a repository.
-func getGitCommit(repoPath string) (string, error) {
-	// Read .git/HEAD to get current commit
-	headPath := filepath.Join(repoPath, gitDir, "HEAD")
-	data, err := os.ReadFile(headPath)
-	if err != nil {
-		return "", errHeadNotFound
-	}
-
-	head := strings.TrimSpace(string(data))
-	if strings.HasPrefix(head, "ref: ") {
-		// HEAD points to a branch
-		refPath := strings.TrimPrefix(head, "ref: ")
-		refFullPath := filepath.Join(repoPath, gitDir, refPath)
-		commitData, err := os.ReadFile(refFullPath)
-		if err != nil {
-			return "", errBranchNotFound
-		}
-		return strings.TrimSpace(string(commitData)), nil
-	}
-
-	// HEAD is a direct commit hash
-	return head, nil
 }
 
 func parsePackageDependencies(codec map[string]interface{}) []*config.RustPackageDependency {
