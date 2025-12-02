@@ -34,6 +34,8 @@ type Version struct {
 	PrereleaseSeparator string
 	// PrereleaseNumber is the numeric part of the pre-release string (e.g., "1", "21").
 	PrereleaseNumber int
+	// HasPrereleaseNumber flags if a prerelease number was parsed from the version string.
+	HasPrereleaseNumber bool
 }
 
 // semverRegex defines format for semantic version.
@@ -86,6 +88,7 @@ func Parse(versionString string) (*Version, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid prerelease number: %w", err)
 			}
+			v.HasPrereleaseNumber = true
 		} else {
 			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
 			if len(matches) == 3 {
@@ -95,6 +98,7 @@ func Parse(versionString string) (*Version, error) {
 					// This should not happen if the regex is correct.
 					return nil, fmt.Errorf("invalid prerelease number: %w", err)
 				}
+				v.HasPrereleaseNumber = true
 			} else {
 				v.Prerelease = prerelease
 			}
@@ -154,7 +158,7 @@ func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
 		version += "-" + v.Prerelease
-		if v.PrereleaseNumber > 0 {
+		if v.HasPrereleaseNumber {
 			version += v.PrereleaseSeparator + strconv.Itoa(v.PrereleaseNumber)
 		}
 	}
@@ -164,8 +168,9 @@ func (v *Version) String() string {
 // incrementPrerelease increments the pre-release version number, or appends
 // one if it doesn't exist.
 func (v *Version) incrementPrerelease() {
-	if v.PrereleaseNumber == 0 {
+	if !v.HasPrereleaseNumber {
 		v.PrereleaseSeparator = "."
+		v.HasPrereleaseNumber = true
 	}
 	v.PrereleaseNumber += 1
 }
