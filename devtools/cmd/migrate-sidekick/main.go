@@ -470,27 +470,21 @@ func buildConfig(libraries map[string]*config.Library, googleapisPath string, ro
 		if len(lib.Channels) > 0 {
 			apiPath = lib.Channels[0].Path
 		}
-
+		
 		// Derive expected library name from API path
-		// For Rust with one_library_per: channel, expected name is the API path with / replaced by -
 		expectedName := deriveLibraryName(apiPath)
-
+		nameMatchesConvention := lib.Name == expectedName
 		// Check if library has extra configuration beyond just name/api/version
 		hasExtraConfig := lib.CopyrightYear != "" ||
 			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
 				len(lib.Rust.PackageDependencies) > 0 || lib.Rust.GenerateSetterSamples ||
 				len(lib.Rust.PaginationOverrides) > 0 || lib.Rust.NameOverrides != ""))
-
 		// Only include in libraries section if:
 		// 1. Name doesn't match expected naming convention (name override)
 		// 2. Library has extra configuration
 		// 3. Library spans multiple APIs
-		nameMatchesConvention := lib.Name == expectedName
-
 		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
-			// Clear version from library (it goes in versions section)
 			libCopy := *lib
-			libCopy.Version = ""
 			libList = append(libList, &libCopy)
 		}
 	}

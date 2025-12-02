@@ -284,6 +284,87 @@ func TestDeriveLibraryName(t *testing.T) {
 	}
 }
 
+func TestBuildConfig(t *testing.T) {
+	t.Parallel()
+	gitDir = "test-git"
+	for _, test := range []struct {
+		name         string
+		libraries    map[string]*config.Library
+		googleapis   string
+		rootDefaults *RootDefaults
+		want         *config.Config
+		wantErr      error
+	}{
+		{
+			name: "rust_defaults",
+			rootDefaults: &RootDefaults{
+				DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+				PackageDependencies: []*config.RustPackageDependency{
+					{
+						Feature: "_internal-http-client",
+						Name:    "gaxi",
+						Package: "google-cloud-gax-internal",
+						Source:  "internal",
+						UsedIf:  "services",
+					},
+					{
+						ForceUsed: true,
+						Name:      "lazy_static",
+						Package:   "lazy_static",
+						UsedIf:    "services",
+					},
+				},
+			},
+			want: &config.Config{
+				Language: "rust",
+				Default: &config.Default{
+					Output: "src/generated/",
+					Rust: &config.RustDefault{
+						DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+						PackageDependencies: []*config.RustPackageDependency{
+							{
+								Feature: "_internal-http-client",
+								Name:    "gaxi",
+								Package: "google-cloud-gax-internal",
+								Source:  "internal",
+								UsedIf:  "services",
+							},
+							{
+								ForceUsed: true,
+								Name:      "lazy_static",
+								Package:   "lazy_static",
+								UsedIf:    "services",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:         "googleapis_path",
+			googleapis:   "testdata/get-git-commit/direct-commit-sha",
+			rootDefaults: &RootDefaults{},
+			want: &config.Config{
+				Language: "rust",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "1234567abcdefg",
+					},
+				},
+				Default: &config.Default{Output: "src/generated/", Rust: &config.RustDefault{}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := buildConfig(test.libraries, test.googleapis, test.rootDefaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetGitCommit(t *testing.T) {
 	t.Parallel()
 	gitDir = "test-git"
