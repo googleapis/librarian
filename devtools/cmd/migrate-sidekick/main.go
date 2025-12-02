@@ -104,34 +104,32 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	var (
-		repoPath       string
-		outputPath     string
-		googleapisPath string
-	)
 	if len(args) == 0 || args[0] != "migrate-sidekick" {
 		return errCommandNotFound
 	}
 
-	flag.StringVar(&repoPath, "repo", "", "Path to the google-cloud-rust repository (required)")
-	flag.StringVar(&outputPath, "output", "", "Output file path (default: stdout)")
-	flag.StringVar(&googleapisPath, "googleapis", "", "Path to googleapis repository")
-	flag.Parse()
+	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
+	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
+	outputPath := flagSet.String("output", "", "Output file path (default: stdout)")
+	googleapisPath := flagSet.String("googleapis", "", "Path to googleapis repository")
+	if err := flagSet.Parse(args[1:]); err != nil {
+		return err
+	}
 
-	if repoPath == "" {
+	if *repoPath == "" {
 		return errRepoNotFound
 	}
 
 	slog.Info("Reading sidekick.toml...", "path", repoPath)
 
 	// Read root .sidekick.toml for defaults
-	rootDefaults, err := readRootSidekick(repoPath)
+	rootDefaults, err := readRootSidekick(*repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
 	}
 
 	// Find all .sidekick.toml files
-	sidekickFiles, err := findSidekickFiles(repoPath)
+	sidekickFiles, err := findSidekickFiles(*repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
@@ -143,10 +141,10 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	// Build config
-	cfg := buildConfig(libraries, googleapisPath, rootDefaults)
+	cfg := buildConfig(libraries, *googleapisPath, rootDefaults)
 
 	// Write output
-	if outputPath == "" {
+	if *outputPath == "" {
 		// Write to stdout
 		enc := yamlv3.NewEncoder(os.Stdout)
 		enc.SetIndent(2)
@@ -156,7 +154,7 @@ func run(ctx context.Context, args []string) error {
 			return fmt.Errorf("failed to encode config: %w", err)
 		}
 	} else {
-		if err := yaml.Write(outputPath, cfg); err != nil {
+		if err := yaml.Write(*outputPath, cfg); err != nil {
 			return fmt.Errorf("failed to write config: %w", err)
 		}
 		slog.Info("Wrote config to output file", "path", outputPath)
