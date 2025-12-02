@@ -31,16 +31,17 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		source["discovery-root"] = discoveryDir
 		source["roots"] = "discovery,googleapis"
 	}
-	if library.Rust != nil && library.Rust.TitleOverride != "" {
-		source["title-override"] = library.Rust.TitleOverride
+	if library.Rust != nil {
+		if library.Rust.TitleOverride != "" {
+			source["title-override"] = library.Rust.TitleOverride
+		}
+		if library.Rust.DescriptionOverride != "" {
+			source["description-override"] = library.Rust.DescriptionOverride
+		}
+		if len(library.Rust.SkippedIds) > 0 {
+			source["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
+		}
 	}
-	if library.Rust != nil && library.Rust.DescriptionOverride != "" {
-		source["description-override"] = library.Rust.DescriptionOverride
-	}
-	if library.Rust != nil && len(library.Rust.SkippedIds) > 0 {
-		source["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
-	}
-
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
