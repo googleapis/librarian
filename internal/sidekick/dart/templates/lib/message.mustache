@@ -30,10 +30,22 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
     required this.{{Codec.Name}},
     {{/Codec.FieldBehaviorRequired}}
     {{^Codec.FieldBehaviorRequired}}
+    {{#Codec.IsRequiredBytes}}
+    Uint8List? {{Codec.Name}},
+    {{/Codec.IsRequiredBytes}}
+    {{^Codec.IsRequiredBytes}}
     this.{{Codec.Name}}{{#Codec.DefaultValue}} = {{{Codec.DefaultValue}}}{{/Codec.DefaultValue}},
+    {{/Codec.IsRequiredBytes}}
     {{/Codec.FieldBehaviorRequired}}
   {{/Fields}}
-  }{{/Codec.HasFields}}) : super(fullyQualifiedName){{Codec.ConstructorBody}}
+  }{{/Codec.HasFields}}) : 
+    {{#Fields}}
+    {{#Codec.IsRequiredBytes}}
+    {{Codec.Name}} = {{Codec.Name}} ?? {{{Codec.DefaultValue}}},
+    {{/Codec.IsRequiredBytes}}
+    {{/Fields}}
+  
+  super(fullyQualifiedName){{Codec.ConstructorBody}}
 
   {{#Codec.HasCustomEncoding}}
   factory {{Codec.Name}}.fromJson(Object json) => _{{Codec.Name}}Helper.decode(json);

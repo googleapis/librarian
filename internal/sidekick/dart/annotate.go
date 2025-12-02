@@ -34,6 +34,24 @@ var omitGeneration = map[string]string{
 	".google.protobuf.Value":        "",
 }
 
+var defaultValues = map[api.Typez]string{
+	api.BOOL_TYPE:     "false",
+	api.BYTES_TYPE:    "Uint8List(0)",
+	api.DOUBLE_TYPE:   "0",
+	api.FIXED32_TYPE:  "0",
+	api.FIXED64_TYPE:  "0",
+	api.FLOAT_TYPE:    "0",
+	api.INT32_TYPE:    "0",
+	api.INT64_TYPE:    "0",
+	api.SFIXED32_TYPE: "0",
+	api.SFIXED64_TYPE: "0",
+	api.SINT32_TYPE:   "0",
+	api.SINT64_TYPE:   "0",
+	api.STRING_TYPE:   "''",
+	api.UINT32_TYPE:   "0",
+	api.UINT64_TYPE:   "0",
+}
+
 type modelAnnotations struct {
 	Parent *api.API
 	// The Dart package name (e.g. google_cloud_secretmanager).
@@ -166,6 +184,7 @@ type fieldAnnotation struct {
 	DefaultValue          string
 	FromJson              string
 	ToJson                string
+	IsRequiredBytes       bool
 }
 
 type enumAnnotation struct {
@@ -743,33 +762,10 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		}
 	}
 
-	// We interpret proto implicit presence as non-nullable for Dart.
-	required := implicitPresence
-
-	// We can't make 'bytes' required, as UInt8List in Dart can't be const.
-	if field.Typez == api.BYTES_TYPE {
-		required = false
-	}
-
 	// Calculate the default field value.
-	defaultValues := map[api.Typez]string{
-		api.BOOL_TYPE:     "false",
-		api.DOUBLE_TYPE:   "0",
-		api.FIXED32_TYPE:  "0",
-		api.FIXED64_TYPE:  "0",
-		api.FLOAT_TYPE:    "0",
-		api.INT32_TYPE:    "0",
-		api.INT64_TYPE:    "0",
-		api.SFIXED32_TYPE: "0",
-		api.SFIXED64_TYPE: "0",
-		api.SINT32_TYPE:   "0",
-		api.SINT64_TYPE:   "0",
-		api.STRING_TYPE:   "''",
-		api.UINT32_TYPE:   "0",
-		api.UINT64_TYPE:   "0",
-	}
 	defaultValue := ""
-	if required {
+	required := slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED)
+	if implicitPresence && !required {
 		switch {
 		case field.Repeated:
 			defaultValue = "const []"
@@ -785,18 +781,22 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		}
 	}
 
+	if field.Name == "f_bytes" {
+		fmt.Printf("field: %+v  - %s\n", field, defaultValue)
+	}
 	state := annotate.state
 
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
 		DocLines:              formatDocComments(field.Documentation, state),
-		Required:              required,
-		Nullable:              !required,
-		FieldBehaviorRequired: slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED),
+		Required:              implicitPresence,
+		Nullable:              !implicitPresence,
+		FieldBehaviorRequired: required,
 		DefaultValue:          defaultValue,
-		FromJson:              annotate.createFromJsonLine(field, state, required),
-		ToJson:                createToJsonLine(field, state, required),
+		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
+		ToJson:                createToJsonLine(field, state, implicitPresence),
+		IsRequiredBytes:       defaultValue == "Uint8List(0)",
 	}
 }
 
@@ -817,23 +817,6 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			bang = fmt.Sprintf(" ?? %s.$default", typeName)
 		default:
-			defaultValues := map[api.Typez]string{
-				api.BOOL_TYPE:     "false",
-				api.BYTES_TYPE:    "Uint8List()",
-				api.DOUBLE_TYPE:   "0",
-				api.FIXED32_TYPE:  "0",
-				api.FIXED64_TYPE:  "0",
-				api.FLOAT_TYPE:    "0",
-				api.INT32_TYPE:    "0",
-				api.INT64_TYPE:    "0",
-				api.SFIXED32_TYPE: "0",
-				api.SFIXED64_TYPE: "0",
-				api.SINT32_TYPE:   "0",
-				api.SINT64_TYPE:   "0",
-				api.STRING_TYPE:   "''",
-				api.UINT32_TYPE:   "0",
-				api.UINT64_TYPE:   "0",
-			}
 			bang = fmt.Sprintf(" ?? %s", defaultValues[field.Typez])
 		}
 	}
