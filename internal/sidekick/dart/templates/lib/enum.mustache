@@ -32,7 +32,7 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoEnum {
 
   const {{Codec.Name}}(super.value);
 
-  factory {{Codec.Name}}.fromJson(String json) => {{Codec.Name}}(json);
+  factory {{Codec.Name}}.fromJson(Object? json) => {{Codec.Name}}(json as String);
 
   bool get isNotDefault => this != $default;
 
