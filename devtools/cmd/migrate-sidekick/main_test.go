@@ -27,34 +27,34 @@ func TestReadRootSidekick(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		path    string
-		want    *RootDefaults
+		want    *config.Default
 		wantErr error
 	}{
 		{
 			name: "success",
 			path: "testdata/root-sidekick/success",
-			want: &RootDefaults{
-				DisabledRustdocWarnings: []string{
-					"redundant_explicit_links",
-					"broken_intra_doc_links",
-				},
-				PackageDependencies: []*config.RustPackageDependency{
-					{
-						Feature: "_internal-http-client",
-						Name:    "gaxi",
-						Package: "google-cloud-gax-internal",
-						Source:  "internal",
-						UsedIf:  "services",
+			want: &config.Default{
+				Rust: &config.RustDefault{
+					DisabledRustdocWarnings: []string{
+						"redundant_explicit_links",
+						"broken_intra_doc_links",
 					},
-					{
-						Name:      "lazy_static",
-						Package:   "lazy_static",
-						UsedIf:    "services",
-						ForceUsed: true,
+					PackageDependencies: []*config.RustPackageDependency{
+						{
+							Feature: "_internal-http-client",
+							Name:    "gaxi",
+							Package: "google-cloud-gax-internal",
+							Source:  "internal",
+							UsedIf:  "services",
+						},
+						{
+							Name:      "lazy_static",
+							Package:   "lazy_static",
+							UsedIf:    "services",
+							ForceUsed: true,
+						},
 					},
 				},
-				Remote: "upstream",
-				Branch: "main",
 			},
 		},
 		{
@@ -312,31 +312,19 @@ func TestDeriveLibraryName(t *testing.T) {
 func TestBuildConfig(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name         string
-		libraries    map[string]*config.Library
-		googleapis   string
-		rootDefaults *RootDefaults
-		want         *config.Config
-		wantErr      error
+		name       string
+		libraries  map[string]*config.Library
+		googleapis string
+		defaults   *config.Default
+		want       *config.Config
+		wantErr    error
 	}{
 		{
 			name: "rust_defaults",
-			rootDefaults: &RootDefaults{
-				DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
-				PackageDependencies: []*config.RustPackageDependency{
-					{
-						Feature: "_internal-http-client",
-						Name:    "gaxi",
-						Package: "google-cloud-gax-internal",
-						Source:  "internal",
-						UsedIf:  "services",
-					},
-					{
-						ForceUsed: true,
-						Name:      "lazy_static",
-						Package:   "lazy_static",
-						UsedIf:    "services",
-					},
+			defaults: &config.Default{
+				Output: "src/generated/",
+				Rust: &config.RustDefault{
+					DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 				},
 			},
 			want: &config.Config{
@@ -345,28 +333,13 @@ func TestBuildConfig(t *testing.T) {
 					Output: "src/generated/",
 					Rust: &config.RustDefault{
 						DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
-						PackageDependencies: []*config.RustPackageDependency{
-							{
-								Feature: "_internal-http-client",
-								Name:    "gaxi",
-								Package: "google-cloud-gax-internal",
-								Source:  "internal",
-								UsedIf:  "services",
-							},
-							{
-								ForceUsed: true,
-								Name:      "lazy_static",
-								Package:   "lazy_static",
-								UsedIf:    "services",
-							},
-						},
 					},
 				},
 			},
 		},
 		{
-			name:         "copy_libraries",
-			rootDefaults: &RootDefaults{},
+			name:     "copy_libraries",
+			defaults: &config.Default{},
 			libraries: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
@@ -401,7 +374,7 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "rust",
-				Default:  &config.Default{Output: "src/generated/", Rust: &config.RustDefault{}},
+				Default:  &config.Default{},
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-security-publicca-v1",
@@ -428,7 +401,7 @@ func TestBuildConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := buildConfig(test.libraries, test.googleapis, test.rootDefaults)
+			got := buildConfig(test.libraries, test.googleapis, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

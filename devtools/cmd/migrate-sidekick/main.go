@@ -47,18 +47,6 @@ var (
 	errSrcNotFound      = errors.New("src/generated directory not found")
 )
 
-// RootSidekickConfig represents the structure of the root .sidekick.toml file.
-type RootSidekickConfig struct {
-	Codec struct {
-		DisabledRustdocWarnings string            `toml:"disabled-rustdoc-warnings"`
-		Packages                map[string]string `toml:",remain"`
-	} `toml:"codec"`
-	Release struct {
-		Remote string `toml:"remote"`
-		Branch string `toml:"branch"`
-	} `toml:"release"`
-}
-
 // SidekickConfig represents the structure of a .sidekick.toml file.
 type SidekickConfig struct {
 	General struct {
@@ -76,14 +64,6 @@ type SidekickConfig struct {
 		ID        string `toml:"id"`
 		ItemField string `toml:"item-field"`
 	} `toml:"pagination-overrides"`
-}
-
-// RootDefaults contains defaults extracted from root .sidekick.toml.
-type RootDefaults struct {
-	DisabledRustdocWarnings []string
-	PackageDependencies     []*config.RustPackageDependency
-	Remote                  string
-	Branch                  string
 }
 
 // CargoConfig represents relevant fields from Cargo.toml.
@@ -163,7 +143,7 @@ func run(args []string) error {
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
-func readRootSidekick(repoPath string) (*RootDefaults, error) {
+func readRootSidekick(repoPath string) (*config.Default, error) {
 	rootPath := filepath.Join(repoPath, sidekickFile)
 	data, err := os.ReadFile(rootPath)
 	if err != nil {
@@ -171,49 +151,24 @@ func readRootSidekick(repoPath string) (*RootDefaults, error) {
 	}
 
 	// Parse as generic map to handle the dynamic package keys
-	var raw map[string]interface{}
-	if err := toml.Unmarshal(data, &raw); err != nil {
+	var sidekick SidekickConfig
+	if err := toml.Unmarshal(data, &sidekick); err != nil {
 		return nil, err
 	}
 
-	defaults := &RootDefaults{}
+	releaseLevel, _ := sidekick.Codec["release-level"].(string)
+	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
 
-	// Extract codec section
-	if codec, ok := raw["codec"].(map[string]interface{}); ok {
-		// Parse disabled warnings
-		if warnings, ok := codec["disabled-rustdoc-warnings"].(string); ok {
-			defaults.DisabledRustdocWarnings = strings.Split(warnings, ",")
-		}
-
-		// Parse package dependencies
-		for key, value := range codec {
-			if !strings.HasPrefix(key, "package:") {
-				continue
-			}
-			pkgName := strings.TrimPrefix(key, "package:")
-			pkgSpec := value.(string)
-
-			dep := parsePackageDependency(pkgName, pkgSpec)
-			if dep != nil {
-				defaults.PackageDependencies = append(defaults.PackageDependencies, dep)
-			}
-		}
+	// Parse package dependencies
+	packageDependencies := parsePackageDependencies(sidekick.Codec)
+	defaults := &config.Default{
+		Output:       "src/generated/",
+		ReleaseLevel: releaseLevel,
+		Rust: &config.RustDefault{
+			PackageDependencies:     packageDependencies,
+			DisabledRustdocWarnings: strToSlice(warnings),
+		},
 	}
-
-	// Extract release section
-	if release, ok := raw["release"].(map[string]interface{}); ok {
-		if remote, ok := release["remote"].(string); ok {
-			defaults.Remote = remote
-		}
-		if branch, ok := release["branch"].(string); ok {
-			defaults.Branch = branch
-		}
-	}
-
-	// Sort package dependencies by name
-	sort.Slice(defaults.PackageDependencies, func(i, j int) bool {
-		return defaults.PackageDependencies[i].Name < defaults.PackageDependencies[j].Name
-	})
 
 	return defaults, nil
 }
@@ -376,27 +331,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 
 		// Parse package dependencies
-		var packageDeps []*config.RustPackageDependency
-		for key, value := range sidekick.Codec {
-			if !strings.HasPrefix(key, "package:") {
-				continue
-			}
-			pkgName := strings.TrimPrefix(key, "package:")
-			pkgSpec, ok := value.(string)
-			if !ok {
-				continue
-			}
-
-			dep := parsePackageDependency(pkgName, pkgSpec)
-			if dep != nil {
-				packageDeps = append(packageDeps, dep)
-			}
-		}
-
-		// Sort package dependencies by name for consistent output
-		sort.Slice(packageDeps, func(i, j int) bool {
-			return packageDeps[i].Name < packageDeps[j].Name
-		})
+		packageDeps := parsePackageDependencies(sidekick.Codec)
 
 		// Parse documentation overrides
 		var documentationOverrides []config.RustDocumentationOverride
@@ -466,16 +401,10 @@ func deriveLibraryName(apiPath string) string {
 }
 
 // buildConfig builds the complete config from libraries.
-func buildConfig(libraries map[string]*config.Library, googleapisPath string, rootDefaults *RootDefaults) *config.Config {
+func buildConfig(libraries map[string]*config.Library, googleapisPath string, defaults *config.Default) *config.Config {
 	cfg := &config.Config{
 		Language: "rust",
-		Default: &config.Default{
-			Output: "src/generated/",
-			Rust: &config.RustDefault{
-				DisabledRustdocWarnings: rootDefaults.DisabledRustdocWarnings,
-				PackageDependencies:     rootDefaults.PackageDependencies,
-			},
-		},
+		Default:  defaults,
 	}
 
 	// Add googleapis source if provided
@@ -552,6 +481,32 @@ func getGitCommit(repoPath string) (string, error) {
 
 	// HEAD is a direct commit hash
 	return head, nil
+}
+
+func parsePackageDependencies(codec map[string]interface{}) []*config.RustPackageDependency {
+	var packageDeps []*config.RustPackageDependency
+	for key, value := range codec {
+		if !strings.HasPrefix(key, "package:") {
+			continue
+		}
+		pkgName := strings.TrimPrefix(key, "package:")
+		pkgSpec, ok := value.(string)
+		if !ok {
+			continue
+		}
+
+		dep := parsePackageDependency(pkgName, pkgSpec)
+		if dep != nil {
+			packageDeps = append(packageDeps, dep)
+		}
+	}
+
+	// Sort package dependencies by name
+	sort.Slice(packageDeps, func(i, j int) bool {
+		return packageDeps[i].Name < packageDeps[j].Name
+	})
+
+	return packageDeps
 }
 
 func strToBool(s string) bool {
