@@ -72,6 +72,19 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 				}
 			}
 		}
+		if library.Rust.Discovery != nil {
+			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
+			for i, poller := range library.Rust.Discovery.Pollers {
+				pollers[i] = &sidekickconfig.Poller{
+					Prefix:   poller.Prefix,
+					MethodID: poller.MethodID,
+				}
+			}
+			sidekickCfg.Discovery = &sidekickconfig.Discovery{
+				OperationID: library.Rust.Discovery.OperationID,
+				Pollers:     pollers,
+			}
+		}
 	}
 	return sidekickCfg
 }
@@ -159,6 +172,9 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	}
 	if dep.Feature != "" {
 		parts = append(parts, "feature="+dep.Feature)
+	}
+	if dep.Ignore {
+		parts = append(parts, "ignore=true")
 	}
 	return strings.Join(parts, ",")
 }
