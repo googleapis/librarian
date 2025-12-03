@@ -166,6 +166,11 @@ func TestUpdateCommand(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "unknown source",
+			args:    []string{"librarian", "update", "unknown"},
+			wantErr: fmt.Errorf("unknown source: unknown"),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// reset config file for each test
