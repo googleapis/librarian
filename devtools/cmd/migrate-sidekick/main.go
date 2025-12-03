@@ -306,8 +306,11 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		}
 
 		// Parse Rust-specific configuration from sidekick.toml source section
+		if descriptionOverride, ok := sidekick.Source["description-override"].(string); ok {
+			lib.DescriptionOverride = descriptionOverride
+		}
+
 		titleOverride, _ := sidekick.Source["title-override"].(string)
-		descriptionOverride, _ := sidekick.Source["description-override"].(string)
 		roots, _ := sidekick.Source["roots"].(string)
 		includeList, _ := sidekick.Source["include-list"].(string)
 		includeIds, _ := sidekick.Source["include-ids"].(string)
@@ -363,7 +366,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			ModulePath:                modulePath,
 			TemplateOverride:          templateOverride,
 			TitleOverride:             titleOverride,
-			DescriptionOverride:       descriptionOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
 			Roots:                     strToSlice(roots),
