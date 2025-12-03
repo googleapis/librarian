@@ -29,7 +29,17 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func setupUpdateTest(t *testing.T) (*httptest.Server, string, string, string, string, string, string) {
+type updateTestSetup struct {
+	server           *httptest.Server
+	configPath       string
+	initialConfig    string
+	googleapisCommit string
+	googleapisSHA    string
+	discoveryCommit  string
+	discoverySHA     string
+}
+
+func setupUpdateTest(t *testing.T) *updateTestSetup {
 	const (
 		googleapisCommit = "123456"
 		discoveryCommit  = "abcdef"
@@ -39,9 +49,9 @@ func setupUpdateTest(t *testing.T) (*httptest.Server, string, string, string, st
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/repos/googleapis/googleapis/commits/main":
+		case "/repos/googleapis/googleapis/commits/master":
 			w.Write([]byte(googleapisCommit))
-		case "/repos/googleapis/discovery-artifact-manager/commits/main":
+		case "/repos/googleapis/discovery-artifact-manager/commits/master":
 			w.Write([]byte(discoveryCommit))
 		case "/googleapis/googleapis/archive/123456.tar.gz":
 			w.Write([]byte(googleapisTarball))
@@ -62,8 +72,10 @@ func setupUpdateTest(t *testing.T) (*httptest.Server, string, string, string, st
 sources:
   googleapis:
     commit: old-googleapis-commit
+    sha256: old-googleapis-sha
   discovery:
     commit: old-discovery-commit
+    sha256: old-discovery-sha
 `
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
@@ -72,12 +84,20 @@ sources:
 	googleapisSHA := fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTarball)))
 	discoverySHA := fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTarball)))
 
-	return ts, configPath, configContent, googleapisCommit, googleapisSHA, discoveryCommit, discoverySHA
+	return &updateTestSetup{
+		server:           ts,
+		configPath:       configPath,
+		initialConfig:    configContent,
+		googleapisCommit: googleapisCommit,
+		googleapisSHA:    googleapisSHA,
+		discoveryCommit:  discoveryCommit,
+		discoverySHA:     discoverySHA,
+	}
 }
 
 func TestUpdateCommand(t *testing.T) {
-	ts, configPath, configContent, googleapisCommit, googleapisSHA, discoveryCommit, discoverySHA := setupUpdateTest(t)
-	defer ts.Close()
+	setup := setupUpdateTest(t)
+	defer setup.server.Close()
 
 	for _, test := range []struct {
 		name       string
@@ -102,11 +122,12 @@ func TestUpdateCommand(t *testing.T) {
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: googleapisCommit,
-						SHA256: googleapisSHA,
+						Commit: setup.googleapisCommit,
+						SHA256: setup.googleapisSHA,
 					},
 					Discovery: &config.Source{
 						Commit: "old-discovery-commit",
+						SHA256: "old-discovery-sha",
 					},
 				},
 			},
@@ -119,10 +140,11 @@ func TestUpdateCommand(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "old-googleapis-commit",
+						SHA256: "old-googleapis-sha",
 					},
 					Discovery: &config.Source{
-						Commit: discoveryCommit,
-						SHA256: discoverySHA,
+						Commit: setup.discoveryCommit,
+						SHA256: setup.discoverySHA,
 					},
 				},
 			},
@@ -134,12 +156,12 @@ func TestUpdateCommand(t *testing.T) {
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: googleapisCommit,
-						SHA256: googleapisSHA,
+						Commit: setup.googleapisCommit,
+						SHA256: setup.googleapisSHA,
 					},
 					Discovery: &config.Source{
-						Commit: discoveryCommit,
-						SHA256: discoverySHA,
+						Commit: setup.discoveryCommit,
+						SHA256: setup.discoverySHA,
 					},
 				},
 			},
@@ -147,7 +169,7 @@ func TestUpdateCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// reset config file for each test
-			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+			if err := os.WriteFile(setup.configPath, []byte(setup.initialConfig), 0644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -165,7 +187,7 @@ func TestUpdateCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotConfig, err := yaml.Read[config.Config](configPath)
+			gotConfig, err := yaml.Read[config.Config](setup.configPath)
 			if err != nil {
 				t.Fatal(err)
 			}

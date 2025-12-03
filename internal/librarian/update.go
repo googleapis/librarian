@@ -17,7 +17,6 @@ package librarian
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -90,33 +89,43 @@ func runUpdate(all bool, sourceName string) error {
 
 	for _, name := range sourceNamesToProcess {
 		source := sourcesMap[name]
-		if err := updateSource(endpoints, name, source); err != nil {
+		fmt.Printf("Fetching latest %s commit...\n", name)
+		if err := updateSource(endpoints, name, source, cfg); err != nil {
 			return err
 		}
 	}
 
-	return yaml.Write(librarianConfigPath, cfg)
+	return nil
 }
 
-func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source) error {
+func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source, cfg *config.Config) error {
 	if source == nil {
 		return nil
 	}
-	slog.Info("updating source to the latest version", "source", name)
-
 	repo, err := repoForSource(name)
 	if err != nil {
 		return err
 	}
 
+	oldCommit := source.Commit
+	oldSHA256 := source.SHA256
+
 	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
 	if err != nil {
 		return err
 	}
-	slog.Debug("old commit", "commit", source.Commit)
-	slog.Debug("new commit", "commit", commit)
-	source.Commit = commit
-	source.SHA256 = sha256
+
+	if oldCommit != commit || oldSHA256 != sha256 {
+		source.Commit = commit
+		source.SHA256 = sha256
+		if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+			return err
+		}
+		fmt.Printf("Updated librarian.yaml:\n  sources.%s.commit: %s -> %s\n  sources.%s.sha: %s -> %s\n\n",
+			name, oldCommit, commit, name, oldSHA256, sha256)
+	} else {
+		fmt.Printf("No change detected for %s.\n\n", name)
+	}
 	return nil
 }
 

@@ -30,6 +30,8 @@ import (
 	"time"
 )
 
+const branch = "master"
+
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
 	defaultBackoff      = 10 * time.Second
@@ -117,7 +119,7 @@ func LatestSha(query string) (string, error) {
 // LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
 // commit from the GitHub API for the given repository.
 func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/main", endpoints.API, repo.Org, repo.Repo)
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
 	commit, err = LatestSha(apiURL)
 	if err != nil {
 		return "", "", err
