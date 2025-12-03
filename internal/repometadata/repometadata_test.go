@@ -25,28 +25,9 @@ import (
 )
 
 func TestGenerateRepoMetadata(t *testing.T) {
-	// Create a test service YAML
-	yamlContent := `type: google.api.Service
-config_version: 3
-name: secretmanager.googleapis.com
-title: Secret Manager API
-
-documentation:
-  summary: |-
-    Stores sensitive data such as API keys, passwords, and certificates.
-    Provides convenience while improving security.
-
-publishing:
-  documentation_uri: https://cloud.google.com/secret-manager/docs/overview
-  api_short_name: secretmanager
-`
+	serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
 
 	tmpDir := t.TempDir()
-	serviceYAMLPath := filepath.Join(tmpDir, "service.yaml")
-	if err := os.WriteFile(serviceYAMLPath, []byte(yamlContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	outDir := filepath.Join(tmpDir, "output")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -94,28 +75,9 @@ publishing:
 }
 
 func TestGenerateRepoMetadata_WithOverrides(t *testing.T) {
-	// Create a test service YAML
-	yamlContent := `type: google.api.Service
-config_version: 3
-name: secretmanager.googleapis.com
-title: Secret Manager API
-
-documentation:
-  summary: |-
-    Stores sensitive data such as API keys, passwords, and certificates.
-    Provides convenience while improving security.
-
-publishing:
-  documentation_uri: https://cloud.google.com/secret-manager/docs/overview
-  api_short_name: secretmanager
-`
+	serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
 
 	tmpDir := t.TempDir()
-	serviceYAMLPath := filepath.Join(tmpDir, "service.yaml")
-	if err := os.WriteFile(serviceYAMLPath, []byte(yamlContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	outDir := filepath.Join(tmpDir, "output")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
