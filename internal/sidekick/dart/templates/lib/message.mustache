@@ -30,10 +30,24 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
     required this.{{Codec.Name}},
     {{/Codec.FieldBehaviorRequired}}
     {{^Codec.FieldBehaviorRequired}}
+    {{! If the default value is `const` (e.g. `0`) then we can use it as a
+    default value. Otherwise (e.g. `Uint8List(0)`), we need to make the type
+    nullable and assign the default value in the initializer list. }}
+    {{#Codec.ConstDefault}}
     this.{{Codec.Name}}{{#Codec.DefaultValue}} = {{{Codec.DefaultValue}}}{{/Codec.DefaultValue}},
+    {{/Codec.ConstDefault}}
+    {{^Codec.ConstDefault}}
+    {{{Codec.Type}}}? {{Codec.Name}},
+    {{/Codec.ConstDefault}}
     {{/Codec.FieldBehaviorRequired}}
   {{/Fields}}
-  }{{/Codec.HasFields}}) : super(fullyQualifiedName){{Codec.ConstructorBody}}
+  }{{/Codec.HasFields}}) : 
+    {{#Fields}}
+    {{^Codec.ConstDefault}}
+    {{Codec.Name}} = {{Codec.Name}} ?? {{{Codec.DefaultValue}}},
+    {{/Codec.ConstDefault}}
+    {{/Fields}}
+  super(fullyQualifiedName){{Codec.ConstructorBody}}
 
   {{#Codec.HasCustomEncoding}}
   factory {{Codec.Name}}.fromJson(Object json) => _{{Codec.Name}}Helper.decode(json);

@@ -520,6 +520,9 @@ func TestBuildQueryLines(t *testing.T) {
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
 			[]string{"if (result.bool$ case final $1 when $1.isNotDefault) 'bool': '${$1}'"},
 		}, {
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			[]string{"if (result.bytes case final $1 when $1.isNotDefault) 'bytes': encodeBytes($1)!"},
+		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
 			[]string{"if (result.int32 case final $1 when $1.isNotDefault) 'int32': '${$1}'"},
 		}, {
@@ -549,6 +552,9 @@ func TestBuildQueryLines(t *testing.T) {
 		{
 			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
 			[]string{"if (result.boolOpt case final $1?) 'bool': '${$1}'"},
+		}, {
+			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
+			[]string{"if (result.bytesOpt case final $1?) 'bytes': encodeBytes($1)!"},
 		}, {
 			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
 			[]string{"if (result.int32Opt case final $1?) 'int32': '${$1}'"},
@@ -586,6 +592,9 @@ func TestBuildQueryLines(t *testing.T) {
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
 			[]string{"if (result.boolList case final $1 when $1.isNotDefault) 'boolList': $1.map((e) => '$e')"},
 		}, {
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			[]string{"if (result.bytesList case final $1 when $1.isNotDefault) 'bytesList': $1.map((e) => encodeBytes(e)!)"},
+		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
 			[]string{"if (result.int32List case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
 		}, {
@@ -603,15 +612,6 @@ func TestBuildQueryLines(t *testing.T) {
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
 			[]string{"if (result.int32ListOpt case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
-		},
-
-		// bytes, repeated bytes
-		{
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
-			[]string{"if (result.bytes case final $1?) 'bytes': encodeBytes($1)!"},
-		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			[]string{"if (result.bytesList case final $1?) 'bytesList': $1.map((e) => encodeBytes(e)!)"},
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -854,6 +854,9 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
 			"json['bool'] ?? false",
 		}, {
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			"decodeBytes(json['bytes']) ?? Uint8List(0)",
+		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
 			"json['int32'] ?? 0",
 		}, {
@@ -868,6 +871,9 @@ func TestCreateFromJsonLine(t *testing.T) {
 		{
 			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
 			"json['bool']",
+		}, {
+			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
+			"decodeBytes(json['bytes'])",
 		}, {
 			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
 			"json['int32']",
@@ -887,6 +893,9 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
 			"decodeList(json['boolList']) ?? []",
 		}, {
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			"decodeListBytes(json['bytesList']) ?? []",
+		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
 			"decodeList(json['int32List']) ?? []",
 		}, {
@@ -898,15 +907,6 @@ func TestCreateFromJsonLine(t *testing.T) {
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
 			"decodeList(json['int32List']) ?? []",
-		},
-
-		// bytes, repeated bytes
-		{
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
-			"decodeBytes(json['bytes'])",
-		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			"decodeListBytes(json['bytesList'])",
 		},
 
 		// enums

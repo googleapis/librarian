@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -35,7 +36,6 @@ const (
 )
 
 var (
-	errCommandNotFound  = errors.New("command not found")
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
@@ -77,10 +77,6 @@ func main() {
 }
 
 func run(args []string) error {
-	if len(args) == 0 || args[0] != "migrate-sidekick" {
-		return errCommandNotFound
-	}
-
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
 	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
@@ -298,8 +294,11 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		}
 
 		// Parse Rust-specific configuration from sidekick.toml source section
+		if descriptionOverride, ok := sidekick.Source["description-override"].(string); ok {
+			lib.DescriptionOverride = descriptionOverride
+		}
+
 		titleOverride, _ := sidekick.Source["title-override"].(string)
-		descriptionOverride, _ := sidekick.Source["description-override"].(string)
 		roots, _ := sidekick.Source["roots"].(string)
 		includeList, _ := sidekick.Source["include-list"].(string)
 		includeIds, _ := sidekick.Source["include-ids"].(string)
@@ -345,8 +344,8 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			})
 		}
 
-		// Set Rust-specific configuration
-		lib.Rust = &config.RustCrate{
+		// Set Rust-specific configuration only if there's actual config
+		rustCrate := &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
 				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
@@ -355,7 +354,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			ModulePath:                modulePath,
 			TemplateOverride:          templateOverride,
 			TitleOverride:             titleOverride,
-			DescriptionOverride:       descriptionOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
 			Roots:                     strToSlice(roots),
@@ -374,6 +372,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			DocumentationOverrides:    documentationOverrides,
 			PaginationOverrides:       paginationOverrides,
 			NameOverrides:             nameOverrides,
+		}
+		if !isEmptyRustCrate(rustCrate) {
+			lib.Rust = rustCrate
 		}
 	}
 
@@ -470,4 +471,8 @@ func strToSlice(s string) []string {
 	}
 
 	return strings.Split(s, ",")
+}
+
+func isEmptyRustCrate(r *config.RustCrate) bool {
+	return reflect.DeepEqual(r, &config.RustCrate{})
 }

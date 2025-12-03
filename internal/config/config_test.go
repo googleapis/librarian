@@ -103,6 +103,7 @@ func TestFill(t *testing.T) {
 	defaults := &Default{
 		Output:       "src/generated/",
 		ReleaseLevel: "stable",
+		Transport:    "default_transport",
 	}
 	for _, test := range []struct {
 		name     string
@@ -117,6 +118,7 @@ func TestFill(t *testing.T) {
 			want: &Library{
 				Output:       "src/generated/",
 				ReleaseLevel: "stable",
+				Transport:    "default_transport",
 			},
 		},
 		{
@@ -125,10 +127,12 @@ func TestFill(t *testing.T) {
 			lib: &Library{
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
+				Transport:    "custom_transport",
 			},
 			want: &Library{
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
+				Transport:    "custom_transport",
 			},
 		},
 		{
@@ -138,6 +142,7 @@ func TestFill(t *testing.T) {
 			want: &Library{
 				Output:       "custom/output/",
 				ReleaseLevel: "stable",
+				Transport:    "default_transport",
 			},
 		},
 		{

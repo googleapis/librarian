@@ -158,8 +158,9 @@ func TestReadSidekickFiles(t *testing.T) {
 							ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
 						},
 					},
-					Version:       "1.1.0",
-					CopyrightYear: "2025",
+					Version:             "1.1.0",
+					CopyrightYear:       "2025",
+					DescriptionOverride: "Description override",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
@@ -168,7 +169,6 @@ func TestReadSidekickFiles(t *testing.T) {
 						ModulePath:                "crate",
 						TemplateOverride:          "templates/mod",
 						TitleOverride:             "Google Apps Script Types",
-						DescriptionOverride:       "Description override",
 						PackageNameOverride:       "google-cloud-security-publicca-v1",
 						RootName:                  "conformance-root",
 						Roots:                     []string{"discovery", "googleapis"},
