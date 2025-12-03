@@ -41,6 +41,9 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
+	DefaultVersion string `json:"default_version,omitempty"`
+
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
 
@@ -89,6 +92,8 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		Repo:                repo,
 		DistributionName:    library.Name,
 	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/3146): set DefaultVersion
 
 	if svcCfg.GetPublishing() != nil {
 		publishing := svcCfg.GetPublishing()
