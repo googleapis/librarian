@@ -114,6 +114,23 @@ func LatestSha(query string) (string, error) {
 	return string(contents), nil
 }
 
+// LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
+// commit from the GitHub API for the given repository.
+func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/main", endpoints.API, repo.Org, repo.Repo)
+	commit, err = LatestSha(apiURL)
+	if err != nil {
+		return "", "", err
+	}
+
+	tarballURL := TarballLink(endpoints.Download, repo, commit)
+	sha256, err = Sha256(tarballURL)
+	if err != nil {
+		return "", "", err
+	}
+	return commit, sha256, nil
+}
+
 // TarballLink constructs a GitHub tarball download URL for the given
 // repository and commit SHA.
 func TarballLink(githubDownload string, repo *Repo, sha string) string {
