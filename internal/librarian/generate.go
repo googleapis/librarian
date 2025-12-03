@@ -141,9 +141,20 @@ func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, e
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if any file in
-// keep does not exist.
+// should contain paths relative to dir. It returns an error if the directory
+// does not exist or any file in keep does not exist.
 func cleanOutput(dir string, keep []string) error {
+	info, err := os.Stat(dir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("output directory %q does not exist; check that the output field in librarian.yaml is correct", dir)
+		}
+		return fmt.Errorf("failed to stat output directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("output path %q is not a directory", dir)
+	}
+
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
 		path := filepath.Join(dir, k)
