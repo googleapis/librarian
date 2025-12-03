@@ -85,7 +85,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir, []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"}); err != nil {
+			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir); err != nil {
 				t.Fatal(err)
 			}
 

@@ -71,7 +71,7 @@ type RepoMetadata struct {
 
 // GenerateRepoMetadata generates the .repo-metadata.json file by parsing the
 // service YAML.
-func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, outdir string, channels []string) error {
+func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, outdir string) error {
 	svcCfg, err := serviceconfig.Read(serviceConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to read service config: %w", err)
