@@ -124,7 +124,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 // src/generated/cloud/secretmanager/v1.
 //
 // TODO(https://github.com/googleapis/librarian/issues/2966): refactor and move
-// to internal/rust package
+// to internal/rust package.
 func deriveDefaultRustOutput(channel, defaultOutput string) string {
 	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
 }
