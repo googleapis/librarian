@@ -256,9 +256,12 @@ func containsProtoFiles(dir string) bool {
 // defaultRustLibraryName derives an API path from a Rust library name.
 // For example: google-cloud-foo-v1 -> google/cloud/foo/v1
 //
-// TODO(https://github.com/googleapis/librarian/issues/3058): See
+// TODO(https://github.com/googleapis/librarian/issues/3058): see
 // go/cloud-rust:on-crate-names for overrides and make sure they are handled
 // properly.
+//
+// TODO(https://github.com/googleapis/librarian/issues/2966): refactor and move
+// to internal/rust package.
 func defaultRustLibraryName(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
