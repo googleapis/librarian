@@ -139,12 +139,16 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	releaseLevel, _ := sidekick.Codec["release-level"].(string)
 	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
 	googleapisCommitSHA, _ := sidekick.Source["googleapis-sha256"].(string)
+	discoveryCommitSHA, _ := sidekick.Source["discovery-sha256"].(string)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
 
 	cfg := &config.Config{
 		Sources: &config.Sources{
+			Discovery: &config.Source{
+				Commit: discoveryCommitSHA,
+			},
 			Googleapis: &config.Source{
 				Commit: googleapisCommitSHA,
 			},

@@ -1,5 +1,6 @@
 [source]
 googleapis-sha256           = '839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085'
+discovery-sha256            = '67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212'
 
 [codec]
 # The default version for all crates. This can be overridden in the crate's
