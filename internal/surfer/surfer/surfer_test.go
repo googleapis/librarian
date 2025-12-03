@@ -28,6 +28,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "valid command",
 			args: []string{
+				"surfer",
 				"generate",
 				"../gcloud/testdata/parallelstore/gcloud.yaml",
 				"--out", "../gcloud/testdata/parallelstore/surface",
@@ -36,6 +37,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "invalid gcloud.yaml filepath",
 			args: []string{
+				"surfer",
 				"generate",
 				"invalidpath/gcloud.yaml",
 			},
@@ -43,12 +45,12 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name:    "missing config arg",
-			args:    []string{"generate"},
+			args:    []string{"surfer", "generate"},
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := Run(t.Context(), test.args); err != nil {
+			if err := Run(t.Context(), test.args...); err != nil {
 				// TODO(https://github.com/googleapis/librarian/issues/2817):
 				// remove once the generate functionality has been implemented
 				if strings.Contains(err.Error(), "failed to create API model") {

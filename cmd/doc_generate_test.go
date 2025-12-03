@@ -27,11 +27,11 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 	}{
 		{
 			name:    "automation_doc",
-			docFile: "cmd/automation/doc.go",
+			docFile: "cmd/legacyautomation/doc.go",
 		},
 		{
 			name:    "librarian_doc",
-			docFile: "cmd/librarian/doc.go",
+			docFile: "cmd/legacylibrarian/doc.go",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -34,6 +34,27 @@ var omitGeneration = map[string]string{
 	".google.protobuf.Value":        "",
 }
 
+var defaultValues = map[api.Typez]struct {
+	Value   string
+	IsConst bool
+}{
+	api.BOOL_TYPE:     {"false", true},
+	api.BYTES_TYPE:    {"Uint8List(0)", false},
+	api.DOUBLE_TYPE:   {"0", true},
+	api.FIXED32_TYPE:  {"0", true},
+	api.FIXED64_TYPE:  {"0", true},
+	api.FLOAT_TYPE:    {"0", true},
+	api.INT32_TYPE:    {"0", true},
+	api.INT64_TYPE:    {"0", true},
+	api.SFIXED32_TYPE: {"0", true},
+	api.SFIXED64_TYPE: {"0", true},
+	api.SINT32_TYPE:   {"0", true},
+	api.SINT64_TYPE:   {"0", true},
+	api.STRING_TYPE:   {"''", true},
+	api.UINT32_TYPE:   {"0", true},
+	api.UINT64_TYPE:   {"0", true},
+}
+
 type modelAnnotations struct {
 	Parent *api.API
 	// The Dart package name (e.g. google_cloud_secretmanager).
@@ -163,9 +184,12 @@ type fieldAnnotation struct {
 	Required              bool
 	Nullable              bool
 	FieldBehaviorRequired bool
-	DefaultValue          string
-	FromJson              string
-	ToJson                string
+	// The default value for the string, e.g. "0" for an integer type.
+	DefaultValue string
+	// Whether the default value is constant or not, e.g. "0" is constant but "Uint8List(0)" is not.
+	ConstDefault bool
+	FromJson     string
+	ToJson       string
 }
 
 type enumAnnotation struct {
@@ -743,33 +767,11 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		}
 	}
 
-	// We interpret proto implicit presence as non-nullable for Dart.
-	required := implicitPresence
-
-	// We can't make 'bytes' required, as UInt8List in Dart can't be const.
-	if field.Typez == api.BYTES_TYPE {
-		required = false
-	}
-
 	// Calculate the default field value.
-	defaultValues := map[api.Typez]string{
-		api.BOOL_TYPE:     "false",
-		api.DOUBLE_TYPE:   "0",
-		api.FIXED32_TYPE:  "0",
-		api.FIXED64_TYPE:  "0",
-		api.FLOAT_TYPE:    "0",
-		api.INT32_TYPE:    "0",
-		api.INT64_TYPE:    "0",
-		api.SFIXED32_TYPE: "0",
-		api.SFIXED64_TYPE: "0",
-		api.SINT32_TYPE:   "0",
-		api.SINT64_TYPE:   "0",
-		api.STRING_TYPE:   "''",
-		api.UINT32_TYPE:   "0",
-		api.UINT64_TYPE:   "0",
-	}
 	defaultValue := ""
-	if required {
+	constDefault := true
+	fieldRequired := slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED)
+	if implicitPresence && !fieldRequired {
 		switch {
 		case field.Repeated:
 			defaultValue = "const []"
@@ -781,22 +783,22 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
-			defaultValue = defaultValues[field.Typez]
+			defaultValue = defaultValues[field.Typez].Value
+			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
-
 	state := annotate.state
-
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
 		DocLines:              formatDocComments(field.Documentation, state),
-		Required:              required,
-		Nullable:              !required,
-		FieldBehaviorRequired: slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED),
+		Required:              implicitPresence,
+		Nullable:              !implicitPresence,
+		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
-		FromJson:              annotate.createFromJsonLine(field, state, required),
-		ToJson:                createToJsonLine(field, state, required),
+		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
+		ToJson:                createToJsonLine(field, state, implicitPresence),
+		ConstDefault:          constDefault,
 	}
 }
 
@@ -844,24 +846,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
-			defaultValues := map[api.Typez]string{
-				api.BOOL_TYPE:     "false",
-				api.BYTES_TYPE:    "Uint8List()",
-				api.DOUBLE_TYPE:   "0",
-				api.FIXED32_TYPE:  "0",
-				api.FIXED64_TYPE:  "0",
-				api.FLOAT_TYPE:    "0",
-				api.INT32_TYPE:    "0",
-				api.INT64_TYPE:    "0",
-				api.SFIXED32_TYPE: "0",
-				api.SFIXED64_TYPE: "0",
-				api.SINT32_TYPE:   "0",
-				api.SINT64_TYPE:   "0",
-				api.STRING_TYPE:   "''",
-				api.UINT32_TYPE:   "0",
-				api.UINT64_TYPE:   "0",
-			}
-			defaultValue = defaultValues[field.Typez]
+			defaultValue = defaultValues[field.Typez].Value
 		}
 	}
 

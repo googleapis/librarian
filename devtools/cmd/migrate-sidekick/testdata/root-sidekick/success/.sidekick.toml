@@ -1,0 +1,23 @@
+[source]
+googleapis-sha256           = '839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085'
+discovery-sha256            = '67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212'
+
+[codec]
+# The default version for all crates. This can be overridden in the crate's
+# `.sidekick.toml` file.
+version = "1.0.0"
+# The default release level for all crates.
+release-level = "stable"
+# Disable a number of warnings.
+# TODO(#1285) - remove `redundant_explicit_links` workaround when no longer needed
+# TODO(#742) - remove `broken_intro_doc_links` workaround when no longer needed
+disabled-rustdoc-warnings = "redundant_explicit_links,broken_intra_doc_links"
+# These are external (not part of `google-cloud-rust`) crates used by (nearly
+# all) generated crates.
+'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
+'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'
+
+[release]
+remote          = 'upstream'
+branch          = 'main'
+ignored-changes = ['.repo-metadata.json', '.sidekick.toml']

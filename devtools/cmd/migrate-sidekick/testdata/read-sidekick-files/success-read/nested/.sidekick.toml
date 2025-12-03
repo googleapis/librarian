@@ -1,0 +1,31 @@
+[general]
+specification-source = 'google/cloud/security/publicca/v1'
+service-config = 'google/cloud/security/publicca/v1/publicca_v1.yaml'
+
+[source]
+title-override = 'Google Apps Script Types'
+description-override = 'Description override'
+roots = 'discovery,googleapis'
+include-list = "api.proto,source_context.proto,type.proto,descriptor.proto"
+include-ids = ".google.iam.v2.Resource"
+skipped-ids = ".google.iam.v1.ResourcePolicyMember"
+
+[codec]
+version        = '1.1.0'
+copyright-year = '2025'
+per-service-features      = 'true'
+disabled-rustdoc-warnings = "bare_urls,broken_intra_doc_links,redundant_explicit_links"
+generate-setter-samples = 'true'
+name-overrides            = '.google.cloud.security/publicca.v1.Storage=StorageControl'
+module-path           = 'crate'
+template-override     = 'templates/mod'
+package-name-override = 'google-cloud-security-publicca-v1'
+root-name         = 'conformance-root'
+default-features          = 'instances,projects'
+extra-modules             = 'errors,operation'
+disabled-clippy-warnings  = "doc_lazy_continuation"
+has-veneer                = 'true'
+routing-required          = 'true'
+include-grpc-only-methods = 'true'
+post-process-protos = 'example post processing'
+detailed-tracing-attributes = 'true'

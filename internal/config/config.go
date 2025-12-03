@@ -16,12 +16,6 @@
 // librarian.yaml configuration files.
 package config
 
-import (
-	"errors"
-)
-
-var errLibraryNotFound = errors.New("library not found")
-
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
@@ -84,7 +78,8 @@ type Default struct {
 
 // Library represents a library configuration.
 type Library struct {
-	// Name is the library name, such as "secretmanager" or "storage".
+	// Name is the library name, such as "secretmanager" or "storage". It is
+	// listed first so it appears at the top of each library entry in YAML.
 	Name string `yaml:"name"`
 
 	// Channel specifies which googleapis Channel to generate from (for generated
@@ -125,11 +120,14 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
+	// DescriptionOverride overrides the library description.
+	DescriptionOverride string `yaml:"description_override,omitempty"`
+
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// Channel describes an Channel to include in a library.
+// Channel describes a Channel to include in a library.
 type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
@@ -137,68 +135,4 @@ type Channel struct {
 
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
-}
-
-// LibraryByName returns a library with the given name.
-func (c *Config) LibraryByName(name string) (*Library, error) {
-	if c.Libraries == nil {
-		return nil, errLibraryNotFound
-	}
-
-	for _, library := range c.Libraries {
-		if library.Name == name {
-			return library, nil
-		}
-	}
-
-	return nil, errLibraryNotFound
-}
-
-// Fill populates empty library fields from the provided defaults.
-func (lib *Library) Fill(d *Default) {
-	if d == nil {
-		return
-	}
-	if lib.Output == "" {
-		lib.Output = d.Output
-	}
-	if lib.ReleaseLevel == "" {
-		lib.ReleaseLevel = d.ReleaseLevel
-	}
-	if d.Rust != nil {
-		lib.fillRust(d)
-	}
-}
-
-// fillRust() populates empty fields in `lib.Rust` from the provided default.
-func (lib *Library) fillRust(d *Default) {
-	if lib.Rust == nil {
-		lib.Rust = &RustCrate{}
-	}
-	lib.Rust.PackageDependencies = mergePackageDependencies(
-		d.Rust.PackageDependencies,
-		lib.Rust.PackageDependencies,
-	)
-	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
-		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
-	}
-}
-
-// mergePackageDependencies merges default and library package dependencies,
-// with library dependencies taking precedence for duplicates.
-func mergePackageDependencies(defaults, lib []*RustPackageDependency) []*RustPackageDependency {
-	seen := make(map[string]bool)
-	var result []*RustPackageDependency
-	for _, dep := range lib {
-		seen[dep.Name] = true
-		result = append(result, dep)
-	}
-	for _, dep := range defaults {
-		if seen[dep.Name] {
-			continue
-		}
-		copied := *dep
-		result = append(result, &copied)
-	}
-	return result
 }

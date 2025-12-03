@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -93,6 +94,11 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 	}
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
+			if lib.SkipGenerate {
+				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
+				return nil
+			}
+			lib = fillDefaults(lib, cfg.Default)
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
@@ -102,10 +108,30 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 					api.ServiceConfig = serviceConfig
 				}
 			}
+			// TODO(https://github.com/googleapis/librarian/issues/2966):
+			// refactor so that the switch statement logic is in one place
+			if cfg.Language == "rust" {
+				if lib.Output == "" {
+					lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, cfg.Default.Output)
+				}
+			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
 	return fmt.Errorf("library %q not found", libraryName)
+}
+
+// deriveDefaultRustOutput returns the output path for a Rust library. If the
+// library has an explicit output path that differs from the default, it returns
+// that path. Otherwise, it derives the output from the first channel path by
+// stripping the "google/" prefix and joining with the default output. For
+// example, the default output for google/cloud/secretmanager/v1 is
+// src/generated/cloud/secretmanager/v1.
+//
+// TODO(https://github.com/googleapis/librarian/issues/2966): refactor and move
+// to internal/rust package.
+func deriveDefaultRustOutput(channel, defaultOutput string) string {
+	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
 }
 
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
@@ -141,9 +167,20 @@ func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, e
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if any file in
-// keep does not exist.
+// should contain paths relative to dir. It returns an error if the directory
+// does not exist or any file in keep does not exist.
 func cleanOutput(dir string, keep []string) error {
+	info, err := os.Stat(dir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("output directory %q does not exist; check that the output field in librarian.yaml is correct", dir)
+		}
+		return fmt.Errorf("failed to stat output directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("output path %q is not a directory", dir)
+	}
+
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
 		path := filepath.Join(dir, k)

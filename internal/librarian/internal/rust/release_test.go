@@ -15,12 +15,14 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -129,4 +131,60 @@ func checkLibraryVersion(t *testing.T, cfg *config.Config, name, wantVersion str
 		}
 	}
 	t.Errorf("library %q not found in config", name)
+}
+
+func TestLibraryByName(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		config      *config.Config
+		want        *config.Library
+		wantErr     error
+	}{
+		{
+			name:        "find_a_library",
+			libraryName: "example-library",
+			config: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "example-library"},
+					{Name: "another-library"},
+				},
+			},
+			want: &config.Library{Name: "example-library"},
+		},
+		{
+			name:        "no_library_in_config",
+			libraryName: "example-library",
+			config:      &config.Config{},
+			wantErr:     errLibraryNotFound,
+		},
+		{
+			name:        "does_not_find_a_library",
+			libraryName: "non-existent-library",
+			config: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "example-library"},
+					{Name: "another-library"},
+				},
+			},
+			wantErr: errLibraryNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := libraryByName(test.config, test.libraryName)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("libraryByName(%q): %v", test.libraryName, err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }

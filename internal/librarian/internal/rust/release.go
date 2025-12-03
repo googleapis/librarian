@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -25,6 +26,8 @@ import (
 	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/pelletier/go-toml/v2"
 )
+
+var errLibraryNotFound = errors.New("library not found")
 
 type cargoPackage struct {
 	Name    string `toml:"name"`
@@ -86,7 +89,7 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		if err := rustrelease.UpdateCargoVersion(path, newVersion); err != nil {
 			return err
 		}
-		library, err := cfg.LibraryByName(manifest.Package.Name)
+		library, err := libraryByName(cfg, manifest.Package.Name)
 		if err != nil {
 			return err
 		}
@@ -100,4 +103,17 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 		return nil, fmt.Errorf("library %q not found", name)
 	}
 	return cfg, nil
+}
+
+// libraryByName returns a library with the given name from the config.
+func libraryByName(c *config.Config, name string) (*config.Library, error) {
+	if c.Libraries == nil {
+		return nil, errLibraryNotFound
+	}
+	for _, library := range c.Libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+	return nil, errLibraryNotFound
 }

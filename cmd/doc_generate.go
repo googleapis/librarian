@@ -131,7 +131,7 @@ func processFile(cmdPath *string) error {
 	}
 
 	var pkg string
-	if filepath.Base(pkgPath) == "automation" {
+	if filepath.Base(pkgPath) == "legacyautomation" {
 		pkg = automationDescription
 	} else {
 		pkg = librarianDescription

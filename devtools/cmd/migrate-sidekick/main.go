@@ -1,0 +1,479 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Command migrate-sidekick is a tool for migrating .sidekick.toml to librarian configuration.
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
+	"github.com/pelletier/go-toml/v2"
+)
+
+const (
+	sidekickFile = ".sidekick.toml"
+)
+
+var (
+	errRepoNotFound     = errors.New("-repo flag is required")
+	errSidekickNotFound = errors.New(".sidekick.toml not found")
+	errSrcNotFound      = errors.New("src/generated directory not found")
+)
+
+// SidekickConfig represents the structure of a .sidekick.toml file.
+type SidekickConfig struct {
+	General struct {
+		SpecificationSource string `toml:"specification-source"`
+		ServiceConfig       string `toml:"service-config"`
+	} `toml:"general"`
+	Source                 map[string]interface{} `toml:"source"`
+	Codec                  map[string]interface{} `toml:"codec"`
+	DocumentationOverrides []struct {
+		ID      string `toml:"id"`
+		Match   string `toml:"match"`
+		Replace string `toml:"replace"`
+	} `toml:"documentation-overrides"`
+	PaginationOverrides []struct {
+		ID        string `toml:"id"`
+		ItemField string `toml:"item-field"`
+	} `toml:"pagination-overrides"`
+}
+
+// CargoConfig represents relevant fields from Cargo.toml.
+type CargoConfig struct {
+	Package struct {
+		Name    string      `toml:"name"`
+		Version string      `toml:"version"`
+		Publish interface{} `toml:"publish"` // Can be bool or array of strings
+	} `toml:"package"`
+}
+
+func main() {
+	if err := run(os.Args[1:]); err != nil {
+		slog.Error("migrate-sidekick failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(args []string) error {
+	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
+	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
+	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
+	if err := flagSet.Parse(args[1:]); err != nil {
+		return err
+	}
+
+	if *repoPath == "" {
+		return errRepoNotFound
+	}
+
+	slog.Info("Reading sidekick.toml...", "path", repoPath)
+
+	// Read root .sidekick.toml for defaults
+	defaults, err := readRootSidekick(*repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
+	}
+
+	// Find all .sidekick.toml files
+	sidekickFiles, err := findSidekickFiles(*repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
+	}
+
+	// Read all sidekick.toml files
+	libraries, err := readSidekickFiles(sidekickFiles)
+	if err != nil {
+		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
+	}
+
+	cfg := buildConfig(libraries, defaults)
+
+	if err := yaml.Write(*outputPath, cfg); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+	slog.Info("Wrote config to output file", "path", outputPath)
+
+	return nil
+}
+
+// readRootSidekick reads the root .sidekick.toml file and extracts defaults.
+func readRootSidekick(repoPath string) (*config.Config, error) {
+	rootPath := filepath.Join(repoPath, sidekickFile)
+	data, err := os.ReadFile(rootPath)
+	if err != nil {
+		return nil, errSidekickNotFound
+	}
+
+	// Parse as generic map to handle the dynamic package keys
+	var sidekick SidekickConfig
+	if err := toml.Unmarshal(data, &sidekick); err != nil {
+		return nil, err
+	}
+
+	releaseLevel, _ := sidekick.Codec["release-level"].(string)
+	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+	googleapisCommitSHA, _ := sidekick.Source["googleapis-sha256"].(string)
+	discoveryCommitSHA, _ := sidekick.Source["discovery-sha256"].(string)
+
+	// Parse package dependencies
+	packageDependencies := parsePackageDependencies(sidekick.Codec)
+
+	cfg := &config.Config{
+		Language: "rust",
+		Sources: &config.Sources{
+			Discovery: &config.Source{
+				Commit: discoveryCommitSHA,
+			},
+			Googleapis: &config.Source{
+				Commit: googleapisCommitSHA,
+			},
+		},
+		Default: &config.Default{
+			Output:       "src/generated/",
+			ReleaseLevel: releaseLevel,
+			Rust: &config.RustDefault{
+				PackageDependencies:     packageDependencies,
+				DisabledRustdocWarnings: strToSlice(warnings),
+			},
+		},
+	}
+
+	return cfg, nil
+}
+
+// parsePackageDependency parses a package dependency spec.
+// Format: "package=name,source=path,force-used=true,used-if=condition".
+func parsePackageDependency(name, spec string) *config.RustPackageDependency {
+	dep := &config.RustPackageDependency{
+		Name: name,
+	}
+
+	parts := strings.Split(spec, ",")
+	for _, part := range parts {
+		kv := strings.Split(part, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		key, value := strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1])
+
+		switch key {
+		case "package":
+			dep.Package = value
+		case "source":
+			dep.Source = value
+		case "force-used":
+			dep.ForceUsed = value == "true"
+		case "used-if":
+			dep.UsedIf = value
+		case "feature":
+			dep.Feature = value
+		}
+	}
+
+	return dep
+}
+
+// findSidekickFiles finds all .sidekick.toml files in the repository.
+func findSidekickFiles(repoPath string) ([]string, error) {
+	var files []string
+
+	generatedPath := filepath.Join(repoPath, "src", "generated")
+	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return errSrcNotFound
+		}
+		if !info.IsDir() && info.Name() == sidekickFile {
+			files = append(files, path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i] < files[j]
+	})
+
+	return files, nil
+}
+
+// readSidekickFiles reads all sidekick.toml files and extracts library information.
+func readSidekickFiles(files []string) (map[string]*config.Library, error) {
+	libraries := make(map[string]*config.Library)
+
+	for _, file := range files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read %s: %w", file, err)
+		}
+
+		var sidekick SidekickConfig
+		if err := toml.Unmarshal(data, &sidekick); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
+		}
+
+		// Get API path
+		apiPath := sidekick.General.SpecificationSource
+		if apiPath == "" {
+			continue
+		}
+		// Get Service config
+		serviceConfig := sidekick.General.ServiceConfig
+
+		// Read Cargo.toml in the same directory to get the actual library name
+		dir := filepath.Dir(file)
+		cargoPath := filepath.Join(dir, "Cargo.toml")
+		cargoData, err := os.ReadFile(cargoPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read %s: %w", cargoPath, err)
+		}
+
+		var cargo CargoConfig
+		if err := toml.Unmarshal(cargoData, &cargo); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %s: %w", cargoPath, err)
+		}
+
+		libraryName := cargo.Package.Name
+		if libraryName == "" {
+			continue
+		}
+
+		// Create or update library
+		lib, exists := libraries[libraryName]
+		if !exists {
+			lib = &config.Library{
+				Name: libraryName,
+			}
+			libraries[libraryName] = lib
+		}
+
+		// Add channels
+		lib.Channels = append(lib.Channels, &config.Channel{
+			Path:          apiPath,
+			ServiceConfig: serviceConfig,
+		})
+
+		// Set version from Cargo.toml (more authoritative than sidekick)
+		if cargo.Package.Version != "" {
+			lib.Version = cargo.Package.Version
+		} else if version, ok := sidekick.Codec["version"].(string); ok && lib.Version == "" {
+			lib.Version = version
+		}
+
+		// Set publish disabled from Cargo.toml
+		if publishValue, ok := cargo.Package.Publish.(bool); ok && !publishValue {
+			lib.SkipPublish = true
+		}
+
+		// Parse library-level configuration
+		if copyrightYear, ok := sidekick.Codec["copyright-year"].(string); ok && copyrightYear != "" {
+			lib.CopyrightYear = copyrightYear
+		}
+
+		// Parse Rust-specific configuration from sidekick.toml source section
+		if descriptionOverride, ok := sidekick.Source["description-override"].(string); ok {
+			lib.DescriptionOverride = descriptionOverride
+		}
+
+		titleOverride, _ := sidekick.Source["title-override"].(string)
+		roots, _ := sidekick.Source["roots"].(string)
+		includeList, _ := sidekick.Source["include-list"].(string)
+		includeIds, _ := sidekick.Source["include-ids"].(string)
+		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
+
+		// Parse Rust-specific configuration from sidekick.toml codec section
+		disabledRustdocWarnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		perServiceFeatures, _ := sidekick.Codec["per-service-features"].(string)
+		modulePath, _ := sidekick.Codec["module-path"].(string)
+		templateOverride, _ := sidekick.Codec["template-override"].(string)
+		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
+		rootName, _ := sidekick.Codec["root-name"].(string)
+		defaultFeatures, _ := sidekick.Codec["default-features"].(string)
+		extraModules, _ := sidekick.Codec["extra-modules"].(string)
+		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].(string)
+		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
+		routingRequired, _ := sidekick.Codec["routing-required"].(string)
+		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
+		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
+		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
+		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(string)
+		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
+
+		// Parse package dependencies
+		packageDeps := parsePackageDependencies(sidekick.Codec)
+
+		// Parse documentation overrides
+		var documentationOverrides []config.RustDocumentationOverride
+		for _, do := range sidekick.DocumentationOverrides {
+			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
+				ID:      do.ID,
+				Match:   do.Match,
+				Replace: do.Replace,
+			})
+		}
+
+		// Parse pagination overrides
+		var paginationOverrides []config.RustPaginationOverride
+		for _, po := range sidekick.PaginationOverrides {
+			paginationOverrides = append(paginationOverrides, config.RustPaginationOverride{
+				ID:        po.ID,
+				ItemField: po.ItemField,
+			})
+		}
+
+		// Set Rust-specific configuration only if there's actual config
+		rustCrate := &config.RustCrate{
+			RustDefault: config.RustDefault{
+				PackageDependencies:     packageDeps,
+				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
+			},
+			PerServiceFeatures:        strToBool(perServiceFeatures),
+			ModulePath:                modulePath,
+			TemplateOverride:          templateOverride,
+			TitleOverride:             titleOverride,
+			PackageNameOverride:       packageNameOverride,
+			RootName:                  rootName,
+			Roots:                     strToSlice(roots),
+			DefaultFeatures:           strToSlice(defaultFeatures),
+			ExtraModules:              strToSlice(extraModules),
+			IncludeList:               strToSlice(includeList),
+			IncludedIds:               strToSlice(includeIds),
+			SkippedIds:                strToSlice(skippedIds),
+			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings),
+			HasVeneer:                 strToBool(hasVeneer),
+			RoutingRequired:           strToBool(routingRequired),
+			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
+			GenerateSetterSamples:     strToBool(generateSetterSamples),
+			PostProcessProtos:         postProcessProtos,
+			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
+			DocumentationOverrides:    documentationOverrides,
+			PaginationOverrides:       paginationOverrides,
+			NameOverrides:             nameOverrides,
+		}
+		if !isEmptyRustCrate(rustCrate) {
+			lib.Rust = rustCrate
+		}
+	}
+
+	return libraries, nil
+}
+
+// deriveLibraryName derives a library name from an API path.
+// For Rust: see go/cloud-rust:on-crate-names.
+func deriveLibraryName(apiPath string) string {
+	trimmedPath := strings.TrimPrefix(apiPath, "google/")
+	trimmedPath = strings.TrimPrefix(trimmedPath, "cloud/")
+	trimmedPath = strings.TrimPrefix(trimmedPath, "devtools/")
+	if strings.HasPrefix(trimmedPath, "api/apikeys/") {
+		trimmedPath = strings.TrimPrefix(trimmedPath, "api/")
+	}
+
+	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
+}
+
+// buildConfig builds the complete config from libraries.
+func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
+	cfg := defaults
+	// Convert libraries map to sorted slice, applying new schema logic
+	var libList []*config.Library
+
+	for _, lib := range libraries {
+		// Get the API path for this library
+		apiPath := ""
+		if len(lib.Channels) > 0 {
+			apiPath = lib.Channels[0].Path
+		}
+
+		// Derive expected library name from API path
+		expectedName := deriveLibraryName(apiPath)
+		nameMatchesConvention := lib.Name == expectedName
+		// Check if library has extra configuration beyond just name/api/version
+		hasExtraConfig := lib.CopyrightYear != "" ||
+			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
+				len(lib.Rust.PackageDependencies) > 0 || lib.Rust.GenerateSetterSamples ||
+				len(lib.Rust.PaginationOverrides) > 0 || lib.Rust.NameOverrides != ""))
+		// Only include in libraries section if:
+		// 1. Name doesn't match expected naming convention (name override)
+		// 2. Library has extra configuration
+		// 3. Library spans multiple APIs
+		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
+			libCopy := *lib
+			libList = append(libList, &libCopy)
+		}
+	}
+
+	// Sort libraries by name
+	sort.Slice(libList, func(i, j int) bool {
+		return libList[i].Name < libList[j].Name
+	})
+
+	cfg.Libraries = libList
+
+	return cfg
+}
+
+func parsePackageDependencies(codec map[string]interface{}) []*config.RustPackageDependency {
+	var packageDeps []*config.RustPackageDependency
+	for key, value := range codec {
+		if !strings.HasPrefix(key, "package:") {
+			continue
+		}
+		pkgName := strings.TrimPrefix(key, "package:")
+		pkgSpec, ok := value.(string)
+		if !ok {
+			continue
+		}
+
+		dep := parsePackageDependency(pkgName, pkgSpec)
+		if dep != nil {
+			packageDeps = append(packageDeps, dep)
+		}
+	}
+
+	// Sort package dependencies by name
+	sort.Slice(packageDeps, func(i, j int) bool {
+		return packageDeps[i].Name < packageDeps[j].Name
+	})
+
+	return packageDeps
+}
+
+func strToBool(s string) bool {
+	return s == "true"
+}
+
+func strToSlice(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	return strings.Split(s, ",")
+}
+
+func isEmptyRustCrate(r *config.RustCrate) bool {
+	return reflect.DeepEqual(r, &config.RustCrate{})
+}

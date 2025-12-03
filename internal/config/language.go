@@ -39,9 +39,6 @@ type RustCrate struct {
 	// TitleOverride overrides the crate title.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
-	// DescriptionOverride overrides the crate description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// PackageNameOverride overrides the package name.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`
 
@@ -82,7 +79,7 @@ type RustCrate struct {
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
-	PostProcessProtos bool `yaml:"post_process_protos,omitempty"`
+	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
@@ -102,7 +99,8 @@ type RustCrate struct {
 
 // RustPackageDependency represents a package dependency configuration.
 type RustPackageDependency struct {
-	// Name is the dependency name.
+	// Name is the dependency name. It is listed first so it appears at the top
+	// of each dependency entry in YAML.
 	Name string `yaml:"name"`
 
 	// Ignore prevents this package from being mapped to an external crate.

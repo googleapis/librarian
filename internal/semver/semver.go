@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package legacysemver provides functionality for parsing, comparing, and manipulating
+// Package semver provides functionality for parsing, comparing, and manipulating
 // semantic version strings according to the SemVer 2.0.0 spec.
-package legacysemver
+package semver
 
 import (
 	"fmt"
@@ -32,14 +32,21 @@ type Version struct {
 	// PrereleaseSeparator is the separator between the pre-release string and
 	// its version (e.g., ".").
 	PrereleaseSeparator string
-	// PrereleaseNumber is the numeric part of the pre-release string (e.g., "1", "21").
-	PrereleaseNumber string
+	// PrereleaseNumber is the numeric part of the pre-release segment of the
+	// version string (e.g., the 1 in "alpha.1"). Zero is a valid pre-release
+	// number. If there is no numeric part in the pre-release segment, this
+	// field is nil.
+	PrereleaseNumber *int
 }
 
 // semverRegex defines format for semantic version.
 // Regex from https://semver.org/, with buildmetadata part removed.
 // It uses named capture groups for major, minor, patch, and prerelease.
 var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
+
+// unsegmentedPrereleaseRegexp extracts the prerelease number, if present, in the
+// prerelease portion of the SemVer version parsed by [semverRegex].
+var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
@@ -78,13 +85,21 @@ func Parse(versionString string) (*Version, error) {
 		if i := strings.LastIndex(prerelease, "."); i != -1 {
 			v.Prerelease = prerelease[:i]
 			v.PrereleaseSeparator = "."
-			v.PrereleaseNumber = prerelease[i+1:]
+			num, err := strconv.Atoi(prerelease[i+1:])
+			if err != nil {
+				return nil, fmt.Errorf("invalid prerelease number: %w", err)
+			}
+			v.PrereleaseNumber = &num
 		} else {
-			re := regexp.MustCompile(`^(.*?)(\d+)$`)
-			matches := re.FindStringSubmatch(prerelease)
+			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
 			if len(matches) == 3 {
 				v.Prerelease = matches[1]
-				v.PrereleaseNumber = matches[2]
+				num, err := strconv.Atoi(matches[2])
+				if err != nil {
+					// This should not happen if the regex is correct.
+					return nil, fmt.Errorf("invalid prerelease number: %w", err)
+				}
+				v.PrereleaseNumber = &num
 			} else {
 				v.Prerelease = prerelease
 			}
@@ -130,11 +145,21 @@ func (v *Version) Compare(other *Version) int {
 		return 1
 	}
 	// prerelease number (e.g. "alpha1" vs "alpha2")
-	if v.PrereleaseNumber < other.PrereleaseNumber {
+	// Note: Lack of prerelease number is considered lower precedence than
+	// the same prerelease when it has a number - https://semver.org/#spec-item-11.
+	if v.PrereleaseNumber == nil && other.PrereleaseNumber != nil {
 		return -1
 	}
-	if v.PrereleaseNumber > other.PrereleaseNumber {
+	if v.PrereleaseNumber != nil && other.PrereleaseNumber == nil {
 		return 1
+	}
+	if v.PrereleaseNumber != nil && other.PrereleaseNumber != nil {
+		if *v.PrereleaseNumber < *other.PrereleaseNumber {
+			return -1
+		}
+		if *v.PrereleaseNumber > *other.PrereleaseNumber {
+			return 1
+		}
 	}
 	return 0
 }
@@ -143,26 +168,50 @@ func (v *Version) Compare(other *Version) int {
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
-		version += "-" + v.Prerelease + v.PrereleaseSeparator + v.PrereleaseNumber
+		version += "-" + v.Prerelease
+		if v.PrereleaseNumber != nil {
+			version += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
+		}
 	}
 	return version
 }
 
 // incrementPrerelease increments the pre-release version number, or appends
 // one if it doesn't exist.
-func (v *Version) incrementPrerelease() error {
-	if v.PrereleaseNumber == "" {
+func (v *Version) incrementPrerelease() {
+	if v.PrereleaseNumber == nil {
 		v.PrereleaseSeparator = "."
-		v.PrereleaseNumber = "1"
-		return nil
+		// Initialize a new int pointer set to 0. Fallthrough to increment to 1.
+		// We prefer the first prerelease to use 1 instead of 0.
+		v.PrereleaseNumber = new(int)
 	}
-	num, err := strconv.Atoi(v.PrereleaseNumber)
-	if err != nil {
-		// This should not happen if Parse is correct.
-		return fmt.Errorf("invalid prerelease version: %w", err)
+	*v.PrereleaseNumber++
+}
+
+func (v *Version) bump(highestChange ChangeLevel) {
+	if v.Prerelease != "" {
+		// Only bump the prerelease version number.
+		v.incrementPrerelease()
+		return
 	}
-	v.PrereleaseNumber = strconv.Itoa(num + 1)
-	return nil
+
+	// Bump the version core.
+	// Breaking changes and feat result in minor bump for pre-1.0.0 versions.
+	if (v.Major == 0 && highestChange == Major) || highestChange == Minor {
+		v.Minor++
+		v.Patch = 0
+		return
+	}
+	if highestChange == Patch {
+		v.Patch++
+		return
+	}
+	if highestChange == Major {
+		v.Major++
+		v.Minor = 0
+		v.Patch = 0
+		return
+	}
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
@@ -218,36 +267,7 @@ func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error
 		return "", fmt.Errorf("failed to parse current version: %w", err)
 	}
 
-	// Handle prerelease versions
-	if currentSemVer.Prerelease != "" {
-		if err := currentSemVer.incrementPrerelease(); err != nil {
-			return "", err
-		}
-		return currentSemVer.String(), nil
-	}
-
-	// Handle standard versions
-	if currentSemVer.Major == 0 {
-		// breaking change and feat result in minor bump for pre-1.0.0
-		if highestChange == Major || highestChange == Minor {
-			currentSemVer.Minor++
-			currentSemVer.Patch = 0
-		} else {
-			currentSemVer.Patch++
-		}
-	} else {
-		switch highestChange {
-		case Major:
-			currentSemVer.Major++
-			currentSemVer.Minor = 0
-			currentSemVer.Patch = 0
-		case Minor:
-			currentSemVer.Minor++
-			currentSemVer.Patch = 0
-		case Patch:
-			currentSemVer.Patch++
-		}
-	}
+	currentSemVer.bump(highestChange)
 
 	return currentSemVer.String(), nil
 }

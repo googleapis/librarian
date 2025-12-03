@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package legacysemver
+package semver
 
 import (
 	"strings"
@@ -20,6 +20,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func ptr(i int) *int {
+	return &i
+}
 
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
@@ -53,7 +57,7 @@ func TestParse(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    "1",
+				PrereleaseNumber:    ptr(1),
 			},
 		},
 		{
@@ -64,7 +68,7 @@ func TestParse(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: "21",
+				PrereleaseNumber: ptr(21),
 			},
 		},
 		{
@@ -82,6 +86,12 @@ func TestParse(t *testing.T) {
 			version:       "1.2",
 			wantErr:       true,
 			wantErrPhrase: "invalid version format",
+		},
+		{
+			name:          "invalid prerelease number with separator",
+			version:       "1.2.3-rc.abc",
+			wantErr:       true,
+			wantErrPhrase: "invalid prerelease number",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -128,7 +138,7 @@ func TestVersion_String(t *testing.T) {
 				Patch:               3,
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
-				PrereleaseNumber:    "1",
+				PrereleaseNumber:    ptr(1),
 			},
 			expected: "1.2.3-alpha.1",
 		},
@@ -139,7 +149,7 @@ func TestVersion_String(t *testing.T) {
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
-				PrereleaseNumber: "21",
+				PrereleaseNumber: ptr(21),
 			},
 			expected: "1.2.3-beta21",
 		},
@@ -367,6 +377,13 @@ func TestCompare(t *testing.T) {
 			name:     "greater than prerelease without number",
 			versionA: "1.2.3-alpha1",
 			versionB: "1.2.3-alpha",
+			want:     1,
+		},
+		{
+			// Note: This is SemVer compliant, but may seem odd in practice.
+			name:     "greater prerelease version core than non-prerelease version core",
+			versionA: "1.2.3-alpha1",
+			versionB: "1.2.0",
 			want:     1,
 		},
 	} {
