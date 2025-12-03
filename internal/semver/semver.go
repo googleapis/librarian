@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package legacysemver provides functionality for parsing, comparing, and manipulating
+// Package semver provides functionality for parsing, comparing, and manipulating
 // semantic version strings according to the SemVer 2.0.0 spec.
-package legacysemver
+package semver
 
 import (
 	"fmt"
@@ -32,7 +32,10 @@ type Version struct {
 	// PrereleaseSeparator is the separator between the pre-release string and
 	// its version (e.g., ".").
 	PrereleaseSeparator string
-	// PrereleaseNumber is the numeric part of the pre-release string (e.g., "1", "21").
+	// PrereleaseNumber is the numeric part of the pre-release segment of the
+	// version string (e.g., the 1 in "alpha.1"). Zero is a valid pre-release
+	// number. If there is no numeric part in the pre-release segment, this
+	// field is nil.
 	PrereleaseNumber *int
 }
 
@@ -178,6 +181,8 @@ func (v *Version) String() string {
 func (v *Version) incrementPrerelease() {
 	if v.PrereleaseNumber == nil {
 		v.PrereleaseSeparator = "."
+		// Initialize a new int pointer set to 0. Fallthrough to increment to 1.
+		// We prefer the first prerelease to use 1 instead of 0.
 		v.PrereleaseNumber = new(int)
 	}
 	*v.PrereleaseNumber++

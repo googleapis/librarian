@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	legacysemver "github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 func TestShouldIncludeForRelease(t *testing.T) {
@@ -559,7 +559,7 @@ func TestGetHighestChange(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		commits        []*legacygitrepo.ConventionalCommit
-		expectedChange legacysemver.ChangeLevel
+		expectedChange semver.ChangeLevel
 	}{
 		{
 			name: "major change",
@@ -568,7 +568,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat"},
 				{Type: "fix"},
 			},
-			expectedChange: legacysemver.Major,
+			expectedChange: semver.Major,
 		},
 		{
 			name: "minor change",
@@ -576,14 +576,14 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat"},
 				{Type: "fix"},
 			},
-			expectedChange: legacysemver.Minor,
+			expectedChange: semver.Minor,
 		},
 		{
 			name: "patch change",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "fix"},
 			},
-			expectedChange: legacysemver.Patch,
+			expectedChange: semver.Patch,
 		},
 		{
 			name: "no change",
@@ -591,12 +591,12 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "docs"},
 				{Type: "chore"},
 			},
-			expectedChange: legacysemver.None,
+			expectedChange: semver.None,
 		},
 		{
 			name:           "no commits",
 			commits:        []*legacygitrepo.ConventionalCommit{},
-			expectedChange: legacysemver.None,
+			expectedChange: semver.None,
 		},
 		{
 			name: "nested commit forces minor bump",
@@ -604,7 +604,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "fix"},
 				{Type: "feat", IsNested: true},
 			},
-			expectedChange: legacysemver.Minor,
+			expectedChange: semver.Minor,
 		},
 		{
 			name: "nested commit with breaking change forces minor bump",
@@ -612,7 +612,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat", IsBreaking: true, IsNested: true},
 				{Type: "feat"},
 			},
-			expectedChange: legacysemver.Minor,
+			expectedChange: semver.Minor,
 		},
 		{
 			name: "major change and nested commit",
@@ -620,7 +620,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "feat", IsBreaking: true},
 				{Type: "fix", IsNested: true},
 			},
-			expectedChange: legacysemver.Major,
+			expectedChange: semver.Major,
 		},
 		{
 			name: "nested commit before major change",
@@ -628,7 +628,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "fix", IsNested: true},
 				{Type: "feat", IsBreaking: true},
 			},
-			expectedChange: legacysemver.Major,
+			expectedChange: semver.Major,
 		},
 		{
 			name: "nested commit with only fixes forces minor bump",
@@ -636,7 +636,7 @@ func TestGetHighestChange(t *testing.T) {
 				{Type: "fix"},
 				{Type: "fix", IsNested: true},
 			},
-			expectedChange: legacysemver.Minor,
+			expectedChange: semver.Minor,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

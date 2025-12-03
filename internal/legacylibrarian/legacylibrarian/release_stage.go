@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacydocker"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	legacysemver "github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 type stageRunner struct {
@@ -248,7 +248,7 @@ func (r *stageRunner) updateLibrary(library *legacyconfig.LibraryState, commits 
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
 		slog.Info("library version override inputted", "currentVersion", library.Version, "inputVersion", r.libraryVersion)
-		nextVersion = legacysemver.MaxVersion(library.Version, r.libraryVersion)
+		nextVersion = semver.MaxVersion(library.Version, r.libraryVersion)
 		slog.Debug("determined the library's next version from version input", "library", library.ID, "nextVersion", nextVersion)
 		// Currently, nextVersion is the max of current version or input version. If nextVersion is equal to the current version,
 		// then the input version is either equal or less than current version and cannot be used for release
@@ -304,7 +304,7 @@ func (r *stageRunner) determineNextVersion(commits []*legacygitrepo.Conventional
 	}
 
 	// Compare versions and pick latest
-	return legacysemver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
+	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
 }
 
 // toCommit converts a slice of legacygitrepo.ConventionalCommit to a slice of legacyconfig.Commit.

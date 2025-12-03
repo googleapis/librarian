@@ -22,7 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	legacysemver "github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 // getConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the
@@ -171,25 +171,25 @@ func isUnderAnyPath(file string, paths []string) bool {
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
 func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string) (string, error) {
 	highestChange := getHighestChange(commits)
-	return legacysemver.DeriveNext(highestChange, currentVersion)
+	return semver.DeriveNext(highestChange, currentVersion)
 }
 
 // getHighestChange determines the highest-ranking change type from a slice of commits.
-func getHighestChange(commits []*legacygitrepo.ConventionalCommit) legacysemver.ChangeLevel {
-	highestChange := legacysemver.None
+func getHighestChange(commits []*legacygitrepo.ConventionalCommit) semver.ChangeLevel {
+	highestChange := semver.None
 	for _, commit := range commits {
-		var currentChange legacysemver.ChangeLevel
+		var currentChange semver.ChangeLevel
 		switch {
 		case commit.IsNested:
 			// ignore nested commit type for version bump
 			// this allows for always increase minor version for generation PR
-			currentChange = legacysemver.Minor
+			currentChange = semver.Minor
 		case commit.IsBreaking:
-			currentChange = legacysemver.Major
+			currentChange = semver.Major
 		case commit.Type == "feat":
-			currentChange = legacysemver.Minor
+			currentChange = semver.Minor
 		case commit.Type == "fix":
-			currentChange = legacysemver.Patch
+			currentChange = semver.Patch
 		}
 		if currentChange > highestChange {
 			highestChange = currentChange
