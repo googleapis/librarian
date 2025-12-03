@@ -51,9 +51,6 @@ type RustCrate struct {
 	// DefaultFeatures is a list of default features to enable.
 	DefaultFeatures []string `yaml:"default_features,omitempty"`
 
-	// ExtraModules is a list of extra modules to include.
-	ExtraModules []string `yaml:"extra_modules,omitempty"`
-
 	// IncludeList is a list of items to include.
 	IncludeList []string `yaml:"include_list,omitempty"`
 
