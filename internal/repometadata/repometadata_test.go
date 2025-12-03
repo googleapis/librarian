@@ -25,103 +25,85 @@ import (
 )
 
 func TestGenerateRepoMetadata(t *testing.T) {
-	serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+			},
+			want: RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				IssueTracker:         "",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				LibraryType:          "GAPIC_AUTO",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+			},
+		},
+		{
+			name: "description override",
+			library: &config.Library{
+				Name:                "google-cloud-secret-manager",
+				ReleaseLevel:        "stable",
+				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+			},
+			want: RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				IssueTracker:         "",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				LibraryType:          "GAPIC_AUTO",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores, manages, and secures access to application secrets.",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
 
-	tmpDir := t.TempDir()
-	outDir := filepath.Join(tmpDir, "output")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+			tmpDir := t.TempDir()
+			outDir := filepath.Join(tmpDir, "output")
+			if err := os.MkdirAll(outDir, 0755); err != nil {
+				t.Fatal(err)
+			}
 
-	library := &config.Library{
-		Name:         "google-cloud-secret-manager",
-		ReleaseLevel: "stable",
-	}
+			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir, []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"}); err != nil {
+				t.Fatal(err)
+			}
 
-	if err := GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir, []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"}); err != nil {
-		t.Fatal(err)
-	}
+			// Read back the generated metadata
+			data, err := os.ReadFile(filepath.Join(outDir, ".repo-metadata.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	// Read back the generated metadata
-	data, err := os.ReadFile(filepath.Join(outDir, ".repo-metadata.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+			var got RepoMetadata
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatal(err)
+			}
 
-	var got RepoMetadata
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatal(err)
-	}
-
-	want := RepoMetadata{
-		Name:                 "secretmanager",
-		NamePretty:           "Secret Manager",
-		ProductDocumentation: "https://cloud.google.com/secret-manager/",
-		ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-		IssueTracker:         "",
-		ReleaseLevel:         "stable",
-		Language:             "python",
-		LibraryType:          "GAPIC_AUTO",
-		Repo:                 "googleapis/google-cloud-python",
-		DistributionName:     "google-cloud-secret-manager",
-		APIID:                "secretmanager.googleapis.com",
-		APIShortname:         "secretmanager",
-		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestGenerateRepoMetadata_WithOverrides(t *testing.T) {
-	serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
-
-	tmpDir := t.TempDir()
-	outDir := filepath.Join(tmpDir, "output")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:                "google-cloud-secret-manager",
-		ReleaseLevel:        "stable",
-		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
-	}
-
-	if err := GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir, []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"}); err != nil {
-		t.Fatal(err)
-	}
-
-	// Read back the generated metadata
-	data, err := os.ReadFile(filepath.Join(outDir, ".repo-metadata.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var got RepoMetadata
-	if err := json.Unmarshal(data, &got); err != nil {
-		t.Fatal(err)
-	}
-
-	want := RepoMetadata{
-		Name:                 "secretmanager",
-		NamePretty:           "Secret Manager",
-		ProductDocumentation: "https://cloud.google.com/secret-manager/",
-		ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-		IssueTracker:         "",
-		ReleaseLevel:         "stable",
-		Language:             "python",
-		LibraryType:          "GAPIC_AUTO",
-		Repo:                 "googleapis/google-cloud-python",
-		DistributionName:     "google-cloud-secret-manager",
-		APIID:                "secretmanager.googleapis.com",
-		APIShortname:         "secretmanager",
-		APIDescription:       "Stores, manages, and secures access to application secrets.",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
