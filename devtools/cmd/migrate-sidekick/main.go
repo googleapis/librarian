@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
-	yamlv3 "gopkg.in/yaml.v3"
 )
 
 const (
@@ -84,7 +83,7 @@ func run(args []string) error {
 
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
-	outputPath := flagSet.String("output", "", "Output file path (default: stdout)")
+	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -117,21 +116,10 @@ func run(args []string) error {
 	cfg := buildConfig(libraries, defaults)
 
 	// Write output
-	if *outputPath == "" {
-		// Write to stdout
-		enc := yamlv3.NewEncoder(os.Stdout)
-		enc.SetIndent(2)
-		defer enc.Close()
-
-		if err := enc.Encode(cfg); err != nil {
-			return fmt.Errorf("failed to encode config: %w", err)
-		}
-	} else {
-		if err := yaml.Write(*outputPath, cfg); err != nil {
-			return fmt.Errorf("failed to write config: %w", err)
-		}
-		slog.Info("Wrote config to output file", "path", outputPath)
+	if err := yaml.Write(*outputPath, cfg); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
 	}
+	slog.Info("Wrote config to output file", "path", outputPath)
 
 	return nil
 }
