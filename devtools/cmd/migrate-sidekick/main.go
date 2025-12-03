@@ -141,6 +141,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
 
 	cfg := &config.Config{
+		Language: "rust",
 		Sources: &config.Sources{
 			Discovery: &config.Source{
 				Commit: discoveryCommitSHA,

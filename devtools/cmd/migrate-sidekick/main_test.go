@@ -34,6 +34,7 @@ func TestReadRootSidekick(t *testing.T) {
 			name: "success",
 			path: "testdata/root-sidekick/success",
 			want: &config.Config{
+				Language: "rust",
 				Sources: &config.Sources{
 					Discovery:  &config.Source{Commit: "67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212"},
 					Googleapis: &config.Source{Commit: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085"},
