@@ -784,7 +784,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez].Value
-			constDefault = !defaultValues[field.Typez].IsConst
+			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
 	state := annotate.state
