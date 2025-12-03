@@ -770,8 +770,8 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	// Calculate the default field value.
 	defaultValue := ""
 	constDefault := true
-	required := slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED)
-	if implicitPresence && !required {
+	fieldRequired := slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED)
+	if implicitPresence && !fieldRequired {
 		switch {
 		case field.Repeated:
 			defaultValue = "const []"
@@ -787,19 +787,14 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			constDefault = !defaultValues[field.Typez].IsConst
 		}
 	}
-
-	if field.Name == "f_bytes" {
-		fmt.Printf("field: %+v  - %s\n", field, defaultValue)
-	}
 	state := annotate.state
-
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
 		DocLines:              formatDocComments(field.Documentation, state),
 		Required:              implicitPresence,
 		Nullable:              !implicitPresence,
-		FieldBehaviorRequired: required,
+		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
 		ToJson:                createToJsonLine(field, state, implicitPresence),
