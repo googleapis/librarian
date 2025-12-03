@@ -41,9 +41,6 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
-	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
-	DefaultVersion string `json:"default_version,omitempty"`
-
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
 
@@ -80,13 +77,6 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		return fmt.Errorf("failed to read service config: %w", err)
 	}
 
-	// Select the default version from all API paths, preferring stable versions,
-	// but with the ability to override.
-	defaultVersion := library.DefaultVersionOverride
-	if defaultVersion == "" {
-		defaultVersion = selectDefaultVersion(channels)
-	}
-
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(svcCfg.GetName()))
 
 	metadata := &RepoMetadata{
@@ -98,7 +88,6 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		LibraryType:         "GAPIC_AUTO",
 		Repo:                repo,
 		DistributionName:    library.Name,
-		DefaultVersion:      defaultVersion,
 	}
 
 	if svcCfg.GetPublishing() != nil {
@@ -141,94 +130,6 @@ func buildClientDocURL(language, serviceName string) string {
 	default:
 		return ""
 	}
-}
-
-// selectDefaultVersion selects the best default version from a list of
-// channels. It prefers stable versions (v1, v2) over beta/alpha versions
-// (v1beta1, v1alpha1). Among stable versions, it selects the highest.
-// Among beta versions, it selects the highest.
-func selectDefaultVersion(channels []string) string {
-	if len(channels) == 0 {
-		return ""
-	}
-
-	var (
-		stableVersions []string
-		betaVersions   []string
-	)
-
-	for _, channel := range channels {
-		version := deriveVersionComponent(channel)
-		if version == "" {
-			continue
-		}
-		// Check if it's a stable version (vN where N is just digits)
-		if isStableVersion(version) {
-			stableVersions = append(stableVersions, version)
-		} else {
-			betaVersions = append(betaVersions, version)
-		}
-	}
-
-	// Prefer stable versions
-	if len(stableVersions) > 0 {
-		return selectHighestVersion(stableVersions)
-	}
-	if len(betaVersions) > 0 {
-		return selectHighestVersion(betaVersions)
-	}
-	return ""
-}
-
-// isStableVersion returns true if the version is stable (e.g., v1, v2) and not beta/alpha.
-func isStableVersion(version string) bool {
-	// If the version doesn't start with "v" or is *just* "v",
-	// it's not a stable version.
-	if !strings.HasPrefix(version, "v") || len(version) < 2 {
-		return false
-	}
-	versionNum := strings.TrimPrefix(version, "v")
-	// Check if it contains only digits (stable) or has alpha/beta (not stable)
-	for _, r := range versionNum {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-// selectHighestVersion selects the highest version from a list of versions.
-// For example, given ["v1", "v2", "v3"], it returns "v3".
-// For beta versions like ["v1beta1", "v1beta2"], it returns "v1beta2".
-func selectHighestVersion(versions []string) string {
-	if len(versions) == 0 {
-		return ""
-	}
-	if len(versions) == 1 {
-		return versions[0]
-	}
-
-	// Simple lexicographic comparison works for most cases
-	// v2 > v1, v1beta2 > v1beta1, etc.
-	highest := versions[0]
-	for _, v := range versions[1:] {
-		if v > highest {
-			highest = v
-		}
-	}
-	return highest
-}
-
-// deriveVersionComponent extracts the version from a channel.
-// Example: "google/cloud/secretmanager/v1" -> "v1".
-func deriveVersionComponent(channel string) string {
-	lastIdx := strings.LastIndex(channel, "/")
-	lastPart := channel[lastIdx+1:]
-	// Check if it looks like a version (v1, v1beta1, etc.)
-	if strings.HasPrefix(lastPart, "v") {
-		return lastPart
-	}
-	return ""
 }
 
 // extractBaseProductURL extracts the base product URL from a documentation URI.

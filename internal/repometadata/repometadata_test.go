@@ -84,7 +84,6 @@ publishing:
 		Repo:                 "googleapis/google-cloud-python",
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
-		DefaultVersion:       "v2",
 		APIShortname:         "secretmanager",
 		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
@@ -123,10 +122,9 @@ publishing:
 	}
 
 	library := &config.Library{
-		Name:                   "google-cloud-secret-manager",
-		ReleaseLevel:           "stable",
-		DescriptionOverride:    "Stores, manages, and secures access to application secrets.",
-		DefaultVersionOverride: "v1",
+		Name:                "google-cloud-secret-manager",
+		ReleaseLevel:        "stable",
+		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 	}
 
 	if err := GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir, []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"}); err != nil {
@@ -156,156 +154,12 @@ publishing:
 		Repo:                 "googleapis/google-cloud-python",
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
-		DefaultVersion:       "v1",
 		APIShortname:         "secretmanager",
 		APIDescription:       "Stores, manages, and secures access to application secrets.",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestSelectDefaultVersion(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		channels []string
-		want     string
-	}{
-		{
-			"prefer v1 over v1beta2",
-			[]string{"google/cloud/secretmanager/v1beta2", "google/cloud/secretmanager/v1"},
-			"v1",
-		},
-		{
-			"prefer v1 over v1beta1",
-			[]string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v1beta1"},
-			"v1",
-		},
-		{
-			"prefer v2 over v1",
-			[]string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v2"},
-			"v2",
-		},
-		{
-			"select highest beta when no stable",
-			[]string{"google/cloud/secretmanager/v1beta1", "google/cloud/secretmanager/v1beta2"},
-			"v1beta2",
-		},
-		{
-			"single version",
-			[]string{"google/cloud/secretmanager/v1"},
-			"v1",
-		},
-		{
-			"multiple APIs with different versions",
-			[]string{
-				"google/cloud/secretmanager/v1",
-				"google/cloud/secretmanager/v1beta2",
-				"google/cloud/secrets/v1beta1",
-			},
-			"v1",
-		},
-		{
-			"mix of non-versioned and versioned",
-			[]string{
-				"google/cloud/logging/type",
-				"google/cloud/logging/v1",
-				"google/cloud/logging/v1beta",
-			},
-			"v1",
-		},
-		{
-			"no numeric versions",
-			[]string{
-				"google/cloud/logging/type",
-			},
-			"",
-		},
-		{
-			"empty",
-			[]string{},
-			"",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := selectDefaultVersion(test.channels)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
-func TestIsStableVersion(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		version string
-		want    bool
-	}{
-		{
-			"stable simple",
-			"v1",
-			true,
-		},
-		{
-			"stable multiple digits",
-			"v12",
-			true,
-		},
-		{
-			"normal beta",
-			"v2beta",
-			false,
-		},
-		{
-			"just v",
-			"v",
-			false,
-		},
-		{
-			"empty",
-			"",
-			false,
-		},
-		{
-			"non-v-prefix",
-			"m1",
-			false,
-		},
-		{
-			"multiple v prefix",
-			"vv1",
-			false,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := isStableVersion(test.version)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestDeriveVersionComponent(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		channel string
-		want    string
-	}{
-		{"v1", "google/cloud/secretmanager/v1", "v1"},
-		{"v1beta1", "google/cloud/aiplatform/v1beta1", "v1beta1"},
-		{"v2", "google/analytics/admin/v2", "v2"},
-		{"no version", "google/cloud/location", ""},
-		{"empty", "", ""},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deriveVersionComponent(test.channel)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
-			}
-		})
 	}
 }
 

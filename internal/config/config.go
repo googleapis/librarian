@@ -129,10 +129,6 @@ type Library struct {
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
 
-	// DefaultVersionOverride overrides the default version (e.g. if v1
-	// is still the default despite v2 being available).
-	DefaultVersionOverride string `yaml:"default_version_override,omitempty"`
-
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
