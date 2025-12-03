@@ -112,10 +112,8 @@ func run(args []string) error {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
 
-	// Build config
 	cfg := buildConfig(libraries, defaults)
 
-	// Write output
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
