@@ -166,6 +166,9 @@ func (lib *Library) Fill(d *Default) {
 	if lib.ReleaseLevel == "" {
 		lib.ReleaseLevel = d.ReleaseLevel
 	}
+	if lib.Transport == "" {
+		lib.Transport = d.Transport
+	}
 	if d.Rust != nil {
 		lib.fillRust(d)
 	}
