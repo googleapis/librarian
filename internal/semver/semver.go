@@ -196,26 +196,21 @@ func (v *Version) bump(highestChange ChangeLevel) {
 	}
 
 	// Bump the version core.
-	if v.Major == 0 {
-		// breaking change and feat result in minor bump for pre-1.0.0
-		if highestChange == Major || highestChange == Minor {
-			v.Minor++
-			v.Patch = 0
-		} else {
-			v.Patch++
-		}
-	} else {
-		switch highestChange {
-		case Major:
-			v.Major++
-			v.Minor = 0
-			v.Patch = 0
-		case Minor:
-			v.Minor++
-			v.Patch = 0
-		case Patch:
-			v.Patch++
-		}
+	// Breaking changes and feat result in minor bump for pre-1.0.0 versions.
+	if (v.Major == 0 && highestChange == Major) || highestChange == Minor {
+		v.Minor++
+		v.Patch = 0
+		return
+	}
+	if highestChange == Patch {
+		v.Patch++
+		return
+	}
+	if highestChange == Major {
+		v.Major++
+		v.Minor = 0
+		v.Patch = 0
+		return
 	}
 }
 
