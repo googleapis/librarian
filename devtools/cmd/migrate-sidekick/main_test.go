@@ -174,7 +174,6 @@ func TestReadSidekickFiles(t *testing.T) {
 						RootName:                  "conformance-root",
 						Roots:                     []string{"discovery", "googleapis"},
 						DefaultFeatures:           []string{"instances", "projects"},
-						ExtraModules:              []string{"errors", "operation"},
 						IncludeList:               []string{"api.proto", "source_context.proto", "type.proto", "descriptor.proto"},
 						IncludedIds:               []string{".google.iam.v2.Resource"},
 						SkippedIds:                []string{".google.iam.v1.ResourcePolicyMember"},

@@ -313,7 +313,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
 		rootName, _ := sidekick.Codec["root-name"].(string)
 		defaultFeatures, _ := sidekick.Codec["default-features"].(string)
-		extraModules, _ := sidekick.Codec["extra-modules"].(string)
 		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].(string)
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
@@ -359,7 +358,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			RootName:                  rootName,
 			Roots:                     strToSlice(roots),
 			DefaultFeatures:           strToSlice(defaultFeatures),
-			ExtraModules:              strToSlice(extraModules),
 			IncludeList:               strToSlice(includeList),
 			IncludedIds:               strToSlice(includeIds),
 			SkippedIds:                strToSlice(skippedIds),
