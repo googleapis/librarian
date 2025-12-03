@@ -28,6 +28,10 @@ import (
 var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
+	sourceRepos    = map[string]*fetch.Repo{
+		"googleapis": {Org: "googleapis", Repo: "googleapis"},
+		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager"},
+	}
 )
 
 // updateCommand returns the `update` subcommand.
@@ -78,10 +82,12 @@ func runUpdate(all bool, sourceName string) error {
 
 	var sourceNamesToProcess []string
 	if all {
-		sourceNamesToProcess = []string{"googleapis", "discovery"}
+		for name := range sourceRepos {
+			sourceNamesToProcess = append(sourceNamesToProcess, name)
+		}
 	} else {
 		lowerSourceName := strings.ToLower(sourceName)
-		if _, ok := sourcesMap[lowerSourceName]; !ok {
+		if _, ok := sourceRepos[lowerSourceName]; !ok {
 			return fmt.Errorf("unknown source: %s", sourceName)
 		}
 		sourceNamesToProcess = []string{lowerSourceName}
@@ -102,9 +108,10 @@ func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source
 	if source == nil {
 		return nil
 	}
-	repo, err := repoForSource(name)
-	if err != nil {
-		return err
+
+	repo, ok := sourceRepos[name]
+	if !ok {
+		return fmt.Errorf("unknown source: %s", name)
 	}
 
 	oldCommit := source.Commit
@@ -127,15 +134,4 @@ func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source
 		fmt.Printf("No change detected for %s.\n\n", name)
 	}
 	return nil
-}
-
-func repoForSource(name string) (*fetch.Repo, error) {
-	switch name {
-	case "googleapis":
-		return &fetch.Repo{Org: "googleapis", Repo: "googleapis"}, nil
-	case "discovery":
-		return &fetch.Repo{Org: "googleapis", Repo: "discovery-artifact-manager"}, nil
-	default:
-		return nil, fmt.Errorf("unknown source: %s", name)
-	}
 }
