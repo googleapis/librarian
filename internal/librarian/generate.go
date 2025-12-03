@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -102,10 +103,30 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 					api.ServiceConfig = serviceConfig
 				}
 			}
+			// TODO(https://github.com/googleapis/librarian/issues/2966):
+			// refactor so that the switch statement logic is in one place
+			if cfg.Language == "rust" {
+				if lib.Output == "" {
+					lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, cfg.Default.Output)
+				}
+			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
 	return fmt.Errorf("library %q not found", libraryName)
+}
+
+// deriveDefaultRustOutput returns the output path for a Rust library. If the
+// library has an explicit output path that differs from the default, it returns
+// that path. Otherwise, it derives the output from the first channel path by
+// stripping the "google/" prefix and joining with the default output. For
+// example, the default output for google/cloud/secretmanager/v1 is
+// src/generated/cloud/secretmanager/v1.
+//
+// TODO(https://github.com/googleapis/librarian/issues/2966): refactor and move
+// to internal/rust package
+func deriveDefaultRustOutput(channel, defaultOutput string) string {
+	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
 }
 
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
