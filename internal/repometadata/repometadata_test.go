@@ -207,15 +207,6 @@ func TestSelectDefaultVersion(t *testing.T) {
 			"v1",
 		},
 		{
-			"just v doesn't count as stable",
-			[]string{
-				"google/cloud/secretmanager/v",
-				"google/cloud/secretmanager/v1beta2",
-				"google/cloud/secrets/v1beta1",
-			},
-			"v1beta2",
-		},
-		{
 			"mix of non-versioned and versioned",
 			[]string{
 				"google/cloud/logging/type",
@@ -241,6 +232,57 @@ func TestSelectDefaultVersion(t *testing.T) {
 			got := selectDefaultVersion(test.channels)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsStableVersion(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{
+			"stable simple",
+			"v1",
+			true,
+		},
+		{
+			"stable multiple digits",
+			"v12",
+			true,
+		},
+		{
+			"normal beta",
+			"v2beta",
+			false,
+		},
+		{
+			"just v",
+			"v",
+			false,
+		},
+		{
+			"empty",
+			"",
+			false,
+		},
+		{
+			"non-v-prefix",
+			"m1",
+			false,
+		},
+		{
+			"multiple v prefix",
+			"vv1",
+			false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isStableVersion(test.version)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}

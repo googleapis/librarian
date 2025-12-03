@@ -182,7 +182,8 @@ func selectDefaultVersion(channels []string) string {
 
 // isStableVersion returns true if the version is stable (e.g., v1, v2) and not beta/alpha.
 func isStableVersion(version string) bool {
-	// Strip the "v" prefix
+	// If the version doesn't start with "v" or is *just* "v",
+	// it's not a stable version.
 	if !strings.HasPrefix(version, "v") || len(version) < 2 {
 		return false
 	}
