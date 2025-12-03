@@ -14,8 +14,8 @@
 
 package serviceconfig
 
-// grpcServiceConfigMap maps channels to their gRPC service config filename.
-var grpcServiceConfigMap = map[string]string{
+// GRPCServiceConfig maps channels to their gRPC service config filename.
+var GRPCServiceConfig = map[string]string{
 	"google/ai/generativelanguage/v1":                    "generativeai_grpc_service_config.json",
 	"google/ai/generativelanguage/v1alpha":               "generativeai_grpc_service_config.json",
 	"google/ai/generativelanguage/v1beta":                "generativeai_grpc_service_config.json",
