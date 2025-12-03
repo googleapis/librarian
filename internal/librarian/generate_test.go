@@ -67,10 +67,10 @@ libraries:
 	}
 
 	for _, test := range []struct {
-		name          string
-		args          []string
-		wantErr       error
-		wantGenerated []string
+		name    string
+		args    []string
+		wantErr error
+		want    []string
 	}{
 		{
 			name:    "no args",
@@ -83,14 +83,14 @@ libraries:
 			wantErr: errBothLibraryAndAllFlag,
 		},
 		{
-			name:          "library name",
-			args:          []string{"librarian", "generate", lib1},
-			wantGenerated: []string{lib1},
+			name: "library name",
+			args: []string{"librarian", "generate", lib1},
+			want: []string{lib1},
 		},
 		{
-			name:          "all flag",
-			args:          []string{"librarian", "generate", "--all"},
-			wantGenerated: []string{lib1, lib2},
+			name: "all flag",
+			args: []string{"librarian", "generate", "--all"},
+			want: []string{lib1, lib2},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -106,7 +106,7 @@ libraries:
 			}
 
 			generated := make(map[string]bool)
-			for _, libName := range test.wantGenerated {
+			for _, libName := range test.want {
 				generated[libName] = true
 			}
 			for libName, outputDir := range allLibraries {
@@ -115,10 +115,10 @@ libraries:
 				_, err = os.Stat(readmePath)
 				if !shouldExist {
 					if err == nil {
-						t.Fatalf("expected file for %q to NOT be generated, but it exists", libName)
+						t.Fatalf("expected file for %q to not be generated, but it exists", libName)
 					}
 					if !os.IsNotExist(err) {
-						t.Fatalf("expected file for %q to NOT be generated, but got unexpected error: %v", libName, err)
+						t.Fatalf("expected file for %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 					return
 				}
@@ -133,6 +133,82 @@ libraries:
 				want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
+				}
+			}
+		})
+	}
+}
+
+func TestGenerateSkip(t *testing.T) {
+	const (
+		lib1       = "library-one"
+		lib1Output = "output1"
+		lib2       = "library-two"
+		lib2Output = "output2"
+	)
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	googleapisDir := filepath.Join(wd, "testdata", "googleapis")
+
+	allLibraries := map[string]string{
+		lib1: lib1Output,
+		lib2: lib2Output,
+	}
+
+	for _, test := range []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "skip_generate with all flag",
+			args: []string{"librarian", "generate", "--all"},
+			want: []string{lib2},
+		},
+		{
+			name: "skip_generate with library name",
+			args: []string{"librarian", "generate", lib1},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configContent := fmt.Sprintf(`language: testhelper
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: %s
+    output: %s
+    skip_generate: true
+  - name: %s
+    output: %s
+`, googleapisDir, lib1, lib1Output, lib2, lib2Output)
+			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := Run(t.Context(), test.args...); err != nil {
+				t.Fatal(err)
+			}
+			generated := make(map[string]bool)
+			for _, libName := range test.want {
+				generated[libName] = true
+			}
+			for libName, outputDir := range allLibraries {
+				readmePath := filepath.Join(tempDir, outputDir, "README.md")
+				shouldExist := generated[libName]
+				_, err := os.Stat(readmePath)
+				if shouldExist && err != nil {
+					t.Errorf("expected %q to be generated, but got error: %v", libName, err)
+				}
+				if !shouldExist {
+					if err == nil {
+						t.Errorf("expected %q to not be generated, but it exists", libName)
+					} else if !os.IsNotExist(err) {
+						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
+					}
 				}
 			}
 		})
