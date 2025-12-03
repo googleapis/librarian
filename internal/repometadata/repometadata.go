@@ -112,16 +112,12 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		}
 	}
 
-	// Set API description from override or service YAML
 	if library.DescriptionOverride != "" {
-		// Use override from library configuration
 		metadata.APIDescription = library.DescriptionOverride
 	} else if svcCfg.GetDocumentation() != nil && svcCfg.GetDocumentation().GetSummary() != "" {
-		// Fall back to service YAML documentation
 		metadata.APIDescription = strings.TrimSpace(svcCfg.GetDocumentation().GetSummary())
 	}
 
-	// Write metadata file
 	data, err := json.MarshalIndent(metadata, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
@@ -141,7 +137,6 @@ func buildClientDocURL(language, serviceName string) string {
 	case "python":
 		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", serviceName)
 	case "rust":
-		// Rust uses docs.rs
 		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", serviceName)
 	default:
 		return ""
