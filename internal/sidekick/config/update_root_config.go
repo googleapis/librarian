@@ -22,10 +22,11 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
+var latestCommitAndChecksum = fetch.LatestCommitAndChecksum
+
 const (
 	defaultGitHubAPI = "https://api.github.com"
 	defaultGitHubDn  = "https://github.com"
-	branch           = "master"
 	defaultRoot      = "googleapis"
 )
 
@@ -40,16 +41,7 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 		return err
 	}
 
-	query := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
-	fmt.Printf("getting latest SHA from %q\n", query)
-	latestSha, err := fetch.LatestSha(query)
-	if err != nil {
-		return err
-	}
-
-	newLink := fetch.TarballLink(endpoints.Download, repo, latestSha)
-	fmt.Printf("computing SHA256 for %q\n", newLink)
-	newSha256, err := fetch.Sha256(newLink)
+	latestSha, newSha256, err := latestCommitAndChecksum(endpoints, repo)
 	if err != nil {
 		return err
 	}

@@ -16,8 +16,6 @@ package config
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path"
 	"testing"
@@ -41,31 +39,15 @@ func TestUpdateRootConfig(t *testing.T) {
 	t.Chdir(tempDir)
 
 	const (
-		getLatestShaPath      = "/repos/googleapis/googleapis/commits/master"
 		latestSha             = "5d5b1bf126485b0e2c972bac41b376438601e266"
-		tarballPath           = "/googleapis/googleapis/archive/5d5b1bf126485b0e2c972bac41b376438601e266.tar.gz"
-		latestShaContents     = "The quick brown fox jumps over the lazy dog"
 		latestShaContentsHash = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
 	)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case getLatestShaPath:
-			got := r.Header.Get("Accept")
-			want := "application/vnd.github.VERSION.sha"
-			if got != want {
-				t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
-			}
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(latestSha))
-		case tarballPath:
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(latestShaContents))
-		default:
-			t.Fatalf("unexpected request path %q", r.URL.Path)
-		}
-	}))
-	defer server.Close()
+	oldLatestCommitAndChecksum := latestCommitAndChecksum
+	defer func() { latestCommitAndChecksum = oldLatestCommitAndChecksum }()
+	latestCommitAndChecksum = func(_ *fetch.Endpoints, _ *fetch.Repo) (string, string, error) {
+		return latestSha, latestShaContentsHash, nil
+	}
 
 	rootConfig := &Config{
 		General: GeneralConfig{
@@ -73,9 +55,9 @@ func TestUpdateRootConfig(t *testing.T) {
 			SpecificationFormat: "protobuf",
 		},
 		Source: map[string]string{
-			"github-api":  server.URL,
-			"github":      server.URL,
-			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/old.tar.gz", server.URL),
+			"github-api":  testGitHubApi,
+			"github":      testGitHubDn,
+			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/old.tar.gz", testGitHubDn),
 			"test-sha256": "old-sha-unused",
 		},
 		Codec: map[string]string{},
@@ -99,9 +81,9 @@ func TestUpdateRootConfig(t *testing.T) {
 	want := &Config{
 		General: rootConfig.General,
 		Source: map[string]string{
-			"github-api":  server.URL,
-			"github":      server.URL,
-			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/%s.tar.gz", server.URL, latestSha),
+			"github-api":  testGitHubApi,
+			"github":      testGitHubDn,
+			"test-root":   fmt.Sprintf("%s/googleapis/googleapis/archive/%s.tar.gz", testGitHubDn, latestSha),
 			"test-sha256": latestShaContentsHash,
 		},
 	}
@@ -112,160 +94,90 @@ func TestUpdateRootConfig(t *testing.T) {
 }
 
 func TestUpdateRootConfigErrors(t *testing.T) {
-	const (
-		getLatestShaPath      = "/repos/googleapis/googleapis/commits/master"
-		latestSha             = "5d5b1bf126485b0e2c972bac41b376438601e266"
-		tarballPath           = "/googleapis/googleapis/archive/5d5b1bf126485b0e2c972bac41b376438601e266.tar.gz"
-		latestShaContents     = "The quick brown fox jumps over the lazy dog"
-		latestShaContentsHash = "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
-	)
-
-	badLatestSha := func() *httptest.Server {
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case getLatestShaPath:
-				got := r.Header.Get("Accept")
-				want := "application/vnd.github.VERSION.sha"
-				if got != want {
-					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("ERROR - bad request"))
-			default:
-				t.Fatalf("unexpected request path %q", r.URL.Path)
-			}
-		}))
-	}
-	badGetSha256 := func() *httptest.Server {
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case getLatestShaPath:
-				got := r.Header.Get("Accept")
-				want := "application/vnd.github.VERSION.sha"
-				if got != want {
-					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(latestSha))
-			case tarballPath:
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("ERROR - bad request"))
-			default:
-				t.Fatalf("unexpected request path %q", r.URL.Path)
-			}
-		}))
-	}
-	goodResponses := func() *httptest.Server {
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case getLatestShaPath:
-				got := r.Header.Get("Accept")
-				want := "application/vnd.github.VERSION.sha"
-				if got != want {
-					t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
-				}
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(latestSha))
-			case tarballPath:
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(latestShaContents))
-			default:
-				t.Fatalf("unexpected request path %q", r.URL.Path)
-			}
-		}))
-	}
-
 	for _, test := range []struct {
-		Server       func() *httptest.Server
-		ExtraOptions func(*httptest.Server) map[string]string
-		Setup        func(*Config)
+		name  string
+		setup func(*Config)
+		// If mockLatestCommitAndChecksumErr is non-nil, it will be used to mock the LatestCommitAndChecksum call.
+		// Otherwise, the default (successful) mock will be used.
+		mockLatestCommitAndChecksumErr error
 	}{
 		{
-			Server: badLatestSha,
-			ExtraOptions: func(*httptest.Server) map[string]string {
-				return map[string]string{
-					"error-reason":    "githubRepoFromTarballLink() fails.",
-					"googleapis-root": "--invalid--",
-				}
+			name: "githubRepoFromTarballLink fails",
+			setup: func(config *Config) {
+				config.Source["googleapis-root"] = "--invalid--"
 			},
-			Setup: func(*Config) {},
 		},
 		{
-			Server: badLatestSha,
-			ExtraOptions: func(server *httptest.Server) map[string]string {
-				return map[string]string{
-					"error-reason":    "getLatestSha() fails.",
-					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
-				}
+			name: "LatestCommitAndChecksum fails",
+			setup: func(config *Config) {
+				config.Source["googleapis-root"] = fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", testGitHubDn)
 			},
-			Setup: func(*Config) {},
+			mockLatestCommitAndChecksumErr: fmt.Errorf("mock LatestCommitAndChecksum error"),
 		},
 		{
-			Server: badGetSha256,
-			ExtraOptions: func(server *httptest.Server) map[string]string {
-				return map[string]string{
-					"error-reason":    "getSha256() fails.",
-					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
-				}
+			name: "ReadFile fails",
+			setup: func(config *Config) {
+				// Intentionally don't write the config file, so ReadFile fails
+				config.Source["googleapis-root"] = fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", testGitHubDn)
 			},
-			Setup: func(*Config) {},
 		},
 		{
-			Server: goodResponses,
-			ExtraOptions: func(server *httptest.Server) map[string]string {
-				return map[string]string{
-					"error-reason":    "ReadFile() fails.",
-					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
-				}
-			},
-			Setup: func(*Config) {},
-		},
-		{
-			Server: goodResponses,
-			ExtraOptions: func(server *httptest.Server) map[string]string {
-				return map[string]string{
-					"error-reason":    "updateRootConfigContents() fails.",
-					"googleapis-root": fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", server.URL),
-				}
-			},
-			Setup: func(config *Config) {
+			name: "updateRootConfigContents fails",
+			setup: func(config *Config) {
 				t.Helper()
 				if err := WriteSidekickToml(".", config); err != nil {
 					t.Fatal(err)
 				}
+				// Make the content invalid to trigger an error in updateRootConfigContents
+				badContent := []byte("googleapis-root # Missing separator\n")
+				if err := os.WriteFile(configName, badContent, 0644); err != nil {
+					t.Fatal(err)
+				}
+				config.Source["googleapis-root"] = fmt.Sprintf("%s/googleapis/googleapis/archive/tarball.tar.gz", testGitHubDn)
 			},
 		},
 	} {
-		// update() normally writes `.sidekick.toml` to cwd. We need to change to a
-		// temporary directory to avoid changing the actual configuration, and any
-		// conflicts with other tests running at the same time.
-		tempDir := t.TempDir()
-		t.Chdir(tempDir)
-		server := test.Server()
-		defer server.Close()
+		test := test // Capture the range variable for use in the subtest
+		t.Run(test.name, func(t *testing.T) {
+			// update() normally writes `.sidekick.toml` to cwd. We need to change to a
+			// temporary directory to avoid changing the actual configuration, and any
+			// conflicts with other tests running at the same time.
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
 
-		rootConfig := &Config{
-			General: GeneralConfig{
-				Language:            "rust",
-				SpecificationFormat: "protobuf",
-			},
-			Source: map[string]string{
-				"github-api": server.URL,
-				"github":     server.URL,
-			},
-			Codec: map[string]string{},
-		}
-		for k, v := range test.ExtraOptions(server) {
-			rootConfig.Source[k] = v
-		}
-		test.Setup(rootConfig)
-		if err := UpdateRootConfig(rootConfig, ""); err == nil {
-			t.Errorf("expected an error with configuration %v", rootConfig)
-			t.Fatal(err)
-		}
+			oldLatestCommitAndChecksum := latestCommitAndChecksum
+			defer func() { latestCommitAndChecksum = oldLatestCommitAndChecksum }()
+
+			if test.mockLatestCommitAndChecksumErr != nil {
+				latestCommitAndChecksum = func(_ *fetch.Endpoints, _ *fetch.Repo) (string, string, error) {
+					return "", "", test.mockLatestCommitAndChecksumErr
+				}
+			} else {
+				// Default successful mock if no specific error is provided
+				latestCommitAndChecksum = func(_ *fetch.Endpoints, _ *fetch.Repo) (string, string, error) {
+					return "mockSha", "mockSha256", nil
+				}
+			}
+
+			rootConfig := &Config{
+				General: GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+				},
+				Source: map[string]string{
+					"github-api": testGitHubApi,
+					"github":     testGitHubDn,
+				},
+				Codec: map[string]string{},
+			}
+			test.setup(rootConfig)
+			if err := UpdateRootConfig(rootConfig, "googleapis"); err == nil {
+				t.Errorf("expected an error with configuration %v", rootConfig)
+				t.Fatal(err)
+			}
+		})
 	}
 }
-
 func TestGithubConfig(t *testing.T) {
 	got := githubConfig(&Config{})
 	want := &fetch.Endpoints{
