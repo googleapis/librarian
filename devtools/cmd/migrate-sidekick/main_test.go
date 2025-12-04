@@ -191,9 +191,10 @@ func TestReadSidekickFiles(t *testing.T) {
 							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
 						},
 					},
-					SkipPublish:   true,
-					Version:       "1.2.0",
-					CopyrightYear: "2025",
+					SpecificationFormat: "openapi",
+					SkipPublish:         true,
+					Version:             "1.2.0",
+					CopyrightYear:       "2025",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							PackageDependencies: []*config.RustPackageDependency{
@@ -444,6 +445,33 @@ func TestRunMigrateCommand(t *testing.T) {
 				t.Fatalf("expected error containing %q, got nil", test.wantErr)
 			}
 
+		})
+	}
+}
+
+func TestMapSpecificationFormat(t *testing.T) {
+	for _, test := range []struct {
+		name               string
+		providedSpecFormat string
+		wantedSpecFormat   string
+	}{
+		{
+			name:               "default",
+			providedSpecFormat: "openapi",
+			wantedSpecFormat:   "openapi",
+		},
+		{
+			name:               "disco_mapping",
+			providedSpecFormat: "disco",
+			wantedSpecFormat:   "discovery",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			got := getSpecificationFormat(test.providedSpecFormat)
+			if diff := cmp.Diff(test.wantedSpecFormat, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }

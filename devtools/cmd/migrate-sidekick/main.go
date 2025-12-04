@@ -48,6 +48,7 @@ type SidekickConfig struct {
 	General struct {
 		SpecificationSource string `toml:"specification-source"`
 		ServiceConfig       string `toml:"service-config"`
+		SpecificationFormat string `toml:"specification-format"`
 	} `toml:"general"`
 	Source                 map[string]interface{} `toml:"source"`
 	Codec                  map[string]interface{} `toml:"codec"`
@@ -251,6 +252,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		// Get Service config
 		serviceConfig := sidekick.General.ServiceConfig
 
+		// Get specification format
+		specificationFormat := getSpecificationFormat(sidekick.General.SpecificationFormat)
+
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
 		cargoPath := filepath.Join(dir, "Cargo.toml")
@@ -273,9 +277,12 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		lib, exists := libraries[libraryName]
 		if !exists {
 			lib = &config.Library{
-				Name: libraryName,
+				Name:                libraryName,
+				SpecificationFormat: specificationFormat,
 			}
 			libraries[libraryName] = lib
+		} else {
+			lib.SpecificationFormat = specificationFormat
 		}
 
 		// Add channels
@@ -481,4 +488,13 @@ func strToSlice(s string) []string {
 
 func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
+}
+
+func getSpecificationFormat(specFormat string) string {
+	mappedSpecFormat := specFormat
+	switch specFormat {
+	case "disco":
+		mappedSpecFormat = "discovery"
+	}
+	return mappedSpecFormat
 }
