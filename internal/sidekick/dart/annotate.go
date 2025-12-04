@@ -803,27 +803,32 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 }
 
 func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *api.APIState) string {
-	switch {
-	case typez == api.INT64_TYPE ||
-		typez == api.UINT64_TYPE || typez == api.SINT64_TYPE ||
-		typez == api.FIXED64_TYPE || typez == api.SFIXED64_TYPE:
+	switch typez {
+	case api.INT64_TYPE,
+		api.UINT64_TYPE,
+		api.SINT64_TYPE,
+		api.FIXED64_TYPE,
+		api.SFIXED64_TYPE:
 		return "decodeInt64"
-	case typez == api.FLOAT_TYPE || typez == api.DOUBLE_TYPE:
+	case api.FLOAT_TYPE,
+		api.DOUBLE_TYPE:
 		return "decodeDouble"
-	case typez == api.INT32_TYPE || typez == api.FIXED32_TYPE ||
-		typez == api.SFIXED32_TYPE || typez == api.SINT32_TYPE ||
-		typez == api.UINT32_TYPE:
+	case api.INT32_TYPE,
+		api.FIXED32_TYPE,
+		api.SFIXED32_TYPE,
+		api.SINT32_TYPE,
+		api.UINT32_TYPE:
 		return "decodeInt"
-	case typez == api.BOOL_TYPE:
+	case api.BOOL_TYPE:
 		return "decodeBool"
-	case typez == api.STRING_TYPE:
+	case api.STRING_TYPE:
 		return "decodeString"
-	case typez == api.BYTES_TYPE:
+	case api.BYTES_TYPE:
 		return "decodeBytes"
-	case typez == api.ENUM_TYPE:
+	case api.ENUM_TYPE:
 		typeName := annotate.resolveEnumName(state.EnumByID[typeid])
 		return fmt.Sprintf("%s.fromJson", typeName)
-	case typez == api.MESSAGE_TYPE:
+	case api.MESSAGE_TYPE:
 		typeName := annotate.resolveMessageName(state.MessageByID[typeid], true)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
