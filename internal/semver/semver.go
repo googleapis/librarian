@@ -18,7 +18,6 @@ package semver
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -170,7 +169,6 @@ func MaxVersion(versionStrings ...string) string {
 	for _, versionString := range versionStrings {
 		// Our client versions must not have a "v" prefix.
 		if strings.HasPrefix(versionString, "v") {
-			slog.Warn("invalid version string", "version", versionString)
 			continue
 		}
 
@@ -178,7 +176,6 @@ func MaxVersion(versionStrings ...string) string {
 		// [semver.Sort].
 		vPrefixedString := "v" + versionString
 		if !semver.IsValid(vPrefixedString) {
-			slog.Warn("invalid version string", "version", versionString)
 			continue
 		}
 		versions = append(versions, vPrefixedString)
