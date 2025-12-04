@@ -64,8 +64,8 @@ func Parse(versionString string) (*Version, error) {
 	// of the Patch segment.
 	prerelease := semver.Prerelease(vPrefixedVersion)
 
-	versionCore := strings.TrimSuffix(vPrefixedVersion, prerelease)
-	versionCore = strings.TrimPrefix(versionCore, "v")
+	versionCore := strings.TrimPrefix(vPrefixedVersion, "v")
+	versionCore = strings.TrimSuffix(versionCore, prerelease)
 	vParts := strings.Split(versionCore, ".")
 
 	v := &Version{}
@@ -91,24 +91,24 @@ func Parse(versionString string) (*Version, error) {
 	}
 
 	prerelease = strings.TrimPrefix(prerelease, "-")
+	var numStr string
 	if i := strings.LastIndex(prerelease, "."); i != -1 {
 		v.Prerelease = prerelease[:i]
 		v.PrereleaseSeparator = "."
-		num, err := strconv.Atoi(prerelease[i+1:])
-		if err != nil {
-			return nil, fmt.Errorf("invalid prerelease number: %w", err)
-		}
-		v.PrereleaseNumber = &num
+		numStr = prerelease[i+1:]
 	} else if matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
 		v.Prerelease = matches[1]
-		num, err := strconv.Atoi(matches[2])
+		numStr = matches[2]
+	} else {
+		v.Prerelease = prerelease
+	}
+
+	if numStr != "" {
+		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			// This should not happen if the regex is correct.
 			return nil, fmt.Errorf("invalid prerelease number: %w", err)
 		}
 		v.PrereleaseNumber = &num
-	} else {
-		v.Prerelease = prerelease
 	}
 
 	return v, nil
