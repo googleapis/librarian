@@ -125,6 +125,9 @@ type Library struct {
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
+
+	// Python contains Python-specific library configuration.
+	Python *PythonPackage `yaml:"python,omitempty"`
 }
 
 // Channel describes a Channel to include in a library.
