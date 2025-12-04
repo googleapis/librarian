@@ -32,6 +32,7 @@ const (
 	librarianDir        = ".librarian"
 	librarianStateFile  = "state.yaml"
 	librarianConfigFile = "config.yaml"
+	defaultTagFormat    = "{name}/v{version}"
 )
 
 var (
@@ -48,6 +49,7 @@ func main() {
 func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
+	language := flagSet.String("lang", "go", "One of go and python (default: go)")
 	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
@@ -66,13 +68,87 @@ func run(args []string) error {
 		return err
 	}
 
-	cfg := buildConfig(librarianState, librarianConfig)
+	cfg := buildConfig(librarianState, librarianConfig, *language)
 
 	return yaml.Write(*outputPath, cfg)
 }
 
-func buildConfig(state *legacyconfig.LibrarianState, config *legacyconfig.LibrarianConfig) *config.Config {
+func buildConfig(
+	librarianState *legacyconfig.LibrarianState,
+	librarianConfig *legacyconfig.LibrarianConfig,
+	lang string) *config.Config {
+	repo := "googleapis/google-cloud-go"
+	if lang == "python" {
+		repo = "googleapis/google-cloud-python"
+	}
+	cfg := &config.Config{
+		Language: lang,
+		Repo:     repo,
+		Default: &config.Default{
+			TagFormat: defaultTagFormat,
+		},
+	}
 
+	cfg.Libraries = buildLibraries(librarianState, librarianConfig)
+
+	return cfg
+}
+
+func buildLibraries(
+	librarianState *legacyconfig.LibrarianState,
+	librarianConfig *legacyconfig.LibrarianConfig) []*config.Library {
+	var libraries []*config.Library
+	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
+		librarianState.Libraries,
+		func(lib *legacyconfig.LibraryState) string {
+			return lib.ID
+		})
+	idToLibraryConfig := sliceToMap[legacyconfig.LibraryConfig](
+		librarianConfig.Libraries,
+		func(lib *legacyconfig.LibraryConfig) string {
+			return lib.LibraryID
+		})
+
+	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
+	// subset of librarianState.Libraries.
+	for id, libState := range idToLibraryState {
+		library := &config.Library{}
+		library.Name = id
+		library.Version = libState.Version
+		library.Channels = toChannels(libState.APIs)
+		library.Keep = libState.PreserveRegex
+		// Go and Python monorepo only contains GAPIC libraries.
+		library.SpecificationFormat = "protobuf"
+		// hydrate params from library config
+		libCfg := idToLibraryConfig[id]
+		library.SkipGenerate = libCfg.GenerateBlocked
+		library.SkipRelease = libCfg.ReleaseBlocked
+		libraries = append(libraries, library)
+	}
+
+	return libraries
+}
+
+func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
+	res := map[string]*T{}
+	for _, t := range slice {
+		key := keyFunc(t)
+		res[key] = t
+	}
+
+	return res
+}
+
+func toChannels(apis []*legacyconfig.API) []*config.Channel {
+	var channels []*config.Channel
+	for _, api := range apis {
+		channels = append(channels, &config.Channel{
+			Path:          api.Path,
+			ServiceConfig: api.ServiceConfig,
+		})
+	}
+
+	return channels
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
