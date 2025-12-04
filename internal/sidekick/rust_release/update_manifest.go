@@ -19,9 +19,9 @@ import (
 	"os"
 	"os/exec"
 	"slices"
-	"strconv"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -60,7 +60,8 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if !info.Package.Publish {
 		return nil, nil
 	}
-	newVersion, err := BumpPackageVersion(info.Package.Version)
+	// Only ever take a minor version bump.
+	newVersion, err := semver.DeriveNext(semver.Minor, info.Package.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -92,23 +93,6 @@ func UpdateCargoVersion(path, newVersion string) error {
 	// the mustache template.
 	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
-}
-
-// BumpPackageVersion increments the minor version and resets the patch version.
-func BumpPackageVersion(version string) (string, error) {
-	components := strings.SplitN(version, ".", 3)
-	if len(components) != 3 {
-		return version, nil
-	}
-	n, err := strconv.Atoi(components[1])
-	if err != nil {
-		return "", err
-	}
-	components[1] = fmt.Sprintf("%d", n+1)
-	v := strings.Split(components[2], "-")
-	v[0] = "0"
-	components[2] = strings.Join(v, "-")
-	return strings.Join(components, "."), nil
 }
 
 func manifestVersionNeedsBump(config *config.Release, lastTag, manifest string) (bool, error) {

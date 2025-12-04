@@ -232,27 +232,6 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 	}
 }
 
-func TestBumpPackageVersion(t *testing.T) {
-	for _, test := range []struct {
-		Input string
-		Want  string
-	}{
-		{"1.2", "1.2"},
-		{"1.2.3", "1.3.0"},
-		{"1.2.3-alpha", "1.3.0-alpha"},
-		{"0.1.2", "0.2.0"},
-		{"0.1.2-alpha", "0.2.0-alpha"},
-	} {
-		got, err := BumpPackageVersion(test.Input)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != test.Want {
-			t.Errorf("mismatch, want=%s, got=%s", test.Want, got)
-		}
-	}
-}
-
 func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	requireCommand(t, "git")
