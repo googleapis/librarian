@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
@@ -115,7 +116,9 @@ func buildLibraries(
 		library := &config.Library{}
 		library.Name = id
 		library.Version = libState.Version
-		library.Channels = toChannels(libState.APIs)
+		if libState.APIs != nil {
+			library.Channels = toChannels(libState.APIs)
+		}
 		library.Keep = libState.PreserveRegex
 		// Go and Python monorepo only contains GAPIC libraries.
 		library.SpecificationFormat = "protobuf"
@@ -128,6 +131,10 @@ func buildLibraries(
 
 		libraries = append(libraries, library)
 	}
+
+	sort.Slice(libraries, func(i, j int) bool {
+		return libraries[i].Name < libraries[j].Name
+	})
 
 	return libraries
 }
