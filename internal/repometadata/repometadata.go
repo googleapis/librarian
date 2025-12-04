@@ -74,7 +74,11 @@ type RepoMetadata struct {
 
 // GenerateRepoMetadata generates the .repo-metadata.json file by parsing the
 // service YAML.
-func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, outdir string) error {
+func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, defaultVersion, outdir string) error {
+	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// Compute the default version, potentially with an override, instead of
+	// taking it as a parameter.
+
 	svcCfg, err := serviceconfig.Read(serviceConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to read service config: %w", err)
@@ -85,6 +89,7 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 	metadata := &RepoMetadata{
 		APIID:               svcCfg.GetName(),
 		NamePretty:          cleanTitle(svcCfg.GetTitle()),
+		DefaultVersion:      defaultVersion,
 		ClientDocumentation: clientDocURL,
 		ReleaseLevel:        library.ReleaseLevel,
 		Language:            language,
@@ -92,8 +97,6 @@ func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfig
 		Repo:                repo,
 		DistributionName:    library.Name,
 	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/3146): set DefaultVersion
 
 	if svcCfg.GetPublishing() != nil {
 		publishing := svcCfg.GetPublishing()
