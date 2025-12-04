@@ -40,9 +40,9 @@ type Version struct {
 	PrereleaseNumber *int
 }
 
-// unsegmentedPrereleaseRegexp extracts the prerelease number, if present, in the
-// prerelease portion of the SemVer version parsed by [semverRegex].
-var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
+// semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
+// the prerelease portion of the SemVer 1.0.0 version string.
+var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
@@ -53,12 +53,12 @@ func Parse(versionString string) (*Version, error) {
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
 	// Then canonicalize it to zero-fill any missing version segments.
-	// Strips build metadata if present, though it is not used in our versions.
+	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
 		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
-	vPrefixedVersion = semver.Canonical((vPrefixedVersion))
+	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
 	// Preemptively pull out the prerelease segment so that we can trim it off
 	// of the Patch segment.
@@ -96,7 +96,7 @@ func Parse(versionString string) (*Version, error) {
 		v.Prerelease = prerelease[:i]
 		v.PrereleaseSeparator = "."
 		numStr = prerelease[i+1:]
-	} else if matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
+	} else if matches := semverV1PrereleaseNumberRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
 		v.Prerelease = matches[1]
 		numStr = matches[2]
 	} else {
