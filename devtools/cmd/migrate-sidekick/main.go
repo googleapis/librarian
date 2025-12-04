@@ -80,7 +80,7 @@ func main() {
 func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
-	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
+	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -117,9 +117,9 @@ func run(args []string) error {
 	slog.Info("Wrote config to output file", "path", outputPath)
 
 	if err := librarian.RunTidy(); err != nil {
-		return fmt.Errorf("librarian tidy command failed: %w", err)
+		return fmt.Errorf("librarian tidy failed: %w", err)
 	}
-	slog.Info("Ran librarian tidy command successfully")
+	slog.Info("Ran librarian tidy successfully")
 
 	return nil
 }

@@ -23,7 +23,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-const librarianConfigPath = ".librarian.yaml"
+const librarianConfigPath = "librarian.yaml"
 
 // Run executes the librarian command with the given arguments.
 func Run(ctx context.Context, args ...string) error {

@@ -1,0 +1,37 @@
+language: rust
+sources:
+  discovery:
+    commit: ""
+  googleapis:
+    commit: ""
+default:
+  output: src/generated/
+  rust: {}
+libraries:
+  - name: google-cloud-sql-v1
+    channels:
+      - path: google/cloud/sql/v1
+        service_config: google/cloud/sql/v1/sqladmin_v1.yaml
+      - path: google/cloud/sql/v1
+        service_config: google/cloud/sql/v1/sqladmin_v1.yaml
+    skip_publish: true
+    version: 1.2.0
+    copyright_year: "2025"
+    rust:
+      package_dependencies:
+        - name: gaxi
+          package: google-cloud-gax-internal
+          source: internal
+          feature: _internal-http-client
+          used_if: services
+        - name: lazy_static
+          package: lazy_static
+          force_used: true
+          used_if: services
+      documentation_overrides:
+        - id: .google.api.ProjectProperties
+          match: example match
+          replace: example replace
+      pagination_overrides:
+        - id: .google.cloud.sql.v1.SqlInstancesService.List
+          item_field: items
