@@ -100,6 +100,7 @@ func buildConfig(
 	if lang == "python" {
 		repo = "googleapis/google-cloud-python"
 	}
+
 	cfg := &config.Config{
 		Language: lang,
 		Repo:     repo,
@@ -108,14 +109,22 @@ func buildConfig(
 		},
 	}
 
-	cfg.Libraries = buildLibraries(librarianState, librarianConfig)
+	libraries, sha := buildLibraries(librarianState, librarianConfig)
+	if sha != "" {
+		cfg.Sources = &config.Sources{
+			Googleapis: &config.Source{
+				Commit: sha,
+			},
+		}
+	}
+	cfg.Libraries = libraries
 
 	return cfg
 }
 
 func buildLibraries(
 	librarianState *legacyconfig.LibrarianState,
-	librarianConfig *legacyconfig.LibrarianConfig) []*config.Library {
+	librarianConfig *legacyconfig.LibrarianConfig) ([]*config.Library, string) {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
 		librarianState.Libraries,
@@ -127,7 +136,7 @@ func buildLibraries(
 		func(lib *legacyconfig.LibraryConfig) string {
 			return lib.LibraryID
 		})
-
+	googleapisCommitSHA := ""
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -140,6 +149,9 @@ func buildLibraries(
 		library.Keep = libState.PreserveRegex
 		// Go and Python monorepo only contains GAPIC libraries.
 		library.SpecificationFormat = "protobuf"
+		if googleapisCommitSHA == "" {
+			googleapisCommitSHA = libState.LastGeneratedCommit
+		}
 		// hydrate params from library config
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
@@ -154,7 +166,7 @@ func buildLibraries(
 		return libraries[i].Name < libraries[j].Name
 	})
 
-	return libraries
+	return libraries, googleapisCommitSHA
 }
 
 func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {

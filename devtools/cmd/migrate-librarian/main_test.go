@@ -137,16 +137,29 @@ func TestBuildConfig(t *testing.T) {
 							"example-preserve-2",
 						},
 					},
+					{
+						ID:                  "another-library",
+						LastGeneratedCommit: "abcd123",
+					},
 				},
 			},
 			cfg: &legacyconfig.LibrarianConfig{},
 			want: &config.Config{
 				Language: "python",
 				Repo:     "googleapis/google-cloud-python",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+					},
+				},
 				Default: &config.Default{
 					TagFormat: defaultTagFormat,
 				},
 				Libraries: []*config.Library{
+					{
+						Name:                "another-library",
+						SpecificationFormat: "protobuf",
+					},
 					{
 						Name:    "example-library",
 						Version: "1.0.0",
