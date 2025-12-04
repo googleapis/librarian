@@ -138,8 +138,8 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
 	}
-	if len(rust.ExtraModules) > 0 {
-		codec["extra-modules"] = strings.Join(rust.ExtraModules, ",")
+	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
+		codec["extra-modules"] = strings.Join(extraModules, ",")
 	}
 	if rust.RoutingRequired {
 		codec["routing-required"] = "true"
@@ -154,6 +154,21 @@ func buildCodec(library *config.Library) map[string]string {
 		codec["package:"+dep.Name] = formatPackageDependency(dep)
 	}
 	return codec
+}
+
+// extraModulesFromKeep extracts module names from keep entries that match
+// "src/*.rs". For example, "src/errors.rs" becomes "errors".
+func extraModulesFromKeep(keep []string) []string {
+	var modules []string
+	for _, k := range keep {
+		if strings.HasPrefix(k, "src/") && strings.HasSuffix(k, ".rs") {
+			// Extract module name: "src/errors.rs" -> "errors"
+			module := strings.TrimPrefix(k, "src/")
+			module = strings.TrimSuffix(module, ".rs")
+			modules = append(modules, module)
+		}
+	}
+	return modules
 }
 
 func formatPackageDependency(dep *config.RustPackageDependency) string {

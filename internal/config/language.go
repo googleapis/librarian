@@ -51,9 +51,6 @@ type RustCrate struct {
 	// DefaultFeatures is a list of default features to enable.
 	DefaultFeatures []string `yaml:"default_features,omitempty"`
 
-	// ExtraModules is a list of extra modules to include.
-	ExtraModules []string `yaml:"extra_modules,omitempty"`
-
 	// IncludeList is a list of items to include.
 	IncludeList []string `yaml:"include_list,omitempty"`
 
@@ -162,4 +159,23 @@ type RustPoller struct {
 
 	// MethodID is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get").
 	MethodID string `yaml:"method_id"`
+}
+
+// PythonPackage contains Python-specific library configuration.
+type PythonPackage struct {
+	// OptArgs contains additional options passed to the generator, where
+	// the options are common to all channels.
+	// Example: ["warehouse-package-name=google-cloud-batch"]
+	OptArgs []string `yaml:"opt_args,omitempty"`
+
+	// OptArgsByChannel contains additional options passed to the generator,
+	// where the options vary by channel. In each entry, the key is the channel
+	// (API path) and the value is the list of options to pass when generating
+	// that API channel.
+	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
+	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
+
+	// IsProtoOnly indicates this library only contains proto files (no GAPIC
+	// generation).
+	IsProtoOnly bool `yaml:"is_proto_only,omitempty"`
 }

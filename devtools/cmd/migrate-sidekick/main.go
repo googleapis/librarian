@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -39,6 +40,7 @@ var (
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
+	errTidyFailed       = errors.New("librarian tidy failed")
 )
 
 // SidekickConfig represents the structure of a .sidekick.toml file.
@@ -79,7 +81,7 @@ func main() {
 func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
-	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
+	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -114,6 +116,11 @@ func run(args []string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 	slog.Info("Wrote config to output file", "path", outputPath)
+
+	if err := librarian.RunTidy(); err != nil {
+		slog.Error(errTidyFailed.Error(), "error", err)
+		return errTidyFailed
+	}
 
 	return nil
 }
@@ -313,7 +320,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
 		rootName, _ := sidekick.Codec["root-name"].(string)
 		defaultFeatures, _ := sidekick.Codec["default-features"].(string)
-		extraModules, _ := sidekick.Codec["extra-modules"].(string)
 		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].(string)
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
@@ -359,7 +365,6 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			RootName:                  rootName,
 			Roots:                     strToSlice(roots),
 			DefaultFeatures:           strToSlice(defaultFeatures),
-			ExtraModules:              strToSlice(extraModules),
 			IncludeList:               strToSlice(includeList),
 			IncludedIds:               strToSlice(includeIds),
 			SkippedIds:                strToSlice(skippedIds),

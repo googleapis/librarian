@@ -116,6 +116,7 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "with rust config",
 			library: &config.Library{
 				Name: "google-cloud-storage",
+				Keep: []string{"src/extra-module.rs"},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
@@ -129,7 +130,6 @@ func TestToSidekickConfig(t *testing.T) {
 					GenerateSetterSamples:     true,
 					DisabledClippyWarnings:    []string{"too_many_arguments"},
 					DefaultFeatures:           []string{"default-feature"},
-					ExtraModules:              []string{"extra-module"},
 					TemplateOverride:          "custom-template",
 				},
 			},
@@ -526,6 +526,52 @@ func TestToSidekickConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtraModulesFromKeep(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		keep []string
+		want []string
+	}{
+		{
+			name: "empty keep list",
+			keep: nil,
+			want: nil,
+		},
+		{
+			name: "single module",
+			keep: []string{"src/errors.rs"},
+			want: []string{"errors"},
+		},
+		{
+			name: "multiple modules",
+			keep: []string{"src/errors.rs", "src/operation.rs"},
+			want: []string{"errors", "operation"},
+		},
+		{
+			name: "ignores non-src files",
+			keep: []string{"Cargo.toml", "README.md"},
+			want: nil,
+		},
+		{
+			name: "ignores non-rs files in src",
+			keep: []string{"src/lib.rs.bak"},
+			want: nil,
+		},
+		{
+			name: "mixed files",
+			keep: []string{"Cargo.toml", "src/errors.rs", "README.md", "src/operation.rs"},
+			want: []string{"errors", "operation"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := extraModulesFromKeep(test.keep)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

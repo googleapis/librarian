@@ -26,9 +26,10 @@ import (
 
 func TestGenerateRepoMetadata(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    RepoMetadata
+		name           string
+		defaultVersion string
+		library        *config.Library
+		want           RepoMetadata
 	}{
 		{
 			name: "no overrides",
@@ -59,11 +60,13 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				ReleaseLevel:        "stable",
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 			},
+			defaultVersion: "v1",
 			want: RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1",
 				IssueTracker:         "",
 				ReleaseLevel:         "stable",
 				Language:             "python",
@@ -85,7 +88,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, outDir); err != nil {
+			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, test.defaultVersion, outDir); err != nil {
 				t.Fatal(err)
 			}
 

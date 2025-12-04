@@ -18,10 +18,11 @@ package semver
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 // Version represents a semantic version.
@@ -109,61 +110,6 @@ func Parse(versionString string) (*Version, error) {
 	return v, nil
 }
 
-// Compare returns an integer comparing two versions.
-// The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
-func (v *Version) Compare(other *Version) int {
-	if v.Major < other.Major {
-		return -1
-	}
-	if v.Major > other.Major {
-		return 1
-	}
-	if v.Minor < other.Minor {
-		return -1
-	}
-	if v.Minor > other.Minor {
-		return 1
-	}
-	if v.Patch < other.Patch {
-		return -1
-	}
-	if v.Patch > other.Patch {
-		return 1
-	}
-	// a pre-release version is less than a non-pre-release version
-	if v.Prerelease != "" && other.Prerelease == "" {
-		return -1
-	}
-	if v.Prerelease == "" && other.Prerelease != "" {
-		return 1
-	}
-	// lexical comparison between prerelease type (e.g. "alpha" vs "beta")
-	if v.Prerelease < other.Prerelease {
-		return -1
-	}
-	if v.Prerelease > other.Prerelease {
-		return 1
-	}
-	// prerelease number (e.g. "alpha1" vs "alpha2")
-	// Note: Lack of prerelease number is considered lower precedence than
-	// the same prerelease when it has a number - https://semver.org/#spec-item-11.
-	if v.PrereleaseNumber == nil && other.PrereleaseNumber != nil {
-		return -1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber == nil {
-		return 1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber != nil {
-		if *v.PrereleaseNumber < *other.PrereleaseNumber {
-			return -1
-		}
-		if *v.PrereleaseNumber > *other.PrereleaseNumber {
-			return 1
-		}
-	}
-	return 0
-}
-
 // String formats a Version struct into a string.
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
@@ -219,22 +165,30 @@ func MaxVersion(versionStrings ...string) string {
 	if len(versionStrings) == 0 {
 		return ""
 	}
-	versions := make([]*Version, 0)
+	versions := make([]string, 0)
 	for _, versionString := range versionStrings {
-		v, err := Parse(versionString)
-		if err != nil {
-			slog.Warn("invalid version string", "version", v)
+		// Our client versions must not have a "v" prefix.
+		if strings.HasPrefix(versionString, "v") {
 			continue
 		}
-		versions = append(versions, v)
-	}
-	largest := versions[0]
-	for i := 1; i < len(versions); i++ {
-		if largest.Compare(versions[i]) < 0 {
-			largest = versions[i]
+
+		// Prepend "v" internally so that we can use [semver.IsValid] and
+		// [semver.Sort].
+		vPrefixedString := "v" + versionString
+		if !semver.IsValid(vPrefixedString) {
+			continue
 		}
+		versions = append(versions, vPrefixedString)
 	}
-	return largest.String()
+
+	if len(versions) == 0 {
+		return ""
+	}
+
+	semver.Sort(versions)
+
+	// Trim the "v" we prepended to make use of [semver].
+	return strings.TrimPrefix(versions[len(versions)-1], "v")
 }
 
 // ChangeLevel represents the level of change, corresponding to semantic versioning.
