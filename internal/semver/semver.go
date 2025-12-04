@@ -111,18 +111,6 @@ func Parse(versionString string) (*Version, error) {
 	return v, nil
 }
 
-// Compare returns an integer comparing two versions.
-// The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
-func (v *Version) Compare(other *Version) int {
-	return gsemver.Compare(v.vString(), other.vString())
-}
-
-// vString prepends a "v" to the version string constructed by [Version.String]
-// for use with [gsemver] APIs.
-func (v *Version) vString() string {
-	return fmt.Sprintf("v%s", v.String())
-}
-
 // String formats a Version struct into a string.
 func (v *Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
