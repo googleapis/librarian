@@ -56,19 +56,16 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
   factory {{Codec.Name}}.fromJson(Object? j) 
     {{#Codec.HasFields}}
     {
-    final json = j as Map<String, Object?>;
-    return
-    {{/Codec.HasFields}}
-    {{^Codec.HasFields}} =>
-    {{/Codec.HasFields}}
-
-     {{Codec.Name}}(
-      {{#Fields}}
-      {{{Codec.Name}}}: {{{Codec.FromJson}}},
-      {{/Fields}}
-    );
-    {{#Codec.HasFields}}
+      final json = j as Map<String, Object?>;
+      return {{Codec.Name}}(
+        {{#Fields}}
+        {{{Codec.Name}}}: {{{Codec.FromJson}}},
+        {{/Fields}}
+      );
     }
+    {{/Codec.HasFields}}
+    {{^Codec.HasFields}}
+    => {{Codec.Name}}();
     {{/Codec.HasFields}}
   {{/Codec.HasCustomEncoding}}
 
