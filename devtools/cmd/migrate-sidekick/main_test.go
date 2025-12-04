@@ -432,7 +432,7 @@ func TestRunMigrateCommand(t *testing.T) {
 		{
 			name:    "tidy_command_fails",
 			path:    "testdata/tidy-fails",
-			wantErr: "librarian tidy command failed",
+wantErr: "librarian tidy failed",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
