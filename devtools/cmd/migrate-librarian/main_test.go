@@ -36,6 +36,11 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			repoPath: "testdata/run/success",
 		},
 		{
+			name:     "no_repo_path",
+			repoPath: "",
+			wantErr:  errRepoNotFound,
+		},
+		{
 			name:     "unsupported_language",
 			repoPath: "unused-path",
 			lang:     "unsupported",
