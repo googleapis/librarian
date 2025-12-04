@@ -278,10 +278,10 @@ func TestCompare(t *testing.T) {
 			want:     0,
 		},
 		{
-			name:     "equal with pre-release and number, different separator",
+			name:     "greater than with pre-release and number, different separator",
 			versionA: "1.2.3-alpha4",
 			versionB: "1.2.3-alpha.4",
-			want:     0,
+			want:     1,
 		},
 		{
 			name:     "less than patch",

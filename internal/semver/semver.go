@@ -22,6 +22,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	gsemver "golang.org/x/mod/semver"
 )
 
 // Version represents a semantic version.
@@ -112,56 +114,13 @@ func Parse(versionString string) (*Version, error) {
 // Compare returns an integer comparing two versions.
 // The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
 func (v *Version) Compare(other *Version) int {
-	if v.Major < other.Major {
-		return -1
-	}
-	if v.Major > other.Major {
-		return 1
-	}
-	if v.Minor < other.Minor {
-		return -1
-	}
-	if v.Minor > other.Minor {
-		return 1
-	}
-	if v.Patch < other.Patch {
-		return -1
-	}
-	if v.Patch > other.Patch {
-		return 1
-	}
-	// a pre-release version is less than a non-pre-release version
-	if v.Prerelease != "" && other.Prerelease == "" {
-		return -1
-	}
-	if v.Prerelease == "" && other.Prerelease != "" {
-		return 1
-	}
-	// lexical comparison between prerelease type (e.g. "alpha" vs "beta")
-	if v.Prerelease < other.Prerelease {
-		return -1
-	}
-	if v.Prerelease > other.Prerelease {
-		return 1
-	}
-	// prerelease number (e.g. "alpha1" vs "alpha2")
-	// Note: Lack of prerelease number is considered lower precedence than
-	// the same prerelease when it has a number - https://semver.org/#spec-item-11.
-	if v.PrereleaseNumber == nil && other.PrereleaseNumber != nil {
-		return -1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber == nil {
-		return 1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber != nil {
-		if *v.PrereleaseNumber < *other.PrereleaseNumber {
-			return -1
-		}
-		if *v.PrereleaseNumber > *other.PrereleaseNumber {
-			return 1
-		}
-	}
-	return 0
+	return gsemver.Compare(v.vString(), other.vString())
+}
+
+// vString prepends a "v" to the version string constructed by [Version.String]
+// for use with [gsemver] APIs.
+func (v *Version) vString() string {
+	return fmt.Sprintf("v%s", v.String())
 }
 
 // String formats a Version struct into a string.
