@@ -178,22 +178,32 @@ func MaxVersion(versionStrings ...string) string {
 	if len(versionStrings) == 0 {
 		return ""
 	}
-	versions := make([]*Version, 0)
+	versions := make([]string, 0)
 	for _, versionString := range versionStrings {
-		v, err := Parse(versionString)
-		if err != nil {
-			slog.Warn("invalid version string", "version", v)
+		// Our client versions must not have a "v" prefix.
+		if strings.HasPrefix(versionString, "v") {
+			slog.Warn("invalid version string", "version", versionString)
 			continue
 		}
-		versions = append(versions, v)
-	}
-	largest := versions[0]
-	for i := 1; i < len(versions); i++ {
-		if largest.Compare(versions[i]) < 0 {
-			largest = versions[i]
+
+		// Prepend "v" internally so that we can use [gsemver.IsValid] and
+		// [gsemver.Sort].
+		versionString = "v" + versionString
+		if !gsemver.IsValid(versionString) {
+			slog.Warn("invalid version string", "version", versionString)
+			continue
 		}
+		versions = append(versions, versionString)
 	}
-	return largest.String()
+
+	if len(versions) == 0 {
+		return ""
+	}
+
+	gsemver.Sort(versions)
+
+	// Trim the "v" we prepended to make use of [gsemver].
+	return strings.TrimPrefix(versions[len(versions)-1], "v")
 }
 
 // ChangeLevel represents the level of change, corresponding to semantic versioning.
