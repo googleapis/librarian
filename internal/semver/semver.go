@@ -177,23 +177,24 @@ func MaxVersion(versionStrings ...string) string {
 		// Prepend "v" internally so that we can use [semver.IsValid] and
 		// [semver.Sort].
 		versionString = "v" + versionString
-versions := make([]string, 0, len(versionStrings))
-for _, versionString := range versionStrings {
-	// Our client versions must not have a "v" prefix.
-	if strings.HasPrefix(versionString, "v") {
-		slog.Warn("invalid version string", "version", versionString)
-		continue
+		if !semver.IsValid(versionString) {
+			slog.Warn("invalid version string", "version", versionString)
+			continue
+		}
+		versions = append(versions, versionString)
 	}
 
-	// Prepend "v" internally so that we can use [gsemver.IsValid] and
-	// [gsemver.Sort].
-	vPrefixedString := "v" + versionString
-	if !gsemver.IsValid(vPrefixedString) {
-		slog.Warn("invalid version string", "version", versionString)
-		continue
+	if len(versions) == 0 {
+		return ""
 	}
-	versions = append(versions, vPrefixedString)
+
+	semver.Sort(versions)
+
+	// Trim the "v" we prepended to make use of [semver].
+	return strings.TrimPrefix(versions[len(versions)-1], "v")
 }
+
+// ChangeLevel represents the level of change, corresponding to semantic versioning.
 type ChangeLevel int
 
 const (
