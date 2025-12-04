@@ -40,6 +40,7 @@ var (
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errSidekickNotFound = errors.New(".sidekick.toml not found")
 	errSrcNotFound      = errors.New("src/generated directory not found")
+	errTidyFailed       = errors.New("librarian tidy failed")
 )
 
 // SidekickConfig represents the structure of a .sidekick.toml file.
@@ -117,9 +118,10 @@ func run(args []string) error {
 	slog.Info("Wrote config to output file", "path", outputPath)
 
 	if err := librarian.RunTidy(); err != nil {
-		return fmt.Errorf("librarian tidy failed: %w", err)
+		slog.Error(errTidyFailed.Error(), "error", err)
+		return errTidyFailed
 	}
-	slog.Info("Ran librarian tidy successfully")
+	fmt.Printf("Ran librarian tidy successfully")
 
 	return nil
 }

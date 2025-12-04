@@ -17,7 +17,6 @@ package main
 import (
 	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -419,43 +418,41 @@ func TestBuildConfig(t *testing.T) {
 }
 
 func TestRunMigrateCommand(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
-		wantErr string
+		wantErr error
 	}{
 		{
 			name: "success",
-			path: "testdata/root-sidekick/success",
+			path: "testdata/run/success",
 		},
 		{
 			name:    "tidy_command_fails",
-			path:    "testdata/tidy-fails",
-wantErr: "librarian tidy failed",
+			path:    "testdata/run/tidy-fails",
+			wantErr: errTidyFailed,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 
-			// ensure .librarian.yaml generated is removed after the test,
+			// ensure librarian.yaml generated is removed after the test,
 			// even if the test fails
-outputPath := "librarian.yaml"
+			outputPath := "librarian.yaml"
 			t.Cleanup(func() {
 				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
 					t.Logf("cleanup: remove %s: %v", outputPath, err)
 				}
 			})
 
-			args := []string{
-				"migrate-sidekick",
-				"-repo", test.path,
-			}
-
-			err := run(args)
-
-			if test.wantErr != "" && !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("expected error %s, got: %v", test.wantErr, err)
+			if err := run([]string{"migrate-sidekick", "-repo", test.path}); err != nil {
+				if test.wantErr == nil {
+					t.Fatal(err)
+				}
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+			} else if test.wantErr != nil {
+				t.Fatalf("expected error containing %q, got nil", test.wantErr)
 			}
 
 		})
