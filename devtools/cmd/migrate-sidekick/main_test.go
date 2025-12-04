@@ -191,10 +191,10 @@ func TestReadSidekickFiles(t *testing.T) {
 							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
 						},
 					},
-					SpecificationFormat: "openapi",
 					SkipPublish:         true,
 					Version:             "1.2.0",
 					CopyrightYear:       "2025",
+					SpecificationFormat: "openapi",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							PackageDependencies: []*config.RustPackageDependency{
@@ -468,7 +468,7 @@ func TestMapSpecificationFormat(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 
-			got := getSpecificationFormat(test.providedSpecFormat)
+			got := mapSpecificationFormat(test.providedSpecFormat)
 			if diff := cmp.Diff(test.wantedSpecFormat, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
