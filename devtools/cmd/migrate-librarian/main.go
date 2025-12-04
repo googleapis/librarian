@@ -48,7 +48,7 @@ func main() {
 
 func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
-	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
+	repoPath := flagSet.String("repo", "", "Path to the repository containing legacy .librarian configuration (required)")
 	language := flagSet.String("lang", "go", "One of go and python (default: go)")
 	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
@@ -133,7 +133,7 @@ func buildLibraries(
 }
 
 func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
-	res := map[string]*T{}
+	res := make(map[string]*T, len(slice))
 	for _, t := range slice {
 		key := keyFunc(t)
 		res[key] = t
@@ -143,7 +143,7 @@ func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
 }
 
 func toChannels(apis []*legacyconfig.API) []*config.Channel {
-	var channels []*config.Channel
+	channels := make([]*config.Channel, 0, len(apis))
 	for _, api := range apis {
 		channels = append(channels, &config.Channel{
 			Path:          api.Path,
