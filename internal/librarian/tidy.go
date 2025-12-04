@@ -42,7 +42,7 @@ func tidyCommand() *cli.Command {
 	}
 }
 
-/* RunTidy formats and validates the librarian configuration file. */
+// RunTidy formats and validates the librarian configuration file.
 func RunTidy() error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
