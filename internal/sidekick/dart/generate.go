@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
-//go:embed templates
+//go:embed all:templates
 var dartTemplates embed.FS
 
 // Generate generates Dart code from the model.
