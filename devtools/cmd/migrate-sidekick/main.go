@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -114,6 +115,11 @@ func run(args []string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 	slog.Info("Wrote config to output file", "path", outputPath)
+
+	if err := librarian.RunTidy(); err != nil {
+		return fmt.Errorf("librarian tidy command failed: %w", err)
+	}
+	slog.Info("Ran librarian tidy command successfully")
 
 	return nil
 }
