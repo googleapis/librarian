@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/librarian/internal/python"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -221,6 +222,11 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 			return fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		err = rust.Generate(ctx, library, sources)
+	case "python":
+		if err := cleanOutput(library.Output, library.Keep); err != nil {
+			return err
+		}
+		err = python.Generate(ctx, library, sources)
 	default:
 		err = fmt.Errorf("generate not implemented for %q", language)
 	}

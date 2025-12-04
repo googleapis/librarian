@@ -174,8 +174,4 @@ type PythonPackage struct {
 	// that API channel.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
-
-	// IsProtoOnly indicates this library only contains proto files (no GAPIC
-	// generation).
-	IsProtoOnly bool `yaml:"is_proto_only,omitempty"`
 }
