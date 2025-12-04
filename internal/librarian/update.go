@@ -95,12 +95,10 @@ func runUpdate(all bool, sourceName string) error {
 
 	for _, name := range sourceNamesToProcess {
 		source := sourcesMap[name]
-		fmt.Printf("Fetching latest %s commit...\n", name)
 		if err := updateSource(endpoints, name, source, cfg); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -128,10 +126,6 @@ func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source
 		if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 			return err
 		}
-		fmt.Printf("Updated librarian.yaml:\n  sources.%s.commit: %s -> %s\n  sources.%s.sha: %s -> %s\n\n",
-			name, oldCommit, commit, name, oldSHA256, sha256)
-	} else {
-		fmt.Printf("No change detected for %s.\n\n", name)
 	}
 	return nil
 }
