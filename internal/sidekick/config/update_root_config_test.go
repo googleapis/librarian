@@ -129,7 +129,7 @@ func TestUpdateRootConfigErrors(t *testing.T) {
 					t.Fatal(err)
 				}
 				// Make the content invalid to trigger an error in updateRootConfigContents
-				badContent := []byte("googleapis-root # Missing separator\n")
+				badContent := []byte("googleapis-root Missing separator\n")
 				if err := os.WriteFile(configName, badContent, 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -137,11 +137,7 @@ func TestUpdateRootConfigErrors(t *testing.T) {
 			},
 		},
 	} {
-		test := test // Capture the range variable for use in the subtest
 		t.Run(test.name, func(t *testing.T) {
-			// update() normally writes `.sidekick.toml` to cwd. We need to change to a
-			// temporary directory to avoid changing the actual configuration, and any
-			// conflicts with other tests running at the same time.
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
 

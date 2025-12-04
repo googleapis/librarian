@@ -647,7 +647,7 @@ func TestLatestCommitAndChecksumFailure(t *testing.T) {
 	t.Run("Sha256 fails", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// The first call is for the latest SHA, which should succeed.
-			if strings.Contains(r.URL.Path, "commits") {
+			if strings.HasSuffix(r.URL.Path, "/commits/master") {
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(commit))
 				return
