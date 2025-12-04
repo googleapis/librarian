@@ -120,9 +120,12 @@ func buildLibraries(
 		// Go and Python monorepo only contains GAPIC libraries.
 		library.SpecificationFormat = "protobuf"
 		// hydrate params from library config
-		libCfg := idToLibraryConfig[id]
-		library.SkipGenerate = libCfg.GenerateBlocked
-		library.SkipRelease = libCfg.ReleaseBlocked
+		libCfg, ok := idToLibraryConfig[id]
+		if ok {
+			library.SkipGenerate = libCfg.GenerateBlocked
+			library.SkipRelease = libCfg.ReleaseBlocked
+		}
+
 		libraries = append(libraries, library)
 	}
 
