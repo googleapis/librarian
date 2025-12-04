@@ -26,6 +26,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -616,6 +617,52 @@ func TestDownloadTarballRetry(t *testing.T) {
 		}
 		if diff := cmp.Diff(tarball.Contents, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestLatestCommitAndChecksumFailure(t *testing.T) {
+	const (
+		commit   = "test-commit-sha"
+		testOrg  = "test-org"
+		testRepo = "test-repo"
+	)
+
+	t.Run("LatestSha fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Fail the first call, which is to get the latest SHA
+			http.Error(w, "failed to get latest sha", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		endpoints := &Endpoints{API: server.URL, Download: server.URL}
+		repo := &Repo{Org: testOrg, Repo: testRepo}
+
+		_, _, err := LatestCommitAndChecksum(endpoints, repo)
+		if err == nil {
+			t.Error("expected an error when LatestSha fails, but got nil")
+		}
+	})
+
+	t.Run("Sha256 fails", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// The first call is for the latest SHA, which should succeed.
+			if strings.Contains(r.URL.Path, "commits") {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(commit))
+				return
+			}
+			// The second call is for the tarball, which should fail.
+			http.Error(w, "failed to download tarball", http.StatusInternalServerError)
+		}))
+		defer server.Close()
+
+		endpoints := &Endpoints{API: server.URL, Download: server.URL}
+		repo := &Repo{Org: testOrg, Repo: testRepo}
+
+		_, _, err := LatestCommitAndChecksum(endpoints, repo)
+		if err == nil {
+			t.Error("expected an error when Sha256 fails, but got nil")
 		}
 	})
 }
