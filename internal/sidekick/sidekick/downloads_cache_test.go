@@ -238,14 +238,17 @@ func TestMakeSourceRootErrors(t *testing.T) {
 	})
 
 	t.Run("download-fails", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		}))
-		defer server.Close()
-
+		// Temporarily replace the download function with a mock to simulate failure
+		oldDownloadTarball := downloadTarball
+		downloadTarball = func(ctx context.Context, target, url, expectedSha256 string) error {
+			return fmt.Errorf("download failed after 3 attempts")
+		}
+		t.Cleanup(func() {
+			downloadTarball = oldDownloadTarball
+		})
 		rootConfig := &config.Config{
 			Source: map[string]string{
-				"googleapis-root":   server.URL,
+				"googleapis-root":   "https://some-url",
 				"googleapis-sha256": "somesha",
 				"cachedir":          t.TempDir(),
 			},
@@ -327,13 +330,8 @@ func TestMakeSourceRootErrors(t *testing.T) {
 }
 
 func TestGetCacheDirFails(t *testing.T) {
-	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", "")
-	defer os.Setenv("HOME", oldHome)
-
-	oldXdg := os.Getenv("XDG_CACHE_HOME")
-	os.Setenv("XDG_CACHE_HOME", "")
-	defer os.Setenv("XDG_CACHE_HOME", oldXdg)
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CACHE_HOME", "")
 
 	_, err := getCacheDir(&config.Config{Source: map[string]string{}})
 	if err == nil {

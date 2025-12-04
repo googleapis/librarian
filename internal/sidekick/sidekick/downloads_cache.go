@@ -28,6 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
+var (
+	downloadTarball = fetch.DownloadTarball
+)
+
 func makeSourceRoot(ctx context.Context, rootConfig *config.Config, configPrefix string) (string, error) {
 	sourceRoot, ok := rootConfig.Source[fmt.Sprintf("%s-root", configPrefix)]
 	if !ok {
@@ -55,7 +59,7 @@ func makeSourceRoot(ctx context.Context, rootConfig *config.Config, configPrefix
 		return target, nil
 	}
 	tgz := target + ".tar.gz"
-	if err := fetch.DownloadTarball(ctx, tgz, sourceRoot, source); err != nil {
+	if err := downloadTarball(ctx, tgz, sourceRoot, source); err != nil {
 		return "", err
 	}
 
