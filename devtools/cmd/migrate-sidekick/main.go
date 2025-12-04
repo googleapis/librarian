@@ -277,13 +277,11 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		lib, exists := libraries[libraryName]
 		if !exists {
 			lib = &config.Library{
-				Name:                libraryName,
-				SpecificationFormat: specificationFormat,
+				Name: libraryName,
 			}
 			libraries[libraryName] = lib
-		} else {
-			lib.SpecificationFormat = specificationFormat
 		}
+		lib.SpecificationFormat = specificationFormat
 
 		// Add channels
 		lib.Channels = append(lib.Channels, &config.Channel{
@@ -491,10 +489,9 @@ func isEmptyRustCrate(r *config.RustCrate) bool {
 }
 
 func mapSpecificationFormat(specFormat string) string {
-	mappedSpecFormat := specFormat
 	switch specFormat {
 	case "disco":
-		mappedSpecFormat = "discovery"
+		return "discovery"
 	}
-	return mappedSpecFormat
+	return specFormat
 }
