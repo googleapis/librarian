@@ -850,12 +850,14 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		}
 	}
 
-	// NullValue and Any have null as an encoding.
-
 	switch {
+	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
 		decoder := annotate.decoder(field.Typez, field.TypezID, state)
-		return fmt.Sprintf("switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], _ => throw TypeError() }", data, defaultValue, decoder)
+		return fmt.Sprintf(
+			"switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], "+
+				"_ => throw FormatException('\"%s\" is not a list') }",
+			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
 		message := state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
@@ -865,7 +867,10 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		valueTypeID := message.Fields[1].TypezID
 		valueDecoder := annotate.decoder(valueType, valueTypeID, state)
 
-		return fmt.Sprintf("switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, _ => throw TypeError() }", data, defaultValue, keyDecoder, valueDecoder)
+		return fmt.Sprintf(
+			"switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, "+
+				"_ => throw FormatException('\"%s\" is not an object') }",
+			data, defaultValue, keyDecoder, valueDecoder, field.JSONName)
 	}
 
 	decoder := annotate.decoder(field.Typez, field.TypezID, state)

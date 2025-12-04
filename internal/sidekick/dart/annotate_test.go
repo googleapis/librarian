@@ -852,91 +852,97 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// primitives
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
-			"json['bool'] ?? false",
+			"switch (json['bool']) { null => false, Object $1 => decodeBool($1)}",
 		}, {
 			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
-			"decodeBytes(json['bytes']) ?? Uint8List(0)",
+			"switch (json['bytes']) { null => Uint8List(0), Object $1 => decodeBytes($1)}",
 		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
-			"json['int32'] ?? 0",
+			"switch (json['int32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
-			"json['fixed32'] ?? 0",
+			"switch (json['fixed32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
-			"json['string'] ?? ''",
+			"switch (json['string']) { null => '', Object $1 => decodeString($1)}",
 		},
 
 		// optional primitives
 		{
 			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
-			"json['bool']",
+			"switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		}, {
 			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
-			"decodeBytes(json['bytes'])",
+			"switch (json['bytes']) { null => null, Object $1 => decodeBytes($1)}",
 		}, {
 			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
-			"json['int32']",
+			"switch (json['int32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
-			"json['string']",
+			"switch (json['string']) { null => null, Object $1 => decodeString($1)}",
 		},
 
 		// one ofs
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
-			"json['bool']",
+			"switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		},
 
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
-			"decodeList(json['boolList']) ?? []",
+			"switch (json['boolList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBool(i)], _ => throw FormatException('\"boolList\" is not a list') }",
 		}, {
 			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			"decodeListBytes(json['bytesList']) ?? []",
+			"switch (json['bytesList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBytes(i)], _ => throw FormatException('\"bytesList\" is not a list') }",
+		}, {
+			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
+			"switch (json['doubleList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeDouble(i)], _ => throw FormatException('\"doubleList\" is not a list') }",
+		}, {
+			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.FIXED32_TYPE, Repeated: true},
+			"switch (json['fixed32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"fixed32List\" is not a list') }",
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
-			"decodeList(json['int32List']) ?? []",
+			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"int32List\" is not a list') }",
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
-			"decodeList(json['stringList']) ?? []",
+			"switch (json['stringList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeString(i)], _ => throw FormatException('\"stringList\" is not a list') }",
 		},
 
 		// repeated primitives w/ optional
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
-			"decodeList(json['int32List']) ?? []",
+			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"int32List\" is not a list') }",
 		},
 
 		// enums
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enumState.ID},
-			"decodeEnum(json['message'], State.fromJson) ?? State.$default",
+			"switch (json['message']) { null => State.$default, Object $1 => State.fromJson($1)}",
 		},
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
-			"decodeEnum(json['message'], foo.ForeignEnum.fromJson) ?? foo.ForeignEnum.$default",
+			"switch (json['message']) { null => foo.ForeignEnum.$default, Object $1 => foo.ForeignEnum.fromJson($1)}",
 		},
 
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
-			"decode(json['message'], Secret.fromJson)",
+			"switch (json['message']) { null => null, Object $1 => Secret.fromJson($1)}",
 		},
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
-			"decode(json['message'], foo.Foo.fromJson)",
+			"switch (json['message']) { null => null, Object $1 => foo.Foo.fromJson($1)}",
 		},
 		{
 			// Custom encoding.
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
-			"decodeCustom(json['message'], Duration.fromJson)",
+			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
 		{
 			// Map of bytes.
 			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
-			"decodeMapBytes(json['message']) ?? {}",
+			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw FormatException('\"message\" is not an object') }",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
