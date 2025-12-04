@@ -72,9 +72,9 @@ func RepoFromTarballLink(githubDownload, tarballLink string) (*Repo, error) {
 	return repo, nil
 }
 
-// Sha256 downloads the content from the given URL and returns its SHA256
+// urlSha256 downloads the content from the given URL and returns its SHA256
 // checksum as a hex string.
-func Sha256(query string) (string, error) {
+func urlSha256(query string) (string, error) {
 	response, err := http.Get(query)
 	if err != nil {
 		return "", err
@@ -92,9 +92,9 @@ func Sha256(query string) (string, error) {
 	return got, nil
 }
 
-// LatestSha fetches the latest commit SHA from the GitHub API for the given
+// latestSha fetches the latest commit SHA from the GitHub API for the given
 // repository URL.
-func LatestSha(query string) (string, error) {
+func latestSha(query string) (string, error) {
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodGet, query, nil)
 	if err != nil {
@@ -120,13 +120,13 @@ func LatestSha(query string) (string, error) {
 // commit from the GitHub API for the given repository.
 func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
 	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
-	commit, err = LatestSha(apiURL)
+	commit, err = latestSha(apiURL)
 	if err != nil {
 		return "", "", err
 	}
 
 	tarballURL := TarballLink(endpoints.Download, repo, commit)
-	sha256, err = Sha256(tarballURL)
+	sha256, err = urlSha256(tarballURL)
 	if err != nil {
 		return "", "", err
 	}

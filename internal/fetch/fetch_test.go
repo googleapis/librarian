@@ -90,7 +90,7 @@ func TestSha256(t *testing.T) {
 	}))
 	defer server.Close()
 
-	got, err := Sha256(server.URL + tarballPath)
+	got, err := urlSha256(server.URL + tarballPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestSha256Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := Sha256(test.url); err == nil {
+			if _, err := urlSha256(test.url); err == nil {
 				t.Error("expected an error from Sha256()")
 			}
 		})
@@ -130,8 +130,8 @@ func TestSha256Error(t *testing.T) {
 
 func TestLatestSha(t *testing.T) {
 	const (
-		getLatestShaPath = "/repos/googleapis/googleapis/commits/master"
-		latestSha        = "5d5b1bf126485b0e2c972bac41b376438601e266"
+		getLatestShaPath  = "/repos/googleapis/googleapis/commits/master"
+		expectedCommitSha = "5d5b1bf126485b0e2c972bac41b376438601e266"
 	)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -144,16 +144,16 @@ func TestLatestSha(t *testing.T) {
 			t.Fatalf("mismatched Accept header for %q, got=%q, want=%s", r.URL.Path, got, want)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(latestSha))
+		w.Write([]byte(expectedCommitSha))
 	}))
 	defer server.Close()
 
-	got, err := LatestSha(server.URL + getLatestShaPath)
+	got, err := latestSha(server.URL + getLatestShaPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != latestSha {
-		t.Errorf("LatestSha() = %q, want %q", got, latestSha)
+	if got != expectedCommitSha {
+		t.Errorf("LatestSha() = %q, want %q", got, expectedCommitSha)
 	}
 }
 
@@ -179,7 +179,7 @@ func TestLatestShaError(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := LatestSha(test.url); err == nil {
+			if _, err := latestSha(test.url); err == nil {
 				t.Error("expected an error from LatestSha()")
 			}
 		})
