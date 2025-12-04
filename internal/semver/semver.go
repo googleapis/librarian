@@ -40,71 +40,75 @@ type Version struct {
 	PrereleaseNumber *int
 }
 
-// semverRegex defines format for semantic version.
-// Regex from https://semver.org/, with buildmetadata part removed.
-// It uses named capture groups for major, minor, patch, and prerelease.
-var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
-
 // unsegmentedPrereleaseRegexp extracts the prerelease number, if present, in the
 // prerelease portion of the SemVer version parsed by [semverRegex].
 var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
-	matches := semverRegex.FindStringSubmatch(versionString)
-	if matches == nil {
+	// Our client versions must not have a "v" prefix.
+	if strings.HasPrefix(versionString, "v") {
 		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
 
-	// Create a map of capture group names to their values.
-	result := make(map[string]string)
-	for i, name := range semverRegex.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = matches[i]
-		}
+	// Prepend "v" internally so that we can use various [semver] APIs.
+	// Then canonicalize it to zero-fill any missing version segments.
+	// Strips build metadata if present, though it is not used in our versions.
+	vPrefixedVersion := "v" + versionString
+	if !semver.IsValid(vPrefixedVersion) {
+		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
+	vPrefixedVersion = semver.Canonical((vPrefixedVersion))
+
+	// Preemptively pull out the prerelease segment so that we can trim it off
+	// of the Patch segment.
+	prerelease := semver.Prerelease(vPrefixedVersion)
+
+	versionCore := strings.TrimSuffix(vPrefixedVersion, prerelease)
+	versionCore = strings.TrimPrefix(versionCore, "v")
+	vParts := strings.Split(versionCore, ".")
 
 	v := &Version{}
 	var err error
-	v.Major, err = strconv.Atoi(result["major"])
+
+	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid major version: %w", err)
 	}
-	v.Minor, err = strconv.Atoi(result["minor"])
+
+	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid minor version: %w", err)
 	}
-	v.Patch, err = strconv.Atoi(result["patch"])
+
+	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid patch version: %w", err)
 	}
 
-	if prerelease := result["prerelease"]; prerelease != "" {
-		if i := strings.LastIndex(prerelease, "."); i != -1 {
-			v.Prerelease = prerelease[:i]
-			v.PrereleaseSeparator = "."
-			num, err := strconv.Atoi(prerelease[i+1:])
-			if err != nil {
-				return nil, fmt.Errorf("invalid prerelease number: %w", err)
-			}
-			v.PrereleaseNumber = &num
-		} else {
-			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
-			if len(matches) == 3 {
-				v.Prerelease = matches[1]
-				num, err := strconv.Atoi(matches[2])
-				if err != nil {
-					// This should not happen if the regex is correct.
-					return nil, fmt.Errorf("invalid prerelease number: %w", err)
-				}
-				v.PrereleaseNumber = &num
-			} else {
-				v.Prerelease = prerelease
-			}
+	if prerelease == "" {
+		return v, nil
+	}
+
+	prerelease = strings.TrimPrefix(prerelease, "-")
+	if i := strings.LastIndex(prerelease, "."); i != -1 {
+		v.Prerelease = prerelease[:i]
+		v.PrereleaseSeparator = "."
+		num, err := strconv.Atoi(prerelease[i+1:])
+		if err != nil {
+			return nil, fmt.Errorf("invalid prerelease number: %w", err)
 		}
+		v.PrereleaseNumber = &num
+	} else if matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
+		v.Prerelease = matches[1]
+		num, err := strconv.Atoi(matches[2])
+		if err != nil {
+			// This should not happen if the regex is correct.
+			return nil, fmt.Errorf("invalid prerelease number: %w", err)
+		}
+		v.PrereleaseNumber = &num
+	} else {
+		v.Prerelease = prerelease
 	}
 
 	return v, nil

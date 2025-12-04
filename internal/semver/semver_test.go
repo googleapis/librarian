@@ -82,10 +82,13 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:          "invalid version",
-			version:       "1.2",
-			wantErr:       true,
-			wantErrPhrase: "invalid version format",
+			name:    "valid shortened version",
+			version: "1.2.0",
+			want: &Version{
+				Major: 1,
+				Minor: 2,
+				Patch: 0,
+			},
 		},
 		{
 			name:          "invalid prerelease number with separator",
