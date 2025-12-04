@@ -209,6 +209,7 @@ func TestReadSidekickFiles(t *testing.T) {
 									Name:      "lazy_static",
 									Package:   "lazy_static",
 									UsedIf:    "services",
+									Ignore:    true,
 								},
 							},
 						},

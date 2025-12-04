@@ -196,6 +196,8 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 			dep.UsedIf = value
 		case "feature":
 			dep.Feature = value
+		case "ignore":
+			dep.Ignore = value == "true"
 		}
 	}
 
