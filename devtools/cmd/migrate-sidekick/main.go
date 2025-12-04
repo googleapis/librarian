@@ -121,7 +121,6 @@ func run(args []string) error {
 		slog.Error(errTidyFailed.Error(), "error", err)
 		return errTidyFailed
 	}
-	fmt.Printf("Ran librarian tidy successfully")
 
 	return nil
 }

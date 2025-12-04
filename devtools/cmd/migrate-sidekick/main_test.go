@@ -24,7 +24,6 @@ import (
 )
 
 func TestReadRootSidekick(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -74,7 +73,6 @@ func TestReadRootSidekick(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := readRootSidekick(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -95,7 +93,6 @@ func TestReadRootSidekick(t *testing.T) {
 }
 
 func TestFindSidekickFiles(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -117,7 +114,6 @@ func TestFindSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := findSidekickFiles(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -138,7 +134,6 @@ func TestFindSidekickFiles(t *testing.T) {
 }
 
 func TestReadSidekickFiles(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		files   []string
@@ -251,7 +246,6 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := readSidekickFiles(test.files)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -272,7 +266,6 @@ func TestReadSidekickFiles(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name string
 		api  string
@@ -310,7 +303,6 @@ func TestDeriveLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got := deriveLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -320,7 +312,6 @@ func TestDeriveLibraryName(t *testing.T) {
 }
 
 func TestBuildConfig(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		libraries map[string]*config.Library
@@ -408,7 +399,6 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got := buildConfig(test.libraries, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
