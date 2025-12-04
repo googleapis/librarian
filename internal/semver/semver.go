@@ -176,12 +176,12 @@ func MaxVersion(versionStrings ...string) string {
 
 		// Prepend "v" internally so that we can use [semver.IsValid] and
 		// [semver.Sort].
-		versionString = "v" + versionString
-		if !semver.IsValid(versionString) {
+		vPrefixedString := "v" + versionString
+		if !semver.IsValid(vPrefixedString) {
 			slog.Warn("invalid version string", "version", versionString)
 			continue
 		}
-		versions = append(versions, versionString)
+		versions = append(versions, vPrefixedString)
 	}
 
 	if len(versions) == 0 {
