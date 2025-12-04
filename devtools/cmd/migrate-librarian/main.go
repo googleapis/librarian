@@ -19,6 +19,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -39,6 +41,7 @@ const (
 var (
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errLangNotSupported = errors.New("only go and python are supported")
+	errTidyFailed       = errors.New("librarian tidy failed")
 )
 
 func main() {
@@ -76,7 +79,17 @@ func run(args []string) error {
 
 	cfg := buildConfig(librarianState, librarianConfig, *language)
 
-	return yaml.Write(*outputPath, cfg)
+	if err := yaml.Write(*outputPath, cfg); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+	slog.Info("Wrote config to output file", "path", outputPath)
+
+	if err := librarian.RunTidy(); err != nil {
+		slog.Error(errTidyFailed.Error(), "error", err)
+		return errTidyFailed
+	}
+
+	return nil
 }
 
 func buildConfig(

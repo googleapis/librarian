@@ -36,6 +36,11 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			repoPath: "testdata/run/success",
 		},
 		{
+			name:     "tidy_failed",
+			repoPath: "testdata/run/tidy-fails",
+			wantErr:  errTidyFailed,
+		},
+		{
 			name:     "no_repo_path",
 			repoPath: "",
 			wantErr:  errRepoNotFound,
