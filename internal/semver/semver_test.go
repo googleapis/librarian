@@ -83,7 +83,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "valid shortened version",
-			version: "1.2.0",
+			version: "1.2",
 			want: &Version{
 				Major: 1,
 				Minor: 2,
