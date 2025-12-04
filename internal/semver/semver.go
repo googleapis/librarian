@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	gsemver "golang.org/x/mod/semver"
+	"golang.org/x/mod/semver"
 )
 
 // Version represents a semantic version.
@@ -174,10 +174,10 @@ func MaxVersion(versionStrings ...string) string {
 			continue
 		}
 
-		// Prepend "v" internally so that we can use [gsemver.IsValid] and
-		// [gsemver.Sort].
+		// Prepend "v" internally so that we can use [semver.IsValid] and
+		// [semver.Sort].
 		versionString = "v" + versionString
-		if !gsemver.IsValid(versionString) {
+		if !semver.IsValid(versionString) {
 			slog.Warn("invalid version string", "version", versionString)
 			continue
 		}
@@ -188,9 +188,9 @@ func MaxVersion(versionStrings ...string) string {
 		return ""
 	}
 
-	gsemver.Sort(versions)
+	semver.Sort(versions)
 
-	// Trim the "v" we prepended to make use of [gsemver].
+	// Trim the "v" we prepended to make use of [semver].
 	return strings.TrimPrefix(versions[len(versions)-1], "v")
 }
 
