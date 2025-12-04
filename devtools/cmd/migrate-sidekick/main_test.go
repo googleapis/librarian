@@ -440,7 +440,7 @@ wantErr: "librarian tidy failed",
 
 			// ensure .librarian.yaml generated is removed after the test,
 			// even if the test fails
-			outputPath := ".librarian.yaml"
+outputPath := "librarian.yaml"
 			t.Cleanup(func() {
 				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
 					t.Logf("cleanup: remove %s: %v", outputPath, err)
