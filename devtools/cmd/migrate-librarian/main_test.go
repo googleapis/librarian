@@ -15,12 +15,64 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 )
+
+func TestRunMigrateLibrarian(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		lang     string
+		wantErr  error
+	}{
+		{
+			name:     "success",
+			repoPath: "testdata/run/success",
+		},
+		{
+			name:     "unsupported_language",
+			repoPath: "unused-path",
+			lang:     "unsupported",
+			wantErr:  errLangNotSupported,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			// ensure librarian.yaml generated is removed after the test,
+			// even if the test fails
+			outputPath := "librarian.yaml"
+			t.Cleanup(func() {
+				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
+					t.Logf("cleanup: remove %s: %v", outputPath, err)
+				}
+			})
+
+			args := []string{"-repo", test.repoPath, "-output", outputPath}
+
+			if test.lang != "" {
+				args = append(args, "-lang", test.lang)
+			}
+
+			if err := run(args); err != nil {
+				if test.wantErr == nil {
+					t.Fatal(err)
+				}
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+			} else if test.wantErr != nil {
+				t.Fatalf("expected error containing %q, got nil", test.wantErr)
+			}
+
+		})
+	}
+}
 
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {

@@ -37,7 +37,8 @@ const (
 )
 
 var (
-	errRepoNotFound = errors.New("-repo flag is required")
+	errRepoNotFound     = errors.New("-repo flag is required")
+	errLangNotSupported = errors.New("only go and python are supported")
 )
 
 func main() {
@@ -51,12 +52,16 @@ func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the repository containing legacy .librarian configuration (required)")
 	language := flagSet.String("lang", "go", "One of go and python (default: go)")
-	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
+	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
 	if *repoPath == "" {
 		return errRepoNotFound
+	}
+
+	if *language != "go" && *language != "python" {
+		return errLangNotSupported
 	}
 
 	librarianState, err := readState(*repoPath)
