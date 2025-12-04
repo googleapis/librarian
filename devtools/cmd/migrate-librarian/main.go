@@ -51,7 +51,7 @@ func run(args []string) error {
 	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
 	language := flagSet.String("lang", "go", "One of go and python (default: go)")
 	outputPath := flagSet.String("output", "./.librarian.yaml", "Output file path (default: ./.librarian.yaml)")
-	if err := flagSet.Parse(args[1:]); err != nil {
+	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
 	if *repoPath == "" {
