@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package semver provides functionality for parsing, comparing, and manipulating
-// semantic version strings according to the SemVer 2.0.0 spec.
+// semantic version strings according to the SemVer 1.0.0 and 2.0.0 spec.
 package semver
 
 import (
@@ -31,7 +31,8 @@ type Version struct {
 	// Prerelease is the non-numeric part of the prerelease string (e.g., "alpha", "beta").
 	Prerelease string
 	// PrereleaseSeparator is the separator between the pre-release string and
-	// its version (e.g., ".").
+	// its version (e.g., "."). SemVer 1.0.0 versions do not have a prerelease
+	// separator.
 	PrereleaseSeparator string
 	// PrereleaseNumber is the numeric part of the pre-release segment of the
 	// version string (e.g., the 1 in "alpha.1"). Zero is a valid pre-release
@@ -41,14 +42,17 @@ type Version struct {
 }
 
 // semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
-// the prerelease portion of the SemVer 1.0.0 version string.
+// the prerelease portion of the SemVer 1.0.0 version string. For example, a
+// version string like "1.2.3-alpha01" is a SemVer 1.0.0. compliant, numbered
+// prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
 var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
-// Parse parses a version string into a Version struct.
-func Parse(versionString string) (*Version, error) {
+// Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a Version
+// struct.
+func Parse(versionString string) (Version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return nil, fmt.Errorf("invalid version format: %s", versionString)
+		return Version{}, fmt.Errorf("invalid version format: %s", versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -56,7 +60,7 @@ func Parse(versionString string) (*Version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return nil, fmt.Errorf("invalid version format: %s", versionString)
+		return Version{}, fmt.Errorf("invalid version format: %s", versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -68,22 +72,22 @@ func Parse(versionString string) (*Version, error) {
 	versionCore = strings.TrimSuffix(versionCore, prerelease)
 	vParts := strings.Split(versionCore, ".")
 
-	v := &Version{}
+	var v Version
 	var err error
 
 	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
-		return nil, fmt.Errorf("invalid major version: %w", err)
+		return Version{}, fmt.Errorf("invalid major version: %w", err)
 	}
 
 	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
-		return nil, fmt.Errorf("invalid minor version: %w", err)
+		return Version{}, fmt.Errorf("invalid minor version: %w", err)
 	}
 
 	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
-		return nil, fmt.Errorf("invalid patch version: %w", err)
+		return Version{}, fmt.Errorf("invalid patch version: %w", err)
 	}
 
 	if prerelease == "" {
@@ -106,7 +110,7 @@ func Parse(versionString string) (*Version, error) {
 	if numStr != "" {
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid prerelease number: %w", err)
+			return Version{}, fmt.Errorf("invalid prerelease number: %w", err)
 		}
 		v.PrereleaseNumber = &num
 	}
@@ -115,7 +119,7 @@ func Parse(versionString string) (*Version, error) {
 }
 
 // String formats a Version struct into a string.
-func (v *Version) String() string {
+func (v Version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
 		version += "-" + v.Prerelease
@@ -124,44 +128,6 @@ func (v *Version) String() string {
 		}
 	}
 	return version
-}
-
-// incrementPrerelease increments the pre-release version number, or appends
-// one if it doesn't exist.
-func (v *Version) incrementPrerelease() {
-	if v.PrereleaseNumber == nil {
-		v.PrereleaseSeparator = "."
-		// Initialize a new int pointer set to 0. Fallthrough to increment to 1.
-		// We prefer the first prerelease to use 1 instead of 0.
-		v.PrereleaseNumber = new(int)
-	}
-	*v.PrereleaseNumber++
-}
-
-func (v *Version) bump(highestChange ChangeLevel) {
-	if v.Prerelease != "" {
-		// Only bump the prerelease version number.
-		v.incrementPrerelease()
-		return
-	}
-
-	// Bump the version core.
-	// Breaking changes and feat result in minor bump for pre-1.0.0 versions.
-	if (v.Major == 0 && highestChange == Major) || highestChange == Minor {
-		v.Minor++
-		v.Patch = 0
-		return
-	}
-	if highestChange == Patch {
-		v.Patch++
-		return
-	}
-	if highestChange == Major {
-		v.Major++
-		v.Minor = 0
-		v.Patch = 0
-		return
-	}
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
@@ -214,18 +180,66 @@ func (c ChangeLevel) String() string {
 	return [...]string{"none", "patch", "minor", "major"}[c]
 }
 
-// DeriveNext calculates the next version based on the highest change type and current version.
-func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
+// DeriveNextOptions contains options for controlling SemVer version derivation.
+type DeriveNextOptions struct {
+	// BumpVersionCore forces the version bump to occur in the version core,
+	// as opposed to the prerelease number, if one was present. If true, and
+	// the version has a prerelease number, that number will be reset to 1.
+	//
+	// Default behavior is to prefer bumping the prerelease number or adding one
+	// when the version is a prerelease without a number.
+	BumpVersionCore bool
+}
+
+func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
 	if highestChange == None {
 		return currentVersion, nil
 	}
 
-	currentSemVer, err := Parse(currentVersion)
+	version, err := Parse(currentVersion)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse current version: %w", err)
 	}
 
-	currentSemVer.bump(highestChange)
+	// Only bump the prerelease version number.
+	if version.Prerelease != "" && !o.BumpVersionCore {
+		// Append prerelease number if there isn't one.
+		if version.PrereleaseNumber == nil {
+			version.PrereleaseSeparator = "."
 
-	return currentSemVer.String(), nil
+			// Initialize a new int pointer set to 0. Fallthrough to increment
+			// to 1. We prefer the first prerelease to use 1 instead of 0.
+			version.PrereleaseNumber = new(int)
+		}
+
+		*version.PrereleaseNumber++
+		return version.String(), nil
+	}
+
+	// Reset prerelease number, if prsent, then fallthrough to bump version core.
+	if version.PrereleaseNumber != nil && o.BumpVersionCore {
+		*version.PrereleaseNumber = 1
+	}
+
+	// Bump the version core.
+	// Breaking changes and feat result in minor bump for pre-1.0.0 versions.
+	if (version.Major == 0 && highestChange == Major) || highestChange == Minor {
+		version.Minor++
+		version.Patch = 0
+	} else if highestChange == Patch {
+		version.Patch++
+	} else if highestChange == Major {
+		version.Major++
+		version.Minor = 0
+		version.Patch = 0
+	}
+
+	return version.String(), nil
+}
+
+// DeriveNext calculates the next version based on the highest change type and
+// current version using the default [DeriveNextOptions]. This is a convenience
+// method.
+func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
+	return DeriveNextOptions{}.DeriveNext(highestChange, currentVersion)
 }

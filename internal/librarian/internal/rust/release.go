@@ -84,7 +84,8 @@ func release(cfg *config.Config, name string) (*config.Config, error) {
 
 		found = true
 		// Only ever take a minor version bump.
-		newVersion, err := semver.DeriveNext(semver.Minor, manifest.Package.Version)
+		// TODO(https://github.com/googleapis/librarian/issues/3182): Implement desired pre-1.0.0 semantics.
+		newVersion, err := semver.DeriveNextOptions{BumpVersionCore: true}.DeriveNext(semver.Minor, manifest.Package.Version)
 		if err != nil {
 			return err
 		}
