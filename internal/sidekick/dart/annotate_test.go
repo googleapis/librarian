@@ -857,14 +857,41 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
 			"switch (json['bytes']) { null => Uint8List(0), Object $1 => decodeBytes($1)}",
 		}, {
-			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
-			"switch (json['int32']) { null => 0, Object $1 => decodeInt($1)}",
+			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
+			"switch (json['double']) { null => 0, Object $1 => decodeDouble($1)}",
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
 			"switch (json['fixed32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
+			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
+			"switch (json['fixed64']) { null => 0, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "float", JSONName: "float", Typez: api.FLOAT_TYPE},
+			"switch (json['float']) { null => 0, Object $1 => decodeDouble($1)}",
+		}, {
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			"switch (json['int32']) { null => 0, Object $1 => decodeInt($1)}",
+		}, {
+			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
+			"switch (json['int64']) { null => 0, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
+			"switch (json['sfixed32']) { null => 0, Object $1 => decodeInt($1)}",
+		}, {
+			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
+			"switch (json['sfixed64']) { null => 0, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.SINT64_TYPE},
+			"switch (json['sint64']) { null => 0, Object $1 => decodeInt64($1)}",
+		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
 			"switch (json['string']) { null => '', Object $1 => decodeString($1)}",
+		}, {
+			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.UINT32_TYPE},
+			"switch (json['uint32']) { null => 0, Object $1 => decodeInt($1)}",
+		}, {
+			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.UINT64_TYPE},
+			"switch (json['uint64']) { null => 0, Object $1 => decodeInt64($1)}",
 		},
 
 		// optional primitives
@@ -875,11 +902,38 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
 			"switch (json['bytes']) { null => null, Object $1 => decodeBytes($1)}",
 		}, {
+			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.DOUBLE_TYPE, Optional: true},
+			"switch (json['double']) { null => null, Object $1 => decodeDouble($1)}",
+		}, {
+			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
+			"switch (json['fixed64']) { null => null, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "float_opt", JSONName: "float", Typez: api.FLOAT_TYPE, Optional: true},
+			"switch (json['float']) { null => null, Object $1 => decodeDouble($1)}",
+		}, {
 			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
 			"switch (json['int32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
+			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.INT64_TYPE, Optional: true},
+			"switch (json['int64']) { null => null, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE, Optional: true},
+			"switch (json['sfixed32']) { null => null, Object $1 => decodeInt($1)}",
+		}, {
+			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE, Optional: true},
+			"switch (json['sfixed64']) { null => null, Object $1 => decodeInt64($1)}",
+		}, {
+			&api.Field{Name: "sint64_opt", JSONName: "sint64", Typez: api.SINT64_TYPE, Optional: true},
+			"switch (json['sint64']) { null => null, Object $1 => decodeInt64($1)}",
+		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
 			"switch (json['string']) { null => null, Object $1 => decodeString($1)}",
+		}, {
+			&api.Field{Name: "uint32_opt", JSONName: "uint32", Typez: api.UINT32_TYPE, Optional: true},
+			"switch (json['uint32']) { null => null, Object $1 => decodeInt($1)}",
+		}, {
+			&api.Field{Name: "uint64_opt", JSONName: "uint64", Typez: api.UINT64_TYPE, Optional: true},
+			"switch (json['uint64']) { null => null, Object $1 => decodeInt64($1)}",
 		},
 
 		// one ofs
