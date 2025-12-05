@@ -25,8 +25,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Version represents a semantic version.
-type Version struct {
+// version represents a semantic version.
+type version struct {
 	Major, Minor, Patch int
 	// Prerelease is the non-numeric part of the prerelease string (e.g., "alpha", "beta").
 	Prerelease string
@@ -47,12 +47,12 @@ type Version struct {
 // prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
 var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
-// Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a Version
+// parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a Version
 // struct.
-func Parse(versionString string) (Version, error) {
+func parse(versionString string) (version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return Version{}, fmt.Errorf("invalid version format: %s", versionString)
+		return version{}, fmt.Errorf("invalid version format: %s", versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -60,7 +60,7 @@ func Parse(versionString string) (Version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return Version{}, fmt.Errorf("invalid version format: %s", versionString)
+		return version{}, fmt.Errorf("invalid version format: %s", versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -72,22 +72,22 @@ func Parse(versionString string) (Version, error) {
 	versionCore = strings.TrimSuffix(versionCore, prerelease)
 	vParts := strings.Split(versionCore, ".")
 
-	var v Version
+	var v version
 	var err error
 
 	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
-		return Version{}, fmt.Errorf("invalid major version: %w", err)
+		return version{}, fmt.Errorf("invalid major version: %w", err)
 	}
 
 	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
-		return Version{}, fmt.Errorf("invalid minor version: %w", err)
+		return version{}, fmt.Errorf("invalid minor version: %w", err)
 	}
 
 	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
-		return Version{}, fmt.Errorf("invalid patch version: %w", err)
+		return version{}, fmt.Errorf("invalid patch version: %w", err)
 	}
 
 	if prerelease == "" {
@@ -110,7 +110,7 @@ func Parse(versionString string) (Version, error) {
 	if numStr != "" {
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			return Version{}, fmt.Errorf("invalid prerelease number: %w", err)
+			return version{}, fmt.Errorf("invalid prerelease number: %w", err)
 		}
 		v.PrereleaseNumber = &num
 	}
@@ -119,7 +119,7 @@ func Parse(versionString string) (Version, error) {
 }
 
 // String formats a Version struct into a string.
-func (v Version) String() string {
+func (v version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
 		version += "-" + v.Prerelease
@@ -198,7 +198,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		return currentVersion, nil
 	}
 
-	version, err := Parse(currentVersion)
+	version, err := parse(currentVersion)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse current version: %w", err)
 	}
