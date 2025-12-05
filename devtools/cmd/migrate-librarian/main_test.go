@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -25,6 +26,13 @@ import (
 )
 
 func TestRunMigrateLibrarian(t *testing.T) {
+	fetchSource = func(ctx context.Context) (*config.Source, error) {
+		return &config.Source{
+			Commit: "abcd123",
+			SHA256: "sha123",
+			Dir:    "path/to/repo",
+		}, nil
+	}
 	for _, test := range []struct {
 		name     string
 		repoPath string
@@ -84,34 +92,59 @@ func TestRunMigrateLibrarian(t *testing.T) {
 }
 
 func TestBuildConfig(t *testing.T) {
+	defaultFetchSource := func(ctx context.Context) (*config.Source, error) {
+		return &config.Source{
+			Commit: "abcd123",
+			SHA256: "sha123",
+			Dir:    "path/to/repo",
+		}, nil
+	}
 	for _, test := range []struct {
-		name  string
-		lang  string
-		state *legacyconfig.LibrarianState
-		cfg   *legacyconfig.LibrarianConfig
-		want  *config.Config
+		name        string
+		lang        string
+		state       *legacyconfig.LibrarianState
+		cfg         *legacyconfig.LibrarianConfig
+		fetchSource func(ctx context.Context) (*config.Source, error)
+		want        *config.Config
+		wantErr     error
 	}{
 		{
-			name:  "go_monorepo_defaults",
-			lang:  "go",
-			state: &legacyconfig.LibrarianState{},
-			cfg:   &legacyconfig.LibrarianConfig{},
+			name:        "go_monorepo_defaults",
+			lang:        "go",
+			state:       &legacyconfig.LibrarianState{},
+			cfg:         &legacyconfig.LibrarianConfig{},
+			fetchSource: defaultFetchSource,
 			want: &config.Config{
 				Language: "go",
 				Repo:     "googleapis/google-cloud-go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+						SHA256: "sha123",
+						Dir:    "path/to/repo",
+					},
+				},
 				Default: &config.Default{
 					TagFormat: defaultTagFormat,
 				},
 			},
 		},
 		{
-			name:  "python_monorepo_defaults",
-			lang:  "python",
-			state: &legacyconfig.LibrarianState{},
-			cfg:   &legacyconfig.LibrarianConfig{},
+			name:        "python_monorepo_defaults",
+			lang:        "python",
+			state:       &legacyconfig.LibrarianState{},
+			cfg:         &legacyconfig.LibrarianConfig{},
+			fetchSource: defaultFetchSource,
 			want: &config.Config{
 				Language: "python",
 				Repo:     "googleapis/google-cloud-python",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+						SHA256: "sha123",
+						Dir:    "path/to/repo",
+					},
+				},
 				Default: &config.Default{
 					TagFormat: defaultTagFormat,
 				},
@@ -141,13 +174,16 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			cfg: &legacyconfig.LibrarianConfig{},
+			cfg:         &legacyconfig.LibrarianConfig{},
+			fetchSource: defaultFetchSource,
 			want: &config.Config{
 				Language: "python",
 				Repo:     "googleapis/google-cloud-python",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "abcd123",
+						SHA256: "sha123",
+						Dir:    "path/to/repo",
 					},
 				},
 				Default: &config.Default{
@@ -197,9 +233,17 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
+			fetchSource: defaultFetchSource,
 			want: &config.Config{
 				Language: "python",
 				Repo:     "googleapis/google-cloud-python",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "abcd123",
+						SHA256: "sha123",
+						Dir:    "path/to/repo",
+					},
+				},
 				Default: &config.Default{
 					TagFormat: defaultTagFormat,
 				},
@@ -217,10 +261,29 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "fetch_source_fails",
+			fetchSource: func(ctx context.Context) (*config.Source, error) {
+				return nil, errors.New("fetch_source_fails")
+			},
+			wantErr: errFetchSource,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
-			got, _ := buildConfig(ctx, test.state, test.cfg, test.lang)
+			fetchSource = test.fetchSource
+			got, err := buildConfig(ctx, test.state, test.cfg, test.lang)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Error(err)
+				return
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

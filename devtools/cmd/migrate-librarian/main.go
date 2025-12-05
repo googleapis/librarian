@@ -43,7 +43,10 @@ const (
 var (
 	errRepoNotFound     = errors.New("-repo flag is required")
 	errLangNotSupported = errors.New("only go and python are supported")
+	errFetchSource      = errors.New("cannot fetch source")
 	errTidyFailed       = errors.New("librarian tidy failed")
+
+	fetchSource = fetchGoogleapis
 )
 
 func main() {
@@ -105,9 +108,9 @@ func buildConfig(
 		repo = "googleapis/google-cloud-python"
 	}
 
-	src, err := fetchGoogleapis(ctx)
+	src, err := fetchSource(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errFetchSource
 	}
 
 	cfg := &config.Config{
