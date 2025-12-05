@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
