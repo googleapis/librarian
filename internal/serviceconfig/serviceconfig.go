@@ -41,9 +41,7 @@ type (
 	OAuthRequirements  = serviceconfig.OAuthRequirements
 )
 
-var (
-	errServiceConfigNotFound = errors.New("Service config file not found")
-)
+var errServiceConfigNotFound = errors.New("service config file not found")
 
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled

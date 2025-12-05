@@ -91,11 +91,8 @@ func TestFind(t *testing.T) {
 }
 
 func TestFindThrowsErrorIfNotFound(t *testing.T) {
-	_, got := Find("testdata/googleapis", "google/cloud/compute/v1")
-	if got == nil {
-		t.Errorf("got no error, want %v", errServiceConfigNotFound)
-	}
-	if !errors.Is(got, errServiceConfigNotFound) {
-		t.Errorf("got error %v, want %v", got, errServiceConfigNotFound)
+	_, err := Find("testdata/googleapis", "google/cloud/compute/v1")
+	if !errors.Is(err, errServiceConfigNotFound) {
+		t.Errorf("Find() error = %v, want %v", err, errServiceConfigNotFound)
 	}
 }
