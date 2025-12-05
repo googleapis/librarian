@@ -18,10 +18,11 @@ package semver
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 // Version represents a semantic version.
@@ -39,129 +40,78 @@ type Version struct {
 	PrereleaseNumber *int
 }
 
-// semverRegex defines format for semantic version.
-// Regex from https://semver.org/, with buildmetadata part removed.
-// It uses named capture groups for major, minor, patch, and prerelease.
-var semverRegex = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$`)
-
-// unsegmentedPrereleaseRegexp extracts the prerelease number, if present, in the
-// prerelease portion of the SemVer version parsed by [semverRegex].
-var unsegmentedPrereleaseRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
+// semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
+// the prerelease portion of the SemVer 1.0.0 version string.
+var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
 // Parse parses a version string into a Version struct.
 func Parse(versionString string) (*Version, error) {
-	matches := semverRegex.FindStringSubmatch(versionString)
-	if matches == nil {
+	// Our client versions must not have a "v" prefix.
+	if strings.HasPrefix(versionString, "v") {
 		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
 
-	// Create a map of capture group names to their values.
-	result := make(map[string]string)
-	for i, name := range semverRegex.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = matches[i]
-		}
+	// Prepend "v" internally so that we can use various [semver] APIs.
+	// Then canonicalize it to zero-fill any missing version segments.
+	// Strips build metadata if present - we do not use build metadata suffixes.
+	vPrefixedVersion := "v" + versionString
+	if !semver.IsValid(vPrefixedVersion) {
+		return nil, fmt.Errorf("invalid version format: %s", versionString)
 	}
+	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
+
+	// Preemptively pull out the prerelease segment so that we can trim it off
+	// of the Patch segment.
+	prerelease := semver.Prerelease(vPrefixedVersion)
+
+	versionCore := strings.TrimPrefix(vPrefixedVersion, "v")
+	versionCore = strings.TrimSuffix(versionCore, prerelease)
+	vParts := strings.Split(versionCore, ".")
 
 	v := &Version{}
 	var err error
-	v.Major, err = strconv.Atoi(result["major"])
+
+	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid major version: %w", err)
 	}
-	v.Minor, err = strconv.Atoi(result["minor"])
+
+	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid minor version: %w", err)
 	}
-	v.Patch, err = strconv.Atoi(result["patch"])
+
+	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
-		// This should not happen if the regex is correct.
 		return nil, fmt.Errorf("invalid patch version: %w", err)
 	}
 
-	if prerelease := result["prerelease"]; prerelease != "" {
-		if i := strings.LastIndex(prerelease, "."); i != -1 {
-			v.Prerelease = prerelease[:i]
-			v.PrereleaseSeparator = "."
-			num, err := strconv.Atoi(prerelease[i+1:])
-			if err != nil {
-				return nil, fmt.Errorf("invalid prerelease number: %w", err)
-			}
-			v.PrereleaseNumber = &num
-		} else {
-			matches := unsegmentedPrereleaseRegexp.FindStringSubmatch(prerelease)
-			if len(matches) == 3 {
-				v.Prerelease = matches[1]
-				num, err := strconv.Atoi(matches[2])
-				if err != nil {
-					// This should not happen if the regex is correct.
-					return nil, fmt.Errorf("invalid prerelease number: %w", err)
-				}
-				v.PrereleaseNumber = &num
-			} else {
-				v.Prerelease = prerelease
-			}
+	if prerelease == "" {
+		return v, nil
+	}
+
+	prerelease = strings.TrimPrefix(prerelease, "-")
+	var numStr string
+	if i := strings.LastIndex(prerelease, "."); i != -1 {
+		v.Prerelease = prerelease[:i]
+		v.PrereleaseSeparator = "."
+		numStr = prerelease[i+1:]
+	} else if matches := semverV1PrereleaseNumberRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
+		v.Prerelease = matches[1]
+		numStr = matches[2]
+	} else {
+		v.Prerelease = prerelease
+	}
+
+	if numStr != "" {
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid prerelease number: %w", err)
 		}
+		v.PrereleaseNumber = &num
 	}
 
 	return v, nil
-}
-
-// Compare returns an integer comparing two versions.
-// The result is -1, 0, or 1 depending on whether v is less than, equal to, or greater than other.
-func (v *Version) Compare(other *Version) int {
-	if v.Major < other.Major {
-		return -1
-	}
-	if v.Major > other.Major {
-		return 1
-	}
-	if v.Minor < other.Minor {
-		return -1
-	}
-	if v.Minor > other.Minor {
-		return 1
-	}
-	if v.Patch < other.Patch {
-		return -1
-	}
-	if v.Patch > other.Patch {
-		return 1
-	}
-	// a pre-release version is less than a non-pre-release version
-	if v.Prerelease != "" && other.Prerelease == "" {
-		return -1
-	}
-	if v.Prerelease == "" && other.Prerelease != "" {
-		return 1
-	}
-	// lexical comparison between prerelease type (e.g. "alpha" vs "beta")
-	if v.Prerelease < other.Prerelease {
-		return -1
-	}
-	if v.Prerelease > other.Prerelease {
-		return 1
-	}
-	// prerelease number (e.g. "alpha1" vs "alpha2")
-	// Note: Lack of prerelease number is considered lower precedence than
-	// the same prerelease when it has a number - https://semver.org/#spec-item-11.
-	if v.PrereleaseNumber == nil && other.PrereleaseNumber != nil {
-		return -1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber == nil {
-		return 1
-	}
-	if v.PrereleaseNumber != nil && other.PrereleaseNumber != nil {
-		if *v.PrereleaseNumber < *other.PrereleaseNumber {
-			return -1
-		}
-		if *v.PrereleaseNumber > *other.PrereleaseNumber {
-			return 1
-		}
-	}
-	return 0
 }
 
 // String formats a Version struct into a string.
@@ -219,22 +169,30 @@ func MaxVersion(versionStrings ...string) string {
 	if len(versionStrings) == 0 {
 		return ""
 	}
-	versions := make([]*Version, 0)
+	versions := make([]string, 0)
 	for _, versionString := range versionStrings {
-		v, err := Parse(versionString)
-		if err != nil {
-			slog.Warn("invalid version string", "version", v)
+		// Our client versions must not have a "v" prefix.
+		if strings.HasPrefix(versionString, "v") {
 			continue
 		}
-		versions = append(versions, v)
-	}
-	largest := versions[0]
-	for i := 1; i < len(versions); i++ {
-		if largest.Compare(versions[i]) < 0 {
-			largest = versions[i]
+
+		// Prepend "v" internally so that we can use [semver.IsValid] and
+		// [semver.Sort].
+		vPrefixedString := "v" + versionString
+		if !semver.IsValid(vPrefixedString) {
+			continue
 		}
+		versions = append(versions, vPrefixedString)
 	}
-	return largest.String()
+
+	if len(versions) == 0 {
+		return ""
+	}
+
+	semver.Sort(versions)
+
+	// Trim the "v" we prepended to make use of [semver].
+	return strings.TrimPrefix(versions[len(versions)-1], "v")
 }
 
 // ChangeLevel represents the level of change, corresponding to semantic versioning.

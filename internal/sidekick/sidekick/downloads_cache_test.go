@@ -220,3 +220,127 @@ func checkDownloadsCacheDir(t *testing.T, got, root string) {
 		t.Errorf("mismatched downloadsCacheDir, want=%s, got=%s", "sidekick", root)
 	}
 }
+
+func TestMakeSourceRootErrors(t *testing.T) {
+	t.Run("invalid-source-root", func(t *testing.T) {
+		rootConfig := config.Config{
+			Source: map[string]string{
+				"googleapis-root": "this-is-not-a-valid-path-and-not-a-url",
+			},
+		}
+		_, err := makeSourceRoot(context.Background(), &rootConfig, "googleapis")
+		if err == nil {
+			t.Fatal("expected error")
+		}
+		if !strings.Contains(err.Error(), "only directories and https URLs are supported") {
+			t.Errorf("unexpected error message: %v", err)
+		}
+	})
+
+	t.Run("download-fails", func(t *testing.T) {
+		// Temporarily replace the download function with a mock to simulate failure
+		oldDownloadTarball := downloadTarball
+		downloadTarball = func(ctx context.Context, target, url, expectedSha256 string) error {
+			return fmt.Errorf("download failed after 3 attempts")
+		}
+		t.Cleanup(func() {
+			downloadTarball = oldDownloadTarball
+		})
+		rootConfig := &config.Config{
+			Source: map[string]string{
+				"googleapis-root":   "https://some-url",
+				"googleapis-sha256": "somesha",
+				"cachedir":          t.TempDir(),
+			},
+		}
+		_, err := makeSourceRoot(context.Background(), rootConfig, "googleapis")
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+		if !strings.Contains(err.Error(), "download failed after 3 attempts") {
+			t.Errorf("expected 'download failed after 3 attempts' in error, got %v", err)
+		}
+	})
+
+	t.Run("extract-fails", func(t *testing.T) {
+		testDir := t.TempDir()
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("this is not a tarball"))
+		}))
+		defer server.Close()
+
+		hasher := sha256.New()
+		hasher.Write([]byte("this is not a tarball"))
+		sha := fmt.Sprintf("%x", hasher.Sum(nil))
+
+		rootConfig := &config.Config{
+			Source: map[string]string{
+				"googleapis-root":   server.URL,
+				"googleapis-sha256": sha,
+				"cachedir":          testDir,
+			},
+		}
+		_, err := makeSourceRoot(context.Background(), rootConfig, "googleapis")
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+	})
+
+	t.Run("rename-fails", func(t *testing.T) {
+		testDir := t.TempDir()
+		simulatedSha := "2d08f07eab9bbe8300cd20b871d0811bbb693fab"
+		simulatedSubdir := fmt.Sprintf("googleapis-%s", simulatedSha)
+		simulatedPath := fmt.Sprintf("/archive/%s.tar.gz", simulatedSha)
+		tarball, err := makeTestTarball(t, testDir, simulatedSubdir)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write(tarball.Contents)
+		}))
+		defer server.Close()
+
+		rootConfig := &config.Config{
+			Source: map[string]string{
+				"googleapis-root":   server.URL + simulatedPath,
+				"googleapis-sha256": tarball.Sha256,
+				"cachedir":          testDir,
+			},
+		}
+		cacheDir, err := getCacheDir(rootConfig)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		targetFile := path.Join(cacheDir, tarball.Sha256)
+		if err := os.WriteFile(targetFile, []byte("dummy"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = makeSourceRoot(context.Background(), rootConfig, "googleapis")
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+	})
+}
+
+func TestGetCacheDirFails(t *testing.T) {
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CACHE_HOME", "")
+
+	_, err := getCacheDir(&config.Config{Source: map[string]string{}})
+	if err == nil {
+		t.Fatal("expected an error when HOME and XDG_CACHE_HOME are not set")
+	}
+}
+
+func TestIsDirectoryFails(t *testing.T) {
+	if isDirectory("a-path-with\x00-null-byte") {
+		t.Error("isDirectory returned true for a path with a null byte, expected false")
+	}
+}

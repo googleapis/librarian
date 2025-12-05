@@ -36,6 +36,7 @@ func Run(ctx context.Context, args ...string) error {
 			generateCommand(),
 			releaseCommand(),
 			tidyCommand(),
+			updateCommand(),
 			versionCommand(),
 		},
 	}

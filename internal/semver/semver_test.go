@@ -82,10 +82,13 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:          "invalid version",
-			version:       "1.2",
-			wantErr:       true,
-			wantErrPhrase: "invalid version format",
+			name:    "valid shortened version",
+			version: "1.2",
+			want: &Version{
+				Major: 1,
+				Minor: 2,
+				Patch: 0,
+			},
 		},
 		{
 			name:          "invalid prerelease number with separator",
@@ -246,158 +249,6 @@ func TestDeriveNext(t *testing.T) {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
 			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestCompare(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		versionA string
-		versionB string
-		want     int
-	}{
-		{
-			name:     "equal",
-			versionA: "1.2.3",
-			versionB: "1.2.3",
-			want:     0,
-		},
-		{
-			name:     "equal with pre-release",
-			versionA: "1.2.3-alpha",
-			versionB: "1.2.3-alpha",
-			want:     0,
-		},
-		{
-			name:     "equal with pre-release and number",
-			versionA: "1.2.3-alpha4",
-			versionB: "1.2.3-alpha4",
-			want:     0,
-		},
-		{
-			name:     "equal with pre-release and number, different separator",
-			versionA: "1.2.3-alpha4",
-			versionB: "1.2.3-alpha.4",
-			want:     0,
-		},
-		{
-			name:     "less than patch",
-			versionA: "1.2.3",
-			versionB: "1.2.4",
-			want:     -1,
-		},
-		{
-			name:     "less than minor",
-			versionA: "1.2.3",
-			versionB: "1.3.0",
-			want:     -1,
-		},
-		{
-			name:     "less than major",
-			versionA: "1.2.3",
-			versionB: "2.0.0",
-			want:     -1,
-		},
-		{
-			name:     "less than prerelease",
-			versionA: "1.2.3-alpha",
-			versionB: "1.2.3-beta",
-			want:     -1,
-		},
-		{
-			name:     "less than prerelease number",
-			versionA: "1.2.3-alpha1",
-			versionB: "1.2.3-alpha2",
-			want:     -1,
-		},
-		{
-			name:     "less than prerelease number with separator",
-			versionA: "1.2.3-alpha.1",
-			versionB: "1.2.3-alpha.2",
-			want:     -1,
-		},
-		{
-			name:     "less than prerelease against stable",
-			versionA: "1.2.3-alpha1",
-			versionB: "1.2.3",
-			want:     -1,
-		},
-		{
-			name:     "less than prerelease without number",
-			versionA: "1.2.3-alpha",
-			versionB: "1.2.3-alpha1",
-			want:     -1,
-		},
-		{
-			name:     "greater than patch",
-			versionA: "1.2.4",
-			versionB: "1.2.3",
-			want:     1,
-		},
-		{
-			name:     "greater than minor",
-			versionA: "1.3.0",
-			versionB: "1.2.3",
-			want:     1,
-		},
-		{
-			name:     "greater than major",
-			versionA: "2.0.0",
-			versionB: "1.2.3",
-			want:     1,
-		},
-		{
-			name:     "greater than prerelease",
-			versionA: "1.2.3-beta",
-			versionB: "1.2.3-alpha",
-			want:     1,
-		},
-		{
-			name:     "greater than prerelease number",
-			versionA: "1.2.3-alpha2",
-			versionB: "1.2.3-alpha1",
-			want:     1,
-		},
-		{
-			name:     "greater than prerelease number with separator",
-			versionA: "1.2.3-alpha.2",
-			versionB: "1.2.3-alpha.1",
-			want:     1,
-		},
-		{
-			name:     "greater than prerelease against stable",
-			versionA: "1.2.3",
-			versionB: "1.2.3-alpha1",
-			want:     1,
-		},
-		{
-			name:     "greater than prerelease without number",
-			versionA: "1.2.3-alpha1",
-			versionB: "1.2.3-alpha",
-			want:     1,
-		},
-		{
-			// Note: This is SemVer compliant, but may seem odd in practice.
-			name:     "greater prerelease version core than non-prerelease version core",
-			versionA: "1.2.3-alpha1",
-			versionB: "1.2.0",
-			want:     1,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			a, err := Parse(test.versionA)
-			if err != nil {
-				t.Fatalf("Parse() returned an error: %v", err)
-			}
-			b, err := Parse(test.versionB)
-			if err != nil {
-				t.Fatalf("Parse() returned an error: %v", err)
-			}
-			got := a.Compare(b)
-			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -16,6 +16,7 @@ package main
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,7 +24,6 @@ import (
 )
 
 func TestReadRootSidekick(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -73,7 +73,6 @@ func TestReadRootSidekick(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := readRootSidekick(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -94,7 +93,6 @@ func TestReadRootSidekick(t *testing.T) {
 }
 
 func TestFindSidekickFiles(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -116,7 +114,6 @@ func TestFindSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := findSidekickFiles(test.path)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -137,7 +134,6 @@ func TestFindSidekickFiles(t *testing.T) {
 }
 
 func TestReadSidekickFiles(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		files   []string
@@ -174,7 +170,6 @@ func TestReadSidekickFiles(t *testing.T) {
 						RootName:                  "conformance-root",
 						Roots:                     []string{"discovery", "googleapis"},
 						DefaultFeatures:           []string{"instances", "projects"},
-						ExtraModules:              []string{"errors", "operation"},
 						IncludeList:               []string{"api.proto", "source_context.proto", "type.proto", "descriptor.proto"},
 						IncludedIds:               []string{".google.iam.v2.Resource"},
 						SkippedIds:                []string{".google.iam.v1.ResourcePolicyMember"},
@@ -250,7 +245,6 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got, err := readSidekickFiles(test.files)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -271,7 +265,6 @@ func TestReadSidekickFiles(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name string
 		api  string
@@ -309,7 +302,6 @@ func TestDeriveLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got := deriveLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -319,7 +311,6 @@ func TestDeriveLibraryName(t *testing.T) {
 }
 
 func TestBuildConfig(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		libraries map[string]*config.Library
@@ -407,11 +398,52 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			got := buildConfig(test.libraries, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+func TestRunMigrateCommand(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		path    string
+		wantErr error
+	}{
+		{
+			name: "success",
+			path: "testdata/run/success",
+		},
+		{
+			name:    "tidy_command_fails",
+			path:    "testdata/run/tidy-fails",
+			wantErr: errTidyFailed,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			// ensure librarian.yaml generated is removed after the test,
+			// even if the test fails
+			outputPath := "librarian.yaml"
+			t.Cleanup(func() {
+				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
+					t.Logf("cleanup: remove %s: %v", outputPath, err)
+				}
+			})
+
+			if err := run([]string{"migrate-sidekick", "-repo", test.path}); err != nil {
+				if test.wantErr == nil {
+					t.Fatal(err)
+				}
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+			} else if test.wantErr != nil {
+				t.Fatalf("expected error containing %q, got nil", test.wantErr)
+			}
+
 		})
 	}
 }

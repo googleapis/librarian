@@ -529,6 +529,58 @@ func TestDownloadTarballErrors(t *testing.T) {
 	}
 }
 
+func TestLatestCommitAndChecksum(t *testing.T) {
+	const (
+		expectedCommit          = "testcommit123"
+		expectedTarballContents = "mock tarball content for checksum"
+		testOrg                 = "testorg"
+		testRepo                = "testrepo"
+	)
+	// Calculate the expected SHA256 for the tarball contents.
+	hasher := sha256.New()
+	hasher.Write([]byte(expectedTarballContents))
+	expectedTarballSHA256 := fmt.Sprintf("%x", hasher.Sum(nil))
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, branch):
+			// Mock response for LatestSha call
+			w.Header().Set("Accept", "application/vnd.github.VERSION.sha")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(expectedCommit))
+		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedCommit):
+			// Mock response for Sha256 call (tarball download)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(expectedTarballContents))
+		default:
+			t.Errorf("unexpected request path: %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	endpoints := &Endpoints{
+		API:      server.URL,
+		Download: server.URL,
+	}
+	repo := &Repo{
+		Org:  testOrg,
+		Repo: testRepo,
+	}
+
+	gotCommit, gotSha256, err := LatestCommitAndChecksum(endpoints, repo)
+	if err != nil {
+		t.Fatalf("LatestCommitAndChecksum() error = %v, wantErr %v", err, nil)
+	}
+
+	if gotCommit != expectedCommit {
+		t.Errorf("LatestCommitAndChecksum() gotCommit = %q, want %q", gotCommit, expectedCommit)
+	}
+	if gotSha256 != expectedTarballSHA256 {
+		t.Errorf("LatestCommitAndChecksum() gotSha256 = %q, want %q", gotSha256, expectedTarballSHA256)
+	}
+}
+
 func TestDownloadTarballRetry(t *testing.T) {
 	t.Run("succeeds after a few retries", func(t *testing.T) {
 		// Set a short backoff for this test to speed up retries.
