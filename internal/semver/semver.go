@@ -47,7 +47,7 @@ type version struct {
 // prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
 var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
-// parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a version
+// parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [version]
 // struct.
 func parse(versionString string) (version, error) {
 	// Our client versions must not have a "v" prefix.
@@ -118,7 +118,7 @@ func parse(versionString string) (version, error) {
 	return v, nil
 }
 
-// String formats a Version struct into a string.
+// String formats a [version] struct into a string.
 func (v version) String() string {
 	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
