@@ -191,6 +191,8 @@ type DeriveNextOptions struct {
 	BumpVersionCore bool
 }
 
+// DeriveNext determines the appropriate SemVer version bump based on the
+// provided [ChangeLevel] and the provided [DeriveNextOptions].
 func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
 	if highestChange == None {
 		return currentVersion, nil
@@ -216,7 +218,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		return version.String(), nil
 	}
 
-// Reset prerelease number, if present, then fallthrough to bump version core.
+	// Reset prerelease number, if present, then fallthrough to bump version core.
 	if version.PrereleaseNumber != nil && o.BumpVersionCore {
 		*version.PrereleaseNumber = 1
 	}
