@@ -131,8 +131,8 @@ func buildConfig(
 
 func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	endpoint := &fetch.Endpoints{
-		API:      "https://www.googleapis.com/apis",
-		Download: "",
+		API:      "https://api.github.com",
+		Download: "https://github.com",
 	}
 	repo := &fetch.Repo{
 		Org:  "googleapis",
