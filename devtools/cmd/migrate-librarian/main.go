@@ -84,7 +84,6 @@ func run(args []string) error {
 	}
 
 	if err := librarian.RunTidy(); err != nil {
-		slog.Error(errTidyFailed.Error(), "error", err)
 		return errTidyFailed
 	}
 
