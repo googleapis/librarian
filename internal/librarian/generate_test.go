@@ -223,6 +223,7 @@ func TestPrepareLibrary(t *testing.T) {
 		output   string
 		channels []*config.Channel
 		want     string
+		wantErr  bool
 	}{
 		{
 			name:     "empty output derives path from channel",
@@ -244,10 +245,10 @@ func TestPrepareLibrary(t *testing.T) {
 			want:     "src/generated",
 		},
 		{
-			name:     "rust with no channels uses default",
+			name:     "rust with no channels returns error",
 			language: "rust",
 			channels: nil,
-			want:     "src/generated",
+			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -259,40 +260,18 @@ func TestPrepareLibrary(t *testing.T) {
 			defaults := &config.Default{
 				Output: "src/generated",
 			}
-			got := prepareLibrary(test.language, lib, defaults)
+			got, err := prepareLibrary(test.language, lib, defaults)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got.Output != test.want {
 				t.Errorf("got output %q, want %q", got.Output, test.want)
-			}
-		})
-	}
-}
-
-func TestDeriveDefaultRustOutput(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		channel string
-		want    string
-	}{
-		{
-			name:    "standard google cloud path",
-			channel: "google/cloud/secretmanager/v1",
-			want:    "src/generated/cloud/secretmanager/v1",
-		},
-		{
-			name:    "nested api path",
-			channel: "google/cloud/aiplatform/v1beta1",
-			want:    "src/generated/cloud/aiplatform/v1beta1",
-		},
-		{
-			name:    "non-cloud path",
-			channel: "google/iam/v1",
-			want:    "src/generated/iam/v1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deriveDefaultRustOutput(test.channel, "src/generated")
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -382,5 +361,69 @@ func TestCleanOutput(t *testing.T) {
 				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestDeriveDefaultLibrariesSkipsConfigured(t *testing.T) {
+	cfg := &config.Config{
+		Language: "rust",
+		Default:  &config.Default{Output: t.TempDir()},
+		Libraries: []*config.Library{{
+			Name:     "secretmanager",
+			Channels: []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+		}},
+	}
+	derived, err := deriveDefaultLibraries(cfg, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(derived) != 0 {
+		t.Errorf("got %d derived libraries, want 0", len(derived))
+	}
+}
+
+func TestDeriveDefaultLibrariesWithOutputDir(t *testing.T) {
+	outputDir := t.TempDir()
+	googleapisDir := t.TempDir()
+
+	writeServiceConfig(t, googleapisDir, "google/cloud/speech/v2", "speech_v2.yaml")
+	if err := os.MkdirAll(filepath.Join(outputDir, "cloud/speech/v2"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Language: "rust",
+		Default:  &config.Default{Output: outputDir},
+	}
+	derived, err := deriveDefaultLibraries(cfg, googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(derived) != 1 {
+		t.Fatalf("got %d derived libraries, want 1", len(derived))
+	}
+
+	want := &config.Library{
+		Name:   "google-cloud-speech-v2",
+		Output: filepath.Join(outputDir, "cloud/speech/v2"),
+		Channels: []*config.Channel{{
+			Path:          "google/cloud/speech/v2",
+			ServiceConfig: "google/cloud/speech/v2/speech_v2.yaml",
+		}},
+	}
+	if diff := cmp.Diff(want, derived[0]); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func writeServiceConfig(t *testing.T, googleapisDir, channel, filename string) {
+	t.Helper()
+	dir := filepath.Join(googleapisDir, channel)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := "type: google.api.Service\nname: test.googleapis.com\n"
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
+		t.Fatal(err)
 	}
 }

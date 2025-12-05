@@ -21,7 +21,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -79,12 +78,93 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
+	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
+	if err != nil {
+		return err
+	}
+
+	libraries, err := deriveDefaultLibraries(cfg, googleapisDir)
+	if err != nil {
+		return err
+	}
+	cfg.Libraries = append(cfg.Libraries, libraries...)
 	for _, lib := range cfg.Libraries {
 		if err := generateLibrary(ctx, cfg, lib.Name); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// deriveDefaultLibraries finds libraries for allowed channels that are not
+// explicitly configured in librarian.yaml.
+//
+// For each allowed channel without configuration, it derives default values
+// for the library name and output path. If the output directory exists, the
+// library is added for generation. Channels whose output directories do not
+// exist in the librarian.yaml but should be generated are returned.
+func deriveDefaultLibraries(cfg *config.Config, googleapisDir string) ([]*config.Library, error) {
+	if cfg.Default == nil {
+		return nil, nil
+	}
+
+	configured := make(map[string]bool)
+	for _, lib := range cfg.Libraries {
+		for _, ch := range lib.Channels {
+			configured[ch.Path] = true
+		}
+	}
+
+	var derived []*config.Library
+	for channel := range serviceconfig.Allowlist {
+		if configured[channel] {
+			continue
+		}
+		name := defaultLibraryName(cfg.Language, channel)
+		output := defaultOutput(cfg.Language, channel, cfg.Default.Output)
+		if !dirExists(output) {
+			continue
+		}
+		sc, err := serviceconfig.Find(googleapisDir, channel)
+		if err != nil {
+			return nil, err
+		}
+		derived = append(derived, &config.Library{
+			Name:   name,
+			Output: output,
+			Channels: []*config.Channel{{
+				Path:          channel,
+				ServiceConfig: sc,
+			}},
+		})
+	}
+	return derived, nil
+}
+
+func defaultLibraryName(language, channel string) string {
+	switch language {
+	case "rust":
+		return rust.DefaultLibraryName(channel)
+	default:
+		return channel
+	}
+}
+
+func defaultOutput(language, channel, defaultOut string) string {
+	switch language {
+	case "rust":
+		return rust.DefaultOutput(channel, defaultOut)
+	default:
+		return defaultOut
+	}
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
@@ -98,7 +178,10 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
 				return nil
 			}
-			lib = prepareLibrary(cfg.Language, lib, cfg.Default)
+			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default)
+			if err != nil {
+				return err
+			}
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
@@ -117,26 +200,14 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path before applying defaults.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default) *config.Library {
-	// TODO(https://github.com/googleapis/librarian/issues/2966):
-	// refactor so that the switch statement logic is in one place
-	if language == "rust" && lib.Output == "" && len(lib.Channels) > 0 {
-		lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, defaults.Output)
+func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+	if lib.Output == "" {
+		if len(lib.Channels) == 0 {
+			return nil, fmt.Errorf("library %q has no channels, cannot determine default output", lib.Name)
+		}
+		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
 	}
-	return fillDefaults(lib, defaults)
-}
-
-// deriveDefaultRustOutput returns the output path for a Rust library. If the
-// library has an explicit output path that differs from the default, it returns
-// that path. Otherwise, it derives the output from the first channel path by
-// stripping the "google/" prefix and joining with the default output. For
-// example, the default output for google/cloud/secretmanager/v1 is
-// src/generated/cloud/secretmanager/v1.
-//
-// TODO(https://github.com/googleapis/librarian/issues/2966): refactor and move
-// to internal/rust package.
-func deriveDefaultRustOutput(channel, defaultOutput string) string {
-	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
+	return fillDefaults(lib, defaults), nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
@@ -147,7 +218,7 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	case "rust":
 		keep := append(library.Keep, "Cargo.toml")
 		if err := cleanOutput(library.Output, keep); err != nil {
-			return err
+			return fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		err = rust.Generate(ctx, library, sources)
 	default:

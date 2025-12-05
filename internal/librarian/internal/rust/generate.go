@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -69,4 +70,17 @@ func sourceDir(ctx context.Context, source *config.Source, repo string) (string,
 		return source.Dir, nil
 	}
 	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+}
+
+// DefaultLibraryName derives a library name from a channel path.
+// For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
+func DefaultLibraryName(channel string) string {
+	return strings.ReplaceAll(channel, "/", "-")
+}
+
+// DefaultOutput derives an output path from a channel path and default output.
+// For example: google/cloud/secretmanager/v1 with default src/generated/
+// returns src/generated/cloud/secretmanager/v1.
+func DefaultOutput(channel, defaultOutput string) string {
+	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
 }
