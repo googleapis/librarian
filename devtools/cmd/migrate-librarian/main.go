@@ -53,7 +53,7 @@ var (
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Args); err != nil {
+	if err := run(ctx, os.Args[1:]); err != nil {
 		log.Fatalf("migrate-librarian failed: %q", err)
 	}
 }
@@ -63,7 +63,7 @@ func run(ctx context.Context, args []string) error {
 	repoPath := flagSet.String("repo", "",
 		"Path to the repository containing legacy .librarian configuration (required). Must end with go or python.")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
-	if err := flagSet.Parse(args[1:]); err != nil {
+	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
 	if *repoPath == "" {
