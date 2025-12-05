@@ -159,6 +159,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					CopyrightYear:       "2025",
 					DescriptionOverride: "Description override",
 					SpecificationFormat: "discovery",
+					Output:              "testdata/read-sidekick-files/success-read/nested",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
@@ -196,6 +197,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					Version:             "1.2.0",
 					CopyrightYear:       "2025",
 					SpecificationFormat: "openapi",
+					Output:              "testdata/read-sidekick-files/success-read/",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							PackageDependencies: []*config.RustPackageDependency{
@@ -248,7 +250,11 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readSidekickFiles(test.files)
+			cwd, err := os.Getwd()
+			if err != nil {
+				t.Fatalf("getwd: %v", err)
+			}
+			got, err := readSidekickFiles(test.files, cwd)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)

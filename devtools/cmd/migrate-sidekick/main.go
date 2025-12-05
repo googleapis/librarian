@@ -106,7 +106,7 @@ func run(args []string) error {
 	}
 
 	// Read all sidekick.toml files
-	libraries, err := readSidekickFiles(sidekickFiles)
+	libraries, err := readSidekickFiles(sidekickFiles, *repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
@@ -232,7 +232,7 @@ func findSidekickFiles(repoPath string) ([]string, error) {
 }
 
 // readSidekickFiles reads all sidekick.toml files and extracts library information.
-func readSidekickFiles(files []string) (map[string]*config.Library, error) {
+func readSidekickFiles(files []string, repoPath string) (map[string]*config.Library, error) {
 	libraries := make(map[string]*config.Library)
 
 	for _, file := range files {
@@ -286,6 +286,7 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			libraries[libraryName] = lib
 		}
 		lib.SpecificationFormat = specificationFormat
+		lib.Output = strings.TrimPrefix(dir, repoPath+string(filepath.Separator))
 
 		// Add channels
 		lib.Channels = append(lib.Channels, &config.Channel{
