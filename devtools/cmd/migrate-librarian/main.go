@@ -62,7 +62,7 @@ func run(ctx context.Context, args []string) error {
 	repoPath := flagSet.String("repo", "",
 		"Path to the repository containing legacy .librarian configuration (required). Must end with go or python.")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
-	if err := flagSet.Parse(args); err != nil {
+	if err := flagSet.Parse(args[1:]); err != nil {
 		return err
 	}
 	if *repoPath == "" {
@@ -157,7 +157,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 		return nil, err
 	}
 
-	dir, err := fetch.RepoDir(ctx, repo.Repo, latestCommit, sha256)
+	dir, err := fetch.RepoDir(ctx, "github.com/googleapis/googleapis", latestCommit, sha256)
 	if err != nil {
 		return nil, err
 	}
