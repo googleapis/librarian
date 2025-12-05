@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -59,7 +60,6 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the repository containing legacy .librarian configuration (required)")
-	language := flagSet.String("lang", "go", "One of go and python (default: go)")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
@@ -68,8 +68,9 @@ func run(ctx context.Context, args []string) error {
 		return errRepoNotFound
 	}
 
-	if *language != "go" && *language != "python" {
-		return errLangNotSupported
+	language, err := deriveLanguage(*repoPath)
+	if err != nil {
+		return err
 	}
 
 	librarianState, err := readState(*repoPath)
@@ -82,7 +83,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	cfg, err := buildConfig(ctx, librarianState, librarianConfig, *language)
+	cfg, err := buildConfig(ctx, librarianState, librarianConfig, language)
 	if err != nil {
 		return err
 	}
@@ -96,6 +97,18 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	return nil
+}
+
+func deriveLanguage(repoPath string) (string, error) {
+	if strings.HasSuffix(repoPath, "go") {
+		return "go", nil
+	}
+
+	if strings.HasSuffix(repoPath, "python") {
+		return "python", nil
+	}
+
+	return "", errLangNotSupported
 }
 
 func buildConfig(

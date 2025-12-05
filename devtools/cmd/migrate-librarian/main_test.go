@@ -41,11 +41,11 @@ func TestRunMigrateLibrarian(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			repoPath: "testdata/run/success",
+			repoPath: "testdata/run/success-python",
 		},
 		{
 			name:     "tidy_failed",
-			repoPath: "testdata/run/tidy-fails",
+			repoPath: "testdata/run/tidy-fails-go",
 			wantErr:  errTidyFailed,
 		},
 		{
@@ -56,7 +56,6 @@ func TestRunMigrateLibrarian(t *testing.T) {
 		{
 			name:     "unsupported_language",
 			repoPath: "unused-path",
-			lang:     "unsupported",
 			wantErr:  errLangNotSupported,
 		},
 	} {
@@ -87,6 +86,47 @@ func TestRunMigrateLibrarian(t *testing.T) {
 				t.Fatalf("expected error containing %q, got nil", test.wantErr)
 			}
 
+		})
+	}
+}
+
+func TestDeriveLanguage(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		want     string
+		wantErr  error
+	}{
+		{
+			name:     "golang",
+			repoPath: "path/to/google-cloud-go",
+			want:     "go",
+		},
+		{
+			name:     "python",
+			repoPath: "path/to/google-cloud-python",
+			want:     "python",
+		},
+		{
+			name:     "unsupported_language",
+			repoPath: "path/to/unsupported-language",
+			wantErr:  errLangNotSupported,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveLanguage(test.repoPath)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Error(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
