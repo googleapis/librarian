@@ -135,10 +135,11 @@ func TestFindSidekickFiles(t *testing.T) {
 
 func TestReadSidekickFiles(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		files   []string
-		want    map[string]*config.Library
-		wantErr error
+		name     string
+		files    []string
+		repoName string
+		want     map[string]*config.Library
+		wantErr  error
 	}{
 		{
 			name: "read_sidekick_files",
@@ -146,6 +147,7 @@ func TestReadSidekickFiles(t *testing.T) {
 				"testdata/read-sidekick-files/success-read/.sidekick.toml",
 				"testdata/read-sidekick-files/success-read/nested/.sidekick.toml",
 			},
+			repoName: "",
 			want: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
@@ -235,22 +237,32 @@ func TestReadSidekickFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "unable_to_calculate_output_path",
+			files: []string{
+				"testdata/read-sidekick-files/success-read/.sidekick.toml",
+			},
+			repoName: "/invalid/repo/path",
+			wantErr:  errUnableToCalculateOutputPath,
+		},
+		{
 			name: "no_api_path",
 			files: []string{
 				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
 			},
-			want: map[string]*config.Library{},
+			repoName: "",
+			want:     map[string]*config.Library{},
 		},
 		{
 			name: "no_package_name",
 			files: []string{
 				"testdata/read-sidekick-files/no-package-name/.sidekick.toml",
 			},
-			want: map[string]*config.Library{},
+			repoName: "",
+			want:     map[string]*config.Library{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readSidekickFiles(test.files, "")
+			got, err := readSidekickFiles(test.files, test.repoName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)

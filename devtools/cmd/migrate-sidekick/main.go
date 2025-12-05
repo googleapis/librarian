@@ -37,10 +37,11 @@ const (
 )
 
 var (
-	errRepoNotFound     = errors.New("-repo flag is required")
-	errSidekickNotFound = errors.New(".sidekick.toml not found")
-	errSrcNotFound      = errors.New("src/generated directory not found")
-	errTidyFailed       = errors.New("librarian tidy failed")
+	errRepoNotFound                = errors.New("-repo flag is required")
+	errSidekickNotFound            = errors.New(".sidekick.toml not found")
+	errSrcNotFound                 = errors.New("src/generated directory not found")
+	errTidyFailed                  = errors.New("librarian tidy failed")
+	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
 )
 
 // SidekickConfig represents the structure of a .sidekick.toml file.
@@ -288,7 +289,8 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 		lib.SpecificationFormat = specificationFormat
 		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
-			return nil, fmt.Errorf("failed to calculate relative path for %q from base %q: %w", dir, repoPath, err)
+			slog.Error("Failed to calculate relative path", "dir", dir, "base", repoPath, "error", err)
+			return nil, errUnableToCalculateOutputPath
 		}
 		lib.Output = relativePath
 
