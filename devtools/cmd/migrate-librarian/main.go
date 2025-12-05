@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -46,8 +47,7 @@ var (
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		slog.Error("migrate-librarian failed", "err", err)
-		os.Exit(1)
+		log.Fatalf("migrate-librarian failed: %q", err)
 	}
 }
 
@@ -82,7 +82,6 @@ func run(args []string) error {
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	slog.Info("Wrote config to output file", "path", outputPath)
 
 	if err := librarian.RunTidy(); err != nil {
 		slog.Error(errTidyFailed.Error(), "error", err)
@@ -147,12 +146,10 @@ func buildLibraries(
 			library.Channels = toChannels(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
-		// Go and Python monorepo only contains GAPIC libraries.
-		library.SpecificationFormat = "protobuf"
 		if googleapisCommitSHA == "" {
 			googleapisCommitSHA = libState.LastGeneratedCommit
 		}
-		// hydrate params from library config
+
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked

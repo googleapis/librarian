@@ -59,7 +59,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			outputPath := "librarian.yaml"
 			t.Cleanup(func() {
 				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Logf("cleanup: remove %s: %v", outputPath, err)
+					t.Fatalf("cleanup: remove %s: %v", outputPath, err)
 				}
 			})
 
