@@ -157,8 +157,7 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:                "another-library",
-						SpecificationFormat: "protobuf",
+						Name: "another-library",
 					},
 					{
 						Name:    "example-library",
@@ -173,7 +172,6 @@ func TestBuildConfig(t *testing.T) {
 							"example-preserve-1",
 							"example-preserve-2",
 						},
-						SpecificationFormat: "protobuf",
 					},
 				},
 			},
@@ -210,16 +208,14 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:                "another-library",
-						Version:             "2.0.0",
-						SpecificationFormat: "protobuf",
+						Name:    "another-library",
+						Version: "2.0.0",
 					},
 					{
-						Name:                "example-library",
-						Version:             "1.0.0",
-						SpecificationFormat: "protobuf",
-						SkipGenerate:        true,
-						SkipRelease:         true,
+						Name:         "example-library",
+						Version:      "1.0.0",
+						SkipGenerate: true,
+						SkipRelease:  true,
 					},
 				},
 			},
