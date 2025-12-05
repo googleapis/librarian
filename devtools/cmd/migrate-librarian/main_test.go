@@ -53,7 +53,6 @@ func TestRunMigrateLibrarian(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-
 			// ensure librarian.yaml generated is removed after the test,
 			// even if the test fails
 			outputPath := "librarian.yaml"
@@ -69,7 +68,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 				args = append(args, "-lang", test.lang)
 			}
 
-			if err := run(args); err != nil {
+			if err := run(t.Context(), args); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}
@@ -220,7 +219,8 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.state, test.cfg, test.lang)
+			ctx := t.Context()
+			got, _ := buildConfig(ctx, test.state, test.cfg, test.lang)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

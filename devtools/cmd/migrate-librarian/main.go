@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -45,12 +47,13 @@ var (
 )
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	ctx := context.Background()
+	if err := run(ctx, os.Args); err != nil {
 		log.Fatalf("migrate-librarian failed: %q", err)
 	}
 }
 
-func run(args []string) error {
+func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
 	repoPath := flagSet.String("repo", "", "Path to the repository containing legacy .librarian configuration (required)")
 	language := flagSet.String("lang", "go", "One of go and python (default: go)")
@@ -76,7 +79,10 @@ func run(args []string) error {
 		return err
 	}
 
-	cfg := buildConfig(librarianState, librarianConfig, *language)
+	cfg, err := buildConfig(ctx, librarianState, librarianConfig, *language)
+	if err != nil {
+		return err
+	}
 
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
@@ -90,38 +96,65 @@ func run(args []string) error {
 }
 
 func buildConfig(
+	ctx context.Context,
 	librarianState *legacyconfig.LibrarianState,
 	librarianConfig *legacyconfig.LibrarianConfig,
-	lang string) *config.Config {
+	lang string) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"
 	if lang == "python" {
 		repo = "googleapis/google-cloud-python"
 	}
 
+	src, err := fetchGoogleapis(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &config.Config{
 		Language: lang,
 		Repo:     repo,
+		Sources: &config.Sources{
+			Googleapis: src,
+		},
 		Default: &config.Default{
 			TagFormat: defaultTagFormat,
 		},
 	}
 
-	libraries, sha := buildLibraries(librarianState, librarianConfig)
-	if sha != "" {
-		cfg.Sources = &config.Sources{
-			Googleapis: &config.Source{
-				Commit: sha,
-			},
-		}
-	}
-	cfg.Libraries = libraries
+	cfg.Libraries = buildLibraries(librarianState, librarianConfig)
 
-	return cfg
+	return cfg, nil
+}
+
+func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
+	endpoint := &fetch.Endpoints{
+		API:      "https://www.googleapis.com/apis",
+		Download: "",
+	}
+	repo := &fetch.Repo{
+		Org:  "googleapis",
+		Repo: "googleapis",
+	}
+	latestCommit, sha256, err := fetch.LatestCommitAndChecksum(endpoint, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	dir, err := fetch.RepoDir(ctx, repo.Repo, latestCommit, sha256)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config.Source{
+		Commit: latestCommit,
+		SHA256: sha256,
+		Dir:    dir,
+	}, nil
 }
 
 func buildLibraries(
 	librarianState *legacyconfig.LibrarianState,
-	librarianConfig *legacyconfig.LibrarianConfig) ([]*config.Library, string) {
+	librarianConfig *legacyconfig.LibrarianConfig) []*config.Library {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
 		librarianState.Libraries,
@@ -133,7 +166,7 @@ func buildLibraries(
 		func(lib *legacyconfig.LibraryConfig) string {
 			return lib.LibraryID
 		})
-	googleapisCommitSHA := ""
+
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -144,9 +177,6 @@ func buildLibraries(
 			library.Channels = toChannels(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
-		if googleapisCommitSHA == "" {
-			googleapisCommitSHA = libState.LastGeneratedCommit
-		}
 
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
@@ -161,7 +191,7 @@ func buildLibraries(
 		return libraries[i].Name < libraries[j].Name
 	})
 
-	return libraries, googleapisCommitSHA
+	return libraries
 }
 
 func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
