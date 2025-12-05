@@ -286,7 +286,11 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 			libraries[libraryName] = lib
 		}
 		lib.SpecificationFormat = specificationFormat
-		lib.Output = strings.TrimPrefix(dir, repoPath+string(filepath.Separator))
+		relativePath, err := filepath.Rel(repoPath, dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate relative path for %q from base %q: %w", dir, repoPath, err)
+		}
+		lib.Output = relativePath
 
 		// Add channels
 		lib.Channels = append(lib.Channels, &config.Channel{

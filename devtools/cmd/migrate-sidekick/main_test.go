@@ -197,7 +197,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					Version:             "1.2.0",
 					CopyrightYear:       "2025",
 					SpecificationFormat: "openapi",
-					Output:              "testdata/read-sidekick-files/success-read/",
+					Output:              "testdata/read-sidekick-files/success-read",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							PackageDependencies: []*config.RustPackageDependency{
@@ -250,11 +250,7 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cwd, err := os.Getwd()
-			if err != nil {
-				t.Fatalf("getwd: %v", err)
-			}
-			got, err := readSidekickFiles(test.files, cwd)
+			got, err := readSidekickFiles(test.files, "")
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
