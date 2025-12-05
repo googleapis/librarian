@@ -39,6 +39,7 @@ const (
 	librarianStateFile  = "state.yaml"
 	librarianConfigFile = "config.yaml"
 	defaultTagFormat    = "{name}/v{version}"
+	googleapisRepo      = "github.com/googleapis/googleapis"
 )
 
 var (
@@ -157,7 +158,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 		return nil, err
 	}
 
-	dir, err := fetch.RepoDir(ctx, "github.com/googleapis/googleapis", latestCommit, sha256)
+	dir, err := fetch.RepoDir(ctx, googleapisRepo, latestCommit, sha256)
 	if err != nil {
 		return nil, err
 	}
