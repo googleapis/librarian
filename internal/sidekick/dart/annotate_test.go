@@ -864,7 +864,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"switch (json['fixed32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
-			"switch (json['fixed64']) { null => 0, Object $1 => decodeInt64($1)}",
+			"switch (json['fixed64']) { null => BigInt.zero, Object $1 => decodeUint64($1)}",
 		}, {
 			&api.Field{Name: "float", JSONName: "float", Typez: api.FLOAT_TYPE},
 			"switch (json['float']) { null => 0, Object $1 => decodeDouble($1)}",
@@ -891,7 +891,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"switch (json['uint32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.UINT64_TYPE},
-			"switch (json['uint64']) { null => 0, Object $1 => decodeInt64($1)}",
+			"switch (json['uint64']) { null => BigInt.zero, Object $1 => decodeUint64($1)}",
 		},
 
 		// optional primitives
@@ -906,7 +906,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"switch (json['double']) { null => null, Object $1 => decodeDouble($1)}",
 		}, {
 			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
-			"switch (json['fixed64']) { null => null, Object $1 => decodeInt64($1)}",
+			"switch (json['fixed64']) { null => null, Object $1 => decodeUint64($1)}",
 		}, {
 			&api.Field{Name: "float_opt", JSONName: "float", Typez: api.FLOAT_TYPE, Optional: true},
 			"switch (json['float']) { null => null, Object $1 => decodeDouble($1)}",
@@ -933,7 +933,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			"switch (json['uint32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
 			&api.Field{Name: "uint64_opt", JSONName: "uint64", Typez: api.UINT64_TYPE, Optional: true},
-			"switch (json['uint64']) { null => null, Object $1 => decodeInt64($1)}",
+			"switch (json['uint64']) { null => null, Object $1 => decodeUint64($1)}",
 		},
 
 		// one ofs
