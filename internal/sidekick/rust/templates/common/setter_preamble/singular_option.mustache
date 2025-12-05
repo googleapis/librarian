@@ -69,8 +69,8 @@ limitations under the License.
 {{^Codec.FieldTypeIsParentType}}
 /// use {{MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */));
-/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}>);
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{Codec.MessageNameInExamples}}::default()/* use setters */));
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{Codec.MessageNameInExamples}}>);
 {{/IsObject}}
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}

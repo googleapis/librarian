@@ -55,7 +55,7 @@ limitations under the License.
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new()
 ///     .set_{{Codec.SetterName}}([
-///         {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */,
-///         {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use (different) setters */,
+///         {{Codec.MessageNameInExamples}}::default()/* use setters */,
+///         {{Codec.MessageNameInExamples}}::default()/* use (different) setters */,
 ///     ]);
 {{/IsObject}}

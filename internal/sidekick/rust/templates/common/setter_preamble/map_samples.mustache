@@ -71,8 +71,8 @@ limitations under the License.
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     ("key0", {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */),
-///     ("key1", {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use (different) setters */),
+///     ("key0", {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     ("key1", {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsString}}
@@ -134,8 +134,8 @@ limitations under the License.
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (true, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */),
-///     (false, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use (different) setters */),
+///     (true, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (false, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsBool}}
@@ -197,8 +197,8 @@ limitations under the License.
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (0, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */),
-///     (1, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use (different) setters */),
+///     (0, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (1, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsLikeInt}}
@@ -260,8 +260,8 @@ limitations under the License.
 /// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
 {{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (0_u32, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use setters */),
-///     (1_u32, {{#Codec.AliasInExamples}}{{.}}{{/Codec.AliasInExamples}}{{^Codec.AliasInExamples}}{{Codec.ValueField.MessageType.Codec.Name}}{{/Codec.AliasInExamples}}::default()/* use (different) setters */),
+///     (0_u32, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (1_u32, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsLikeUInt}}

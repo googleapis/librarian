@@ -93,7 +93,7 @@ func TestFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec and MessageType.Codec fields of Fields,
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec", "Codec")); diff != "" {
 		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
 	}
 
@@ -109,6 +109,12 @@ func TestFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples := ""
+	gotFA, _ := singular_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples := gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:          "repeated_field",
@@ -121,6 +127,12 @@ func TestFieldAnnotations(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = ""
+	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 
 	wantField = &fieldAnnotations{
@@ -141,6 +153,12 @@ func TestFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, map_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples = ""
+	gotFA, _ = map_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:             "boxed_field",
@@ -148,14 +166,21 @@ func TestFieldAnnotations(t *testing.T) {
 		BranchName:            "BoxedField",
 		FQMessageName:         "crate::model::TestMessage",
 		FieldType:             "std::option::Option<std::boxed::Box<crate::model::TestMessage>>",
+		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.boxed_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "boxedField") });`,
 		IsBoxed:               true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, boxed_field.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, boxed_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = "TestMessage"
+	gotFA, _ = boxed_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 }
 
@@ -242,7 +267,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec and MessageType.Codec fields of Fields,
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
-	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec")); diff != "" {
+	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec", "Codec")); diff != "" {
 		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
 	}
 
@@ -266,6 +291,12 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, map_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples := "TestMessage"
+	gotFA, _ := map_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples := gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:             "oneof_field",
@@ -273,6 +304,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		BranchName:            "OneofField",
 		FQMessageName:         "crate::model::TestMessage",
 		FieldType:             "std::boxed::Box<crate::model::TestMessage>",
+		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:               true,
@@ -280,8 +312,14 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		OtherFieldsInGroup:    []*api.Field{},
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, oneof_field.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, oneof_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = "TestMessage"
+	gotFA, _ = oneof_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 
 	wantField = &fieldAnnotations{
@@ -290,14 +328,21 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		BranchName:            "RepeatedField",
 		FQMessageName:         "crate::model::TestMessage",
 		FieldType:             "std::vec::Vec<crate::model::TestMessage>",
+		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		IsBoxed:               true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, repeated_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = "TestMessage"
+	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 
 	wantField = &fieldAnnotations{
@@ -306,14 +351,21 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		BranchName:            "MessageField",
 		FQMessageName:         "crate::model::TestMessage",
 		FieldType:             "std::boxed::Box<crate::model::TestMessage>",
+		MessageType:           message,
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		IsBoxed:               true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
-	if diff := cmp.Diff(wantField, message_field.Codec); diff != "" {
+	if diff := cmp.Diff(wantField, message_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = "TestMessage"
+	gotFA, _ = message_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 }
 
@@ -431,6 +483,12 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, map_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples := "MapField"
+	gotFA, _ := map_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples := gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:          "oneof_field",
@@ -438,6 +496,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		BranchName:         "OneofField",
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::boxed::Box<test.v1.inner::TestMessage>",
+		MessageType:        inner_message,
 		PrimitiveFieldType: "test.v1.inner::TestMessage",
 		AddQueryParameter:  `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:            true,
@@ -448,6 +507,12 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, oneof_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples = "OneofField"
+	gotFA, _ = oneof_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:          "repeated_field",
@@ -455,6 +520,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		BranchName:         "RepeatedField",
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "std::vec::Vec<test.v1.inner::TestMessage>",
+		MessageType:        inner_message,
 		PrimitiveFieldType: "test.v1.inner::TestMessage",
 		AddQueryParameter:  `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		SkipIfIsDefault:    true,
@@ -463,6 +529,12 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
+	wantMessageNameInExamples = "RepeatedField"
+	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
+	}
 
 	wantField = &fieldAnnotations{
 		FieldName:          "message_field",
@@ -470,6 +542,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		BranchName:         "MessageField",
 		FQMessageName:      "crate::model::TestMessage",
 		FieldType:          "test.v1.inner::TestMessage",
+		MessageType:        inner_message,
 		PrimitiveFieldType: "test.v1.inner::TestMessage",
 		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		SkipIfIsDefault:    true,
@@ -477,6 +550,12 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantField, message_field.Codec); diff != "" {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+	wantMessageNameInExamples = "MessageField"
+	gotFA, _ = message_field.Codec.(*fieldAnnotations)
+	gotMessageNameInExamples = gotFA.MessageNameInExamples()
+	if wantMessageNameInExamples != gotMessageNameInExamples {
+		t.Errorf("mismatch in MessageNameInExamples, want %s, got %s", wantMessageNameInExamples, gotMessageNameInExamples)
 	}
 }
 
@@ -634,10 +713,13 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 			SerdeAs:            test.wantSerdeAs,
 			SkipIfIsDefault:    true,
 		}
-		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter")); diff != "" {
+		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter", "MessageType")); diff != "" {
 			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 		}
-
+		got, _ := singular_field.Codec.(*fieldAnnotations)
+		if got.MessageType.ID != test.typezID {
+			t.Errorf("mismatch in field annotations MessageType.ID, want %s, got %s", test.typezID, got.MessageType.ID)
+		}
 	}
 }
 

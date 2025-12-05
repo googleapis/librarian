@@ -588,6 +588,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::boxed::Box<wkt::DoubleValue>",
+		MessageType:        boxed_field.MessageType,
 		PrimitiveFieldType: "wkt::DoubleValue",
 		AddQueryParameter:  `let builder = req.oneof_field_boxed().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldBoxed") });`,
 		IsBoxed:            true,

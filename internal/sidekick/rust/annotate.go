@@ -442,6 +442,9 @@ type fieldAnnotations struct {
 	FieldType          string
 	PrimitiveFieldType string
 	AddQueryParameter  string
+	// For fields that are singular mesaage or list of messages, this is the
+	// message type.
+	MessageType *api.Message
 	// For fields that are maps, these are the type of the key and value,
 	// respectively.
 	KeyType    string
@@ -482,6 +485,24 @@ func (a *fieldAnnotations) SkipIfIsEmpty() bool {
 // RequiresSerdeAs returns true if the field requires a serde_as annotation.
 func (a *fieldAnnotations) RequiresSerdeAs() bool {
 	return a.SerdeAs != ""
+}
+
+// MessageNameInExamples is the type name as used in examples.
+// This will be AliasInExamples if there's an alias,
+// otherwise it will be the message type or value type name.
+func (a *fieldAnnotations) MessageNameInExamples() string {
+	if a.AliasInExamples != "" {
+		return a.AliasInExamples
+	}
+	if a.MessageType != nil {
+		ma, _ := a.MessageType.Codec.(*messageAnnotation)
+		return ma.Name
+	}
+	if a.ValueField != nil && a.ValueField.MessageType != nil {
+		ma, _ := a.ValueField.MessageType.Codec.(*messageAnnotation)
+		return ma.Name
+	}
+	return ""
 }
 
 type enumAnnotation struct {
@@ -1300,6 +1321,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			}
 		} else {
 			ann.SerdeAs = c.messageFieldSerdeAs(field)
+			ann.MessageType = field.MessageType
 		}
 	}
 	if field.Group != nil {
