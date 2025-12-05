@@ -224,16 +224,22 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 	}
 
 	// Bump the version core.
-	// Breaking changes and feat result in minor bump for pre-1.0.0 versions.
-	if (version.Major == 0 && highestChange == Major) || highestChange == Minor {
+	switch highestChange {
+	case Major:
+		// Breaking changes result in a minor bump for pre-1.0.0 versions.
+		if version.Major == 0 {
+			version.Minor++
+			version.Patch = 0
+		} else {
+			version.Major++
+			version.Minor = 0
+			version.Patch = 0
+		}
+	case Minor:
 		version.Minor++
 		version.Patch = 0
-	} else if highestChange == Patch {
+	case Patch:
 		version.Patch++
-	} else if highestChange == Major {
-		version.Major++
-		version.Minor = 0
-		version.Patch = 0
 	}
 
 	return version.String(), nil
