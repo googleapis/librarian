@@ -120,14 +120,14 @@ func parse(versionString string) (version, error) {
 
 // String formats a [version] struct into a string.
 func (v version) String() string {
-	version := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
+	vStr := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" {
-		version += "-" + v.Prerelease
+		vStr += "-" + v.Prerelease
 		if v.PrereleaseNumber != nil {
-			version += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
+			vStr += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
 		}
 	}
-	return version
+	return vStr
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
@@ -198,50 +198,50 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		return currentVersion, nil
 	}
 
-	version, err := parse(currentVersion)
+	v, err := parse(currentVersion)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse current version: %w", err)
 	}
 
 	// Only bump the prerelease version number.
-	if version.Prerelease != "" && !o.BumpVersionCore {
+	if v.Prerelease != "" && !o.BumpVersionCore {
 		// Append prerelease number if there isn't one.
-		if version.PrereleaseNumber == nil {
-			version.PrereleaseSeparator = "."
+		if v.PrereleaseNumber == nil {
+			v.PrereleaseSeparator = "."
 
 			// Initialize a new int pointer set to 0. Fallthrough to increment
 			// to 1. We prefer the first prerelease to use 1 instead of 0.
-			version.PrereleaseNumber = new(int)
+			v.PrereleaseNumber = new(int)
 		}
 
-		*version.PrereleaseNumber++
-		return version.String(), nil
+		*v.PrereleaseNumber++
+		return v.String(), nil
 	}
 
 	// Reset prerelease number, if present, then fallthrough to bump version core.
-	if version.PrereleaseNumber != nil && o.BumpVersionCore {
-		*version.PrereleaseNumber = 1
+	if v.PrereleaseNumber != nil && o.BumpVersionCore {
+		*v.PrereleaseNumber = 1
 	}
 
 	// Breaking changes result in a minor bump for pre-1.0.0 versions.
-	if highestChange == Major && version.Major == 0 {
+	if highestChange == Major && v.Major == 0 {
 		highestChange = Minor
 	}
 
 	// Bump the version core.
 	switch highestChange {
 	case Major:
-		version.Major++
-		version.Minor = 0
-		version.Patch = 0
+		v.Major++
+		v.Minor = 0
+		v.Patch = 0
 	case Minor:
-		version.Minor++
-		version.Patch = 0
+		v.Minor++
+		v.Patch = 0
 	case Patch:
-		version.Patch++
+		v.Patch++
 	}
 
-	return version.String(), nil
+	return v.String(), nil
 }
 
 // DeriveNext calculates the next version based on the highest change type and
