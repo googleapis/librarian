@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerateCommand(t *testing.T) {
@@ -210,6 +211,80 @@ libraries:
 						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestPrepareLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		output   string
+		want     string
+	}{
+		{
+			name:     "empty output derives path from channel",
+			language: "rust",
+			want:     "src/generated/cloud/secretmanager/v1",
+		},
+		{
+			name:     "explicit output keeps explicit path",
+			language: "rust",
+			output:   "custom/output",
+			want:     "custom/output",
+		},
+		{
+			name:     "empty output uses default for non-rust",
+			language: "go",
+			want:     "src/generated",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			lib := &config.Library{
+				Name:   "test-lib",
+				Output: test.output,
+				Channels: []*config.Channel{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			}
+			defaults := &config.Default{
+				Output: "src/generated",
+			}
+			got := prepareLibrary(test.language, lib, defaults)
+			if got.Output != test.want {
+				t.Errorf("got output %q, want %q", got.Output, test.want)
+			}
+		})
+	}
+}
+
+func TestDeriveDefaultRustOutput(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		channel string
+		want    string
+	}{
+		{
+			name:    "standard google cloud path",
+			channel: "google/cloud/secretmanager/v1",
+			want:    "src/generated/cloud/secretmanager/v1",
+		},
+		{
+			name:    "nested api path",
+			channel: "google/cloud/aiplatform/v1beta1",
+			want:    "src/generated/cloud/aiplatform/v1beta1",
+		},
+		{
+			name:    "non-cloud path",
+			channel: "google/iam/v1",
+			want:    "src/generated/iam/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveDefaultRustOutput(test.channel, "src/generated")
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}

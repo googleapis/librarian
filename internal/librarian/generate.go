@@ -98,7 +98,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
 				return nil
 			}
-			lib = fillDefaults(lib, cfg.Default)
+			lib = prepareLibrary(cfg.Language, lib, cfg.Default)
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
@@ -108,17 +108,22 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 					api.ServiceConfig = serviceConfig
 				}
 			}
-			// TODO(https://github.com/googleapis/librarian/issues/2966):
-			// refactor so that the switch statement logic is in one place
-			if cfg.Language == "rust" {
-				if lib.Output == "" {
-					lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, cfg.Default.Output)
-				}
-			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
 	return fmt.Errorf("library %q not found", libraryName)
+}
+
+// prepareLibrary applies language-specific derivations and fills defaults.
+// For Rust libraries without an explicit output path, it derives the output
+// from the first channel path before applying defaults.
+func prepareLibrary(language string, lib *config.Library, defaults *config.Default) *config.Library {
+	// TODO(https://github.com/googleapis/librarian/issues/2966):
+	// refactor so that the switch statement logic is in one place
+	if language == "rust" && lib.Output == "" {
+		lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, defaults.Output)
+	}
+	return fillDefaults(lib, defaults)
 }
 
 // deriveDefaultRustOutput returns the output path for a Rust library. If the
