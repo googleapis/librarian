@@ -221,32 +221,40 @@ func TestPrepareLibrary(t *testing.T) {
 		name     string
 		language string
 		output   string
+		channels []*config.Channel
 		want     string
 	}{
 		{
 			name:     "empty output derives path from channel",
 			language: "rust",
+			channels: []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
 			want:     "src/generated/cloud/secretmanager/v1",
 		},
 		{
 			name:     "explicit output keeps explicit path",
 			language: "rust",
 			output:   "custom/output",
+			channels: []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
 			want:     "custom/output",
 		},
 		{
 			name:     "empty output uses default for non-rust",
 			language: "go",
+			channels: []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			want:     "src/generated",
+		},
+		{
+			name:     "rust with no channels uses default",
+			language: "rust",
+			channels: nil,
 			want:     "src/generated",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
-				Name:   "test-lib",
-				Output: test.output,
-				Channels: []*config.Channel{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
+				Name:     "test-lib",
+				Output:   test.output,
+				Channels: test.channels,
 			}
 			defaults := &config.Default{
 				Output: "src/generated",

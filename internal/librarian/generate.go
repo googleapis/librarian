@@ -120,7 +120,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default) *config.Library {
 	// TODO(https://github.com/googleapis/librarian/issues/2966):
 	// refactor so that the switch statement logic is in one place
-	if language == "rust" && lib.Output == "" {
+	if language == "rust" && lib.Output == "" && len(lib.Channels) > 0 {
 		lib.Output = deriveDefaultRustOutput(lib.Channels[0].Path, defaults.Output)
 	}
 	return fillDefaults(lib, defaults)
