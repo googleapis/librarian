@@ -15,6 +15,7 @@
 package serviceconfig
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,5 +87,15 @@ func TestFind(t *testing.T) {
 	want := "google/cloud/speech/v1/speech_v1.yaml"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestFindThrowsErrorIfNotFound(t *testing.T) {
+	_, got := Find("testdata/googleapis", "google/cloud/compute/v1")
+	if got == nil {
+		t.Errorf("got no error, want %v", errServiceConfigNotFound)
+	}
+	if !errors.Is(got, errServiceConfigNotFound) {
+		t.Errorf("got error %v, want %v", got, errServiceConfigNotFound)
 	}
 }

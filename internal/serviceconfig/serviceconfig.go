@@ -18,6 +18,7 @@ package serviceconfig
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,6 +39,10 @@ type (
 	Authentication     = serviceconfig.Authentication
 	AuthenticationRule = serviceconfig.AuthenticationRule
 	OAuthRequirements  = serviceconfig.OAuthRequirements
+)
+
+var (
+	errServiceConfigNotFound = errors.New("Service config file not found")
 )
 
 // Read reads a service config from a YAML file and returns it as a Service
@@ -105,7 +110,7 @@ func Find(googleapisDir, apiPath string) (string, error) {
 			return filepath.Join(apiPath, name), nil
 		}
 	}
-	return "", nil
+	return "", errServiceConfigNotFound
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
