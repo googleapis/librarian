@@ -178,8 +178,7 @@ func toChannels(apis []*legacyconfig.API) []*config.Channel {
 	channels := make([]*config.Channel, 0, len(apis))
 	for _, api := range apis {
 		channels = append(channels, &config.Channel{
-			Path:          api.Path,
-			ServiceConfig: api.ServiceConfig,
+			Path: api.Path,
 		})
 	}
 

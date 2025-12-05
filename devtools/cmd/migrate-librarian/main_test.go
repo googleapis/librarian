@@ -128,8 +128,7 @@ func TestBuildConfig(t *testing.T) {
 						Version: "1.0.0",
 						APIs: []*legacyconfig.API{
 							{
-								Path:          "google/example/api/v1",
-								ServiceConfig: "google/example/api/v1/service.yaml",
+								Path: "google/example/api/v1",
 							},
 						},
 						PreserveRegex: []string{
@@ -164,8 +163,7 @@ func TestBuildConfig(t *testing.T) {
 						Version: "1.0.0",
 						Channels: []*config.Channel{
 							{
-								Path:          "google/example/api/v1",
-								ServiceConfig: "google/example/api/v1/service.yaml",
+								Path: "google/example/api/v1",
 							},
 						},
 						Keep: []string{
