@@ -861,7 +861,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		decoder := annotate.decoder(field.Typez, field.TypezID, state)
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], "+
-				"_ => throw FormatException('\"%s\" is not a list') }",
+				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
 		message := state.MessageByID[field.TypezID]
@@ -874,7 +874,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, "+
-				"_ => throw FormatException('\"%s\" is not an object') }",
+				"_ => throw const FormatException('\"%s\" is not an object') }",
 			data, defaultValue, keyDecoder, valueDecoder, field.JSONName)
 	}
 

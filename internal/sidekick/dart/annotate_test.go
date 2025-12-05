@@ -945,28 +945,28 @@ func TestCreateFromJsonLine(t *testing.T) {
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
-			"switch (json['boolList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBool(i)], _ => throw FormatException('\"boolList\" is not a list') }",
+			"switch (json['boolList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBool(i)], _ => throw const FormatException('\"boolList\" is not a list') }",
 		}, {
 			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			"switch (json['bytesList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBytes(i)], _ => throw FormatException('\"bytesList\" is not a list') }",
+			"switch (json['bytesList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBytes(i)], _ => throw const FormatException('\"bytesList\" is not a list') }",
 		}, {
 			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
-			"switch (json['doubleList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeDouble(i)], _ => throw FormatException('\"doubleList\" is not a list') }",
+			"switch (json['doubleList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeDouble(i)], _ => throw const FormatException('\"doubleList\" is not a list') }",
 		}, {
 			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.FIXED32_TYPE, Repeated: true},
-			"switch (json['fixed32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"fixed32List\" is not a list') }",
+			"switch (json['fixed32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"fixed32List\" is not a list') }",
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
-			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"int32List\" is not a list') }",
+			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"int32List\" is not a list') }",
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
-			"switch (json['stringList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeString(i)], _ => throw FormatException('\"stringList\" is not a list') }",
+			"switch (json['stringList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeString(i)], _ => throw const FormatException('\"stringList\" is not a list') }",
 		},
 
 		// repeated primitives w/ optional
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
-			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw FormatException('\"int32List\" is not a list') }",
+			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"int32List\" is not a list') }",
 		},
 
 		// enums
@@ -996,7 +996,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 		{
 			// Map of bytes.
 			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
-			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw FormatException('\"message\" is not an object') }",
+			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
