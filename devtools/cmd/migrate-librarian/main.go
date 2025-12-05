@@ -59,7 +59,8 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
-	repoPath := flagSet.String("repo", "", "Path to the repository containing legacy .librarian configuration (required)")
+	repoPath := flagSet.String("repo", "",
+		"Path to the repository containing legacy .librarian configuration (required). Must end with go or python.")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
