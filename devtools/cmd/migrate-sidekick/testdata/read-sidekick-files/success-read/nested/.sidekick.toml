@@ -1,6 +1,7 @@
 [general]
 specification-source = 'google/cloud/security/publicca/v1'
 service-config = 'google/cloud/security/publicca/v1/publicca_v1.yaml'
+specification-format = 'disco'
 
 [source]
 title-override = 'Google Apps Script Types'

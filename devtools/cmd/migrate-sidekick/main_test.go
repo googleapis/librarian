@@ -158,6 +158,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					Version:             "1.1.0",
 					CopyrightYear:       "2025",
 					DescriptionOverride: "Description override",
+					SpecificationFormat: "discovery",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
@@ -445,33 +446,6 @@ func TestRunMigrateCommand(t *testing.T) {
 				t.Fatalf("expected error containing %q, got nil", test.wantErr)
 			}
 
-		})
-	}
-}
-
-func TestMapSpecificationFormat(t *testing.T) {
-	for _, test := range []struct {
-		name               string
-		providedSpecFormat string
-		wantedSpecFormat   string
-	}{
-		{
-			name:               "default",
-			providedSpecFormat: "openapi",
-			wantedSpecFormat:   "openapi",
-		},
-		{
-			name:               "disco_mapping",
-			providedSpecFormat: "disco",
-			wantedSpecFormat:   "discovery",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-
-			got := mapSpecificationFormat(test.providedSpecFormat)
-			if diff := cmp.Diff(test.wantedSpecFormat, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
 		})
 	}
 }

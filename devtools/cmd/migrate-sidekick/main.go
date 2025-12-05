@@ -249,11 +249,13 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 		if apiPath == "" {
 			continue
 		}
-		// Get Service config
+
 		serviceConfig := sidekick.General.ServiceConfig
 
-		// Get specification format
-		specificationFormat := mapSpecificationFormat(sidekick.General.SpecificationFormat)
+		specificationFormat := sidekick.General.SpecificationFormat
+		if specificationFormat == "disco" {
+			specificationFormat = "discovery"
+		}
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
@@ -486,12 +488,4 @@ func strToSlice(s string) []string {
 
 func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
-}
-
-func mapSpecificationFormat(specFormat string) string {
-	switch specFormat {
-	case "disco":
-		return "discovery"
-	}
-	return specFormat
 }
