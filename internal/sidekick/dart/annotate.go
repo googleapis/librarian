@@ -42,7 +42,7 @@ var defaultValues = map[api.Typez]struct {
 	api.BYTES_TYPE:    {"Uint8List(0)", false},
 	api.DOUBLE_TYPE:   {"0", true},
 	api.FIXED32_TYPE:  {"0", true},
-	api.FIXED64_TYPE:  {"0", true},
+	api.FIXED64_TYPE:  {"BigInt.zero", false},
 	api.FLOAT_TYPE:    {"0", true},
 	api.INT32_TYPE:    {"0", true},
 	api.INT64_TYPE:    {"0", true},
@@ -52,7 +52,7 @@ var defaultValues = map[api.Typez]struct {
 	api.SINT64_TYPE:   {"0", true},
 	api.STRING_TYPE:   {"''", true},
 	api.UINT32_TYPE:   {"0", true},
-	api.UINT64_TYPE:   {"0", true},
+	api.UINT64_TYPE:   {"BigInt.zero", false},
 }
 
 type modelAnnotations struct {
@@ -805,11 +805,12 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *api.APIState) string {
 	switch typez {
 	case api.INT64_TYPE,
-		api.UINT64_TYPE,
 		api.SINT64_TYPE,
-		api.FIXED64_TYPE,
 		api.SFIXED64_TYPE:
 		return "decodeInt64"
+	case api.FIXED64_TYPE,
+		api.UINT64_TYPE:
+		return "decodeUint64"
 	case api.FLOAT_TYPE,
 		api.DOUBLE_TYPE:
 		return "decodeDouble"
@@ -922,10 +923,11 @@ func createToJsonLine(field *api.Field, state *api.APIState, required bool) stri
 		return fmt.Sprintf("%s%s.toJson()", name, bang)
 	case field.Typez == api.BYTES_TYPE:
 		return fmt.Sprintf("encodeBytes(%s)", name)
-	case field.Typez == api.INT64_TYPE ||
-		field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
-		field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE:
+	case field.Typez == api.INT64_TYPE || field.Typez == api.SINT64_TYPE ||
+		field.Typez == api.SFIXED64_TYPE:
 		return fmt.Sprintf("encodeInt64(%s)", name)
+	case field.Typez == api.FIXED64_TYPE || field.Typez == api.UINT64_TYPE:
+		return fmt.Sprintf("encodeUint64(%s)", name)
 	case field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
 		return fmt.Sprintf("encodeDouble(%s)", name)
 	default:
@@ -1064,9 +1066,10 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	case api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
 		api.FIXED32_TYPE, api.SFIXED32_TYPE:
 		out = "int"
-	case api.INT64_TYPE, api.UINT64_TYPE, api.SINT64_TYPE,
-		api.FIXED64_TYPE, api.SFIXED64_TYPE:
+	case api.INT64_TYPE, api.SINT64_TYPE, api.SFIXED64_TYPE:
 		out = "int"
+	case api.FIXED64_TYPE, api.UINT64_TYPE:
+		out = "BigInt"
 	case api.FLOAT_TYPE, api.DOUBLE_TYPE:
 		out = "double"
 	case api.STRING_TYPE:
