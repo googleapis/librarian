@@ -330,6 +330,13 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 			expectedVersion: "1.3.0-alpha",
 			opts:            DeriveNextOptions{BumpVersionCore: true},
 		},
+		{
+			name:            "prerelease with numeric trailer and bump core option",
+			highestChange:   Minor,
+			currentVersion:  "1.2.3-alpha.5",
+			expectedVersion: "1.3.0-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nextVersion, err := test.opts.DeriveNext(test.highestChange, test.currentVersion)
