@@ -436,7 +436,7 @@ func TestRunMigrateCommand(t *testing.T) {
 				}
 			})
 
-			if err := run([]string{"migrate-sidekick", "-repo", test.path}); err != nil {
+			if err := run([]string{test.path}); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}
