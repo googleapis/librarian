@@ -165,7 +165,6 @@ func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) er
 	if err := downloadTarball(ctx, tempPath, url); err != nil {
 		return err
 	}
-
 	sha, err := computeSHA256(tempPath)
 	if err != nil {
 		return err
@@ -193,14 +192,13 @@ func downloadTarball(ctx context.Context, target, source string) error {
 			}
 		}
 
-		if err := downloadAttempt(ctx, target, source); err != nil {
+		if err = downloadAttempt(ctx, target, source); err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return err
 			}
 			continue
 		}
 		return nil
-
 	}
 	return fmt.Errorf("download failed after 3 attempts, last error=%w", err)
 }
@@ -233,11 +231,9 @@ func downloadAttempt(ctx context.Context, target, source string) (err error) {
 	if response.StatusCode >= 300 {
 		return fmt.Errorf("http error in download %s", response.Status)
 	}
-
 	if _, err := io.Copy(file, response.Body); err != nil {
 		return err
 	}
-
 	return nil
 }
 
