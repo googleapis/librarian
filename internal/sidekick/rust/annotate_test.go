@@ -494,6 +494,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:           "r#type",
 		SetterName:          "type",
 		EnumName:            "Type",
+		EnumNameInExamples:  "Type",
 		QualifiedName:       "crate::model::message::Type",
 		RelativeName:        "message::Type",
 		StructQualifiedName: "crate::model::Message",
@@ -645,6 +646,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		FieldName:           "nested_thing",
 		SetterName:          "nested_thing",
 		EnumName:            "NestedThingOneOf",
+		EnumNameInExamples:  "NestedThingOneOf",
 		QualifiedName:       "crate::model::message::NestedThingOneOf",
 		RelativeName:        "message::NestedThingOneOf",
 		StructQualifiedName: "crate::model::Message",
@@ -699,6 +701,7 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
 		AliasInExamples:     "MessageOneOf",
+		EnumNameInExamples:  "MessageOneOf",
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)

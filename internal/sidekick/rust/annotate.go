@@ -417,8 +417,10 @@ type oneOfAnnotation struct {
 	// The unqualified oneof name may be the same as the unqualified name of the
 	// containing type. If that happens we need to alias one of them.
 	AliasInExamples string
-	FieldType       string
-	DocLines        []string
+	// This is AliasInExamples if there's one, EnumName otherwise.
+	EnumNameInExamples string
+	FieldType          string
+	DocLines           []string
 	// The best field to show in a oneof related samples.
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
@@ -1224,6 +1226,11 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	// because we show usings for all types involved.
 	if ann.EnumName == message.Name {
 		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
+	}
+	if ann.AliasInExamples == "" {
+		ann.EnumNameInExamples = ann.EnumName
+	} else {
+		ann.EnumNameInExamples = ann.AliasInExamples
 	}
 
 	oneof.Codec = ann
