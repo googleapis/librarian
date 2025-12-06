@@ -34,6 +34,7 @@ const branch = "master"
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
+	errMissingSHA256    = errors.New("expectedSha256 is required")
 	defaultBackoff      = 10 * time.Second
 )
 
@@ -145,6 +146,9 @@ func TarballLink(githubDownload string, repo *Repo, sha string) string {
 func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) error {
 	if fileExists(target) {
 		return nil
+	}
+	if expectedSha256 == "" {
+		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 		return err
