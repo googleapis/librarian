@@ -530,6 +530,14 @@ func TestDownloadTarballErrors(t *testing.T) {
 	}
 }
 
+func TestDownloadTarballEmptySha(t *testing.T) {
+	target := path.Join(t.TempDir(), "target")
+	err := DownloadTarball(t.Context(), target, "https://any-url", "")
+	if !errors.Is(err, errMissingSHA256) {
+		t.Errorf("expected errMissingSHA256, got: %v", err)
+	}
+}
+
 func TestLatestCommitAndChecksum(t *testing.T) {
 	const (
 		expectedCommit          = "testcommit123"
