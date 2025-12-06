@@ -15,7 +15,6 @@
 package serviceconfig
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,9 +89,12 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestFindThrowsErrorIfNotFound(t *testing.T) {
-	_, err := Find("testdata/googleapis", "google/cloud/compute/v1")
-	if !errors.Is(err, errServiceConfigNotFound) {
-		t.Errorf("Find() error = %v, want %v", err, errServiceConfigNotFound)
+func TestFindReturnsEmptyIfNotFound(t *testing.T) {
+	got, err := Find("testdata/googleapis", "google/cloud/compute/v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" {
+		t.Errorf("Find() = %q, want empty string", got)
 	}
 }
