@@ -36,6 +36,7 @@ var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errEmptySources            = errors.New("sources field is required in librarian.yaml: specify googleapis and/or discovery source commits")
+	errLibraryNotFound         = errors.New("not found")
 )
 
 func generateCommand() *cli.Command {
@@ -135,7 +136,7 @@ func deriveDefaultLibraries(cfg *config.Config, googleapisDir string) ([]*config
 		}
 		sc, err := serviceconfig.Find(googleapisDir, channel)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("library %q: %w", name, err)
 		}
 		derived = append(derived, &config.Library{
 			Name:   name,
@@ -176,6 +177,11 @@ func dirExists(path string) bool {
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("library %q: %w", libraryName, err)
+		}
+	}()
 	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
 	if err != nil {
 		return nil, err
@@ -202,7 +208,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
-	return nil, fmt.Errorf("library %q not found", libraryName)
+	return nil, fmt.Errorf("library %q not found: %w", libraryName, errLibraryNotFound)
 }
 
 // prepareLibrary applies language-specific derivations and fills defaults.
