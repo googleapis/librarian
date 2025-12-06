@@ -36,7 +36,6 @@ func TestRunMigrateLibrarian(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		repoPath string
-		lang     string
 		wantErr  error
 	}{
 		{
@@ -69,10 +68,9 @@ func TestRunMigrateLibrarian(t *testing.T) {
 				}
 			})
 
-			args := []string{"-repo", test.repoPath, "-output", outputPath}
-
-			if test.lang != "" {
-				args = append(args, "-lang", test.lang)
+			args := []string{"-output", outputPath}
+			if test.repoPath != "" {
+				args = append(args, test.repoPath)
 			}
 
 			if err := run(t.Context(), args); err != nil {
