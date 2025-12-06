@@ -407,16 +407,20 @@ type oneOfAnnotation struct {
 	QualifiedName string
 	// The fully qualified name, relative to `codec.modulePath`. Typically this
 	// is the `QualifiedName` with the `crate::model::` prefix removed.
-	// This is always relative to `ScopeInExamples`.
 	RelativeName string
 	// The Rust `struct` that contains this oneof, fully qualified
 	StructQualifiedName string
-	// The scope to show in examples. For messages in external packages
+	// The fully qualified name for examples. For messages in external packages
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
-	ScopeInExamples string
-	FieldType       string
-	DocLines        []string
+	NameInExamples string
+	// The unqualified oneof name may be the same as the unqualified name of the
+	// containing type. If that happens we need to alias one of them.
+	AliasInExamples string
+	// This is AliasInExamples if there's one, EnumName otherwise.
+	EnumNameInExamples string
+	FieldType          string
+	DocLines           []string
 	// The best field to show in a oneof related samples.
 	// Non deprecated fields are preferred, then scalar, repeated, map fields
 	// in that order.
@@ -443,6 +447,9 @@ type fieldAnnotations struct {
 	FieldType          string
 	PrimitiveFieldType string
 	AddQueryParameter  string
+	// For fields that are singular mesaage or list of messages, this is the
+	// message type.
+	MessageType *api.Message
 	// For fields that are maps, these are the type of the key and value,
 	// respectively.
 	KeyType    string
@@ -461,6 +468,15 @@ type fieldAnnotations struct {
 	// If true, this is a `wkt::NullValue` field, and also requires super-extra
 	// custom deserialization.
 	IsWktNullValue bool
+	// Some fields may be the type of the message they are defined in.
+	// We need to know this in sample generation to avoid importing
+	// the parent type twice.
+	// This applies to single value, repeated and map fields.
+	FieldTypeIsParentType bool
+	// In some cases, for instance, for OpenApi and Discovery synthetic requests,
+	// types in different namespaces have the same unqualified name. When the field type and the
+	// containing type have the same unqualified name, we need to alias one of those.
+	AliasInExamples string
 	// If this field is part of a oneof group, this will contain the other fields
 	// in the group.
 	OtherFieldsInGroup []*api.Field
@@ -474,6 +490,24 @@ func (a *fieldAnnotations) SkipIfIsEmpty() bool {
 // RequiresSerdeAs returns true if the field requires a serde_as annotation.
 func (a *fieldAnnotations) RequiresSerdeAs() bool {
 	return a.SerdeAs != ""
+}
+
+// MessageNameInExamples is the type name as used in examples.
+// This will be AliasInExamples if there's an alias,
+// otherwise it will be the message type or value type name.
+func (a *fieldAnnotations) MessageNameInExamples() string {
+	if a.AliasInExamples != "" {
+		return a.AliasInExamples
+	}
+	if a.MessageType != nil {
+		ma, _ := a.MessageType.Codec.(*messageAnnotation)
+		return ma.Name
+	}
+	if a.ValueField != nil && a.ValueField.MessageType != nil {
+		ma, _ := a.ValueField.MessageType.Codec.(*messageAnnotation)
+		return ma.Name
+	}
+	return ""
 }
 
 type enumAnnotation struct {
@@ -492,6 +526,9 @@ type enumAnnotation struct {
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
 	NameInExamples string
+	// There's a missmatch between the sidekick model representation of wkt::NullValue
+	// and the representation in Rust. We us this for sample generation.
+	IsWktNullValue bool
 	// These are some of the enum values that can be used in examples,
 	// accompanied by an index to facilitate generating code that can
 	// distinctly reference each value. These attempt to avoid deprecated
@@ -888,10 +925,7 @@ func (c *codec) annotateService(s *api.Service) {
 func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	nameInExamples := qualifiedName
-	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
 		Name:              toPascal(m.Name),
 		ModuleName:        toSnake(m.Name),
@@ -1143,10 +1177,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
-	scopeInExamples := scope
-	if strings.HasPrefix(scope, c.modulePath+"::") {
-		scopeInExamples = strings.Replace(scope, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
 	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
 		if f1.Deprecated == f2.Deprecated {
@@ -1176,18 +1207,33 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		}
 	})
 
-	oneof.Codec = &oneOfAnnotation{
+	ann := &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
 		SetterName:          toSnakeNoMangling(oneof.Name),
 		EnumName:            enumName,
 		QualifiedName:       qualifiedName,
 		RelativeName:        relativeEnumName,
 		StructQualifiedName: structQualifiedName,
-		ScopeInExamples:     scopeInExamples,
+		NameInExamples:      nameInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
 		ExampleField:        bestField,
 	}
+	// Note that this is different from OneOf name-overrides
+	// as those solve for fully qualified name clashes where a oneof
+	// and a child message have the same name.
+	// This is solving for unqualified name clashes that affect samples
+	// because we show usings for all types involved.
+	if ann.EnumName == message.Name {
+		ann.AliasInExamples = fmt.Sprintf("%sOneOf", ann.EnumName)
+	}
+	if ann.AliasInExamples == "" {
+		ann.EnumNameInExamples = ann.EnumName
+	} else {
+		ann.EnumNameInExamples = ann.AliasInExamples
+	}
+
+	oneof.Codec = ann
 }
 
 func (c *codec) primitiveSerdeAs(field *api.Field) string {
@@ -1295,10 +1341,25 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			}
 		} else {
 			ann.SerdeAs = c.messageFieldSerdeAs(field)
+			ann.MessageType = field.MessageType
 		}
 	}
 	if field.Group != nil {
 		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
+	}
+	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
+		// Map field whose value type is the same as the conaining type.
+		(ann.ValueField != nil && ann.ValueField.MessageType == message))
+	if !ann.FieldTypeIsParentType && // When the type of the field is the same as the containing type we don't import twice. No alias needed.
+		// Single or repeated field whose type's unqualified name is the same as the containing message's.
+		((field.MessageType != nil && field.MessageType.Name == message.Name) ||
+			// Map field whose type's unqualified name is the same as the containing message's.
+			(ann.ValueField != nil && ann.ValueField.MessageType != nil && ann.ValueField.MessageType.Name == message.Name)) {
+		ann.AliasInExamples = toPascal(field.Name)
+		if ann.AliasInExamples == toPascal(message.Name) {
+			// The field name was the same as the type name so we still have to disambiguate.
+			ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
+		}
 	}
 }
 
@@ -1309,10 +1370,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 
 	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	nameInExamples := qualifiedName
-	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		nameInExamples = fmt.Sprintf("%s::model::%s", c.packageNamespace(model), relativeName)
-	}
+	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
 	// For BigQuery (and so far only BigQuery), the enum values conflict when
 	// converted to the Rust style [1]. Basically, there are several enum values
@@ -1366,6 +1424,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 		QualifiedName:     qualifiedName,
 		RelativeName:      relativeName,
 		NameInExamples:    nameInExamples,
+		IsWktNullValue:    nameInExamples == "wkt::NullValue",
 		ValuesForExamples: forExamples,
 	}
 	e.Codec = annotations

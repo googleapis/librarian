@@ -42,6 +42,13 @@ limitations under the License.
 ///     ("key1", 456),
 /// ]);
 {{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     ("key0", 123_u32),
+///     ("key1", 456_u32),
+/// ]);
+{{/Codec.ValueField.IsLikeUInt}}
 {{#Codec.ValueField.IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
@@ -60,10 +67,12 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     ("key0", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
-///     ("key1", {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+///     ("key0", {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     ("key1", {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsString}}
@@ -96,6 +105,13 @@ limitations under the License.
 ///     (false, 456),
 /// ]);
 {{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (true, 123_u32),
+///     (false, 456_u32),
+/// ]);
+{{/Codec.ValueField.IsLikeUInt}}
 {{#Codec.ValueField.IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
@@ -114,10 +130,12 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (true, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
-///     (false, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+///     (true, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (false, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsBool}}
@@ -150,6 +168,13 @@ limitations under the License.
 ///     (1, 456),
 /// ]);
 {{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0, 123_u32),
+///     (1, 456_u32),
+/// ]);
+{{/Codec.ValueField.IsLikeUInt}}
 {{#Codec.ValueField.IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
@@ -168,10 +193,75 @@ limitations under the License.
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-///     (0, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use setters */),
-///     (1, {{Codec.ValueField.MessageType.Codec.Name}}::default()/* use (different) setters */),
+///     (0, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (1, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
 /// ]);
 {{/Codec.ValueField.IsObject}}
 {{/Codec.KeyField.IsLikeInt}}
+{{#Codec.KeyField.IsLikeUInt}}
+{{#Codec.ValueField.IsString}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, "abc"),
+///     (1_u32, "xyz"),
+/// ]);
+{{/Codec.ValueField.IsString}}
+{{#Codec.ValueField.IsBytes}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, bytes::Bytes::from_static(b"abc")),
+///     (1_u32, bytes::Bytes::from_static(b"xyz")),
+/// ]);
+{{/Codec.ValueField.IsBytes}}
+{{#Codec.ValueField.IsBool}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, true),
+///     (1_u32, false),
+/// ]);
+{{/Codec.ValueField.IsBool}}
+{{#Codec.ValueField.IsLikeInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, 123),
+///     (1_u32, 456),
+/// ]);
+{{/Codec.ValueField.IsLikeInt}}
+{{#Codec.ValueField.IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, 123_u32),
+///     (1_u32, 456_u32),
+/// ]);
+{{/Codec.ValueField.IsLikeUInt}}
+{{#Codec.ValueField.IsLikeFloat}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, 123.5),
+///     (1_u32, 456.5),
+/// ]);
+{{/Codec.ValueField.IsLikeFloat}}
+{{#Codec.ValueField.IsEnum}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+///     ({{Index}}_u32, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
+{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+/// ]);
+{{/Codec.ValueField.IsEnum}}
+{{#Codec.ValueField.IsObject}}
+/// # use {{Parent.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
+/// use {{Codec.ValueField.MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
+///     (0_u32, {{Codec.MessageNameInExamples}}::default()/* use setters */),
+///     (1_u32, {{Codec.MessageNameInExamples}}::default()/* use (different) setters */),
+/// ]);
+{{/Codec.ValueField.IsObject}}
+{{/Codec.KeyField.IsLikeUInt}}

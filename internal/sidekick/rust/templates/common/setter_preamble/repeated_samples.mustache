@@ -23,14 +23,18 @@ limitations under the License.
 /// let b2 = bytes::Bytes::from_static(b"xyz");
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([b1, b2]);
 {{/IsBytes}}
-{{#IsLikeBool}}
+{{#IsBool}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([true, false, true]);
-{{/IsLikeBool}}
+{{/IsBool}}
 {{#IsLikeInt}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1, 2, 3]);
 {{/IsLikeInt}}
+{{#IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1_u32, 2_u32, 3_u32]);
+{{/IsLikeUInt}}
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([1.0, 2.0, 3.0]);
@@ -46,10 +50,12 @@ limitations under the License.
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{MessageType.Codec.NameInExamples}};
+{{^Codec.FieldTypeIsParentType}}
+/// use {{MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
 /// let x = {{Parent.Codec.Name}}::new()
 ///     .set_{{Codec.SetterName}}([
-///         {{MessageType.Codec.Name}}::default()/* use setters */,
-///         {{MessageType.Codec.Name}}::default()/* use (different) setters */,
+///         {{Codec.MessageNameInExamples}}::default()/* use setters */,
+///         {{Codec.MessageNameInExamples}}::default()/* use (different) setters */,
 ///     ]);
 {{/IsObject}}

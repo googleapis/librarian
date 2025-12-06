@@ -239,6 +239,7 @@ func TestFieldTypePredicates(t *testing.T) {
 		isBytes  bool
 		isBool   bool
 		isInt    bool
+		isUInt   bool
 		isFloat  bool
 		isEnum   bool
 		isObject bool
@@ -249,14 +250,14 @@ func TestFieldTypePredicates(t *testing.T) {
 		{field: &Field{Typez: BOOL_TYPE}, isBool: true},
 		{field: &Field{Typez: INT32_TYPE}, isInt: true},
 		{field: &Field{Typez: INT64_TYPE}, isInt: true},
-		{field: &Field{Typez: UINT32_TYPE}, isInt: true},
-		{field: &Field{Typez: UINT64_TYPE}, isInt: true},
 		{field: &Field{Typez: SINT32_TYPE}, isInt: true},
 		{field: &Field{Typez: SINT64_TYPE}, isInt: true},
-		{field: &Field{Typez: FIXED32_TYPE}, isInt: true},
-		{field: &Field{Typez: FIXED64_TYPE}, isInt: true},
 		{field: &Field{Typez: SFIXED32_TYPE}, isInt: true},
 		{field: &Field{Typez: SFIXED64_TYPE}, isInt: true},
+		{field: &Field{Typez: UINT32_TYPE}, isUInt: true},
+		{field: &Field{Typez: UINT64_TYPE}, isUInt: true},
+		{field: &Field{Typez: FIXED32_TYPE}, isUInt: true},
+		{field: &Field{Typez: FIXED64_TYPE}, isUInt: true},
 		{field: &Field{Typez: FLOAT_TYPE}, isFloat: true},
 		{field: &Field{Typez: DOUBLE_TYPE}, isFloat: true},
 		{field: &Field{Typez: ENUM_TYPE}, isEnum: true},
@@ -274,6 +275,9 @@ func TestFieldTypePredicates(t *testing.T) {
 		}
 		if tc.field.IsLikeInt() != tc.isInt {
 			t.Errorf("IsLikeInt() for %v should be %v", tc.field.Typez, tc.isInt)
+		}
+		if tc.field.IsLikeUInt() != tc.isUInt {
+			t.Errorf("IsLikeUInt() for %v should be %v", tc.field.Typez, tc.isUInt)
 		}
 		if tc.field.IsLikeFloat() != tc.isFloat {
 			t.Errorf("IsLikeFloat() for %v should be %v", tc.field.Typez, tc.isFloat)
