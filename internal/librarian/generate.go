@@ -199,9 +199,12 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
-// from the first channel path before applying defaults.
+// from the first channel path.
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if lib.Output == "" {
+		if lib.Veneer {
+			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+		}
 		if len(lib.Channels) == 0 {
 			return nil, fmt.Errorf("library %q has no channels, cannot determine default output", lib.Name)
 		}
@@ -216,11 +219,14 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	case "testhelper":
 		err = testGenerate(library)
 	case "rust":
-		keep := append(library.Keep, "Cargo.toml")
+		keep, err := rust.Keep(library)
+		if err != nil {
+			return fmt.Errorf("library %s: %w", library.Name, err)
+		}
 		if err := cleanOutput(library.Output, keep); err != nil {
 			return fmt.Errorf("library %s: %w", library.Name, err)
 		}
-		err = rust.Generate(ctx, library, sources)
+		return rust.Generate(ctx, library, sources)
 	default:
 		err = fmt.Errorf("generate not implemented for %q", language)
 	}

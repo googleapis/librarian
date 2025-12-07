@@ -221,6 +221,7 @@ func TestPrepareLibrary(t *testing.T) {
 		name     string
 		language string
 		output   string
+		veneer   bool
 		channels []*config.Channel
 		want     string
 		wantErr  bool
@@ -250,11 +251,23 @@ func TestPrepareLibrary(t *testing.T) {
 			channels: nil,
 			wantErr:  true,
 		},
+		{
+			name:    "veneer without output returns error",
+			veneer:  true,
+			wantErr: true,
+		},
+		{
+			name:   "veneer with explicit output succeeds",
+			veneer: true,
+			output: "src/storage",
+			want:   "src/storage",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
 				Name:     "test-lib",
 				Output:   test.output,
+				Veneer:   test.veneer,
 				Channels: test.channels,
 			}
 			defaults := &config.Default{
