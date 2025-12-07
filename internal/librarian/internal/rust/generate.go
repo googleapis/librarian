@@ -53,6 +53,13 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
+	return nil
+}
+
+// Format formats a generated Rust library. Must be called sequentially;
+// parallel calls cause race conditions as cargo fmt runs cargo metadata,
+// which competes for locks on the workspace Cargo.toml and Cargo.lock.
+func Format(library *config.Library) error {
 	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}

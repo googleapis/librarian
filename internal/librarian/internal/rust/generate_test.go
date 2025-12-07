@@ -70,6 +70,9 @@ func TestGenerate(t *testing.T) {
 	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
+	if err := Format(library); err != nil {
+		t.Fatal(err)
+	}
 
 	for _, test := range []struct {
 		path string

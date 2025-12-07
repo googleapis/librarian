@@ -74,7 +74,11 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if all {
 		return generateAll(ctx, cfg)
 	}
-	return generateLibrary(ctx, cfg, libraryName)
+	lib, err := generateLibrary(ctx, cfg, libraryName)
+	if err != nil {
+		return err
+	}
+	return formatLibrary(cfg.Language, lib)
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
@@ -88,8 +92,13 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	cfg.Libraries = append(cfg.Libraries, libraries...)
+
 	for _, lib := range cfg.Libraries {
-		if err := generateLibrary(ctx, cfg, lib.Name); err != nil {
+		lib, err := generateLibrary(ctx, cfg, lib.Name)
+		if err != nil {
+			return err
+		}
+		if err := formatLibrary(cfg.Language, lib); err != nil {
 			return err
 		}
 	}
@@ -167,26 +176,26 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
+func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
 	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
 			if lib.SkipGenerate {
 				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
-				return nil
+				return nil, nil
 			}
 			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					api.ServiceConfig = serviceConfig
 				}
@@ -194,7 +203,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
-	return fmt.Errorf("library %q not found", libraryName)
+	return nil, fmt.Errorf("library %q not found", libraryName)
 }
 
 // prepareLibrary applies language-specific derivations and fills defaults.
@@ -210,7 +219,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return fillDefaults(lib, defaults), nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
+func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
 	var err error
 	switch language {
 	case "testhelper":
@@ -218,7 +227,7 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	case "rust":
 		keep := append(library.Keep, "Cargo.toml")
 		if err := cleanOutput(library.Output, keep); err != nil {
-			return fmt.Errorf("library %s: %w", library.Name, err)
+			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		err = rust.Generate(ctx, library, sources)
 	default:
@@ -226,10 +235,20 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	}
 	if err != nil {
 		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
-		return err
+		return nil, err
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
-	return nil
+	return library, nil
+}
+
+func formatLibrary(language string, library *config.Library) error {
+	switch language {
+	case "testhelper":
+		return nil
+	case "rust":
+		return rust.Format(library)
+	}
+	return fmt.Errorf("format not implemented for %q", language)
 }
 
 func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, error) {
