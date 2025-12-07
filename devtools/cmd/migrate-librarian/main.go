@@ -43,9 +43,9 @@ const (
 )
 
 var (
-	errRepoNotFound     = errors.New("repo path argument is required")
-	errLangNotSupported = errors.New("only go and python are supported")
 	errFetchSource      = errors.New("cannot fetch source")
+	errLangNotSupported = errors.New("only go and python are supported")
+	errRepoNotFound     = errors.New("exactly one repo path argument is required")
 	errTidyFailed       = errors.New("librarian tidy failed")
 
 	fetchSource = fetchGoogleapis
@@ -64,7 +64,7 @@ func run(ctx context.Context, args []string) error {
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
-	if flagSet.NArg() < 1 {
+	if flagSet.NArg() != 1 {
 		return errRepoNotFound
 	}
 	repoPath := flagSet.Arg(0)
@@ -101,20 +101,15 @@ func run(ctx context.Context, args []string) error {
 }
 
 func deriveLanguage(repoPath string) (string, error) {
-	absPath, err := filepath.Abs(repoPath)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.HasSuffix(absPath, "go") {
+	base := filepath.Base(repoPath)
+	switch {
+	case strings.HasSuffix(base, "go"):
 		return "go", nil
-	}
-
-	if strings.HasSuffix(absPath, "python") {
+	case strings.HasSuffix(base, "python"):
 		return "python", nil
+	default:
+		return "", errLangNotSupported
 	}
-
-	return "", errLangNotSupported
 }
 
 func buildConfig(
