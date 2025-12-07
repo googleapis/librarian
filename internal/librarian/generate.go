@@ -92,7 +92,6 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	cfg.Libraries = append(cfg.Libraries, libraries...)
-
 	for _, lib := range cfg.Libraries {
 		lib, err := generateLibrary(ctx, cfg, lib.Name)
 		if err != nil {
