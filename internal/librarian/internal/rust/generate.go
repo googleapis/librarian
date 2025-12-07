@@ -57,7 +57,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
 	return nil
@@ -67,10 +67,10 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 // parallel calls cause race conditions as cargo fmt runs cargo metadata,
 // which competes for locks on the workspace Cargo.toml and Cargo.lock.
 func Format(library *config.Library) error {
-	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
+	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}
-	if err := command.Run("cargo", "fmt", "-p", library.Name); err != nil {
+	if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
 		return err
 	}
 	return nil

@@ -16,14 +16,15 @@
 package command
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 )
 
 // Run executes a program (with arguments) and captures any error output.
-func Run(command string, arg ...string) error {
-	cmd := exec.Command(command, arg...)
+func Run(ctx context.Context, command string, arg ...string) error {
+	cmd := exec.CommandContext(ctx, command, arg...)
 	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)

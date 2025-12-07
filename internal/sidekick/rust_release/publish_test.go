@@ -43,7 +43,7 @@ func TestPublishSuccess(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-2001-02-03")
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err != nil {
+	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -67,14 +67,14 @@ func TestPublishWithNewCrate(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-with-new-crate")
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err != nil {
+	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -104,7 +104,7 @@ func TestPublishWithRootsPem(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-with-roots-pem")
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err != nil {
+	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -129,13 +129,13 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	remoteDir := setupForPublish(t, "release-with-local-changes-error")
 	cloneRepository(t, remoteDir)
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Errorf("expected an error publishing a dirty local repository")
 	}
 }
@@ -146,7 +146,7 @@ func TestPublishPreflightError(t *testing.T) {
 			"git": "git-not-found",
 		},
 	}
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Errorf("expected an error in BumpVersions() with a bad git command")
 	}
 }
@@ -164,7 +164,7 @@ func TestPublishLastTagError(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-2001-02-03")
 	cloneRepository(t, remoteDir)
-	if err := Publish(&config, true, false); err == nil {
+	if err := Publish(t.Context(), &config, true, false); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
 	}
 }
@@ -195,11 +195,11 @@ func TestPublishBadManifest(t *testing.T) {
 	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
 }
@@ -216,7 +216,7 @@ func TestPublishGetPlanError(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-2001-02-03")
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
 }
@@ -240,7 +240,7 @@ func TestPublishPlanMismatchError(t *testing.T) {
 	}
 	remoteDir := setupForPublish(t, "release-2001-02-03")
 	cloneRepository(t, remoteDir)
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
 }
@@ -280,12 +280,12 @@ fi
 	cloneRepository(t, remoteDir)
 
 	// This should fail because semver-checks fails.
-	if err := Publish(config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 
 	// Skipping the checks should succeed.
-	if err := Publish(config, true, true); err != nil {
+	if err := Publish(t.Context(), config, true, true); err != nil {
 		t.Fatal(err)
 	}
 }
