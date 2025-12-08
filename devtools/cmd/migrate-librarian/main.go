@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -66,10 +67,11 @@ type RepoConfigModule struct {
 
 // RepoConfigAPI represents an API in repo-config.yaml.
 type RepoConfigAPI struct {
-	Path         string   `yaml:"path"`
-	DisableGAPIC bool     `yaml:"disable_gapic,omitempty"`
-	NestedProtos []string `yaml:"nested_protos,omitempty"`
-	ProtoPackage string   `yaml:"proto_package,omitempty"`
+	Path            string   `yaml:"path"`
+	ClientDirectory string   `yaml:"client_directory,omitempty"`
+	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
+	NestedProtos    []string `yaml:"nested_protos,omitempty"`
+	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
 
 type Config struct {
@@ -243,7 +245,26 @@ func buildLibraries(cfg *Config) []*config.Library {
 
 		libGoModule, ok := idToGoModule[id]
 		if ok {
+			var goAPIs []*config.GoAPI
+			for _, oneApi := range libGoModule.APIs {
+				goAPIs = append(goAPIs, &config.GoAPI{
+					Path:            oneApi.Path,
+					ClientDirectory: oneApi.ClientDirectory,
+					DisableGAPIC:    oneApi.DisableGAPIC,
+					NestedProtos:    oneApi.NestedProtos,
+					ProtoPackage:    oneApi.ProtoPackage,
+				})
+			}
 
+			goModule := &config.GoModule{
+				DeleteGenerationOutputPaths: libGoModule.DeleteGenerationOutputPaths,
+				GoAPIs:                      goAPIs,
+				ModulePathVersion:           libGoModule.ModulePathVersion,
+			}
+
+			if !isEmptyGoModule(goModule) {
+				library.Go = goModule
+			}
 		}
 
 		libraries = append(libraries, library)
@@ -275,6 +296,10 @@ func toChannels(apis []*legacyconfig.API) []*config.Channel {
 	}
 
 	return channels
+}
+
+func isEmptyGoModule(mod *config.GoModule) bool {
+	return reflect.DeepEqual(mod, &config.GoModule{})
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
