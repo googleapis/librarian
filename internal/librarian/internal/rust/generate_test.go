@@ -180,7 +180,7 @@ func TestGenerate(t *testing.T) {
 	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
-	if err := Format(library); err != nil {
+	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
 	}
 

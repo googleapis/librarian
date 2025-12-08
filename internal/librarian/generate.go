@@ -78,7 +78,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if err != nil {
 		return err
 	}
-	return formatLibrary(cfg.Language, lib)
+	return formatLibrary(ctx, cfg.Language, lib)
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
@@ -97,7 +97,7 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		if err != nil {
 			return err
 		}
-		if err := formatLibrary(cfg.Language, lib); err != nil {
+		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
 			return err
 		}
 	}
@@ -245,12 +245,12 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	return library, nil
 }
 
-func formatLibrary(language string, library *config.Library) error {
+func formatLibrary(ctx context.Context, language string, library *config.Library) error {
 	switch language {
 	case "testhelper":
 		return nil
 	case "rust":
-		return rust.Format(library)
+		return rust.Format(ctx, library)
 	}
 	return fmt.Errorf("format not implemented for %q", language)
 }
