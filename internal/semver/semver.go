@@ -238,7 +238,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 	if v.Major == 0 {
 		if highestChange == Major {
 			highestChange = Minor
-		} else if o.DowngradePreGAChanges {
+		} else if highestChange == Minor && o.DowngradePreGAChanges {
 			highestChange = Patch
 		}
 	}
