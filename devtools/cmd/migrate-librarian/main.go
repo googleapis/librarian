@@ -112,7 +112,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	repoConfig, err := readRepoConfig(*repoPath)
+	repoConfig, err := readRepoConfig(repoPath)
 	if err != nil {
 		return err
 	}
