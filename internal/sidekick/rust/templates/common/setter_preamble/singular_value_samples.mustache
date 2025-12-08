@@ -29,19 +29,31 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(42);
 {{/IsLikeInt}}
+{{#IsLikeUInt}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(42_u32);
+{{/IsLikeUInt}}
 {{#IsLikeFloat}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(42.0);
 {{/IsLikeFloat}}
 {{#IsEnum}}
+{{#Codec.IsWktNullValue}}
+/// # use {{Parent.Codec.NameInExamples}};
+/// use wkt::NullValue;
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(NullValue);
+{{/Codec.IsWktNullValue}}
+{{^Codec.IsWktNullValue}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
 {{#EnumType.Codec.ValuesForExamples}}
 /// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{FieldCodec.SetterName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}});
 {{/EnumType.Codec.ValuesForExamples}}
+{{/Codec.IsWktNullValue}}
 {{/IsEnum}}
 {{#IsObject}}
 /// # use {{Parent.Codec.NameInExamples}};
-/// use {{MessageType.Codec.NameInExamples}};
-/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}({{MessageType.Codec.Name}}::default()/* use setters */);
+{{^Codec.FieldTypeIsParentType}}/// use {{MessageType.Codec.NameInExamples}}{{#Codec.AliasInExamples}} as {{.}}{{/Codec.AliasInExamples}};
+{{/Codec.FieldTypeIsParentType}}
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}({{Codec.MessageNameInExamples}}::default()/* use setters */);
 {{/IsObject}}

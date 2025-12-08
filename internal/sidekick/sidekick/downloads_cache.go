@@ -63,7 +63,7 @@ func makeSourceRoot(ctx context.Context, rootConfig *config.Config, configPrefix
 		return "", err
 	}
 
-	if err := extractTarball(tgz, cacheDir); err != nil {
+	if err := extractTarball(ctx, tgz, cacheDir); err != nil {
 		slog.Error("error extracting .tar.gz file", "file", tgz, "cacheDir", cacheDir, "error", err)
 		return "", err
 	}
@@ -74,8 +74,8 @@ func makeSourceRoot(ctx context.Context, rootConfig *config.Config, configPrefix
 	return target, nil
 }
 
-func extractTarball(source, destination string) error {
-	return cmd.Run("tar", "-zxf", source, "-C", destination)
+func extractTarball(ctx context.Context, source, destination string) error {
+	return cmd.Run(ctx, "tar", "-zxf", source, "-C", destination)
 }
 
 func extractedName(rootConfig *config.Config, googleapisRoot, configPrefix string) string {

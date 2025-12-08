@@ -40,5 +40,5 @@ effect.
 
 // rustBumpVersions increments the version numbers as needed.
 func rustBumpVersions(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.BumpVersions(rootConfig.Release)
+	return rustrelease.BumpVersions(ctx, rootConfig.Release)
 }

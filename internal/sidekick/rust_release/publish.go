@@ -15,6 +15,7 @@
 package rustrelease
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -30,8 +31,8 @@ import (
 
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
-func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := PreFlight(config); err != nil {
+func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
+	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
 	lastTag, err := getLastTag(config)
@@ -56,7 +57,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	cmd := stdexec.Command(cargoExe(config), "workspaces", "plan", "--skip-published")
+	cmd := stdexec.CommandContext(ctx, cargoExe(config), "workspaces", "plan", "--skip-published")
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
@@ -85,7 +86,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 				continue
 			}
 			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
-			if err := command.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+			if err := command.Run(ctx, cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 				return err
 			}
 		}
@@ -95,7 +96,7 @@ func Publish(config *config.Release, dryRun bool, skipSemverChecks bool) error {
 	if dryRun {
 		args = append(args, "--dry-run")
 	}
-	cmd = stdexec.Command(cargoExe(config), args...)
+	cmd = stdexec.CommandContext(ctx, cargoExe(config), args...)
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}

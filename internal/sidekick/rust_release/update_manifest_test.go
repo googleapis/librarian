@@ -54,7 +54,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if idx == -1 {
 		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
 	}
-	if err := command.Run("git", "commit", "-m", "update version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "update version", "."); err != nil {
 		t.Fatal(err)
 	}
 
@@ -178,10 +178,10 @@ version = "a.b.c"
 	if err := os.WriteFile(name, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "introduce bad version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "introduce bad version", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "tag", "bad-version-tag"); err != nil {
+	if err := command.Run(t.Context(), "git", "tag", "bad-version-tag"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -255,7 +255,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "updated version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "updated version", "."); err != nil {
 		t.Fatal(err)
 	}
 
@@ -278,10 +278,10 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 		Preinstalled: map[string]string{},
 	}
 	addGeneratedCrate(t, path.Join("src", "new"), "google-cloud-new")
-	if err := command.Run("git", "add", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "new crate", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "new crate", "."); err != nil {
 		t.Fatal(err)
 	}
 	name := path.Join("src", "new", "Cargo.toml")

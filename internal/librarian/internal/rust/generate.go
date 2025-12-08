@@ -17,6 +17,7 @@ package rust
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
+	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
 
 const (
@@ -38,28 +40,101 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
+	if library.Veneer {
+		return generateVeneer(ctx, library, googleapisDir)
+	}
+
+	if len(library.Channels) != 1 {
+		return fmt.Errorf("the Rust generator only supports a single channel per library")
+	}
+
 	discoveryDir, err := sourceDir(ctx, sources.Discovery, discoveryRepo)
 	if err != nil {
 		return err
-	}
-	if len(library.Channels) != 1 {
-		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir)
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
 	}
-	if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
-		return err
-	}
-	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
-		return err
-	}
-	if err := command.Run("cargo", "fmt", "-p", library.Name); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
 	return nil
+}
+
+// Format formats a generated Rust library. Must be called sequentially;
+// parallel calls cause race conditions as cargo fmt runs cargo metadata,
+// which competes for locks on the workspace Cargo.toml and Cargo.lock.
+func Format(ctx context.Context, library *config.Library) error {
+	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
+		return err
+	}
+	if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
+		return err
+	}
+	return nil
+}
+
+func generateVeneer(ctx context.Context, library *config.Library, googleapisDir string) error {
+	if library.Rust == nil || len(library.Rust.Modules) == 0 {
+		return fmt.Errorf("veneer %q has no modules defined", library.Name)
+	}
+	for _, module := range library.Rust.Modules {
+		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir)
+		model, err := parser.CreateModel(sidekickConfig)
+		if err != nil {
+			return fmt.Errorf("module %s: %w", module.Output, err)
+		}
+		switch sidekickConfig.General.Language {
+		case "rust":
+			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
+		case "rust+prost":
+			err = rust_prost.Generate(ctx, model, module.Output, sidekickConfig)
+		default:
+			err = fmt.Errorf("unknown language: %s", sidekickConfig.General.Language)
+		}
+		if err != nil {
+			return fmt.Errorf("module %s: %w", module.Output, err)
+		}
+	}
+	return nil
+}
+
+// Keep returns the list of files to preserve when cleaning the output directory.
+func Keep(library *config.Library) ([]string, error) {
+	if !library.Veneer {
+		return append(library.Keep, "Cargo.toml"), nil
+	}
+
+	// For veneers, keep all files outside module output directories. We walk
+	// library.Output and keep files not under any module.Output.
+	var keep []string
+	moduleOutputs := make(map[string]bool)
+	for _, m := range library.Rust.Modules {
+		moduleOutputs[m.Output] = true
+	}
+	err := filepath.WalkDir(library.Output, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if moduleOutputs[path] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		rel, err := filepath.Rel(library.Output, path)
+		if err != nil {
+			return err
+		}
+		keep = append(keep, rel)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keep, nil
 }
 
 func sourceDir(ctx context.Context, source *config.Source, repo string) (string, error) {

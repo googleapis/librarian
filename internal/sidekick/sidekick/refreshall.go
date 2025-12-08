@@ -86,7 +86,7 @@ func refreshAll(ctx context.Context, rootConfig *config.Config, cmdLine *Command
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			err := refreshDir(override, cmdLine, dir)
+			err := refreshDir(ctx, override, cmdLine, dir)
 			results <- result{dir: dir, err: err}
 		}()
 	}

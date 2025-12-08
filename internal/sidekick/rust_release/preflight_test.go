@@ -26,7 +26,7 @@ func TestPreflightMissingGit(t *testing.T) {
 			"git": "git-is-not-installed",
 		},
 	}
-	if err := PreFlight(&release); err == nil {
+	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Fatal(err)
 	}
 }
@@ -38,7 +38,7 @@ func TestPreflightMissingCargo(t *testing.T) {
 			"cargo": "cargo-is-not-installed",
 		},
 	}
-	if err := PreFlight(&release); err == nil {
+	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Fatal(err)
 	}
 }
@@ -53,7 +53,7 @@ func TestPreflightMissingUpstream(t *testing.T) {
 		Remote: "upstream",
 	}
 	continueInNewGitRepository(t, t.TempDir())
-	if err := PreFlight(&release); err == nil {
+	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Fatal(err)
 	}
 }
@@ -77,7 +77,7 @@ func TestPreflightWithTools(t *testing.T) {
 		},
 	}
 	setupForVersionBump(t, "test-preflight-with-tools")
-	if err := PreFlight(&release); err != nil {
+	if err := PreFlight(t.Context(), &release); err != nil {
 		t.Errorf("expected a successful run, got=%v", err)
 	}
 }
@@ -101,7 +101,7 @@ func TestPreflightToolFailure(t *testing.T) {
 		},
 	}
 	setupForVersionBump(t, "test-preflight-with-tools")
-	if err := PreFlight(&release); err == nil {
+	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Errorf("expected an error installing cargo-semver-checks")
 	}
 }

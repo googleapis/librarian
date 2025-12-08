@@ -47,9 +47,8 @@ func refresh(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLin
 	if err != nil {
 		return err
 	}
-	return refreshDir(override, cmdLine, cmdLine.Output)
+	return refreshDir(ctx, override, cmdLine, cmdLine.Output)
 }
-
 func loadDir(rootConfig *config.Config, output string) (*api.API, *config.Config, error) {
 	config, err := config.MergeConfigAndFile(rootConfig, path.Join(output, ".sidekick.toml"))
 	if err != nil {
@@ -68,7 +67,7 @@ func loadDir(rootConfig *config.Config, output string) (*api.API, *config.Config
 	return model, config, nil
 }
 
-func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) error {
+func refreshDir(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine, output string) error {
 	model, config, err := loadDir(rootConfig, output)
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 
 	switch config.General.Language {
 	case "rust":
-		return rust.Generate(model, output, config)
+		return rust.Generate(ctx, model, output, config)
 	case "rust_storage":
 		// The StorageControl client depends on multiple specification sources.
 		// We load them both here manually, and pass them along to
@@ -92,13 +91,13 @@ func refreshDir(rootConfig *config.Config, cmdLine *CommandLine, output string) 
 		if err != nil {
 			return err
 		}
-		return rust.GenerateStorage(output, storageModel, storageConfig, controlModel, controlConfig)
+		return rust.GenerateStorage(ctx, output, storageModel, storageConfig, controlModel, controlConfig)
 	case "rust+prost":
-		return rust_prost.Generate(model, output, config)
+		return rust_prost.Generate(ctx, model, output, config)
 	case "dart":
-		return dart.Generate(model, output, config)
+		return dart.Generate(ctx, model, output, config)
 	case "sample":
-		return codec_sample.Generate(model, output, config)
+		return codec_sample.Generate(ctx, model, output, config)
 	default:
 		return fmt.Errorf("unknown language: %s", config.General.Language)
 	}

@@ -37,9 +37,61 @@ type RustDefault struct {
 	DisabledRustdocWarnings []string `yaml:"disabled_rustdoc_warnings,omitempty"`
 }
 
+// RustModule defines a generation target within a veneer crate.
+// Each module specifies what proto source to use, which template to apply,
+// and where to output the generated code.
+type RustModule struct {
+	// HasVeneer indicates whether this module has a hand-written wrapper.
+	HasVeneer bool `yaml:"has_veneer,omitempty"`
+
+	// IncludedIds is a list of proto IDs to include in generation.
+	IncludedIds []string `yaml:"included_ids,omitempty"`
+
+	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
+	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
+	IncludeList string `yaml:"include_list,omitempty"`
+
+	// ModulePath is the Rust module path for converters
+	// (e.g., "crate::generated::gapic::model").
+	ModulePath string `yaml:"module_path,omitempty"`
+
+	// NameOverrides contains codec-level overrides for type and service names.
+	NameOverrides string `yaml:"name_overrides,omitempty"`
+
+	// Output is the directory where generated code is written
+	// (e.g., "src/storage/src/generated/gapic").
+	Output string `yaml:"output"`
+
+	// PostProcessProtos contains code to post-process generated protos.
+	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
+
+	// RoutingRequired indicates whether routing is required.
+	RoutingRequired bool `yaml:"routing_required,omitempty"`
+
+	// ServiceConfig is the path to the service config file.
+	ServiceConfig string `yaml:"service_config,omitempty"`
+
+	// SkippedIds is a list of proto IDs to skip in generation.
+	SkippedIds []string `yaml:"skipped_ids,omitempty"`
+
+	// Source is the proto path to generate from (e.g., "google/storage/v2").
+	Source string `yaml:"source"`
+
+	// Template specifies which generator template to use.
+	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
+	Template string `yaml:"template"`
+}
+
 // RustCrate contains Rust-specific library configuration.
 type RustCrate struct {
 	RustDefault `yaml:",inline"`
+
+	// Modules specifies generation targets for veneer crates. Each module
+	// defines a source proto path, output location, and template to use.
+	// This is only used when the library has veneer: true.
+	Modules []*RustModule `yaml:"modules,omitempty"`
 
 	// PerServiceFeatures enables per-service feature flags.
 	PerServiceFeatures bool `yaml:"per_service_features,omitempty"`
@@ -188,8 +240,4 @@ type PythonPackage struct {
 	// that API channel.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
-
-	// IsProtoOnly indicates this library only contains proto files (no GAPIC
-	// generation).
-	IsProtoOnly bool `yaml:"is_proto_only,omitempty"`
 }

@@ -113,7 +113,7 @@ func patchMethodDocs(svc *Service, name string, override *config.DocumentationOv
 }
 
 func patchElementDocs(documentation *string, override *config.DocumentationOverride) error {
-	new := strings.ReplaceAll(*documentation, override.Match, override.Replace)
+	new := strings.ReplaceAll(*documentation, strings.ReplaceAll(override.Match, "\r\n", "\n"), override.Replace)
 	if *documentation == new {
 		slog.Error("comment override mismatch", "id", override.ID, "want", override.Match, "text", *documentation)
 		return fmt.Errorf("comment override for %s did not match", override.ID)

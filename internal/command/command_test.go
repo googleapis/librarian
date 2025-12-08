@@ -20,13 +20,13 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	if err := Run("go", "version"); err != nil {
+	if err := Run(t.Context(), "go", "version"); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestRunError(t *testing.T) {
-	err := Run("go", "invalid-subcommand-bad-bad-bad")
+	err := Run(t.Context(), "go", "invalid-subcommand-bad-bad-bad")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

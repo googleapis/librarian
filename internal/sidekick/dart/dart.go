@@ -16,6 +16,7 @@
 package dart
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -256,8 +257,8 @@ func shouldGenerateMethod(m *api.Method) bool {
 	return m.PathInfo.Bindings[0].PathTemplate != nil
 }
 
-func formatDirectory(dir string) error {
-	if err := command.Run("dart", "format", dir); err != nil {
+func formatDirectory(ctx context.Context, dir string) error {
+	if err := command.Run(ctx, "dart", "format", dir); err != nil {
 		return fmt.Errorf("got an error trying to run `dart format`; perhaps try https://dart.dev/get-dart (%w)", err)
 	}
 	return nil

@@ -46,3 +46,20 @@ libraries:
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
+  - name: google-cloud-storage
+    version: 1.4.0
+    veneer: true
+    rust:
+      modules:
+        - source: google/storage/v2
+          service_config: google/storage/v2/storage_v2.yaml
+          output: src/storage/src/generated/gapic
+          template: grpc-client
+          has_veneer: true
+          routing_required: true
+          included_ids:
+            - .google.storage.v2.Storage.GetBucket
+            - .google.storage.v2.Storage.ListBuckets
+        - source: google/storage/v2
+          output: src/storage/src/generated/protos/storage
+          template: prost
