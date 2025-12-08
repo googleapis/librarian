@@ -36,6 +36,7 @@ const (
 	sidekickFile            = ".sidekick.toml"
 	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
 	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
+	tarballSuffix           = ".tar.gz"
 )
 
 var (
@@ -149,6 +150,11 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
 
+	discoveryCommit := strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix)
+	discoveryCommit = strings.TrimSuffix(discoveryCommit, tarballSuffix)
+	googleapisCommit := strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix)
+	googleapisCommit = strings.TrimSuffix(googleapisCommit, tarballSuffix)
+
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
 
@@ -156,11 +162,11 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 		Language: "rust",
 		Sources: &config.Sources{
 			Discovery: &config.Source{
-				Commit: getCommitSHA(discoveryRoot),
+				Commit: discoveryCommit,
 				SHA256: discoverySHA256,
 			},
 			Googleapis: &config.Source{
-				Commit: getCommitSHA(googleapisRoot),
+				Commit: googleapisCommit,
 				SHA256: googleapisSHA256,
 			},
 		},
@@ -209,12 +215,6 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 	}
 
 	return dep
-}
-
-func getCommitSHA(root string) string {
-	got := strings.TrimPrefix(root, discoveryArchivePrefix)
-	got = strings.TrimPrefix(got, googleapisArchivePrefix)
-	return strings.TrimSuffix(got, ".tar.gz")
 }
 
 // findSidekickFiles finds all .sidekick.toml files in the repository.
