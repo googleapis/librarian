@@ -223,7 +223,7 @@ func buildLibraries(cfg *Config) []*config.Library {
 		})
 
 	idToGoModule := make(map[string]*RepoConfigModule)
-	if cfg.lang == "go" {
+	if cfg.repoConfig != nil {
 		idToGoModule = sliceToMap[RepoConfigModule](
 			cfg.repoConfig.Modules,
 			func(mod *RepoConfigModule) string {
