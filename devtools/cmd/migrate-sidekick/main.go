@@ -33,7 +33,9 @@ import (
 )
 
 const (
-	sidekickFile = ".sidekick.toml"
+	sidekickFile            = ".sidekick.toml"
+	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
+	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
 )
 
 var (
@@ -210,8 +212,8 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 }
 
 func getCommitSHA(root string) string {
-	got := strings.TrimPrefix(root, "https://github.com/googleapis/discovery-artifact-manager/archive/")
-	got = strings.TrimPrefix(got, "https://github.com/googleapis/googleapis/archive/")
+	got := strings.TrimPrefix(root, discoveryArchivePrefix)
+	got = strings.TrimPrefix(got, googleapisArchivePrefix)
 	return strings.TrimSuffix(got, ".tar.gz")
 }
 
