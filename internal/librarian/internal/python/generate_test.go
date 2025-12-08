@@ -39,7 +39,7 @@ type MockCommand struct {
 
 func TestGetStagingChildDirectory(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, test := range []struct {
 		name     string
 		apiPath  string
 		expected string
@@ -54,12 +54,11 @@ func TestGetStagingChildDirectory(t *testing.T) {
 			apiPath:  "google/test/type",
 			expected: "type-py",
 		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := getStagingChildDirectory(tc.apiPath)
-			if diff := cmp.Diff(tc.expected, got); diff != "" {
-				t.Errorf("getStagingChildDirectory(%q) returned diff (-want +got):\n%s", tc.apiPath, diff)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := getStagingChildDirectory(test.apiPath)
+			if diff := cmp.Diff(test.expected, got); diff != "" {
+				t.Errorf("getStagingChildDirectory(%q) returned diff (-want +got):\n%s", test.apiPath, diff)
 			}
 		})
 	}
@@ -67,7 +66,7 @@ func TestGetStagingChildDirectory(t *testing.T) {
 
 func TestCreateProtocOptions(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, test := range []struct {
 		name     string
 		channel  *config.Channel
 		library  *config.Library
@@ -157,17 +156,16 @@ func TestCreateProtocOptions(t *testing.T) {
 				"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
 			},
 		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			googleapisDir := "testdata"
 
-			got, err := createProtocOptions(tc.channel, tc.library, googleapisDir, "staging")
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, tc.wantErr)
+			got, err := createProtocOptions(test.channel, test.library, googleapisDir, "staging")
+			if (err != nil) != test.wantErr {
+				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
 			}
 
-			if diff := cmp.Diff(tc.expected, got); diff != "" {
+			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
 			}
 		})
@@ -183,8 +181,7 @@ func TestSourceDir(t *testing.T) {
 	fetchRepoDir = func(ctx context.Context, repo, commit, sha256 string) (string, error) {
 		return "fetched", nil
 	}
-
-	testCases := []struct {
+	for _, test := range []struct {
 		name        string
 		source      *config.Source
 		expected    string
@@ -210,15 +207,13 @@ func TestSourceDir(t *testing.T) {
 			},
 			expected: "fetched",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := sourceDir(context.Background(), tc.source, "repo")
-			if (err != nil) != tc.expectedErr {
-				t.Fatalf("sourceDir() error = %v, wantErr %v", err, tc.expectedErr)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := sourceDir(context.Background(), test.source, "repo")
+			if (err != nil) != test.expectedErr {
+				t.Fatalf("sourceDir() error = %v, wantErr %v", err, test.expectedErr)
 			}
-			if diff := cmp.Diff(tc.expected, got); diff != "" {
+			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("sourceDir() returned diff (-want +got):\n%s", diff)
 			}
 		})
@@ -227,7 +222,7 @@ func TestSourceDir(t *testing.T) {
 
 func TestCopyReadmeToDocsDir(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, test := range []struct {
 		name            string
 		setup           func(t *testing.T, outdir string)
 		expectedContent string
@@ -299,23 +294,21 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
-			tc.setup(t, outdir)
+			test.setup(t, outdir)
 			err := copyReadmeToDocsDir(outdir)
-			if (err != nil) != tc.expectedErr {
-				t.Fatalf("copyReadmeToDocsDir() error = %v, wantErr %v", err, tc.expectedErr)
+			if (err != nil) != test.expectedErr {
+				t.Fatalf("copyReadmeToDocsDir() error = %v, wantErr %v", err, test.expectedErr)
 			}
 
-			if tc.expectedContent != "" {
+			if test.expectedContent != "" {
 				content, err := os.ReadFile(filepath.Join(outdir, "docs", "README.rst"))
 				if err != nil {
 					t.Fatal(err)
 				}
-				if diff := cmp.Diff(tc.expectedContent, string(content)); diff != "" {
+				if diff := cmp.Diff(test.expectedContent, string(content)); diff != "" {
 					t.Errorf("copyReadmeToDocsDir() returned diff (-want +got):\n%s", diff)
 				}
 			}
@@ -325,7 +318,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 
 func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
+	for _, test := range []struct {
 		name        string
 		setup       func(t *testing.T, repoRoot string)
 		expectedErr bool
@@ -365,17 +358,15 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			},
 			expectedErr: true,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
-			tc.setup(t, repoRoot)
+			test.setup(t, repoRoot)
 			err := cleanUpFilesAfterPostProcessing(repoRoot)
-			if (err != nil) != tc.expectedErr {
-				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v, wantErr %v", err, tc.expectedErr)
+			if (err != nil) != test.expectedErr {
+				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v, wantErr %v", err, test.expectedErr)
 			}
-			if !tc.expectedErr {
+			if !test.expectedErr {
 				if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 					t.Errorf("owl-bot-staging should have been removed")
 				}
@@ -389,7 +380,7 @@ func TestRunPostProcessor(t *testing.T) {
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, "out/dir")
-	testCases := []struct {
+	for _, test := range []struct {
 		name          string
 		commandScript CommandScript
 		wantErr       bool
@@ -416,20 +407,18 @@ python_mono_repo.owlbot_main(%q)
 			},
 			wantErr: true,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			originalRunCommand := runCommand
 			t.Cleanup(func() {
 				runCommand = originalRunCommand
 			})
-			runCommand = newMockRunCommand(t, tc.commandScript)
+			runCommand = newMockRunCommand(t, test.commandScript)
 			err := runPostProcessor(t.Context(), t.TempDir(), "out/dir")
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("runPostProcessor() error = %v, wantErr %v", err, tc.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("runPostProcessor() error = %v, wantErr %v", err, test.wantErr)
 			}
-			verifyCommands(t, tc.commandScript)
+			verifyCommands(t, test.commandScript)
 		})
 	}
 }
@@ -443,7 +432,7 @@ func TestGenerateChannel(t *testing.T) {
 		"--python_gapic_opt=rest-numeric-enums,metadata",
 	}
 
-	testCases := []struct {
+	for _, test := range []struct {
 		name          string
 		commandScript CommandScript
 		wantErr       bool
@@ -470,15 +459,13 @@ func TestGenerateChannel(t *testing.T) {
 			},
 			wantErr: true,
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			originalRunCommand := runCommand
 			t.Cleanup(func() {
 				runCommand = originalRunCommand
 			})
-			runCommand = newMockRunCommand(t, tc.commandScript)
+			runCommand = newMockRunCommand(t, test.commandScript)
 			err := generateChannel(
 				t.Context(),
 				&config.Channel{Path: "google/test/v1"},
@@ -486,10 +473,10 @@ func TestGenerateChannel(t *testing.T) {
 				"testdata",
 				repoRoot,
 			)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("generateChannel() error = %v, wantErr %v", err, tc.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("generateChannel() error = %v, wantErr %v", err, test.wantErr)
 			}
-			verifyCommands(t, tc.commandScript)
+			verifyCommands(t, test.commandScript)
 		})
 	}
 }

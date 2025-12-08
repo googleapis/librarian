@@ -22,7 +22,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name     string
 		args     []string
 		wantErr  bool
@@ -50,22 +50,21 @@ func TestRun(t *testing.T) {
 			wantErr:  true,
 			wantExit: 1,
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := run(context.Background(), tt.args, ".")
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("Run() error = %v, wantErr %v", err, tt.wantErr)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := run(context.Background(), test.args, ".")
+			if (err != nil) != test.wantErr {
+				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
 
-			if !tt.wantErr {
+			if !test.wantErr {
 				return
 			}
 
 			var exitErr *exec.ExitError
 			if errors.As(err, &exitErr) {
-				if tt.wantExit != 0 && exitErr.ExitCode() != tt.wantExit {
-					t.Errorf("Run() exit code = %d, want %d", exitErr.ExitCode(), tt.wantExit)
+				if test.wantExit != 0 && exitErr.ExitCode() != test.wantExit {
+					t.Errorf("Run() exit code = %d, want %d", exitErr.ExitCode(), test.wantExit)
 				}
 			}
 		})
