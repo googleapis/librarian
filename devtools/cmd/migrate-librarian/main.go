@@ -215,16 +215,21 @@ func buildLibraries(cfg *Config) []*config.Library {
 		func(lib *legacyconfig.LibraryState) string {
 			return lib.ID
 		})
+
 	idToLibraryConfig := sliceToMap[legacyconfig.LibraryConfig](
 		cfg.librarianConfig.Libraries,
 		func(lib *legacyconfig.LibraryConfig) string {
 			return lib.LibraryID
 		})
-	idToGoModule := sliceToMap[RepoConfigModule](
-		cfg.repoConfig.Modules,
-		func(mod *RepoConfigModule) string {
-			return mod.Name
-		})
+
+	idToGoModule := make(map[string]*RepoConfigModule)
+	if cfg.lang == "go" {
+		idToGoModule = sliceToMap[RepoConfigModule](
+			cfg.repoConfig.Modules,
+			func(mod *RepoConfigModule) string {
+				return mod.Name
+			})
+	}
 
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
@@ -316,7 +321,7 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	configFile := filepath.Join(path, librarianDir, "generator-input/repo-config.yaml")
 	if _, err := os.Stat(configFile); err != nil {
 		if os.IsNotExist(err) {
-			return &RepoConfig{}, nil
+			return nil, nil
 		}
 		return nil, err
 	}
