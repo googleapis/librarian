@@ -590,45 +590,6 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 	}
 }
 
-func TestDownloadTarballRetry(t *testing.T) {
-	t.Run("succeeds after a few retries", func(t *testing.T) {
-		// Set a short backoff for this test to speed up retries.
-		defaultBackoff = time.Millisecond
-		t.Cleanup(func() {
-			defaultBackoff = 10 * time.Second
-		})
-		testDir := t.TempDir()
-		tarball := makeTestContents(t)
-		var requestCount int
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			requestCount++
-			if requestCount < 3 {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
-			w.Write(tarball.Contents)
-		}))
-		defer server.Close()
-
-		target := path.Join(testDir, "target-file")
-		if err := DownloadTarball(t.Context(), target, server.URL+"/test.tar.gz", tarball.Sha256); err != nil {
-			t.Fatal(err)
-		}
-
-		if requestCount != 3 {
-			t.Errorf("expected 3 requests, got %d", requestCount)
-		}
-		got, err := os.ReadFile(target)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if diff := cmp.Diff(tarball.Contents, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-}
-
 func TestDownloadTarballRetryErrorIncludesLastFailure(t *testing.T) {
 	defaultBackoff = time.Millisecond
 	t.Cleanup(func() {

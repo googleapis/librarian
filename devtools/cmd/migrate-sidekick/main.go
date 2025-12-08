@@ -34,7 +34,6 @@ import (
 
 const (
 	sidekickFile = ".sidekick.toml"
-	org          = "googleapis"
 )
 
 var (
