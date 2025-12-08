@@ -150,3 +150,35 @@ libraries:
 		t.Errorf("expected %v, got %v", errDuplicateLibraryName, err)
 	}
 }
+
+func TestTidy_DerivableOutput(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configContent := `
+language: rust
+default:
+  output: generated/
+libraries:
+  - name: google-cloud-secretmanager-v1
+    output: generated/cloud/secretmanager/v1
+    channels:
+      - path: google/cloud/secretmanager/v1
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RunTidy(); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
+	}
+	if cfg.Libraries[0].Output != "" {
+		t.Errorf("expected output to be empty, got %q", cfg.Libraries[0].Output)
+	}
+}

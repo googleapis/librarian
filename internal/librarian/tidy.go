@@ -51,7 +51,21 @@ func RunTidy() error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
+	for _, lib := range cfg.Libraries {
+		removeDerivableOutput(cfg, lib)
+	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+}
+
+// removeDerivableOutput removes the `output` field if it can be derived from the default configuration.
+func removeDerivableOutput(cfg *config.Config, lib *config.Library) {
+	if cfg.Default == nil || lib.Output == "" || len(lib.Channels) != 1 {
+		return
+	}
+	derivedOutput := defaultOutput(cfg.Language, lib.Channels[0].Path, cfg.Default.Output)
+	if lib.Output == derivedOutput {
+		lib.Output = ""
+	}
 }
 
 func validateLibraries(cfg *config.Config) error {
