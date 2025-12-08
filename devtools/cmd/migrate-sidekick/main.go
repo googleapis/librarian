@@ -150,10 +150,8 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
 
-	discoveryCommit := strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix)
-	discoveryCommit = strings.TrimSuffix(discoveryCommit, tarballSuffix)
-	googleapisCommit := strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix)
-	googleapisCommit = strings.TrimSuffix(googleapisCommit, tarballSuffix)
+	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
+	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
