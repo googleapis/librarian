@@ -14,12 +14,14 @@
 
 package config
 
+// GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
 	GoAPIs                      []*GoAPI `yaml:"go_apis,omitempty"`
 	ModulePathVersion           string   `yaml:"module_path_version,omitempty"`
 }
 
+// GoAPI represents configuration for a single API channel within a Go module.
 type GoAPI struct {
 	Path            string   `yaml:"path,omitempty"`
 	ClientDirectory string   `yaml:"client_directory,omitempty"`
