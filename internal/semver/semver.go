@@ -189,6 +189,15 @@ type DeriveNextOptions struct {
 	// Default behavior is to prefer bumping the prerelease number or adding one
 	// when the version is a prerelease without a number.
 	BumpVersionCore bool
+
+	// DowngradePreGAChanges specifically forces [Minor] changes to be treated
+	// as [Patch] changes when the current version is pre-1.0.0. [Major] changes
+	// are always downgraded to [Minor] changes when the current version is
+	// pre-1.0.0 regardless of if this is enabled. This is primarily for Rust.
+	//
+	// This has no effect on prerelease versions unless BumpVersionCore is also
+	// enabled.
+	DowngradePreGAChanges bool
 }
 
 // DeriveNext determines the appropriate SemVer version bump based on the
@@ -223,9 +232,15 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		*v.PrereleaseNumber = 1
 	}
 
-	// Breaking changes result in a minor bump for pre-1.0.0 versions.
-	if highestChange == Major && v.Major == 0 {
-		highestChange = Minor
+	// Breaking changes result in a minor bump for pre-1.0.0 versions across
+	// all languages. Some languages, however, prefer to downgrade all pre-1.0.0
+	// changes e.g. Rust.
+	if v.Major == 0 {
+		if highestChange == Major {
+			highestChange = Minor
+		} else if o.DowngradePreGAChanges {
+			highestChange = Patch
+		}
 	}
 
 	// Bump the version core.

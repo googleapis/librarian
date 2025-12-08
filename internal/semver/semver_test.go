@@ -282,10 +282,17 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 			expectedVersion: "1.2.4",
 		},
 		{
-			name:            "pre-1.0.0 feat is patch bump",
-			highestChange:   Minor, // feat is minor
+			name:            "pre-1.0.0 feat is minor bump",
+			highestChange:   Minor,
 			currentVersion:  "0.2.3",
 			expectedVersion: "0.3.0",
+		},
+		{
+			name:            "pre-1.0.0 feat with downgrade is patch bump",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3",
+			expectedVersion: "0.2.4",
+			opts:            DeriveNextOptions{DowngradePreGAChanges: true},
 		},
 		{
 			name:            "pre-1.0.0 fix is patch bump",
@@ -336,6 +343,27 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 			currentVersion:  "1.2.3-alpha.5",
 			expectedVersion: "1.3.0-alpha.1",
 			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease with numeric trailer and bump core option",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.3.0-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease with numeric trailer, bump core and downgrade options",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.2.4-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true, DowngradePreGAChanges: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease feat with downgrade, no bump core, is still prerelease bump",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.2.3-alpha.3",
+			opts:            DeriveNextOptions{DowngradePreGAChanges: true},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
