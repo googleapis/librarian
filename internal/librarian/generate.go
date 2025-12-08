@@ -176,7 +176,7 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
+func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (_ *config.Library, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("library %q: %w", libraryName, err)
