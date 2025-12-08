@@ -36,8 +36,14 @@ func TestReadRootSidekick(t *testing.T) {
 			want: &config.Config{
 				Language: "rust",
 				Sources: &config.Sources{
-					Discovery:  &config.Source{Commit: "67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212"},
-					Googleapis: &config.Source{Commit: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085"},
+					Discovery: &config.Source{
+						Commit: "0bb1100f52bf0bae06f4b4d76742e7eba5c59793",
+						SHA256: "67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212",
+					},
+					Googleapis: &config.Source{
+						Commit: "fe58211356a91f4140ed51893703910db05ade91",
+						SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
+					},
 				},
 				Default: &config.Default{
 					Output:       "src/generated/",

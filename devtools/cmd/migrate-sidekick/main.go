@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
@@ -144,31 +143,23 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 
 	releaseLevel, _ := sidekick.Codec["release-level"].(string)
 	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
-	googleapisCommitSHA, _ := sidekick.Source["googleapis-sha256"].(string)
-	discoveryCommitSHA, _ := sidekick.Source["discovery-sha256"].(string)
+	discoverySHA256, _ := sidekick.Source["discovery-sha256"].(string)
+	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
+	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
+	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
-
-	discoverySHA256, err := fetchDiscoverySHA(discoveryCommitSHA)
-	if err != nil {
-		return nil, err
-	}
-
-	googleapisSHA256, err := fetchGoogleapisSHA(discoveryCommitSHA)
-	if err != nil {
-		return nil, err
-	}
 
 	cfg := &config.Config{
 		Language: "rust",
 		Sources: &config.Sources{
 			Discovery: &config.Source{
-				Commit: discoveryCommitSHA,
+				Commit: getCommitSHA(discoveryRoot),
 				SHA256: discoverySHA256,
 			},
 			Googleapis: &config.Source{
-				Commit: googleapisCommitSHA,
+				Commit: getCommitSHA(googleapisRoot),
 				SHA256: googleapisSHA256,
 			},
 		},
@@ -219,31 +210,10 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 	return dep
 }
 
-func fetchDiscoverySHA(commit string) (string, error) {
-	repo := &fetch.Repo{
-		Org:  org,
-		Repo: "discovery-artifact-manager",
-	}
-
-	return fetchSHA(repo, commit)
-}
-
-func fetchGoogleapisSHA(commit string) (string, error) {
-	repo := &fetch.Repo{
-		Org:  org,
-		Repo: "googleapis",
-	}
-
-	return fetchSHA(repo, commit)
-}
-
-func fetchSHA(repo *fetch.Repo, commit string) (string, error) {
-	endpoint := &fetch.Endpoints{
-		API:      "https://api.github.com",
-		Download: "https://github.com",
-	}
-
-	return fetch.Checksum(endpoint, repo, commit)
+func getCommitSHA(root string) string {
+	got := strings.TrimPrefix(root, "https://github.com/googleapis/discovery-artifact-manager/archive/")
+	got = strings.TrimPrefix(got, "https://github.com/googleapis/googleapis/archive/")
+	return strings.TrimSuffix(got, ".tar.gz")
 }
 
 // findSidekickFiles finds all .sidekick.toml files in the repository.
