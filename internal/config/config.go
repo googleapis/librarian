@@ -123,6 +123,9 @@ type Library struct {
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
 
+	// Go contains Go-specific library configuration.
+	Go *GoModule `yaml:"go,omitempty"`
+
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 

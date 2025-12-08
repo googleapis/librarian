@@ -14,6 +14,20 @@
 
 package config
 
+type GoModule struct {
+	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
+	GoAPIs                      []*GoAPI `yaml:"go_apis,omitempty"`
+	ModulePathVersion           string   `yaml:"module_path_version,omitempty"`
+}
+
+type GoAPI struct {
+	Path            string   `yaml:"path,omitempty"`
+	ClientDirectory string   `yaml:"client_directory,omitempty"`
+	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
+	NestedProtos    []string `yaml:"nested_protos,omitempty"`
+	ProtoPackage    string   `yaml:"proto_package,omitempty"`
+}
+
 // RustDefault contains Rust-specific default configuration.
 type RustDefault struct {
 	// PackageDependencies is a list of default package dependencies.
