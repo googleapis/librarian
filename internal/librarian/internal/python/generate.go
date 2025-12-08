@@ -81,8 +81,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	// Remove the default version fudget here, as GenerateRepoMetadata should
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
-	lastSlash := strings.LastIndex(library.Channels[0].Path, "/")
-	defaultVersion := library.Channels[0].Path[lastSlash+1:]
+	defaultVersion := filepath.Base(library.Channels[0].Path)
 
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
