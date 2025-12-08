@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/librarian/internal/python"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -78,7 +79,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if err != nil {
 		return err
 	}
-	return formatLibrary(cfg.Language, lib)
+	return formatLibrary(ctx, cfg.Language, lib)
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
@@ -97,7 +98,7 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		if err != nil {
 			return err
 		}
-		if err := formatLibrary(cfg.Language, lib); err != nil {
+		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
 			return err
 		}
 	}
@@ -238,6 +239,13 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 		if err := rust.Generate(ctx, library, sources); err != nil {
 			return nil, err
 		}
+	case "python":
+		if err := cleanOutput(library.Output, library.Keep); err != nil {
+			return nil, err
+		}
+		if err := python.Generate(ctx, library, sources); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("generate not implemented for %q", language)
 	}
@@ -245,12 +253,12 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	return library, nil
 }
 
-func formatLibrary(language string, library *config.Library) error {
+func formatLibrary(ctx context.Context, language string, library *config.Library) error {
 	switch language {
 	case "testhelper":
 		return nil
 	case "rust":
-		return rust.Format(library)
+		return rust.Format(ctx, library)
 	}
 	return fmt.Errorf("format not implemented for %q", language)
 }

@@ -530,6 +530,14 @@ func TestDownloadTarballErrors(t *testing.T) {
 	}
 }
 
+func TestDownloadTarballEmptySha(t *testing.T) {
+	target := path.Join(t.TempDir(), "target")
+	err := DownloadTarball(t.Context(), target, "https://any-url", "")
+	if !errors.Is(err, errMissingSHA256) {
+		t.Errorf("expected errMissingSHA256, got: %v", err)
+	}
+}
+
 func TestLatestCommitAndChecksum(t *testing.T) {
 	const (
 		expectedCommit          = "testcommit123"
@@ -663,6 +671,64 @@ func TestDownloadTarballRetry(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+}
+
+func TestDownloadTarballRetryErrorIncludesLastFailure(t *testing.T) {
+	defaultBackoff = time.Millisecond
+	t.Cleanup(func() {
+		defaultBackoff = 10 * time.Second
+	})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	target := path.Join(t.TempDir(), "target-file")
+	err := DownloadTarball(t.Context(), target, server.URL+"/test.tar.gz", "any-sha")
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if strings.Contains(err.Error(), "<nil>") {
+		t.Errorf("error should contain the last failure, not <nil>: %v", err)
+	}
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf("error should mention the HTTP status code: %v", err)
+	}
+}
+
+func TestDownloadTarballRetrySucceeds(t *testing.T) {
+	defaultBackoff = time.Millisecond
+	t.Cleanup(func() {
+		defaultBackoff = 10 * time.Second
+	})
+	tarball := makeTestContents(t)
+	var requestCount int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if requestCount < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarball.Contents)
+	}))
+	defer server.Close()
+
+	target := path.Join(t.TempDir(), "target-file")
+	if err := DownloadTarball(t.Context(), target, server.URL+"/test.tar.gz", tarball.Sha256); err != nil {
+		t.Fatal(err)
+	}
+
+	if requestCount != 3 {
+		t.Errorf("expected 3 requests, got %d", requestCount)
+	}
+	got, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(tarball.Contents, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
 }
 
 func TestLatestCommitAndChecksumFailure(t *testing.T) {

@@ -16,6 +16,7 @@
 package codec_sample
 
 import (
+	"context"
 	"embed"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -27,7 +28,7 @@ import (
 var templates embed.FS
 
 // Generate generates code from the model.
-func Generate(model *api.API, outdir string, cfg *config.Config) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
 	// A template provide converts a template name into the contents.
 	provider := func(name string) (string, error) {
 		contents, err := templates.ReadFile(name)

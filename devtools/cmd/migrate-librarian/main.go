@@ -43,9 +43,9 @@ const (
 )
 
 var (
-	errRepoNotFound     = errors.New("-repo flag is required")
-	errLangNotSupported = errors.New("only go and python are supported")
 	errFetchSource      = errors.New("cannot fetch source")
+	errLangNotSupported = errors.New("only go and python are supported")
+	errRepoNotFound     = errors.New("exactly one repo path argument is required")
 	errTidyFailed       = errors.New("librarian tidy failed")
 
 	fetchSource = fetchGoogleapis
@@ -60,27 +60,26 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
-	repoPath := flagSet.String("repo", "",
-		"Path to the repository containing legacy .librarian configuration (required). Must end with go or python.")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
-	if *repoPath == "" {
+	if flagSet.NArg() != 1 {
 		return errRepoNotFound
 	}
+	repoPath := flagSet.Arg(0)
 
-	language, err := deriveLanguage(*repoPath)
+	language, err := deriveLanguage(repoPath)
 	if err != nil {
 		return err
 	}
 
-	librarianState, err := readState(*repoPath)
+	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err
 	}
 
-	librarianConfig, err := readConfig(*repoPath)
+	librarianConfig, err := readConfig(repoPath)
 	if err != nil {
 		return err
 	}
@@ -102,15 +101,15 @@ func run(ctx context.Context, args []string) error {
 }
 
 func deriveLanguage(repoPath string) (string, error) {
-	if strings.HasSuffix(repoPath, "go") {
+	base := filepath.Base(repoPath)
+	switch {
+	case strings.HasSuffix(base, "go"):
 		return "go", nil
-	}
-
-	if strings.HasSuffix(repoPath, "python") {
+	case strings.HasSuffix(base, "python"):
 		return "python", nil
+	default:
+		return "", errLangNotSupported
 	}
-
-	return "", errLangNotSupported
 }
 
 func buildConfig(

@@ -15,7 +15,6 @@
 package serviceconfig
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,19 +79,40 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	got, err := Find("testdata/googleapis", "google/cloud/speech/v1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "google/cloud/speech/v1/speech_v1.yaml"
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
-	}
-}
-
-func TestFindThrowsErrorIfNotFound(t *testing.T) {
-	_, err := Find("testdata/googleapis", "google/cloud/compute/v1")
-	if !errors.Is(err, errServiceConfigNotFound) {
-		t.Errorf("Find() error = %v, want %v", err, errServiceConfigNotFound)
+	const googleapisDir = "testdata/googleapis"
+	for _, test := range []struct {
+		name    string
+		channel string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "found",
+			channel: "google/cloud/speech/v1",
+			want:    "google/cloud/speech/v1/speech_v1.yaml",
+		},
+		{
+			name:    "not found",
+			channel: "google/cloud/compute/v1",
+			want:    "",
+		},
+		{
+			name:    "directory does not exist",
+			channel: "google/cloud/nonexistent/v1",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Find(googleapisDir, test.channel)
+			if err != nil {
+				if !test.wantErr {
+					t.Fatal(err)
+				}
+				return
+			}
+			if got != test.want {
+				t.Errorf("Find() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }

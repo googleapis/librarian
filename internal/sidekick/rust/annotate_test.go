@@ -494,10 +494,11 @@ func TestOneOfAnnotations(t *testing.T) {
 		FieldName:           "r#type",
 		SetterName:          "type",
 		EnumName:            "Type",
+		EnumNameInExamples:  "Type",
 		QualifiedName:       "crate::model::message::Type",
 		RelativeName:        "message::Type",
 		StructQualifiedName: "crate::model::Message",
-		ScopeInExamples:     "google_cloud_test::model::message",
+		NameInExamples:      "google_cloud_test::model::message::Type",
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
@@ -588,6 +589,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		FQMessageName:      "crate::model::Message",
 		DocLines:           nil,
 		FieldType:          "std::boxed::Box<wkt::DoubleValue>",
+		MessageType:        boxed_field.MessageType,
 		PrimitiveFieldType: "wkt::DoubleValue",
 		AddQueryParameter:  `let builder = req.oneof_field_boxed().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofFieldBoxed") });`,
 		IsBoxed:            true,
@@ -644,13 +646,62 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		FieldName:           "nested_thing",
 		SetterName:          "nested_thing",
 		EnumName:            "NestedThingOneOf",
+		EnumNameInExamples:  "NestedThingOneOf",
 		QualifiedName:       "crate::model::message::NestedThingOneOf",
 		RelativeName:        "message::NestedThingOneOf",
 		StructQualifiedName: "crate::model::Message",
-		ScopeInExamples:     "google_cloud_test::model::message",
+		NameInExamples:      "google_cloud_test::model::message::NestedThingOneOf",
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
 		ExampleField:        singular,
+	}
+	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
+		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
+	singular := &api.Field{
+		Name:     "oneof_field",
+		JSONName: "oneofField",
+		ID:       ".test.Message.oneof_field",
+		Typez:    api.STRING_TYPE,
+		IsOneOf:  true,
+	}
+	group := &api.OneOf{
+		Name:          "message",
+		ID:            ".test.Message.message.message",
+		Documentation: "Say something clever about this oneof.",
+		Fields:        []*api.Field{singular},
+	}
+	message := &api.Message{
+		Name:    "Message",
+		ID:      ".test.Message",
+		Package: "test",
+		Fields:  []*api.Field{singular},
+		OneOfs:  []*api.OneOf{group},
+	}
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := createRustCodec()
+	annotateModel(model, codec)
+
+	// Stops the recursion when comparing fields.
+	ignore := cmpopts.IgnoreFields(api.OneOf{}, "Codec")
+
+	want := &oneOfAnnotation{
+		FieldName:           "message",
+		SetterName:          "message",
+		EnumName:            "Message",
+		QualifiedName:       "crate::model::message::Message",
+		RelativeName:        "message::Message",
+		StructQualifiedName: "crate::model::Message",
+		NameInExamples:      "google_cloud_test::model::message::Message",
+		FieldType:           "crate::model::message::Message",
+		DocLines:            []string{"/// Say something clever about this oneof."},
+		ExampleField:        singular,
+		AliasInExamples:     "MessageOneOf",
+		EnumNameInExamples:  "MessageOneOf",
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)

@@ -15,6 +15,7 @@
 package rustrelease
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -23,14 +24,14 @@ import (
 )
 
 // PreFlight() verifies all the necessary tools are installed.
-func PreFlight(config *config.Release) error {
-	if err := command.Run(gitExe(config), "--version"); err != nil {
+func PreFlight(ctx context.Context, config *config.Release) error {
+	if err := command.Run(ctx, gitExe(config), "--version"); err != nil {
 		return err
 	}
-	if err := command.Run(cargoExe(config), "--version"); err != nil {
+	if err := command.Run(ctx, cargoExe(config), "--version"); err != nil {
 		return err
 	}
-	if err := command.Run(gitExe(config), "remote", "get-url", config.Remote); err != nil {
+	if err := command.Run(ctx, gitExe(config), "remote", "get-url", config.Remote); err != nil {
 		return err
 	}
 	tools, ok := config.Tools["cargo"]
@@ -40,7 +41,7 @@ func PreFlight(config *config.Release) error {
 	for _, tool := range tools {
 		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.Run(cargoExe(config), "install", "--locked", spec); err != nil {
+		if err := command.Run(ctx, cargoExe(config), "install", "--locked", spec); err != nil {
 			return err
 		}
 	}

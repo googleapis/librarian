@@ -41,7 +41,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return err
 	}
 	if library.Veneer {
-		return generateVeneer(library, googleapisDir)
+		return generateVeneer(ctx, library, googleapisDir)
 	}
 
 	if len(library.Channels) != 1 {
@@ -57,7 +57,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	if err := sidekickrust.Generate(model, library.Output, sidekickConfig); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
 	return nil
@@ -66,17 +66,17 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 // Format formats a generated Rust library. Must be called sequentially;
 // parallel calls cause race conditions as cargo fmt runs cargo metadata,
 // which competes for locks on the workspace Cargo.toml and Cargo.lock.
-func Format(library *config.Library) error {
-	if err := command.Run("taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
+func Format(ctx context.Context, library *config.Library) error {
+	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}
-	if err := command.Run("cargo", "fmt", "-p", library.Name); err != nil {
+	if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
 		return err
 	}
 	return nil
 }
 
-func generateVeneer(library *config.Library, googleapisDir string) error {
+func generateVeneer(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return fmt.Errorf("veneer %q has no modules defined", library.Name)
 	}
@@ -88,9 +88,9 @@ func generateVeneer(library *config.Library, googleapisDir string) error {
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
-			err = sidekickrust.Generate(model, module.Output, sidekickConfig)
+			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
 		case "rust+prost":
-			err = rust_prost.Generate(model, module.Output, sidekickConfig)
+			err = rust_prost.Generate(ctx, model, module.Output, sidekickConfig)
 		default:
 			err = fmt.Errorf("unknown language: %s", sidekickConfig.General.Language)
 		}

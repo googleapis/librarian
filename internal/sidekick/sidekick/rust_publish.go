@@ -44,5 +44,5 @@ the dependency order.
 // rustPublish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func rustPublish(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.Publish(rootConfig.Release, cmdLine.DryRun, skipSemverChecks)
+	return rustrelease.Publish(ctx, rootConfig.Release, cmdLine.DryRun, skipSemverChecks)
 }
