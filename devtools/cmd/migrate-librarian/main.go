@@ -74,6 +74,7 @@ type RepoConfigAPI struct {
 	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
 
+// Config holds all intermediate configuration and state necessary for migration from legacy files.
 type Config struct {
 	librarianState  *legacyconfig.LibrarianState
 	librarianConfig *legacyconfig.LibrarianConfig
