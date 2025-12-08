@@ -37,7 +37,7 @@ func run(ctx context.Context, args []string, workingDir string) error {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			// The command ran and exited with a non-zero exit code.
-			return fmt.Errorf("command failed with exit error: %s: %w", exitErr.Stderr, err)
+			return fmt.Errorf("command failed with exit error: %w", err)
 		}
 		// Another error occurred (e.g., command not found).
 		return fmt.Errorf("command failed: %w", err)
