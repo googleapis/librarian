@@ -135,11 +135,7 @@ func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 s
 // Checksum returns the SHA256 for the given repository at the given commit.
 func Checksum(endpoints *Endpoints, repo *Repo, commit string) (sha256 string, err error) {
 	tarballURL := TarballLink(endpoints.Download, repo, commit)
-	sha256, err = urlSha256(tarballURL)
-	if err != nil {
-		return "", err
-	}
-	return sha256, nil
+	return urlSha256(tarballURL)
 }
 
 // TarballLink constructs a GitHub tarball download URL for the given
