@@ -51,7 +51,53 @@ func RunTidy() error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
+	for _, lib := range cfg.Libraries {
+		removeDerivableChannelFields(lib)
+	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+}
+
+// removeDerivableChannelFields removes 'path' and 'service_config' fields from a library's channels
+// if they can be derived from the library's name.
+//
+// Derivation Rules:
+//   - ch.Path: Derived by replacing all hyphens ('-') in the library's name with forward slashes ('/').
+//     If an explicitly set path matches this derived value, it is removed.
+//   - ch.ServiceConfig: Derived using the resolved path (either original or derived).
+//     The pattern is '[resolved_path]/[service_name]_[version].yaml'.
+//     If an explicitly set service_config matches this pattern, it is removed.
+func removeDerivableChannelFields(lib *config.Library) {
+	derivedPath := strings.ReplaceAll(lib.Name, "-", "/")
+	var nonEmptyChannels []*config.Channel
+	for _, ch := range lib.Channels {
+		resolvedPath := ch.Path
+		if resolvedPath == "" {
+			resolvedPath = derivedPath
+		}
+
+		if ch.ServiceConfig != "" {
+			parts := strings.Split(resolvedPath, "/")
+			if len(parts) >= 2 {
+				version := parts[len(parts)-1]
+				service := parts[len(parts)-2]
+				if strings.HasPrefix(version, "v") {
+					derivedSC := fmt.Sprintf("%s/%s_%s.yaml", resolvedPath, service, version)
+					if ch.ServiceConfig == derivedSC {
+						ch.ServiceConfig = ""
+					}
+				}
+			}
+		}
+
+		if ch.Path == derivedPath {
+			ch.Path = ""
+		}
+
+		if ch.Path != "" || ch.ServiceConfig != "" {
+			nonEmptyChannels = append(nonEmptyChannels, ch)
+		}
+	}
+	lib.Channels = nonEmptyChannels
 }
 
 func validateLibraries(cfg *config.Config) error {
