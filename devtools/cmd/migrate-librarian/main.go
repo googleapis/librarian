@@ -51,6 +51,27 @@ var (
 	fetchSource = fetchGoogleapis
 )
 
+// RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
+type RepoConfig struct {
+	Modules []*RepoConfigModule `yaml:"modules"`
+}
+
+// RepoConfigModule represents a module in repo-config.yaml.
+type RepoConfigModule struct {
+	Name                        string           `yaml:"name"`
+	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
+	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
+	APIs                        []*RepoConfigAPI `yaml:"apis,omitempty"`
+}
+
+// RepoConfigAPI represents an API in repo-config.yaml.
+type RepoConfigAPI struct {
+	Path         string   `yaml:"path"`
+	DisableGAPIC bool     `yaml:"disable_gapic,omitempty"`
+	NestedProtos []string `yaml:"nested_protos,omitempty"`
+	ProtoPackage string   `yaml:"proto_package,omitempty"`
+}
+
 func main() {
 	ctx := context.Background()
 	if err := run(ctx, os.Args[1:]); err != nil {
@@ -81,6 +102,11 @@ func run(ctx context.Context, args []string) error {
 	}
 
 	librarianConfig, err := readConfig(*repoPath)
+	if err != nil {
+		return err
+	}
+
+	repoConfig, err := readRepoConfig(*repoPath)
 	if err != nil {
 		return err
 	}
@@ -241,4 +267,16 @@ func readState(path string) (*legacyconfig.LibrarianState, error) {
 func readConfig(path string) (*legacyconfig.LibrarianConfig, error) {
 	configFile := filepath.Join(path, librarianDir, librarianConfigFile)
 	return yaml.Read[legacyconfig.LibrarianConfig](configFile)
+}
+
+func readRepoConfig(path string) (*RepoConfig, error) {
+	configFile := filepath.Join(path, librarianDir, "generator-input", "repo-config.yaml")
+	if _, err := os.Stat(configFile); err != nil {
+		if os.IsNotExist(err) {
+			return &RepoConfig{}, nil
+		}
+		return nil, err
+	}
+
+	return yaml.Read[RepoConfig](configFile)
 }
