@@ -224,7 +224,9 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
 	switch language {
 	case "testhelper":
-		return nil, testGenerate(library)
+		if err := testGenerate(library); err != nil {
+			return nil, err
+		}
 	case "rust":
 		keep, err := rust.Keep(library)
 		if err != nil {
@@ -233,7 +235,11 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 		if err := cleanOutput(library.Output, keep); err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
-		return nil, rust.Generate(ctx, library, sources)
+		if err := rust.Generate(ctx, library, sources); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("generate not implemented for %q", language)
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
 	return library, nil
