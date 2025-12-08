@@ -75,7 +75,11 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if all {
 		return generateAll(ctx, cfg)
 	}
-	return generateLibrary(ctx, cfg, libraryName)
+	lib, err := generateLibrary(ctx, cfg, libraryName)
+	if err != nil {
+		return err
+	}
+	return formatLibrary(cfg.Language, lib)
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
@@ -90,7 +94,11 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 	}
 	cfg.Libraries = append(cfg.Libraries, libraries...)
 	for _, lib := range cfg.Libraries {
-		if err := generateLibrary(ctx, cfg, lib.Name); err != nil {
+		lib, err := generateLibrary(ctx, cfg, lib.Name)
+		if err != nil {
+			return err
+		}
+		if err := formatLibrary(cfg.Language, lib); err != nil {
 			return err
 		}
 	}
@@ -168,26 +176,26 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) error {
+func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
 	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
 			if lib.SkipGenerate {
 				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
-				return nil
+				return nil, nil
 			}
 			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			for _, api := range lib.Channels {
 				if api.ServiceConfig == "" {
 					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
 					if err != nil {
-						return err
+						return nil, err
 					}
 					api.ServiceConfig = serviceConfig
 				}
@@ -195,14 +203,17 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
-	return fmt.Errorf("library %q not found", libraryName)
+	return nil, fmt.Errorf("library %q not found", libraryName)
 }
 
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
-// from the first channel path before applying defaults.
+// from the first channel path.
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if lib.Output == "" {
+		if lib.Veneer {
+			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+		}
 		if len(lib.Channels) == 0 {
 			return nil, fmt.Errorf("library %q has no channels, cannot determine default output", lib.Name)
 		}
@@ -211,31 +222,45 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return fillDefaults(lib, defaults), nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) error {
-	var err error
+func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
 	switch language {
 	case "testhelper":
-		err = testGenerate(library)
-	case "rust":
-		keep := append(library.Keep, "Cargo.toml")
-		if err := cleanOutput(library.Output, keep); err != nil {
-			return fmt.Errorf("library %s: %w", library.Name, err)
+		if err := testGenerate(library); err != nil {
+			return nil, err
 		}
-		err = rust.Generate(ctx, library, sources)
+	case "rust":
+		keep, err := rust.Keep(library)
+		if err != nil {
+			return nil, fmt.Errorf("library %s: %w", library.Name, err)
+		}
+		if err := cleanOutput(library.Output, keep); err != nil {
+			return nil, fmt.Errorf("library %s: %w", library.Name, err)
+		}
+		if err := rust.Generate(ctx, library, sources); err != nil {
+			return nil, err
+		}
 	case "python":
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return err
+			return nil, err
 		}
-		err = python.Generate(ctx, library, sources)
+		if err := python.Generate(ctx, library, sources); err != nil {
+			return nil, err
+		}
 	default:
-		err = fmt.Errorf("generate not implemented for %q", language)
-	}
-	if err != nil {
-		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
-		return err
+		return nil, fmt.Errorf("generate not implemented for %q", language)
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
-	return nil
+	return library, nil
+}
+
+func formatLibrary(language string, library *config.Library) error {
+	switch language {
+	case "testhelper":
+		return nil
+	case "rust":
+		return rust.Format(library)
+	}
+	return fmt.Errorf("format not implemented for %q", language)
 }
 
 func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, error) {

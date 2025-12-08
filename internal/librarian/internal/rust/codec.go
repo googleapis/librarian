@@ -90,18 +90,12 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 }
 
 func buildCodec(library *config.Library) map[string]string {
-	codec := make(map[string]string)
+	codec := newLibraryCodec(library)
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
 	if library.ReleaseLevel != "" {
 		codec["release-level"] = library.ReleaseLevel
-	}
-	if library.Name != "" {
-		codec["package-name-override"] = library.Name
-	}
-	if library.CopyrightYear != "" {
-		codec["copyright-year"] = library.CopyrightYear
 	}
 	if library.Rust == nil {
 		return codec
@@ -113,12 +107,6 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 	if library.SkipPublish {
 		codec["not-for-publication"] = "true"
-	}
-	if len(rust.DisabledRustdocWarnings) > 0 {
-		codec["disabled-rustdoc-warnings"] = strings.Join(rust.DisabledRustdocWarnings, ",")
-	}
-	if len(rust.DisabledClippyWarnings) > 0 {
-		codec["disabled-clippy-warnings"] = strings.Join(rust.DisabledClippyWarnings, ",")
 	}
 	if rust.TemplateOverride != "" {
 		codec["template-override"] = rust.TemplateOverride
@@ -150,8 +138,27 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.NameOverrides != "" {
 		codec["name-overrides"] = rust.NameOverrides
 	}
-	for _, dep := range rust.PackageDependencies {
-		codec["package:"+dep.Name] = formatPackageDependency(dep)
+	return codec
+}
+
+func newLibraryCodec(library *config.Library) map[string]string {
+	codec := make(map[string]string)
+	if library.CopyrightYear != "" {
+		codec["copyright-year"] = library.CopyrightYear
+	}
+	if library.Name != "" {
+		codec["package-name-override"] = library.Name
+	}
+	if library.Rust != nil {
+		for _, dep := range library.Rust.PackageDependencies {
+			codec["package:"+dep.Name] = formatPackageDependency(dep)
+		}
+		if len(library.Rust.DisabledRustdocWarnings) > 0 {
+			codec["disabled-rustdoc-warnings"] = strings.Join(library.Rust.DisabledRustdocWarnings, ",")
+		}
+		if len(library.Rust.DisabledClippyWarnings) > 0 {
+			codec["disabled-clippy-warnings"] = strings.Join(library.Rust.DisabledClippyWarnings, ",")
+		}
 	}
 	return codec
 }
@@ -192,4 +199,61 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 		parts = append(parts, "ignore=true")
 	}
 	return strings.Join(parts, ",")
+}
+
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir string) *sidekickconfig.Config {
+	source := map[string]string{
+		"googleapis-root": googleapisDir,
+	}
+	if len(module.IncludedIds) > 0 {
+		source["included-ids"] = strings.Join(module.IncludedIds, ",")
+	}
+	if len(module.SkippedIds) > 0 {
+		source["skipped-ids"] = strings.Join(module.SkippedIds, ",")
+	}
+	if module.IncludeList != "" {
+		source["include-list"] = module.IncludeList
+	}
+
+	language := "rust"
+	if module.Template == "prost" {
+		language = "rust+prost"
+	}
+	sidekickCfg := &sidekickconfig.Config{
+		General: sidekickconfig.GeneralConfig{
+			Language:            language,
+			SpecificationFormat: "protobuf",
+			ServiceConfig:       module.ServiceConfig,
+			SpecificationSource: module.Source,
+		},
+		Source: source,
+		Codec:  buildModuleCodec(library, module),
+	}
+	return sidekickCfg
+}
+
+func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {
+	codec := newLibraryCodec(library)
+	if module.HasVeneer {
+		codec["has-veneer"] = "true"
+	}
+	if module.IncludeGrpcOnlyMethods {
+		codec["include-grpc-only-methods"] = "true"
+	}
+	if module.ModulePath != "" {
+		codec["module-path"] = module.ModulePath
+	}
+	if module.NameOverrides != "" {
+		codec["name-overrides"] = module.NameOverrides
+	}
+	if module.PostProcessProtos != "" {
+		codec["post-process-protos"] = module.PostProcessProtos
+	}
+	if module.RoutingRequired {
+		codec["routing-required"] = "true"
+	}
+	if module.Template != "" {
+		codec["template-override"] = "templates/" + module.Template
+	}
+	return codec
 }

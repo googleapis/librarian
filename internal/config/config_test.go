@@ -73,6 +73,32 @@ func TestRead(t *testing.T) {
 					},
 				},
 			},
+			{
+				Name:    "google-cloud-storage",
+				Version: "1.4.0",
+				Veneer:  true,
+				Rust: &RustCrate{
+					Modules: []*RustModule{
+						{
+							Source:          "google/storage/v2",
+							ServiceConfig:   "google/storage/v2/storage_v2.yaml",
+							Output:          "src/storage/src/generated/gapic",
+							Template:        "grpc-client",
+							HasVeneer:       true,
+							RoutingRequired: true,
+							IncludedIds: []string{
+								".google.storage.v2.Storage.GetBucket",
+								".google.storage.v2.Storage.ListBuckets",
+							},
+						},
+						{
+							Source:   "google/storage/v2",
+							Output:   "src/storage/src/generated/protos/storage",
+							Template: "prost",
+						},
+					},
+				},
+			},
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
