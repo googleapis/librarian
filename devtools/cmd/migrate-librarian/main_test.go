@@ -310,7 +310,12 @@ func TestBuildConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
 			fetchSource = test.fetchSource
-			got, err := buildConfig(ctx, test.state, test.cfg, test.lang)
+			languageCfg := &Config{
+				librarianState:  test.state,
+				librarianConfig: test.cfg,
+				lang:            test.lang,
+			}
+			got, err := buildConfig(ctx, languageCfg)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
