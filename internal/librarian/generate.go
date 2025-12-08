@@ -222,25 +222,18 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 }
 
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
-	var err error
 	switch language {
 	case "testhelper":
-		err = testGenerate(library)
+		return nil, testGenerate(library)
 	case "rust":
 		keep, err := rust.Keep(library)
 		if err != nil {
-			return fmt.Errorf("library %s: %w", library.Name, err)
+			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		if err := cleanOutput(library.Output, keep); err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
-		return rust.Generate(ctx, library, sources)
-	default:
-		err = fmt.Errorf("generate not implemented for %q", language)
-	}
-	if err != nil {
-		fmt.Printf("✗ Error generating %s: %v\n", library.Name, err)
-		return nil, err
+		return nil, rust.Generate(ctx, library, sources)
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
 	return library, nil
