@@ -4,13 +4,14 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	https://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package python
 
 import (
@@ -67,13 +68,11 @@ func TestGetStagingChildDirectory(t *testing.T) {
 func TestCreateProtocOptions(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		name         string
-		channel      *config.Channel
-		library      *config.Library
-		grpcConfig   bool
-		multipleGrpc bool
-		expected     []string
-		expectedErr  bool
+		name     string
+		channel  *config.Channel
+		library  *config.Library
+		expected []string
+		wantErr  bool
 	}{
 		{
 			name:    "basic case",
@@ -141,10 +140,10 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name:        "multiple grpc configs",
-			channel:     &config.Channel{Path: "google/test/v3"},
-			library:     &config.Library{},
-			expectedErr: true,
+			name:    "multiple grpc configs",
+			channel: &config.Channel{Path: "google/test/v3"},
+			library: &config.Library{},
+			wantErr: true,
 		},
 		{
 			name: "with service config",
@@ -164,8 +163,8 @@ func TestCreateProtocOptions(t *testing.T) {
 			googleapisDir := "testdata"
 
 			got, err := createProtocOptions(tc.channel, tc.library, googleapisDir, "staging")
-			if (err != nil) != tc.expectedErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, tc.expectedErr)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, tc.wantErr)
 			}
 
 			if diff := cmp.Diff(tc.expected, got); diff != "" {
