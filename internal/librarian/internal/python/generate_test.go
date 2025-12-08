@@ -136,7 +136,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=testdata/google/test/v2/test_grpc_service_config.json",
+				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/test/v2/test_grpc_service_config.json",
 			},
 		},
 		{
@@ -154,7 +154,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=testdata/google/test/v1/test_v1.yaml",
+				"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
 			},
 		},
 	}
@@ -436,7 +436,12 @@ python_mono_repo.owlbot_main(%q)
 
 func TestGenerateChannel(t *testing.T) {
 	repoRoot := t.TempDir()
-	protocCommand := "protoc google/test/v1/*.proto --python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1 --python_gapic_opt=rest-numeric-enums,metadata"
+	protocCommand := []string{
+		"protoc",
+		"google/test/v1/test.proto",
+		"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
+		"--python_gapic_opt=rest-numeric-enums,metadata",
+	}
 
 	testCases := []struct {
 		name          string
@@ -448,11 +453,7 @@ func TestGenerateChannel(t *testing.T) {
 			commandScript: CommandScript{
 				Commands: []*MockCommand{
 					{
-						ExpectedArgs: []string{
-							"sh",
-							"-c",
-							protocCommand,
-						},
+						ExpectedArgs: protocCommand,
 					},
 				},
 			},
@@ -462,12 +463,8 @@ func TestGenerateChannel(t *testing.T) {
 			commandScript: CommandScript{
 				Commands: []*MockCommand{
 					{
-						ExpectedArgs: []string{
-							"sh",
-							"-c",
-							protocCommand,
-						},
-						Error: &exec.ErrNotFound,
+						ExpectedArgs: protocCommand,
+						Error:        &exec.ErrNotFound,
 					},
 				},
 			},
@@ -504,8 +501,6 @@ func TestGenerate(t *testing.T) {
 		t.Fatalf("filepath.Abs() error = %v", err)
 	}
 
-	protoc1 := "protoc google/test/v1/*.proto --python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1 --python_gapic_opt=rest-numeric-enums,metadata,service-yaml=testdata/google/test/v1/test_v1.yaml"
-	protoc2 := "protoc google/test/v2/*.proto --python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v2 --python_gapic_opt=rest-numeric-enums,metadata,retry-config=testdata/google/test/v2/test_grpc_service_config.json,service-yaml=testdata/google/test/v2/test_v2.yaml"
 	postProcessor := fmt.Sprintf(`
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
@@ -514,10 +509,20 @@ python_mono_repo.owlbot_main(%q)
 	commands := CommandScript{
 		Commands: []*MockCommand{
 			{
-				ExpectedArgs: []string{"sh", "-c", protoc1},
+				ExpectedArgs: []string{
+					"protoc",
+					"google/test/v1/test.proto",
+					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
+					"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
+				},
 			},
 			{
-				ExpectedArgs: []string{"sh", "-c", protoc2},
+				ExpectedArgs: []string{
+					"protoc",
+					"google/test/v2/test.proto",
+					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v2",
+					"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/test/v2/test_grpc_service_config.json,service-yaml=google/test/v2/test_v2.yaml",
+				},
 			},
 			{
 				ExpectedArgs: []string{"python3", "-c", postProcessor},

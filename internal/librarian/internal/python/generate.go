@@ -127,11 +127,31 @@ func generateChannel(ctx context.Context, channel *config.Channel, library *conf
 	if err != nil {
 		return err
 	}
-	cmdArgs := []string{
-		"sh",
-		"-c",
-		"protoc " + filepath.Join(channel.Path, "*.proto") + " " + strings.Join(protocOptions, " "),
+
+	apiDir := filepath.Join(googleapisDir, channel.Path)
+	protos, err := filepath.Glob(apiDir + "/*.proto")
+	if err != nil {
+		return fmt.Errorf("globbing for protos failed: %w", err)
 	}
+	if len(protos) == 0 {
+		return fmt.Errorf("channel has no protos: %s", channel.Path)
+	}
+
+	// We want the proto filenames to be relative to googleapisDir
+	for index, protoFile := range protos {
+		rel, err := filepath.Rel(googleapisDir, protoFile)
+		if err != nil {
+			return fmt.Errorf("can't find relative path to proto")
+		}
+		protos[index] = rel
+	}
+
+	cmdArgs := []string{
+		"protoc",
+	}
+	cmdArgs = append(cmdArgs, protos...)
+	cmdArgs = append(cmdArgs, protocOptions...)
+
 	if err := runCommand(ctx, cmdArgs, googleapisDir); err != nil {
 		return fmt.Errorf("protoc command failed: %w", err)
 	}
@@ -180,14 +200,18 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 		if len(matches) > 1 {
 			return nil, fmt.Errorf("multiple _grpc_service_config.json files found in %s", apiDir)
 		}
-		grpcConfigPath = matches[0]
+		rel, err := filepath.Rel(googleapisDir, matches[0])
+		if err != nil {
+			return nil, fmt.Errorf("unable to make path relative: %s", matches[0])
+		}
+		grpcConfigPath = rel
 	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 	// Add service YAML (API metadata) if provided
 	if channel.ServiceConfig != "" {
-		opts = append(opts, fmt.Sprintf("service-yaml=%s", filepath.Join(apiDir, channel.ServiceConfig)))
+		opts = append(opts, fmt.Sprintf("service-yaml=%s", filepath.Join(channel.Path, channel.ServiceConfig)))
 	}
 
 	return []string{
