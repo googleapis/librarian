@@ -227,14 +227,15 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	case "testhelper":
 		err = testGenerate(library)
 	case "rust":
-		keep, err := rust.Keep(library)
+		var keep []string
+		keep, err = rust.Keep(library)
 		if err != nil {
-			return fmt.Errorf("library %s: %w", library.Name, err)
+			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		if err := cleanOutput(library.Output, keep); err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
-		return rust.Generate(ctx, library, sources)
+		err = rust.Generate(ctx, library, sources)
 	default:
 		err = fmt.Errorf("generate not implemented for %q", language)
 	}
