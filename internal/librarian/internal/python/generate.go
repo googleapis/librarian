@@ -117,6 +117,8 @@ func generateChannel(ctx context.Context, channel *config.Channel, library *conf
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
 	// the correct final position in the repository.
+	// TODO(https://github.com/googleapis/librarian/issues/3210): generate
+	// directly in place.
 
 	stagingChildDirectory := getStagingChildDirectory(channel.Path)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
@@ -302,6 +304,8 @@ func copyReadmeToDocsDir(outdir string) error {
 }
 
 // cleanUpFilesAfterPostProcessing cleans up files after post processing.
+// TODO(https://github.com/googleapis/librarian/issues/3210): generate
+// directly in place and remove this code entirely.
 func cleanUpFilesAfterPostProcessing(repoRoot string) error {
 	// Remove owl-bot-staging
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
