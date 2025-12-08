@@ -129,14 +129,12 @@ libraries:
 
 func TestTidy_DerivableFields(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		configContent  string
-		wantPath       string
-		wantSvcCfg     string
-		wantNumLibs    int
-		wantNumChnls   int
-		pathShouldBe   string
-		svcCfgShouldBe string
+		name          string
+		configContent string
+		wantPath      string
+		wantSvcCfg    string
+		wantNumLibs   int
+		wantNumChnls  int
 	}{
 		{
 			name: "derivable fields removed",

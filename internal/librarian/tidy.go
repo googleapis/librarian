@@ -68,7 +68,6 @@ func RunTidy() error {
 //     If an explicitly set service_config matches this pattern, it is removed.
 func removeDerivableChannelFields(lib *config.Library) {
 	derivedPath := strings.ReplaceAll(lib.Name, "-", "/")
-	var nonEmptyChannels []*config.Channel
 	for _, ch := range lib.Channels {
 		resolvedPath := ch.Path
 		if resolvedPath == "" {
@@ -92,12 +91,10 @@ func removeDerivableChannelFields(lib *config.Library) {
 		if ch.Path == derivedPath {
 			ch.Path = ""
 		}
-
-		if ch.Path != "" || ch.ServiceConfig != "" {
-			nonEmptyChannels = append(nonEmptyChannels, ch)
-		}
 	}
-	lib.Channels = nonEmptyChannels
+	lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
+		return ch.Path == "" && ch.ServiceConfig == ""
+	})
 }
 
 func validateLibraries(cfg *config.Config) error {
