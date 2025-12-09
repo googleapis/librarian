@@ -919,13 +919,9 @@ type Resource struct {
 	// Type identifies the kind of resource (e.g., "cloudresourcemanager.googleapis.com/Project").
 	// This string is globally unique and identifies the type of resource across Google Cloud.
 	Type string
-	// Pattern is a list of strings representing the resource name pattern,
-	// defining the structure of its unique identifier. For example, a pattern
-	// might be `["publishers", "{publisher}", "shelves", "{shelf}"]`.
-	// These patterns are used to construct and parse resource names.
-	// TODO(https://github.com/googleapis/librarian/issues/3090): Pattern field in Resource struct
-	// should be []PathSegment
-	Pattern []string
+	// Pattern is a list of resource patterns, where each pattern is a sequence of path segments.
+	// This defines the structure of the resource's unique identifier.
+	Pattern [][]PathSegment
 	// Plural is the plural form of the resource name.
 	// For example, for a "Book" resource, Plural would be "books".
 	Plural string

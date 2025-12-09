@@ -30,6 +30,10 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
+func strptr(s string) *string {
+	return &s
+}
+
 func TestProtobuf_Info(t *testing.T) {
 	requireProtoc(t)
 	sc := sample.ServiceConfig()
@@ -1813,8 +1817,13 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
 		}
 		wantResourceDef := &api.Resource{
-			Type:    "library.googleapis.com/Shelf",
-			Pattern: []string{"publishers/{publisher}/shelves/{shelf}"},
+			Type: "library.googleapis.com/Shelf",
+			Pattern: [][]api.PathSegment{
+				{
+					{Literal: strptr("publishers")}, {Variable: api.NewPathVariable("publisher").WithMatch()},
+					{Literal: strptr("shelves")}, {Variable: api.NewPathVariable("shelf").WithMatch()},
+				},
+			},
 		}
 
 		if diff := cmp.Diff(wantResourceDef, test.ResourceDefinitions[0], cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
@@ -1830,8 +1839,14 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 
 		// Check Resource separately to handle 'Self' cycle and ignore Codec
 		wantBookResource := &api.Resource{
-			Type:     "library.googleapis.com/Book",
-			Pattern:  []string{"publishers/{publisher}/shelves/{shelf}/books/{book}"},
+			Type: "library.googleapis.com/Book",
+			Pattern: [][]api.PathSegment{
+				{
+					{Literal: strptr("publishers")}, {Variable: api.NewPathVariable("publisher").WithMatch()},
+					{Literal: strptr("shelves")}, {Variable: api.NewPathVariable("shelf").WithMatch()},
+					{Literal: strptr("books")}, {Variable: api.NewPathVariable("book").WithMatch()},
+				},
+			},
 			Plural:   "books",
 			Singular: "book",
 		}

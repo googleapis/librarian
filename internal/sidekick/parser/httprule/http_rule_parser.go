@@ -87,6 +87,13 @@ func ParseSegments(pathTemplate string) (*api.PathTemplate, error) {
 	return parsePathTemplate(pathTemplate)
 }
 
+// ParseResourcePattern parses a Resource Pattern, defined at the [google.api.resource annotation].
+//
+// This is different from `ParseSegments` because it does not expect a leading `/`.
+func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
+	return parsePathTemplate("/" + pathTemplate)
+}
+
 // Literal is a literal in a path template.
 type Literal string
 

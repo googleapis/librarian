@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -548,9 +549,20 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 	if !ok {
 		return
 	}
+
+	var patterns [][]api.PathSegment
+	for _, p := range res.GetPattern() {
+		tmpl, err := httprule.ParseResourcePattern(p)
+		if err != nil {
+			slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
+			continue
+		}
+		patterns = append(patterns, tmpl.Segments)
+	}
+
 	message.Resource = &api.Resource{
 		Type:     res.GetType(),
-		Pattern:  res.GetPattern(),
+		Pattern:  patterns,
 		Plural:   res.GetPlural(),
 		Singular: res.GetSingular(),
 		Self:     message,
@@ -569,9 +581,19 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	}
 
 	for _, r := range res {
+		var patterns [][]api.PathSegment
+		for _, p := range r.GetPattern() {
+			tmpl, err := httprule.ParseResourcePattern(p)
+			if err != nil {
+				slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
+				continue
+			}
+			patterns = append(patterns, tmpl.Segments)
+		}
+
 		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
 			Type:     r.GetType(),
-			Pattern:  r.GetPattern(),
+			Pattern:  patterns,
 			Plural:   r.GetPlural(),
 			Singular: r.GetSingular(),
 		})
