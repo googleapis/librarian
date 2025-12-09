@@ -127,6 +127,108 @@ libraries:
 	}
 }
 
+func TestTidy_DerivableFields(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		configContent string
+		wantPath      string
+		wantSvcCfg    string
+		wantNumLibs   int
+		wantNumChnls  int
+	}{
+		{
+			name: "derivable fields removed",
+			configContent: `
+libraries:
+  - name: google-cloud-accessapproval-v1
+    channels:
+      - path: google/cloud/accessapproval/v1
+        service_config: google/cloud/accessapproval/v1/accessapproval_v1.yaml
+`,
+			wantPath:     "",
+			wantSvcCfg:   "",
+			wantNumLibs:  1,
+			wantNumChnls: 0, // Channels should be removed
+		},
+		{
+			name: "non-derivable path not removed",
+			configContent: `
+libraries:
+  - name: google-cloud-api-servicecontrol-v1
+    channels:
+      - path: google/api/servicecontrol/v1
+        service_config: google/api/servicecontrol/v1/servicecontrol.yaml
+`,
+			wantPath:     "google/api/servicecontrol/v1",
+			wantSvcCfg:   "google/api/servicecontrol/v1/servicecontrol.yaml",
+			wantNumLibs:  1,
+			wantNumChnls: 1,
+		},
+		{
+			name: "only derivable service config removed",
+			configContent: `
+libraries:
+  - name: google-cloud-vision-v1
+    channels:
+      - path: google/some/other/domain/vision/v1
+        service_config: google/some/other/domain/vision/v1/vision_v1.yaml
+`,
+			wantPath:     "google/some/other/domain/vision/v1",
+			wantSvcCfg:   "",
+			wantNumLibs:  1,
+			wantNumChnls: 1,
+		},
+		{
+			name: "path needs to be resolved",
+			configContent: `
+libraries:
+  - name: google-cloud-vision-v1
+    channels:
+      - service_config: google/some/other/domain/vision/v1/vision_v1.yaml
+`,
+			wantPath:     "",
+			wantSvcCfg:   "google/some/other/domain/vision/v1/vision_v1.yaml",
+			wantNumLibs:  1,
+			wantNumChnls: 1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configPath := filepath.Join(tempDir, librarianConfigPath)
+
+			if err := os.WriteFile(configPath, []byte(test.configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := Run(t.Context(), "librarian", "tidy"); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg, err := yaml.Read[config.Config](configPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(cfg.Libraries) != test.wantNumLibs {
+				t.Fatalf("wrong number of libraries")
+			}
+			lib := cfg.Libraries[0]
+			if len(lib.Channels) != test.wantNumChnls {
+				t.Fatalf("wrong number of channels")
+			}
+			if test.wantNumChnls > 0 {
+				ch := lib.Channels[0]
+				if ch.Path != test.wantPath {
+					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
+				}
+				if ch.ServiceConfig != test.wantSvcCfg {
+					t.Errorf("service_config should be %s, got %q", test.wantSvcCfg, ch.ServiceConfig)
+				}
+			}
+		})
+	}
+}
+
 func TestTidyCommandDuplicateError(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
