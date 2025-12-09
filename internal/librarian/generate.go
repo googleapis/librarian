@@ -210,12 +210,22 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path.
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+	if len(lib.Channels) == 0 {
+		// If no channels are specified, create an empty channel first
+		lib.Channels = append(lib.Channels, &config.Channel{})
+	}
+	for _, ch := range lib.Channels {
+		if ch.Path == "" {
+			ch.Path = deriveChannelPath(lib)
+		}
+		if ch.ServiceConfig == "" {
+			ch.ServiceConfig = deriveServiceConfig(lib, ch)
+		}
+	}
+
 	if lib.Output == "" {
 		if lib.Veneer {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
-		}
-		if len(lib.Channels) == 0 {
-			return nil, fmt.Errorf("library %q has no channels, cannot determine default output", lib.Name)
 		}
 		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
 	}

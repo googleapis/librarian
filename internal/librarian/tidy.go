@@ -56,11 +56,10 @@ func RunTidy() error {
 			lib.Output = ""
 		}
 		for _, ch := range lib.Channels {
-			isPathDerivable, isServiceConfigDerivable := isDerivableChannelFields(lib, ch)
-			if isPathDerivable {
+			if ch.Path == deriveChannelPath(lib) {
 				ch.Path = ""
 			}
-			if isServiceConfigDerivable {
+			if ch.ServiceConfig != "" && ch.ServiceConfig == deriveServiceConfig(lib, ch) {
 				ch.ServiceConfig = ""
 			}
 		}
@@ -74,43 +73,6 @@ func RunTidy() error {
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	derivedOutput := defaultOutput(cfg.Language, lib.Channels[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
-}
-
-// isDerivableChannelFields checks if 'path' and 'service_config' fields of a library's channel
-// can be derived from the library's name.
-// It returns two booleans: isPathDerivable and isServiceConfigDerivable.
-//
-// Derivation Rules:
-//   - ch.Path: Considered derivable if it matches the value obtained by replacing all hyphens ('-')
-//     in the library's name with forward slashes ('/').
-//   - ch.ServiceConfig: Considered derivable if it matches the pattern '[resolved_path]/[service_name]_[version].yaml',
-//     where [resolved_path] is either the original ch.Path or the derived path from the library's name.
-func isDerivableChannelFields(lib *config.Library, ch *config.Channel) (isPathDerivable, isServiceConfigDerivable bool) {
-	derivedPath := strings.ReplaceAll(lib.Name, "-", "/")
-
-	resolvedPath := ch.Path
-	if resolvedPath == "" {
-		resolvedPath = derivedPath
-	}
-
-	if ch.ServiceConfig != "" {
-		parts := strings.Split(resolvedPath, "/")
-		if len(parts) >= 2 {
-			version := parts[len(parts)-1]
-			service := parts[len(parts)-2]
-			if strings.HasPrefix(version, "v") {
-				derivedSC := fmt.Sprintf("%s/%s_%s.yaml", resolvedPath, service, version)
-				if ch.ServiceConfig == derivedSC {
-					isServiceConfigDerivable = true
-				}
-			}
-		}
-	}
-
-	if ch.Path == derivedPath {
-		isPathDerivable = true
-	}
-	return
 }
 
 func validateLibraries(cfg *config.Config) error {

@@ -15,6 +15,9 @@
 package librarian
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -70,4 +73,38 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 		result = append(result, &copied)
 	}
 	return result
+}
+
+// deriveChannelPath returns the derived path for a library.
+func deriveChannelPath(lib *config.Library) string {
+	return strings.ReplaceAll(lib.Name, "-", "/")
+}
+
+// deriveServiceConfig returns the conventionally derived service config path for a given channel.
+//
+// The derivation process first resolves the base path:
+//   - If ch.Path is explicitly set, it is used.
+//   - Otherwise, the path is derived from lib.Name (e.g., "google-cloud-speech-v1" -> "google/cloud/speech/v1").
+//
+// The final service config path is constructed using the pattern: "[resolved_path]/[service_name]_[version].yaml".
+//
+// For example, if resolved_path is "google/cloud/speech/v1", it derives to "google/cloud/speech/v1/speech_v1.yaml".
+//
+// It returns an empty string if the resolved path does not contain sufficient components
+// (e.g., missing version or service name) or if the version component does not start with 'v'.
+func deriveServiceConfig(lib *config.Library, ch *config.Channel) string {
+	resolvedPath := ch.Path
+	if resolvedPath == "" {
+		resolvedPath = deriveChannelPath(lib)
+	}
+
+	parts := strings.Split(resolvedPath, "/")
+	if len(parts) >= 2 {
+		version := parts[len(parts)-1]
+		service := parts[len(parts)-2]
+		if strings.HasPrefix(version, "v") {
+			return fmt.Sprintf("%s/%s_%s.yaml", resolvedPath, service, version)
+		}
+	}
+	return ""
 }
