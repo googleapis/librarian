@@ -191,6 +191,20 @@ libraries:
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
+		{
+			name: "service config not derivable (no version at end of path)",
+			configContent: `
+libraries:
+  - name: google-cloud-speech
+    channels:
+      - path: google/cloud/speech
+        service_config: google/cloud/speech/1/speech_1.yaml
+`,
+			wantPath:     "",
+			wantSvcCfg:   "google/cloud/speech/1/speech_1.yaml",
+			wantNumLibs:  1,
+			wantNumChnls: 1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
