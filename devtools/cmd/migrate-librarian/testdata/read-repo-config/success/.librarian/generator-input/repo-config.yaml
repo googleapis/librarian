@@ -3,7 +3,6 @@ modules:
     apis:
       - path: google/cloud/bigquery/v2
         client_directory: v2/apiv2
-
   - name: bigtable
     apis:
       - path: google/bigtable/v2
