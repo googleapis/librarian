@@ -56,10 +56,10 @@ func RunTidy() error {
 			lib.Output = ""
 		}
 		for _, ch := range lib.Channels {
-			if ch.Path == deriveChannelPath(lib) {
+			if isDerivableChannelPath(lib, ch) {
 				ch.Path = ""
 			}
-			if ch.ServiceConfig != "" && ch.ServiceConfig == deriveServiceConfig(lib, ch) {
+			if isDerivableServiceConfig(lib, ch) {
 				ch.ServiceConfig = ""
 			}
 		}
@@ -73,6 +73,14 @@ func RunTidy() error {
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	derivedOutput := defaultOutput(cfg.Language, lib.Channels[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
+}
+
+func isDerivableChannelPath(lib *config.Library, ch *config.Channel) bool {
+	return ch.Path == deriveChannelPath(lib)
+}
+
+func isDerivableServiceConfig(lib *config.Library, ch *config.Channel) bool {
+	return ch.ServiceConfig != "" && ch.ServiceConfig == deriveServiceConfig(lib, ch)
 }
 
 func validateLibraries(cfg *config.Config) error {
