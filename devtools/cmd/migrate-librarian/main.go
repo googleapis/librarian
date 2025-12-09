@@ -74,8 +74,8 @@ type RepoConfigAPI struct {
 	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
 
-// Config holds all intermediate configuration and state necessary for migration from legacy files.
-type Config struct {
+// MigrationInput holds all intermediate configuration and state necessary for migration from legacy files.
+type MigrationInput struct {
 	librarianState  *legacyconfig.LibrarianState
 	librarianConfig *legacyconfig.LibrarianConfig
 	repoConfig      *RepoConfig
@@ -120,7 +120,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	cfg, err := buildConfig(ctx, &Config{
+	cfg, err := buildConfig(ctx, &MigrationInput{
 		librarianState:  librarianState,
 		librarianConfig: librarianConfig,
 		repoConfig:      repoConfig,
@@ -156,9 +156,9 @@ func deriveLanguage(repoPath string) (string, error) {
 
 func buildConfig(
 	ctx context.Context,
-	languageConfig *Config) (*config.Config, error) {
+	input *MigrationInput) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"
-	if languageConfig.lang == "python" {
+	if input.lang == "python" {
 		repo = "googleapis/google-cloud-python"
 	}
 
@@ -168,7 +168,7 @@ func buildConfig(
 	}
 
 	cfg := &config.Config{
-		Language: languageConfig.lang,
+		Language: input.lang,
 		Repo:     repo,
 		Sources: &config.Sources{
 			Googleapis: src,
@@ -178,7 +178,7 @@ func buildConfig(
 		},
 	}
 
-	cfg.Libraries = buildLibraries(languageConfig)
+	cfg.Libraries = buildLibraries(input)
 
 	return cfg, nil
 }
@@ -209,24 +209,24 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	}, nil
 }
 
-func buildLibraries(cfg *Config) []*config.Library {
+func buildLibraries(input *MigrationInput) []*config.Library {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
-		cfg.librarianState.Libraries,
+		input.librarianState.Libraries,
 		func(lib *legacyconfig.LibraryState) string {
 			return lib.ID
 		})
 
 	idToLibraryConfig := sliceToMap[legacyconfig.LibraryConfig](
-		cfg.librarianConfig.Libraries,
+		input.librarianConfig.Libraries,
 		func(lib *legacyconfig.LibraryConfig) string {
 			return lib.LibraryID
 		})
 
 	idToGoModule := make(map[string]*RepoConfigModule)
-	if cfg.repoConfig != nil {
+	if input.repoConfig != nil {
 		idToGoModule = sliceToMap[RepoConfigModule](
-			cfg.repoConfig.Modules,
+			input.repoConfig.Modules,
 			func(mod *RepoConfigModule) string {
 				return mod.Name
 			})
@@ -252,13 +252,13 @@ func buildLibraries(cfg *Config) []*config.Library {
 		libGoModule, ok := idToGoModule[id]
 		if ok {
 			var goAPIs []*config.GoAPI
-			for _, oneApi := range libGoModule.APIs {
+			for _, api := range libGoModule.APIs {
 				goAPIs = append(goAPIs, &config.GoAPI{
-					Path:            oneApi.Path,
-					ClientDirectory: oneApi.ClientDirectory,
-					DisableGAPIC:    oneApi.DisableGAPIC,
-					NestedProtos:    oneApi.NestedProtos,
-					ProtoPackage:    oneApi.ProtoPackage,
+					Path:            api.Path,
+					ClientDirectory: api.ClientDirectory,
+					DisableGAPIC:    api.DisableGAPIC,
+					NestedProtos:    api.NestedProtos,
+					ProtoPackage:    api.ProtoPackage,
 				})
 			}
 

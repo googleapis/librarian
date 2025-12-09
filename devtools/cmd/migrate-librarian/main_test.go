@@ -310,12 +310,12 @@ func TestBuildConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := t.Context()
 			fetchSource = test.fetchSource
-			languageCfg := &Config{
+			input := &MigrationInput{
 				librarianState:  test.state,
 				librarianConfig: test.cfg,
 				lang:            test.lang,
 			}
-			got, err := buildConfig(ctx, languageCfg)
+			got, err := buildConfig(ctx, input)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
@@ -336,13 +336,13 @@ func TestBuildConfig(t *testing.T) {
 
 func TestBuildLibraries(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		langCfg *Config
-		want    []*config.Library
+		name  string
+		input *MigrationInput
+		want  []*config.Library
 	}{
 		{
 			name: "sorted_libraries",
-			langCfg: &Config{
+			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
@@ -388,7 +388,7 @@ func TestBuildLibraries(t *testing.T) {
 		},
 		{
 			name: "go_libraries",
-			langCfg: &Config{
+			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
@@ -469,7 +469,7 @@ func TestBuildLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildLibraries(test.langCfg)
+			got := buildLibraries(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
