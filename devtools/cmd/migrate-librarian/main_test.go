@@ -386,6 +386,87 @@ func TestBuildLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "go_libraries",
+			langCfg: &Config{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "example-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/example/api/v1",
+									ServiceConfig: "path/to/config.yaml",
+								},
+							},
+						},
+						{
+							ID: "another-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/another/api/v1",
+									ServiceConfig: "another/config.yaml",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "example-library",
+							DeleteGenerationOutputPaths: []string{
+								"internal/generated/snippets/storage/internal",
+							},
+							APIs: []*RepoConfigAPI{
+								{
+									Path:            "google/maps/fleetengine/v1",
+									ClientDirectory: "proto_package: maps.fleetengine.v1",
+									DisableGAPIC:    true,
+									NestedProtos:    []string{"grafeas/grafeas.proto"},
+									ProtoPackage:    "google.cloud.translation.v3",
+								},
+							},
+							ModulePathVersion: "v2",
+						},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name: "another-library",
+					Channels: []*config.Channel{
+						{
+							Path: "google/another/api/v1",
+						},
+					},
+				},
+				{
+					Name: "example-library",
+					Channels: []*config.Channel{
+						{
+							Path: "google/example/api/v1",
+						},
+					},
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: []string{
+							"internal/generated/snippets/storage/internal",
+						},
+						GoAPIs: []*config.GoAPI{
+							{
+								Path:            "google/maps/fleetengine/v1",
+								ClientDirectory: "proto_package: maps.fleetengine.v1",
+								DisableGAPIC:    true,
+								NestedProtos:    []string{"grafeas/grafeas.proto"},
+								ProtoPackage:    "google.cloud.translation.v3",
+							},
+						},
+						ModulePathVersion: "v2",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildLibraries(test.langCfg)
