@@ -1998,6 +1998,72 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 	return request
 }
 
+func TestParseResourcePatterns(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		patterns []string
+		want     [][]api.PathSegment
+	}{
+		{
+			name:     "empty",
+			patterns: []string{},
+			want:     nil,
+		},
+		{
+			name:     "single valid",
+			patterns: []string{"publishers/{publisher}/shelves/{shelf}"},
+			want: [][]api.PathSegment{
+				{
+					{Literal: strptr("publishers")},
+					{Variable: api.NewPathVariable("publisher").WithMatch()},
+					{Literal: strptr("shelves")},
+					{Variable: api.NewPathVariable("shelf").WithMatch()},
+				},
+			},
+		},
+		{
+			name:     "multiple valid",
+			patterns: []string{"publishers/{publisher}/shelves/{shelf}", "projects/{project}"},
+			want: [][]api.PathSegment{
+				{
+					{Literal: strptr("publishers")},
+					{Variable: api.NewPathVariable("publisher").WithMatch()},
+					{Literal: strptr("shelves")},
+					{Variable: api.NewPathVariable("shelf").WithMatch()},
+				},
+				{
+					{Literal: strptr("projects")},
+					{Variable: api.NewPathVariable("project").WithMatch()},
+				},
+			},
+		},
+		{
+			name:     "invalid pattern",
+			patterns: []string{"projects/{project=*}/**"},
+			want:     nil,
+		},
+		{
+			name:     "mixed valid and invalid",
+			patterns: []string{"publishers/{publisher}/shelves/{shelf}", "projects/{project=*}/**"},
+			want: [][]api.PathSegment{
+				{
+					{Literal: strptr("publishers")},
+					{Variable: api.NewPathVariable("publisher").WithMatch()},
+					{Literal: strptr("shelves")},
+					{Variable: api.NewPathVariable("shelf").WithMatch()},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := parseResourcePatterns(test.patterns)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func requireProtoc(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("protoc"); err != nil {

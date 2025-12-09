@@ -550,15 +550,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		return
 	}
 
-	var patterns [][]api.PathSegment
-	for _, p := range res.GetPattern() {
-		tmpl, err := httprule.ParseResourcePattern(p)
-		if err != nil {
-			slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
-			continue
-		}
-		patterns = append(patterns, tmpl.Segments)
-	}
+	patterns := parseResourcePatterns(res.GetPattern())
 
 	message.Resource = &api.Resource{
 		Type:     res.GetType(),
@@ -581,15 +573,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	}
 
 	for _, r := range res {
-		var patterns [][]api.PathSegment
-		for _, p := range r.GetPattern() {
-			tmpl, err := httprule.ParseResourcePattern(p)
-			if err != nil {
-				slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
-				continue
-			}
-			patterns = append(patterns, tmpl.Segments)
-		}
+		patterns := parseResourcePatterns(r.GetPattern())
 
 		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
 			Type:     r.GetType(),
@@ -728,6 +712,19 @@ func addEnumDocumentation(state *api.APIState, p []int32, doc string, eFQN strin
 	} else {
 		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}
+}
+
+func parseResourcePatterns(patterns []string) [][]api.PathSegment {
+	var parsedPatterns [][]api.PathSegment
+	for _, p := range patterns {
+		tmpl, err := httprule.ParseResourcePattern(p)
+		if err != nil {
+			slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
+			continue
+		}
+		parsedPatterns = append(parsedPatterns, tmpl.Segments)
+	}
+	return parsedPatterns
 }
 
 // trimLeadingSpacesInDocumentation removes the leading spaces from each line in the documentation.
