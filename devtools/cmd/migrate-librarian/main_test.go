@@ -476,3 +476,57 @@ func TestBuildLibraries(t *testing.T) {
 		})
 	}
 }
+
+func TestReadRepoConfig(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		want     *RepoConfig
+		wantErr  error
+	}{
+		{
+			name:     "success",
+			repoPath: "testdata/read-repo-config/success",
+			want: &RepoConfig{
+				Modules: []*RepoConfigModule{
+					{
+						Name: "bigquery/v2",
+						APIs: []*RepoConfigAPI{
+							{
+								Path:            "google/cloud/bigquery/v2",
+								ClientDirectory: "v2/apiv2"},
+						},
+					},
+					{
+						Name: "bigtable",
+						APIs: []*RepoConfigAPI{
+							{Path: "google/bigtable/v2", DisableGAPIC: true},
+							{Path: "google/bigtable/admin/v2", DisableGAPIC: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "no_file",
+			repoPath: "testdata/read-repo-config/no_file",
+			want:     nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := readRepoConfig(test.repoPath)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Error(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
