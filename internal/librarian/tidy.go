@@ -21,7 +21,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -67,7 +69,20 @@ func RunTidy() error {
 			return ch.Path == "" && ch.ServiceConfig == ""
 		})
 	}
+	cfg.Libraries = slices.DeleteFunc(cfg.Libraries, func(lib *config.Library) bool {
+		return isRedundant(cfg.Language, lib)
+	})
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+}
+
+// A library is redundant if the only field specified is the name,
+// and the name is derivable from an allowed channel path.
+func isRedundant(language string, lib *config.Library) bool {
+	if !cmp.Equal(lib, &config.Library{Name: lib.Name}) {
+		return false
+	}
+	ch := deriveChannelPath(language, lib)
+	return serviceconfig.Allowlist[ch]
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
