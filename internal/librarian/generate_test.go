@@ -294,20 +294,16 @@ func TestPrepareLibrary(t *testing.T) {
 			if got.Output != test.wantOutput {
 				t.Errorf("got output %q, want %q", got.Output, test.wantOutput)
 			}
-			if test.wantChannelPath != "" {
+			if test.wantChannelPath != "" || test.wantServiceConfig != "" {
 				if len(got.Channels) == 0 {
 					t.Fatalf("expected a channel, got none")
 				}
-				if got.Channels[0].Path != test.wantChannelPath {
-					t.Errorf("got channel path %q, want %q", got.Channels[0].Path, test.wantChannelPath)
+				ch := got.Channels[0]
+				if test.wantChannelPath != "" && ch.Path != test.wantChannelPath {
+					t.Errorf("got channel path %q, want %q", ch.Path, test.wantChannelPath)
 				}
-			}
-			if test.wantServiceConfig != "" {
-				if len(got.Channels) == 0 {
-					t.Fatalf("expected a channel, got none")
-				}
-				if got.Channels[0].ServiceConfig != test.wantServiceConfig {
-					t.Errorf("got service config %q, want %q", got.Channels[0].ServiceConfig, test.wantServiceConfig)
+				if test.wantServiceConfig != "" && ch.ServiceConfig != test.wantServiceConfig {
+					t.Errorf("got service config %q, want %q", ch.ServiceConfig, test.wantServiceConfig)
 				}
 			}
 		})
