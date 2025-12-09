@@ -182,3 +182,32 @@ libraries:
 		t.Errorf("expected output to be empty, got %q", cfg.Libraries[0].Output)
 	}
 }
+
+func TestTidy_Redundant(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configContent := `
+language: rust
+libraries:
+  - name: google-cloud-secretmanager-v1
+  - name: google-cloud-storage-v1
+    version: 1.0.0
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RunTidy(); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
+	}
+	if cfg.Libraries[0].Name != "google-cloud-storage-v1" {
+		t.Errorf("expected %q, got %q", "google-cloud-storage-v1", cfg.Libraries[0].Name)
+	}
+}
