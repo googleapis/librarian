@@ -333,3 +333,65 @@ func TestBuildConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildLibraries(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		langCfg *Config
+		want    []*config.Library
+	}{
+		{
+			name: "sorted_libraries",
+			langCfg: &Config{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "example-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/example/api/v1",
+									ServiceConfig: "path/to/config.yaml",
+								},
+							},
+						},
+						{
+							ID: "another-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/another/api/v1",
+									ServiceConfig: "another/config.yaml",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "another-library",
+					Channels: []*config.Channel{
+						{
+							Path: "google/another/api/v1",
+						},
+					},
+				},
+				{
+					Name: "example-library",
+					Channels: []*config.Channel{
+						{
+							Path: "google/example/api/v1",
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildLibraries(test.langCfg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
