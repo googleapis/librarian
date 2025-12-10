@@ -34,6 +34,7 @@ import (
 
 const (
 	sidekickFile            = ".sidekick.toml"
+	cargoFile               = "Cargo.toml"
 	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
 	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
 	tarballSuffix           = ".tar.gz"
@@ -102,7 +103,7 @@ func run(args []string) error {
 		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
 	}
 
-	// Find all .sidekick.toml files
+	// Find all .sidekick.toml files for GAPIC libraries.
 	sidekickFiles, err := findSidekickFiles(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
@@ -500,4 +501,21 @@ func strToSlice(s string) []string {
 
 func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
+}
+
+func findCargos(path string) (files []string, err error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if entry.Name() == cargoFile {
+			files = append(files, filepath.Join(path, entry.Name()))
+		}
+	}
+	return files, nil
 }
