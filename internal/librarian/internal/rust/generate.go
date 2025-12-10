@@ -153,6 +153,12 @@ func DefaultLibraryName(channel string) string {
 	return strings.ReplaceAll(channel, "/", "-")
 }
 
+// DeriveChannelPath derives a channel path from a library name.
+// For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
+func DeriveChannelPath(name string) string {
+	return strings.ReplaceAll(name, "-", "/")
+}
+
 // DefaultOutput derives an output path from a channel path and default output.
 // For example: google/cloud/secretmanager/v1 with default src/generated/
 // returns src/generated/cloud/secretmanager/v1.
