@@ -561,7 +561,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 
 	patterns, err := parseResourcePatterns(res.GetPattern())
 	if err != nil {
-		return err
+		return fmt.Errorf("unexpected type for E_Resource extension: %T", ext)
 	}
 
 	message.Resource = &api.Resource{
@@ -582,7 +582,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
 	res, ok := ext.([]*annotations.ResourceDescriptor)
 	if !ok {
-		return nil
+		return fmt.Errorf("unexpected type for E_ResourceDefinition extension: %T", ext)
 	}
 
 	for _, r := range res {
