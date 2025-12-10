@@ -15,7 +15,7 @@
 # This triggers the `update-image` workflow for all repositories registered
 # to automate the `librarian update-image` command 
 steps:
-  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher:0.7.0
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher:latest
     id: update-image-dispatcher
     args:
       - '--project=$PROJECT_ID'
