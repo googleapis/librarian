@@ -219,7 +219,7 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 func findSidekickFiles(repoPath string) ([]string, error) {
 	var files []string
 
-	generatedPath := filepath.Join(repoPath, "src")
+	generatedPath := filepath.Join(repoPath, "src", "generated")
 	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errSrcNotFound
@@ -271,9 +271,15 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
-		cargo, err := readCargo(dir)
+		cargoPath := filepath.Join(dir, "Cargo.toml")
+		cargoData, err := os.ReadFile(cargoPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read %s: %w", file, err)
+			return nil, fmt.Errorf("failed to read %s: %w", cargoPath, err)
+		}
+
+		var cargo CargoConfig
+		if err := toml.Unmarshal(cargoData, &cargo); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal %s: %w", cargoPath, err)
 		}
 
 		libraryName := cargo.Package.Name
@@ -494,23 +500,4 @@ func strToSlice(s string) []string {
 
 func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
-}
-
-func readCargo(path string) (*CargoConfig, error) {
-	cargoPath := filepath.Join(path, "Cargo.toml")
-	if _, err := os.Stat(cargoPath); errors.Is(err, os.ErrNotExist) {
-		return &CargoConfig{}, nil
-	}
-
-	cargoData, err := os.ReadFile(cargoPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", cargoPath, err)
-	}
-
-	var cargo CargoConfig
-	if err := toml.Unmarshal(cargoData, &cargo); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", cargoPath, err)
-	}
-
-	return &cargo, nil
 }
