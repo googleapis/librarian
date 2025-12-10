@@ -133,7 +133,7 @@ func run(args []string) error {
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	slog.Info("Wrote config to output file", "path", outputPath)
+	slog.Info("Wrote config to output file", "path", *outputPath)
 
 	if err := librarian.RunTidy(); err != nil {
 		slog.Error(errTidyFailed.Error(), "error", err)
