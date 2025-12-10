@@ -128,7 +128,7 @@ func run(args []string) error {
 	maps.Copy(allLibraries, libraries)
 	maps.Copy(allLibraries, veneers)
 
-	cfg := buildConfig(libraries, defaults)
+	cfg := buildConfig(allLibraries, defaults)
 
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
