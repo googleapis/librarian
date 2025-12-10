@@ -319,6 +319,65 @@ func TestDeriveLibraryName(t *testing.T) {
 	}
 }
 
+func TestBuildVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		files   []string
+		want    map[string]*config.Library
+		wantErr error
+	}{
+		{
+			name: "no_sidekick_file",
+			files: []string{
+				"testdata/build-veneer/success/lib-1/Cargo.toml",
+				"testdata/build-veneer/success/lib-2/Cargo.toml",
+			},
+			want: map[string]*config.Library{
+				"google-cloud-storage": {
+					Name:    "google-cloud-storage",
+					Output:  "testdata/build-veneer/success/lib-1",
+					Version: "1.5.0",
+					Rust: &config.RustCrate{
+						Modules: []*config.RustModule{
+							{
+								HasVeneer:              true,
+								IncludedIds:            []string{},
+								IncludeGrpcOnlyMethods: true,
+								NameOverrides:          ".google.storage.v2.Storage=StorageControl",
+								Output:                 "testdata/build-veneer/success/lib-1/dir-1",
+								RoutingRequired:        true,
+								Template:               "grpc-client",
+							},
+							{
+								Output:   "testdata/build-veneer/success/lib-1/dir-2",
+								Template: "convert-prost",
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := buildVeneer(test.files)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("got error %v, want nil", err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
 		name      string

@@ -484,7 +484,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			return err
 		}
 
-		includeIds, _ := sidekick.Source["include-ids"].(string)
+		includedIds, _ := sidekick.Source["included-ids"].(string)
 		includeList, _ := sidekick.Source["include-list"].(string)
 
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
@@ -497,7 +497,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 
 		modules = append(modules, &config.RustModule{
 			HasVeneer:              strToBool(hasVeneer),
-			IncludedIds:            strToSlice(includeIds),
+			IncludedIds:            strToSlice(includedIds),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
 			IncludeList:            includeList,
 			ModulePath:             modulePath,

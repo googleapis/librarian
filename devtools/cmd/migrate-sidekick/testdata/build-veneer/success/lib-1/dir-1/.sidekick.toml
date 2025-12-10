@@ -1,0 +1,33 @@
+[general]
+language             = 'rust'
+specification-source = 'google/storage/v2'
+service-config       = 'google/storage/v2/storage_v2.yaml'
+
+[source]
+included-ids = """\
+    .google.storage.v2.Storage.DeleteBucket,\
+    .google.storage.v2.Storage.GetBucket,\
+    .google.storage.v2.Storage.CreateBucket,\
+    .google.storage.v2.Storage.ListBuckets,\
+    .google.storage.v2.Storage.LockBucketRetentionPolicy,\
+    .google.storage.v2.Storage.UpdateBucket,\
+    .google.storage.v2.Storage.ComposeObject,\
+    .google.storage.v2.Storage.DeleteObject,\
+    .google.storage.v2.Storage.RestoreObject,\
+    .google.storage.v2.Storage.GetObject,\
+    .google.storage.v2.Storage.UpdateObject,\
+    .google.storage.v2.Storage.ListObjects,\
+    .google.storage.v2.Storage.RewriteObject,\
+    .google.storage.v2.Storage.MoveObject,\
+    .google.storage.v2.ReadObjectRequest,\
+    .google.storage.v2.WriteObjectSpec\
+    """
+
+[codec]
+copyright-year            = '2025'
+template-override         = 'templates/grpc-client'
+package-name-override     = 'google-cloud-storage'
+name-overrides            = '.google.storage.v2.Storage=StorageControl'
+include-grpc-only-methods = 'true'
+has-veneer                = 'true'
+routing-required          = 'true'
