@@ -514,6 +514,8 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			Output:                 filepath.Dir(path),
 			PostProcessProtos:      postProcessProtos,
 			RoutingRequired:        strToBool(routingRequired),
+			ServiceConfig:          sidekick.General.ServiceConfig,
+			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
 		})
 
