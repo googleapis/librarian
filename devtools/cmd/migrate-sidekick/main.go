@@ -476,7 +476,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 	var modules []*config.RustModule
 	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return errSrcNotFound
+			return err
 		}
 
 		if d.IsDir() || d.Name() != sidekickFile {
