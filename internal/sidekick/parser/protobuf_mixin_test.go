@@ -54,7 +54,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 	}
 	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
 	if err != nil {
-		t.Fatalf("Failed to make API for Protobufj %v", err)
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
 	}
 	for _, service := range test.Services {
 		if service.ID == ".google.cloud.location.Locations" {
@@ -125,7 +125,7 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 	}
 	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
 	if err != nil {
-		t.Fatalf("Failed to make API for Protobufj %v", err)
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
 	}
 	for _, service := range test.Services {
 		if service.ID == ".google.iam.v1.IAMPolicy" {
@@ -202,7 +202,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 	}
 	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
 	if err != nil {
-		t.Fatalf("Failed to make API for Protobufj %v", err)
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
 	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
@@ -289,7 +289,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 	}
 	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_noempty_mixin.proto"))
 	if err != nil {
-		t.Fatalf("Failed to make API for Protobufj %v", err)
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
 	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
@@ -375,7 +375,7 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 	}
 	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_duplicate_mixin.proto"))
 	if err != nil {
-		t.Fatalf("Failed to make API for Protobufj %v", err)
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
 	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {

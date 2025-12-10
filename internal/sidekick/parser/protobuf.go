@@ -566,7 +566,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 
 	message.Resource = &api.Resource{
 		Type:     res.GetType(),
-		Pattern:  patterns,
+		Patterns: patterns,
 		Plural:   res.GetPlural(),
 		Singular: res.GetSingular(),
 		Self:     message,
@@ -593,7 +593,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 
 		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
 			Type:     r.GetType(),
-			Pattern:  patterns,
+			Patterns: patterns,
 			Plural:   r.GetPlural(),
 			Singular: r.GetSingular(),
 		})

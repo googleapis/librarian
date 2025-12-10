@@ -244,7 +244,7 @@ func TestExamples(t *testing.T) {
 	} {
 		api, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "routing_info.proto"))
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("Failed to make API for Protobuf %v", err)
 		}
 		t.Run(test.methodID, func(t *testing.T) {
 			got, ok := api.State.MethodByID[test.methodID]

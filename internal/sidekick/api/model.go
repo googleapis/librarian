@@ -938,7 +938,7 @@ type Resource struct {
 	Type string
 	// Pattern is a list of resource patterns, where each pattern is a sequence of path segments.
 	// This defines the structure of the resource's unique identifier.
-	Pattern []ResourcePattern
+	Patterns []ResourcePattern
 	// Plural is the plural form of the resource name.
 	// For example, for a "Book" resource, Plural would be "books".
 	Plural string
