@@ -59,6 +59,46 @@ func TestMakeServiceMethods(t *testing.T) {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
+func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "..zoneOperations.delete"
+	got, ok := model.State.MethodByID[id]
+	if !ok {
+		t.Fatalf("expected method %s in the API model", id)
+	}
+	want := &api.Method{
+		ID:            "..zoneOperations.delete",
+		Name:          "delete",
+		Documentation: "Deletes the specified zone-specific Operations resource.",
+		InputTypeID:   "..zoneOperations.deleteRequest",
+		OutputTypeID:  ".google.protobuf.Empty",
+		ReturnsEmpty:  true,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: "DELETE",
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("compute").
+						WithLiteral("v1").
+						WithLiteral("projects").
+						WithVariableNamed("project").
+						WithLiteral("zones").
+						WithVariableNamed("zone").
+						WithLiteral("operations").
+						WithVariableNamed("operation"),
+					QueryParameters: map[string]bool{},
+				},
+			},
+			BodyFieldPath: "",
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
 
 func TestMakeServiceMethodsDeprecated(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
