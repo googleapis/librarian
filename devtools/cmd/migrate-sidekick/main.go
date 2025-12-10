@@ -97,7 +97,6 @@ func run(args []string) error {
 
 	slog.Info("Reading sidekick.toml...", "path", repoPath)
 
-	// Read root .sidekick.toml for defaults
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
@@ -110,7 +109,7 @@ func run(args []string) error {
 	}
 
 	// Read all sidekick.toml files
-	libraries, err := readSidekickFiles(sidekickFiles, *repoPath)
+	libraries, err := readSidekickFiles(sidekickFiles, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
@@ -299,8 +298,7 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 		lib.SpecificationFormat = specificationFormat
 		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
-			slog.Error("Failed to calculate relative path", "dir", dir, "base", repoPath, "error", err)
-			return nil, errUnableToCalculateOutputPath
+			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
 		lib.Output = relativePath
 

@@ -153,7 +153,6 @@ func TestReadSidekickFiles(t *testing.T) {
 				"testdata/read-sidekick-files/success-read/.sidekick.toml",
 				"testdata/read-sidekick-files/success-read/nested/.sidekick.toml",
 			},
-			repoName: "",
 			want: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
@@ -255,16 +254,14 @@ func TestReadSidekickFiles(t *testing.T) {
 			files: []string{
 				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
 			},
-			repoName: "",
-			want:     map[string]*config.Library{},
+			want: map[string]*config.Library{},
 		},
 		{
 			name: "no_package_name",
 			files: []string{
 				"testdata/read-sidekick-files/no-package-name/.sidekick.toml",
 			},
-			repoName: "",
-			want:     map[string]*config.Library{},
+			want: map[string]*config.Library{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
