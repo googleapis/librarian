@@ -114,7 +114,7 @@ func run(args []string) error {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
 
-	cargoFiles, err := findCargos(repoPath)
+	cargoFiles, err := findCargos(filepath.Join(repoPath, "src"))
 	if err != nil {
 		return fmt.Errorf("failed to find Cargo.toml files: %w", err)
 	}
@@ -427,21 +427,26 @@ func deriveLibraryName(apiPath string) string {
 	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
 }
 
-func findCargos(path string) (files []string, err error) {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		return nil, err
-	}
+func findCargos(path string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+		if d.IsDir() && strings.Contains(path, "src/generated") {
+			return filepath.SkipDir
 		}
-		if entry.Name() == cargoFile {
-			files = append(files, filepath.Join(path, entry.Name()))
+
+		if d.IsDir() || d.Name() != cargoFile {
+			return nil
 		}
-	}
-	return files, nil
+
+		files = append(files, path)
+
+		return nil
+	})
+	return files, err
 }
 
 func buildVeneer(files []string) (map[string]*config.Library, error) {
