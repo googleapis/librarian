@@ -22,21 +22,24 @@ import (
 	"testing"
 )
 
+const (
+	libExists       = "library-one"
+	libExistsOutput = "output1"
+	newLib          = "library-two"
+	newLibOutput    = "output2"
+	newLibSpec      = "google/cloud/storage/v1"
+	newLibSC        = "google/cloud/storage/v1/storage_v1.yaml"
+)
+
 func TestCreateCommand(t *testing.T) {
-	const (
-		libExists       = "library-one"
-		libExistsOutput = "output1"
-		newLib          = "library-two"
-		newLibOutput    = "output2"
-		newLibSpec      = "google/cloud/storage/v1"
-		newLibSC        = "google/cloud/storage/v1/storage_v1.yaml"
-	)
 
 	for _, test := range []struct {
-		name     string
-		args     []string
-		wantErr  error
-		language string
+		name             string
+		args             []string
+		language         string
+		skipCreatingYaml bool
+		wantLibs         []string
+		wantErr          error
 	}{
 		{
 			name:    "no args",
@@ -46,6 +49,7 @@ func TestCreateCommand(t *testing.T) {
 		{
 			name:     "run create for existing library",
 			args:     []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
+			wantLibs: []string{libExists},
 			language: "testhelper",
 		},
 		{
@@ -64,6 +68,13 @@ func TestCreateCommand(t *testing.T) {
 			name:     "create new library",
 			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
 			language: "rust",
+			wantLibs: []string{newLib},
+		},
+		{
+			name:             "no yaml",
+			args:             []string{"librarian", "create", "--name", newLib},
+			skipCreatingYaml: true,
+			wantErr:          errNoYaml,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -72,12 +83,12 @@ func TestCreateCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 			googleapisDir := filepath.Join(wd, "testdata", "googleapis")
-
-			tempDir := t.TempDir()
-			t.Chdir(tempDir)
-			configPath := filepath.Join(tempDir, librarianConfigPath)
-
-			configContent := fmt.Sprintf(`language: %s
+			if !test.skipCreatingYaml {
+				// Create a temporary librarian.yaml for the test
+				tempDir := t.TempDir()
+				t.Chdir(tempDir)
+				configPath := filepath.Join(tempDir, librarianConfigPath)
+				configContent := fmt.Sprintf(`language: %s
 sources:
   googleapis:
     dir: %s
@@ -90,13 +101,14 @@ libraries:
       - path: google/cloud/speech/v2
       - path: grafeas/v1
 `, test.language, googleapisDir, libExists, libExistsOutput)
-			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-				t.Fatal(err)
-			}
+				if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+					t.Fatal(err)
+				}
 
-			// Create the output directories that are referenced in the config
-			if err := os.MkdirAll(filepath.Join(tempDir, libExistsOutput), 0755); err != nil {
-				t.Fatal(err)
+				// Create the output directories that are referenced in the config
+				if err := os.MkdirAll(filepath.Join(tempDir, libExistsOutput), 0755); err != nil {
+					t.Fatal(err)
+				}
 			}
 			err = Run(t.Context(), test.args...)
 			if test.wantErr != nil {
@@ -108,6 +120,12 @@ libraries:
 			if err != nil {
 				t.Fatal(err)
 			}
+			allLibraries := map[string]string{
+				libExists: libExistsOutput,
+				newLib:    newLibOutput,
+			}
+			tempDir := os.Getenv("PWD") // or store it before Chdir
+			validateGeneration(t, test.wantLibs, allLibraries, tempDir)
 		})
 	}
 }

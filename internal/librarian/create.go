@@ -17,6 +17,7 @@ package librarian
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -30,6 +31,7 @@ var (
 	errOutputFlagRequired             = errors.New("output flag is required when default.output is not set in librarian.yaml")
 	errServiceConfigAndSpecRequired   = errors.New("both service-config and specification-source flags are required for creating a new library")
 	errMissingNameFlag                = errors.New("name flag is required to create a new library")
+	errNoYaml                         = errors.New("unable to read librarian.yaml")
 )
 
 func createCommand() *cli.Command {
@@ -77,20 +79,13 @@ func createCommand() *cli.Command {
 func runCreate(ctx context.Context, name, specSource, serviceConfig, output, specFormat string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w %w", errNoYaml, err)
 	}
 	switch cfg.Language {
 	case "testhelper", "rust":
-		if output == "" {
-			if cfg.Default == nil || cfg.Default.Output == "" {
-				return errOutputFlagRequired
-			}
-			output = rust.DefaultOutput(specSource, cfg.Default.Output)
-		}
 		libraryExists := false
 		for _, lib := range cfg.Libraries {
 			if lib.Name == name {
-
 				libraryExists = true
 				break
 			}
@@ -100,12 +95,19 @@ func runCreate(ctx context.Context, name, specSource, serviceConfig, output, spe
 			return runGenerate(ctx, false, name)
 		}
 
-		if (serviceConfig == "") || (specSource == "") {
+		if serviceConfig == "" || specSource == "" {
 			return errServiceConfigAndSpecRequired
 		}
 
+		if output == "" {
+			if cfg.Default == nil || cfg.Default.Output == "" {
+				return errOutputFlagRequired
+			}
+			output = rust.DefaultOutput(specSource, cfg.Default.Output)
+		}
+
 		// TODO: port over sidekick rustGenerate logic to create a new librarian
-		slog.Info("Creating new Rust library (not implemented yet)")
+		slog.InfoContext(ctx, "Creating new Rust library", "name", name, "specSource", specSource, "serviceConfig", serviceConfig, "output", output, "specFormat", specFormat)
 		return nil
 	default:
 		return errRunningCreateOnNonRustLanguage
