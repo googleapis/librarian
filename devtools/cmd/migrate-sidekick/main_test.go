@@ -331,6 +331,8 @@ func TestFindCargos(t *testing.T) {
 			path: "testdata/find-cargos/success",
 			want: []string{
 				"testdata/find-cargos/success/Cargo.toml",
+				"testdata/find-cargos/success/dir-1/Cargo.toml",
+				"testdata/find-cargos/success/dir-2/dirdir-2/Cargo.toml",
 			},
 		},
 		{
