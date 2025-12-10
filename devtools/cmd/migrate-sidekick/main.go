@@ -124,7 +124,9 @@ func run(args []string) error {
 		return fmt.Errorf("failed to build veneers: %w", err)
 	}
 
-	maps.Copy(libraries, veneers)
+	allLibraries := make(map[string]*config.Library, len(libraries)+len(veneers))
+	maps.Copy(allLibraries, libraries)
+	maps.Copy(allLibraries, veneers)
 
 	cfg := buildConfig(libraries, defaults)
 
