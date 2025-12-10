@@ -86,6 +86,12 @@ type Library struct {
 	// libraries).
 	Channels []*Channel `yaml:"channels,omitempty"`
 
+	// Veneer indicates this library has hand-written code with generated
+	// submodules. When true, the library uses language-specific module
+	// configuration (e.g., rust.modules) instead of generating a complete crate
+	// from channels.
+	Veneer bool `yaml:"veneer,omitempty"`
+
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
 
@@ -122,6 +128,9 @@ type Library struct {
 
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
+
+	// Go contains Go-specific library configuration.
+	Go *GoModule `yaml:"go,omitempty"`
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`

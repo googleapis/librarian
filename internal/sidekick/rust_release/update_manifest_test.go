@@ -54,7 +54,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	if idx == -1 {
 		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
 	}
-	if err := command.Run("git", "commit", "-m", "update version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "update version", "."); err != nil {
 		t.Fatal(err)
 	}
 
@@ -178,10 +178,10 @@ version = "a.b.c"
 	if err := os.WriteFile(name, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "introduce bad version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "introduce bad version", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "tag", "bad-version-tag"); err != nil {
+	if err := command.Run(t.Context(), "git", "tag", "bad-version-tag"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -232,27 +232,6 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 	}
 }
 
-func TestBumpPackageVersion(t *testing.T) {
-	for _, test := range []struct {
-		Input string
-		Want  string
-	}{
-		{"1.2", "1.2"},
-		{"1.2.3", "1.3.0"},
-		{"1.2.3-alpha", "1.3.0-alpha"},
-		{"0.1.2", "0.2.0"},
-		{"0.1.2-alpha", "0.2.0-alpha"},
-	} {
-		got, err := BumpPackageVersion(test.Input)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != test.Want {
-			t.Errorf("mismatch, want=%s, got=%s", test.Want, got)
-		}
-	}
-}
-
 func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	requireCommand(t, "git")
@@ -276,7 +255,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "updated version", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "updated version", "."); err != nil {
 		t.Fatal(err)
 	}
 
@@ -299,10 +278,10 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 		Preinstalled: map[string]string{},
 	}
 	addGeneratedCrate(t, path.Join("src", "new"), "google-cloud-new")
-	if err := command.Run("git", "add", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "new crate", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "new crate", "."); err != nil {
 		t.Fatal(err)
 	}
 	name := path.Join("src", "new", "Cargo.toml")

@@ -33,7 +33,10 @@ import (
 )
 
 const (
-	sidekickFile = ".sidekick.toml"
+	sidekickFile            = ".sidekick.toml"
+	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
+	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
+	tarballSuffix           = ".tar.gz"
 )
 
 var (
@@ -82,26 +85,26 @@ func main() {
 
 func run(args []string) error {
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
-	repoPath := flagSet.String("repo", "", "Path to the google-cloud-rust repository (required)")
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
-	if err := flagSet.Parse(args[1:]); err != nil {
+	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
 
-	if *repoPath == "" {
+	if flagSet.NArg() < 1 {
 		return errRepoNotFound
 	}
+	repoPath := flagSet.Arg(0)
 
 	slog.Info("Reading sidekick.toml...", "path", repoPath)
 
 	// Read root .sidekick.toml for defaults
-	defaults, err := readRootSidekick(*repoPath)
+	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
 	}
 
 	// Find all .sidekick.toml files
-	sidekickFiles, err := findSidekickFiles(*repoPath)
+	sidekickFiles, err := findSidekickFiles(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
@@ -143,8 +146,13 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 
 	releaseLevel, _ := sidekick.Codec["release-level"].(string)
 	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
-	googleapisCommitSHA, _ := sidekick.Source["googleapis-sha256"].(string)
-	discoveryCommitSHA, _ := sidekick.Source["discovery-sha256"].(string)
+	discoverySHA256, _ := sidekick.Source["discovery-sha256"].(string)
+	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
+	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
+	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
+
+	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
+	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
@@ -153,10 +161,12 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 		Language: "rust",
 		Sources: &config.Sources{
 			Discovery: &config.Source{
-				Commit: discoveryCommitSHA,
+				Commit: discoveryCommit,
+				SHA256: discoverySHA256,
 			},
 			Googleapis: &config.Source{
-				Commit: googleapisCommitSHA,
+				Commit: googleapisCommit,
+				SHA256: googleapisSHA256,
 			},
 		},
 		Default: &config.Default{

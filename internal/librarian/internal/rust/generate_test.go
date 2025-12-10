@@ -17,12 +17,122 @@ package rust
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
+
+func TestGenerateVeneer(t *testing.T) {
+	cmdtest.RequireCommand(t, "protoc")
+	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	module1Dir := filepath.Join(outDir, "src", "generated", "v1")
+	module2Dir := filepath.Join(outDir, "src", "generated", "v1beta")
+	googleapisDir := filepath.Join(testdataDir, "googleapis")
+
+	library := &config.Library{
+		Name:          "test-veneer",
+		Veneer:        true,
+		Output:        outDir,
+		CopyrightYear: "2025",
+		Rust: &config.RustCrate{
+			RustDefault: config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+				},
+			},
+			Modules: []*config.RustModule{
+				{
+					Source:        "google/cloud/secretmanager/v1",
+					ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+					Output:        module1Dir,
+					Template:      "grpc-client",
+				},
+				{
+					Source:        "google/cloud/secretmanager/v1",
+					ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+					Output:        module2Dir,
+					Template:      "grpc-client",
+				},
+			},
+		},
+	}
+	sources := &config.Sources{
+		Googleapis: &config.Source{Dir: googleapisDir},
+	}
+	if err := Generate(t.Context(), library, sources); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, dir := range []string{module1Dir, module2Dir} {
+		model, err := os.ReadFile(filepath.Join(dir, "model.rs"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(model), "SecretManagerService") {
+			t.Errorf("%s/model.rs missing SecretManagerService", dir)
+		}
+	}
+}
+
+func TestKeepNonVeneer(t *testing.T) {
+	library := &config.Library{
+		Keep: []string{"src/custom.rs"},
+	}
+	got, err := Keep(library)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"src/custom.rs", "Cargo.toml"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestKeepVeneer(t *testing.T) {
+	dir := t.TempDir()
+	for _, f := range []string{
+		"Cargo.toml",
+		"src/lib.rs",
+		"src/generated/model.rs",
+	} {
+		path := filepath.Join(dir, f)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte{}, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	library := &config.Library{
+		Veneer: true,
+		Output: dir,
+		Rust: &config.RustCrate{
+			Modules: []*config.RustModule{
+				{Output: filepath.Join(dir, "src", "generated")},
+			},
+		},
+	}
+	got, err := Keep(library)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sort.Strings(got)
+	want := []string{"Cargo.toml", "src/lib.rs"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
 func TestGenerate(t *testing.T) {
 	cmdtest.RequireCommand(t, "protoc")
@@ -68,6 +178,9 @@ func TestGenerate(t *testing.T) {
 		Googleapis: &config.Source{Dir: googleapisDir},
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {
+		t.Fatal(err)
+	}
+	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
 	}
 

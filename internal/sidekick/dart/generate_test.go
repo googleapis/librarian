@@ -65,7 +65,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {

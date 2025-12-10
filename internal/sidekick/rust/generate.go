@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"context"
 	"embed"
 	"path/filepath"
 
@@ -27,7 +28,7 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model.
-func Generate(model *api.API, outdir string, cfg *config.Config) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
 	codec, err := newCodec(cfg.General.SpecificationFormat, cfg.Codec)
 	if err != nil {
 		return err
@@ -39,7 +40,7 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 }
 
 // GenerateStorage generates Rust code for the storage service.
-func GenerateStorage(outdir string, storageModel *api.API, storageConfig *config.Config, controlModel *api.API, controlConfig *config.Config) error {
+func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageConfig *config.Config, controlModel *api.API, controlConfig *config.Config) error {
 	storageCodec, err := newCodec(storageConfig.General.SpecificationFormat, storageConfig.Codec)
 	if err != nil {
 		return err

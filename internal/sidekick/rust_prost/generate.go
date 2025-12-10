@@ -15,6 +15,7 @@
 package rust_prost
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"os"
@@ -31,14 +32,14 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model using prost.
-func Generate(model *api.API, outdir string, cfg *config.Config) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
 	if cfg.General.SpecificationFormat != "protobuf" {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)
 	}
-	if err := command.Run("cargo", "--version"); err != nil {
+	if err := command.Run(ctx, "cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
-	if err := command.Run("protoc", "--version"); err != nil {
+	if err := command.Run(ctx, "protoc", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `protoc --version`, the instructions on https://grpc.io/docs/protoc-installation/ may solve this problem: %w", err)
 	}
 
@@ -55,7 +56,7 @@ func Generate(model *api.API, outdir string, cfg *config.Config) error {
 		return err
 	}
 	rootName := cfg.Source[codec.RootName]
-	return buildRS(rootName, tmpDir, outdir)
+	return buildRS(ctx, rootName, tmpDir, outdir)
 }
 
 func templatesProvider() language.TemplateProvider {
@@ -68,7 +69,7 @@ func templatesProvider() language.TemplateProvider {
 	}
 }
 
-func buildRS(rootName, tmpDir, outDir string) error {
+func buildRS(ctx context.Context, rootName, tmpDir, outDir string) error {
 	absRoot, err := filepath.Abs(rootName)
 	if err != nil {
 		return err
@@ -77,7 +78,7 @@ func buildRS(rootName, tmpDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("cargo", "build", "--features", "_generate-protos")
+	cmd := exec.CommandContext(ctx, "cargo", "build", "--features", "_generate-protos")
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SOURCE_ROOT=%s", absRoot))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DEST=%s", absOutDir))

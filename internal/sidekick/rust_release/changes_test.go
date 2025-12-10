@@ -63,10 +63,10 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 	remoteDir := setupForPublish(t, "v1.0.0")
 	cloneRepository(t, remoteDir)
 	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run("git", "add", path.Join("src", "pubsub")); err != nil {
+	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,10 +91,10 @@ func TestIsNewFile(t *testing.T) {
 	if err := os.WriteFile(newName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "add", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 	if isNewFile(&release, wantTag, existingName) {
@@ -136,7 +136,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run("git", "commit", "-m", "feat: changed storage", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
 

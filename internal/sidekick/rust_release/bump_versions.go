@@ -16,6 +16,7 @@
 package rustrelease
 
 import (
+	"context"
 	"log/slog"
 	"slices"
 
@@ -25,8 +26,8 @@ import (
 
 // BumpVersions finds all the crates that need a version bump and performs the
 // bump, changing both the Cargo.toml and sidekick.toml files.
-func BumpVersions(config *config.Release) error {
-	if err := PreFlight(config); err != nil {
+func BumpVersions(ctx context.Context, config *config.Release) error {
+	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
 	lastTag, err := getLastTag(config)
@@ -54,7 +55,7 @@ func BumpVersions(config *config.Release) error {
 	}
 	for _, name := range crates {
 		slog.Info("runnning cargo semver-checks", "crate", name)
-		if err := command.Run(cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+		if err := command.Run(ctx, cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}

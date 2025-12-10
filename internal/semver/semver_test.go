@@ -29,14 +29,14 @@ func TestParse(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		version       string
-		want          *Version
+		want          version
 		wantErr       bool
 		wantErrPhrase string
 	}{
 		{
 			name:    "valid version",
 			version: "1.2.3",
-			want: &Version{
+			want: version{
 				Major: 1,
 				Minor: 2,
 				Patch: 3,
@@ -51,7 +51,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with prerelease",
 			version: "1.2.3-alpha.1",
-			want: &Version{
+			want: version{
 				Major:               1,
 				Minor:               2,
 				Patch:               3,
@@ -63,7 +63,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-betaXX",
 			version: "1.2.3-beta21",
-			want: &Version{
+			want: version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -74,7 +74,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with prerelease without version",
 			version: "1.2.3-beta",
-			want: &Version{
+			want: version{
 				Major:      1,
 				Minor:      2,
 				Patch:      3,
@@ -84,7 +84,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid shortened version",
 			version: "1.2",
-			want: &Version{
+			want: version{
 				Major: 1,
 				Minor: 2,
 				Patch: 0,
@@ -98,7 +98,7 @@ func TestParse(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := Parse(test.version)
+			actual, err := parse(test.version)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("Parse() should have failed")
@@ -121,12 +121,12 @@ func TestParse(t *testing.T) {
 func TestVersion_String(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		version  *Version
+		version  version
 		expected string
 	}{
 		{
 			name: "simple version",
-			version: &Version{
+			version: version{
 				Major: 1,
 				Minor: 2,
 				Patch: 3,
@@ -135,7 +135,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease",
-			version: &Version{
+			version: version{
 				Major:               1,
 				Minor:               2,
 				Patch:               3,
@@ -147,7 +147,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease no separator",
-			version: &Version{
+			version: version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -158,7 +158,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease no version",
-			version: &Version{
+			version: version{
 				Major:      1,
 				Minor:      2,
 				Patch:      3,
@@ -245,6 +245,129 @@ func TestDeriveNext(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion)
+			if err != nil {
+				t.Fatalf("DeriveNext() returned an error: %v", err)
+			}
+			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveNextOptions_DeriveNext(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		highestChange   ChangeLevel
+		currentVersion  string
+		expectedVersion string
+		opts            DeriveNextOptions
+	}{
+		{
+			name:            "major bump",
+			highestChange:   Major,
+			currentVersion:  "1.2.3",
+			expectedVersion: "2.0.0",
+		},
+		{
+			name:            "minor bump",
+			highestChange:   Minor,
+			currentVersion:  "1.2.3",
+			expectedVersion: "1.3.0",
+		},
+		{
+			name:            "patch bump",
+			highestChange:   Patch,
+			currentVersion:  "1.2.3",
+			expectedVersion: "1.2.4",
+		},
+		{
+			name:            "pre-1.0.0 feat is minor bump",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3",
+			expectedVersion: "0.3.0",
+		},
+		{
+			name:            "pre-1.0.0 feat with downgrade is patch bump",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3",
+			expectedVersion: "0.2.4",
+			opts:            DeriveNextOptions{DowngradePreGAChanges: true},
+		},
+		{
+			name:            "pre-1.0.0 fix is patch bump",
+			highestChange:   Patch,
+			currentVersion:  "0.2.3",
+			expectedVersion: "0.2.4",
+		},
+		{
+			name:            "pre-1.0.0 breaking change is minor bump",
+			highestChange:   Major,
+			currentVersion:  "0.2.3",
+			expectedVersion: "0.3.0",
+		},
+		{
+			name:            "prerelease bump with numeric trailer",
+			highestChange:   Minor,
+			currentVersion:  "1.2.3-beta.1",
+			expectedVersion: "1.2.3-beta.2",
+		},
+		{
+			name:            "prerelease bump without numeric trailer",
+			highestChange:   Patch,
+			currentVersion:  "1.2.3-beta",
+			expectedVersion: "1.2.3-beta.1",
+		},
+		{
+			name:            "prerelease bump with betaXX format",
+			highestChange:   Major,
+			currentVersion:  "1.2.3-beta21",
+			expectedVersion: "1.2.3-beta22",
+		},
+		{
+			name:            "no bump",
+			highestChange:   None,
+			currentVersion:  "1.2.3",
+			expectedVersion: "1.2.3",
+		},
+		{
+			name:            "prerelease with bump core option",
+			highestChange:   Minor,
+			currentVersion:  "1.2.3-alpha",
+			expectedVersion: "1.3.0-alpha",
+			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
+			name:            "prerelease with numeric trailer and bump core option",
+			highestChange:   Minor,
+			currentVersion:  "1.2.3-alpha.5",
+			expectedVersion: "1.3.0-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease with numeric trailer and bump core option",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.3.0-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease with numeric trailer, bump core and downgrade options",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.2.4-alpha.1",
+			opts:            DeriveNextOptions{BumpVersionCore: true, DowngradePreGAChanges: true},
+		},
+		{
+			name:            "pre-1.0.0 prerelease feat with downgrade, no bump core, is still prerelease bump",
+			highestChange:   Minor,
+			currentVersion:  "0.2.3-alpha.2",
+			expectedVersion: "0.2.3-alpha.3",
+			opts:            DeriveNextOptions{DowngradePreGAChanges: true},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			nextVersion, err := test.opts.DeriveNext(test.highestChange, test.currentVersion)
 			if err != nil {
 				t.Fatalf("DeriveNext() returned an error: %v", err)
 			}
