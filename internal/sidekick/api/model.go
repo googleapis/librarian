@@ -597,6 +597,23 @@ func (v *PathVariable) WithMatch() *PathVariable {
 	return v
 }
 
+// NewPathSegment creates a new path segment.
+func NewPathSegment() *PathSegment {
+	return &PathSegment{}
+}
+
+// WithLiteral adds a literal to the path segment.
+func (s *PathSegment) WithLiteral(l string) *PathSegment {
+	s.Literal = &l
+	return s
+}
+
+// WithVariable adds a variable to the path segment.
+func (s *PathSegment) WithVariable(v *PathVariable) *PathSegment {
+	s.Variable = v
+	return s
+}
+
 // Message defines a message used in request/response handling.
 type Message struct {
 	// Documentation for the message.
@@ -921,7 +938,7 @@ type Resource struct {
 	Type string
 	// Pattern is a list of resource patterns, where each pattern is a sequence of path segments.
 	// This defines the structure of the resource's unique identifier.
-	Pattern [][]PathSegment
+	Pattern []ResourcePattern
 	// Plural is the plural form of the resource name.
 	// For example, for a "Book" resource, Plural would be "books".
 	Plural string
@@ -935,6 +952,9 @@ type Resource struct {
 	// Language specific annotations.
 	Codec any
 }
+
+// ResourcePattern is a sequence of path segments that defines the structure of a resource's unique identifier.
+type ResourcePattern []PathSegment
 
 // ResourceReference describes a field's relationship to another resource type.
 // It acts as a foreign key, indicating that the field's value identifies an instance of another resource.

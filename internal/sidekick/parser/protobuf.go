@@ -49,7 +49,7 @@ func ParseProtobuf(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	return makeAPIForProtobuf(serviceConfig, request), nil
+	return makeAPIForProtobuf(serviceConfig, request)
 }
 
 func newCodeGeneratorRequest(source string, options map[string]string) (_ *pluginpb.CodeGeneratorRequest, err error) {
@@ -181,7 +181,7 @@ const (
 	enumDescriptorValue = 2
 )
 
-func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.CodeGeneratorRequest) *api.API {
+func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.CodeGeneratorRequest) (*api.API, error) {
 	var (
 		mixinFileDesc       []*descriptorpb.FileDescriptorProto
 		enabledMixinMethods mixinMethods = make(map[string]bool)
@@ -216,14 +216,18 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fFQN := "." + f.GetPackage()
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			_ = processMessage(state, m, mFQN, f.GetPackage(), nil)
+			if _, err := processMessage(state, m, mFQN, f.GetPackage(), nil); err != nil {
+				return nil, err
+			}
 		}
 
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
 			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
 		}
-		processResourceDefinitions(f, result)
+		if err := processResourceDefinitions(f, result); err != nil {
+			return nil, err
+		}
 	}
 
 	// Then we need to add the messages, enums and services to the list of
@@ -332,7 +336,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	}
 	updatePackageName(result)
 	updateAutoPopulatedFields(serviceConfig, result)
-	return result
+	return result, nil
 }
 
 // requiresLongrunningMixin finds out if any method returns a LRO. This is used
@@ -468,7 +472,7 @@ func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, m
 	return method
 }
 
-func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) *api.Message {
+func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
@@ -482,12 +486,17 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		if opts.GetMapEntry() {
 			message.IsMap = true
 		}
-		processResourceAnnotation(opts, message)
+		if err := processResourceAnnotation(opts, message); err != nil {
+			return nil, err
+		}
 	}
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
-			nmsg := processMessage(state, nm, nmFQN, packagez, message)
+			nmsg, err := processMessage(state, nm, nmFQN, packagez, message)
+			if err != nil {
+				return nil, err
+			}
 			message.Messages = append(message.Messages, nmsg)
 		}
 	}
@@ -537,20 +546,23 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		message.OneOfs = message.OneOfs[:oneOfIdx]
 	}
 
-	return message
+	return message, nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) error {
 	if !proto.HasExtension(opts, annotations.E_Resource) {
-		return
+		return nil
 	}
 	ext := proto.GetExtension(opts, annotations.E_Resource)
 	res, ok := ext.(*annotations.ResourceDescriptor)
 	if !ok {
-		return
+		return nil
 	}
 
-	patterns := parseResourcePatterns(res.GetPattern())
+	patterns, err := parseResourcePatterns(res.GetPattern())
+	if err != nil {
+		return err
+	}
 
 	message.Resource = &api.Resource{
 		Type:     res.GetType(),
@@ -559,21 +571,25 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		Singular: res.GetSingular(),
 		Self:     message,
 	}
+	return nil
 }
 
-func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) {
+func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) error {
 	if f.Options == nil || !proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
-		return
+		return nil
 	}
 
 	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
 	res, ok := ext.([]*annotations.ResourceDescriptor)
 	if !ok {
-		return
+		return nil
 	}
 
 	for _, r := range res {
-		patterns := parseResourcePatterns(r.GetPattern())
+		patterns, err := parseResourcePatterns(r.GetPattern())
+		if err != nil {
+			return err
+		}
 
 		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
 			Type:     r.GetType(),
@@ -582,6 +598,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 			Singular: r.GetSingular(),
 		})
 	}
+	return nil
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
@@ -714,17 +731,16 @@ func addEnumDocumentation(state *api.APIState, p []int32, doc string, eFQN strin
 	}
 }
 
-func parseResourcePatterns(patterns []string) [][]api.PathSegment {
-	var parsedPatterns [][]api.PathSegment
+func parseResourcePatterns(patterns []string) ([]api.ResourcePattern, error) {
+	var parsedPatterns []api.ResourcePattern
 	for _, p := range patterns {
 		tmpl, err := httprule.ParseResourcePattern(p)
 		if err != nil {
-			slog.Warn("failed to parse resource pattern", "pattern", p, "error", err)
-			continue
+			return nil, fmt.Errorf("failed to parse resource pattern %q: %w", p, err)
 		}
 		parsedPatterns = append(parsedPatterns, tmpl.Segments)
 	}
-	return parsedPatterns
+	return parsedPatterns, nil
 }
 
 // trimLeadingSpacesInDocumentation removes the leading spaces from each line in the documentation.

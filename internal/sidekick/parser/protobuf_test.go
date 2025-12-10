@@ -16,6 +16,7 @@ package parser
 
 import (
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -37,7 +38,10 @@ func strptr(s string) *string {
 func TestProtobuf_Info(t *testing.T) {
 	requireProtoc(t)
 	sc := sample.ServiceConfig()
-	got := makeAPIForProtobuf(sc, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	got, err := makeAPIForProtobuf(sc, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	if got.Name != "secretmanager" {
 		t.Errorf("want = %q; got = %q", "secretmanager", got.Name)
 	}
@@ -56,7 +60,10 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 		Title: "Secret Manager API",
 	}
 
-	got := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	got, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	want := &api.API{
 		Name:        "secretmanager",
 		PackageName: "test",
@@ -70,7 +77,10 @@ func TestProtobuf_PartialInfo(t *testing.T) {
 
 func TestProtobuf_Scalar(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
@@ -192,7 +202,10 @@ func TestProtobuf_Scalar(t *testing.T) {
 
 func TestProtobuf_ScalarArray(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_array.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_array.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
@@ -241,7 +254,10 @@ func TestProtobuf_ScalarArray(t *testing.T) {
 
 func TestProtobuf_ScalarOptional(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_optional.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "scalar_optional.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API", "Fake")
@@ -290,7 +306,10 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 
 func TestProtobuf_SkipExternalMessages(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	// Both `ImportedMessage` and `LocalMessage` should be in the index:
 	_, ok := test.State.MessageByID[".away.ImportedMessage"]
 	if !ok {
@@ -336,7 +355,10 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 
 func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "with_import.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	// Both `ImportedEnum` and `LocalEnum` should be in the index:
 	_, ok := test.State.EnumByID[".away.ImportedEnum"]
 	if !ok {
@@ -376,7 +398,10 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 
 func TestProtobuf_Comments(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "comments.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "comments.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Request"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
@@ -479,7 +504,10 @@ func TestProtobuf_Comments(t *testing.T) {
 
 func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum_values.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum_values.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	withAlias, ok := test.State.EnumByID[".test.WithAlias"]
 	if !ok {
 		t.Fatalf("Cannot find enum %s in API State", ".test.WithAlias")
@@ -506,6 +534,7 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 			Number: 3,
 		},
 	}
+
 	uniqueList := []*api.EnumValue{
 		{
 			Name:   "X_UNSPECIFIED",
@@ -532,7 +561,10 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 
 func TestProtobuf_OneOfs(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "oneofs.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "oneofs.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
@@ -604,7 +636,10 @@ func TestProtobuf_OneOfs(t *testing.T) {
 
 func TestProtobuf_ObjectFields(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "object_fields.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "object_fields.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
@@ -638,7 +673,10 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 
 func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "wkt_fields.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "wkt_fields.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
@@ -702,7 +740,10 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 
 func TestProtobuf_JsonName(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "json_name.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "json_name.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Request"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
@@ -737,7 +778,10 @@ func TestProtobuf_JsonName(t *testing.T) {
 
 func TestProtobuf_MapFields(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "map_fields.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "map_fields.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	message, ok := test.State.MessageByID[".test.Fake"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
@@ -832,7 +876,10 @@ func TestProtobuf_MapFields(t *testing.T) {
 
 func TestProtobuf_Service(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
@@ -862,8 +909,7 @@ func TestProtobuf_Service(t *testing.T) {
 									WithMatch().
 									WithLiteral("foos").
 									WithMatch()),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "",
 				},
@@ -909,8 +955,7 @@ func TestProtobuf_Service(t *testing.T) {
 									WithMatch().
 									WithLiteral("foos").
 									WithMatch()),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 				},
 				ReturnsEmpty: true,
@@ -944,8 +989,7 @@ func TestProtobuf_Service(t *testing.T) {
 									WithLiteral("foos").
 									WithMatch()).
 								WithVerb("Download"),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "",
 				},
@@ -968,7 +1012,10 @@ func TestProtobuf_Service(t *testing.T) {
 
 func TestProtobuf_QueryParameters(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "query_parameters.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "query_parameters.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
@@ -1034,7 +1081,10 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 
 func TestProtobuf_Enum(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "enum.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	e, ok := test.State.EnumByID[".test.Code"]
 	if !ok {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Code")
@@ -1084,7 +1134,10 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 
 func TestProtobuf_Pagination(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "pagination.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	updateMethodPagination(nil, test)
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
@@ -1429,7 +1482,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_operation_info.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_operation_info.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	service, ok := test.State.ServiceByID[".test.LroService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
@@ -1458,8 +1514,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 									WithLiteral("projects").
 									WithMatch()).
 								WithLiteral("foos"),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "foo",
 				},
@@ -1485,8 +1540,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 									WithLiteral("projects").
 									WithMatch()).
 								WithLiteral("foos"),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "foo",
 				},
@@ -1511,8 +1565,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 								WithVariable(api.NewPathVariable("name").
 									WithLiteral("operations").
 									WithMatch()),
-							QueryParameters: map[string]bool{},
-						},
+							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "*",
 				},
@@ -1556,7 +1609,10 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "auto_populated.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "auto_populated.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
@@ -1690,7 +1746,10 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 
 func TestProtobuf_Deprecated(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "deprecated.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "deprecated.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 	s, ok := test.State.ServiceByID[".test.ServiceA"]
 	if !ok {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceA")
@@ -1810,7 +1869,10 @@ func TestProtobuf_Deprecated(t *testing.T) {
 
 func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	requireProtoc(t)
-	test := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_annotations.proto"))
+	test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_annotations.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobufj %v", err)
+	}
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
 		if len(test.ResourceDefinitions) != 1 {
@@ -1818,10 +1880,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 		wantResourceDef := &api.Resource{
 			Type: "library.googleapis.com/Shelf",
-			Pattern: [][]api.PathSegment{
+			Pattern: []api.ResourcePattern{
 				{
-					{Literal: strptr("publishers")}, {Variable: api.NewPathVariable("publisher").WithMatch()},
-					{Literal: strptr("shelves")}, {Variable: api.NewPathVariable("shelf").WithMatch()},
+					*api.NewPathSegment().WithLiteral("publishers"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*api.NewPathSegment().WithLiteral("shelves"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
 				},
 			},
 		}
@@ -1840,11 +1904,14 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Check Resource separately to handle 'Self' cycle and ignore Codec
 		wantBookResource := &api.Resource{
 			Type: "library.googleapis.com/Book",
-			Pattern: [][]api.PathSegment{
+			Pattern: []api.ResourcePattern{
 				{
-					{Literal: strptr("publishers")}, {Variable: api.NewPathVariable("publisher").WithMatch()},
-					{Literal: strptr("shelves")}, {Variable: api.NewPathVariable("shelf").WithMatch()},
-					{Literal: strptr("books")}, {Variable: api.NewPathVariable("book").WithMatch()},
+					*api.NewPathSegment().WithLiteral("publishers"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*api.NewPathSegment().WithLiteral("shelves"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*api.NewPathSegment().WithLiteral("books"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("book").WithMatch()),
 				},
 			},
 			Plural:   "books",
@@ -1993,75 +2060,49 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 	}
 	request, err := newCodeGeneratorRequest("testdata", options)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to make API for Protobufj %v", err)
 	}
 	return request
 }
 
 func TestParseResourcePatterns(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		patterns []string
-		want     [][]api.PathSegment
-	}{
-		{
-			name:     "empty",
-			patterns: []string{},
-			want:     nil,
-		},
-		{
-			name:     "single valid",
-			patterns: []string{"publishers/{publisher}/shelves/{shelf}"},
-			want: [][]api.PathSegment{
-				{
-					{Literal: strptr("publishers")},
-					{Variable: api.NewPathVariable("publisher").WithMatch()},
-					{Literal: strptr("shelves")},
-					{Variable: api.NewPathVariable("shelf").WithMatch()},
-				},
+	t.Run("valid patterns", func(t *testing.T) {
+		patterns := []string{
+			"publishers/{publisher}/shelves/{shelf}",
+			"projects/{project}",
+		}
+		want := []api.ResourcePattern{
+			{
+				*api.NewPathSegment().WithLiteral("publishers"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
+				*api.NewPathSegment().WithLiteral("shelves"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
 			},
-		},
-		{
-			name:     "multiple valid",
-			patterns: []string{"publishers/{publisher}/shelves/{shelf}", "projects/{project}"},
-			want: [][]api.PathSegment{
-				{
-					{Literal: strptr("publishers")},
-					{Variable: api.NewPathVariable("publisher").WithMatch()},
-					{Literal: strptr("shelves")},
-					{Variable: api.NewPathVariable("shelf").WithMatch()},
-				},
-				{
-					{Literal: strptr("projects")},
-					{Variable: api.NewPathVariable("project").WithMatch()},
-				},
+			{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
 			},
-		},
-		{
-			name:     "invalid pattern",
-			patterns: []string{"projects/{project=*}/**"},
-			want:     nil,
-		},
-		{
-			name:     "mixed valid and invalid",
-			patterns: []string{"publishers/{publisher}/shelves/{shelf}", "projects/{project=*}/**"},
-			want: [][]api.PathSegment{
-				{
-					{Literal: strptr("publishers")},
-					{Variable: api.NewPathVariable("publisher").WithMatch()},
-					{Literal: strptr("shelves")},
-					{Variable: api.NewPathVariable("shelf").WithMatch()},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := parseResourcePatterns(test.patterns)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
+		}
+		got, err := parseResourcePatterns(patterns)
+		if err != nil {
+			t.Fatalf("parseResourcePatterns() returned an error: %v", err)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("invalid pattern", func(t *testing.T) {
+		patterns := []string{"projects/{project=*}/**"}
+		_, err := parseResourcePatterns(patterns)
+		if err == nil {
+			t.Fatal("parseResourcePatterns() expected an error, but got nil")
+		}
+		want := `failed to parse resource pattern "projects/{project=*}/**"`
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("parseResourcePatterns() returned error %q, want %q", err.Error(), want)
+		}
+	})
 }
 
 func requireProtoc(t *testing.T) {
