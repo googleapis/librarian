@@ -427,6 +427,9 @@ func deriveLibraryName(apiPath string) string {
 	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
 }
 
+// findCargos returns all Cargo.toml files within the given path.
+//
+// A file is filtered if the file lives in a path that contains src/generated.
 func findCargos(path string) ([]string, error) {
 	var files []string
 	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
