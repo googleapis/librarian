@@ -319,6 +319,46 @@ func TestDeriveLibraryName(t *testing.T) {
 	}
 }
 
+func TestFindCargos(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		path    string
+		want    []string
+		wantErr error
+	}{
+		{
+			name: "success",
+			path: "testdata/find-cargos/success",
+			want: []string{
+				"testdata/find-cargos/success/Cargo.toml",
+			},
+		},
+		{
+			name:    "invalid_path",
+			path:    "testdata/find-cargos/non-existent-path",
+			wantErr: os.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := findCargos(test.path)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("got error %v, want nil", err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuildVeneer(t *testing.T) {
 	for _, test := range []struct {
 		name    string
