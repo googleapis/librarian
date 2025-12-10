@@ -31,17 +31,53 @@ func TestCreateCommand(t *testing.T) {
 		newLibSpec      = "google/cloud/storage/v1"
 		newLibSC        = "google/cloud/storage/v1/storage_v1.yaml"
 	)
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	googleapisDir := filepath.Join(wd, "testdata", "googleapis")
 
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
+	for _, test := range []struct {
+		name     string
+		args     []string
+		wantErr  error
+		language string
+	}{
+		{
+			name:    "no args",
+			args:    []string{"librarian", "create"},
+			wantErr: errMissingNameFlag,
+		},
+		{
+			name:     "run create for existing library",
+			args:     []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
+			language: "testhelper",
+		},
+		{
+			name:     "missing service-config",
+			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--specification-source", newLibSpec},
+			language: "rust",
+			wantErr:  errServiceConfigAndSpecRequired,
+		},
+		{
+			name:     "missing specification-source",
+			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC},
+			language: "rust",
+			wantErr:  errServiceConfigAndSpecRequired,
+		},
+		{
+			name:     "create new library",
+			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
+			language: "rust",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			wd, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			googleapisDir := filepath.Join(wd, "testdata", "googleapis")
 
-	configContent := fmt.Sprintf(`language: rust
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configPath := filepath.Join(tempDir, librarianConfigPath)
+
+			configContent := fmt.Sprintf(`language: %s
 sources:
   googleapis:
     dir: %s
@@ -53,35 +89,16 @@ libraries:
       - path: google/cloud/speech/v1p1beta1
       - path: google/cloud/speech/v2
       - path: grafeas/v1
-`, googleapisDir, libExists, libExistsOutput)
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
+`, test.language, googleapisDir, libExists, libExistsOutput)
+			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
 
-	// Create the output directories that are referenced in the config
-	if err := os.MkdirAll(filepath.Join(tempDir, libExistsOutput), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	for _, test := range []struct {
-		name    string
-		args    []string
-		wantErr error
-		want    []string
-	}{
-		{
-			name:    "no args",
-			args:    []string{"librarian", "create"},
-			wantErr: errMissingNameFlag,
-		},
-		{
-			name: "run create for existing library",
-			args: []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
-			want: []string{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			err := Run(t.Context(), test.args...)
+			// Create the output directories that are referenced in the config
+			if err := os.MkdirAll(filepath.Join(tempDir, libExistsOutput), 0755); err != nil {
+				t.Fatal(err)
+			}
+			err = Run(t.Context(), test.args...)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("want error %v, got %v", test.wantErr, err)

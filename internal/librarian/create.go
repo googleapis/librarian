@@ -79,35 +79,36 @@ func runCreate(ctx context.Context, name, specSource, serviceConfig, output, spe
 	if err != nil {
 		return err
 	}
+	switch cfg.Language {
+	case "testhelper", "rust":
+		if output == "" {
+			if cfg.Default == nil || cfg.Default.Output == "" {
+				return errOutputFlagRequired
+			}
+			output = rust.DefaultOutput(specSource, cfg.Default.Output)
+		}
+		libraryExists := false
+		for _, lib := range cfg.Libraries {
+			if lib.Name == name {
 
-	if cfg.Language != "rust" {
+				libraryExists = true
+				break
+			}
+		}
+
+		if libraryExists {
+			return runGenerate(ctx, false, name)
+		}
+
+		if (serviceConfig == "") || (specSource == "") {
+			return errServiceConfigAndSpecRequired
+		}
+
+		// TODO: port over sidekick rustGenerate logic to create a new librarian
+		slog.Info("Creating new Rust library (not implemented yet)")
+		return nil
+	default:
 		return errRunningCreateOnNonRustLanguage
 	}
 
-	if output == "" {
-		if cfg.Default == nil || cfg.Default.Output == "" {
-			return errOutputFlagRequired
-		}
-		output = rust.DefaultOutput(specSource, cfg.Default.Output)
-	}
-	libraryExists := false
-	for _, lib := range cfg.Libraries {
-		if lib.Name == name {
-
-			libraryExists = true
-			break
-		}
-	}
-
-	if libraryExists {
-		return runGenerate(ctx, false, name)
-	}
-
-	if (serviceConfig == "") || (specSource == "") {
-		return errServiceConfigAndSpecRequired
-	}
-
-	// TODO: port over sidekick rustGenerate logic to create a new librarian
-	slog.Info("Creating new Rust library (not implemented yet)")
-	return nil
 }
