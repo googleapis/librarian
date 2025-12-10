@@ -459,9 +459,11 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 			Name:    name,
 			Output:  dir,
 			Version: cargo.Package.Version,
-			Rust: &config.RustCrate{
+		}
+		if rustModules != nil {
+			veneers[name].Rust = &config.RustCrate{
 				Modules: rustModules,
-			},
+			}
 		}
 	}
 
