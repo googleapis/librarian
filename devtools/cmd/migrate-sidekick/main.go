@@ -215,11 +215,11 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 	return dep
 }
 
-// findSidekickFiles finds all .sidekick.toml files in the repository.
-func findSidekickFiles(repoPath string) ([]string, error) {
+// findSidekickFiles finds all .sidekick.toml files within the given path.
+func findSidekickFiles(repo string) ([]string, error) {
 	var files []string
 
-	generatedPath := filepath.Join(repoPath, "src", "generated")
+	generatedPath := filepath.Join(repo, "src", "generated")
 	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errSrcNotFound
