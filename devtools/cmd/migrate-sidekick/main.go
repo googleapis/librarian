@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -95,8 +96,6 @@ func run(args []string) error {
 	}
 	repoPath := flagSet.Arg(0)
 
-	slog.Info("Reading sidekick.toml...", "path", repoPath)
-
 	// Read root .sidekick.toml for defaults
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
@@ -114,6 +113,18 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
+
+	cargoFiles, err := findCargos(repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to find Cargo.toml files: %w", err)
+	}
+
+	veneers, err := buildVeneer(cargoFiles)
+	if err != nil {
+		return fmt.Errorf("failed to build veneers: %w", err)
+	}
+
+	maps.Copy(libraries, veneers)
 
 	cfg := buildConfig(libraries, defaults)
 
@@ -272,15 +283,9 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
-		cargoPath := filepath.Join(dir, "Cargo.toml")
-		cargoData, err := os.ReadFile(cargoPath)
+		cargo, err := readCargo(filepath.Join(dir, cargoFile))
 		if err != nil {
-			return nil, fmt.Errorf("failed to read %s: %w", cargoPath, err)
-		}
-
-		var cargo CargoConfig
-		if err := toml.Unmarshal(cargoData, &cargo); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal %s: %w", cargoPath, err)
+			return nil, fmt.Errorf("failed to read cargo: %w", err)
 		}
 
 		libraryName := cargo.Package.Name
@@ -420,6 +425,95 @@ func deriveLibraryName(apiPath string) string {
 	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
 }
 
+func findCargos(path string) (files []string, err error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if entry.Name() == cargoFile {
+			files = append(files, filepath.Join(path, entry.Name()))
+		}
+	}
+	return files, nil
+}
+
+func buildVeneer(files []string) (map[string]*config.Library, error) {
+	veneers := make(map[string]*config.Library)
+	for _, file := range files {
+		cargo, err := readCargo(file)
+		if err != nil {
+			return nil, err
+		}
+		dir := filepath.Dir(file)
+		rustModules, err := buildModules(dir)
+		if err != nil {
+			return nil, err
+		}
+		name := cargo.Package.Name
+		veneers[name] = &config.Library{
+			Name:    name,
+			Output:  dir,
+			Version: cargo.Package.Version,
+			Rust: &config.RustCrate{
+				Modules: rustModules,
+			},
+		}
+	}
+
+	return veneers, nil
+}
+
+func buildModules(path string) ([]*config.RustModule, error) {
+	var modules []*config.RustModule
+	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return errSrcNotFound
+		}
+
+		if d.IsDir() || d.Name() != sidekickFile {
+			return nil
+		}
+
+		sidekick, err := readSidekick(path)
+		if err != nil {
+			return err
+		}
+
+		includeIds, _ := sidekick.Source["include-ids"].(string)
+		includeList, _ := sidekick.Source["include-list"].(string)
+
+		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
+		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
+		routingRequired, _ := sidekick.Codec["routing-required"].(string)
+		modulePath, _ := sidekick.Codec["module-path"].(string)
+		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
+		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
+		templateOverride, _ := sidekick.Codec["template-override"].(string)
+
+		modules = append(modules, &config.RustModule{
+			HasVeneer:              strToBool(hasVeneer),
+			IncludedIds:            strToSlice(includeIds),
+			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
+			IncludeList:            includeList,
+			ModulePath:             modulePath,
+			NameOverrides:          nameOverrides,
+			Output:                 filepath.Dir(path),
+			PostProcessProtos:      postProcessProtos,
+			RoutingRequired:        strToBool(routingRequired),
+			Template:               strings.TrimPrefix(templateOverride, "templates/"),
+		})
+
+		return nil
+	})
+
+	return modules, err
+}
+
 // buildConfig builds the complete config from libraries.
 func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
 	cfg := defaults
@@ -503,19 +597,30 @@ func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
 }
 
-func findCargos(path string) (files []string, err error) {
-	entries, err := os.ReadDir(path)
+func readSidekick(file string) (*SidekickConfig, error) {
+	data, err := os.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read %s: %w", file, err)
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if entry.Name() == cargoFile {
-			files = append(files, filepath.Join(path, entry.Name()))
-		}
+	var sidekick SidekickConfig
+	if err := toml.Unmarshal(data, &sidekick); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
 	}
-	return files, nil
+
+	return &sidekick, nil
+}
+
+func readCargo(file string) (*CargoConfig, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", file, err)
+	}
+
+	var cargo CargoConfig
+	if err := toml.Unmarshal(data, &cargo); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
+	}
+
+	return &cargo, nil
 }
