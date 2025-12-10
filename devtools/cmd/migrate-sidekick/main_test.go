@@ -327,7 +327,7 @@ func TestBuildVeneer(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "no_sidekick_file",
+			name: "success",
 			files: []string{
 				"testdata/build-veneer/success/lib-1/Cargo.toml",
 				"testdata/build-veneer/success/lib-2/Cargo.toml",
@@ -340,8 +340,13 @@ func TestBuildVeneer(t *testing.T) {
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
-								HasVeneer:              true,
-								IncludedIds:            []string{},
+								HasVeneer: true,
+								IncludedIds: []string{
+									".google.storage.v2.Storage.DeleteBucket",
+									".google.storage.v2.Storage.GetBucket",
+									".google.storage.v2.Storage.CreateBucket",
+									".google.storage.v2.Storage.ListBuckets",
+								},
 								IncludeGrpcOnlyMethods: true,
 								NameOverrides:          ".google.storage.v2.Storage=StorageControl",
 								Output:                 "testdata/build-veneer/success/lib-1/dir-1",
