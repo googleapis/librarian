@@ -219,7 +219,7 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 func findSidekickFiles(repoPath string) ([]string, error) {
 	var files []string
 
-	generatedPath := filepath.Join(repoPath, "src", "generated")
+	generatedPath := filepath.Join(repoPath, "src")
 	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errSrcNotFound
