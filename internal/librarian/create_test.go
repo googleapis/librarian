@@ -40,6 +40,7 @@ func TestCreateCommand(t *testing.T) {
 		skipCreatingYaml bool
 		wantLibs         []string
 		wantErr          error
+		defaultOutput    string
 	}{
 		{
 			name:    "no args",
@@ -76,6 +77,25 @@ func TestCreateCommand(t *testing.T) {
 			skipCreatingYaml: true,
 			wantErr:          errNoYaml,
 		},
+		{
+			name:     "unsupported language",
+			args:     []string{"librarian", "create", "--name", newLib},
+			language: "unsupported-lang",
+			wantErr:  errUnsupportedLanguage,
+		},
+		{
+			name:     "output flag required",
+			args:     []string{"librarian", "create", "--name", newLib, "--service-config", newLibSC, "--specification-source", newLibSpec},
+			language: "rust",
+			wantErr:  errOutputFlagRequired,
+		},
+		{
+			name:          "default output directory used",
+			args:          []string{"librarian", "create", "--name", newLib, "--service-config", newLibSC, "--specification-source", newLibSpec},
+			language:      "rust",
+			wantLibs:      []string{newLib},
+			defaultOutput: newLibOutput,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			wd, err := os.Getwd()
@@ -83,15 +103,17 @@ func TestCreateCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 			googleapisDir := filepath.Join(wd, "testdata", "googleapis")
+			tempDir := t.TempDir()
 			if !test.skipCreatingYaml {
 				// Create a temporary librarian.yaml for the test
-				tempDir := t.TempDir()
 				t.Chdir(tempDir)
 				configPath := filepath.Join(tempDir, librarianConfigPath)
 				configContent := fmt.Sprintf(`language: %s
 sources:
   googleapis:
     dir: %s
+default:
+  output: %s
 libraries:
   - name: %s
     output: %s
@@ -100,7 +122,7 @@ libraries:
       - path: google/cloud/speech/v1p1beta1
       - path: google/cloud/speech/v2
       - path: grafeas/v1
-`, test.language, googleapisDir, libExists, libExistsOutput)
+`, test.language, googleapisDir, test.defaultOutput, libExists, libExistsOutput)
 				if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -124,7 +146,6 @@ libraries:
 				libExists: libExistsOutput,
 				newLib:    newLibOutput,
 			}
-			tempDir := os.Getenv("PWD") // or store it before Chdir
 			validateGeneration(t, test.wantLibs, allLibraries, tempDir)
 		})
 	}

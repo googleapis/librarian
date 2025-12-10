@@ -27,11 +27,11 @@ import (
 )
 
 var (
-	errRunningCreateOnNonRustLanguage = errors.New("library creation is only supported for Rust libraries")
-	errOutputFlagRequired             = errors.New("output flag is required when default.output is not set in librarian.yaml")
-	errServiceConfigAndSpecRequired   = errors.New("both service-config and specification-source flags are required for creating a new library")
-	errMissingNameFlag                = errors.New("name flag is required to create a new library")
-	errNoYaml                         = errors.New("unable to read librarian.yaml")
+	errUnsupportedLanguage          = errors.New("library creation is not supported for the specified language")
+	errOutputFlagRequired           = errors.New("output flag is required when default.output is not set in librarian.yaml")
+	errServiceConfigAndSpecRequired = errors.New("both service-config and specification-source flags are required for creating a new library")
+	errMissingNameFlag              = errors.New("name flag is required to create a new library")
+	errNoYaml                       = errors.New("unable to read librarian.yaml")
 )
 
 func createCommand() *cli.Command {
@@ -110,7 +110,7 @@ func runCreate(ctx context.Context, name, specSource, serviceConfig, output, spe
 		slog.InfoContext(ctx, "Creating new Rust library", "name", name, "specSource", specSource, "serviceConfig", serviceConfig, "output", output, "specFormat", specFormat)
 		return nil
 	default:
-		return errRunningCreateOnNonRustLanguage
+		return errUnsupportedLanguage
 	}
 
 }
