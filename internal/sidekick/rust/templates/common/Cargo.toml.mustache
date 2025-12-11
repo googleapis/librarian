@@ -49,6 +49,14 @@ default = [
 # Enables `client::{{Codec.Name}}` and all the types it depends on.
 {{Codec.FeatureName}} = []
 {{/Codec.Services}}
+
+{{! We want docs for all features, not just the default features. }}
+[package.metadata.docs.rs]
+features = [
+{{#Codec.Services}}
+  "{{Codec.FeatureName}}",
+{{/Codec.Services}}
+]
 {{/Codec.PerServiceFeatures}}
 
 [dependencies]
