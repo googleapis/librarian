@@ -77,15 +77,19 @@ func createCommand() *cli.Command {
 }
 
 func runCreate(ctx context.Context, name, specSource, serviceConfig, output, specFormat string) error {
+	return runCreateWithGenerator(ctx, name, specSource, serviceConfig, output, specFormat, &Generate{})
+}
+
+func runCreateWithGenerator(ctx context.Context, name, specSource, serviceConfig, output, specFormat string, gen Generator) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w %v", errNoYaml, err)
 	}
 	switch cfg.Language {
-	case "testhelper", "rust":
+	case "rust":
 		for _, lib := range cfg.Libraries {
 			if lib.Name == name {
-				return runGenerate(ctx, false, name)
+				return gen.Run(ctx, false, name)
 			}
 		}
 

@@ -106,41 +106,37 @@ libraries:
 				t.Fatal(err)
 			}
 
-			validateGeneration(t, test.want, allLibraries, tempDir)
+			generated := make(map[string]bool)
+			for _, libName := range test.want {
+				generated[libName] = true
+			}
+			for libName, outputDir := range allLibraries {
+				readmePath := filepath.Join(tempDir, outputDir, "README.md")
+				shouldExist := generated[libName]
+				_, err = os.Stat(readmePath)
+				if !shouldExist {
+					if err == nil {
+						t.Fatalf("expected file for %q to not be generated, but it exists", libName)
+					}
+					if !os.IsNotExist(err) {
+						t.Fatalf("expected file for %q to not be generated, but got unexpected error: %v", libName, err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("expected file to be generated for %q, but got error: %v", libName, err)
+				}
+
+				got, err := os.ReadFile(readmePath)
+				if err != nil {
+					t.Fatalf("could not read generated file for %q: %v", libName, err)
+				}
+				want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
+				if diff := cmp.Diff(want, string(got)); diff != "" {
+					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
+				}
+			}
 		})
-	}
-}
-
-func validateGeneration(t *testing.T, generatedLibs []string, allLibraries map[string]string, tempDir string) {
-	generated := make(map[string]bool)
-	for _, libName := range generatedLibs {
-		generated[libName] = true
-	}
-	for libName, outputDir := range allLibraries {
-		readmePath := filepath.Join(tempDir, outputDir, "README.md")
-		shouldExist := generated[libName]
-		_, err := os.Stat(readmePath)
-		if !shouldExist {
-			if err == nil {
-				t.Fatalf("expected file for %q to not be generated, but it exists", libName)
-			}
-			if !os.IsNotExist(err) {
-				t.Fatalf("expected file for %q to not be generated, but got unexpected error: %v", libName, err)
-			}
-			return
-		}
-		if err != nil {
-			t.Fatalf("expected file to be generated for %q, but got error: %v", libName, err)
-		}
-
-		got, err := os.ReadFile(readmePath)
-		if err != nil {
-			t.Fatalf("could not read generated file for %q: %v", libName, err)
-		}
-		want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
-		if diff := cmp.Diff(want, string(got)); diff != "" {
-			t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
-		}
 	}
 }
 

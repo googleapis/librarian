@@ -15,11 +15,14 @@
 package librarian
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -31,6 +34,59 @@ const (
 	newLibSC        = "google/cloud/storage/v1/storage_v1.yaml"
 )
 
+type mockGenerator struct {
+	called   bool
+	callArgs struct {
+		all         bool
+		libraryName string
+	}
+}
+
+func (m *mockGenerator) Run(ctx context.Context, all bool, libraryName string) error {
+	m.called = true
+	m.callArgs.all = all
+	m.callArgs.libraryName = libraryName
+	return nil
+}
+
+func TestCreateCommandForExistingLib(t *testing.T) {
+
+	for _, test := range []struct {
+		name     string
+		libName  string
+		output   string
+		language string
+	}{
+		{
+			name:     "run create for existing library",
+			libName:  libExists,
+			output:   libExistsOutput,
+			language: "rust",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			createLibrarianYaml(t, test.libName, test.output, test.language, "")
+			var gen Generator = &mockGenerator{}
+
+			err := runCreateWithGenerator(context.Background(), test.libName, "", "", test.output, "protobuf", gen)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mock := gen.(*mockGenerator)
+			if !mock.called {
+				t.Error("expected mockGenerator.Run to be called")
+			}
+			if mock.callArgs.libraryName != test.libName {
+				t.Errorf("expected libraryName %s, got %s", test.libName, mock.callArgs.libraryName)
+			}
+
+		})
+	}
+
+}
+
 func TestCreateCommand(t *testing.T) {
 
 	for _, test := range []struct {
@@ -38,7 +94,6 @@ func TestCreateCommand(t *testing.T) {
 		args             []string
 		language         string
 		skipCreatingYaml bool
-		wantLibs         []string
 		wantErr          error
 		defaultOutput    string
 		libOutputFolder  string
@@ -47,13 +102,6 @@ func TestCreateCommand(t *testing.T) {
 			name:    "no args",
 			args:    []string{"librarian", "create"},
 			wantErr: errMissingNameFlag,
-		},
-		{
-			name:            "run create for existing library",
-			args:            []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
-			wantLibs:        []string{libExists},
-			language:        "testhelper",
-			libOutputFolder: libExistsOutput,
 		},
 		{
 			name:     "missing service-config",
@@ -98,42 +146,10 @@ func TestCreateCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			wd, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			googleapisDir := filepath.Join(wd, "testdata", "googleapis")
-			tempDir := t.TempDir()
 			if !test.skipCreatingYaml {
-				// Create a temporary librarian.yaml for the test
-				t.Chdir(tempDir)
-				configPath := filepath.Join(tempDir, librarianConfigPath)
-				configContent := fmt.Sprintf(`language: %s
-sources:
-  googleapis:
-    dir: %s
-default:
-  output: %s
-libraries:
-  - name: %s
-    output: %s
-    apis:
-      - path: google/cloud/speech/v1
-      - path: google/cloud/speech/v1p1beta1
-      - path: google/cloud/speech/v2
-      - path: grafeas/v1
-`, test.language, googleapisDir, test.defaultOutput, libExists, libExistsOutput)
-				if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-					t.Fatal(err)
-				}
-
-				if test.libOutputFolder != "" {
-					if err := os.MkdirAll(filepath.Join(tempDir, test.libOutputFolder), 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
+				createLibrarianYaml(t, libExists, libExistsOutput, test.language, test.defaultOutput)
 			}
-			err = Run(t.Context(), test.args...)
+			err := Run(t.Context(), test.args...)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("want error %v, got %v", test.wantErr, err)
@@ -143,11 +159,44 @@ libraries:
 			if err != nil {
 				t.Fatal(err)
 			}
-			allLibraries := map[string]string{
-				libExists: libExistsOutput,
-				newLib:    newLibOutput,
-			}
-			validateGeneration(t, test.wantLibs, allLibraries, tempDir)
 		})
+	}
+}
+
+func createLibrarianYaml(t *testing.T, libName string, libOutput string, language string, defaultOutput string) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	config := config.Config{
+		Language: language,
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Dir: "/googleapis/testdata",
+			},
+		},
+		Default: &config.Default{
+			Output: defaultOutput,
+		},
+		Libraries: []*config.Library{
+			{
+				Name:   libName,
+				Output: libOutput,
+			},
+		},
+	}
+
+	configBytes, err := yaml.Marshal(&config)
+	if err != nil {
+		t.Fatalf("Failed to marshal YAML: %v", err)
+	}
+
+	configContent := string(configBytes)
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.MkdirAll(filepath.Join(tempDir, libOutput), 0755); err != nil {
+		t.Fatal(err)
 	}
 }
