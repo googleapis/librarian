@@ -234,6 +234,9 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 
 func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {
 	codec := newLibraryCodec(library)
+	if module.GenerateSetterSamples {
+		codec["generate-setter-samples"] = "true"
+	}
 	if module.HasVeneer {
 		codec["has-veneer"] = "true"
 	}

@@ -510,8 +510,13 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
 		templateOverride, _ := sidekick.Codec["template-override"].(string)
+		generateSetterSamples, ok := sidekick.Codec["generate-setter-samples"].(string)
+		if !ok {
+			generateSetterSamples = "true"
+		}
 
 		modules = append(modules, &config.RustModule{
+			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
 			IncludedIds:            strToSlice(includedIds),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),

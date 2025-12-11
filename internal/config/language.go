@@ -43,6 +43,9 @@ type RustDefault struct {
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
+	// GenerateSetterSamples indicates whether to generate setter samples.
+	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
+
 	// HasVeneer indicates whether this module has a hand-written wrapper.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
