@@ -132,7 +132,7 @@ func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
 
 func tidyRustConfig(lib *config.Library) *config.Library {
 	if lib.Rust != nil && lib.Rust.Modules != nil {
-		slices.DeleteFunc(lib.Rust.Modules, func(module *config.RustModule) bool {
+		lib.Rust.Modules = slices.DeleteFunc(lib.Rust.Modules, func(module *config.RustModule) bool {
 			return module.Source == "none" && module.Template == ""
 		})
 	}

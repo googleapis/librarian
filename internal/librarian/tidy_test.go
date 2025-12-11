@@ -298,3 +298,59 @@ libraries:
 		t.Errorf("expected output to be empty, got %q", cfg.Libraries[0].Output)
 	}
 }
+
+func TestTidyLanguageConfig_Rust(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		configContent string
+		wantNumLibs   int
+		wantNumMods   int
+	}{
+		{
+			name: "empty_module_removed",
+			configContent: `
+language: rust
+default:
+  output: generated/
+libraries:
+  - name: google-cloud-storage
+    output: src/storage
+    rust:
+      modules:
+      - output: src/storage/src/generated/protos/storage
+        source: google/storage/v2
+        template: prost
+      - output: src/storage/control
+        source: none
+        template: ""`,
+			wantNumLibs: 1,
+			wantNumMods: 1, // Modules should be removed
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configPath := filepath.Join(tempDir, librarianConfigPath)
+
+			if err := os.WriteFile(configPath, []byte(test.configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := Run(t.Context(), "librarian", "tidy"); err != nil {
+				t.Fatal(err)
+			}
+
+			cfg, err := yaml.Read[config.Config](configPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(cfg.Libraries) != test.wantNumLibs {
+				t.Fatalf("wrong number of libraries")
+			}
+			lib := cfg.Libraries[0]
+			if len(lib.Rust.Modules) != test.wantNumMods {
+				t.Fatalf("wrong number of modules")
+			}
+		})
+	}
+}
