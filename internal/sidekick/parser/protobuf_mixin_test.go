@@ -52,7 +52,10 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.cloud.location.Locations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
@@ -120,7 +123,10 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.iam.v1.IAMPolicy" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
@@ -194,7 +200,10 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_service.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
@@ -278,7 +287,10 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_noempty_mixin.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_noempty_mixin.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
@@ -361,7 +373,10 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			},
 		},
 	}
-	test := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_duplicate_mixin.proto"))
+	test, err := makeAPIForProtobuf(serviceConfig, newTestCodeGeneratorRequest(t, "test_duplicate_mixin.proto"))
+	if err != nil {
+		t.Fatalf("Failed to make API for Protobuf: %v", err)
+	}
 	for _, service := range test.Services {
 		if service.ID == ".google.longrunning.Operations" {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)

@@ -244,12 +244,17 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 		// If no channels are specified, create an empty channel first
 		lib.Channels = append(lib.Channels, &config.Channel{})
 	}
-	for _, ch := range lib.Channels {
-		if ch.Path == "" {
-			ch.Path = deriveChannelPath(language, lib)
-		}
-		if ch.ServiceConfig == "" {
-			ch.ServiceConfig = deriveServiceConfig(ch.Path)
+
+	// The googleapis path of a veneer library lives in language-specific configurations,
+	// so we only need to derive the path and service config for non-veneer libraries.
+	if !lib.Veneer {
+		for _, ch := range lib.Channels {
+			if ch.Path == "" {
+				ch.Path = deriveChannelPath(language, lib)
+			}
+			if ch.ServiceConfig == "" {
+				ch.ServiceConfig = deriveServiceConfig(ch.Path)
+			}
 		}
 	}
 
@@ -334,7 +339,15 @@ func cleanOutput(dir string, keep []string) error {
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("%s: file %q in keep list does not exist", dir, k)
 		}
-		keepSet[k] = true
+		// Effectively get a canonical relative path. While in most cases
+		// this will be equal to k, it might not be - in particular,
+		// on Windows the directory separator in paths returned by Rel
+		// will be a backslash.
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		keepSet[rel] = true
 	}
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

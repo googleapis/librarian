@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -48,7 +49,7 @@ func ParseProtobuf(cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	return makeAPIForProtobuf(serviceConfig, request), nil
+	return makeAPIForProtobuf(serviceConfig, request)
 }
 
 func newCodeGeneratorRequest(source string, options map[string]string) (_ *pluginpb.CodeGeneratorRequest, err error) {
@@ -180,7 +181,7 @@ const (
 	enumDescriptorValue = 2
 )
 
-func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.CodeGeneratorRequest) *api.API {
+func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.CodeGeneratorRequest) (*api.API, error) {
 	var (
 		mixinFileDesc       []*descriptorpb.FileDescriptorProto
 		enabledMixinMethods mixinMethods = make(map[string]bool)
@@ -215,14 +216,18 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fFQN := "." + f.GetPackage()
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			_ = processMessage(state, m, mFQN, f.GetPackage(), nil)
+			if _, err := processMessage(state, m, mFQN, f.GetPackage(), nil); err != nil {
+				return nil, err
+			}
 		}
 
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
 			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
 		}
-		processResourceDefinitions(f, result)
+		if err := processResourceDefinitions(f, result); err != nil {
+			return nil, err
+		}
 	}
 
 	// Then we need to add the messages, enums and services to the list of
@@ -257,9 +262,11 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			service := processService(state, s, sFQN, f.GetPackage())
 			for _, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
-				if method := processMethod(state, m, mFQN, f.GetPackage(), sFQN); method != nil {
-					service.Methods = append(service.Methods, method)
+				method, err := processMethod(state, m, mFQN, f.GetPackage(), sFQN)
+				if err != nil {
+					return nil, err
 				}
+				service.Methods = append(service.Methods, method)
 			}
 			fileServices = append(fileServices, service)
 		}
@@ -317,10 +324,12 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 						// define the mixin method in the code.
 						continue
 					}
-					if method := processMethod(state, m, mFQN, service.Package, sFQN); method != nil {
-						applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin)
-						service.Methods = append(service.Methods, method)
+					method, err := processMethod(state, m, mFQN, service.Package, sFQN)
+					if err != nil {
+						return nil, err
 					}
+					applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin)
+					service.Methods = append(service.Methods, method)
 				}
 			}
 		}
@@ -331,7 +340,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	}
 	updatePackageName(result)
 	updateAutoPopulatedFields(serviceConfig, result)
-	return result
+	return result, nil
 }
 
 // requiresLongrunningMixin finds out if any method returns a LRO. This is used
@@ -437,16 +446,14 @@ func processService(state *api.APIState, s *descriptorpb.ServiceDescriptorProto,
 	return service
 }
 
-func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID string) *api.Method {
+func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID string) (*api.Method, error) {
 	pathInfo, err := parsePathInfo(m, state)
 	if err != nil {
-		slog.Error("unsupported http method", "method", m, "error", err)
-		return nil
+		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
 	}
 	routing, err := parseRoutingAnnotations(mFQN, m)
 	if err != nil {
-		slog.Error("cannot parse routing annotations", "method", m, "err", err)
-		return nil
+		return nil, fmt.Errorf("cannot parse routing annotations for %q: %w", mFQN, err)
 	}
 	outputTypeID := m.GetOutputType()
 	method := &api.Method{
@@ -464,10 +471,10 @@ func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, m
 		SourceServiceID:     serviceID,
 	}
 	state.MethodByID[mFQN] = method
-	return method
+	return method, nil
 }
 
-func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) *api.Message {
+func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
@@ -481,12 +488,17 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		if opts.GetMapEntry() {
 			message.IsMap = true
 		}
-		processResourceAnnotation(opts, message)
+		if err := processResourceAnnotation(opts, message); err != nil {
+			return nil, err
+		}
 	}
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
-			nmsg := processMessage(state, nm, nmFQN, packagez, message)
+			nmsg, err := processMessage(state, nm, nmFQN, packagez, message)
+			if err != nil {
+				return nil, err
+			}
 			message.Messages = append(message.Messages, nmsg)
 		}
 	}
@@ -514,7 +526,9 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 			AutoPopulated: protobufIsAutoPopulated(mf),
 			Behavior:      protobufFieldBehavior(mf),
 		}
-		processResourceReference(mf, field)
+		if err := processResourceReference(mf, field); err != nil {
+			return nil, err
+		}
 		normalizeTypes(state, mf, field)
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf {
@@ -536,46 +550,59 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		message.OneOfs = message.OneOfs[:oneOfIdx]
 	}
 
-	return message
+	return message, nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) error {
 	if !proto.HasExtension(opts, annotations.E_Resource) {
-		return
+		return nil
 	}
 	ext := proto.GetExtension(opts, annotations.E_Resource)
 	res, ok := ext.(*annotations.ResourceDescriptor)
 	if !ok {
-		return
+		return fmt.Errorf("in message %q: unexpected type for E_Resource extension: %T", message.ID, ext)
 	}
+
+	patterns, err := parseResourcePatterns(res.GetPattern())
+	if err != nil {
+		return fmt.Errorf("in message %q: %w", message.ID, err)
+	}
+
 	message.Resource = &api.Resource{
 		Type:     res.GetType(),
-		Pattern:  res.GetPattern(),
+		Patterns: patterns,
 		Plural:   res.GetPlural(),
 		Singular: res.GetSingular(),
 		Self:     message,
 	}
+	return nil
 }
 
-func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) {
+func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) error {
 	if f.Options == nil || !proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
-		return
+		return nil
 	}
 
 	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
 	res, ok := ext.([]*annotations.ResourceDescriptor)
 	if !ok {
-		return
+		return fmt.Errorf("unexpected type for E_ResourceDefinition extension: %T", ext)
 	}
 
 	for _, r := range res {
+		patterns, err := parseResourcePatterns(r.GetPattern())
+		if err != nil {
+			return fmt.Errorf("in file %q: %w", f.GetName(), err)
+		}
+
 		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
 			Type:     r.GetType(),
-			Pattern:  r.GetPattern(),
+			Patterns: patterns,
 			Plural:   r.GetPlural(),
 			Singular: r.GetSingular(),
 		})
 	}
+	return nil
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
@@ -591,22 +618,23 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 // distinction correctly. Future work should involve creating a more robust
 // model that correctly determines the primary resource for a method, using
 // `child_type` when it is present for collection-based methods.
-func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) {
+func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.Field) error {
 	if f.Options == nil {
-		return
+		return nil
 	}
 	if !proto.HasExtension(f.Options, annotations.E_ResourceReference) {
-		return
+		return nil
 	}
 	ext := proto.GetExtension(f.Options, annotations.E_ResourceReference)
 	ref, ok := ext.(*annotations.ResourceReference)
 	if !ok {
-		return
+		return fmt.Errorf("in field %q: unexpected type for E_ResourceReference extension: %T", field.ID, ext)
 	}
 	field.ResourceReference = &api.ResourceReference{
 		Type:      ref.Type,
 		ChildType: ref.ChildType,
 	}
+	return nil
 }
 
 func processEnum(state *api.APIState, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {
@@ -706,6 +734,18 @@ func addEnumDocumentation(state *api.APIState, p []int32, doc string, eFQN strin
 	} else {
 		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}
+}
+
+func parseResourcePatterns(patterns []string) ([]api.ResourcePattern, error) {
+	var parsedPatterns []api.ResourcePattern
+	for _, p := range patterns {
+		tmpl, err := httprule.ParseResourcePattern(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resource pattern %q: %w", p, err)
+		}
+		parsedPatterns = append(parsedPatterns, tmpl.Segments)
+	}
+	return parsedPatterns, nil
 }
 
 // trimLeadingSpacesInDocumentation removes the leading spaces from each line in the documentation.

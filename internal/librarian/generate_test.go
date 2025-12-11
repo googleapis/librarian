@@ -254,10 +254,19 @@ func TestPrepareLibrary(t *testing.T) {
 			name:              "rust with no channels creates default and derives path",
 			language:          "rust",
 			channels:          nil,
-			wantErr:           false,
 			wantOutput:        "src/generated/cloud/test/v1",
 			wantChannelPath:   "google/cloud/test/v1",
 			wantServiceConfig: "google/cloud/test/v1/test_v1.yaml",
+		},
+		{
+			name:              "veneer rust with no channels does not derive path and service config",
+			language:          "rust",
+			output:            "src/storage/test/v1",
+			veneer:            true,
+			channels:          nil,
+			wantOutput:        "src/storage/test/v1",
+			wantChannelPath:   "",
+			wantServiceConfig: "",
 		},
 		{
 			name:    "veneer without output returns error",
@@ -379,6 +388,16 @@ func TestCleanOutput(t *testing.T) {
 			files: []string{"Cargo.toml", "README.md", "src/lib.rs", "src/operation.rs", "src/endpoint.rs"},
 			keep:  []string{"src/operation.rs", "src/endpoint.rs"},
 			want:  []string{"src/endpoint.rs", "src/operation.rs"},
+		},
+		{
+			// While it would definitely be odd to use "./" here, the
+			// most common case for canonicalizing is for Windows where
+			// the directory separator is a backslash. This test ensures
+			// the logic is tested even on Unix.
+			name:  "keep entries are canonicalized",
+			files: []string{"Cargo.toml", "README.md", "src/lib.rs"},
+			keep:  []string{"./Cargo.toml"},
+			want:  []string{"Cargo.toml"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
