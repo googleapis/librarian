@@ -132,6 +132,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.RoutingRequired {
 		codec["routing-required"] = "true"
 	}
+	if rust.GenerateSetterSamples {
+		codec["generate-setter-samples"] = "true"
+	}
 	if rust.NameOverrides != "" {
 		codec["name-overrides"] = rust.NameOverrides
 	}
@@ -155,9 +158,6 @@ func newLibraryCodec(library *config.Library) map[string]string {
 		}
 		if len(library.Rust.DisabledClippyWarnings) > 0 {
 			codec["disabled-clippy-warnings"] = strings.Join(library.Rust.DisabledClippyWarnings, ",")
-		}
-		if library.Rust.GenerateSetterSamples {
-			codec["generate-setter-samples"] = "true"
 		}
 	}
 	return codec

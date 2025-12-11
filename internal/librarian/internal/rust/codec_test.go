@@ -119,7 +119,6 @@ func TestToSidekickConfig(t *testing.T) {
 				Keep: []string{"src/extra-module.rs"},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						GenerateSetterSamples:   true,
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 					},
 					ModulePath:                "gcs",
@@ -128,6 +127,7 @@ func TestToSidekickConfig(t *testing.T) {
 					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
+					GenerateSetterSamples:     true,
 					DisabledClippyWarnings:    []string{"too_many_arguments"},
 					DefaultFeatures:           []string{"default-feature"},
 					TemplateOverride:          "custom-template",

@@ -50,9 +50,6 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
 		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
 	}
-	if d.Rust.GenerateSetterSamples {
-		lib.Rust.GenerateSetterSamples = d.Rust.GenerateSetterSamples
-	}
 	return lib
 }
 
