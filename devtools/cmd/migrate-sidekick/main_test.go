@@ -139,7 +139,7 @@ func TestFindSidekickFiles(t *testing.T) {
 	}
 }
 
-func TestReadSidekickFiles(t *testing.T) {
+func TestBuildGAPIC(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		files    []string
@@ -265,7 +265,7 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readSidekickFiles(test.files, test.repoName)
+			got, err := buildGAPIC(test.files, test.repoName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)

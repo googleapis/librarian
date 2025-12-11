@@ -104,7 +104,7 @@ func run(args []string) error {
 	}
 
 	// Find all .sidekick.toml files for GAPIC libraries.
-	sidekickFiles, err := findSidekickFiles(repoPath)
+	sidekickFiles, err := findSidekickFiles(filepath.Join(repoPath, "src", "generated"))
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
@@ -230,13 +230,11 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 }
 
 // findSidekickFiles finds all .sidekick.toml files within the given path.
-func findSidekickFiles(repo string) ([]string, error) {
+func findSidekickFiles(path string) ([]string, error) {
 	var files []string
-
-	generatedPath := filepath.Join(repo, "src", "generated")
-	err := filepath.Walk(generatedPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return errSrcNotFound
+			return err
 		}
 		if !info.IsDir() && info.Name() == sidekickFile {
 			files = append(files, path)
