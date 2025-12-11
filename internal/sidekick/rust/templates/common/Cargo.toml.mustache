@@ -52,11 +52,7 @@ default = [
 
 {{! We want docs for all features, not just the default features. }}
 [package.metadata.docs.rs]
-features = [
-{{#Codec.Services}}
-  "{{Codec.FeatureName}}",
-{{/Codec.Services}}
-]
+all-features = true
 {{/Codec.PerServiceFeatures}}
 
 [dependencies]
