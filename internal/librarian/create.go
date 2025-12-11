@@ -93,7 +93,7 @@ func runCreateWithGenerator(ctx context.Context, name, specSource, serviceConfig
 			}
 		}
 
-		// in future if we add support for veneers this check might have to be ingored
+		// if we add support for creating veneers this check should be ignored
 		if serviceConfig == "" && specSource == "" {
 			return errServiceConfigOrSpecRequired
 		}
