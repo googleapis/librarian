@@ -49,7 +49,7 @@ func (m *mockGenerator) Run(ctx context.Context, all bool, libraryName string) e
 	return nil
 }
 
-func TestCreateCommandForExistingLib(t *testing.T) {
+func TestCreateForExistingLib(t *testing.T) {
 
 	for _, test := range []struct {
 		name     string
@@ -190,9 +190,7 @@ func createLibrarianYaml(t *testing.T, libName string, libOutput string, languag
 		t.Fatalf("Failed to marshal YAML: %v", err)
 	}
 
-	configContent := string(configBytes)
-
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, configBytes, 0644); err != nil {
 		t.Fatal(err)
 	}
 

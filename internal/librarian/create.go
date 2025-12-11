@@ -83,7 +83,7 @@ func runCreate(ctx context.Context, name, specSource, serviceConfig, output, spe
 func runCreateWithGenerator(ctx context.Context, name, specSource, serviceConfig, output, specFormat string, gen Generator) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return fmt.Errorf("%w %v", errNoYaml, err)
+		return fmt.Errorf("%w: %v", errNoYaml, err)
 	}
 	switch cfg.Language {
 	case "rust":
