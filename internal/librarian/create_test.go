@@ -107,13 +107,17 @@ func TestCreateCommand(t *testing.T) {
 			name:     "missing service-config",
 			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--specification-source", newLibSpec},
 			language: "rust",
-			wantErr:  errServiceConfigAndSpecRequired,
 		},
 		{
 			name:     "missing specification-source",
 			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC},
 			language: "rust",
-			wantErr:  errServiceConfigAndSpecRequired,
+		},
+		{
+			name:     "missing specification-source and service-config",
+			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput},
+			language: "rust",
+			wantErr:  errServiceConfigOrSpecRequired,
 		},
 		{
 			name:     "create new library",

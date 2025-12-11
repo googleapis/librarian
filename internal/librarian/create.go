@@ -27,11 +27,11 @@ import (
 )
 
 var (
-	errUnsupportedLanguage          = errors.New("library creation is not supported for the specified language")
-	errOutputFlagRequired           = errors.New("output flag is required when default.output is not set in librarian.yaml")
-	errServiceConfigAndSpecRequired = errors.New("both service-config and specification-source flags are required for creating a new library")
-	errMissingNameFlag              = errors.New("name flag is required to create a new library")
-	errNoYaml                       = errors.New("unable to read librarian.yaml")
+	errUnsupportedLanguage         = errors.New("library creation is not supported for the specified language")
+	errOutputFlagRequired          = errors.New("output flag is required when default.output is not set in librarian.yaml")
+	errServiceConfigOrSpecRequired = errors.New("both service-config and specification-source flags are required for creating a new library")
+	errMissingNameFlag             = errors.New("name flag is required to create a new library")
+	errNoYaml                      = errors.New("unable to read librarian.yaml")
 )
 
 func createCommand() *cli.Command {
@@ -93,8 +93,9 @@ func runCreateWithGenerator(ctx context.Context, name, specSource, serviceConfig
 			}
 		}
 
-		if serviceConfig == "" || specSource == "" {
-			return errServiceConfigAndSpecRequired
+		// in future if we add support for veneers this check might have to be ingored
+		if serviceConfig == "" && specSource == "" {
+			return errServiceConfigOrSpecRequired
 		}
 
 		if output == "" {
