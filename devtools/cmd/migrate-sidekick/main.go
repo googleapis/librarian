@@ -109,8 +109,7 @@ func run(args []string) error {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
 
-	// Read all sidekick.toml files
-	libraries, err := readSidekickFiles(sidekickFiles, repoPath)
+	libraries, err := buildGAPIC(sidekickFiles, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
@@ -256,8 +255,7 @@ func findSidekickFiles(repo string) ([]string, error) {
 	return files, nil
 }
 
-// readSidekickFiles reads all sidekick.toml files and extracts library information.
-func readSidekickFiles(files []string, repoPath string) (map[string]*config.Library, error) {
+func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, error) {
 	libraries := make(map[string]*config.Library)
 
 	for _, file := range files {
