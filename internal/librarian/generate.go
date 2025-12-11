@@ -334,7 +334,15 @@ func cleanOutput(dir string, keep []string) error {
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("%s: file %q in keep list does not exist", dir, k)
 		}
-		keepSet[k] = true
+		// Effectively get a canonical relative path. While in most cases
+		// this will be equal to k, it might not be - in particular,
+		// on Windows the directory separator in paths returned by Rel
+		// will be a backslash.
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		keepSet[rel] = true
 	}
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

@@ -380,6 +380,16 @@ func TestCleanOutput(t *testing.T) {
 			keep:  []string{"src/operation.rs", "src/endpoint.rs"},
 			want:  []string{"src/endpoint.rs", "src/operation.rs"},
 		},
+		{
+			// While it would definitely be odd to use "./" here, the
+			// most common case for canonicalizing is for Windows where
+			// the directory separator is a backslash. This test ensures
+			// the logic is tested even on Unix.
+			name:  "keep entries are canonicalized",
+			files: []string{"Cargo.toml", "README.md", "src/lib.rs"},
+			keep:  []string{"./Cargo.toml"},
+			want:  []string{"Cargo.toml"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
