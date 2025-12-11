@@ -41,6 +41,7 @@ func TestCreateCommand(t *testing.T) {
 		wantLibs         []string
 		wantErr          error
 		defaultOutput    string
+		libOutputFolder  string
 	}{
 		{
 			name:    "no args",
@@ -48,10 +49,11 @@ func TestCreateCommand(t *testing.T) {
 			wantErr: errMissingNameFlag,
 		},
 		{
-			name:     "run create for existing library",
-			args:     []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
-			wantLibs: []string{libExists},
-			language: "testhelper",
+			name:            "run create for existing library",
+			args:            []string{"librarian", "create", "--name", libExists, "--output", libExistsOutput},
+			wantLibs:        []string{libExists},
+			language:        "testhelper",
+			libOutputFolder: libExistsOutput,
 		},
 		{
 			name:     "missing service-config",
@@ -66,10 +68,11 @@ func TestCreateCommand(t *testing.T) {
 			wantErr:  errServiceConfigAndSpecRequired,
 		},
 		{
-			name:     "create new library",
-			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
-			language: "rust",
-			wantLibs: []string{newLib},
+			name:            "create new library",
+			args:            []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
+			language:        "rust",
+			wantLibs:        []string{newLib},
+			libOutputFolder: newLibOutput,
 		},
 		{
 			name:             "no yaml",
@@ -127,9 +130,15 @@ libraries:
 					t.Fatal(err)
 				}
 
-				// Create the output directories that are referenced in the config
-				if err := os.MkdirAll(filepath.Join(tempDir, libExistsOutput), 0755); err != nil {
-					t.Fatal(err)
+				if test.defaultOutput != "" {
+					if err := os.MkdirAll(filepath.Join(tempDir, test.defaultOutput), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if test.libOutputFolder != "" {
+					if err := os.MkdirAll(filepath.Join(tempDir, test.libOutputFolder), 0755); err != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 			err = Run(t.Context(), test.args...)

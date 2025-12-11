@@ -79,20 +79,14 @@ func createCommand() *cli.Command {
 func runCreate(ctx context.Context, name, specSource, serviceConfig, output, specFormat string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return fmt.Errorf("%w %w", errNoYaml, err)
+		return fmt.Errorf("%w %v", errNoYaml, err)
 	}
 	switch cfg.Language {
 	case "testhelper", "rust":
-		libraryExists := false
 		for _, lib := range cfg.Libraries {
 			if lib.Name == name {
-				libraryExists = true
-				break
+				return runGenerate(ctx, false, name)
 			}
-		}
-
-		if libraryExists {
-			return runGenerate(ctx, false, name)
 		}
 
 		if serviceConfig == "" || specSource == "" {
