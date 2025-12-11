@@ -387,10 +387,11 @@ func TestBuildVeneer(t *testing.T) {
 			},
 			want: map[string]*config.Library{
 				"google-cloud-storage": {
-					Name:    "google-cloud-storage",
-					Veneer:  true,
-					Output:  "testdata/build-veneer/success/lib-1",
-					Version: "1.5.0",
+					Name:          "google-cloud-storage",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/success/lib-1",
+					Version:       "1.5.0",
+					CopyrightYear: "2025",
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
@@ -420,10 +421,11 @@ func TestBuildVeneer(t *testing.T) {
 					},
 				},
 				"google-cloud-spanner": {
-					Name:    "google-cloud-spanner",
-					Veneer:  true,
-					Output:  "testdata/build-veneer/success/lib-2",
-					Version: "0.0.0",
+					Name:          "google-cloud-spanner",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/success/lib-2",
+					Version:       "0.0.0",
+					CopyrightYear: "2025",
 				},
 			},
 		},
