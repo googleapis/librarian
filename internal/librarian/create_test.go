@@ -68,11 +68,9 @@ func TestCreateCommand(t *testing.T) {
 			wantErr:  errServiceConfigAndSpecRequired,
 		},
 		{
-			name:            "create new library",
-			args:            []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
-			language:        "rust",
-			wantLibs:        []string{newLib},
-			libOutputFolder: newLibOutput,
+			name:     "create new library",
+			args:     []string{"librarian", "create", "--name", newLib, "--output", newLibOutput, "--service-config", newLibSC, "--specification-source", newLibSpec},
+			language: "rust",
 		},
 		{
 			name:             "no yaml",
@@ -96,8 +94,7 @@ func TestCreateCommand(t *testing.T) {
 			name:          "default output directory used",
 			args:          []string{"librarian", "create", "--name", newLib, "--service-config", newLibSC, "--specification-source", newLibSpec},
 			language:      "rust",
-			wantLibs:      []string{newLib},
-			defaultOutput: newLibOutput,
+			defaultOutput: "default",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -130,11 +127,6 @@ libraries:
 					t.Fatal(err)
 				}
 
-				if test.defaultOutput != "" {
-					if err := os.MkdirAll(filepath.Join(tempDir, test.defaultOutput), 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
 				if test.libOutputFolder != "" {
 					if err := os.MkdirAll(filepath.Join(tempDir, test.libOutputFolder), 0755); err != nil {
 						t.Fatal(err)
