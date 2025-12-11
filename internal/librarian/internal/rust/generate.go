@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -164,4 +165,37 @@ func DeriveChannelPath(name string) string {
 // returns src/generated/cloud/secretmanager/v1.
 func DefaultOutput(channel, defaultOutput string) string {
 	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
+}
+
+func generateLibraryCargoFile(libraryName string, libraryVersion string, libraryDescription string) string {
+	var cargo CargoConfig
+	cargo.Package.Name = "google-cloud-" + "{{library_name}}"
+	cargo.Package.Version = "{{library_version}}"
+	cargo.Package.Description = "Google Cloud Client Libraries for Rust - {{library_description}}"
+	cargo.Package.Edition.workspace = true
+	cargo.Package.Authors.workspace = true
+	cargo.Package.License.workspace = true
+	cargo.Package.Repository.workspace = true
+	cargo.Package.Keywords.workspace = true
+	cargo.Package.Categories.workspace = true
+	cargo.Package.RustVersion.workspace = true
+
+	cargo.Dependencies["async-trait"].workspace = true
+	cargo.Dependencies["bytes"].workspace = true
+	cargo.Dependencies["gax"].workspace = true
+	cargo.Dependencies["gaxi"].workspace = true
+	cargo.Dependencies["gaxi"].features = []string{"_internal-http-client"}
+	cargo.Dependencies["lazy_static"].workspace = true
+	cargo.Dependencies["reqwest"].workspace = true
+	cargo.Dependencies["serde"].workspace = true
+	cargo.Dependencies["serde_json"].workspace = true
+	cargo.Dependencies["serde_with"].workspace = true
+	cargo.Dependencies["tracing"].workspace = true
+	cargo.Dependencies["wkt"].workspace = true
+
+	cargo.DevDependencies["tokio-test"].workspace = true
+
+	data, _ := yaml.Marshal(&cargo)
+	return string(data)
+
 }
