@@ -40,6 +40,20 @@ var (
 	errEmptySources            = errors.New("sources field is required in librarian.yaml: specify googleapis and/or discovery source commits")
 )
 
+// Generator interface used for mocking in tests.
+type Generator interface {
+	Run(ctx context.Context, all bool, libraryName string) error
+}
+
+// Generate struct implements Generator interface.
+type Generate struct {
+}
+
+// Run encaspulates runGenerate command on Genrator interface.
+func (g *Generate) Run(ctx context.Context, all bool, libraryName string) error {
+	return runGenerate(ctx, all, libraryName)
+}
+
 func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
