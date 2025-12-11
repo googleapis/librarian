@@ -244,12 +244,17 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 		// If no channels are specified, create an empty channel first
 		lib.Channels = append(lib.Channels, &config.Channel{})
 	}
-	for _, ch := range lib.Channels {
-		if ch.Path == "" {
-			ch.Path = deriveChannelPath(language, lib)
-		}
-		if ch.ServiceConfig == "" {
-			ch.ServiceConfig = deriveServiceConfig(ch.Path)
+
+	// The googleapis path of a veneer library lives in language-specific configurations,
+	// so we only need to derive the path and service config for non-veneer libraries.
+	if !lib.Veneer {
+		for _, ch := range lib.Channels {
+			if ch.Path == "" {
+				ch.Path = deriveChannelPath(language, lib)
+			}
+			if ch.ServiceConfig == "" {
+				ch.ServiceConfig = deriveServiceConfig(ch.Path)
+			}
 		}
 	}
 
