@@ -158,6 +158,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 
 	releaseLevel, _ := sidekick.Codec["release-level"].(string)
 	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+	generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 	discoverySHA256, _ := sidekick.Source["discovery-sha256"].(string)
 	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
@@ -185,6 +186,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Output:       "src/generated/",
 			ReleaseLevel: releaseLevel,
 			Rust: &config.RustDefault{
+				GenerateSetterSamples:   strToBool(generateSetterSamples),
 				PackageDependencies:     packageDependencies,
 				DisabledRustdocWarnings: strToSlice(warnings),
 			},
@@ -352,7 +354,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
-		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
 		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(string)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
@@ -400,7 +401,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
-			GenerateSetterSamples:     strToBool(generateSetterSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
 			DocumentationOverrides:    documentationOverrides,
