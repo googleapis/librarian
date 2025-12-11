@@ -116,7 +116,7 @@ func TestFindSidekickFiles(t *testing.T) {
 		{
 			name:    "no_src_directory",
 			path:    "testdata/find-sidekick-files/no-src",
-			wantErr: errSrcNotFound,
+			wantErr: os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

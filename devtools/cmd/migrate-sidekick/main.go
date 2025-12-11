@@ -44,7 +44,6 @@ const (
 var (
 	errRepoNotFound                = errors.New("-repo flag is required")
 	errSidekickNotFound            = errors.New(".sidekick.toml not found")
-	errSrcNotFound                 = errors.New("src/generated directory not found")
 	errTidyFailed                  = errors.New("librarian tidy failed")
 	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
 )
@@ -232,11 +231,11 @@ func parsePackageDependency(name, spec string) *config.RustPackageDependency {
 // findSidekickFiles finds all .sidekick.toml files within the given path.
 func findSidekickFiles(path string) ([]string, error) {
 	var files []string
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == sidekickFile {
+		if !d.IsDir() && d.Name() == sidekickFile {
 			files = append(files, path)
 		}
 		return nil
