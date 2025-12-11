@@ -66,6 +66,8 @@ func RunTidy() error {
 		lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
 			return ch.Path == "" && ch.ServiceConfig == ""
 		})
+
+		lib = tidyLanguageConfig(lib, cfg.Language)
 	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
 }
@@ -117,6 +119,25 @@ func validateLibraries(cfg *config.Config) error {
 		return errors.Join(errs...)
 	}
 	return nil
+}
+
+func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
+	switch language {
+	case "rust":
+		return tidyRustConfig(lib)
+	default:
+		return lib
+	}
+}
+
+func tidyRustConfig(lib *config.Library) *config.Library {
+	if lib.Rust != nil && lib.Rust.Modules != nil {
+		slices.DeleteFunc(lib.Rust.Modules, func(module *config.RustModule) bool {
+			return module.Source == "none" && module.Template == ""
+		})
+	}
+
+	return lib
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
