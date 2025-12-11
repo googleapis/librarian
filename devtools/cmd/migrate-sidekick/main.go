@@ -286,7 +286,7 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
-		cargo, err := readCargo(filepath.Join(dir, cargoFile))
+		cargo, err := readTOML[CargoConfig](filepath.Join(dir, cargoFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read cargo: %w", err)
 		}
@@ -461,7 +461,7 @@ func findCargos(path string) ([]string, error) {
 func buildVeneer(files []string) (map[string]*config.Library, error) {
 	veneers := make(map[string]*config.Library)
 	for _, file := range files {
-		cargo, err := readCargo(file)
+		cargo, err := readTOML[CargoConfig](file)
 		if err != nil {
 			return nil, err
 		}
@@ -497,7 +497,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			return nil
 		}
 
-		sidekick, err := readSidekick(path)
+		sidekick, err := readTOML[SidekickConfig](path)
 		if err != nil {
 			return err
 		}
@@ -617,30 +617,16 @@ func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
 }
 
-func readSidekick(file string) (*SidekickConfig, error) {
+func readTOML[T any](file string) (*T, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s: %w", file, err)
 	}
 
-	var sidekick SidekickConfig
-	if err := toml.Unmarshal(data, &sidekick); err != nil {
+	var tomlData T
+	if err := toml.Unmarshal(data, &tomlData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
 	}
 
-	return &sidekick, nil
-}
-
-func readCargo(file string) (*CargoConfig, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", file, err)
-	}
-
-	var cargo CargoConfig
-	if err := toml.Unmarshal(data, &cargo); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
-	}
-
-	return &cargo, nil
+	return &tomlData, nil
 }
