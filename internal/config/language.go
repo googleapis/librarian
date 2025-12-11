@@ -32,6 +32,9 @@ type GoAPI struct {
 
 // RustDefault contains Rust-specific default configuration.
 type RustDefault struct {
+	// GenerateSetterSamples indicates whether to generate setter samples.
+	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
+
 	// PackageDependencies is a list of default package dependencies.
 	PackageDependencies []*RustPackageDependency `yaml:"package_dependencies,omitempty"`
 
@@ -139,9 +142,6 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
-
-	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
