@@ -141,10 +141,11 @@ func TestFindSidekickFiles(t *testing.T) {
 
 func TestReadSidekickFiles(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		files   []string
-		want    map[string]*config.Library
-		wantErr error
+		name     string
+		files    []string
+		repoName string
+		want     map[string]*config.Library
+		wantErr  error
 	}{
 		{
 			name: "read_sidekick_files",
@@ -165,6 +166,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					CopyrightYear:       "2025",
 					DescriptionOverride: "Description override",
 					SpecificationFormat: "discovery",
+					Output:              "testdata/read-sidekick-files/success-read/nested",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
@@ -202,6 +204,7 @@ func TestReadSidekickFiles(t *testing.T) {
 					Version:             "1.2.0",
 					CopyrightYear:       "2025",
 					SpecificationFormat: "openapi",
+					Output:              "testdata/read-sidekick-files/success-read",
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							PackageDependencies: []*config.RustPackageDependency{
@@ -239,6 +242,14 @@ func TestReadSidekickFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "unable_to_calculate_output_path",
+			files: []string{
+				"testdata/read-sidekick-files/success-read/.sidekick.toml",
+			},
+			repoName: "/invalid/repo/path",
+			wantErr:  errUnableToCalculateOutputPath,
+		},
+		{
 			name: "no_api_path",
 			files: []string{
 				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
@@ -254,7 +265,7 @@ func TestReadSidekickFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readSidekickFiles(test.files)
+			got, err := readSidekickFiles(test.files, test.repoName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)

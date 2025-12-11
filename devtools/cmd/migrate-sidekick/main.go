@@ -42,10 +42,11 @@ const (
 )
 
 var (
-	errRepoNotFound     = errors.New("repo path argument is required")
-	errSidekickNotFound = errors.New(".sidekick.toml not found")
-	errSrcNotFound      = errors.New("src/generated directory not found")
-	errTidyFailed       = errors.New("librarian tidy failed")
+	errRepoNotFound                = errors.New("-repo flag is required")
+	errSidekickNotFound            = errors.New(".sidekick.toml not found")
+	errSrcNotFound                 = errors.New("src/generated directory not found")
+	errTidyFailed                  = errors.New("librarian tidy failed")
+	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
 )
 
 // SidekickConfig represents the structure of a .sidekick.toml file.
@@ -109,7 +110,7 @@ func run(args []string) error {
 	}
 
 	// Read all sidekick.toml files
-	libraries, err := readSidekickFiles(sidekickFiles)
+	libraries, err := readSidekickFiles(sidekickFiles, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
@@ -256,7 +257,7 @@ func findSidekickFiles(repo string) ([]string, error) {
 }
 
 // readSidekickFiles reads all sidekick.toml files and extracts library information.
-func readSidekickFiles(files []string) (map[string]*config.Library, error) {
+func readSidekickFiles(files []string, repoPath string) (map[string]*config.Library, error) {
 	libraries := make(map[string]*config.Library)
 
 	for _, file := range files {
@@ -304,6 +305,11 @@ func readSidekickFiles(files []string) (map[string]*config.Library, error) {
 			libraries[libraryName] = lib
 		}
 		lib.SpecificationFormat = specificationFormat
+		relativePath, err := filepath.Rel(repoPath, dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
+		}
+		lib.Output = relativePath
 
 		// Add channels
 		lib.Channels = append(lib.Channels, &config.Channel{

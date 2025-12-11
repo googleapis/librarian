@@ -133,6 +133,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		Deprecated:    input.Deprecated,
 		InputTypeID:   requestMessage.ID,
 		OutputTypeID:  outputID,
+		ReturnsEmpty:  outputID == ".google.protobuf.Empty",
 		PathInfo: &api.PathInfo{
 			Bindings:      []*api.PathBinding{binding},
 			BodyFieldPath: bodyPathField,
