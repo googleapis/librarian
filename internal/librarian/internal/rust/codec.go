@@ -15,7 +15,7 @@
 package rust
 
 import (
-	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -208,7 +208,8 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir, protobufDir string) *sidekickconfig.Config {
 	source := map[string]string{
 		"googleapis-root": googleapisDir,
-		"protobuf-src":    fmt.Sprintf("%s/src", protobufDir),
+		// proto files live in src/ directory in the protobuf source.
+		"protobuf-src": filepath.Join(protobufDir, "src"),
 	}
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
