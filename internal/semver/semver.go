@@ -130,6 +130,24 @@ func (v version) String() string {
 	return vStr
 }
 
+// VersionCore produces a new [version] with only the Major, Minor, and Patch
+// segments copied over.
+// The SemVer version core is defined in the spec:
+// https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions.
+func (v version) VersionCore() version {
+	return version{
+		Major: v.Major,
+		Minor: v.Minor,
+		Patch: v.Patch,
+	}
+}
+
+// vString formats the version normally as a string and prepends a 'v'.
+// This is necessary to make the version compatible with [semver] APIs.
+func (v version) vString() string {
+	return fmt.Sprintf("v%s", v.String())
+}
+
 // MaxVersion returns the largest semantic version string among the provided version strings.
 func MaxVersion(versionStrings ...string) string {
 	if len(versionStrings) == 0 {
@@ -209,7 +227,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 
 	v, err := parse(currentVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse current version: %w", err)
+		return "", fmt.Errorf("failed to parse version: %w", err)
 	}
 
 	// Only bump the prerelease version number.
@@ -259,9 +277,57 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 	return v.String(), nil
 }
 
+// DeriveNextPreview determines the next appropriate SemVer version bump for the
+// preview version relative to the provided stable version. Previews always lead
+// the stable version, so when the preview is equal with or behind the stable
+// version, it must be caught up. When the preview version is ahead, a
+// prerelease number bump is all that is necessary. Every change is treated as a
+// [Minor] change. The provided preview version must have a prerelease segment.
+func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion string) (string, error) {
+	pv, err := parse(previewVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse preview version: %w", err)
+	}
+	if pv.Prerelease == "" {
+		return "", fmt.Errorf("provided preview version has no prerelease segment: %s", previewVersion)
+	}
+	sv, err := parse(stableVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse stable version: %w", err)
+	}
+
+	// Make a shallow copy of original options to retain any language-specific needs.
+	nextOpts := o
+	switch semver.Compare(pv.VersionCore().vString(), sv.VersionCore().vString()) {
+	case 0:
+		// Stable caught up to preview, so bump preview version core.
+		nextOpts.BumpVersionCore = true
+	case 1:
+		// Preview is ahead, normal bump behavior.
+	case -1:
+		// Catch up to stable version's core, then bump and
+		// reset prerelease, if set.
+		pv.Major = sv.Major
+		pv.Minor = sv.Minor
+		pv.Patch = sv.Patch
+
+		previewVersion = pv.String()
+		nextOpts.BumpVersionCore = true
+	}
+
+	return nextOpts.DeriveNext(Minor, previewVersion)
+}
+
 // DeriveNext calculates the next version based on the highest change type and
 // current version using the default [DeriveNextOptions]. This is a convenience
 // method.
 func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
 	return DeriveNextOptions{}.DeriveNext(highestChange, currentVersion)
+}
+
+// DeriveNextPreview calculates the next preview version based on the provided
+// stable version using the default [DeriveNextOptions]. This is a convenience
+// method.
+func DeriveNextPreview(previewVersion, stableVersion string) (string, error) {
+	return DeriveNextOptions{}.DeriveNextPreview(previewVersion, stableVersion)
 }

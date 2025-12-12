@@ -369,9 +369,188 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			nextVersion, err := test.opts.DeriveNext(test.highestChange, test.currentVersion)
 			if err != nil {
-				t.Fatalf("DeriveNext() returned an error: %v", err)
+				t.Fatalf("DeriveNextOptions.DeriveNext() returned an error: %v", err)
 			}
 			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveNextPreview(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		changeLevel    ChangeLevel
+		previewVersion string
+		stableVersion  string
+		opts           DeriveNextOptions
+		want           string
+	}{
+		{
+			name:           "equal, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "1.2.3",
+			want:           "1.3.0-rc.1",
+		},
+		{
+			name:           "equal, pre-GA, bump preview core, prerelease reset",
+			previewVersion: "0.1.2-rc.3",
+			stableVersion:  "0.1.2",
+			want:           "0.2.0-rc.1",
+		},
+		{
+			name:           "equal, bump preview core, no prerelease number",
+			previewVersion: "1.2.3-rc",
+			stableVersion:  "1.2.3",
+			want:           "1.3.0-rc",
+		},
+		{
+			name:           "stable ahead, catch up, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "1.3.0",
+			want:           "1.4.0-rc.1",
+		},
+		{
+			name:           "stable ahead, pre-GA, catch up, bump preview core, prerelease reset",
+			previewVersion: "0.2.3-rc.3",
+			stableVersion:  "0.3.0",
+			want:           "0.4.0-rc.1",
+		},
+		{
+			name:           "stable ahead by major, catch up, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "2.0.0",
+			want:           "2.1.0-rc.1",
+		},
+		{
+			name:           "stable ahead by major, pre-GA, catch up, minor bump, prerelease reset",
+			previewVersion: "0.1.3-rc.3",
+			stableVersion:  "1.0.0",
+			want:           "1.1.0-rc.1",
+		},
+		{
+			name:           "preview ahead, bump prerelease number",
+			previewVersion: "1.2.4-rc.1",
+			stableVersion:  "1.2.3",
+			want:           "1.2.4-rc.2",
+		},
+		{
+			name:           "preview ahead, pre-GA, bump prerelease number",
+			previewVersion: "0.1.3-rc.1",
+			stableVersion:  "0.1.2",
+			want:           "0.1.3-rc.2",
+		},
+		{
+			name:           "preview ahead, no prerelease number, append prerelease number",
+			previewVersion: "1.2.4-rc",
+			stableVersion:  "1.2.3",
+			want:           "1.2.4-rc.1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			nextVersion, err := DeriveNextPreview(test.previewVersion, test.stableVersion)
+			if err != nil {
+				t.Fatalf("DeriveNextPreview() returned an error: %v", err)
+			}
+			if diff := cmp.Diff(test.want, nextVersion); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		changeLevel    ChangeLevel
+		previewVersion string
+		stableVersion  string
+		opts           DeriveNextOptions
+		want           string
+	}{
+		{
+			name:           "equal, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "1.2.3",
+			want:           "1.3.0-rc.1",
+		},
+		{
+			name:           "equal, pre-GA, bump preview core, prerelease reset",
+			previewVersion: "0.1.2-rc.3",
+			stableVersion:  "0.1.2",
+			want:           "0.2.0-rc.1",
+		},
+		{
+			name:           "equal, pre-GA, bump preview core, downgrade pre-GA, patch bump",
+			previewVersion: "0.1.2-rc",
+			stableVersion:  "0.1.2",
+			want:           "0.1.3-rc",
+			opts:           DeriveNextOptions{DowngradePreGAChanges: true},
+		},
+		{
+			name:           "equal, bump preview core, no prerelease number",
+			previewVersion: "1.2.3-rc",
+			stableVersion:  "1.2.3",
+			want:           "1.3.0-rc",
+		},
+		{
+			name:           "stable ahead, catch up, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "1.3.0",
+			want:           "1.4.0-rc.1",
+		},
+		{
+			name:           "stable ahead, pre-GA, catch up, bump preview core, prerelease reset",
+			previewVersion: "0.2.3-rc.3",
+			stableVersion:  "0.3.0",
+			want:           "0.4.0-rc.1",
+		},
+		{
+			name:           "stable ahead by major, catch up, bump preview core, prerelease reset",
+			previewVersion: "1.2.3-rc.3",
+			stableVersion:  "2.0.0",
+			want:           "2.1.0-rc.1",
+		},
+		{
+			name:           "stable ahead by major, pre-GA, catch up, minor bump, prerelease reset",
+			previewVersion: "0.1.3-rc.3",
+			stableVersion:  "1.0.0",
+			want:           "1.1.0-rc.1",
+		},
+		{
+			name:           "stable ahead, pre-GA, bump preview core, downgrade pre-GA, patch bump, no prerelease number",
+			previewVersion: "0.1.2-rc",
+			stableVersion:  "0.1.3",
+			want:           "0.1.4-rc",
+			opts:           DeriveNextOptions{DowngradePreGAChanges: true},
+		},
+		{
+			name:           "preview ahead, bump prerelease number",
+			previewVersion: "1.2.4-rc.1",
+			stableVersion:  "1.2.3",
+			want:           "1.2.4-rc.2",
+		},
+		{
+			name:           "preview ahead, pre-GA, bump prerelease number",
+			previewVersion: "0.1.3-rc.1",
+			stableVersion:  "0.1.2",
+			want:           "0.1.3-rc.2",
+		},
+		{
+			// TODO(https://github.com/googleapis/librarian/issues/3252): Determine if we need a flag to disable this.
+			name:           "preview ahead, no prerelease number, append prerelease number",
+			previewVersion: "1.2.4-rc",
+			stableVersion:  "1.2.3",
+			want:           "1.2.4-rc.1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			nextVersion, err := test.opts.DeriveNextPreview(test.previewVersion, test.stableVersion)
+			if err != nil {
+				t.Fatalf("DeriveNextOptions.DeriveNextPreview() returned an error: %v", err)
+			}
+			if diff := cmp.Diff(test.want, nextVersion); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
