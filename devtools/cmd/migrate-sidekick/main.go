@@ -349,6 +349,7 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
 		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
+		generateRpcSamples, _ := sidekick.Codec["generate-rpc-samples"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
 		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(string)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
@@ -397,6 +398,7 @@ func readSidekickFiles(files []string, repoPath string) (map[string]*config.Libr
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
 			GenerateSetterSamples:     strToBool(generateSetterSamples),
+			GenerateRpcSamples:        strToBool(generateRpcSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
 			DocumentationOverrides:    documentationOverrides,
@@ -443,8 +445,9 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 		// Check if library has extra configuration beyond just name/api/version
 		hasExtraConfig := lib.CopyrightYear != "" ||
 			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
-				len(lib.Rust.PackageDependencies) > 0 || lib.Rust.GenerateSetterSamples ||
-				len(lib.Rust.PaginationOverrides) > 0 || lib.Rust.NameOverrides != ""))
+				lib.Rust.GenerateSetterSamples || lib.Rust.GenerateRpcSamples ||
+				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
+				lib.Rust.NameOverrides != ""))
 		// Only include in libraries section if:
 		// 1. Name doesn't match expected naming convention (name override)
 		// 2. Library has extra configuration

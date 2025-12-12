@@ -17,6 +17,7 @@ copyright-year = '2025'
 per-service-features      = 'true'
 disabled-rustdoc-warnings = "bare_urls,broken_intra_doc_links,redundant_explicit_links"
 generate-setter-samples = 'true'
+generate-rpc-samples = 'true'
 name-overrides            = '.google.cloud.security/publicca.v1.Storage=StorageControl'
 module-path           = 'crate'
 template-override     = 'templates/mod'

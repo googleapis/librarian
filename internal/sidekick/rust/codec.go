@@ -160,6 +160,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `generate-setter-samples` value %q to boolean: %w", definition, err)
 			}
 			codec.generateSetterSamples = value
+		case key == "generate-rpc-samples":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `generate-rpc-samples` value %q to boolean: %w", definition, err)
+			}
+			codec.generateRpcSamples = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -298,6 +304,8 @@ type codec struct {
 	routingRequired bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
 	generateSetterSamples bool
+	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
+	generateRpcSamples bool
 }
 
 type systemParameter struct {

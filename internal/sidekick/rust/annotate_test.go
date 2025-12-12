@@ -42,6 +42,7 @@ func TestPackageNames(t *testing.T) {
 		"per-service-features":        "true",
 		"extra-modules":               "operation",
 		"generate-setter-samples":     "true",
+		"generate-rpc-samples":        "true",
 		"detailed-tracing-attributes": "true",
 	})
 	if err != nil {
@@ -62,6 +63,7 @@ func TestPackageNames(t *testing.T) {
 		PerServiceFeatures:        false, // no services
 		ExtraModules:              []string{"operation"},
 		GenerateSetterSamples:     true,
+		GenerateRpcSamples:        true,
 		DetailedTracingAttributes: true,
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
@@ -1719,6 +1721,20 @@ func TestGenerateSetterSamples(t *testing.T) {
 	annotateModel(model, codec)
 	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
 		t.Errorf("GenerateSetterSamples should be true")
+	}
+}
+
+func TestGenerateRpcSamples(t *testing.T) {
+	model := serviceAnnotationsModel()
+	codec, err := newCodec("protobuf", map[string]string{
+		"generate-rpc-samples": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	if !model.Codec.(*modelAnnotations).GenerateRpcSamples {
+		t.Errorf("GenerateRpcSamples should be true")
 	}
 }
 

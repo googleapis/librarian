@@ -143,6 +143,9 @@ type RustCrate struct {
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
+	// GenerateRpcSamples indicates whether to generate RPC samples.
+	GenerateRpcSamples bool `yaml:"generate_rpc_samples,omitempty"`
+
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 

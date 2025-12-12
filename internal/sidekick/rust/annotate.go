@@ -72,6 +72,8 @@ type modelAnnotations struct {
 	Incomplete bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
 	GenerateSetterSamples bool
+	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
+	GenerateRpcSamples bool
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
@@ -655,6 +657,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 			return slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !codec.generateMethod(m) })
 		}),
 		GenerateSetterSamples:     codec.generateSetterSamples,
+		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
 	}
 

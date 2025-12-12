@@ -296,6 +296,15 @@ func TestParseOptions(t *testing.T) {
 				c.generateSetterSamples = true
 			},
 		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"generate-rpc-samples": "true",
+			},
+			Update: func(c *codec) {
+				c.generateRpcSamples = true
+			},
+		},
 	} {
 		want, err := newCodec(test.Format, map[string]string{})
 		if err != nil {
@@ -331,6 +340,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"has-veneer": ""}},
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
+		{Options: map[string]string{"generate-rpc-samples": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
 		if got, err := newCodec("disco", test.Options); err == nil {
@@ -2029,5 +2039,18 @@ func TestParseOptionsGenerateSetterSamples(t *testing.T) {
 	}
 	if !got.generateSetterSamples {
 		t.Errorf("generateSetterSamples should be true")
+	}
+}
+
+func TestParseOptionsGenerateRpcSamples(t *testing.T) {
+	options := map[string]string{
+		"generate-rpc-samples": "true",
+	}
+	got, err := newCodec("", options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.generateRpcSamples {
+		t.Errorf("generateRpcSamples should be true")
 	}
 }

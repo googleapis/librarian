@@ -135,6 +135,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.GenerateSetterSamples {
 		codec["generate-setter-samples"] = "true"
 	}
+	if rust.GenerateRpcSamples {
+		codec["generate-rpc-samples"] = "true"
+	}
 	if rust.NameOverrides != "" {
 		codec["name-overrides"] = rust.NameOverrides
 	}
