@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -204,9 +205,10 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir string) *sidekickconfig.Config {
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir, protobufDir string) *sidekickconfig.Config {
 	source := map[string]string{
 		"googleapis-root": googleapisDir,
+		"protobuf-src":    fmt.Sprintf("%s/src", protobufDir),
 	}
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")

@@ -32,6 +32,7 @@ import (
 const (
 	googleapisRepo = "github.com/googleapis/googleapis"
 	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	protobufRepo   = "https://github.com/protocolbuffers/protobuf"
 )
 
 // Generate generates a Rust client library.
@@ -40,8 +41,14 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
+
+	protobufDir, err := sourceDir(ctx, sources.Protobuf, protobufRepo)
+	if err != nil {
+		return err
+	}
+
 	if library.Veneer {
-		return generateVeneer(ctx, library, googleapisDir)
+		return generateVeneer(ctx, library, googleapisDir, protobufDir)
 	}
 
 	if len(library.Channels) != 1 {
@@ -76,12 +83,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, googleapisDir string) error {
+func generateVeneer(ctx context.Context, library *config.Library, googleapisDir, protobufDir string) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return fmt.Errorf("veneer %q has no modules defined", library.Name)
 	}
 	for _, module := range library.Rust.Modules {
-		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir)
+		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufDir)
 		model, err := parser.CreateModel(sidekickConfig)
 		if err != nil {
 			return fmt.Errorf("module %s: %w", module.Output, err)
