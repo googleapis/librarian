@@ -162,6 +162,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
+	protobufSHA256, _ := sidekick.Source["protobuf-src-sha256"].(string)
 
 	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
@@ -179,6 +180,11 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Googleapis: &config.Source{
 				Commit: googleapisCommit,
 				SHA256: googleapisSHA256,
+			},
+			Protobuf: &config.Source{
+				// hardcode commit
+				Commit: "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
+				SHA256: protobufSHA256,
 			},
 		},
 		Default: &config.Default{
