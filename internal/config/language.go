@@ -72,6 +72,7 @@ type RustModule struct {
 	// PostProcessProtos contains code to post-process generated protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
+	// Roots is a list of root names to be used as source directories.
 	Roots []string `yaml:"roots,omitempty"`
 
 	// RoutingRequired indicates whether routing is required.
