@@ -36,7 +36,7 @@ func DetermineInputFiles(source string, options map[string]string) ([]string, er
 
 	// `config.Source` is relative to the `googleapis-root`,
 	// or `extra-protos-root`, when that is set. It should always be a directory
-	// and by default all the the files in that directory are used.
+	// and by default all the files in that directory are used.
 	for _, opt := range config.SourceRoots(options) {
 		location, ok := options[opt]
 		if !ok {
