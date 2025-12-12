@@ -116,21 +116,26 @@ func deriveSpecSource(specSource string, serviceConfig string, language string) 
 }
 
 func deriveOutput(output string, cfg *config.Config, libraryName string, specSource string, language string) (string, error) {
+	if output == "" && (cfg.Default == nil || cfg.Default.Output == "") {
+		return "", errOutputFlagRequired
+	}
 	switch language {
 	case "rust":
-		googlePrefix := "google/"
 		if output == "" {
 			if cfg.Default == nil || cfg.Default.Output == "" {
 				return "", errOutputFlagRequired
 			}
 			if specSource != "" {
-				return path.Join(cfg.Default.Output, strings.TrimPrefix(specSource, googlePrefix)), nil
+				return defaultOutput(language, specSource, cfg.Default.Output), nil
 			} else {
-				packageDir := strings.ReplaceAll(libraryName, "-", "/")
-				return path.Join(cfg.Default.Output, strings.TrimPrefix(packageDir, googlePrefix)), nil
+				libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
+				return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
 			}
 		}
+	default:
+		return defaultOutput(language, specSource, cfg.Default.Output), nil
 	}
+
 	return output, nil
 }
 
