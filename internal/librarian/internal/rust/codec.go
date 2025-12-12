@@ -214,6 +214,9 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	if module.IncludeList != "" {
 		source["include-list"] = module.IncludeList
 	}
+	if module.TitleOverride != "" {
+		source["title-override"] = module.TitleOverride
+	}
 
 	language := "rust"
 	if module.Template == "prost" {
