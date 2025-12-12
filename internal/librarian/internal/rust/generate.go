@@ -30,8 +30,11 @@ import (
 )
 
 const (
-	googleapisRepo = "github.com/googleapis/googleapis"
-	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	googleapisRepo  = "github.com/googleapis/googleapis"
+	discoveryRepo   = "github.com/googleapis/discovery-artifact-manager"
+	protobufRepo    = "github.com/protocolbuffers/protobuf"
+	conformanceRepo = "github.com/googleapis/conformance-tests"
+	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 
 // Generate generates a Rust client library.
@@ -52,7 +55,19 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	if err != nil {
 		return err
 	}
-	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir)
+	protobufDir, err := sourceDir(ctx, sources.Protobuf, protobufRepo)
+	if err != nil {
+		return err
+	}
+	conformanceDir, err := sourceDir(ctx, sources.Conformance, conformanceRepo)
+	if err != nil {
+		return err
+	}
+	showcaseDir, err := sourceDir(ctx, sources.Showcase, showcaseRepo)
+	if err != nil {
+		return err
+	}
+	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir)
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err

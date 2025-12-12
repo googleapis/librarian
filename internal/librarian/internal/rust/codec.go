@@ -21,16 +21,42 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir string) *sidekickconfig.Config {
-	source := map[string]string{
-		"googleapis-root": googleapisDir,
-	}
-	specFormat := "protobuf"
-	if library.SpecificationFormat == "discovery" {
+func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {
+	source := map[string]string{}
+	var roots []string
+	specFormat := "protobuf" // Default specFormat
+
+	// Always add googleapis-root, and include it in roots
+	source["googleapis-root"] = googleapisDir
+	roots = append(roots, "googleapis")
+
+	// Conditionally add other sources and their roots based on directory presence and specification format
+	switch library.SpecificationFormat {
+	case "discovery":
 		specFormat = "disco"
-		source["discovery-root"] = discoveryDir
-		source["roots"] = "discovery,googleapis"
+		if discoveryDir != "" {
+			source["discovery-root"] = discoveryDir
+			roots = append(roots, "discovery")
+		}
+	case "showcase":
+		// Showcase uses protobuf format, so specFormat remains "protobuf"
+		if showcaseDir != "" {
+			source["showcase-root"] = showcaseDir
+			roots = append(roots, "showcase")
+		}
 	}
+
+	if protobufDir != "" {
+		source["protobuf-src-root"] = protobufDir
+		roots = append(roots, "protobuf-src")
+	}
+	if conformanceDir != "" {
+		source["conformance-root"] = conformanceDir
+		roots = append(roots, "conformance")
+	}
+
+	source["roots"] = strings.Join(roots, ",")
+
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}

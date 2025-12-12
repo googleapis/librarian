@@ -42,6 +42,15 @@ type Sources struct {
 
 	// Googleapis is the googleapis repository configuration.
 	Googleapis *Source `yaml:"googleapis,omitempty"`
+
+	// Showcase is the showcase repository configuration.
+	Showcase *Source `yaml:"showcase,omitempty"`
+
+	// Protobuf is the protobuf repository configuration.
+	Protobuf *Source `yaml:"protobuf,omitempty"`
+
+	// Conformance is the conformance test repository configuration.
+	Conformance *Source `yaml:"conformance,omitempty"`
 }
 
 // Source represents a source repository.
