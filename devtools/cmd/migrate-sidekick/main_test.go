@@ -395,7 +395,8 @@ func TestBuildVeneer(t *testing.T) {
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
-								HasVeneer: true,
+								GenerateSetterSamples: true,
+								HasVeneer:             true,
 								IncludedIds: []string{
 									".google.storage.v2.Storage.DeleteBucket",
 									".google.storage.v2.Storage.GetBucket",
@@ -412,11 +413,12 @@ func TestBuildVeneer(t *testing.T) {
 								Template:               "grpc-client",
 							},
 							{
-								ModulePath:    "crate::generated::gapic_control::model",
-								NameOverrides: ".google.storage.control.v2.IntelligenceConfig.Filter.cloud_storage_buckets=CloudStorageBucketsOneOf",
-								Output:        "testdata/build-veneer/success/lib-1/dir-2/dirdir-2",
-								Source:        "google/storage/control/v2",
-								Template:      "convert-prost",
+								GenerateSetterSamples: false,
+								ModulePath:            "crate::generated::gapic_control::model",
+								NameOverrides:         ".google.storage.control.v2.IntelligenceConfig.Filter.cloud_storage_buckets=CloudStorageBucketsOneOf",
+								Output:                "testdata/build-veneer/success/lib-1/dir-2/dirdir-2",
+								Source:                "google/storage/control/v2",
+								Template:              "convert-prost",
 							},
 						},
 					},
