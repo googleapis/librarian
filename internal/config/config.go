@@ -46,10 +46,10 @@ type Sources struct {
 	// Showcase is the showcase repository configuration.
 	Showcase *Source `yaml:"showcase,omitempty"`
 
-	// Protobuf is the path to the `protobuf` repository, used as include directory) for `protoc`.
+	// Protobuf is the path to the `protobuf` repository, used as include directory for `protoc`.
 	Protobuf *Source `yaml:"protobuf,omitempty"`
 
-	// Conformance is the path to the `conformance-tests` repository, used as include directory) for `protoc`.
+	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
 	Conformance *Source `yaml:"conformance,omitempty"`
 }
 

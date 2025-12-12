@@ -46,7 +46,7 @@ func TestRead(t *testing.T) {
 				SHA256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 			},
 			Conformance: &Source{
-				Commit: "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
+				Commit: "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
 				SHA256: "f572d396fae9206628714fb2ce00f72e94f2258f",
 			},
 		},
