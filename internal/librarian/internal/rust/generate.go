@@ -42,12 +42,12 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return err
 	}
 
-	protobufDir, err := sourceDir(ctx, sources.Protobuf, protobufRepo)
-	if err != nil {
-		return err
-	}
-
 	if library.Veneer {
+		protobufDir, err := sourceDir(ctx, sources.Protobuf, protobufRepo)
+		if err != nil {
+			return err
+		}
+
 		return generateVeneer(ctx, library, googleapisDir, protobufDir)
 	}
 
