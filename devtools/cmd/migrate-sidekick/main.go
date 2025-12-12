@@ -331,6 +331,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 
 		if extraModules, ok := sidekick.Codec["extra-modules"].(string); ok {
 			for _, module := range strToSlice(extraModules) {
+				if module == "" {
+					continue
+				}
 				lib.Keep = append(lib.Keep, fmt.Sprintf("src/%s.rs", module))
 			}
 		}
