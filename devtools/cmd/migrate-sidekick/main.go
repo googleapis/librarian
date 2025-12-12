@@ -329,7 +329,13 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			lib.CopyrightYear = copyrightYear
 		}
 
-		// Parse Rust-specific configuration from sidekick.toml source section
+		if extraModules, ok := sidekick.Codec["extra-modules"].(string); ok {
+			for _, module := range strToSlice(extraModules) {
+				lib.Keep = append(lib.Keep, fmt.Sprintf("src/%s.rs", module))
+			}
+		}
+
+		// Parse Rust-specific configuration from .sidekick.toml source section
 		if descriptionOverride, ok := sidekick.Source["description-override"].(string); ok {
 			lib.DescriptionOverride = descriptionOverride
 		}
