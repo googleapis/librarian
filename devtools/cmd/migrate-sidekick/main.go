@@ -182,7 +182,9 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 				SHA256: googleapisSHA256,
 			},
 			Protobuf: &config.Source{
-				// hardcode commit
+				// Hardcode commit because sidekick use tags to fetch
+				// protobuf source, which is different from other sources.
+				// This commit is equivalent to v29.3.
 				Commit: "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
 				SHA256: protobufSHA256,
 			},
