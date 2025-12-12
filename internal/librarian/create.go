@@ -134,8 +134,8 @@ func deriveOutput(output string, cfg *config.Config, libraryName string, specSou
 	return output, nil
 }
 
-func addLibraryToLibrarianConfig(rootConfig *config.Config, name string, output string, specificationSource string, serviceConfig string, specificationFormat string) error {
-	lib := config.Library{
+func addLibraryToLibrarianConfig(rootConfig *config.Config, name, output, specificationSource, serviceConfig, specificationFormat string) error {
+	lib := &config.Library{
 		Name:                name,
 		Output:              output,
 		Version:             "0.1.0",
@@ -150,7 +150,7 @@ func addLibraryToLibrarianConfig(rootConfig *config.Config, name string, output 
 			},
 		}
 	}
-	rootConfig.Libraries = append(rootConfig.Libraries, &lib)
+	rootConfig.Libraries = append(rootConfig.Libraries, lib)
 	data, err := yaml.Marshal(rootConfig)
 	if err != nil {
 		return fmt.Errorf("error marshaling librarian config: %w", err)
