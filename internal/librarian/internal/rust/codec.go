@@ -23,38 +23,45 @@ import (
 
 func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {
 	source := map[string]string{}
-	var roots []string
-	specFormat := "protobuf" // Default specFormat
-
-	if googleapisDir != "" {
-		source["googleapis-root"] = googleapisDir
-		roots = append(roots, "googleapis")
+	specFormat := "protobuf"
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
+	if specFormat == "discovery" {
+		specFormat = "disco"
 	}
 
-	// Conditionally add other sources and their roots based on directory presence and specification format
-	switch library.SpecificationFormat {
-	case "discovery":
-		specFormat = "disco"
-		if discoveryDir != "" {
-			source["discovery-root"] = discoveryDir
-			roots = append(roots, "discovery")
+	if len(library.Roots) == 0 && googleapisDir != "" {
+		// Default to googleapis if no roots are specified.
+		source["googleapis-root"] = googleapisDir
+		source["roots"] = "googleapis"
+	} else {
+		source["roots"] = strings.Join(library.Roots, ",")
+		for _, root := range library.Roots {
+			switch root {
+			case "googleapis":
+				if googleapisDir != "" {
+					source["googleapis-root"] = googleapisDir
+				}
+			case "discovery":
+				if discoveryDir != "" {
+					source["discovery-root"] = discoveryDir
+				}
+			case "showcase":
+				if showcaseDir != "" {
+					source["showcase-root"] = showcaseDir
+				}
+			case "protobuf-src":
+				if protobufDir != "" {
+					source["protobuf-src-root"] = protobufDir
+				}
+			case "conformance":
+				if conformanceDir != "" {
+					source["conformance-root"] = conformanceDir
+				}
+			}
 		}
 	}
-
-	if showcaseDir != "" {
-		source["showcase-root"] = showcaseDir
-		roots = append(roots, "showcase")
-	}
-	if protobufDir != "" {
-		source["protobuf-src-root"] = protobufDir
-		roots = append(roots, "protobuf-src")
-	}
-	if conformanceDir != "" {
-		source["conformance-root"] = conformanceDir
-		roots = append(roots, "conformance")
-	}
-
-	source["roots"] = strings.Join(roots, ",")
 
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride

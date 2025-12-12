@@ -66,6 +66,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Name:         "google-cloud-storage",
 				Version:      "0.1.0",
 				ReleaseLevel: "preview",
+				Roots:        []string{"googleapis"},
 			},
 			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
@@ -95,6 +96,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:          "google-cloud-storage",
 				CopyrightYear: "2024",
+				Roots:         []string{"googleapis"},
 			},
 			channel: &config.Channel{
 				Path:          "google/cloud/storage/v1",
@@ -177,6 +179,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:        "google-cloud-storage",
 				SkipPublish: true,
+				Roots:       []string{"googleapis"},
 				Rust:        &config.RustCrate{},
 			},
 			channel: &config.Channel{
@@ -337,6 +340,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
+				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
 				Path:          "discoveries/compute.v1.json",
@@ -355,6 +359,38 @@ func TestToSidekickConfig(t *testing.T) {
 					"googleapis-root": "/tmp/googleapis",
 					"discovery-root":  "/tmp/discovery-artifact-manager",
 					"roots":           "googleapis,discovery",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-compute-v1",
+				},
+			},
+		},
+		{
+			name: "with multiple formats",
+			library: &config.Library{
+				Name:                "google-cloud-compute-v1",
+				SpecificationFormat: "discovery",
+				Roots:               []string{"googleapis", "discovery", "showcase"},
+			},
+			channel: &config.Channel{
+				Path:          "discoveries/compute.v1.json",
+				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+			},
+			googleapisDir: "/tmp/googleapis",
+			discoveryDir:  "/tmp/discovery-artifact-manager",
+			showcaseDir:   "/tmp/showcase",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "disco",
+					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
+					SpecificationSource: "discoveries/compute.v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+					"discovery-root":  "/tmp/discovery-artifact-manager",
+					"showcase-root":   "/tmp/showcase",
+					"roots":           "googleapis,discovery,showcase",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-compute-v1",
@@ -486,192 +522,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
-				Rust: &config.RustCrate{
-					Discovery: &config.RustDiscovery{
-						OperationID: ".google.cloud.compute.v1.Operation",
-						Pollers: []config.RustPoller{
-							{
-								Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-								MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-							},
-							{
-								Prefix:   "compute/v1/projects/{project}/regions/{region}",
-								MethodID: ".google.cloud.compute.v1.regionOperations.get",
-							},
-							{
-								Prefix:   "compute/v1/projects/{project}",
-								MethodID: ".google.cloud.compute.v1.globalOperations.get",
-							},
-						},
-					},
-				},
-			},
-			channel: &config.Channel{
-				Path:          "discoveries/compute.v1.json",
-				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
-			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "disco",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-					SpecificationSource: "discoveries/compute.v1.json",
-				},
-				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"discovery-root":  "/tmp/discovery-artifact-manager",
-					"roots":           "googleapis,discovery",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-compute-v1",
-				},
-				Discovery: &sidekickconfig.Discovery{
-					OperationID: ".google.cloud.compute.v1.Operation",
-					Pollers: []*sidekickconfig.Poller{
-						{
-							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}/regions/{region}",
-							MethodID: ".google.cloud.compute.v1.regionOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}",
-							MethodID: ".google.cloud.compute.v1.globalOperations.get",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "with title override",
-			library: &config.Library{
-				Name: "google-cloud-apps-script-type-gmail",
-				Rust: &config.RustCrate{
-					TitleOverride: "Google Apps Script Types",
-				},
-			},
-			channel: &config.Channel{
-				Path: "google/apps/script/type/gmail",
-			},
-			googleapisDir: "/tmp/googleapis",
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/apps/script/type/gmail",
-				},
-				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"title-override":  "Google Apps Script Types",
-					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-apps-script-type-gmail",
-				},
-			},
-		},
-		{
-			name: "with description override",
-			library: &config.Library{
-				Name:                "google-cloud-longrunning",
-				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
-			},
-			channel: &config.Channel{
-				Path:          "google/longrunning",
-				ServiceConfig: "google/longrunning/longrunning.yaml",
-			},
-			googleapisDir: "/tmp/googleapis",
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/longrunning/longrunning.yaml",
-					SpecificationSource: "google/longrunning",
-				},
-				Source: map[string]string{
-					"googleapis-root":      "/tmp/googleapis",
-					"description-override": "Defines types and an abstract service to handle long-running operations.",
-					"roots":                "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-longrunning",
-				},
-			},
-		},
-		{
-			name: "with skipped ids",
-			library: &config.Library{
-				Name: "google-cloud-spanner-admin-database-v1",
-				Rust: &config.RustCrate{
-					SkippedIds: []string{
-						".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation",
-						".google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest",
-						".google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
-					},
-				},
-			},
-			channel: &config.Channel{
-				Path:          "google/spanner/admin/database/v1",
-				ServiceConfig: "google/spanner/admin/database/v1/spanner.yaml",
-			},
-			googleapisDir: "/tmp/googleapis",
-
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/spanner/admin/database/v1/spanner.yaml",
-					SpecificationSource: "google/spanner/admin/database/v1",
-				},
-				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
-					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-spanner-admin-database-v1",
-				},
-			},
-		},
-		{
-			name: "with name overrides",
-			library: &config.Library{
-				Name: "google-cloud-storageinsights-v1",
-				Rust: &config.RustCrate{
-					NameOverrides: ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
-				},
-			},
-			channel: &config.Channel{
-				Path:          "google/cloud/storageinsights/v1",
-				ServiceConfig: "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
-			},
-			googleapisDir: "/tmp/googleapis",
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
-					SpecificationSource: "google/cloud/storageinsights/v1",
-				},
-				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-storageinsights-v1",
-					"name-overrides":        ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
-				},
-			},
-		},
-		{
-			name: "with discovery LRO polling config",
-			library: &config.Library{
-				Name:                "google-cloud-compute-v1",
-				SpecificationFormat: "discovery",
+				Roots:               []string{"googleapis", "discovery"},
 				Rust: &config.RustCrate{
 					Discovery: &config.RustDiscovery{
 						OperationID: ".google.cloud.compute.v1.Operation",
@@ -735,7 +586,8 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with protobuf and conformance",
 			library: &config.Library{
-				Name: "google-cloud-vision-v1",
+				Name:  "google-cloud-vision-v1",
+				Roots: []string{"googleapis", "protobuf-src", "conformance"},
 			},
 			channel: &config.Channel{
 				Path:          "google/cloud/vision/v1",
@@ -765,7 +617,8 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with showcase as source",
 			library: &config.Library{
-				Name: "google-cloud-showcase",
+				Name:  "google-cloud-showcase",
+				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
 				Path:          "google/showcase/v1beta1",
@@ -791,7 +644,8 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with protobufDir and conformanceDir",
 			library: &config.Library{
-				Name: "google-cloud-vision-v1",
+				Name:  "google-cloud-vision-v1",
+				Roots: []string{"googleapis", "protobuf-src", "conformance"},
 			},
 			channel: &config.Channel{
 				Path:          "google/cloud/vision/v1",
@@ -821,7 +675,8 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with showcaseDir and no other sources",
 			library: &config.Library{
-				Name: "google-cloud-showcase",
+				Name:  "google-cloud-showcase",
+				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
 				Path:          "google/showcase/v1beta1",

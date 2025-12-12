@@ -76,6 +76,7 @@ func TestRead(t *testing.T) {
 			{
 				Name:    "google-cloud-storage-v2",
 				Version: "2.3.4",
+				Roots:   []string{"googleapis"},
 				Channels: []*Channel{
 					{Path: "google/cloud/storage/v2"},
 				},

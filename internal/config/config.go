@@ -46,10 +46,10 @@ type Sources struct {
 	// Showcase is the showcase repository configuration.
 	Showcase *Source `yaml:"showcase,omitempty"`
 
-	// Protobuf is the protobuf repository configuration.
+	// Protobuf is the path to the `protobuf` repository, used as include directory) for `protoc`.
 	Protobuf *Source `yaml:"protobuf,omitempty"`
 
-	// Conformance is the conformance test repository configuration.
+	// Conformance is the path to the `conformance-tests` repository, used as include directory) for `protoc`.
 	Conformance *Source `yaml:"conformance,omitempty"`
 }
 
@@ -130,6 +130,9 @@ type Library struct {
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
+
+	// Roots specifies the source roots to use for generation. Defaults to googleapis.
+	Roots []string `yaml:"roots,omitempty"`
 
 	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
 	// overrides Default.Transport.
