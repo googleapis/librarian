@@ -83,6 +83,11 @@ func TestCreateLibrary(t *testing.T) {
 			wantErr:  errUnsupportedLanguage,
 			output:   newLibOutput,
 		},
+		{
+			name:     "output flag required",
+			language: "rust",
+			wantErr:  errOutputFlagRequired,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 
