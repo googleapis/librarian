@@ -32,7 +32,7 @@ import (
 const (
 	googleapisRepo = "github.com/googleapis/googleapis"
 	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
-	protobufRepo   = "https://github.com/protocolbuffers/protobuf"
+	protobufRepo   = "github.com/protocolbuffers/protobuf"
 )
 
 // Generate generates a Rust client library.
