@@ -83,8 +83,11 @@ func runCreateWithGenerator(ctx context.Context, libraryName, specSource, servic
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
 	}
-	if err := checkForExistingLibrary(ctx, cfg, libraryName, gen); err != nil {
-		return err
+	// check for existing libraries, if it exists just run generate
+	for _, lib := range cfg.Libraries {
+		if lib.Name == libraryName {
+			return gen.Run(ctx, false, libraryName)
+		}
 	}
 	specSource = deriveSpecSource(specSource, serviceConfig, cfg.Language)
 	if output, err = deriveOutput(output, cfg, libraryName, specSource, cfg.Language); err != nil {
@@ -95,6 +98,7 @@ func runCreateWithGenerator(ctx context.Context, libraryName, specSource, servic
 	}
 	switch cfg.Language {
 	case "rust":
+		//TODO: add create logic
 		return gen.Run(ctx, false, libraryName)
 	default:
 		return errUnsupportedLanguage
@@ -128,15 +132,6 @@ func deriveOutput(output string, cfg *config.Config, libraryName string, specSou
 		}
 	}
 	return output, nil
-}
-
-func checkForExistingLibrary(ctx context.Context, cfg *config.Config, name string, gen Generator) error {
-	for _, lib := range cfg.Libraries {
-		if lib.Name == name {
-			return gen.Run(ctx, false, name)
-		}
-	}
-	return nil
 }
 
 func addLibraryToLibrarianConfig(rootConfig *config.Config, name string, output string, specificationSource string, serviceConfig string, specificationFormat string) error {
