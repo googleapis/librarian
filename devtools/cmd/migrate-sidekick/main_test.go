@@ -44,6 +44,10 @@ func TestReadRootSidekick(t *testing.T) {
 						Commit: "fe58211356a91f4140ed51893703910db05ade91",
 						SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
 					},
+					Protobuf: &config.Source{
+						Commit: "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
+						SHA256: "008a11cc56f9b96679b4c285fd05f46d317d685be3ab524b2a310be0fbad987e",
+					},
 				},
 				Default: &config.Default{
 					Output:       "src/generated/",
