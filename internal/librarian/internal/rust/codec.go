@@ -216,6 +216,9 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	if len(module.SkippedIds) > 0 {
 		source["skipped-ids"] = strings.Join(module.SkippedIds, ",")
 	}
+	if len(module.Roots) > 0 {
+		source["roots"] = strings.Join(module.Roots, ",")
+	}
 	if module.IncludeList != "" {
 		source["include-list"] = module.IncludeList
 	}
