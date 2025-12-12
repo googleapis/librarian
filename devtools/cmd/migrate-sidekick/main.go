@@ -502,6 +502,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		includedIds, _ := sidekick.Source["included-ids"].(string)
 		includeList, _ := sidekick.Source["include-list"].(string)
 		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
+		titleOverride, _ := sidekick.Source["title-override"].(string)
 
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
@@ -530,6 +531,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			SkippedIds:             strToSlice(skippedIds),
 			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
+			TitleOverride:          titleOverride,
 		})
 
 		return nil

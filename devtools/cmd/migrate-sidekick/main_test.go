@@ -411,6 +411,7 @@ func TestBuildVeneer(t *testing.T) {
 								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
 								Source:                 "google/storage/v2",
 								Template:               "grpc-client",
+								TitleOverride:          "Cloud Firestore API",
 							},
 							{
 								GenerateSetterSamples: false,
