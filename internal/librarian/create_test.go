@@ -343,7 +343,16 @@ func validateLibrarianYaml(t *testing.T, libName string, libOutput string, specS
 	if len(cfg.Libraries) != 2 {
 		t.Errorf("want number of libraries in librarian.yaml to be 2, got %d", len(cfg.Libraries))
 	}
-	newLib := cfg.Libraries[1]
+	var newLib *config.Library
+	for _, lib := range cfg.Libraries {
+		if lib.Name == libName {
+			newLib = lib
+			break
+		}
+	}
+	if newLib == nil {
+		t.Fatalf("library %q not found in config after adding it", libName)
+	}
 
 	if newLib.Name != libName {
 		t.Errorf("Expected Name %q, got %q", libName, newLib.Name)
