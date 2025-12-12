@@ -35,16 +35,17 @@ type RustCreator interface {
 type RustCreate struct {
 }
 
-// RunPrepareCargoWorkspace encaspulates PrepareCargoWorkspace command.
+// PrepareCargoWorkspace encaspulates PrepareCargoWorkspace command.
 func (r *RustCreate) PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	return prepareCargoWorkspace(ctx, outputDir)
 }
 
-// RunPrepareCargoWorkspace encaspulates PrepareCargoWorkspace command.
+// FormatAndValidateLibrary encaspulates PrepareCargoWorkspace command.
 func (r *RustCreate) FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return formatAndValidateLibrary(ctx, outputDir)
 }
 
+// getPackageName retrieves the packagename from a Cargo.toml file.
 func getPackageName(output string) (string, error) {
 	cargo := CargoConfig{}
 	filename := path.Join(output, "Cargo.toml")
@@ -93,7 +94,7 @@ func formatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return addNewFilesToGit(ctx, outputDir)
 }
 
-// addNewFilesToGit addes newly created library files and mod files to git to be committed
+// addNewFilesToGit addes newly created library files and mod files to git to be committed.
 func addNewFilesToGit(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "git", "add", outputDir); err != nil {
 		return err
