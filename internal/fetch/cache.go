@@ -97,11 +97,12 @@ func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, 
 	}
 
 	// Step 3: Download tarball, compute SHA256, verify against expected, extract.
-	sourceURL := ""
+	var sourceURL string
 	if isVersionTag(commit) {
 		sourceURL = fmt.Sprintf("https://%s/archive/refs/tags/%s.tar.gz", repo, commit)
+	} else {
+		sourceURL = fmt.Sprintf("https://%s/archive/%s.tar.gz", repo, commit)
 	}
-	sourceURL = fmt.Sprintf("https://%s/archive/%s.tar.gz", repo, commit)
 	if err := os.MkdirAll(filepath.Dir(tgz), 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", filepath.Dir(tgz), err)
 	}
@@ -182,7 +183,7 @@ func isVersionTag(commit string) bool {
 	}
 	version := strings.TrimPrefix(commit, "v")
 	for _, r := range version {
-		if !('0' <= r && r <= '9' || r == '.') {
+		if (r < '0' || r > '9') && r != '.' {
 			return false
 		}
 	}

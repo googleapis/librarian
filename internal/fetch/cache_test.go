@@ -263,6 +263,51 @@ func TestRepoDir_Download(t *testing.T) {
 	}
 }
 
+func TestRepoDir_Download_Tag(t *testing.T) {
+	cachedir := t.TempDir()
+	t.Setenv(envLibrarianCache, cachedir)
+
+	tagCommit := "v1.2.3"
+	tarballData := createTestTarball(t, "googleapis-"+tagCommit, map[string]string{
+		"README.md":                    "# googleapis",
+		"google/api/annotations.proto": "syntax = \"proto3\";",
+	})
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		wantPath := fmt.Sprintf("/archive/refs/tags/%s.tar.gz", tagCommit)
+		if !strings.HasSuffix(r.URL.Path, wantPath) {
+			t.Errorf("unexpected request path: got %q, want suffix %q", r.URL.Path, wantPath)
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarballData)
+	}))
+	defer server.Close()
+
+	defer func(t http.RoundTripper) { http.DefaultTransport = t }(http.DefaultTransport)
+	http.DefaultTransport = server.Client().Transport
+
+	repo := strings.TrimPrefix(server.URL, "https://")
+	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
+	got, err := RepoDir(t.Context(), repo, tagCommit, expectedSHA)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(got, "README.md")); err != nil {
+		t.Errorf("expected README.md to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(got, "google/api/annotations.proto")); err != nil {
+		t.Errorf("expected google/api/annotations.proto to exist: %v", err)
+	}
+
+	tarballPath := tarballPath(cachedir, repo, tagCommit)
+	if _, err := os.Stat(tarballPath); err != nil {
+		t.Errorf("expected tarball to be cached at %q: %v", tarballPath, err)
+	}
+}
+
 func TestRepoDir_ContextDeadlineExceeded(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)

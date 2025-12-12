@@ -732,6 +732,118 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with protobuf and conformance",
+			library: &config.Library{
+				Name: "google-cloud-vision-v1",
+			},
+			channel: &config.Channel{
+				Path:          "google/cloud/vision/v1",
+				ServiceConfig: "google/cloud/vision/v1/vision_v1.yaml",
+			},
+			googleapisDir:  "/tmp/googleapis",
+			protobufDir:    "/tmp/protobuf",
+			conformanceDir: "/tmp/conformance",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/vision/v1/vision_v1.yaml",
+					SpecificationSource: "google/cloud/vision/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root":   "/tmp/googleapis",
+					"protobuf-src-root": "/tmp/protobuf",
+					"conformance-root":  "/tmp/conformance",
+					"roots":             "googleapis,protobuf-src,conformance",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-vision-v1",
+				},
+			},
+		},
+		{
+			name: "with showcase as source",
+			library: &config.Library{
+				Name: "google-cloud-showcase",
+			},
+			channel: &config.Channel{
+				Path:          "google/showcase/v1beta1",
+				ServiceConfig: "google/showcase/v1beta1/showcase_v1beta1.yaml",
+			},
+			showcaseDir: "/tmp/gapic-showcase",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/showcase/v1beta1/showcase_v1beta1.yaml",
+					SpecificationSource: "google/showcase/v1beta1",
+				},
+				Source: map[string]string{
+					"showcase-root": "/tmp/gapic-showcase",
+					"roots":         "showcase",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-showcase",
+				},
+			},
+		},
+		{
+			name: "with protobufDir and conformanceDir",
+			library: &config.Library{
+				Name: "google-cloud-vision-v1",
+			},
+			channel: &config.Channel{
+				Path:          "google/cloud/vision/v1",
+				ServiceConfig: "google/cloud/vision/v1/vision_v1.yaml",
+			},
+			googleapisDir:  "/tmp/googleapis",
+			protobufDir:    "/tmp/protobuf",
+			conformanceDir: "/tmp/conformance",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/vision/v1/vision_v1.yaml",
+					SpecificationSource: "google/cloud/vision/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root":   "/tmp/googleapis",
+					"protobuf-src-root": "/tmp/protobuf",
+					"conformance-root":  "/tmp/conformance",
+					"roots":             "googleapis,protobuf-src,conformance",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-vision-v1",
+				},
+			},
+		},
+		{
+			name: "with showcaseDir and no other sources",
+			library: &config.Library{
+				Name: "google-cloud-showcase",
+			},
+			channel: &config.Channel{
+				Path:          "google/showcase/v1beta1",
+				ServiceConfig: "google/showcase/v1beta1/showcase_v1beta1.yaml",
+			},
+			showcaseDir: "/tmp/gapic-showcase",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/showcase/v1beta1/showcase_v1beta1.yaml",
+					SpecificationSource: "google/showcase/v1beta1",
+				},
+				Source: map[string]string{
+					"showcase-root": "/tmp/gapic-showcase",
+					"roots":         "showcase",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-showcase",
+				},
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.conformanceDir, tt.showcaseDir)

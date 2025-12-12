@@ -26,9 +26,10 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 	var roots []string
 	specFormat := "protobuf" // Default specFormat
 
-	// Always add googleapis-root, and include it in roots
-	source["googleapis-root"] = googleapisDir
-	roots = append(roots, "googleapis")
+	if googleapisDir != "" {
+		source["googleapis-root"] = googleapisDir
+		roots = append(roots, "googleapis")
+	}
 
 	// Conditionally add other sources and their roots based on directory presence and specification format
 	switch library.SpecificationFormat {
@@ -38,14 +39,12 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 			source["discovery-root"] = discoveryDir
 			roots = append(roots, "discovery")
 		}
-	case "showcase":
-		// Showcase uses protobuf format, so specFormat remains "protobuf"
-		if showcaseDir != "" {
-			source["showcase-root"] = showcaseDir
-			roots = append(roots, "showcase")
-		}
 	}
 
+	if showcaseDir != "" {
+		source["showcase-root"] = showcaseDir
+		roots = append(roots, "showcase")
+	}
 	if protobufDir != "" {
 		source["protobuf-src-root"] = protobufDir
 		roots = append(roots, "protobuf-src")
