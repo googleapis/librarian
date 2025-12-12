@@ -127,10 +127,9 @@ func deriveOutput(output string, cfg *config.Config, libraryName string, specSou
 			}
 			if specSource != "" {
 				return defaultOutput(language, specSource, cfg.Default.Output), nil
-			} else {
-				libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
-				return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
 			}
+			libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
+			return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
 		}
 	default:
 		return defaultOutput(language, specSource, cfg.Default.Output), nil
