@@ -40,6 +40,9 @@ func TestSourceRoots(t *testing.T) {
 			"more-root":       "bar",
 			"ignored":         "baz",
 		}, []string{"googleapis-root", "more-root"}},
+		{map[string]string{
+			"roots": "googleapis,protobuf-src",
+		}, []string{"googleapis-root", "protobuf-src"}},
 	}
 
 	for _, c := range testCases {
