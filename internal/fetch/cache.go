@@ -61,7 +61,11 @@ const envLibrarianCache = "LIBRARIAN_CACHE"
 //     through to step 3.
 //  3. Download tarball, compute SHA256, verify it matches expectedSHA256 from
 //     librarian.yaml, extract, and return the path.
-func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
+//
+// subpath is an optional directory within the extracted archive. If provided,
+// it is appended to the final returned path, making it the effective root for
+// further operations.
+func RepoDir(ctx context.Context, repo, commit, expectedSHA256, subpath string) (string, error) {
 	cacheDir, err := cacheDir()
 	if err != nil {
 		return "", err
@@ -72,6 +76,9 @@ func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, 
 
 	// Step 1: Check if extracted directory exists and contains files.
 	if cached, err := extractedDir(cacheDir, repo, commit); err == nil {
+		if subpath != "" {
+			return filepath.Join(cached, subpath), nil
+		}
 		return cached, nil
 	}
 
@@ -86,6 +93,9 @@ func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, 
 					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 				}
 				if err := ExtractTarball(tgz, outDir); err == nil {
+					if subpath != "" {
+						return filepath.Join(outDir, subpath), nil
+					}
 					return outDir, nil
 				}
 			}
@@ -108,6 +118,9 @@ func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, 
 	}
 	if err := ExtractTarball(tgz, outDir); err != nil {
 		return "", fmt.Errorf("failed to extract tarball: %w", err)
+	}
+	if subpath != "" {
+		return filepath.Join(outDir, subpath), nil
 	}
 	return outDir, nil
 }

@@ -30,16 +30,22 @@ import (
 )
 
 const (
-	googleapisRepo = "github.com/googleapis/googleapis"
-	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	googleapisRepo  = "github.com/googleapis/googleapis"
+	discoveryRepo   = "github.com/googleapis/discovery-artifact-manager"
+	protobufRepo    = "github.com/protocolbuffers/protobuf"
+	conformanceRepo = "github.com/googleapis/conformance-tests"
+	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
-	googleapisDir, err := sourceDir(ctx, sources.Googleapis, googleapisRepo)
+	dirs, err := getSourceDirs(ctx, sources)
 	if err != nil {
 		return err
 	}
+
+	googleapisDir := dirs["googleapis"]
+
 	if library.Veneer {
 		return generateVeneer(ctx, library, googleapisDir)
 	}
@@ -48,11 +54,8 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
-	discoveryDir, err := sourceDir(ctx, sources.Discovery, discoveryRepo)
-	if err != nil {
-		return err
-	}
-	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir)
+	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir,
+		dirs["discovery"], dirs["protobuf-src"], dirs["conformance"], dirs["showcase"])
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
@@ -61,6 +64,28 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return err
 	}
 	return nil
+}
+
+func getSourceDirs(ctx context.Context, sources *config.Sources) (map[string]string, error) {
+	dirs := make(map[string]string)
+	sourceMap := map[string]struct {
+		cfg  *config.Source
+		repo string
+	}{
+		"googleapis":   {sources.Googleapis, googleapisRepo},
+		"discovery":    {sources.Discovery, discoveryRepo},
+		"protobuf-src": {sources.ProtobufSrc, protobufRepo},
+		"conformance":  {sources.Conformance, conformanceRepo},
+		"showcase":     {sources.Showcase, showcaseRepo},
+	}
+	for name, info := range sourceMap {
+		dir, err := sourceDir(ctx, info.cfg, info.repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get source dir for %s: %w", name, err)
+		}
+		dirs[name] = dir
+	}
+	return dirs, nil
 }
 
 // Format formats a generated Rust library. Must be called sequentially;
@@ -144,7 +169,7 @@ func sourceDir(ctx context.Context, source *config.Source, repo string) (string,
 	if source.Dir != "" {
 		return source.Dir, nil
 	}
-	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256, source.Subpath)
 }
 
 // DefaultLibraryName derives a library name from a channel path.
