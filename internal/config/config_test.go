@@ -42,8 +42,9 @@ func TestRead(t *testing.T) {
 				SHA256: "d41d8cd98f00b204e9800998ecf8427e",
 			},
 			Protobuf: &Source{
-				Commit: "4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b",
-				SHA256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Commit:  "4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b",
+				SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Subpath: "src",
 			},
 			Conformance: &Source{
 				Commit: "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",

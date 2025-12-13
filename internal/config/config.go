@@ -64,6 +64,10 @@ type Source struct {
 	// Dir is a local directory path to use instead of fetching.
 	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"dir,omitempty"`
+
+	// Subpath is a directory inside the fetched archive that should be treated as
+	// the root for operations.
+	Subpath string `yaml:"subpath,omitempty"`
 }
 
 // Default contains default settings for all libraries.

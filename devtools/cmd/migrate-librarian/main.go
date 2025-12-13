@@ -197,7 +197,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 		return nil, err
 	}
 
-	dir, err := fetch.RepoDir(ctx, googleapisRepo, latestCommit, sha256)
+	dir, err := fetch.RepoDir(ctx, googleapisRepo, latestCommit, sha256, "")
 	if err != nil {
 		return nil, err
 	}

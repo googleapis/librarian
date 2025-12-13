@@ -169,7 +169,7 @@ func sourceDir(ctx context.Context, source *config.Source, repo string) (string,
 	if source.Dir != "" {
 		return source.Dir, nil
 	}
-	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256, source.Subpath)
 }
 
 // DefaultLibraryName derives a library name from a channel path.

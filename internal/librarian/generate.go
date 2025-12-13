@@ -310,7 +310,7 @@ func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, e
 	if sources.Googleapis.Dir != "" {
 		return sources.Googleapis.Dir, nil
 	}
-	return fetch.RepoDir(ctx, googleapisRepo, sources.Googleapis.Commit, sources.Googleapis.SHA256)
+	return fetch.RepoDir(ctx, googleapisRepo, sources.Googleapis.Commit, sources.Googleapis.SHA256, sources.Googleapis.Subpath)
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list

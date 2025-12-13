@@ -123,7 +123,7 @@ func TestRepoDir_ExtractedDirExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := RepoDir(t.Context(), testRepo, testCommit, testSHA256)
+	got, err := RepoDir(t.Context(), testRepo, testCommit, testSHA256, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func TestRepoDir_TarballExists(t *testing.T) {
 	}
 
 	sha := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(t.Context(), testRepo, testCommit, sha)
+	got, err := RepoDir(t.Context(), testRepo, testCommit, sha, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func TestRepoDir_MismatchTarball(t *testing.T) {
 	}
 	defer f.Close()
 
-	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
+	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func TestRepoDir_Download(t *testing.T) {
 
 	repo := strings.TrimPrefix(server.URL, "https://")
 	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
+	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,6 +260,47 @@ func TestRepoDir_Download(t *testing.T) {
 	tarballPath := tarballPath(cachedir, repo, testCommit)
 	if _, err := os.Stat(tarballPath); err != nil {
 		t.Errorf("expected tarball to be cached at %q: %v", tarballPath, err)
+	}
+}
+
+
+func TestRepoDir_WithSubpath(t *testing.T) {
+	cachedir := t.TempDir()
+	t.Setenv(envLibrarianCache, cachedir)
+
+	subpath := "src"
+	tarballData := createTestTarball(t, "googleapis-"+testCommit, map[string]string{
+		filepath.Join(subpath, "test.proto"): "syntax = \"proto3\";",
+	})
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/archive/"+testCommit+".tar.gz") {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(tarballData)
+	}))
+	defer server.Close()
+
+	defer func(t http.RoundTripper) { http.DefaultTransport = t }(http.DefaultTransport)
+	http.DefaultTransport = server.Client().Transport
+
+	repo := strings.TrimPrefix(server.URL, "https://")
+	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
+	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA, subpath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantExtractedDir := filepath.Join(cachedir, fmt.Sprintf("%s@%s", repo, testCommit), subpath)
+
+	if diff := cmp.Diff(wantExtractedDir, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if _, err := os.Stat(filepath.Join(got, "test.proto")); err != nil {
+		t.Errorf("expected test.proto to exist in subpath: %v", err)
 	}
 }
 
@@ -281,7 +322,7 @@ func TestRepoDir_ContextDeadlineExceeded(t *testing.T) {
 	defer cancel()
 
 	repo := strings.TrimPrefix(server.URL, "https://")
-	_, err := RepoDir(ctx, repo, testCommit, "any-sha")
+	_, err := RepoDir(ctx, repo, testCommit, "any-sha", "")
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("expected context.DeadlineExceeded, got: %v", err)
 	}
