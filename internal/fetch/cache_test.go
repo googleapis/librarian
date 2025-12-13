@@ -263,7 +263,6 @@ func TestRepoDir_Download(t *testing.T) {
 	}
 }
 
-
 func TestRepoDir_WithSubpath(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
