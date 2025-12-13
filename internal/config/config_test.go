@@ -41,7 +41,7 @@ func TestRead(t *testing.T) {
 				Commit: "3f4e3f4f5e2f4c6e8b6f4e2f4c6e8b6f4e2f4c6e",
 				SHA256: "d41d8cd98f00b204e9800998ecf8427e",
 			},
-			Protobuf: &Source{
+			ProtobufSrc: &Source{
 				Commit:  "4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b",
 				SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 				Subpath: "src",

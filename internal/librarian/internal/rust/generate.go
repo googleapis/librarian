@@ -55,7 +55,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 	}
 
 	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir,
-		dirs["discovery"], dirs["protobuf"], dirs["conformance"], dirs["showcase"])
+		dirs["discovery"], dirs["protobuf-src"], dirs["conformance"], dirs["showcase"])
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
@@ -72,11 +72,11 @@ func getSourceDirs(ctx context.Context, sources *config.Sources) (map[string]str
 		cfg  *config.Source
 		repo string
 	}{
-		"googleapis":  {sources.Googleapis, googleapisRepo},
-		"discovery":   {sources.Discovery, discoveryRepo},
-		"protobuf":    {sources.Protobuf, protobufRepo},
-		"conformance": {sources.Conformance, conformanceRepo},
-		"showcase":    {sources.Showcase, showcaseRepo},
+		"googleapis":   {sources.Googleapis, googleapisRepo},
+		"discovery":    {sources.Discovery, discoveryRepo},
+		"protobuf-src": {sources.ProtobufSrc, protobufRepo},
+		"conformance":  {sources.Conformance, conformanceRepo},
+		"showcase":     {sources.Showcase, showcaseRepo},
 	}
 	for name, info := range sourceMap {
 		dir, err := sourceDir(ctx, info.cfg, info.repo)
