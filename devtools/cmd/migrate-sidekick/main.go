@@ -162,6 +162,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
+	generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 
 	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
@@ -187,7 +188,11 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Rust: &config.RustDefault{
 				PackageDependencies:     packageDependencies,
 				DisabledRustdocWarnings: strToSlice(warnings),
+				GenerateSetterSamples: generateSetterSamples
 			},
+		},
+		Codec: map[string]string {
+			"generate-setter-samples" : generateSetterSamples,
 		},
 	}
 

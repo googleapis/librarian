@@ -37,6 +37,8 @@ type RustDefault struct {
 
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
 	DisabledRustdocWarnings []string `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	GenerateSetterSamples string `yaml:"generate_sample_sources,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
