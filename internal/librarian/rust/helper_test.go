@@ -60,7 +60,7 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
 	os.RemoveAll(testdataDir)
-	command.Run(t.Context(), "git", "reset", "--hard")
+	command.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
 }
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
@@ -85,6 +85,6 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	if lineCount != 6 {
 		t.Errorf("formatting should have given us 6 lines but got: %d", lineCount)
 	}
-	command.Run(t.Context(), "git", "reset", "--hard")
-	command.Run(t.Context(), "git", "clean", "-fd")
+	command.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
+	command.Run(t.Context(), "git", "clean", "-fd", "./testdata")
 }
