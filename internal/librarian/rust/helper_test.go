@@ -86,5 +86,5 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 		t.Errorf("formatting should have given us 6 lines but got: %d", lineCount)
 	}
 	command.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
-	command.Run(t.Context(), "git", "clean", "-fd", "./testdata")
+	command.Run(t.Context(), "git", "clean", "-fd", ".")
 }
