@@ -17,7 +17,6 @@ package rust
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"path"
 
@@ -35,12 +34,12 @@ type RustCreator interface {
 type RustCreate struct {
 }
 
-// PrepareCargoWorkspace encaspulates PrepareCargoWorkspace command.
+// PrepareCargoWorkspace encaspulates prepareCargoWorkspace command.
 func (r *RustCreate) PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	return prepareCargoWorkspace(ctx, outputDir)
 }
 
-// FormatAndValidateLibrary encaspulates PrepareCargoWorkspace command.
+// FormatAndValidateLibrary encaspulates formatAndValidateLibrary command.
 func (r *RustCreate) FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return formatAndValidateLibrary(ctx, outputDir)
 }
@@ -49,11 +48,12 @@ func (r *RustCreate) FormatAndValidateLibrary(ctx context.Context, outputDir str
 func getPackageName(output string) (string, error) {
 	cargo := CargoConfig{}
 	filename := path.Join(output, "Cargo.toml")
-	if contents, err := os.ReadFile(filename); err == nil {
-		err = toml.Unmarshal(contents, &cargo)
-		if err != nil {
-			return "", fmt.Errorf("error reading %s: %w", filename, err)
-		}
+	contents, err := os.ReadFile(filename)
+	if err != nil {
+		return "", fmt.Errorf("failed to read %s: %w", filename, err)
+	}
+	if err = toml.Unmarshal(contents, &cargo); err != nil {
+		return "", fmt.Errorf("error unmarshaling %s: %w", filename, err)
 	}
 	return cargo.Package.Name, nil
 }
@@ -63,7 +63,7 @@ func prepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
-if err := command.Run(ctx, "taplo", "fmt", path.Join(outputDir, "Cargo.toml")); err != nil {
+	if err := command.Run(ctx, "taplo", "fmt", "Cargo.toml"); err != nil {
 		return err
 	}
 	return nil
@@ -71,24 +71,17 @@ if err := command.Run(ctx, "taplo", "fmt", path.Join(outputDir, "Cargo.toml")); 
 
 // formatAndValidateLibrary runs formatter, typos checks, tests  tasks on the specified output directory.
 func formatAndValidateLibrary(ctx context.Context, outputDir string) error {
-	if err := command.Run(ctx, "cargo", "fmt"); err != nil {
+	manifestPath := path.Join(outputDir, "Cargo.toml")
+	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {
 		return err
 	}
-	packagez, err := getPackageName(outputDir)
-	if err != nil {
+	if err := command.Run(ctx, "cargo", "test", "--manifest-path", manifestPath); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "cargo", "test", "--package", packagez); err != nil {
+	if err := command.Run(ctx, "env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--package", packagez, "--no-deps"); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, "cargo", "clippy", "--package", packagez, "--", "--deny", "warnings"); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, "typos"); err != nil {
-		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
+	if err := command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings"); err != nil {
 		return err
 	}
 	return addNewFilesToGit(ctx, outputDir)
@@ -99,15 +92,15 @@ func addNewFilesToGit(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "git", "add", outputDir); err != nil {
 		return err
 	}
-	return command.Run(ctx, "git", "add", "cargo.lock", "cargo.toml")
+	return command.Run(ctx, "git", "add", "Cargo.lock", "Cargo.toml")
 }
 
 // CargoConfig is the configuration for a cargo package.
 type CargoConfig struct {
-	Package CargoPackage // `toml:"package"`
+	Package CargoPackage `toml:"package"`
 }
 
 // CargoPackage is a cargo package.
 type CargoPackage struct {
-	Name string // `toml:"name"`
+	Name string `toml:"name"`
 }
