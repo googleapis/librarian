@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     https://www.apache.org/licenses/LICENSE-2.0
+//	https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package rust provides Rust functionality for librarian that is also being used by sidekick so needs to be accessible to sidekick package.
 package rust
 
 import (
@@ -69,7 +70,7 @@ func PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	return nil
 }
 
-// formatAndValidateLibrary runs formatter, typos checks, tests  tasks on the specified output directory.
+// FormatAndValidateLibrary runs formatter, typos checks, tests  tasks on the specified output directory.
 func FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	manifestPath := path.Join(outputDir, "Cargo.toml")
 	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {

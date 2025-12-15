@@ -22,13 +22,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 )
 
 func TestGetPackageName(t *testing.T) {
-	expectedPackageName := "google-cloud-accessapproval-v1"
-	got, err := getPackageName("testdata/package")
+	expectedPackageName := "new-lib-format"
+	got, err := getPackageName("testdata/new-lib-format")
 	if err != nil {
 		t.Fatalf("error getting package name %v", err)
 	}
@@ -60,7 +59,7 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
 	os.RemoveAll(testdataDir)
-	command.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
+	cmdtest.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
 }
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
@@ -85,6 +84,6 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	if lineCount != 6 {
 		t.Errorf("formatting should have given us 6 lines but got: %d", lineCount)
 	}
-	command.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", ".")
-	command.Run(t.Context(), "git", "clean", "-fd", ".")
+	cmdtest.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", ".")
+	cmdtest.Run(t.Context(), "git", "clean", "-fd", ".")
 }

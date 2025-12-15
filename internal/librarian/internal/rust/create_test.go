@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 )
 
@@ -60,7 +59,7 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
 	os.RemoveAll(testdataDir)
-	command.Run(t.Context(), "git", "reset", "--hard")
+	cmdtest.Run(t.Context(), "git", "reset", "--hard")
 }
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
@@ -68,6 +67,9 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "env")
 	cmdtest.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
 	libName := "new-lib-format"
 	t.Chdir(testdataDir)
 	fileToFormat := path.Join(testdataDir, libName) + "/src/main.rs"
@@ -85,6 +87,6 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	if lineCount != 6 {
 		t.Errorf("formatting should have given us 6 lines but got: %d", lineCount)
 	}
-	command.Run(t.Context(), "git", "reset", "--hard")
-	command.Run(t.Context(), "git", "clean", "-fd")
+	cmdtest.Run(t.Context(), "git", "reset", "--hard")
+	cmdtest.Run(t.Context(), "git", "clean", "-fd")
 }
