@@ -66,9 +66,9 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "env")
 	cmdtest.RequireCommand(t, "git")
-	testdataDir, err := filepath.Abs("./testdata/new-lib-format")
+	testdataDir, err := filepath.Abs("./testdata")
 	t.Chdir(testdataDir)
-	fileToFormat := testdataDir + "/src/main.rs"
+	fileToFormat := testdataDir + "new-lib-format/src/main.rs"
 
 	if err := formatAndValidateLibrary(t.Context(), testdataDir); err != nil {
 		t.Fatal(err)
@@ -82,7 +82,7 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 		lineCount++
 	}
 	if lineCount != 6 {
-		t.Errorf("formatting should have given us 7 lines but got: %d", lineCount)
+		t.Errorf("formatting should have given us 6 lines but got: %d", lineCount)
 	}
 	command.Run(t.Context(), "git", "reset", "--hard")
 }
