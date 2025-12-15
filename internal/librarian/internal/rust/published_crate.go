@@ -12,27 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sidekick
+package rust
 
 import (
-	"context"
-	"testing"
+	"os"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/pelletier/go-toml/v2"
 )
 
-func TestRustBumpVersions(t *testing.T) {
-	testhelpers.RequireCommand(t, "taplo")
-	config := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git": "git-not-found",
-			},
+func publishedCrate(manifest string) ([]string, error) {
+	contents, err := os.ReadFile(manifest)
+	if err != nil {
+		return nil, err
+	}
+	info := cargo{
+		Package: &crateInfo{
+			Publish: true,
 		},
 	}
-	cmdLine := &CommandLine{}
-	if err := rustBumpVersions(context.Background(), config, cmdLine); err == nil {
-		t.Errorf("expected an error with invalid git command")
+	if err := toml.Unmarshal(contents, &info); err != nil {
+		return nil, err
 	}
+	if !info.Package.Publish {
+		return nil, nil
+	}
+	return []string{info.Package.Name}, nil
 }

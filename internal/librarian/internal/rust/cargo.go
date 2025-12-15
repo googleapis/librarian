@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package command
+package rust
 
-import (
-	"os/exec"
-	"testing"
-)
+type cargo struct {
+	Package *crateInfo `toml:"package"`
+}
 
-// RequireCommand skips the test if the specified command is not found in PATH.
-// Use this to skip tests that depend on external tools like protoc, cargo, or
-// taplo, so that `go test ./...` will always pass on a fresh clone of the
-// repo.
-func RequireCommand(t *testing.T, command string) {
-	t.Helper()
-	if _, err := exec.LookPath(command); err != nil {
-		t.Skipf("skipping test because %s is not installed", command)
-	}
+type crateInfo struct {
+	Name    string `toml:"name"`
+	Publish bool   `toml:"publish"`
 }

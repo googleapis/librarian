@@ -18,6 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/googleapis/librarian/internal/change"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -26,9 +30,63 @@ func publishCommand() *cli.Command {
 		Name:      "publish",
 		Usage:     "publishes client libraries",
 		UsageText: "librarian publish",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "print commands without executing",
+			},
+			&cli.BoolFlag{
+				Name:  "skip-semver-checks",
+				Usage: "skip semantic versioning checks",
+			},
+		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fmt.Printf("publish command not yet implemented\n")
-			return nil
+			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			if err != nil {
+				return err
+			}
+			dryRun := cmd.Bool("dry-run")
+			skipSemverChecks := cmd.Bool("skip-semver-checks")
+			return publish(ctx, cfg, dryRun, skipSemverChecks)
 		},
 	}
+}
+
+func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChecks bool) error {
+	if err := preflight(ctx, cfg.Language, cfg.Release); err != nil {
+		return err
+	}
+	lastTag, err := change.GetLastTag(ctx, cfg.Release)
+	if err != nil {
+		return err
+	}
+	files, err := change.FilesChangedSince(ctx, lastTag, cfg.Release)
+	if err != nil {
+		return err
+	}
+	switch cfg.Language {
+	case "rust":
+		return rust.Publish(ctx, cfg, dryRun, skipSemverChecks, lastTag, files)
+	default:
+		return fmt.Errorf("publish not implemented for %q", cfg.Language)
+	}
+}
+
+// preflight verifies all the necessary language-agnostic tools are installed.
+func preflight(ctx context.Context, language string, cfg *config.Release) error {
+	if err := change.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
+		return err
+	}
+	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), "upstream"); err != nil {
+		return err
+	}
+	switch language {
+	case "rust":
+		if err := rust.PreFlight(ctx, cfg); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown language: %s", language)
+	}
+	return nil
 }
