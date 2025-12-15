@@ -604,10 +604,11 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/vision/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root":   "/tmp/googleapis",
-					"protobuf-src-root": "/tmp/protobuf",
-					"conformance-root":  "/tmp/conformance",
-					"roots":             "googleapis,protobuf-src,conformance",
+					"googleapis-root":     "/tmp/googleapis",
+					"protobuf-src-root":   "/tmp/protobuf",
+					"protobuf-src-subdir": "",
+					"conformance-root":    "/tmp/conformance",
+					"roots":               "googleapis,protobuf-src,conformance",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-vision-v1",
@@ -643,7 +644,7 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.conformanceDir, tt.showcaseDir)
+			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, "", tt.conformanceDir, tt.showcaseDir)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

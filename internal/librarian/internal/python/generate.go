@@ -229,9 +229,8 @@ func sourceDir(ctx context.Context, source *config.Source, repo string) (string,
 		return "", nil
 	}
 	if source.Dir != "" {
-		return source.Dir, nil
-	}
-	return fetchRepoDir(ctx, repo, source.Commit, source.SHA256, source.Subpath)
+		return source.Dir, nil	}
+	return fetchRepoDir(ctx, repo, source.Commit, source.SHA256)
 }
 
 // getStagingChildDirectory determines where within owl-bot-staging/{library-name} the

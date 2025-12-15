@@ -178,7 +178,7 @@ func TestSourceDir(t *testing.T) {
 		fetchRepoDir = originalFetchRepoDir
 	})
 
-	fetchRepoDir = func(ctx context.Context, repo, commit, sha256, subpath string) (string, error) {
+	fetchRepoDir = func(ctx context.Context, repo, commit, sha256 string) (string, error) {
 		return "fetched", nil
 	}
 	for _, test := range []struct {

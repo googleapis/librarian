@@ -54,8 +54,13 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
+	var protobufSubDir string
+	if sources.ProtobufSrc != nil {
+		protobufSubDir = sources.ProtobufSrc.Subpath
+	}
+
 	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir,
-		dirs["discovery"], dirs["protobuf-src"], dirs["conformance"], dirs["showcase"])
+		dirs["discovery"], dirs["protobuf-src"], protobufSubDir, dirs["conformance"], dirs["showcase"])
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
@@ -169,7 +174,7 @@ func sourceDir(ctx context.Context, source *config.Source, repo string) (string,
 	if source.Dir != "" {
 		return source.Dir, nil
 	}
-	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256, source.Subpath)
+	return fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
 }
 
 // DefaultLibraryName derives a library name from a channel path.
