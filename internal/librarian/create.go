@@ -25,7 +25,8 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/librarian/rust"
+
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -76,10 +77,10 @@ func createCommand() *cli.Command {
 }
 
 func runCreate(ctx context.Context, name, specSource, serviceConfig, output, specFormat string) error {
-	return create(ctx, name, specSource, serviceConfig, output, specFormat, &Generate{}, &rust.RustCreate{})
+	return create(ctx, name, specSource, serviceConfig, output, specFormat, &Generate{}, &rust.RustHelp{})
 }
 
-func create(ctx context.Context, libraryName, specSource, serviceConfig, output, specFormat string, gen Generator, rustCreator rust.RustCreator) error {
+func create(ctx context.Context, libraryName, specSource, serviceConfig, output, specFormat string, gen Generator, rustHelper rust.RustHelper) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
@@ -99,13 +100,13 @@ func create(ctx context.Context, libraryName, specSource, serviceConfig, output,
 	}
 	switch cfg.Language {
 	case "rust":
-		if err := rustCreator.PrepareCargoWorkspace(ctx, output); err != nil {
+		if err := rustHelper.HelperPrepareCargoWorkspace(ctx, output); err != nil {
 			return err
 		}
 		if err := gen.Run(ctx, false, libraryName); err != nil {
 			return err
 		}
-		return rustCreator.FormatAndValidateLibrary(ctx, output)
+		return rustHelper.HelperFormatAndValidateLibrary(ctx, output)
 	default:
 		return errUnsupportedLanguage
 	}
