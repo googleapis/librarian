@@ -39,14 +39,17 @@ func TestGetPackageName(t *testing.T) {
 func TestPrepareCargoWorkspace(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "taplo")
-	testdataDir, err := filepath.Abs("./testdata/new-lib")
+	libName := "new-lib"
+	testdataDir, err := filepath.Abs("./testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := PrepareCargoWorkspace(t.Context(), testdataDir); err != nil {
+	t.Chdir(testdataDir)
+	outputDir := path.Join(testdataDir, libName)
+	if err := PrepareCargoWorkspace(t.Context(), outputDir); err != nil {
 		t.Fatal(err)
 	}
-	expectedFile := path.Join(testdataDir, "Cargo.toml")
+	expectedFile := path.Join(outputDir, "Cargo.toml")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Fatal(err)
 	}
@@ -58,8 +61,8 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 	if !strings.Contains(string(got), expectedCargoContent) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
-	os.RemoveAll(testdataDir)
-	cmdtest.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", "./testdata")
+	os.RemoveAll(outputDir)
+	cmdtest.Run(t.Context(), "git", "restore", "--source=HEAD", "--staged", "--worktree", ".")
 }
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
@@ -69,7 +72,7 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	testdataDir, err := filepath.Abs("./testdata")
 	libName := "new-lib-format"
 	t.Chdir(testdataDir)
-	fileToFormat := path.Join(testdataDir, libName) + "/src/main.rs"
+	fileToFormat := path.Join(testdataDir, libName, "src", "main.rs")
 	if err := FormatAndValidateLibrary(t.Context(), path.Join(testdataDir, libName)); err != nil {
 		t.Fatal(err)
 	}
