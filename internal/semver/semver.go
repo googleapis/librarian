@@ -120,32 +120,36 @@ func parse(versionString string) (version, error) {
 
 // String formats a [version] struct into a string.
 func (v version) String() string {
+	return stringifyOptions{}.Stringify(v)
+}
+
+// stringifyOptions configures how a version string will be formatted.
+// By default, it is the complete, unmodified SemVer string.
+type stringifyOptions struct {
+	// IncludeVPrefix prepends a 'v' to the resulting version string.
+	// This is necessary to make the version compatible with [semver] APIs.
+	IncludeVPrefix bool
+
+	// VersionCoreOnly produces a string with only the Major, Minor, and Patch
+	// segments. The SemVer version core is defined in the spec:
+	// https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions.
+	VersionCoreOnly bool
+}
+
+// Stringify formats the given version as a string with the formatting options
+// configured in [versionStringifyOptions].
+func (o stringifyOptions) Stringify(v version) string {
 	vStr := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
-	if v.Prerelease != "" {
+	if v.Prerelease != "" && !o.VersionCoreOnly {
 		vStr += "-" + v.Prerelease
 		if v.PrereleaseNumber != nil {
 			vStr += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
 		}
 	}
-	return vStr
-}
-
-// VersionCore produces a new [version] with only the Major, Minor, and Patch
-// segments copied over.
-// The SemVer version core is defined in the spec:
-// https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions.
-func (v version) VersionCore() version {
-	return version{
-		Major: v.Major,
-		Minor: v.Minor,
-		Patch: v.Patch,
+	if o.IncludeVPrefix {
+		vStr = "v" + vStr
 	}
-}
-
-// vString formats the version normally as a string and prepends a 'v'.
-// This is necessary to make the version compatible with [semver] APIs.
-func (v version) vString() string {
-	return fmt.Sprintf("v%s", v.String())
+	return vStr
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
@@ -297,11 +301,15 @@ func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion strin
 	}
 
 	// Make a shallow copy of original options to retain any language-specific needs.
-	nextOpts := o
-	switch semver.Compare(pv.VersionCore().vString(), sv.VersionCore().vString()) {
+	nextVerOpts := o
+	coreStrOpts := stringifyOptions{
+		VersionCoreOnly: true,
+		IncludeVPrefix:  true,
+	}
+	switch semver.Compare(coreStrOpts.Stringify(pv), coreStrOpts.Stringify(sv)) {
 	case 0:
 		// Stable caught up to preview, so bump preview version core.
-		nextOpts.BumpVersionCore = true
+		nextVerOpts.BumpVersionCore = true
 	case 1:
 		// Preview is ahead, normal bump behavior.
 	case -1:
@@ -312,10 +320,10 @@ func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion strin
 		pv.Patch = sv.Patch
 
 		previewVersion = pv.String()
-		nextOpts.BumpVersionCore = true
+		nextVerOpts.BumpVersionCore = true
 	}
 
-	return nextOpts.DeriveNext(Minor, previewVersion)
+	return nextVerOpts.DeriveNext(Minor, previewVersion)
 }
 
 // DeriveNext calculates the next version based on the highest change type and
