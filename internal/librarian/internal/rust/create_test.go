@@ -79,7 +79,7 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	if len(data) > 0 && !bytes.HasSuffix(data, []byte("\n")) {
 		lineCount++
 	}
-	if lineCount != 7 {
+	if lineCount != 6 {
 		t.Errorf("formatting should have given us 7 lines but got: %d", lineCount)
 	}
 	command.Run(t.Context(), "git", "reset", "--hard")

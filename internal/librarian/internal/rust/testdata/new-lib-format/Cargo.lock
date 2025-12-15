@@ -3,9 +3,5 @@
 version = 4
 
 [[package]]
-name = "google-cloud-secretmanager-v1"
-version = "0.1.0"
-
-[[package]]
 name = "new-lib-format"
 version = "0.1.0"
