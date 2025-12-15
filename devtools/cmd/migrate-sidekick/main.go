@@ -188,11 +188,8 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Rust: &config.RustDefault{
 				PackageDependencies:     packageDependencies,
 				DisabledRustdocWarnings: strToSlice(warnings),
-				GenerateSetterSamples: generateSetterSamples
+				GenerateSetterSamples:   generateSetterSamples,
 			},
-		},
-		Codec: map[string]string {
-			"generate-setter-samples" : generateSetterSamples,
 		},
 	}
 
