@@ -379,13 +379,27 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 }
 
 func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
-	badVersion := "abc123"
-	wantErr := "failed to parse version:"
-	_, err := DeriveNextOptions{}.DeriveNext(Minor, badVersion)
-	if err == nil {
-		t.Errorf("DeriveNextOptions.DeriveNext(Minor, %q) did not return an error as expected.", badVersion)
-	} else if !strings.Contains(err.Error(), wantErr) {
-		t.Errorf("mismatch, got %q, wanted inclusion of %q", err, wantErr)
+	for _, test := range []struct {
+		name           string
+		changeLevel    ChangeLevel
+		currentVersion string
+		wantErr        string
+	}{
+		{
+			name:           "bad version",
+			changeLevel:    Minor,
+			currentVersion: "abc123",
+			wantErr:        "failed to parse version",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := DeriveNextOptions{}.DeriveNext(test.changeLevel, test.currentVersion)
+			if err == nil {
+				t.Errorf("DeriveNextOptions.DeriveNext(%v, %q) did not return an error as expected.", test.changeLevel, test.currentVersion)
+			} else if !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErr)
+			}
+		})
 	}
 }
 
