@@ -56,6 +56,9 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if err := preflight(ctx, cfg.Language, cfg.Release); err != nil {
 		return err
 	}
+	if err := change.AssertGitStatusClean(ctx, cfg.Release.GetExecutablePath("git")); err != nil {
+		return err
+	}
 	lastTag, err := change.GetLastTag(ctx, cfg.Release)
 	if err != nil {
 		return err

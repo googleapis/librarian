@@ -231,21 +231,45 @@ func TestFilterSomeGlobs(t *testing.T) {
 	}
 }
 
-func TestFilterEmpty(t *testing.T) {
-	input := []string{
-		"",
-	}
-
+func TestAssertGitStatusClean(t *testing.T) {
+	testhelpers.RequireCommand(t, "git")
+	ctx := context.Background()
 	cfg := &config.Release{
-		IgnoredChanges: []string{
-			".sidekick.toml",
-			".repo-metadata.json",
-			"doc/**",
+		Preinstalled: map[string]string{
+			"git": "git",
 		},
 	}
-	got := filesFilter(cfg, input)
-	want := []string{}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T)
+		wantErr bool
+	}{
+		{
+			name: "clean",
+			setup: func(t *testing.T) {
+				testhelpers.SetupRepo(t, "release-1.2.3")
+			},
+			wantErr: false,
+		},
+		{
+			name: "dirty",
+			setup: func(t *testing.T) {
+				testhelpers.SetupRepo(t, "release-1.2.3")
+				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			test.setup(t)
+			err := AssertGitStatusClean(ctx, cfg.GetExecutablePath("git"))
+			if (err != nil) != test.wantErr {
+				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }

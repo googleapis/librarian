@@ -28,6 +28,19 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
+func AssertGitStatusClean(ctx context.Context, git string) error {
+	cmd := exec.CommandContext(ctx, git, "status", "--porcelain")
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to check git status: %w", err)
+	}
+	if len(output) > 0 {
+		return fmt.Errorf("git working directory is not clean")
+	}
+	return nil
+}
+
 // GetLastTag returns the last git tag for the given release configuration.
 func GetLastTag(ctx context.Context, cfg *config.Release) (string, error) {
 	branch := fmt.Sprintf("%s/%s", cfg.Remote, cfg.Branch)
