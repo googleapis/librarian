@@ -67,7 +67,9 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "env")
 	cmdtest.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata/new-lib-format")
+	t.Chdir(testdataDir)
 	fileToFormat := testdataDir + "/src/main.rs"
+
 	if err := formatAndValidateLibrary(t.Context(), testdataDir); err != nil {
 		t.Fatal(err)
 	}
