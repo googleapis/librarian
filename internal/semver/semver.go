@@ -224,8 +224,8 @@ type DeriveNextOptions struct {
 
 // DeriveNext determines the appropriate SemVer version bump based on the
 // provided [ChangeLevel] and the provided [DeriveNextOptions].
-func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
-	if highestChange == None {
+func (o DeriveNextOptions) DeriveNext(changeLevel ChangeLevel, currentVersion string) (string, error) {
+	if changeLevel == None {
 		return currentVersion, nil
 	}
 
@@ -234,6 +234,11 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		return "", fmt.Errorf("failed to parse version: %w", err)
 	}
 
+	return o.deriveNext(changeLevel, v), nil
+}
+
+// deriveNext implements next version derivation based on the [DeriveNextOptions].
+func (o DeriveNextOptions) deriveNext(changeLevel ChangeLevel, v version) string {
 	// Only bump the prerelease version number.
 	if v.Prerelease != "" && !o.BumpVersionCore {
 		// Append prerelease number if there isn't one.
@@ -246,7 +251,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		}
 
 		*v.PrereleaseNumber++
-		return v.String(), nil
+		return v.String()
 	}
 
 	// Reset prerelease number, if present, then fallthrough to bump version core.
@@ -258,15 +263,15 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 	// all languages. Some languages, however, prefer to downgrade all pre-1.0.0
 	// changes e.g. Rust.
 	if v.Major == 0 {
-		if highestChange == Major {
-			highestChange = Minor
-		} else if highestChange == Minor && o.DowngradePreGAChanges {
-			highestChange = Patch
+		if changeLevel == Major {
+			changeLevel = Minor
+		} else if changeLevel == Minor && o.DowngradePreGAChanges {
+			changeLevel = Patch
 		}
 	}
 
 	// Bump the version core.
-	switch highestChange {
+	switch changeLevel {
 	case Major:
 		v.Major++
 		v.Minor = 0
@@ -278,7 +283,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		v.Patch++
 	}
 
-	return v.String(), nil
+	return v.String()
 }
 
 // DeriveNextPreview determines the next appropriate SemVer version bump for the
@@ -319,11 +324,10 @@ func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion strin
 		pv.Minor = sv.Minor
 		pv.Patch = sv.Patch
 
-		previewVersion = pv.String()
 		nextVerOpts.BumpVersionCore = true
 	}
 
-	return nextVerOpts.DeriveNext(Minor, previewVersion)
+	return nextVerOpts.deriveNext(Minor, pv), nil
 }
 
 // DeriveNext calculates the next version based on the highest change type and

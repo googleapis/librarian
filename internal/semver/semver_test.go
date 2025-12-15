@@ -378,6 +378,17 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 	}
 }
 
+func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
+	badVersion := "abc123"
+	wantErr := "failed to parse version:"
+	_, err := DeriveNextOptions{}.DeriveNext(Minor, badVersion)
+	if err == nil {
+		t.Errorf("DeriveNextOptions.DeriveNext(Minor, %q) did not return an error as expected.", badVersion)
+	} else if !strings.Contains(err.Error(), wantErr) {
+		t.Errorf("mismatch, got %q, wanted inclusion of %q", err, wantErr)
+	}
+}
+
 func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 	for _, test := range []struct {
 		name           string
@@ -468,6 +479,43 @@ func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, nextVersion); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveNextOptions_DeriveNextPreview_Errors(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		previewVersion string
+		stableVersion  string
+		wantErr        string
+	}{
+		{
+			name:           "bad preview version",
+			previewVersion: "abc123",
+			stableVersion:  "1.2.3",
+			wantErr:        "parse preview version",
+		},
+		{
+			name:           "bad stable version",
+			previewVersion: "0.1.2-rc.3",
+			stableVersion:  "abc123",
+			wantErr:        "parse stable version",
+		},
+		{
+			name:           "non-prerelease preview version",
+			previewVersion: "0.1.3",
+			stableVersion:  "0.1.2",
+			wantErr:        "no prerelease segment",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := DeriveNextOptions{}.DeriveNextPreview(test.previewVersion, test.stableVersion)
+			if err == nil {
+				t.Errorf("DeriveNextOptions.DeriveNextPreview(%q, %q) did not return an error as expected.", test.previewVersion, test.stableVersion)
+			} else if !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErr)
 			}
 		})
 	}
