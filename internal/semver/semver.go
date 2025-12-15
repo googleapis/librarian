@@ -137,7 +137,7 @@ type stringifyOptions struct {
 }
 
 // Stringify formats the given version as a string with the formatting options
-// configured in [versionStringifyOptions].
+// configured in [stringifyOptions].
 func (o stringifyOptions) Stringify(v version) string {
 	vStr := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Prerelease != "" && !o.VersionCoreOnly {
