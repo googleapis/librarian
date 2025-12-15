@@ -76,6 +76,9 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	if err := FormatAndValidateLibrary(t.Context(), path.Join(testdataDir, libName)); err != nil {
 		t.Fatal(err)
 	}
+	if err != nil {
+		t.Fatal(err)
+	}
 	data, err := os.ReadFile(fileToFormat)
 	if err != nil {
 		t.Fatal(err)
