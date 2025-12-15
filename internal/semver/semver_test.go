@@ -474,6 +474,13 @@ func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 			want:           "1.2.4-rc.2",
 		},
 		{
+			name:           "preview ahead, ignore BumpVersionCore, bump prerelease number",
+			previewVersion: "1.2.4-rc.1",
+			stableVersion:  "1.2.3",
+			want:           "1.2.4-rc.2",
+			opts:           DeriveNextOptions{BumpVersionCore: true},
+		},
+		{
 			name:           "preview ahead, pre-GA, bump prerelease number",
 			previewVersion: "0.1.3-rc.1",
 			stableVersion:  "0.1.2",
@@ -484,6 +491,13 @@ func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 			previewVersion: "1.2.4-rc",
 			stableVersion:  "1.2.3",
 			want:           "1.2.4-rc.1",
+		},
+		{
+			name:           "preview ahead, pre-GA, ignore BumpVersionCore, downgrade pre-GA, append prerelease number",
+			previewVersion: "0.1.2-rc",
+			stableVersion:  "0.1.1",
+			want:           "0.1.2-rc.1",
+			opts:           DeriveNextOptions{BumpVersionCore: true, DowngradePreGAChanges: true},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

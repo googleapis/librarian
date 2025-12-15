@@ -316,7 +316,8 @@ func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion strin
 		// Stable caught up to preview, so bump preview version core.
 		nextVerOpts.BumpVersionCore = true
 	case 1:
-		// Preview is ahead, normal bump behavior, defer to provided options.
+		// Preview is ahead, so only bump the prerelease version.
+		nextVerOpts.BumpVersionCore = false
 	case -1:
 		// Catch up to stable version's core, then bump and
 		// reset prerelease, if set.
