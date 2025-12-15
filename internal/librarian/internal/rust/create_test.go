@@ -15,6 +15,9 @@
 package rust
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	cmdtest "github.com/googleapis/librarian/internal/command"
@@ -34,13 +37,54 @@ func TestGetPackageName(t *testing.T) {
 func TestPrepareCargoWorkspace(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "taplo")
-	prepareCargoWorkspace(t.Context(), "testdata")
-}
+	testdataDir, err := filepath.Abs("./testdata/new-lib")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := prepareCargoWorkspace(t.Context(), testdataDir); err != nil {
+		t.Fatal(err)
+	}
+	expectedFile := testdataDir + "/Cargo.toml"
+	if _, err := os.Stat(expectedFile); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedCargoContent := "name = \"new-lib\""
+	if !strings.Contains(string(got), expectedCargoContent) {
+		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
+	}
+	os.RemoveAll(testdataDir)
+	command.Run(ctx, "git", "reset", "--hard")
+.}
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "env")
-	cmdtest.RequireCommand(t, "typos")
 	cmdtest.RequireCommand(t, "git")
-	formatAndValidateLibrary(t.Context(), "testdata/package")
+	testdataDir, err := filepath.Abs("./testdata/new-lib-format")
+	expectedFile := testdataDir + "/src/main.rs"
+	if _, err := os.Stat(expectedFile); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(expectedFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := formatAndValidateLibrary(t.Context(), testdataDir); err != nil {
+		t.Fatal(err)
+	}
+	lineCount := bytes.Count(data, []byte("\n"))
+	if len(data) > 0 && !bytes.HasSuffix(data, []byte("\n")) {
+		lineCount++
+	}
+	if (lineCount != 7) {
+		t.Errorf("formatting should have given us 7 lines but got: %d",lineCount)
+	}
+	command.Run(ctx, "git", "reset", "--hard")
 }

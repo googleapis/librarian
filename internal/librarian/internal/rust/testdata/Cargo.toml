@@ -1,5 +1,5 @@
 [workspace]
-members = ["google-cloud-secretmanager-v1"]
+members = ["google-cloud-secretmanager-v1", "new-lib-format"]
 resolver = "2"
 
 [workspace.package]
