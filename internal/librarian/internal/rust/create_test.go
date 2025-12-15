@@ -15,11 +15,13 @@
 package rust
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/command"
 	cmdtest "github.com/googleapis/librarian/internal/command"
 )
 
@@ -57,34 +59,28 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
 	os.RemoveAll(testdataDir)
-	command.Run(ctx, "git", "reset", "--hard")
-.}
+	command.Run(t.Context(), "git", "reset", "--hard")
+}
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "cargo")
 	cmdtest.RequireCommand(t, "env")
 	cmdtest.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata/new-lib-format")
-	expectedFile := testdataDir + "/src/main.rs"
-	if _, err := os.Stat(expectedFile); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(expectedFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
+	fileToFormat := testdataDir + "/src/main.rs"
 	if err := formatAndValidateLibrary(t.Context(), testdataDir); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(fileToFormat)
+	if err != nil {
 		t.Fatal(err)
 	}
 	lineCount := bytes.Count(data, []byte("\n"))
 	if len(data) > 0 && !bytes.HasSuffix(data, []byte("\n")) {
 		lineCount++
 	}
-	if (lineCount != 7) {
-		t.Errorf("formatting should have given us 7 lines but got: %d",lineCount)
+	if lineCount != 7 {
+		t.Errorf("formatting should have given us 7 lines but got: %d", lineCount)
 	}
-	command.Run(ctx, "git", "reset", "--hard")
+	command.Run(t.Context(), "git", "reset", "--hard")
 }
