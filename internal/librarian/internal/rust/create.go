@@ -63,7 +63,7 @@ func prepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "taplo", "fmt", "Cargo.toml"); err != nil {
+if err := command.Run(ctx, "taplo", "fmt", path.Join(outputDir, "Cargo.toml")); err != nil {
 		return err
 	}
 	return nil
