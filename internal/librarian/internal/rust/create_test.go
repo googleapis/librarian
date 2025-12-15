@@ -17,6 +17,7 @@ package rust
 import (
 	"bytes"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -46,7 +47,7 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 	if err := prepareCargoWorkspace(t.Context(), testdataDir); err != nil {
 		t.Fatal(err)
 	}
-	expectedFile := testdataDir + "/Cargo.toml"
+	expectedFile := path.Join(testdataDir, "Cargo.toml")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Fatal(err)
 	}
@@ -67,10 +68,10 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	cmdtest.RequireCommand(t, "env")
 	cmdtest.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata")
+	libName := "new-lib-format"
 	t.Chdir(testdataDir)
-	fileToFormat := testdataDir + "new-lib-format/src/main.rs"
-
-	if err := formatAndValidateLibrary(t.Context(), testdataDir); err != nil {
+	fileToFormat := path.Join(testdataDir, libName) + "/src/main.rs"
+	if err := formatAndValidateLibrary(t.Context(), path.Join(testdataDir, libName)); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(fileToFormat)
