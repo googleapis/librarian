@@ -18,7 +18,6 @@ disabled-rustdoc-warnings = "redundant_explicit_links,broken_intra_doc_links"
 # all) generated crates.
 'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
 'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'
-'
 
 [release]
 remote          = 'upstream'
