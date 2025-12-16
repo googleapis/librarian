@@ -27,11 +27,9 @@ func ptr(i int) *int {
 
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		version       string
-		want          version
-		wantErr       bool
-		wantErrPhrase string
+		name    string
+		version string
+		want    version
 	}{
 		{
 			name:    "valid version",
@@ -41,12 +39,6 @@ func TestParse(t *testing.T) {
 				Minor: 2,
 				Patch: 3,
 			},
-		},
-		{
-			name:          "invalid version with v prefix",
-			version:       "v1.2.3",
-			wantErr:       true,
-			wantErrPhrase: "invalid version format",
 		},
 		{
 			name:    "valid version with prerelease",
@@ -69,6 +61,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(21),
+				SpecVersion:      SemVerSpecV1,
 			},
 		},
 		{
@@ -90,29 +83,57 @@ func TestParse(t *testing.T) {
 				Patch: 0,
 			},
 		},
-		{
-			name:          "invalid prerelease number with separator",
-			version:       "1.2.3-rc.abc",
-			wantErr:       true,
-			wantErrPhrase: "invalid prerelease number",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actual, err := parse(test.version)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("Parse() should have failed")
-				}
-				if !strings.Contains(err.Error(), test.wantErrPhrase) {
-					t.Errorf("Parse() returned error %q, want to contain %q", err.Error(), test.wantErrPhrase)
-				}
-				return
-			}
 			if err != nil {
 				t.Fatalf("Parse() failed: %v", err)
 			}
 			if diff := cmp.Diff(test.want, actual); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParse_Errors(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		version       string
+		wantErrPhrase string
+	}{
+		{
+			name:          "invalid version with v prefix",
+			version:       "v1.2.3",
+			wantErrPhrase: "invalid version format",
+		},
+		{
+			name:          "invalid prerelease number with separator",
+			version:       "1.2.3-rc.abc",
+			wantErrPhrase: "invalid prerelease number",
+		},
+		{
+			name:          "invalid major number",
+			version:       "a.2.3",
+			wantErrPhrase: "invalid version format",
+		},
+		{
+			name:          "invalid minor number",
+			version:       "1.a.3",
+			wantErrPhrase: "invalid version format",
+		},
+		{
+			name:          "invalid patch number",
+			version:       "1.2.a",
+			wantErrPhrase: "invalid version format",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parse(test.version)
+			if err == nil {
+				t.Errorf("Parse(%q) should have failed", test.version)
+			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
+				t.Errorf("Parse(%s) returned error %q, want to contain %q", test.version, err.Error(), test.wantErrPhrase)
 			}
 		})
 	}
@@ -146,18 +167,31 @@ func TestVersion_String(t *testing.T) {
 			expected: "1.2.3-alpha.1",
 		},
 		{
-			name: "with prerelease no separator",
+			name: "with prerelease, semver spec v1 no separator",
 			version: version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(21),
+				SpecVersion:      SemVerSpecV1,
 			},
 			expected: "1.2.3-beta21",
 		},
 		{
-			name: "with prerelease no version",
+			name: "with prerelease, semver spec v1 no separator, zero padded single digit",
+			version: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "beta",
+				PrereleaseNumber: ptr(2),
+				SpecVersion:      SemVerSpecV1,
+			},
+			expected: "1.2.3-beta02",
+		},
+		{
+			name: "with prerelease no number",
 			version: version{
 				Major:      1,
 				Minor:      2,
@@ -383,21 +417,21 @@ func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
 		name           string
 		changeLevel    ChangeLevel
 		currentVersion string
-		wantErr        string
+		wantErrPhrase  string
 	}{
 		{
 			name:           "bad version",
 			changeLevel:    Minor,
 			currentVersion: "abc123",
-			wantErr:        "failed to parse version",
+			wantErrPhrase:  "failed to parse version",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := DeriveNextOptions{}.DeriveNext(test.changeLevel, test.currentVersion)
 			if err == nil {
 				t.Errorf("DeriveNextOptions.DeriveNext(%v, %q) did not return an error as expected.", test.changeLevel, test.currentVersion)
-			} else if !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErr)
+			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
+				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErrPhrase)
 			}
 		})
 	}
@@ -517,33 +551,33 @@ func TestDeriveNextOptions_DeriveNextPreview_Errors(t *testing.T) {
 		name           string
 		previewVersion string
 		stableVersion  string
-		wantErr        string
+		wantErrPhrase  string
 	}{
 		{
 			name:           "bad preview version",
 			previewVersion: "abc123",
 			stableVersion:  "1.2.3",
-			wantErr:        "parse preview version",
+			wantErrPhrase:  "parse preview version",
 		},
 		{
 			name:           "bad stable version",
 			previewVersion: "0.1.2-rc.3",
 			stableVersion:  "abc123",
-			wantErr:        "parse stable version",
+			wantErrPhrase:  "parse stable version",
 		},
 		{
 			name:           "non-prerelease preview version",
 			previewVersion: "0.1.3",
 			stableVersion:  "0.1.2",
-			wantErr:        "no prerelease segment",
+			wantErrPhrase:  "no prerelease segment",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := DeriveNextOptions{}.DeriveNextPreview(test.previewVersion, test.stableVersion)
 			if err == nil {
 				t.Errorf("DeriveNextOptions.DeriveNextPreview(%q, %q) did not return an error as expected.", test.previewVersion, test.stableVersion)
-			} else if !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErr)
+			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
+				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErrPhrase)
 			}
 		})
 	}

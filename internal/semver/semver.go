@@ -25,6 +25,25 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+// SemVerSpecVersion represents the version of the SemVer specification in use
+// by a version string.
+type SemVerSpecVersion int
+
+// String converts a SemVerSpecVersion to its string representation.
+func (c SemVerSpecVersion) String() string {
+	return [...]string{"2.0.0", "1.0.0"}[c]
+}
+
+const (
+	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
+	// https://semver.org/spec/v2.0.0.html.
+	SemVerSpecV2 = iota
+
+	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
+	// https://semver.org/spec/v1.0.0.html.
+	SemVerSpecV1
+)
+
 // version represents a semantic version.
 type version struct {
 	Major, Minor, Patch int
@@ -39,6 +58,10 @@ type version struct {
 	// number. If there is no numeric part in the pre-release segment, this
 	// field is nil.
 	PrereleaseNumber *int
+	// SpecVersion is the SemVer spec version detected in the version string.
+	// By default this is [SemVerSpecV2].
+	// Currently, this only impacts stringifying of prerelease numbers.
+	SpecVersion SemVerSpecVersion
 }
 
 // semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
@@ -77,16 +100,19 @@ func parse(versionString string) (version, error) {
 
 	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
+		// This shouldn't happen, [semver.IsValid] should catch it above.
 		return version{}, fmt.Errorf("invalid major version: %w", err)
 	}
 
 	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
+		// This shouldn't happen, [semver.IsValid] should catch it above.
 		return version{}, fmt.Errorf("invalid minor version: %w", err)
 	}
 
 	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
+		// This shouldn't happen, [semver.IsValid] should catch it above.
 		return version{}, fmt.Errorf("invalid patch version: %w", err)
 	}
 
@@ -103,6 +129,7 @@ func parse(versionString string) (version, error) {
 	} else if matches := semverV1PrereleaseNumberRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
 		v.Prerelease = matches[1]
 		numStr = matches[2]
+		v.SpecVersion = SemVerSpecV1
 	} else {
 		v.Prerelease = prerelease
 	}
@@ -143,7 +170,13 @@ func (o stringifyOptions) Stringify(v version) string {
 	if v.Prerelease != "" && !o.VersionCoreOnly {
 		vStr += "-" + v.Prerelease
 		if v.PrereleaseNumber != nil {
-			vStr += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
+			var numStr string
+			if v.SpecVersion == SemVerSpecV1 {
+				numStr = fmt.Sprintf("%02d", *v.PrereleaseNumber)
+			} else {
+				numStr = strconv.Itoa(*v.PrereleaseNumber)
+			}
+			vStr += v.PrereleaseSeparator + numStr
 		}
 	}
 	if o.IncludeVPrefix {
