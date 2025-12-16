@@ -41,9 +41,8 @@ func RequireCommand(t *testing.T, cmd string) {
 
 // SetupRepo creates a temporary git repository for testing.
 // It initializes a git repository, sets up a remote, and creates an initial commit with a tag.
-func SetupRepo(t *testing.T, tag string) {
+func SetupRepo(ctx context.Context, t *testing.T, tag string) {
 	t.Helper()
-	ctx := context.Background()
 	remoteDir := t.TempDir()
 	if err := command.Run(ctx, "git", "init", "--bare", remoteDir); err != nil {
 		t.Fatal(err)
