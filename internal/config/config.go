@@ -43,7 +43,7 @@ type Release struct {
 	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
 	Remote string `yaml:"remote,omitempty"`
 
-	// ReleaseBranch sets the name of the release branch, typically `main`
+	// Branch sets the name of the release branch, typically `main`
 	Branch string `yaml:"branch,omitempty"`
 
 	// Tools defines the list of tools to install, indexed by installer.
