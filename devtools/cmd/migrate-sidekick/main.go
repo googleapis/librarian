@@ -530,7 +530,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		}
 
 		modules = append(modules, &config.RustModule{
-			GenerateSetterSamples:  generateSetterSamples,
+			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
 			IncludedIds:            strToSlice(includedIds),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),

@@ -401,7 +401,7 @@ func TestBuildVeneer(t *testing.T) {
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
-								GenerateSetterSamples: "true",
+								GenerateSetterSamples: true,
 								HasVeneer:             true,
 								IncludedIds: []string{
 									".google.storage.v2.Storage.DeleteBucket",
@@ -420,7 +420,7 @@ func TestBuildVeneer(t *testing.T) {
 								TitleOverride:          "Cloud Firestore API",
 							},
 							{
-								GenerateSetterSamples: "false",
+								GenerateSetterSamples: false,
 								ModulePath:            "crate::generated::gapic_control::model",
 								NameOverrides:         ".google.storage.control.v2.IntelligenceConfig.Filter.cloud_storage_buckets=CloudStorageBucketsOneOf",
 								Output:                "testdata/build-veneer/success/lib-1/dir-2/dirdir-2",
