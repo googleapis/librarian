@@ -39,7 +39,7 @@ type RustDefault struct {
 	DisabledRustdocWarnings []string `yaml:"disabled_rustdoc_warnings,omitempty"`
 
 	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples string `yaml:"generate_sample_sources,omitempty"`
+	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
