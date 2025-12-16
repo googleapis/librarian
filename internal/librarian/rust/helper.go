@@ -31,7 +31,7 @@ type RustHelper interface {
 	HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error
 }
 
-// RustHelp struct implements RustCreator interface.
+// RustHelp struct implements RustHelper interface.
 type RustHelp struct {
 }
 
