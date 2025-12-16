@@ -33,6 +33,52 @@ type Config struct {
 	// Libraries contains configuration overrides for libraries that need
 	// special handling, and differ from default settings.
 	Libraries []*Library `yaml:"libraries,omitempty"`
+
+	// Release holds the configuration parameter for any `${lang}-release` subcommand.
+	Release *Release `yaml:"release,omitempty"`
+}
+
+// Release holds the configuration parameter for publish command.
+type Release struct {
+	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
+	Remote string `yaml:"remote,omitempty"`
+
+	// ReleaseBranch sets the name of the release branch, typically `main`
+	Branch string `yaml:"branch,omitempty"`
+
+	// Tools defines the list of tools to install, indexed by installer.
+	Tools map[string][]Tool `yaml:"tools,omitempty"`
+
+	// Preinstalled tools defines the list of tools that must be pre-installed.
+	//
+	// This is indexed by the well-known name of the tool vs. its path, e.g.
+	// [preinstalled]
+	// cargo = /usr/bin/cargo
+	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
+
+	// IgnoredChanges defines globs that are ignored in change analysis.
+	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
+
+	// An alternative location for the `roots.pem` file. If empty it has no
+	// effect.
+	RootsPem string `yaml:"roots_pem,omitempty"`
+}
+
+// GetExecutablePath finds the path for a given command, checking for an
+// override in the configuration first.
+func (r *Release) GetExecutablePath(commandName string) string {
+	if r != nil && r.Preinstalled != nil {
+		if exe, ok := r.Preinstalled[commandName]; ok {
+			return exe
+		}
+	}
+	return commandName
+}
+
+// Tool defines the configuration required to install helper tools.
+type Tool struct {
+	Name    string `yaml:"name"`
+	Version string `yaml:"version,omitempty"`
 }
 
 // Sources references external source repositories.
