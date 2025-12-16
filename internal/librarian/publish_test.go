@@ -80,7 +80,7 @@ func TestPublish(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			testhelpers.SetupRepo(t.Context(), t, "v1.0.0")
+			testhelpers.SetupForVersionBump(t, "v1.0.0")
 
 			var (
 				preflightCalled bool
@@ -105,7 +105,7 @@ func TestPublish(t *testing.T) {
 			cfg := &config.Config{
 				Language: test.language,
 				Release: &config.Release{
-					Remote: "upstream",
+					Remote: "origin",
 					Branch: "main",
 				},
 			}

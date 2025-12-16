@@ -86,7 +86,7 @@ func preflight(ctx context.Context, language string, cfg *config.Release) error 
 	if err := change.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
 		return err
 	}
-	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), "upstream"); err != nil {
+	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), cfg.Remote); err != nil {
 		return err
 	}
 	switch language {
