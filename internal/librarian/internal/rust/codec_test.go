@@ -120,6 +120,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:   "true",
 					},
 					ModulePath:                "gcs",
 					PerServiceFeatures:        true,
@@ -127,7 +128,6 @@ func TestToSidekickConfig(t *testing.T) {
 					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
-					GenerateSetterSamples:     "true",
 					GenerateRpcSamples:        true,
 					DisabledClippyWarnings:    []string{"too_many_arguments"},
 					DefaultFeatures:           []string{"default-feature"},

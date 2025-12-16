@@ -264,8 +264,5 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.Template != "" {
 		codec["template-override"] = "templates/" + module.Template
 	}
-	if module.GenerateSetterSamples == "true" {
-		codec["generate-setter-samples"] = "true"
-	}
 	return codec
 }

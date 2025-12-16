@@ -396,6 +396,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
 				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
+				GenerateSetterSamples:   generateSetterSamples,
 			},
 			PerServiceFeatures:        strToBool(perServiceFeatures),
 			ModulePath:                modulePath,
@@ -412,7 +413,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
-			GenerateSetterSamples:     generateSetterSamples,
 			GenerateRpcSamples:        strToBool(generateRpcSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: strToBool(detailedTracingAttributes),

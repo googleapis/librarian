@@ -149,9 +149,6 @@ type RustCrate struct {
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
-	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
-
 	// GenerateRpcSamples indicates whether to generate RPC samples.
 	GenerateRpcSamples bool `yaml:"generate_rpc_samples,omitempty"`
 
