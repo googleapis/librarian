@@ -53,6 +53,10 @@ func TestReadRootSidekick(t *testing.T) {
 						SHA256:  "55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d",
 						Subpath: "src",
 					},
+					Conformance: &config.Source{
+						Commit: "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
+						SHA256: "55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d",
+					},
 				},
 				Default: &config.Default{
 					Output:       "src/generated/",
