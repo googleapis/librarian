@@ -54,7 +54,12 @@ func rustGenerate(ctx context.Context, rootConfig *config.Config, cmdLine *Comma
 		cmdLine.Output = path.Join("src/generated", strings.TrimPrefix(cmdLine.SpecificationSource, "google/"))
 	}
 
-	if err := VerifyRustTools(ctx); err != nil {
+	// As part of migration to librarian we removed call to typos, so specifically call it here.
+	if err := cmd.Run(ctx, "typos", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
+	}
+
+	if err := rust.VerifyRustTools(ctx); err != nil {
 		return err
 	}
 
@@ -66,23 +71,6 @@ func rustGenerate(ctx context.Context, rootConfig *config.Config, cmdLine *Comma
 		return err
 	}
 	return PostGenerate(ctx, cmdLine.Output)
-}
-
-// VerifyRustTools verifies that all required Rust tools are installed.
-func VerifyRustTools(ctx context.Context) error {
-	if err := cmd.Run(ctx, "cargo", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
-	}
-	if err := cmd.Run(ctx, "taplo", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
-	}
-	if err := cmd.Run(ctx, "typos", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
-	}
-	if err := cmd.Run(ctx, "git", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
-	}
-	return nil
 }
 
 // PostGenerate runs post-generation tasks on the specified output directory.

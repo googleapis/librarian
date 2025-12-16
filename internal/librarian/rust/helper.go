@@ -35,12 +35,12 @@ type RustHelper interface {
 type RustHelp struct {
 }
 
-// HelperPrepareCargoWorkspace encaspulates prepareCargoWorkspace command.
+// HelperPrepareCargoWorkspace encapsulates prepareCargoWorkspace command.
 func (r *RustHelp) HelperPrepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	return PrepareCargoWorkspace(ctx, outputDir)
 }
 
-// HelperFormatAndValidateLibrary encaspulates formatAndValidateLibrary command.
+// HelperFormatAndValidateLibrary encapsulates formatAndValidateLibrary command.
 func (r *RustHelp) HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return FormatAndValidateLibrary(ctx, outputDir)
 }
@@ -61,6 +61,9 @@ func getPackageName(output string) (string, error) {
 
 // PrepareCargoWorkspace creates a new cargo package in the specified output directory.
 func PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
+	if err := VerifyRustTools(ctx); err != nil {
+		return err
+	}
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
@@ -86,6 +89,20 @@ func FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 		return err
 	}
 	return addNewFilesToGit(ctx, outputDir)
+}
+
+// VerifyRustTools verifies that all required Rust tools are installed.
+func VerifyRustTools(ctx context.Context) error {
+	if err := command.Run(ctx, "cargo", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
+	}
+	if err := command.Run(ctx, "taplo", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
+	}
+	if err := command.Run(ctx, "git", "--version"); err != nil {
+		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
+	}
+	return nil
 }
 
 // addNewFilesToGit addes newly created library files and mod files to git to be committed.
