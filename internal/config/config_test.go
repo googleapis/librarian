@@ -37,6 +37,19 @@ func TestRead(t *testing.T) {
 				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
 				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
 			},
+			Showcase: &Source{
+				Commit: "3f4e3f4f5e2f4c6e8b6f4e2f4c6e8b6f4e2f4c6e",
+				SHA256: "d41d8cd98f00b204e9800998ecf8427e",
+			},
+			ProtobufSrc: &Source{
+				Commit:  "4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b",
+				SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Subpath: "src",
+			},
+			Conformance: &Source{
+				Commit: "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+				SHA256: "f572d396fae9206628714fb2ce00f72e94f2258f",
+			},
 		},
 		Default: &Default{
 			Output:       "src/generated/",
@@ -64,6 +77,7 @@ func TestRead(t *testing.T) {
 			{
 				Name:    "google-cloud-storage-v2",
 				Version: "2.3.4",
+				Roots:   []string{"googleapis"},
 				Channels: []*Channel{
 					{Path: "google/cloud/storage/v2"},
 				},
@@ -121,5 +135,56 @@ func TestWrite(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestReleaseGetExecutablePath(t *testing.T) {
+	tests := []struct {
+		name           string
+		releaseConfig  *Release
+		executableName string
+		want           string
+	}{
+		{
+			name: "Preinstalled tool found",
+			releaseConfig: &Release{
+				Preinstalled: map[string]string{
+					"cargo": "/usr/bin/cargo",
+					"git":   "/usr/bin/git",
+				},
+			},
+			executableName: "cargo",
+			want:           "/usr/bin/cargo",
+		},
+		{
+			name: "Preinstalled tool not found",
+			releaseConfig: &Release{
+				Preinstalled: map[string]string{
+					"git": "/usr/bin/git",
+				},
+			},
+			executableName: "cargo",
+			want:           "cargo",
+		},
+		{
+			name:           "No preinstalled section",
+			releaseConfig:  &Release{},
+			executableName: "cargo",
+			want:           "cargo",
+		},
+		{
+			name:           "Nil release config",
+			releaseConfig:  nil,
+			executableName: "cargo",
+			want:           "cargo",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.releaseConfig.GetExecutablePath(test.executableName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("GetExecutablePath() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

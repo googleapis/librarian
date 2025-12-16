@@ -120,12 +120,34 @@ func parse(versionString string) (version, error) {
 
 // String formats a [version] struct into a string.
 func (v version) String() string {
+	return stringifyOptions{}.Stringify(v)
+}
+
+// stringifyOptions configures how a version string will be formatted.
+// By default, it is the complete, unmodified SemVer string.
+type stringifyOptions struct {
+	// IncludeVPrefix prepends a 'v' to the resulting version string.
+	// This is necessary to make the version compatible with [semver] APIs.
+	IncludeVPrefix bool
+
+	// VersionCoreOnly produces a string with only the Major, Minor, and Patch
+	// segments. The SemVer version core is defined in the spec:
+	// https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions.
+	VersionCoreOnly bool
+}
+
+// Stringify formats the given version as a string with the formatting options
+// configured in [stringifyOptions].
+func (o stringifyOptions) Stringify(v version) string {
 	vStr := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
-	if v.Prerelease != "" {
+	if v.Prerelease != "" && !o.VersionCoreOnly {
 		vStr += "-" + v.Prerelease
 		if v.PrereleaseNumber != nil {
 			vStr += v.PrereleaseSeparator + strconv.Itoa(*v.PrereleaseNumber)
 		}
+	}
+	if o.IncludeVPrefix {
+		vStr = "v" + vStr
 	}
 	return vStr
 }
@@ -202,16 +224,21 @@ type DeriveNextOptions struct {
 
 // DeriveNext determines the appropriate SemVer version bump based on the
 // provided [ChangeLevel] and the provided [DeriveNextOptions].
-func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
-	if highestChange == None {
+func (o DeriveNextOptions) DeriveNext(changeLevel ChangeLevel, currentVersion string) (string, error) {
+	if changeLevel == None {
 		return currentVersion, nil
 	}
 
 	v, err := parse(currentVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse current version: %w", err)
+		return "", fmt.Errorf("failed to parse version: %w", err)
 	}
 
+	return o.deriveNext(changeLevel, v), nil
+}
+
+// deriveNext implements next version derivation based on the [DeriveNextOptions].
+func (o DeriveNextOptions) deriveNext(changeLevel ChangeLevel, v version) string {
 	// Only bump the prerelease version number.
 	if v.Prerelease != "" && !o.BumpVersionCore {
 		// Append prerelease number if there isn't one.
@@ -224,7 +251,7 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		}
 
 		*v.PrereleaseNumber++
-		return v.String(), nil
+		return v.String()
 	}
 
 	// Reset prerelease number, if present, then fallthrough to bump version core.
@@ -236,15 +263,15 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 	// all languages. Some languages, however, prefer to downgrade all pre-1.0.0
 	// changes e.g. Rust.
 	if v.Major == 0 {
-		if highestChange == Major {
-			highestChange = Minor
-		} else if highestChange == Minor && o.DowngradePreGAChanges {
-			highestChange = Patch
+		if changeLevel == Major {
+			changeLevel = Minor
+		} else if changeLevel == Minor && o.DowngradePreGAChanges {
+			changeLevel = Patch
 		}
 	}
 
 	// Bump the version core.
-	switch highestChange {
+	switch changeLevel {
 	case Major:
 		v.Major++
 		v.Minor = 0
@@ -256,7 +283,52 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 		v.Patch++
 	}
 
-	return v.String(), nil
+	return v.String()
+}
+
+// DeriveNextPreview determines the next appropriate SemVer version bump for the
+// preview version relative to the provided stable version. Previews always lead
+// the stable version, so when the preview is equal with or behind the stable
+// version, it must be caught up. When the preview version is ahead, a
+// prerelease number bump is all that is necessary. Every change is treated as a
+// [Minor] change. The provided preview version must have a prerelease segment.
+func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion string) (string, error) {
+	pv, err := parse(previewVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse preview version: %w", err)
+	}
+	if pv.Prerelease == "" {
+		return "", fmt.Errorf("provided preview version has no prerelease segment: %s", previewVersion)
+	}
+	sv, err := parse(stableVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse stable version: %w", err)
+	}
+
+	// Make a shallow copy of original options to retain any language-specific needs.
+	nextVerOpts := o
+	coreStrOpts := stringifyOptions{
+		VersionCoreOnly: true,
+		IncludeVPrefix:  true,
+	}
+	switch semver.Compare(coreStrOpts.Stringify(pv), coreStrOpts.Stringify(sv)) {
+	case 0:
+		// Stable caught up to preview, so bump preview version core.
+		nextVerOpts.BumpVersionCore = true
+	case 1:
+		// Preview is ahead, so only bump the prerelease version.
+		nextVerOpts.BumpVersionCore = false
+	case -1:
+		// Catch up to stable version's core, then bump and
+		// reset prerelease, if set.
+		pv.Major = sv.Major
+		pv.Minor = sv.Minor
+		pv.Patch = sv.Patch
+
+		nextVerOpts.BumpVersionCore = true
+	}
+
+	return nextVerOpts.deriveNext(Minor, pv), nil
 }
 
 // DeriveNext calculates the next version based on the highest change type and
@@ -264,4 +336,11 @@ func (o DeriveNextOptions) DeriveNext(highestChange ChangeLevel, currentVersion 
 // method.
 func DeriveNext(highestChange ChangeLevel, currentVersion string) (string, error) {
 	return DeriveNextOptions{}.DeriveNext(highestChange, currentVersion)
+}
+
+// DeriveNextPreview calculates the next preview version based on the provided
+// stable version using the default [DeriveNextOptions]. This is a convenience
+// method.
+func DeriveNextPreview(previewVersion, stableVersion string) (string, error) {
+	return DeriveNextOptions{}.DeriveNextPreview(previewVersion, stableVersion)
 }

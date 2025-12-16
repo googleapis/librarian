@@ -39,6 +39,7 @@ func Run(ctx context.Context, args ...string) error {
 			tidyCommand(),
 			updateCommand(),
 			versionCommand(),
+			publishCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)

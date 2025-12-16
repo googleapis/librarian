@@ -178,9 +178,6 @@ func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) er
 	if sha != expectedSha256 {
 		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSha256, sha)
 	}
-	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-		return err
-	}
 	return os.Rename(tempPath, target)
 }
 

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"gopkg.in/yaml.v3"
 )
 
@@ -47,6 +48,29 @@ func (m *mockGenerator) Run(ctx context.Context, all bool, libraryName string) e
 	m.called = true
 	m.callArgs.all = all
 	m.callArgs.libraryName = libraryName
+	return nil
+}
+
+type mockRustHelper struct {
+	prepareCalled   bool
+	prepareCallArgs struct {
+		outputDir string
+	}
+	validateCalled   bool
+	validateCallArgs struct {
+		outputDir string
+	}
+}
+
+func (m *mockRustHelper) HelperPrepareCargoWorkspace(ctx context.Context, outputDir string) error {
+	m.prepareCalled = true
+	m.prepareCallArgs.outputDir = outputDir
+	return nil
+}
+
+func (m *mockRustHelper) HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error {
+	m.validateCalled = true
+	m.validateCallArgs.outputDir = outputDir
 	return nil
 }
 
@@ -95,8 +119,9 @@ func TestCreateLibrary(t *testing.T) {
 				createLibrarianYaml(t, libExists, libExistsOutput, test.language, "")
 			}
 			var gen Generator = &mockGenerator{}
+			var rustHelper rust.RustHelper = &mockRustHelper{}
 
-			err := runCreateWithGenerator(context.Background(), test.libName, "", "", test.output, defaultSpecFormat, gen)
+			err := create(context.Background(), test.libName, "", "", test.output, defaultSpecFormat, gen, rustHelper)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("want error %v, got %v", test.wantErr, err)
