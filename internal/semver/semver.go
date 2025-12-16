@@ -31,7 +31,14 @@ type SemVerSpecVersion int
 
 // String converts a SemVerSpecVersion to its string representation.
 func (c SemVerSpecVersion) String() string {
-	return [...]string{"2.0.0", "1.0.0"}[c]
+	switch c {
+	case SemVerSpecV2:
+		return "2.0.0"
+	case SemVerSpecV1:
+		return "1.0.0"
+	default:
+		return "unknown"
+	}
 }
 
 const (
