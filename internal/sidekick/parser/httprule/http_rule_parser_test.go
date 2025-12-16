@@ -157,7 +157,7 @@ func TestParseResourcePattern(t *testing.T) {
 		{
 			"single wildcard",
 			api.SingleSegmentWildcard,
-			api.NewPathTemplate().WithLiteral(api.SingleSegmentWildcard),
+			api.NewPathTemplate(),
 			false,
 			"should parse a single wildcard as a literal segment",
 		},

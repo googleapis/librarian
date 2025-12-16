@@ -94,7 +94,7 @@ func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3258): ParseResourcePattern
 	// should support parsing generic resources more robustly than just checking for a literal `*`.
 	if pathTemplate == api.SingleSegmentWildcard {
-		return api.NewPathTemplate().WithLiteral(api.SingleSegmentWildcard), nil
+		return api.NewPathTemplate(), nil
 	}
 	return parsePathTemplate("/" + pathTemplate)
 }
