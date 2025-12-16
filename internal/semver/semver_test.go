@@ -133,7 +133,7 @@ func TestParse_Errors(t *testing.T) {
 			if err == nil {
 				t.Errorf("Parse(%q) should have failed", test.version)
 			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
-				t.Errorf("Parse(%s) returned error %q, want to contain %q", test.version, err.Error(), test.wantErrPhrase)
+				t.Errorf("Parse(%q) returned error %q, want to contain %q", test.version, err.Error(), test.wantErrPhrase)
 			}
 		})
 	}
