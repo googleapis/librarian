@@ -123,25 +123,73 @@ func TestParseLiteral(t *testing.T) {
 }
 
 func TestParseIdentifier(t *testing.T) {
-	if got, pos, err := parseIdentifier(""); err == nil {
-		t.Errorf("expected an error, got=%v, pos=%v", got, pos)
+	for _, test := range []struct {
+		name string
+		input string
+		want *Identifier
+		wantPos int
+		expectErr bool
+	}{
+		{"empty string", "", nil, 0, true},
+		{"underscore", "_", nil, 0, true},
+		{"valid identifier", "abc", (*Identifier)(strptr("abc")), 3, false},
+		{"identifier with slash", "abc/def", (*Identifier)(strptr("abc")), 3, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, pos, err := parseIdentifier(test.input)
+			if test.expectErr {
+				if err == nil {
+					t.Fatalf("parseIdentifier(%s) succeeded, want error", test.input)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("parseIdentifier(%s) failed: %v", test.input, err)
+				}
+				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" || pos != test.wantPos {
+					t.Errorf("mismatch (-want +got) for identifier or position:\n%s\nwantPos=%d, gotPos=%d", diff, test.wantPos, pos)
+				}
+			}
+		})
 	}
-	if got, pos, err := parseIdentifier("_"); err == nil {
-		t.Errorf("expected an error, got=%v, pos=%v", got, pos)
-	}
-	got, pos, err := parseIdentifier("abc")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if *got != "abc" || pos != 3 {
-		t.Errorf("mismatch want=abc, got=%v, wantPos=3, gotPos=%d", got, pos)
-	}
+}
 
-	got, pos, err = parseIdentifier("abc/def")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if *got != "abc" || pos != 3 {
-		t.Errorf("mismatch want=abc, got=%v, wantPos=3, gotPos=%d", got, pos)
+func TestParseResourcePattern(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		pattern     string
+		want        *api.PathTemplate
+		expectErr   bool
+		explanation string
+	}{
+		{
+			"single wildcard",
+			api.SingleSegmentWildcard,
+			api.NewPathTemplate().WithLiteral(api.SingleSegmentWildcard),
+			false,
+			"should parse a single wildcard as a literal segment",
+		},
+		{
+			"double wildcard (unsupported for now)",
+			api.MultiSegmentWildcard,
+			nil,
+			true,
+			"should not support double wildcard as a top-level resource pattern",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ParseResourcePattern(test.pattern)
+			if test.expectErr {
+				if err == nil {
+					t.Fatalf("ParseResourcePattern(%s) succeeded, want error: %s", test.pattern, test.explanation)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("ParseResourcePattern(%s) failed: %v", test.pattern, err)
+				}
+				if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+					t.Fatalf("failed parsing resource pattern [\"%s\"] (-want, +got):\n%s", test.pattern, diff)
+				}
+			}
+		})
 	}
 }
