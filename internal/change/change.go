@@ -89,8 +89,7 @@ func IsNewFile(ctx context.Context, gitExe, ref, name string) bool {
 	if err != nil {
 		return false
 	}
-	expected := fmt.Sprintf(" create mode 100644 %s", name)
-	return bytes.HasPrefix(output, []byte(expected))
+	return bytes.HasPrefix(output, []byte(" create mode "))
 }
 
 // GitVersion checks the git version.
