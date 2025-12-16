@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Package testhelpers provides helper functions for tests.
+// These are used across packages
 package testhelpers
 
 import (
@@ -87,7 +88,7 @@ version = "1.0.0"
 	initialLibRsContents = `pub fn test() -> &'static str { "Hello World" }`
 
 	// NewLibRsContents defines new content for a lib.rs file for testing changes.
-	newLibRsContents = `pub fn hello() -> &'static str { "Hello World" }`
+	NewLibRsContents = `pub fn hello() -> &'static str { "Hello World" }`
 )
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
@@ -180,7 +181,7 @@ func SetupForPublish(t *testing.T, wantTag string) string {
 		t.Fatal(err)
 	}
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {

@@ -42,7 +42,7 @@ func TestBumpVersionsSuccess(t *testing.T) {
 	}
 	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
@@ -70,7 +70,7 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 	}
 	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
@@ -98,7 +98,7 @@ func TestBumpVersionsNoSemverChecks(t *testing.T) {
 	}
 	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {

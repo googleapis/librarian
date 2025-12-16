@@ -102,3 +102,20 @@ func GitVersion(ctx context.Context, gitExe string) error {
 func GitRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
 }
+
+// MatchesBranchPoint returns an error if the local repository has unpushed changes.
+func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) error {
+	remoteBranch := fmt.Sprintf("%s/%s", remote, branch)
+	delta := fmt.Sprintf("%s...HEAD", remoteBranch)
+	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	if len(output) != 0 {
+		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, string(output))
+	}
+	return nil
+}
+

@@ -189,7 +189,7 @@ func TestPublishBadManifest(t *testing.T) {
 	}
 	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	name = path.Join("src", "storage", "Cargo.toml")

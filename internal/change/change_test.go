@@ -252,3 +252,50 @@ func TestAssertGitStatusClean(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchesBranchPointSuccess(t *testing.T) {
+	testhelpers.RequireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+	}
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMatchesBranchDiffError(t *testing.T) {
+	testhelpers.RequireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+		t.Errorf("expected an error with an invalid branch")
+	}
+}
+
+func TestMatchesDirtyCloneError(t *testing.T) {
+	testhelpers.RequireCommand(t, "git")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "not-a-valid-branch",
+	}
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+		t.Errorf("expected an error with a dirty clone")
+	}
+}

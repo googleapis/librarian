@@ -40,7 +40,7 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err != nil {
 		return err
 	}
-	if err := matchesBranchPoint(config); err != nil {
+	if err := change.MatchesBranchPoint(ctx, gitExe(config), config.Remote, config.Branch); err != nil {
 		return err
 	}
 	files, err := change.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
