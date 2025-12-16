@@ -51,6 +51,9 @@ func SetupRepo(t *testing.T, tag string) {
 	if err := command.Run(ctx, "git", "clone", remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
+	if err := command.Run(ctx, "git", "remote", "add", "upstream", remoteDir); err != nil {
+		t.Fatal(err)
+	}
 	if err := command.Run(ctx, "git", "config", "user.email", "test@example.com"); err != nil {
 		t.Fatal(err)
 	}

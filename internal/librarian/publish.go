@@ -25,6 +25,11 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var (
+	rustPublishCrates  = rustrelease.PublishCrates
+	rustCargoPreFlight = rustrelease.CargoPreFlight
+)
+
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
@@ -69,7 +74,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	}
 	switch cfg.Language {
 	case "rust":
-		return rustrelease.PublishCrates(ctx, toSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+		return rustPublishCrates(ctx, toSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}
@@ -85,7 +90,7 @@ func preflight(ctx context.Context, language string, cfg *config.Release) error 
 	}
 	switch language {
 	case "rust":
-		if err := rustrelease.CargoPreFlight(ctx, toSidekickReleaseConfig(cfg)); err != nil {
+		if err := rustCargoPreFlight(ctx, toSidekickReleaseConfig(cfg)); err != nil {
 			return err
 		}
 	default:
