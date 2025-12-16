@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 const (
@@ -27,40 +28,40 @@ const (
 )
 
 func TestMatchesBranchPointSuccess(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := setupForPublish(t, "v1.0.0")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := matchesBranchPoint(config); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMatchesBranchDiffError(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := setupForPublish(t, "v1.0.0")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := matchesBranchPoint(config); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
 
 func TestMatchesDirtyCloneError(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := setupForPublish(t, "v1.0.0")
-	cloneRepository(t, remoteDir)
-	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}

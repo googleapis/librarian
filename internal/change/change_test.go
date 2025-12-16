@@ -16,6 +16,7 @@ package change
 
 import (
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"testing"
@@ -62,17 +63,19 @@ func TestLastTagGitError(t *testing.T) {
 	}
 }
 
-func TestIsNewFile(t *testing.T) {
-	const wantTag = "new-file-success"
-	testhelpers.SetupForVersionBump(t, wantTag)
-	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
+func TestIsNewFileSuccess(t *testing.T) {
+	testhelpers.SetupForVersionBump(t, "dummy-tag")
+	// Get the HEAD commit hash, which serves as a unique reference for this test.
+	cmd := exec.CommandContext(t.Context(), "git", "rev-parse", "HEAD")
+	out, err := cmd.Output()
+	if err != nil {
 		t.Fatal(err)
 	}
+	headCommit := strings.TrimSpace(string(out))
 	existingName := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	cfg := &config.Release{}
 	gitExe := cfg.GetExecutablePath("git")
 
@@ -89,10 +92,10 @@ func TestIsNewFile(t *testing.T) {
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
-	if IsNewFile(t.Context(), gitExe, wantTag, existingName) {
+	if IsNewFile(t.Context(), gitExe, headCommit, existingName) {
 		t.Errorf("file is not new but reported as such: %s", existingName)
 	}
-	if !IsNewFile(t.Context(), gitExe, wantTag, newName) {
+	if !IsNewFile(t.Context(), gitExe, headCommit, newName) {
 		t.Errorf("file is new but not reported as such: %s", newName)
 	}
 }

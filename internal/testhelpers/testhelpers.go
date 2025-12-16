@@ -67,10 +67,10 @@ func SetupRepo(t *testing.T, tag string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(ctx, "git", "push", "origin", strings.TrimSpace(string(branch))); err != nil {
+	if err := command.Run(ctx, "git", "push", "upstream", strings.TrimSpace(string(branch))); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(ctx, "git", "push", "origin", tag); err != nil {
+	if err := command.Run(ctx, "git", "push", "upstream", tag); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -95,7 +95,7 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	remoteDir := t.TempDir()
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
-	if err := command.Run(t.Context(), "git", "remote", "add", "upstream", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
 	cloneDir := t.TempDir()
@@ -103,10 +103,6 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	if err := command.Run(t.Context(), "git", "clone", remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "remote", "add", "upstream", remoteDir); err != nil {
-		t.Fatal(err)
-	}
-
 	configNewGitRepository(t)
 }
 

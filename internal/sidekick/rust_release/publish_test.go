@@ -22,11 +22,12 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestPublishSuccess(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -41,16 +42,16 @@ func TestPublishSuccess(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPublishWithNewCrate(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -65,23 +66,23 @@ func TestPublishWithNewCrate(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-with-new-crate")
-	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	remoteDir := testhelpers.SetupForPublish(t, "release-with-new-crate")
+	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
-	cloneRepository(t, remoteDir)
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPublishWithRootsPem(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	tmpDir := t.TempDir()
 	rootsPem := path.Join(tmpDir, "roots.pem")
 	if err := os.WriteFile(rootsPem, []byte{}, 0644); err != nil {
@@ -102,16 +103,16 @@ func TestPublishWithRootsPem(t *testing.T) {
 		},
 		RootsPem: rootsPem,
 	}
-	remoteDir := setupForPublish(t, "release-with-roots-pem")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-with-roots-pem")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPublishWithLocalChangesError(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -126,9 +127,9 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-with-local-changes-error")
-	cloneRepository(t, remoteDir)
-	addCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	remoteDir := testhelpers.SetupForPublish(t, "release-with-local-changes-error")
+	testhelpers.CloneRepository(t, remoteDir)
+	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
@@ -153,8 +154,8 @@ func TestPublishPreflightError(t *testing.T) {
 
 func TestPublishLastTagError(t *testing.T) {
 	const echo = "/bin/echo"
-	requireCommand(t, "git")
-	requireCommand(t, echo)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, echo)
 	config := config.Release{
 		Remote: "origin",
 		Branch: "invalid-branch",
@@ -162,16 +163,16 @@ func TestPublishLastTagError(t *testing.T) {
 			"cargo": echo,
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), &config, true, false); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
 	}
 }
 
 func TestPublishBadManifest(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -186,7 +187,7 @@ func TestPublishBadManifest(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
@@ -198,14 +199,14 @@ func TestPublishBadManifest(t *testing.T) {
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
-	cloneRepository(t, remoteDir)
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
 }
 
 func TestPublishGetPlanError(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -214,16 +215,16 @@ func TestPublishGetPlanError(t *testing.T) {
 			"cargo": "git",
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
 }
 
 func TestPublishPlanMismatchError(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -238,8 +239,8 @@ func TestPublishPlanMismatchError(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
@@ -250,8 +251,8 @@ func TestPublishSkipSemverChecks(t *testing.T) {
 		t.Skip("skipping on windows, bash script set up does not work")
 	}
 
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	tmpDir := t.TempDir()
 	// Create a fake cargo that fails on `semver-checks`
 	cargoScript := path.Join(tmpDir, "cargo")
@@ -276,8 +277,8 @@ fi
 			"cargo": cargoScript,
 		},
 	}
-	remoteDir := setupForPublish(t, "release-2001-02-03")
-	cloneRepository(t, remoteDir)
+	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	testhelpers.CloneRepository(t, remoteDir)
 
 	// This should fail because semver-checks fails.
 	if err := Publish(t.Context(), config, true, false); err == nil {

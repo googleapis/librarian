@@ -21,11 +21,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestPublishedCrateSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
-	addCrate(t, tmpDir, "google-cloud-storage")
+	testhelpers.AddCrate(t, tmpDir, "google-cloud-storage")
 	manifest := path.Join(tmpDir, "Cargo.toml")
 	got, err := publishedCrate(manifest)
 	if err != nil {
@@ -47,7 +48,7 @@ func TestPublishedCrateReadError(t *testing.T) {
 
 func TestPublishedCrateUnmarshalError(t *testing.T) {
 	tmpDir := t.TempDir()
-	addCrate(t, tmpDir, "google-cloud-storage")
+	testhelpers.AddCrate(t, tmpDir, "google-cloud-storage")
 	manifest := path.Join(tmpDir, "Cargo.toml")
 	if err := os.WriteFile(manifest, []byte("invalid-toml={\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -59,9 +60,9 @@ func TestPublishedCrateUnmarshalError(t *testing.T) {
 
 func TestPublishedCrateNotForPublication(t *testing.T) {
 	tmpDir := t.TempDir()
-	addCrate(t, tmpDir, "google-cloud-storage")
+	testhelpers.AddCrate(t, tmpDir, "google-cloud-storage")
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	contents := fmt.Sprintf(initialCargoContents, "google-cloud-storage")
+	contents := fmt.Sprintf(testhelpers.InitialCargoContents, "google-cloud-storage")
 	contents = contents + "\npublish = false\n"
 	if err := os.WriteFile(manifest, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
