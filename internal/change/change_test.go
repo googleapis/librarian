@@ -15,9 +15,9 @@
 package change
 
 import (
-	"context"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,16 +31,14 @@ const (
 )
 
 func TestGetLastTag(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
 	const wantTag = "v1.2.3"
-	t.Chdir(t.TempDir())
-	testhelpers.SetupRepo(t, wantTag)
+	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	testhelpers.CloneRepository(t, remoteDir)
 	cfg := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 	}
-	got, err := GetLastTag(ctx, cfg)
+	got, err := GetLastTag(t.Context(), cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,32 +47,29 @@ func TestGetLastTag(t *testing.T) {
 	}
 }
 
-func TestIsNewFile(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
-	const wantTag = "new-file-success"
+func TestLastTagGitError(t *testing.T) {
 	t.Chdir(t.TempDir())
-	// Don't use SetupRepo because we need to create a commit before the tag.
-	if err := command.Run(ctx, "git", "init"); err != nil {
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+	}
+	_, err := GetLastTag(t.Context(), cfg)
+	if err == nil {
+		t.Fatal("expected an error but got none")
+	}
+	if !strings.Contains(err.Error(), "fatal: not a git repository") && !strings.Contains(err.Error(), "exit status 128") {
+		t.Errorf("expected git error, got: %v", err)
+	}
+}
+
+func TestIsNewFile(t *testing.T) {
+	const wantTag = "new-file-success"
+	testhelpers.SetupForVersionBump(t, wantTag)
+	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(ctx, "git", "config", "user.email", "test@example.com"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "config", "user.name", "Test User"); err != nil {
-		t.Fatal(err)
-	}
-	existingName := "README.md"
-	if err := os.WriteFile(existingName, []byte("old file"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "commit", "-m", "add readme"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "tag", wantTag); err != nil {
+	existingName := path.Join("src", "storage", "src", "lib.rs")
+	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -88,79 +83,60 @@ func TestIsNewFile(t *testing.T) {
 	if err := os.WriteFile(newName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(ctx, "git", "commit", "-m", "feat: changed storage"); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
 		t.Fatal(err)
 	}
-	if IsNewFile(ctx, gitExe, wantTag, existingName) {
+	if IsNewFile(t.Context(), gitExe, wantTag, existingName) {
 		t.Errorf("file is not new but reported as such: %s", existingName)
 	}
-	if !IsNewFile(ctx, gitExe, wantTag, newName) {
+	if !IsNewFile(t.Context(), gitExe, wantTag, newName) {
 		t.Errorf("file is new but not reported as such: %s", newName)
 	}
 }
 
 func TestIsNewFileDiffError(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
 	const wantTag = "new-file-success"
 	t.Chdir(t.TempDir())
-	testhelpers.SetupRepo(t, wantTag)
+	testhelpers.SetupForVersionBump(t, wantTag)
 	cfg := &config.Release{}
 	gitExe := cfg.GetExecutablePath("git")
-	existingName := "README.md"
-	if IsNewFile(ctx, gitExe, "invalid-tag", existingName) {
+	existingName := path.Join("src", "storage", "src", "lib.rs")
+	if IsNewFile(t.Context(), gitExe, "invalid-tag", existingName) {
 		t.Errorf("diff errors should return false for isNewFile(): %s", existingName)
 	}
 }
 
 func TestFilesChangedSuccess(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
 	const wantTag = "release-2001-02-03"
 	release := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 	}
-	t.Chdir(t.TempDir())
-	testhelpers.SetupRepo(t, wantTag)
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.MkdirAll(path.Dir(name), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(name, []byte(newLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "commit", "-m", "feat: changed storage"); err != nil {
-		t.Fatal(err)
-	}
+	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	testhelpers.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(ctx, wantTag, release)
+	got, err := FilesChangedSince(t.Context(), wantTag, release)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{name}
+	want := []string{path.Join("src", "storage", "src", "lib.rs")}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
 
 func TestFilesBadRef(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
 	const wantTag = "release-2002-03-04"
 	release := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 	}
-	t.Chdir(t.TempDir())
-	testhelpers.SetupRepo(t, wantTag)
-	if got, err := FilesChangedSince(ctx, "--invalid--", release); err == nil {
+	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	testhelpers.CloneRepository(t, remoteDir)
+	if got, err := FilesChangedSince(t.Context(), "--invalid--", release); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
@@ -232,8 +208,6 @@ func TestFilterSomeGlobs(t *testing.T) {
 }
 
 func TestAssertGitStatusClean(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	ctx := context.Background()
 	cfg := &config.Release{
 		Preinstalled: map[string]string{
 			"git": "git",
@@ -247,14 +221,16 @@ func TestAssertGitStatusClean(t *testing.T) {
 		{
 			name: "clean",
 			setup: func(t *testing.T) {
-				testhelpers.SetupRepo(t, "release-1.2.3")
+				remoteDir := testhelpers.SetupForPublish(t, "release-1.2.3")
+				testhelpers.CloneRepository(t, remoteDir)
 			},
 			wantErr: false,
 		},
 		{
 			name: "dirty",
 			setup: func(t *testing.T) {
-				testhelpers.SetupRepo(t, "release-1.2.3")
+				remoteDir := testhelpers.SetupForPublish(t, "release-1.2.3")
+				testhelpers.CloneRepository(t, remoteDir)
 				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -266,7 +242,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 			test.setup(t)
-			err := AssertGitStatusClean(ctx, cfg.GetExecutablePath("git"))
+			err := AssertGitStatusClean(t.Context(), cfg.GetExecutablePath("git"))
 			if (err != nil) != test.wantErr {
 				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
 			}
