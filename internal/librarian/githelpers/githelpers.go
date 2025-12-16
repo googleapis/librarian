@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package change provides functions for determining changes in a git repository.
-package change
+// Package githelpers provides functions for determining changes in a git repository.
+package githelpers
 
 import (
 	"bytes"
