@@ -39,6 +39,7 @@ const (
 	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
 	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
 	showcaseArchivePrefix   = "https://github.com/googleapis/gapic-showcase/archive/"
+	protobufArchivePrefix   = "https://github.com/protocolbuffers/protobuf/archive/"
 	tarballSuffix           = ".tar.gz"
 )
 
@@ -165,11 +166,15 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
 	showcaseRoot, _ := sidekick.Source["showcase-root"].(string)
 	showcaseSHA256, _ := sidekick.Source["showcase-sha256"].(string)
+	protobufRoot, _ := sidekick.Source["protobuf-src-root"].(string)
+	protobufSHA256, _ := sidekick.Source["protobuf-src-sha256"].(string)
+	protobufSubDir, _ := sidekick.Source["protobuf-src-subdir"].(string)
 	generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 
 	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
 	showcaseCommit := strings.TrimSuffix(strings.TrimPrefix(showcaseRoot, showcaseArchivePrefix), tarballSuffix)
+	protobufCommit := strings.TrimSuffix(strings.TrimPrefix(protobufRoot, protobufArchivePrefix), tarballSuffix)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
@@ -188,6 +193,11 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Showcase: &config.Source{
 				Commit: showcaseCommit,
 				SHA256: showcaseSHA256,
+			},
+			ProtobufSrc: &config.Source{
+				Commit:  protobufCommit,
+				SHA256:  protobufSHA256,
+				Subpath: protobufSubDir,
 			},
 		},
 		Default: &config.Default{

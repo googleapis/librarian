@@ -5,6 +5,9 @@ googleapis-root             = 'https://github.com/googleapis/googleapis/archive/
 googleapis-sha256           = '839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085'
 discovery-root              = 'https://github.com/googleapis/discovery-artifact-manager/archive/0bb1100f52bf0bae06f4b4d76742e7eba5c59793.tar.gz'
 discovery-sha256            = '67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212'
+protobuf-src-root           = 'https://github.com/protocolbuffers/protobuf/archive/b407e8416e3893036aee5af9a12bd9b6a0e2b2e6.tar.gz'
+protobuf-src-sha256         = '55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d'
+protobuf-src-subdir         = 'src'
 
 [codec]
 # The default version for all crates. This can be overridden in the crate's
