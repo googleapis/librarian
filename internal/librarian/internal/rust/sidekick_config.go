@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
+package rust
 
 import (
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// toSidekickReleaseConfig translates a librarian Release config to a sidekick
+// ToSidekickReleaseConfig translates a librarian Release config to a sidekick
 // Release config.
-func toSidekickReleaseConfig(cfg *config.Release) *sidekickconfig.Release {
+func ToSidekickReleaseConfig(cfg *config.Release) *sidekickconfig.Release {
 	if cfg == nil {
 		return nil
 	}

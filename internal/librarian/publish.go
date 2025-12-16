@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/change"
 	"github.com/googleapis/librarian/internal/config"
+	rust "github.com/googleapis/librarian/internal/librarian/internal/rust"
 	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -74,7 +75,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	}
 	switch cfg.Language {
 	case "rust":
-		return rustPublishCrates(ctx, toSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+		return rustPublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}
@@ -85,12 +86,12 @@ func preflight(ctx context.Context, language string, cfg *config.Release) error 
 	if err := change.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
 		return err
 	}
-	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), "upstream"); err != nil {
+	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), cfg.Remote); err != nil {
 		return err
 	}
 	switch language {
 	case "rust":
-		if err := rustCargoPreFlight(ctx, toSidekickReleaseConfig(cfg)); err != nil {
+		if err := rustCargoPreFlight(ctx, rust.ToSidekickReleaseConfig(cfg)); err != nil {
 			return err
 		}
 	default:

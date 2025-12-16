@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// PreFlight() verifies all the necessary cargo tools are installed.
+// CargoPreFlight() verifies all the necessary cargo tools are installed.
 func CargoPreFlight(ctx context.Context, config *config.Release) error {
 	if err := command.Run(ctx, cargoExe(config), "--version"); err != nil {
 		return err
