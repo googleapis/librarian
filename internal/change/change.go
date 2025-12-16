@@ -25,7 +25,6 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
@@ -42,9 +41,9 @@ func AssertGitStatusClean(ctx context.Context, git string) error {
 }
 
 // GetLastTag returns the last git tag for the given release configuration.
-func GetLastTag(ctx context.Context, cfg *config.Release) (string, error) {
-	branch := fmt.Sprintf("%s/%s", cfg.Remote, cfg.Branch)
-	cmd := exec.CommandContext(ctx, cfg.GetExecutablePath("git"), "describe", "--abbrev=0", "--tags", branch)
+func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, error) {
+	ref := fmt.Sprintf("%s/%s", remote, branch)
+	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
 	cmd.Dir = "."
 	contents, err := cmd.CombinedOutput()
 	if err != nil {
@@ -55,22 +54,19 @@ func GetLastTag(ctx context.Context, cfg *config.Release) (string, error) {
 }
 
 // FilesChangedSince returns the files changed since the given git ref.
-func FilesChangedSince(ctx context.Context, ref string, cfg *config.Release) ([]string, error) {
-	cmd := exec.CommandContext(ctx, cfg.GetExecutablePath("git"), "diff", "--name-only", ref)
+func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges []string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
-	return filesFilter(cfg, strings.Split(string(output), "\n")), nil
+	return filesFilter(ignoredChanges, strings.Split(string(output), "\n")), nil
 }
 
-func filesFilter(cfg *config.Release, files []string) []string {
+func filesFilter(ignoredChanges []string, files []string) []string {
 	var patterns []gitignore.Pattern
-	if cfg == nil {
-		return files
-	}
-	for _, p := range cfg.IgnoredChanges {
+	for _, p := range ignoredChanges {
 		patterns = append(patterns, gitignore.ParsePattern(p, nil))
 	}
 	matcher := gitignore.NewMatcher(patterns)

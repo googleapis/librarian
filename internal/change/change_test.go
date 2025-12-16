@@ -38,7 +38,7 @@ func TestGetLastTag(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	got, err := GetLastTag(t.Context(), cfg)
+	got, err := GetLastTag(t.Context(), cfg.GetExecutablePath("git"), cfg.Remote, cfg.Branch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestLastTagGitError(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	_, err := GetLastTag(t.Context(), cfg)
+	_, err := GetLastTag(t.Context(), cfg.GetExecutablePath("git"), cfg.Remote, cfg.Branch)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -118,7 +118,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	remoteDir := testhelpers.SetupForPublish(t, wantTag)
 	testhelpers.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(t.Context(), wantTag, release)
+	got, err := FilesChangedSince(t.Context(), wantTag, release.GetExecutablePath("git"), release.IgnoredChanges)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestFilesBadRef(t *testing.T) {
 	}
 	remoteDir := testhelpers.SetupForPublish(t, wantTag)
 	testhelpers.CloneRepository(t, remoteDir)
-	if got, err := FilesChangedSince(t.Context(), "--invalid--", release); err == nil {
+	if got, err := FilesChangedSince(t.Context(), "--invalid--", release.GetExecutablePath("git"), release.IgnoredChanges); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
@@ -152,7 +152,7 @@ func TestFilterNoFilter(t *testing.T) {
 	}
 
 	cfg := &config.Release{}
-	got := filesFilter(cfg, input)
+	got := filesFilter(cfg.IgnoredChanges, input)
 	want := input
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -175,7 +175,7 @@ func TestFilterBasic(t *testing.T) {
 			".repo-metadata.json",
 		},
 	}
-	got := filesFilter(cfg, input)
+	got := filesFilter(cfg.IgnoredChanges, input)
 	want := []string{
 		"src/storage/src/lib.rs",
 		"src/storage/Cargo.toml",
@@ -200,7 +200,7 @@ func TestFilterSomeGlobs(t *testing.T) {
 			"doc/**",
 		},
 	}
-	got := filesFilter(cfg, input)
+	got := filesFilter(cfg.IgnoredChanges, input)
 	want := []string{}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
