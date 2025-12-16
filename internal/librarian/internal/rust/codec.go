@@ -132,8 +132,8 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.RoutingRequired {
 		codec["routing-required"] = "true"
 	}
-	if rust.GenerateSetterSamples {
-		codec["generate-setter-samples"] = "true"
+	if rust.GenerateSetterSamples != "" {
+		codec["generate-setter-samples"] = rust.GenerateSetterSamples
 	}
 	if rust.GenerateRpcSamples {
 		codec["generate-rpc-samples"] = "true"
@@ -240,8 +240,8 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 
 func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {
 	codec := newLibraryCodec(library)
-	if module.GenerateSetterSamples {
-		codec["generate-setter-samples"] = "true"
+	if module.GenerateSetterSamples != "" {
+		codec["generate-setter-samples"] = module.GenerateSetterSamples
 	}
 	if module.HasVeneer {
 		codec["has-veneer"] = "true"
@@ -263,6 +263,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.Template != "" {
 		codec["template-override"] = "templates/" + module.Template
+	}
+	if module.GenerateSetterSamples == "true" {
+		codec["generate-setter-samples"] = "true"
 	}
 	return codec
 }

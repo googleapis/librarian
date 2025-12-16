@@ -412,7 +412,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
-			GenerateSetterSamples:     strToBool(generateSetterSamples),
+			GenerateSetterSamples:     generateSetterSamples,
 			GenerateRpcSamples:        strToBool(generateRpcSamples),
 			PostProcessProtos:         postProcessProtos,
 			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
@@ -530,7 +530,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		}
 
 		modules = append(modules, &config.RustModule{
-			GenerateSetterSamples:  strToBool(generateSetterSamples),
+			GenerateSetterSamples:  generateSetterSamples,
 			HasVeneer:              strToBool(hasVeneer),
 			IncludedIds:            strToSlice(includedIds),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
@@ -572,7 +572,7 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 		// Check if library has extra configuration beyond just name/api/version
 		hasExtraConfig := lib.CopyrightYear != "" ||
 			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
-				lib.Rust.GenerateSetterSamples || lib.Rust.GenerateRpcSamples ||
+				lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples ||
 				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
 				lib.Rust.NameOverrides != ""))
 		// Only include in libraries section if:

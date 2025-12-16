@@ -127,7 +127,7 @@ func TestToSidekickConfig(t *testing.T) {
 					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
-					GenerateSetterSamples:     true,
+					GenerateSetterSamples:     "true",
 					GenerateRpcSamples:        true,
 					DisabledClippyWarnings:    []string{"too_many_arguments"},
 					DefaultFeatures:           []string{"default-feature"},

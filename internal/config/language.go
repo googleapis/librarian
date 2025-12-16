@@ -46,7 +46,7 @@ type RustDefault struct {
 // and where to output the generated code.
 type RustModule struct {
 	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
+	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
 
 	// HasVeneer indicates whether this module has a hand-written wrapper.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
@@ -149,7 +149,7 @@ type RustCrate struct {
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
 	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
+	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
 
 	// GenerateRpcSamples indicates whether to generate RPC samples.
 	GenerateRpcSamples bool `yaml:"generate_rpc_samples,omitempty"`
