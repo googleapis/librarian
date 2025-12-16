@@ -91,7 +91,7 @@ func ParseSegments(pathTemplate string) (*api.PathTemplate, error) {
 //
 // This is different from `ParseSegments` because it does not expect a leading `/`.
 func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3258): improve the logic for hanglind generic resources
+	// TODO(https://github.com/googleapis/librarian/issues/NNN): ParseResourcePattern
 	// should support parsing generic resources more robustly than just checking for a literal `*`.
 	if pathTemplate == api.SingleSegmentWildcard {
 		return api.NewPathTemplate().WithLiteral(api.SingleSegmentWildcard), nil
