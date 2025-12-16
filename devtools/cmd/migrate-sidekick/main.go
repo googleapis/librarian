@@ -38,6 +38,7 @@ const (
 	cargoFile               = "Cargo.toml"
 	discoveryArchivePrefix  = "https://github.com/googleapis/discovery-artifact-manager/archive/"
 	googleapisArchivePrefix = "https://github.com/googleapis/googleapis/archive/"
+	showcaseArchivePrefix   = "https://github.com/googleapis/gapic-showcase/archive/"
 	tarballSuffix           = ".tar.gz"
 )
 
@@ -162,10 +163,13 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
 	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
 	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
+	showcaseRoot, _ := sidekick.Source["showcase-root"].(string)
+	showcaseSHA256, _ := sidekick.Source["showcase-sha256"].(string)
 	generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
 
 	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
+	showcaseCommit := strings.TrimSuffix(strings.TrimPrefix(showcaseRoot, showcaseArchivePrefix), tarballSuffix)
 
 	// Parse package dependencies
 	packageDependencies := parsePackageDependencies(sidekick.Codec)
@@ -180,6 +184,10 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			Googleapis: &config.Source{
 				Commit: googleapisCommit,
 				SHA256: googleapisSHA256,
+			},
+			Showcase: &config.Source{
+				Commit: showcaseCommit,
+				SHA256: showcaseSHA256,
 			},
 		},
 		Default: &config.Default{

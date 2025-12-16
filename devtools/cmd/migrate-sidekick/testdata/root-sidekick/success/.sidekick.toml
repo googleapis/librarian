@@ -1,4 +1,6 @@
 [source]
+showcase-root            = 'https://github.com/googleapis/gapic-showcase/archive/69bdd62035d793f3d23a0c960dee547023c1c5ac.tar.gz'
+showcase-sha256          = '96491310ba1b5c0c71738d3d80327a95196c1b6ac16f033e3fa440870efbbf5c'
 googleapis-root             = 'https://github.com/googleapis/googleapis/archive/fe58211356a91f4140ed51893703910db05ade91.tar.gz'
 googleapis-sha256           = '839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085'
 discovery-root              = 'https://github.com/googleapis/discovery-artifact-manager/archive/0bb1100f52bf0bae06f4b4d76742e7eba5c59793.tar.gz'
