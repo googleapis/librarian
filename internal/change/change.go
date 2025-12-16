@@ -118,4 +118,3 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	}
 	return nil
 }
-
