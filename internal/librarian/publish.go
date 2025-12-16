@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/googleapis/librarian/internal/change"
 	"github.com/googleapis/librarian/internal/config"
+	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -51,7 +53,43 @@ func publishCommand() *cli.Command {
 }
 
 func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChecks bool) error {
-	// TODO: Not yet implemented.
-	fmt.Printf("publish not implemented. ctx: %v, cfg: %v, dryRun: %v, skipSemverChecks: %v\n", ctx, cfg, dryRun, skipSemverChecks)
-	panic("not implemented")
+	if err := preflight(ctx, cfg.Language, cfg.Release); err != nil {
+		return err
+	}
+	if err := change.AssertGitStatusClean(ctx, cfg.Release.GetExecutablePath("git")); err != nil {
+		return err
+	}
+	lastTag, err := change.GetLastTag(ctx, cfg.Release.GetExecutablePath("git"), cfg.Release.Remote, cfg.Release.Branch)
+	if err != nil {
+		return err
+	}
+	files, err := change.FilesChangedSince(ctx, lastTag, cfg.Release.GetExecutablePath("git"), cfg.Release.IgnoredChanges)
+	if err != nil {
+		return err
+	}
+	switch cfg.Language {
+	case "rust":
+		return rustrelease.PublishCrates(ctx, toSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+	default:
+		return fmt.Errorf("publish not implemented for %q", cfg.Language)
+	}
+}
+
+// preflight verifies all the necessary language-agnostic tools are installed.
+func preflight(ctx context.Context, language string, cfg *config.Release) error {
+	if err := change.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
+		return err
+	}
+	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), "upstream"); err != nil {
+		return err
+	}
+	switch language {
+	case "rust":
+		if err := rustrelease.CargoPreFlight(ctx, toSidekickReleaseConfig(cfg)); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown language: %s", language)
+	}
+	return nil
 }
