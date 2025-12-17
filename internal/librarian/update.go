@@ -17,6 +17,8 @@ package librarian
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -28,9 +30,9 @@ import (
 var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
-	sourceRepos    = map[string]*fetch.Repo{
-		"googleapis": {Org: "googleapis", Repo: "googleapis"},
-		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager"},
+	sourceRepos    = map[string]fetch.Repo{
+		"googleapis": {Org: "googleapis", Repo: "googleapis", Branch: "master"},
+		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: "master"},
 	}
 )
 
@@ -82,9 +84,7 @@ func runUpdate(all bool, sourceName string) error {
 
 	var sourceNamesToProcess []string
 	if all {
-		for name := range sourceRepos {
-			sourceNamesToProcess = append(sourceNamesToProcess, name)
-		}
+		sourceNamesToProcess = slices.Collect(maps.Keys(sourceRepos))
 	} else {
 		lowerSourceName := strings.ToLower(sourceName)
 		if _, ok := sourceRepos[lowerSourceName]; !ok {
@@ -95,27 +95,29 @@ func runUpdate(all bool, sourceName string) error {
 
 	for _, name := range sourceNamesToProcess {
 		source := sourcesMap[name]
-		if err := updateSource(endpoints, name, source, cfg); err != nil {
+		repo := sourceRepos[name]
+		if err := updateSource(endpoints, repo, source, cfg); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func updateSource(endpoints *fetch.Endpoints, name string, source *config.Source, cfg *config.Config) error {
+func updateSource(endpoints *fetch.Endpoints, repo fetch.Repo, source *config.Source, cfg *config.Config) error {
 	if source == nil {
 		return nil
 	}
 
-	repo, ok := sourceRepos[name]
-	if !ok {
-		return fmt.Errorf("unknown source: %s", name)
+	// Source configuration specifically references a branch of the
+	// source repository.
+	if source.Branch != "" {
+		repo.Branch = source.Branch
 	}
 
 	oldCommit := source.Commit
 	oldSHA256 := source.SHA256
 
-	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
+	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-const branch = "master"
+const defaultBranchMaster = "master"
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
@@ -56,11 +56,16 @@ type Repo struct {
 
 	// Repo is the name of the repository, such as `googleapis` or `google-cloud-rust`.
 	Repo string
+
+	// Branch is the name of the repository branch, such as `master` or `preview`.
+	Branch string
 }
 
 // RepoFromTarballLink extracts the gitHub account and repository (such as
 // `googleapis/googleapis`, or `googleapis/google-cloud-rust`) from the tarball
 // link.
+// Note: This does **not** set [Repo.Branch] as it is not derivable from a
+// commit-based archive URL.
 func RepoFromTarballLink(githubDownload, tarballLink string) (*Repo, error) {
 	urlPath := strings.TrimPrefix(tarballLink, githubDownload)
 	urlPath = strings.TrimPrefix(urlPath, "/")
@@ -121,7 +126,12 @@ func latestSha(query string) (string, error) {
 
 // LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
 // commit from the GitHub API for the given repository.
+// Defaults to [defaultBranchMaster] if the provided [Repo.Branch] is unset.
 func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
+	branch := defaultBranchMaster
+	if repo.Branch != "" {
+		branch = repo.Branch
+	}
 	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
 	commit, err = latestSha(apiURL)
 	if err != nil {
@@ -138,6 +148,8 @@ func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 s
 
 // TarballLink constructs a GitHub tarball download URL for the given
 // repository and commit SHA.
+// Note: This does **not** incorporate the [Repo.Branch] as this produces a
+// commit-based archive URL.
 func TarballLink(githubDownload string, repo *Repo, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Repo, sha)
 }

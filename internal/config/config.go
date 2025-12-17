@@ -107,6 +107,10 @@ type Source struct {
 	// SHA256 is the expected hash of the tarball for this commit.
 	SHA256 string `yaml:"sha256,omitempty"`
 
+	// Branch is the source's git branch to pull updates from.
+	// Unset should be interpreted as the repository default branch.
+	Branch string `yaml:"branch,omitempty"`
+
 	// Dir is a local directory path to use instead of fetching.
 	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"dir,omitempty"`
