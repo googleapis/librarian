@@ -62,14 +62,15 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if err := preflight(ctx, cfg.Language, cfg.Release); err != nil {
 		return err
 	}
-	if err := githelpers.AssertGitStatusClean(ctx, cfg.Release.GetExecutablePath("git")); err != nil {
+	gitExe := cfg.Release.GetExecutablePath("git")
+	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	lastTag, err := githelpers.GetLastTag(ctx, cfg.Release.GetExecutablePath("git"), cfg.Release.Remote, cfg.Release.Branch)
+	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := githelpers.FilesChangedSince(ctx, lastTag, cfg.Release.GetExecutablePath("git"), cfg.Release.IgnoredChanges)
+	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -83,10 +84,11 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 
 // preflight verifies all the necessary language-agnostic tools are installed.
 func preflight(ctx context.Context, language string, cfg *config.Release) error {
-	if err := githelpers.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
+	gitExe := cfg.GetExecutablePath("git")
+	if err := githelpers.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := githelpers.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), cfg.Remote); err != nil {
+	if err := githelpers.GitRemoteURL(ctx, gitExe, cfg.Remote); err != nil {
 		return err
 	}
 	switch language {

@@ -25,14 +25,14 @@ func ToSidekickReleaseConfig(cfg *config.Release) *sidekickconfig.Release {
 	if cfg == nil {
 		return nil
 	}
-	tools := make(map[string][]sidekickconfig.Tool)
+	tools := make(map[string][]sidekickconfig.Tool, len(cfg.Tools))
 	for k, v := range cfg.Tools {
-		var sidekickTools []sidekickconfig.Tool
-		for _, t := range v {
-			sidekickTools = append(sidekickTools, sidekickconfig.Tool{
+		sidekickTools := make([]sidekickconfig.Tool, len(v))
+		for i, t := range v {
+			sidekickTools[i] = sidekickconfig.Tool{
 				Name:    t.Name,
 				Version: t.Version,
-			})
+			}
 		}
 		tools[k] = sidekickTools
 	}
