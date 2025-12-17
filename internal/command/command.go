@@ -31,11 +31,13 @@ func Run(ctx context.Context, command string, arg ...string) error {
 // RunWithEnv executes a program (with arguments) and optional environment
 // variables and captures any error output. If env is nil or empty, the command
 // inherits the environment of the calling process.
-func RunWithEnv(ctx context.Context, env []string, command string, arg ...string) error {
+func RunWithEnv(ctx context.Context, env map[string]string, command string, arg ...string) error {
 	cmd := exec.CommandContext(ctx, command, arg...)
 	if len(env) > 0 {
 		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, env...)
+		for k, v := range env {
+			cmd.Env = append(cmd.Env, k+"="+v)
+		}
 	}
 	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
 	if output, err := cmd.CombinedOutput(); err != nil {

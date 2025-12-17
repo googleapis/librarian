@@ -42,7 +42,7 @@ func TestRunWithEnv_SetsAndVerifiesVariable(t *testing.T) {
 		name  = "LIBRARIAN_TEST_VAR"
 		value = "value"
 	)
-	err := RunWithEnv(ctx, []string{fmt.Sprintf("%s=%s", name, value)},
+	err := RunWithEnv(ctx, map[string]string{name: value},
 		"sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
 	if err != nil {
 		t.Fatalf("RunWithEnv() = %v, want %v", err, nil)
@@ -55,7 +55,7 @@ func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 		name  = "LIBRARIAN_TEST_VAR"
 		value = "value"
 	)
-	err := RunWithEnv(ctx, []string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
+	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
 	if err == nil {
 		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
 	}
