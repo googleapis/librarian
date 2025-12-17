@@ -546,6 +546,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
+		extendGrpcTransport, _ := sidekick.Codec["extend-grpc-transport"].(string)
 		modulePath, _ := sidekick.Codec["module-path"].(string)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
@@ -566,6 +567,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			Output:                 filepath.Dir(path),
 			PostProcessProtos:      postProcessProtos,
 			RoutingRequired:        strToBool(routingRequired),
+			ExtendGrpcTransport:    strToBool(extendGrpcTransport),
 			ServiceConfig:          sidekick.General.ServiceConfig,
 			SkippedIds:             strToSlice(skippedIds),
 			Source:                 sidekick.General.SpecificationSource,

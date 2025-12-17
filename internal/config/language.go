@@ -46,6 +46,10 @@ type RustDefault struct {
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
+	// ExtendGrpcTransport indicates whether the transport stub can be
+	// extended (in order to support streams).
+	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`
+
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 

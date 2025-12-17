@@ -154,6 +154,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `routing-required` value %q to boolean: %w", definition, err)
 			}
 			codec.routingRequired = value
+		case key == "extend-grpc-transport":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `extend-grpc-transport` value %q to boolean: %w", definition, err)
+			}
+			codec.extendGrpcTransport = value
 		case key == "generate-setter-samples":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -302,6 +308,9 @@ type codec struct {
 	// If true, fail requests locally that do not yield a gRPC routing
 	// header.
 	routingRequired bool
+	// If true, the transport stub is extensible from outside of
+	// `transport.rs`. This is done to add ad-hoc streaming support.
+	extendGrpcTransport bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
 	generateSetterSamples bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
