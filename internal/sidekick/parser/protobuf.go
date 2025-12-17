@@ -22,7 +22,6 @@ import (
 	"maps"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -113,10 +112,6 @@ func protoc(tempFile string, files []string, options map[string]string) ([]byte,
 	for _, name := range config.SourceRoots(options) {
 		if path, ok := options[name]; ok {
 			args = append(args, "--proto_path")
-			prefix := strings.TrimSuffix(name, "-root")
-			if subdir, ok := options[prefix+"-subdir"]; ok {
-				path = filepath.Join(path, subdir)
-			}
 			args = append(args, path)
 		}
 	}

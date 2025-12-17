@@ -91,6 +91,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 				{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 			},
 			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+			GenerateSetterSamples:   "true",
 		},
 	}
 	for _, test := range []struct {
@@ -109,6 +110,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:   "true",
 					},
 				},
 			},
@@ -121,6 +123,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						PackageDependencies: []*config.RustPackageDependency{
 							{Name: "custom", Package: "custom-pkg"},
 						},
+						GenerateSetterSamples: "true",
 					},
 				},
 			},
@@ -133,6 +136,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:   "true",
 					},
 				},
 			},
@@ -145,6 +149,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						PackageDependencies: []*config.RustPackageDependency{
 							{Name: "wkt", Package: "custom-wkt"},
 						},
+						GenerateSetterSamples: "false",
 					},
 				},
 			},
@@ -156,6 +161,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:   "false",
 					},
 				},
 			},
@@ -177,6 +183,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 						},
 						DisabledRustdocWarnings: []string{"custom_warning"},
+						GenerateSetterSamples:   "true",
 					},
 				},
 			},

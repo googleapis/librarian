@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestPreflightMissingGit(t *testing.T) {
@@ -32,7 +33,7 @@ func TestPreflightMissingGit(t *testing.T) {
 }
 
 func TestPreflightMissingCargo(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	release := config.Release{
 		Preinstalled: map[string]string{
 			"cargo": "cargo-is-not-installed",
@@ -44,23 +45,23 @@ func TestPreflightMissingCargo(t *testing.T) {
 }
 
 func TestPreflightMissingUpstream(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	release := config.Release{
 		Preinstalled: map[string]string{
 			"cargo": "/bin/echo",
 		},
-		Remote: "upstream",
+		Remote: "origin",
 	}
-	continueInNewGitRepository(t, t.TempDir())
+	testhelpers.ContinueInNewGitRepository(t, t.TempDir())
 	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPreflightWithTools(t *testing.T) {
-	requireCommand(t, "git")
-	requireCommand(t, "/bin/echo")
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.RequireCommand(t, "/bin/echo")
 	release := config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -76,14 +77,14 @@ func TestPreflightWithTools(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "test-preflight-with-tools")
+	testhelpers.SetupForVersionBump(t, "test-preflight-with-tools")
 	if err := PreFlight(t.Context(), &release); err != nil {
 		t.Errorf("expected a successful run, got=%v", err)
 	}
 }
 
 func TestPreflightToolFailure(t *testing.T) {
-	requireCommand(t, "git")
+	testhelpers.RequireCommand(t, "git")
 	release := config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -100,7 +101,7 @@ func TestPreflightToolFailure(t *testing.T) {
 			},
 		},
 	}
-	setupForVersionBump(t, "test-preflight-with-tools")
+	testhelpers.SetupForVersionBump(t, "test-preflight-with-tools")
 	if err := PreFlight(t.Context(), &release); err == nil {
 		t.Errorf("expected an error installing cargo-semver-checks")
 	}

@@ -25,14 +25,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestUpdateManifestSuccess(t *testing.T) {
 	const tag = "update-manifest-success"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -79,10 +80,10 @@ func TestUpdateManifestSuccess(t *testing.T) {
 
 func TestUpdateManifestBadDelta(t *testing.T) {
 	const tag = "update-manifest-bad-delta"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -95,10 +96,10 @@ func TestUpdateManifestBadDelta(t *testing.T) {
 
 func TestUpdateManifestBadManifest(t *testing.T) {
 	const tag = "update-manifest-bad-manifest"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -114,10 +115,10 @@ func TestUpdateManifestBadManifest(t *testing.T) {
 
 func TestUpdateManifestBadContents(t *testing.T) {
 	const tag = "update-manifest-bad-contents"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -133,10 +134,10 @@ func TestUpdateManifestBadContents(t *testing.T) {
 
 func TestUpdateManifestSkipUnpublished(t *testing.T) {
 	const tag = "update-manifest-skip-unpublished"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -162,10 +163,10 @@ func TestUpdateManifestSkipUnpublished(t *testing.T) {
 
 func TestUpdateManifestBadVersion(t *testing.T) {
 	const tag = "update-manifest-bad-version"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -192,10 +193,10 @@ version = "a.b.c"
 
 func TestUpdateManifestNoVersion(t *testing.T) {
 	const tag = "update-manifest-no-version"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -215,10 +216,10 @@ name = "google-cloud-storage"
 
 func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 	const tag = "update-manifest-bad-sidekick"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -234,10 +235,10 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 
 func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -270,14 +271,14 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 
 func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 	const tag = "manifest-version-update-new-crate"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
-	addGeneratedCrate(t, path.Join("src", "new"), "google-cloud-new")
+	testhelpers.AddCrate(t, path.Join("src", "new"), "google-cloud-new")
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
@@ -297,10 +298,10 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 
 func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
 	const tag = "manifest-version-update-no-change"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}
@@ -316,10 +317,10 @@ func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
 
 func TestManifestVersionNeedsBumpBadDiff(t *testing.T) {
 	const tag = "manifest-version-update-success"
-	requireCommand(t, "git")
-	setupForVersionBump(t, tag)
+	testhelpers.RequireCommand(t, "git")
+	testhelpers.SetupForVersionBump(t, tag)
 	release := config.Release{
-		Remote:       "origin",
+		Remote:       "upstream",
 		Branch:       "main",
 		Preinstalled: map[string]string{},
 	}

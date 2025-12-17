@@ -159,8 +159,8 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.RoutingRequired {
 		codec["routing-required"] = "true"
 	}
-	if rust.GenerateSetterSamples {
-		codec["generate-setter-samples"] = "true"
+	if rust.GenerateSetterSamples != "" {
+		codec["generate-setter-samples"] = rust.GenerateSetterSamples
 	}
 	if rust.GenerateRpcSamples {
 		codec["generate-rpc-samples"] = "true"

@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -35,14 +36,14 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
-	lastTag, err := getLastTag(config)
+	lastTag, err := githelpers.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	if err := matchesBranchPoint(config); err != nil {
+	if err := githelpers.MatchesBranchPoint(ctx, gitExe(config), config.Remote, config.Branch); err != nil {
 		return err
 	}
-	files, err := filesChangedSince(config, lastTag)
+	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
-			if isNewFile(config, lastTag, manifest) {
+			if githelpers.IsNewFile(ctx, gitExe(config), lastTag, manifest) {
 				continue
 			}
 			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)

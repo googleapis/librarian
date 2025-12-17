@@ -44,6 +44,19 @@ func TestReadRootSidekick(t *testing.T) {
 						Commit: "fe58211356a91f4140ed51893703910db05ade91",
 						SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
 					},
+					Showcase: &config.Source{
+						Commit: "69bdd62035d793f3d23a0c960dee547023c1c5ac",
+						SHA256: "96491310ba1b5c0c71738d3d80327a95196c1b6ac16f033e3fa440870efbbf5c",
+					},
+					ProtobufSrc: &config.Source{
+						Commit:  "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
+						SHA256:  "55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d",
+						Subpath: "src",
+					},
+					Conformance: &config.Source{
+						Commit: "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6",
+						SHA256: "55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d",
+					},
 				},
 				Default: &config.Default{
 					Output:       "src/generated/",
@@ -68,6 +81,7 @@ func TestReadRootSidekick(t *testing.T) {
 								ForceUsed: true,
 							},
 						},
+						GenerateSetterSamples: "true",
 					},
 				},
 			},
@@ -174,6 +188,7 @@ func TestBuildGAPIC(t *testing.T) {
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+							GenerateSetterSamples:   "true",
 						},
 						PerServiceFeatures:        true,
 						ModulePath:                "crate",
@@ -190,7 +205,6 @@ func TestBuildGAPIC(t *testing.T) {
 						HasVeneer:                 true,
 						RoutingRequired:           true,
 						IncludeGrpcOnlyMethods:    true,
-						GenerateSetterSamples:     true,
 						GenerateRpcSamples:        true,
 						PostProcessProtos:         "example post processing",
 						DetailedTracingAttributes: true,
@@ -503,11 +517,11 @@ func TestBuildConfig(t *testing.T) {
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+							GenerateSetterSamples:   "true",
 						},
-						PerServiceFeatures:    true,
-						GenerateSetterSamples: true,
-						GenerateRpcSamples:    true,
-						NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
+						PerServiceFeatures: true,
+						GenerateRpcSamples: true,
+						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 					},
 				},
 				"skipped": {
@@ -537,11 +551,11 @@ func TestBuildConfig(t *testing.T) {
 						Rust: &config.RustCrate{
 							RustDefault: config.RustDefault{
 								DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+								GenerateSetterSamples:   "true",
 							},
-							PerServiceFeatures:    true,
-							GenerateSetterSamples: true,
-							GenerateRpcSamples:    true,
-							NameOverrides:         ".google.cloud.security/publicca.v1.Storage=StorageControl",
+							PerServiceFeatures: true,
+							GenerateRpcSamples: true,
+							NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 						},
 					},
 				},

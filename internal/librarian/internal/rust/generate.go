@@ -30,10 +30,11 @@ import (
 )
 
 const (
-	googleapisRepo  = "github.com/googleapis/googleapis"
-	discoveryRepo   = "github.com/googleapis/discovery-artifact-manager"
-	protobufRepo    = "github.com/protocolbuffers/protobuf"
-	conformanceRepo = "github.com/googleapis/conformance-tests"
+	googleapisRepo = "github.com/googleapis/googleapis"
+	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	protobufRepo   = "github.com/protocolbuffers/protobuf"
+	// Used for fetching protos such as https://github.com/protocolbuffers/protobuf/blob/26.x/conformance/conformance.proto
+	conformanceRepo = protobufRepo
 	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 

@@ -19,11 +19,11 @@ import (
 	"path"
 	"testing"
 
-	cmdtest "github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestRustProstConvert(t *testing.T) {
-	cmdtest.RequireCommand(t, "protoc")
+	testhelpers.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 
 	type TestConfig struct {

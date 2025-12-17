@@ -68,7 +68,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         let client_request_span = gaxi::observability::create_client_request_span(
             span_name,
             "{{Codec.Name}}",
-            &crate::info::INSTRUMENTATION_CLIENT_INFO,
+            &info::INSTRUMENTATION_CLIENT_INFO,
         );
 
         let result = self.inner.{{Codec.Name}}(req, options)
@@ -119,3 +119,22 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 }
 
 {{/Codec.Services}}
+{{#Codec.HasServices}}
+{{#Codec.DetailedTracingAttributes}}
+#[cfg(google_cloud_unstable_tracing)]
+pub(crate) mod info {
+    const NAME: &str = env!("CARGO_PKG_NAME");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    lazy_static::lazy_static! {
+        pub(crate) static ref INSTRUMENTATION_CLIENT_INFO: gaxi::options::InstrumentationClientInfo = {
+            let mut info = gaxi::options::InstrumentationClientInfo::default();
+            info.service_name = "{{Name}}";
+            info.client_version = VERSION;
+            info.client_artifact = NAME;
+            info.default_host = "{{Codec.DefaultHostShort}}";
+            info
+        };
+    }
+}
+{{/Codec.DetailedTracingAttributes}}
+{{/Codec.HasServices}}

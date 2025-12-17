@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	cmdtest "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 const (
@@ -69,8 +69,8 @@ func TestReleaseOne(t *testing.T) {
 
 func setupRelease(t *testing.T) *config.Config {
 	t.Helper()
-	cmdtest.RequireCommand(t, "cargo")
-	cmdtest.RequireCommand(t, "taplo")
+	testhelpers.RequireCommand(t, "cargo")
+	testhelpers.RequireCommand(t, "taplo")
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
