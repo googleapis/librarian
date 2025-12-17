@@ -533,16 +533,20 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 			return nil
 		}
 
-		// Only use a .sidekick.toml to represent a rust module if the following directory exists:
-		// |-src
-		// |  |-generated
-		// |     |-.sidekick.toml
-		// |-Cargo.toml
-		// Only one pair of Cargo.toml and .sidekick.toml is not comply this structure in google-cloud-rust,
-		// which is wkt/Cargo.toml and src/wkt/tests/common/src/generated/.sidekick.toml.
-		srcDir := strings.TrimSuffix(path, fmt.Sprintf("/src/generated/%s", sidekickFile))
-		if rootDir != srcDir {
-			return nil
+		if strings.Contains(path, "tests") {
+			// Only use a .sidekick.toml in tests directory to represent a rust module if the following directory
+			// exists:
+			//
+			// |-src
+			// |  |-generated
+			// |     |-.sidekick.toml
+			// |-Cargo.toml
+			// Only one pair of Cargo.toml and .sidekick.toml (within tests directory) is not comply this structure in
+			// google-cloud-rust, which is wkt/Cargo.toml and src/wkt/tests/common/src/generated/.sidekick.toml.
+			srcDir := strings.TrimSuffix(path, fmt.Sprintf("/src/generated/%s", sidekickFile))
+			if rootDir != srcDir {
+				return nil
+			}
 		}
 
 		sidekick, err := readTOML[SidekickConfig](path)
