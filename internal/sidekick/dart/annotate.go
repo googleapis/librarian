@@ -833,7 +833,28 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *ap
 		typeName := annotate.resolveMessageName(state.MessageByID[typeid], true)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
-		panic("unknown type")
+		panic(fmt.Sprintf("unsupported type: %d", typez))
+	}
+}
+
+func (annotate *annotateModel) keyDecoder(typez api.Typez, typeid string, state *api.APIState) string {
+	// JSON objects can only contain string keys so non-String types need to use specialized decoders.
+	// Supported key types are defined here:
+	// https://protobuf.dev/programming-guides/proto3/#maps
+	switch typez {
+	case api.STRING_TYPE:
+		return "decodeString"
+	case api.INT32_TYPE, // Integer types that can be decoded as Dart `int`.
+		api.FIXED32_TYPE,
+		api.SFIXED32_TYPE,
+		api.SINT32_TYPE,
+		api.UINT32_TYPE,
+		api.INT64_TYPE,
+		api.SINT64_TYPE,
+		api.SFIXED64_TYPE:
+		return "decodeIntKey"
+	default:
+		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
 }
 
@@ -868,7 +889,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 		message := state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
 		keyTypeID := message.Fields[0].TypezID
-		keyDecoder := annotate.decoder(keyType, keyTypeID, state)
+		keyDecoder := annotate.keyDecoder(keyType, keyTypeID, state)
 		valueType := message.Fields[1].Typez
 		valueTypeID := message.Fields[1].TypezID
 		valueDecoder := annotate.decoder(valueType, valueTypeID, state)
@@ -880,7 +901,6 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	}
 
 	decoder := annotate.decoder(field.Typez, field.TypezID, state)
-	// No decoding necessary.
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
