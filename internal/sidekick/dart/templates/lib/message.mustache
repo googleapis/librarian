@@ -89,12 +89,12 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
   @override
   {{#Codec.HasToStringLines}}
   String toString() {
-    final contents = [
+    final $contents = [
       {{#Codec.ToStringLines}}
       {{{.}}}
       {{/Codec.ToStringLines}}
     ].join(',');
-    return '{{Name}}($contents)';
+    return '{{Name}}(${$contents})';
   }
   {{/Codec.HasToStringLines}}
   {{^Codec.HasToStringLines}}

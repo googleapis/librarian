@@ -32,6 +32,7 @@ func TestToSidekickConfig(t *testing.T) {
 		protobufDir    string
 		conformanceDir string
 		showcaseDir    string
+		protobufSubDir string
 		want           *sidekickconfig.Config
 	}{
 		{
@@ -598,6 +599,7 @@ func TestToSidekickConfig(t *testing.T) {
 			googleapisDir:  "/tmp/googleapis",
 			protobufDir:    "/tmp/protobuf",
 			conformanceDir: "/tmp/conformance",
+			protobufSubDir: "src",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -606,11 +608,10 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/vision/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root":     "/tmp/googleapis",
-					"protobuf-src-root":   "/tmp/protobuf",
-					"protobuf-src-subdir": "",
-					"conformance-root":    "/tmp/conformance",
-					"roots":               "googleapis,protobuf-src,conformance",
+					"googleapis-root":   "/tmp/googleapis",
+					"protobuf-src-root": "/tmp/protobuf/src",
+					"conformance-root":  "/tmp/conformance",
+					"roots":             "googleapis,protobuf-src,conformance",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-vision-v1",
@@ -646,7 +647,7 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, "", tt.conformanceDir, tt.showcaseDir)
+			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.protobufSubDir, tt.conformanceDir, tt.showcaseDir)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

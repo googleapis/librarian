@@ -50,19 +50,6 @@ mod info {
             ac.grpc_header_value()
         };
     }
-    {{#Codec.DetailedTracingAttributes}}
-    #[cfg(google_cloud_unstable_tracing)]
-    lazy_static::lazy_static! {
-        pub(crate) static ref INSTRUMENTATION_CLIENT_INFO: gaxi::options::InstrumentationClientInfo = {
-            let mut info = gaxi::options::InstrumentationClientInfo::default();
-            info.service_name = "{{Name}}";
-            info.client_version = VERSION;
-            info.client_artifact = NAME;
-            info.default_host = "{{Codec.DefaultHostShort}}";
-            info
-        };
-    }
-    {{/Codec.DetailedTracingAttributes}}
 }
 
 {{/Codec.HasServices}}
@@ -94,14 +81,13 @@ impl {{Codec.Name}} {
     pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
         {{#Codec.DetailedTracingAttributes}}
         #[cfg(google_cloud_unstable_tracing)]
-        let tracing_enabled = gaxi::options::tracing_enabled(&config);
-        let inner = gaxi::grpc::Client::new(config, DEFAULT_HOST).await?;
-        #[cfg(google_cloud_unstable_tracing)]
-        let inner = if tracing_enabled {
-            inner.with_instrumentation(&info::INSTRUMENTATION_CLIENT_INFO)
+        let inner = if gaxi::options::tracing_enabled(&config) {
+            gaxi::grpc::Client::new_with_instrumentation(config, DEFAULT_HOST, &super::tracing::info::INSTRUMENTATION_CLIENT_INFO).await?
         } else {
-            inner
+            gaxi::grpc::Client::new(config, DEFAULT_HOST).await?
         };
+        #[cfg(not(google_cloud_unstable_tracing))]
+        let inner = gaxi::grpc::Client::new(config, DEFAULT_HOST).await?;
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         let inner = gaxi::grpc::Client::new(config, DEFAULT_HOST).await?;
