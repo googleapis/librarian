@@ -33,8 +33,8 @@ const (
 	googleapisRepo = "github.com/googleapis/googleapis"
 	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
 	protobufRepo   = "github.com/protocolbuffers/protobuf"
-	// Note this is used for fetching protos such as https://github.com/protocolbuffers/protobuf/blob/26.x/conformance/conformance.proto
-	conformanceRepo = "github.com/protocolbuffers/protobuf"
+	// Used for fetching protos such as https://github.com/protocolbuffers/protobuf/blob/26.x/conformance/conformance.proto
+	conformanceRepo = protobufRepo
 	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 
