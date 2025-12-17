@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package librarian provides functionality for onboarding, generating and
+// releasing Google Cloud client libraries.
 package librarian
 
 import (

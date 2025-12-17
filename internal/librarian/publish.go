@@ -18,17 +18,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/change"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	rust "github.com/googleapis/librarian/internal/librarian/internal/rust"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
+	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
 var (
-	rustPublishCrates  = rustrelease.PublishCrates
-	rustCargoPreFlight = rustrelease.CargoPreFlight
+	rustPublishCrates  = sidekickrust.PublishCrates
+	rustCargoPreFlight = sidekickrust.CargoPreFlight
 )
 
 func publishCommand() *cli.Command {
@@ -62,14 +62,14 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if err := preflight(ctx, cfg.Language, cfg.Release); err != nil {
 		return err
 	}
-	if err := change.AssertGitStatusClean(ctx, cfg.Release.GetExecutablePath("git")); err != nil {
+	if err := githelpers.AssertGitStatusClean(ctx, cfg.Release.GetExecutablePath("git")); err != nil {
 		return err
 	}
-	lastTag, err := change.GetLastTag(ctx, cfg.Release.GetExecutablePath("git"), cfg.Release.Remote, cfg.Release.Branch)
+	lastTag, err := githelpers.GetLastTag(ctx, cfg.Release.GetExecutablePath("git"), cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := change.FilesChangedSince(ctx, lastTag, cfg.Release.GetExecutablePath("git"), cfg.Release.IgnoredChanges)
+	files, err := githelpers.FilesChangedSince(ctx, lastTag, cfg.Release.GetExecutablePath("git"), cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -83,10 +83,10 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 
 // preflight verifies all the necessary language-agnostic tools are installed.
 func preflight(ctx context.Context, language string, cfg *config.Release) error {
-	if err := change.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
+	if err := githelpers.GitVersion(ctx, cfg.GetExecutablePath("git")); err != nil {
 		return err
 	}
-	if err := change.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), cfg.Remote); err != nil {
+	if err := githelpers.GitRemoteURL(ctx, cfg.GetExecutablePath("git"), cfg.Remote); err != nil {
 		return err
 	}
 	switch language {
