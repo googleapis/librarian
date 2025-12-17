@@ -561,6 +561,56 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "service does not exist",
+			defaults: &config.Config{},
+			libraries: map[string]*config.Library{
+				"google-cloud-security-publicca-v1": {
+					Name: "google-cloud-security-publicca-v1",
+					Channels: []*config.Channel{
+						{
+							Path: "google/cloud/security/publicca/v1",
+						},
+					},
+					Version:       "1.1.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						RustDefault: config.RustDefault{
+							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+							GenerateSetterSamples:   "true",
+						},
+						PerServiceFeatures: true,
+						GenerateRpcSamples: true,
+						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
+					},
+				},
+			},
+			want: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-security-publicca-v1",
+						Channels: []*config.Channel{
+							{
+								ServiceConfigDoesNotExist: true,
+								Path:                      "google/cloud/security/publicca/v1",
+								ServiceConfig:             "",
+							},
+						},
+						Version:       "1.1.0",
+						CopyrightYear: "2025",
+						Rust: &config.RustCrate{
+							RustDefault: config.RustDefault{
+								DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
+								GenerateSetterSamples:   "true",
+							},
+							PerServiceFeatures: true,
+							GenerateRpcSamples: true,
+							NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildConfig(test.libraries, test.defaults)

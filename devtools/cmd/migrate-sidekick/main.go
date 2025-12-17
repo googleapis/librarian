@@ -588,8 +588,13 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	for _, lib := range libraries {
 		// Get the API path for this library
 		apiPath := ""
+		serviceConfigDoesNotExist := false
 		if len(lib.Channels) > 0 {
 			apiPath = lib.Channels[0].Path
+			if lib.Channels[0].ServiceConfig == "" {
+				serviceConfigDoesNotExist = true
+				lib.Channels[0].ServiceConfigDoesNotExist = true
+			}
 		}
 
 		// Derive expected library name from API path
@@ -605,7 +610,7 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 		// 1. Name doesn't match expected naming convention (name override)
 		// 2. Library has extra configuration
 		// 3. Library spans multiple APIs
-		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
+		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 || serviceConfigDoesNotExist {
 			libCopy := *lib
 			libList = append(libList, &libCopy)
 		}

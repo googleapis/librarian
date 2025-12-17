@@ -279,6 +279,14 @@ func TestPrepareLibrary(t *testing.T) {
 			output:     "src/storage",
 			wantOutput: "src/storage",
 		},
+		{
+			name:              "rust lib without service config does not derive service config",
+			language:          "rust",
+			channels:          []*config.Channel{{ServiceConfigDoesNotExist: true}},
+			wantOutput:        "src/generated/cloud/test/v1",
+			wantChannelPath:   "google/cloud/test/v1",
+			wantServiceConfig: "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
