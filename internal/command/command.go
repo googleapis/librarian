@@ -22,9 +22,21 @@ import (
 	"os/exec"
 )
 
-// Run executes a program (with arguments) and captures any error output.
+// Run executes a program (with arguments) and captures any error output. It is a
+// convenience wrapper around RunWithEnv.
 func Run(ctx context.Context, command string, arg ...string) error {
+	return RunWithEnv(ctx, nil, command, arg...)
+}
+
+// RunWithEnv executes a program (with arguments) and optional environment
+// variables and captures any error output. If env is nil or empty, the command
+// inherits the environment of the calling process.
+func RunWithEnv(ctx context.Context, env []string, command string, arg ...string) error {
 	cmd := exec.CommandContext(ctx, command, arg...)
+	if len(env) > 0 {
+		cmd.Env = os.Environ()
+		cmd.Env = append(cmd.Env, env...)
+	}
 	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)

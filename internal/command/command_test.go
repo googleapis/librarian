@@ -34,3 +34,27 @@ func TestRunError(t *testing.T) {
 		t.Errorf("error should mention the invalid subcommand, got: %v", err)
 	}
 }
+
+func TestRunWithEnvSuccess(t *testing.T) {
+	ctx := t.Context()
+	const (
+		name  = "LIBRARIAN_TEST_VAR"
+		value = "value"
+	)
+	err := RunWithEnv(ctx, []string{name + "=" + value}, "sh", "-c", `test "$`+name+`" = "`+value+`"`)
+	if err != nil {
+		t.Fatalf("RunWithEnv() = %v, want %v", err, nil)
+	}
+}
+
+func TestRunWithEnvFailure(t *testing.T) {
+	ctx := t.Context()
+	const (
+		name  = "LIBRARIAN_TEST_VAR"
+		value = "value"
+	)
+	err := RunWithEnv(ctx, []string{}, "sh", "-c", `test "$`+name+`" = "`+value+`"`)
+	if err == nil {
+		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
+	}
+}
