@@ -837,7 +837,7 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *ap
 	}
 }
 
-func (annotate *annotateModel) keyDecoder(typez api.Typez, typeid string, state *api.APIState) string {
+func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 	// JSON objects can only contain string keys so non-String types need to use specialized decoders.
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
@@ -889,8 +889,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	case field.Map:
 		message := state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
-		keyTypeID := message.Fields[0].TypezID
-		keyDecoder := annotate.keyDecoder(keyType, keyTypeID, state)
+		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := message.Fields[1].Typez
 		valueTypeID := message.Fields[1].TypezID
 		valueDecoder := annotate.decoder(valueType, valueTypeID, state)
