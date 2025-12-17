@@ -59,6 +59,7 @@ func overrideSources(ctx context.Context, rootConfig *config.Config) (*config.Co
 		}
 		if subdir, ok := rootConfig.Source[configPrefix+"-subdir"]; ok {
 			source = path.Join(source, subdir)
+			delete(override.Source, configPrefix+"-subdir")
 		}
 		override.Source[root] = source
 	}
