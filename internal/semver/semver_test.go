@@ -618,3 +618,33 @@ func TestMaxVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestSemVerSpecVersion_String(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		specVersion SemVerSpecVersion
+		want        string
+	}{
+		{
+			name:        "spec 2.0.0",
+			specVersion: SemVerSpecV2,
+			want:        "2.0.0",
+		},
+		{
+			name:        "spec 1.0.0",
+			specVersion: SemVerSpecV1,
+			want:        "1.0.0",
+		},
+		{
+			name:        "spec unknown",
+			specVersion: 100,
+			want:        "unknown",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if diff := cmp.Diff(test.want, test.specVersion.String()); diff != "" {
+				t.Errorf("SemVerSpecVersion.String(%v) returned diff (-want +got):\n%s", test.name, diff)
+			}
+		})
+	}
+}
