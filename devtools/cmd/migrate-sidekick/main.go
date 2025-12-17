@@ -589,8 +589,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			module.ModuleRoots = moduleRoots
 		}
 
-		var disabledRustdocWarnings string
-		disabledRustdocWarnings, ok = sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		disabledRustdocWarnings, ok := sidekick.Codec["disabled-rustdoc-warnings"].(string)
 		if ok {
 			module.DisabledRustdocWarnings = strToSlice(disabledRustdocWarnings, true)
 		}
