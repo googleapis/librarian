@@ -32,21 +32,14 @@ import (
 const (
 	googleapisRepo = "github.com/googleapis/googleapis"
 	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
-	protobufRepo   = "github.com/protocolbuffers/protobuf"
-	// Used for fetching protos such as https://github.com/protocolbuffers/protobuf/blob/26.x/conformance/conformance.proto
-	conformanceRepo = protobufRepo
-	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
-	dirs, err := getSourceDirs(ctx, sources)
+	googleapisDir, err := sourceDir(ctx, sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
-
-	googleapisDir := dirs["googleapis"]
-
 	if library.Veneer {
 		return generateVeneer(ctx, library, googleapisDir)
 	}
@@ -55,13 +48,11 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
-	var protobufSubDir string
-	if sources.ProtobufSrc != nil {
-		protobufSubDir = sources.ProtobufSrc.Subpath
+	discoveryDir, err := sourceDir(ctx, sources.Discovery, discoveryRepo)
+	if err != nil {
+		return err
 	}
-
-	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir,
-		dirs["discovery"], dirs["protobuf-src"], protobufSubDir, dirs["conformance"], dirs["showcase"])
+	sidekickConfig := toSidekickConfig(library, library.Channels[0], googleapisDir, discoveryDir)
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err
@@ -70,28 +61,6 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		return err
 	}
 	return nil
-}
-
-func getSourceDirs(ctx context.Context, sources *config.Sources) (map[string]string, error) {
-	dirs := make(map[string]string)
-	sourceMap := map[string]struct {
-		cfg  *config.Source
-		repo string
-	}{
-		"googleapis":   {sources.Googleapis, googleapisRepo},
-		"discovery":    {sources.Discovery, discoveryRepo},
-		"protobuf-src": {sources.ProtobufSrc, protobufRepo},
-		"conformance":  {sources.Conformance, conformanceRepo},
-		"showcase":     {sources.Showcase, showcaseRepo},
-	}
-	for name, info := range sourceMap {
-		dir, err := sourceDir(ctx, info.cfg, info.repo)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get source dir for %s: %w", name, err)
-		}
-		dirs[name] = dir
-	}
-	return dirs, nil
 }
 
 // Format formats a generated Rust library. Must be called sequentially;

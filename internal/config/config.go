@@ -88,15 +88,6 @@ type Sources struct {
 
 	// Googleapis is the googleapis repository configuration.
 	Googleapis *Source `yaml:"googleapis,omitempty"`
-
-	// Showcase is the showcase repository configuration.
-	Showcase *Source `yaml:"showcase,omitempty"`
-
-	// ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`.
-	ProtobufSrc *Source `yaml:"protobuf,omitempty"`
-
-	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
-	Conformance *Source `yaml:"conformance,omitempty"`
 }
 
 // Source represents a source repository.
@@ -110,10 +101,6 @@ type Source struct {
 	// Dir is a local directory path to use instead of fetching.
 	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"dir,omitempty"`
-
-	// Subpath is a directory inside the fetched archive that should be treated as
-	// the root for operations.
-	Subpath string `yaml:"subpath,omitempty"`
 }
 
 // Default contains default settings for all libraries.
@@ -180,9 +167,6 @@ type Library struct {
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
-
-	// Roots specifies the source roots to use for generation. Defaults to googleapis.
-	Roots []string `yaml:"roots,omitempty"`
 
 	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
 	// overrides Default.Transport.
