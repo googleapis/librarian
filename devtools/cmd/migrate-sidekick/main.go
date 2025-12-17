@@ -674,6 +674,11 @@ func strToBool(s string) bool {
 	return s == "true"
 }
 
+// strToSlice converts a comma-separated string into a slice of strings.
+//
+// The wantEmpty parameter controls the behavior when the input string is empty:
+//   - If true: Returns an empty initialized slice (make([]string, 0)).
+//   - If false: Returns nil.
 func strToSlice(s string, wantEmpty bool) []string {
 	if s == "" {
 		if wantEmpty {
