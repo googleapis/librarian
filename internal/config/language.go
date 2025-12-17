@@ -49,7 +49,7 @@ type RustModule struct {
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
-	// HasVeneer indicates whether this module has a hand-written wrapper.
+	// HasVeneer indicates whether this module has a handwritten wrapper.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
 	// IncludedIds is a list of proto IDs to include in generation.
@@ -64,6 +64,8 @@ type RustModule struct {
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
+
+	ModuleRoots map[string]string `yaml:"module_roots,omitempty"`
 
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`

@@ -2,6 +2,10 @@
 language             = 'rust'
 specification-source = 'google/storage/control/v2'
 
+[source]
+roots        = 'project'
+project-root = '.'
+
 [codec]
 copyright-year    = '2025'
 template-override = 'templates/convert-prost'

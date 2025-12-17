@@ -542,6 +542,17 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		includeList, _ := sidekick.Source["include-list"].(string)
 		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
 		titleOverride, _ := sidekick.Source["title-override"].(string)
+		moduleRoots := make(map[string]string)
+		roots, ok := sidekick.Source["roots"].(string)
+		if ok {
+			for _, root := range strings.Split(roots, ",") {
+				root = fmt.Sprintf("%s-root", root)
+				modPath, ok := sidekick.Source[root].(string)
+				if ok {
+					moduleRoots[root] = modPath
+				}
+			}
+		}
 
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
@@ -555,7 +566,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			generateSetterSamples = "true"
 		}
 
-		modules = append(modules, &config.RustModule{
+		module := &config.RustModule{
 			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
 			IncludedIds:            strToSlice(includedIds),
@@ -571,7 +582,13 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
 			TitleOverride:          titleOverride,
-		})
+		}
+
+		if len(moduleRoots) > 0 {
+			module.ModuleRoots = moduleRoots
+		}
+
+		modules = append(modules, module)
 
 		return nil
 	})
