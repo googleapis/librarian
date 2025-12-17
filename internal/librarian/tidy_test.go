@@ -129,12 +129,13 @@ libraries:
 
 func TestTidy_DerivableFields(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		configContent string
-		wantPath      string
-		wantSvcCfg    string
-		wantNumLibs   int
-		wantNumChnls  int
+		name                 string
+		configContent        string
+		wantPath             string
+		wantSvcCfg           string
+		wantNumLibs          int
+		wantNumChnls         int
+		wantServiceConfigDne bool
 	}{
 		{
 			name: "derivable fields removed",
@@ -205,6 +206,20 @@ libraries:
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
+		{
+			name: "channel remains if service config does not exist",
+			configContent: `
+libraries:
+  - name: google-cloud-accessapproval-v1
+    channels:
+      - service_config_does_not_exist: true
+`,
+			wantPath:             "",
+			wantSvcCfg:           "",
+			wantNumLibs:          1,
+			wantNumChnls:         1,
+			wantServiceConfigDne: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -237,6 +252,9 @@ libraries:
 				}
 				if ch.ServiceConfig != test.wantSvcCfg {
 					t.Errorf("service_config should be %s, got %q", test.wantSvcCfg, ch.ServiceConfig)
+				}
+				if ch.ServiceConfigDoesNotExist != test.wantServiceConfigDne {
+					t.Errorf("service_config_does_not_exist should be %t, got %t", test.wantServiceConfigDne, ch.ServiceConfigDoesNotExist)
 				}
 			}
 		})
