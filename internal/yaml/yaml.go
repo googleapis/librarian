@@ -23,6 +23,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type StringList []string
+
+// IsZero implements yaml.IsZeroer.
+// It controls when 'omitempty' takes effect.
+func (s StringList) IsZero() bool {
+	// return true ONLY if nil (omit field)
+	// return false if empty slice (keep field)
+	return s == nil
+}
+
 // Unmarshal parses YAML data into a value of type T.
 func Unmarshal[T any](data []byte) (*T, error) {
 	var v T
