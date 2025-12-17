@@ -236,8 +236,8 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		"googleapis-root":   googleapisDir,
 		"protobuf-src-root": protobufSrcDir,
 	}
-	if module.ModulePath != "" {
-		source["project-root"] = module.ModulePath
+	for root, dir := range module.ModuleRoots {
+		source[root] = dir
 	}
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
