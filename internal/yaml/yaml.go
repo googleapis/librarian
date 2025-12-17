@@ -23,11 +23,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type StringList []string
+// StringSlice is a custom slice of strings that allows for fine-grained control
+// over YAML marshaling when used with the 'omitempty' tag.
+//
+// By implementing the yaml.IsZeroer interface, it ensures that:
+//  1. A nil slice is considered "zero" and is omitted from the output.
+//  2. An empty but initialized slice (e.g., []string{}) is NOT considered "zero"
+//     and is explicitly marshaled as an empty YAML sequence ([]).
+type StringSlice []string
 
-// IsZero implements yaml.IsZeroer.
-// It controls when 'omitempty' takes effect.
-func (s StringList) IsZero() bool {
+// IsZero implements the yaml.IsZeroer interface, which determines whether a
+// field should be considered "empty" when the 'omitempty' struct tag is used.
+func (s StringSlice) IsZero() bool {
 	// return true ONLY if nil (omit field)
 	// return false if empty slice (keep field)
 	return s == nil

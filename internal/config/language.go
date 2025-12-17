@@ -49,7 +49,7 @@ type RustDefault struct {
 // and where to output the generated code.
 type RustModule struct {
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
-	DisabledRustdocWarnings yaml.StringList `yaml:"disabled_rustdoc_warnings,omitempty"`
+	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
