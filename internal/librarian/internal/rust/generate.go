@@ -33,7 +33,7 @@ const (
 	googleapisRepo  = "github.com/googleapis/googleapis"
 	discoveryRepo   = "github.com/googleapis/discovery-artifact-manager"
 	protobufRepo    = "github.com/protocolbuffers/protobuf"
-	conformanceRepo = "github.com/googleapis/conformance-tests"
+	conformanceRepo = "github.com/protocolbuffers/protobuf"
 	showcaseRepo    = "github.com/googleapis/gapic-showcase"
 )
 
