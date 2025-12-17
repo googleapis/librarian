@@ -250,6 +250,26 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	}
 }
 
+func TestServiceAnnotationsHasVeneer(t *testing.T) {
+	model := serviceAnnotationsModel()
+	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"has-veneer": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	serviceAnn := service.Codec.(*serviceAnnotations)
+
+	if !serviceAnn.HasVeneer {
+		t.Errorf("expected `has-veneer` to be set on the service.")
+	}
+}
+
 func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
 	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
