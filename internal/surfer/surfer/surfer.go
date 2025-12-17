@@ -55,6 +55,11 @@ service config yaml, and gcloud.yaml.`,
 				Value: ".",
 				Usage: "output directory",
 			},
+			&cli.StringFlag{
+				Name:  "proto-files-include-list",
+				Value: "google/cloud/parallelstore/v1/parallelstore.proto",
+				Usage: "comma-separated list of protobuf files used to generate the gcloud commands",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if cmd.Args().Len() == 0 {
@@ -63,7 +68,10 @@ service config yaml, and gcloud.yaml.`,
 			config := cmd.Args().First()
 			googleapis := cmd.String("googleapis")
 			out := cmd.String("out")
+			// TODO: Pass includeList once gcloud.Generate supports it (feat-surfer-generator)
+			_ = cmd.String("proto-files-include-list")
 			return gcloud.Generate(ctx, googleapis, config, out)
 		},
 	}
 }
+
