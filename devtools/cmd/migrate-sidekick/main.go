@@ -213,7 +213,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			ReleaseLevel: releaseLevel,
 			Rust: &config.RustDefault{
 				PackageDependencies:     packageDependencies,
-				DisabledRustdocWarnings: strToSlice(warnings),
+				DisabledRustdocWarnings: strToSlice(warnings, false),
 				GenerateSetterSamples:   generateSetterSamples,
 			},
 		},
@@ -358,7 +358,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if extraModules, ok := sidekick.Codec["extra-modules"].(string); ok {
-			for _, module := range strToSlice(extraModules) {
+			for _, module := range strToSlice(extraModules, false) {
 				if module == "" {
 					continue
 				}
@@ -421,7 +421,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		rustCrate := &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
-				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
+				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings, false),
 				GenerateSetterSamples:   generateSetterSamples,
 			},
 			PerServiceFeatures:        strToBool(perServiceFeatures),
@@ -430,12 +430,12 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			TitleOverride:             titleOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
-			Roots:                     strToSlice(roots),
-			DefaultFeatures:           strToSlice(defaultFeatures),
-			IncludeList:               strToSlice(includeList),
-			IncludedIds:               strToSlice(includeIds),
-			SkippedIds:                strToSlice(skippedIds),
-			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings),
+			Roots:                     strToSlice(roots, false),
+			DefaultFeatures:           strToSlice(defaultFeatures, false),
+			IncludeList:               strToSlice(includeList, false),
+			IncludedIds:               strToSlice(includeIds, false),
+			SkippedIds:                strToSlice(skippedIds, false),
+			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings, false),
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
@@ -561,6 +561,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
 		templateOverride, _ := sidekick.Codec["template-override"].(string)
+
 		generateSetterSamples, ok := sidekick.Codec["generate-setter-samples"].(string)
 		if !ok {
 			generateSetterSamples = "true"
@@ -569,7 +570,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		module := &config.RustModule{
 			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
-			IncludedIds:            strToSlice(includedIds),
+			IncludedIds:            strToSlice(includedIds, false),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
 			IncludeList:            includeList,
 			ModulePath:             modulePath,
@@ -578,7 +579,7 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			PostProcessProtos:      postProcessProtos,
 			RoutingRequired:        strToBool(routingRequired),
 			ServiceConfig:          sidekick.General.ServiceConfig,
-			SkippedIds:             strToSlice(skippedIds),
+			SkippedIds:             strToSlice(skippedIds, false),
 			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
 			TitleOverride:          titleOverride,
@@ -586,6 +587,12 @@ func buildModules(path string) ([]*config.RustModule, error) {
 
 		if len(moduleRoots) > 0 {
 			module.ModuleRoots = moduleRoots
+		}
+
+		var disabledRustdocWarnings string
+		disabledRustdocWarnings, ok = sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		if ok {
+			module.DisabledRustdocWarnings = strToSlice(disabledRustdocWarnings, true)
 		}
 
 		modules = append(modules, module)
@@ -668,8 +675,12 @@ func strToBool(s string) bool {
 	return s == "true"
 }
 
-func strToSlice(s string) []string {
+func strToSlice(s string, wantEmpty bool) []string {
 	if s == "" {
+		if wantEmpty {
+			return make([]string, 0)
+		}
+
 		return nil
 	}
 

@@ -414,9 +414,10 @@ func TestBuildVeneer(t *testing.T) {
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
-								GenerateSetterSamples: true,
-								ModuleRoots:           nil,
-								HasVeneer:             true,
+								DisabledRustdocWarnings: []string{},
+								GenerateSetterSamples:   true,
+								ModuleRoots:             nil,
+								HasVeneer:               true,
 								IncludedIds: []string{
 									".google.storage.v2.Storage.DeleteBucket",
 									".google.storage.v2.Storage.GetBucket",
