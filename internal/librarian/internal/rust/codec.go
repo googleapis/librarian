@@ -40,17 +40,17 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		source["roots"] = strings.Join(library.Roots, ",")
 		rootMap := map[string]struct {
 			path string
-			keys []string
+			key  string
 		}{
-			"googleapis":   {path: googleapisDir, keys: []string{"googleapis-root"}},
-			"discovery":    {path: discoveryDir, keys: []string{"discovery-root"}},
-			"showcase":     {path: showcaseDir, keys: []string{"showcase-root"}},
-			"protobuf-src": {path: path.Join(protobufRootDir, protobufSubDir), keys: []string{"protobuf-src-root"}},
-			"conformance":  {path: conformanceDir, keys: []string{"conformance-root"}},
+			"googleapis":   {path: googleapisDir, key: "googleapis-root"},
+			"discovery":    {path: discoveryDir, key: "discovery-root"},
+			"showcase":     {path: showcaseDir, key: "showcase-root"},
+			"protobuf-src": {path: path.Join(protobufRootDir, protobufSubDir), key: "protobuf-src-root"},
+			"conformance":  {path: conformanceDir, key: "conformance-root"},
 		}
 		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
-				source[r.keys[0]] = r.path
+				source[r.key] = r.path
 			}
 		}
 	}
