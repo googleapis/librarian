@@ -20,6 +20,7 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -44,10 +45,11 @@ func CargoPreFlight(ctx context.Context, config *config.Release) error {
 
 // PreFlight() verifies all the necessary  tools are installed.
 func PreFlight(ctx context.Context, config *config.Release) error {
-	if err := command.Run(ctx, gitExe(config), "--version"); err != nil {
+	gitExe := gitExe(config)
+	if err := githelpers.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, gitExe(config), "remote", "get-url", config.Remote); err != nil {
+	if err := githelpers.GitRemoteURL(ctx, gitExe, config.Remote); err != nil {
 		return err
 	}
 	if err := CargoPreFlight(ctx, config); err != nil {
