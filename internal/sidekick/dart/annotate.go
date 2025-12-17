@@ -854,6 +854,7 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez, typeid string, state 
 		api.SFIXED64_TYPE:
 		return "decodeIntKey"
 	default:
+		// TODO(https://github.com/googleapis/google-cloud-dart/issues/95): Support all key types.
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
 }
