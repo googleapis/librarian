@@ -40,7 +40,7 @@ const (
 	googleapisArchivePrefix  = "https://github.com/googleapis/googleapis/archive/"
 	showcaseArchivePrefix    = "https://github.com/googleapis/gapic-showcase/archive/"
 	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
-	conformanceArchivePrefix = "https://github.com/protocolbuffers/protobuf/archive/"
+	conformanceArchivePrefix = "https://github.com/googleapis/conformance-tests/archive/"
 	tarballSuffix            = ".tar.gz"
 )
 
