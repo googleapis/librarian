@@ -522,14 +522,26 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 	return veneers, nil
 }
 
-func buildModules(path string) ([]*config.RustModule, error) {
+func buildModules(rootDir string) ([]*config.RustModule, error) {
 	var modules []*config.RustModule
-	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if d.IsDir() || d.Name() != sidekickFile {
+			return nil
+		}
+
+		// Only use a .sidekick.toml to represent a rust module if the following directory exists:
+		// |-src
+		// |  |-generated
+		// |     |-.sidekick.toml
+		// |-Cargo.toml
+		// Only one pair of Cargo.toml and .sidekick.toml is not comply this structure in google-cloud-rust,
+		// which is wkt/Cargo.toml and src/wkt/tests/common/src/generated/.sidekick.toml.
+		srcDir := strings.TrimSuffix(path, fmt.Sprintf("/src/generated/%s", sidekickFile))
+		if rootDir != srcDir {
 			return nil
 		}
 

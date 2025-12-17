@@ -457,6 +457,55 @@ func TestBuildVeneer(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "google_cloud-wkt",
+			files: []string{
+				"testdata/build-veneer/wkt/Cargo.toml",
+				"testdata/build-veneer/wkt/tests/common/Cargo.toml",
+			},
+			want: map[string]*config.Library{
+				"common": {
+					Name:          "common",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/wkt/tests/common",
+					Version:       "0.0.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						Modules: []*config.RustModule{
+							{
+								DisabledRustdocWarnings: []string{},
+								ModulePath:              "crate::generated",
+								ModuleRoots: map[string]string{
+									"project-root": ".",
+								},
+								Output:   "testdata/build-veneer/wkt/tests/common/src/generated",
+								Source:   "src/wkt/tests/protos",
+								Template: "mod",
+							},
+						},
+					},
+				},
+				"google-cloud-wkt": {
+					Name:          "google-cloud-wkt",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/wkt",
+					Version:       "1.2.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						Modules: []*config.RustModule{
+							{
+								GenerateSetterSamples: true,
+								IncludeList:           "api.proto,source_context.proto,type.proto,descriptor.proto",
+								ModulePath:            "crate",
+								Output:                "testdata/build-veneer/wkt/src/generated",
+								Source:                "google/protobuf",
+								Template:              "mod",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildVeneer(test.files)
