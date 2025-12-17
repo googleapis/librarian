@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"path"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -38,22 +39,18 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 	} else {
 		source["roots"] = strings.Join(library.Roots, ",")
 		rootMap := map[string]struct {
-			path   string
-			subdir string
-			keys   []string
+			path string
+			keys []string
 		}{
 			"googleapis":   {path: googleapisDir, keys: []string{"googleapis-root"}},
 			"discovery":    {path: discoveryDir, keys: []string{"discovery-root"}},
 			"showcase":     {path: showcaseDir, keys: []string{"showcase-root"}},
-			"protobuf-src": {path: protobufRootDir, subdir: protobufSubDir, keys: []string{"protobuf-src-root", "protobuf-src-subdir"}},
+			"protobuf-src": {path: path.Join(protobufRootDir, protobufSubDir), keys: []string{"protobuf-src-root"}},
 			"conformance":  {path: conformanceDir, keys: []string{"conformance-root"}},
 		}
 		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
 				source[r.keys[0]] = r.path
-				if len(r.keys) > 1 {
-					source[r.keys[1]] = r.subdir
-				}
 			}
 		}
 	}
