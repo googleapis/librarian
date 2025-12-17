@@ -107,12 +107,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, googleapisDir, protobufSubDir string) error {
+func generateVeneer(ctx context.Context, library *config.Library, googleapisDir, protobufSrcDir string) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return fmt.Errorf("veneer %q has no modules defined", library.Name)
 	}
 	for _, module := range library.Rust.Modules {
-		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufSubDir)
+		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufSrcDir)
 		model, err := parser.CreateModel(sidekickConfig)
 		if err != nil {
 			return fmt.Errorf("module %s: %w", module.Output, err)
