@@ -191,19 +191,30 @@ func TestParseResourcePattern(t *testing.T) {
 	}
 }
 
-func TestParseResourcePatternDoesntFail(t *testing.T) {
+func TestParseResourcePatternWithNonStandardSeparators(t *testing.T) {
 	// TODO(https://github.com/googleapis/librarian/issues/3258): at this
 	// moment, we don't care what the exact representation is for this
 	// input. We just care that parsing does not error.
-	_, err := ParseResourcePattern("users/{user}/profile/blurbs/legacy/{legacy_user}~{blurb}")
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-
+	testCases := []struct {
+		name    string
+		pattern string
+	}{
+		{
+			name:    "tilde separator",
+			pattern: "users/{user}/profile/blurbs/legacy/{legacy_user}~{blurb}",
+		},
+		{
+			name:    "dot separator",
+			pattern: "rooms/{room}/blurbs/legacy/{legacy_room}.{blurb}",
+		},
 	}
 
-	_, err = ParseResourcePattern("rooms/{room}/blurbs/legacy/{legacy_room}.{blurb}")
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ParseResourcePattern(tc.pattern)
+			if err != nil {
+				t.Fatalf("ParseResourcePattern(%q) failed; want no error, got %v", tc.pattern, err)
+			}
+		})
 	}
 }
