@@ -21,10 +21,10 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 const (

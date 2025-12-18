@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 const (

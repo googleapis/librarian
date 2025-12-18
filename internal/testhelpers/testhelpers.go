@@ -23,7 +23,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/command"
 )
 
 // RequireCommand skips the test if the specified command is not found in PATH.

@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycli"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycli"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestLibrarianAction(t *testing.T) {

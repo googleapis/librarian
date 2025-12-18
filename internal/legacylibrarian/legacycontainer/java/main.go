@@ -20,9 +20,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/generate"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/release"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/generate"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/release"
 )
 
 const version = "0.1.0"

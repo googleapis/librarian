@@ -19,9 +19,9 @@ import (
 	"log/slog"
 	"strings"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/parser/httprule"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"

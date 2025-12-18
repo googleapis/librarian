@@ -18,9 +18,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/parser/discovery"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/parser/discovery"
 )
 
 // ParseDisco reads discovery docs specifications and converts them into

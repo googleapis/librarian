@@ -21,7 +21,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"

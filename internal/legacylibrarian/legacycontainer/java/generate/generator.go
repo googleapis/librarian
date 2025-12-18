@@ -24,12 +24,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/bazel"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/execv"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/pom"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/protoc"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/bazel"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/execv"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/pom"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/protoc"
 )
 
 // Test substitution vars.

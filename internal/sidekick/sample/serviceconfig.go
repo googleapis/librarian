@@ -15,7 +15,7 @@
 package sample
 
 import (
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 )

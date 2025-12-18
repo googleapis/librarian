@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/librarian/githelpers"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 // CargoPreFlight() verifies all the necessary cargo tools are installed.

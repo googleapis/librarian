@@ -14,7 +14,7 @@
 
 package gcloud
 
-import "github.com/googleapis/librarian/internal/yaml"
+import "cloud.google.com/go/librarian/internal/yaml"
 
 // Command is a single gcloud command.
 type Command struct {

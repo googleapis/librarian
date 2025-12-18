@@ -16,7 +16,7 @@
 // the Run function to execute commands within the container.
 // This package should not have any language-specific implementation or
 // Librarian CLI's implementation.
-// TODO(b/447404382): Move this package to the https://github.com/googleapis/librarian
+// TODO(b/447404382): Move this package to the https://cloud.google.com/go/librarian
 // GitHub repository once the interface is finalized.
 package languagecontainer
 
@@ -29,9 +29,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 )
 
 // LanguageContainer defines the functions for language-specific container operations.

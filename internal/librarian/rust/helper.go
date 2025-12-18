@@ -21,7 +21,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/googleapis/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/command"
 	"github.com/pelletier/go-toml/v2"
 )
 

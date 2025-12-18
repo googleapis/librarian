@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/rust"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/librarian/rust"
 	"gopkg.in/yaml.v3"
 )
 

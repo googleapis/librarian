@@ -21,10 +21,10 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 	"gopkg.in/yaml.v3"
 )
 

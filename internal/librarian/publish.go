@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
-	rust "github.com/googleapis/librarian/internal/librarian/internal/rust"
-	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/librarian/githelpers"
+	rust "cloud.google.com/go/librarian/internal/librarian/internal/rust"
+	sidekickrust "cloud.google.com/go/librarian/internal/sidekick/rust_release"
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 

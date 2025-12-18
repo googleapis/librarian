@@ -17,9 +17,9 @@ package httprule
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestParseSegments(t *testing.T) {
@@ -192,7 +192,7 @@ func TestParseResourcePattern(t *testing.T) {
 }
 
 func TestParseResourcePatternWithNonStandardSeparators(t *testing.T) {
-	// TODO(https://github.com/googleapis/librarian/issues/3258): at this
+	// TODO(https://cloud.google.com/go/librarian/issues/3258): at this
 	// moment, we don't care what the exact representation is for this
 	// input. We just care that parsing does not error.
 	testCases := []struct {

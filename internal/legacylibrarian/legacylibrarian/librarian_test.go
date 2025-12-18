@@ -29,8 +29,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"gopkg.in/yaml.v3"
 
 	"github.com/google/go-cmp/cmp"

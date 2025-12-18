@@ -19,7 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/config"
 )
 
 // testReleaseVersion is the version that libraries are always released at when

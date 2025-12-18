@@ -15,8 +15,8 @@
 package parser
 
 import (
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 )
 
 // updateAutoPopulatedFields adds auto-populated fields to methods. Fields that do not conform to

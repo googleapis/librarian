@@ -18,11 +18,11 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygithub"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"github.com/go-git/go-git/v5"
 	gogitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygithub"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 func TestGetGitHubRepositoryFromGitRepo(t *testing.T) {

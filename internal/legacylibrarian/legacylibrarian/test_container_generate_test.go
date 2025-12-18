@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestValidateGenerateTest(t *testing.T) {

@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	cmdtest "github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	cmdtest "cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 )
 
 func TestGetPackageName(t *testing.T) {

@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"cloud.google.com/go/cloudbuild/apiv1/v2/cloudbuildpb"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygithub"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v69/github"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygithub"
 )
 
 type mockGitHubClient struct {
@@ -125,7 +125,7 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghPRs:           []*legacygithub.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/librarian/pull/1")}},
+			ghPRs:           []*legacygithub.PullRequest{{HTMLURL: github.Ptr("https://cloud.google.com/go/librarian/pull/1")}},
 			wantTriggersRun: []string{"publish-release-trigger-id"},
 		},
 		{

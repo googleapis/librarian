@@ -17,9 +17,9 @@ package rust
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/config"
+	sidekickconfig "cloud.google.com/go/librarian/internal/sidekick/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestToSidekickReleaseConfig(t *testing.T) {

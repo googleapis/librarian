@@ -18,8 +18,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/config"
+	sidekickconfig "cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufRootDir, protobufSubDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {

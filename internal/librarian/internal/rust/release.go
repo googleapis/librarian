@@ -22,9 +22,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/semver"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/semver"
+	rustrelease "cloud.google.com/go/librarian/internal/sidekick/rust_release"
 	"github.com/pelletier/go-toml/v2"
 )
 

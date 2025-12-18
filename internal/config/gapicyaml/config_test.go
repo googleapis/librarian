@@ -17,8 +17,8 @@ package gapicyaml
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestConfig(t *testing.T) {

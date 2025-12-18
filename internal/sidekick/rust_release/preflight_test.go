@@ -17,8 +17,8 @@ package rustrelease
 import (
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 )
 
 func TestPreflightMissingGit(t *testing.T) {

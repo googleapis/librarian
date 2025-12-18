@@ -23,12 +23,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/librarian/internal/python"
-	"github.com/googleapis/librarian/internal/librarian/internal/rust"
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/fetch"
+	"cloud.google.com/go/librarian/internal/librarian/internal/python"
+	"cloud.google.com/go/librarian/internal/librarian/internal/rust"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 

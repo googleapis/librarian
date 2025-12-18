@@ -15,7 +15,7 @@
 package librarian
 
 import (
-	"github.com/googleapis/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/config"
 )
 
 // fillDefaults populates empty library fields from the provided defaults.

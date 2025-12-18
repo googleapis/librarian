@@ -18,8 +18,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 func loadServiceConfig(cfg *config.Config) (*serviceconfig.Service, error) {

@@ -17,8 +17,8 @@ package rustrelease
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/testhelpers"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestFindManifest(t *testing.T) {

@@ -19,7 +19,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/fetch"
+	"cloud.google.com/go/librarian/internal/fetch"
 )
 
 var latestCommitAndChecksum = fetch.LatestCommitAndChecksum

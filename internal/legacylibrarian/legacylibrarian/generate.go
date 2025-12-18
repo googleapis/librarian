@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacydocker"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacydocker"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 func generateSingleLibrary(ctx context.Context, containerClient ContainerClient, state *legacyconfig.LibrarianState, libraryState *legacyconfig.LibraryState, repo legacygitrepo.Repository, sourceRepo legacygitrepo.Repository, outputDir string) error {

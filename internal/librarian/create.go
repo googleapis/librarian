@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/rust"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/librarian/rust"
 
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 

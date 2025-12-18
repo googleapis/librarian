@@ -17,7 +17,7 @@ package legacyautomation
 import (
 	"context"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 const (
@@ -39,6 +39,6 @@ func newGenerateRunner(cfg *legacyconfig.Config) *generateRunner {
 }
 
 func (r *generateRunner) run(ctx context.Context) error {
-	// TODO(https://github.com/googleapis/librarian/issues/2890): refactor this function after all commands are migrated.
+	// TODO(https://cloud.google.com/go/librarian/issues/2890): refactor this function after all commands are migrated.
 	return runCommandFn(ctx, generateCmdName, r.projectID, r.push, r.build)
 }

@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestFieldAnnotations(t *testing.T) {

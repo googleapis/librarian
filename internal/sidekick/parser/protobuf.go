@@ -25,12 +25,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
-	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
-	"github.com/googleapis/librarian/internal/sidekick/protobuf"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/parser/httprule"
+	"cloud.google.com/go/librarian/internal/sidekick/parser/svcconfig"
+	"cloud.google.com/go/librarian/internal/sidekick/protobuf"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -605,7 +605,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	return nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
+// TODO(https://cloud.google.com/go/librarian/issues/3036): This function needs
 // to be made more robust. For methods that operate on
 //
 // collections (e.g., a `List` method), the `(google.api.resource_reference)`

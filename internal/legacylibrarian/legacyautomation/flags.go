@@ -17,7 +17,7 @@ package legacyautomation
 import (
 	"flag"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func addFlagBuild(fs *flag.FlagSet, cfg *legacyconfig.Config) {

@@ -21,11 +21,11 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 )
 
 // Context holds the directory paths for the generate command.
-// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#generate
+// https://cloud.google.com/go/librarian/blob/main/doc/language-onboarding.md#generate
 type Context struct {
 	// LibrarianDir is the path to the librarian-tool input directory.
 	// It is expected to contain the generate-request.json file.

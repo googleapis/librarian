@@ -27,9 +27,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/librarian"
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
 

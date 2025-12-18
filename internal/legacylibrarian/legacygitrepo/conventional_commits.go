@@ -164,7 +164,7 @@ func extractBeginCommitMessage(message string) string {
 	// Search the deprecated marker first because beginCommit is the prefix
 	// of beginCommitOverride.
 	// TODO: remove usage when we drop support for `BEGIN_COMMIT_OVERRIDE` and `END_COMMIT_OVERRIDE`.
-	// see https://github.com/googleapis/librarian/issues/2684
+	// see https://cloud.google.com/go/librarian/issues/2684
 	beginMarker := beginCommitOverride
 	endMarker := endCommitOverride
 	beginIndex := strings.Index(message, beginMarker)

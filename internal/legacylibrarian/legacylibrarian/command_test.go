@@ -26,10 +26,10 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygithub"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygithub"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 func TestDeriveImage(t *testing.T) {

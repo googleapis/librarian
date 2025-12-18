@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 )
 
 // ParseSegments parses a PathTemplate, defined at the [google.api.http annotation].
@@ -91,11 +91,11 @@ func ParseSegments(pathTemplate string) (*api.PathTemplate, error) {
 //
 // This is different from `ParseSegments` because it does not expect a leading `/`.
 func ParseResourcePattern(pathTemplate string) (*api.PathTemplate, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3258): ParseResourcePattern
+	// TODO(https://cloud.google.com/go/librarian/issues/3258): ParseResourcePattern
 	// should support parsing generic resources more robustly than just checking for a literal `*`.
 	if strings.Contains(pathTemplate, "}.{") ||
 		strings.Contains(pathTemplate, "}~{") {
-		// TODO(https://github.com/googleapis/librarian/issues/3258): support non-standard separators in resource names... somehow.
+		// TODO(https://cloud.google.com/go/librarian/issues/3258): support non-standard separators in resource names... somehow.
 		return api.NewPathTemplate(), nil
 	}
 	if pathTemplate == api.SingleSegmentWildcard {

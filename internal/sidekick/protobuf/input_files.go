@@ -23,7 +23,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 // DetermineInputFiles determines the input files from the source and options.

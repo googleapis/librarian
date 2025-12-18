@@ -20,9 +20,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 )
 
 func TestPublishSuccess(t *testing.T) {

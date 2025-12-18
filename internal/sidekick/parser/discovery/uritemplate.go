@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 )
 
 const (

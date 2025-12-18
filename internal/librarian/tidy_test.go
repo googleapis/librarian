@@ -20,9 +20,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestValidateLibraries(t *testing.T) {

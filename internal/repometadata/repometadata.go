@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
 )
 
 // RepoMetadata represents the .repo-metadata.json file structure.
@@ -75,7 +75,7 @@ type RepoMetadata struct {
 // GenerateRepoMetadata generates the .repo-metadata.json file by parsing the
 // service YAML.
 func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, defaultVersion, outdir string) error {
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// TODO(https://cloud.google.com/go/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
 

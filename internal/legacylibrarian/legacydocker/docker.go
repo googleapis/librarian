@@ -14,7 +14,7 @@
 
 // Package legacydocker provides the interface for running language-specific
 // Docker containers which conform to the Librarian container contract.
-// TODO(https://github.com/googleapis/librarian/issues/330): link to
+// TODO(https://cloud.google.com/go/librarian/issues/330): link to
 // the documentation when it's written.
 package legacydocker
 
@@ -28,7 +28,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 // Command is the string representation of a command to be passed to the language-specific

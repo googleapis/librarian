@@ -22,8 +22,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 

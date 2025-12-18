@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	gapic "google.golang.org/genproto/googleapis/gapic/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"

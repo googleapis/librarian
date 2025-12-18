@@ -23,8 +23,8 @@ import (
 	"slices"
 	"strings"
 
+	"cloud.google.com/go/librarian/internal/command"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
-	"github.com/googleapis/librarian/internal/command"
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.

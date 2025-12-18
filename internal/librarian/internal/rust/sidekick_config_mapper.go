@@ -15,8 +15,8 @@
 package rust
 
 import (
-	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/config"
+	sidekickconfig "cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 // ToSidekickReleaseConfig translates a librarian Release config to a sidekick

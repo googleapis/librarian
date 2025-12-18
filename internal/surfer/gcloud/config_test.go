@@ -20,8 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestReadGcloudConfig(t *testing.T) {

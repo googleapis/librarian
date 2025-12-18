@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 var cmdSidekick = newCommand(

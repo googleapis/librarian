@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/googleapis/librarian/internal/sidekick/sidekick"
+	"cloud.google.com/go/librarian/internal/sidekick/sidekick"
 )
 
 func main() {

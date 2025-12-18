@@ -21,12 +21,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
-	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
-	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/fetch"
+	"cloud.google.com/go/librarian/internal/sidekick/parser"
+	sidekickrust "cloud.google.com/go/librarian/internal/sidekick/rust"
+	"cloud.google.com/go/librarian/internal/sidekick/rust_prost"
 )
 
 const (

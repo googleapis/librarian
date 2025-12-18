@@ -17,8 +17,8 @@ package discovery
 import (
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api/apitest"
 )
 
 func TestService(t *testing.T) {

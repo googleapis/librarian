@@ -21,10 +21,10 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygithub"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygithub"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 func TestNewUpdateImageRunner(t *testing.T) {
@@ -68,7 +68,7 @@ func TestNewUpdateImageRunner(t *testing.T) {
 				API:         "some/api",
 				APISource:   t.TempDir(),
 				Branch:      "test-branch",
-				Repo:        "https://github.com/googleapis/librarian.git",
+				Repo:        "https://cloud.google.com/go/librarian.git",
 				WorkRoot:    t.TempDir(),
 				CommandName: updateImageCmdName,
 			},

@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestNew(t *testing.T) {

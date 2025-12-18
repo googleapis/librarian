@@ -21,8 +21,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/semver"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/semver"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 	"github.com/pelletier/go-toml/v2"
 )
 

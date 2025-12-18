@@ -19,7 +19,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacylibrarian"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacylibrarian"
 )
 
 func main() {

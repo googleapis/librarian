@@ -17,7 +17,7 @@ package legacyautomation
 import (
 	"context"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycli"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycli"
 )
 
 func newAutomationCommand() *legacycli.Command {

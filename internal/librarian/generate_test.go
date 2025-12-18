@@ -22,8 +22,8 @@ import (
 	"slices"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerateCommand(t *testing.T) {

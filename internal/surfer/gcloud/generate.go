@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/parser"
+	"cloud.google.com/go/librarian/internal/yaml"
 )
 
 // Generate generates gcloud commands for a service.
@@ -32,7 +32,7 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 
 	model, err := parser.ParseProtobuf(&config.Config{
 		General: config.GeneralConfig{
-			// TODO(https://github.com/googleapis/librarian/issues/2817):
+			// TODO(https://cloud.google.com/go/librarian/issues/2817):
 			// determine the specification source
 			SpecificationSource: "",
 		},
@@ -44,7 +44,7 @@ func Generate(ctx context.Context, googleapis, gcloudconfig, output string) erro
 		return fmt.Errorf("failed to create API model: %w", err)
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/2817): implement
+	// TODO(https://cloud.google.com/go/librarian/issues/2817): implement
 	// gcloud command generation logic
 	_, _ = model, cfg
 	return nil

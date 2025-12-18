@@ -27,8 +27,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"gopkg.in/yaml.v3"
 )
 

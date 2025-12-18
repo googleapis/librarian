@@ -19,7 +19,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 )
 
 func TestRustProstConvert(t *testing.T) {

@@ -24,10 +24,10 @@ import (
 	"slices"
 	"strings"
 
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/librarian/githelpers"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // Publish finds all the crates that should be published, (optionally) runs

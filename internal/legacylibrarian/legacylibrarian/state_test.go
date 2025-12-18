@@ -21,9 +21,9 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"gopkg.in/yaml.v3"
 )
 

@@ -21,10 +21,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
 )
 
 func TestRun(t *testing.T) {

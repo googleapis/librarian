@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 func TestRustPublish(t *testing.T) {

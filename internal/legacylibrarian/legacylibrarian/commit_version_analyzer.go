@@ -20,9 +20,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"github.com/googleapis/librarian/internal/semver"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/semver"
 )
 
 // getConventionalCommitsSinceLastRelease returns all conventional commits for the given library since the

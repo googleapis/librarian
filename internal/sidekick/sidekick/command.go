@@ -21,7 +21,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 // command is an implementation of a sidekick command, like 'sidekick generate'.

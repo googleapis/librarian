@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
 	"github.com/google/uuid"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
 var errGenerateBlocked = errors.New("generation is blocked for library")

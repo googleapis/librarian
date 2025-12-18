@@ -21,7 +21,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycli"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycli"
 )
 
 // Run executes the Librarian CLI with the given command line arguments.

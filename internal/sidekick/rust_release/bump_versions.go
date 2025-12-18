@@ -20,9 +20,9 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/librarian/githelpers"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 // BumpVersions finds all the crates that need a version bump and performs the

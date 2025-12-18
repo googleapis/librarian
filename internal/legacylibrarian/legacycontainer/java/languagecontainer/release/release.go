@@ -15,10 +15,10 @@
 // Package release contains types for language container's release command.
 package release
 
-import "github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
+import "cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 
 // Context has the directory paths for the release-stage command.
-// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-stage
+// https://cloud.google.com/go/librarian/blob/main/doc/language-onboarding.md#release-stage
 type Context struct {
 	LibrarianDir string
 	RepoDir      string

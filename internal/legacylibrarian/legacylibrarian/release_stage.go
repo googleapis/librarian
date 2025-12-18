@@ -23,10 +23,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacydocker"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"github.com/googleapis/librarian/internal/semver"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacydocker"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacygitrepo"
+	"cloud.google.com/go/librarian/internal/semver"
 )
 
 type stageRunner struct {

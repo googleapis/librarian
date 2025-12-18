@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 )
 
 func TestStage(t *testing.T) {

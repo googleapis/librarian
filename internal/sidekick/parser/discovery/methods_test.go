@@ -17,9 +17,9 @@ package discovery
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api/apitest"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 )
 
 func TestMakeServiceMethods(t *testing.T) {

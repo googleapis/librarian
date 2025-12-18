@@ -21,9 +21,9 @@ import (
 	"path"
 	"strings"
 
-	cmd "github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	cmd "cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/librarian/rust"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 )
 
 func init() {

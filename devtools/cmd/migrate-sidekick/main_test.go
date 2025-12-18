@@ -19,8 +19,8 @@ import (
 	"os"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestReadRootSidekick(t *testing.T) {

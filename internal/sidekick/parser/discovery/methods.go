@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 )
 
 func makeServiceMethods(model *api.API, service *api.Service, doc *document, resource *resource) error {

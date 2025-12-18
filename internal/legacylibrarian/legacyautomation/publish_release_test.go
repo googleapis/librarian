@@ -19,7 +19,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestNewPublishRunner(t *testing.T) {

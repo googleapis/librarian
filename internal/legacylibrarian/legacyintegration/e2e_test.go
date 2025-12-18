@@ -30,10 +30,10 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/go-github/v69/github"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"gopkg.in/yaml.v3"
 )
 
@@ -126,7 +126,7 @@ func TestRunGenerate(t *testing.T) {
 			cmdArgs := []string{
 				"run",
 				"-tags", mockGithubTag,
-				"github.com/googleapis/librarian/cmd/legacylibrarian",
+				"cloud.google.com/go/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
@@ -216,7 +216,7 @@ func TestCleanAndCopy(t *testing.T) {
 		"go",
 		"run",
 		"-tags", mockGithubTag,
-		"github.com/googleapis/librarian/cmd/legacylibrarian",
+		"cloud.google.com/go/librarian/cmd/legacylibrarian",
 		"generate",
 		fmt.Sprintf("--api=%s", apiToGenerate),
 		fmt.Sprintf("--output=%s", workRoot),
@@ -295,7 +295,7 @@ func TestRunConfigure(t *testing.T) {
 			cmd := exec.Command(
 				"go",
 				"run",
-				"github.com/googleapis/librarian/cmd/legacylibrarian",
+				"cloud.google.com/go/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--api=%s", test.api),
 				fmt.Sprintf("--output=%s", workRoot),
@@ -398,7 +398,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 			cmd := exec.Command(
 				"go",
 				"run",
-				"github.com/googleapis/librarian/cmd/legacylibrarian",
+				"cloud.google.com/go/librarian/cmd/legacylibrarian",
 				"generate",
 				fmt.Sprintf("--output=%s", workRoot),
 				fmt.Sprintf("--repo=%s", repo),
@@ -531,7 +531,7 @@ func TestReleaseStage(t *testing.T) {
 			cmdArgs := []string{
 				"run",
 				"-tags", mockGithubTag,
-				"github.com/googleapis/librarian/cmd/legacylibrarian",
+				"cloud.google.com/go/librarian/cmd/legacylibrarian",
 				"release",
 				"stage",
 				fmt.Sprintf("--repo=%s", repo),
@@ -608,7 +608,7 @@ func TestReleaseTag(t *testing.T) {
 		### Features
 		- feat: new feature
 		</details>`,
-			repoURL: "https://github.com/googleapis/librarian",
+			repoURL: "https://cloud.google.com/go/librarian",
 		},
 		{
 			name: "runs successfully from cloned repo",
@@ -733,12 +733,12 @@ libraries:
 			}
 			cmdArgs := []string{
 				"run",
-				"github.com/googleapis/librarian/cmd/legacylibrarian",
+				"cloud.google.com/go/librarian/cmd/legacylibrarian",
 				"release",
 				"tag",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
-				"--pr=https://github.com/googleapis/librarian/pull/123",
+				"--pr=https://cloud.google.com/go/librarian/pull/123",
 			}
 			if test.push {
 				cmdArgs = append(cmdArgs, "--push")
@@ -790,7 +790,7 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string, expectedContentIn
 				t.Errorf("unexpected PR base: got %q", *newPR.Base)
 			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"number": 123, "html_url": "https://github.com/googleapis/librarian/pull/123"}`)
+			fmt.Fprint(w, `{"number": 123, "html_url": "https://cloud.google.com/go/librarian/pull/123"}`)
 			return
 		}
 
@@ -817,7 +817,7 @@ func initRepo(t *testing.T, dir, source, message string) error {
 	runGit(t, dir, "config", "user.email", "test@github.com")
 	runGit(t, dir, "config", "user.name", "Test User")
 	runGit(t, dir, "commit", "-m", message)
-	runGit(t, dir, "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
+	runGit(t, dir, "remote", "add", "origin", "https://cloud.google.com/go/librarian.git")
 	return nil
 }
 

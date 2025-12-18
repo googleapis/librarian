@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/repometadata"
+	"cloud.google.com/go/librarian/internal/config"
+	"cloud.google.com/go/librarian/internal/fetch"
+	"cloud.google.com/go/librarian/internal/repometadata"
 )
 
 const (
@@ -73,11 +73,11 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 		}
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3157):
+	// TODO(https://cloud.google.com/go/librarian/issues/3157):
 	// Copy files from .librarian/generator-input/client-post-processing
 	// for post processing, or reimplement.
 
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// TODO(https://cloud.google.com/go/librarian/issues/3146):
 	// Remove the default version fudget here, as GenerateRepoMetadata should
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
@@ -85,7 +85,7 @@ func Generate(ctx context.Context, library *config.Library, sources *config.Sour
 
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
-	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
+	// TODO(https://cloud.google.com/go/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
 	absoluteServiceConfig := filepath.Join(googleapisDir, library.Channels[0].Path, library.Channels[0].ServiceConfig)
 	if err := repometadata.GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
@@ -117,7 +117,7 @@ func generateChannel(ctx context.Context, channel *config.Channel, library *conf
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
 	// the correct final position in the repository.
-	// TODO(https://github.com/googleapis/librarian/issues/3210): generate
+	// TODO(https://cloud.google.com/go/librarian/issues/3210): generate
 	// directly in place.
 
 	stagingChildDirectory := getStagingChildDirectory(channel.Path)
@@ -170,7 +170,7 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3161):
+	// TODO(https://cloud.google.com/go/librarian/issues/3161):
 	// Make these conditional on configuration.
 	opts = append(opts, "rest-numeric-enums")
 	opts = append(opts, "metadata")
@@ -222,7 +222,7 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 	}, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/3160): remove this code,
+// TODO(https://cloud.google.com/go/librarian/issues/3160): remove this code,
 // instead making sure that the Googleapis source already has Dir populated.
 func sourceDir(ctx context.Context, source *config.Source, repo string) (string, error) {
 	if source == nil {
@@ -304,7 +304,7 @@ func copyReadmeToDocsDir(outdir string) error {
 }
 
 // cleanUpFilesAfterPostProcessing cleans up files after post processing.
-// TODO(https://github.com/googleapis/librarian/issues/3210): generate
+// TODO(https://cloud.google.com/go/librarian/issues/3210): generate
 // directly in place and remove this code entirely.
 func cleanUpFilesAfterPostProcessing(repoRoot string) error {
 	// Remove owl-bot-staging

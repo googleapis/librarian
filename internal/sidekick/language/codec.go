@@ -19,7 +19,7 @@ package language
 import (
 	"log/slog"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 )
 
 // GeneratedFile represents an input template and its corresponding output file.

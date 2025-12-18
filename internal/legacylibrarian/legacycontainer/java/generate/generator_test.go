@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/protoc"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/protoc"
 )
 
 // testEnv encapsulates a temporary test environment.

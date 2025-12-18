@@ -22,10 +22,10 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/command"
+	"cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestUpdateManifestSuccess(t *testing.T) {

@@ -18,9 +18,9 @@ package apitest
 import (
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // CheckMessage compares two `Message` instances ignoring the order of fields, and oneofs and ignoring child messages.

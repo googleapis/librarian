@@ -19,10 +19,10 @@ import (
 	"errors"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/config"
+	sidekickconfig "cloud.google.com/go/librarian/internal/sidekick/config"
+	"cloud.google.com/go/librarian/internal/testhelpers"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
 )
 
 func TestPublish(t *testing.T) {

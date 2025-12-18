@@ -18,9 +18,9 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/sample"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 
 func TestMessageNames(t *testing.T) {

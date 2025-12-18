@@ -20,8 +20,8 @@ import (
 	"path"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/fetch"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/fetch"
 	toml "github.com/pelletier/go-toml/v2"
 )
 

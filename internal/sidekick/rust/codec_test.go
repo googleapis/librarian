@@ -19,11 +19,11 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/api"
+	"cloud.google.com/go/librarian/internal/sidekick/language"
+	"cloud.google.com/go/librarian/internal/sidekick/sample"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 
 func createRustCodec() *codec {

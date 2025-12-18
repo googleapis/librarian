@@ -25,7 +25,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 // Command represents a single command that can be executed by the application.

@@ -18,7 +18,7 @@ package svcconfig
 import (
 	"strings"
 
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	"cloud.google.com/go/librarian/internal/serviceconfig"
 )
 
 // ServiceNames contains the package and (unqualified) name of a service.

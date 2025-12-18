@@ -20,9 +20,9 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/pom"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/pom"
 )
 
 // Stage executes the release stage command.

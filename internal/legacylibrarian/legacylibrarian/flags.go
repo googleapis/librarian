@@ -18,7 +18,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func addFlagAPI(fs *flag.FlagSet, cfg *legacyconfig.Config) {

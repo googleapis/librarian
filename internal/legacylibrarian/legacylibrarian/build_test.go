@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestBuildSingleLibrary(t *testing.T) {

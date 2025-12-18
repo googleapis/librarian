@@ -1689,7 +1689,7 @@ func TestCanUseSSH(t *testing.T) {
 	}{
 		{
 			name:      "remote_https_uri",
-			remoteURI: "https://github.com/googleapis/librarian.git",
+			remoteURI: "https://cloud.google.com/go/librarian.git",
 			want:      false,
 		},
 		{
@@ -1699,7 +1699,7 @@ func TestCanUseSSH(t *testing.T) {
 		},
 		{
 			name:      "remote_ssh_uri_with_scheme",
-			remoteURI: "ssh://git@github.com/googleapis/librarian.git",
+			remoteURI: "ssh://git@cloud.google.com/go/librarian.git",
 			want:      true,
 		},
 		{

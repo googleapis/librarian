@@ -19,8 +19,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/sidekick/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (

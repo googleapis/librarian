@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message"
 )
 
 func TestReadReleaseStageRequest(t *testing.T) {
