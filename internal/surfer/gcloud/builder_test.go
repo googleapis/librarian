@@ -102,7 +102,6 @@ func TestNewParam(t *testing.T) {
 				Repeated: false,
 			},
 		},
-		// Add more cases: Map, Enum, ResourceReference
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := newParam(test.field, test.apiField, &Config{}, &api.API{}, &api.Service{})
