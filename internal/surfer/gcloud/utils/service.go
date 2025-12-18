@@ -18,7 +18,7 @@ import "strings"
 
 // InferTrackFromPackage infers the release track from the proto package name.
 // as mandated per AIP-185
-// e.g. "google.cloud.parallelstore.v1beta" -> "beta"
+// e.g. "google.cloud.parallelstore.v1beta" -> "beta".
 func InferTrackFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
 	if len(parts) == 0 {
