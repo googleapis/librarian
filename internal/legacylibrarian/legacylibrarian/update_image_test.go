@@ -68,7 +68,7 @@ func TestNewUpdateImageRunner(t *testing.T) {
 				API:         "some/api",
 				APISource:   t.TempDir(),
 				Branch:      "test-branch",
-				Repo:        "https://cloud.google.com/go/librarian.git",
+				Repo:        "https://github.com/googleapis/librarian.git",
 				WorkRoot:    t.TempDir(),
 				CommandName: updateImageCmdName,
 			},

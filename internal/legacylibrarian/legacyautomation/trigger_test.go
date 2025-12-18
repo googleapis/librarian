@@ -125,7 +125,7 @@ func TestRunCommandWithClient(t *testing.T) {
 					Id:   "publish-release-trigger-id",
 				},
 			},
-			ghPRs:           []*legacygithub.PullRequest{{HTMLURL: github.Ptr("https://cloud.google.com/go/librarian/pull/1")}},
+			ghPRs:           []*legacygithub.PullRequest{{HTMLURL: github.Ptr("https://github.com/googleapis/librarian/pull/1")}},
 			wantTriggersRun: []string{"publish-release-trigger-id"},
 		},
 		{

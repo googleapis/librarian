@@ -25,7 +25,7 @@ import (
 )
 
 // Context holds the directory paths for the generate command.
-// https://cloud.google.com/go/librarian/blob/main/doc/language-onboarding.md#generate
+// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#generate
 type Context struct {
 	// LibrarianDir is the path to the librarian-tool input directory.
 	// It is expected to contain the generate-request.json file.

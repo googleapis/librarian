@@ -18,7 +18,7 @@ package release
 import "cloud.google.com/go/librarian/internal/legacylibrarian/legacycontainer/java/message"
 
 // Context has the directory paths for the release-stage command.
-// https://cloud.google.com/go/librarian/blob/main/doc/language-onboarding.md#release-stage
+// https://github.com/googleapis/librarian/blob/main/doc/language-onboarding.md#release-stage
 type Context struct {
 	LibrarianDir string
 	RepoDir      string

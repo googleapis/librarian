@@ -16,7 +16,7 @@
 // the Run function to execute commands within the container.
 // This package should not have any language-specific implementation or
 // Librarian CLI's implementation.
-// TODO(b/447404382): Move this package to the https://cloud.google.com/go/librarian
+// TODO(b/447404382): Move this package to the https://github.com/googleapis/librarian
 // GitHub repository once the interface is finalized.
 package languagecontainer
 

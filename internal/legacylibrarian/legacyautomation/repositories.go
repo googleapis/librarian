@@ -45,7 +45,7 @@ type RepositoryConfig struct {
 
 	// Branch configures the repository branch to checkout in Cloud Build prior
 	// to command execution. Furthermore, it dictates the value set on the
-	// [cloud.google.com/go/librarian/internal/legacyconfig.Config] Branch property
+	// [github.com/googleapis/librarian/internal/legacyconfig.Config] Branch property
 	// via the --branch flag.
 	//
 	// This property is optional. Downstream usage defaults to "main".

@@ -39,7 +39,7 @@ type Config struct {
 
 	// HasGoGRPC indicates whether go_grpc_library is used.
 	//
-	// TODO(https://cloud.google.com/go/librarian/issues/1021): Remove this field once
+	// TODO(https://github.com/googleapis/librarian/issues/1021): Remove this field once
 	// the googleapis migration from go_proto_library to go_grpc_library is complete.
 	HasGoGRPC bool
 

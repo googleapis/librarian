@@ -38,7 +38,7 @@ func TestGetRawContentSystem(t *testing.T) {
 	if testToken == "" {
 		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	repoName := "https://cloud.google.com/go/librarian"
+	repoName := "https://github.com/googleapis/librarian"
 
 	for _, test := range []struct {
 		name          string
@@ -300,7 +300,7 @@ func TestFindMergedPullRequest(t *testing.T) {
 	if testToken == "" {
 		t.Skip("LIBRARIAN_TEST_GITHUB_TOKEN not set, skipping GitHub integration test")
 	}
-	repoName := "https://cloud.google.com/go/librarian"
+	repoName := "https://github.com/googleapis/librarian"
 	repo, err := github.ParseRemote(repoName)
 	if err != nil {
 		t.Fatalf("unexpected error in ParseRemote() %s", err)
@@ -536,7 +536,7 @@ func TestGitCheckout(t *testing.T) {
 			repo, err := gitrepo.NewRepository(&gitrepo.RepositoryOptions{
 				Dir:          filepath.Join(t.TempDir(), "librarian"),
 				MaybeClone:   true,
-				RemoteURL:    "https://cloud.google.com/go/librarian",
+				RemoteURL:    "https://github.com/googleapis/librarian",
 				RemoteBranch: "main",
 			})
 			if err != nil {
