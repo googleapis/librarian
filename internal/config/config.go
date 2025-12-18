@@ -131,11 +131,11 @@ type Default struct {
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
-	Transport string `yaml:"transport,omitempty"`
-
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
+
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
+	Transport string `yaml:"transport,omitempty"`
 }
 
 // Library represents a library configuration.
