@@ -858,7 +858,7 @@ func setupStateFile(t *testing.T, repoInitDir, lastGeneratedCommit string) {
 		Libraries: []*config.LibraryState{
 			{
 				ID:      "go-google-cloud-pubsub-v1",
-				Version: "1.0.0",
+				Version: "v1.0.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/pubsub/v1",
