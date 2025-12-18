@@ -63,23 +63,24 @@ func TestGenerateService(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-				tmpDir := t.TempDir()
-							err := generateService(test.service, &Config{}, test.model, tmpDir)
-							if (err != nil) != test.wantErr {
-								t.Errorf("generateService() error = %v, wantErr %v", err, test.wantErr)
-							}
-						})
-					}
-				}
+			tmpDir := t.TempDir()
+			err := generateService(test.service, &Config{}, test.model, tmpDir)
+			if (err != nil) != test.wantErr {
+				t.Errorf("generateService() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 // TestGenerateResourceCommands verifies that command files are generated.
 func TestGenerateResourceCommands(t *testing.T) {
 	// This tests the file writing logic specifically.
 	tmpDir := t.TempDir()
-	
+
 	err := generateResourceCommands("instances", []*api.Method{
 		{
-			Name: "CreateInstance",
-			Service: &api.Service{Package: "google.cloud.parallelstore.v1"},
+			Name:      "CreateInstance",
+			Service:   &api.Service{Package: "google.cloud.parallelstore.v1"},
 			InputType: &api.Message{},
 		},
 	}, tmpDir, &Config{}, &api.API{}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
