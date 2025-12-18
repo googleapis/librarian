@@ -36,9 +36,10 @@ func TestParse(t *testing.T) {
 			name:    "valid version",
 			version: "1.2.3",
 			want: version{
-				Major: 1,
-				Minor: 2,
-				Patch: 3,
+				Major:       1,
+				Minor:       2,
+				Patch:       3,
+				SpecVersion: SemVerSpecV2,
 			},
 		},
 		{
@@ -51,6 +52,7 @@ func TestParse(t *testing.T) {
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
 				PrereleaseNumber:    ptr(1),
+				SpecVersion:         SemVerSpecV2,
 			},
 		},
 		{
@@ -69,19 +71,21 @@ func TestParse(t *testing.T) {
 			name:    "valid version with prerelease without version",
 			version: "1.2.3-beta",
 			want: version{
-				Major:      1,
-				Minor:      2,
-				Patch:      3,
-				Prerelease: "beta",
+				Major:       1,
+				Minor:       2,
+				Patch:       3,
+				Prerelease:  "beta",
+				SpecVersion: SemVerSpecV2,
 			},
 		},
 		{
 			name:    "valid shortened version",
 			version: "1.2",
 			want: version{
-				Major: 1,
-				Minor: 2,
-				Patch: 0,
+				Major:       1,
+				Minor:       2,
+				Patch:       0,
+				SpecVersion: SemVerSpecV2,
 			},
 		},
 	} {
@@ -615,36 +619,6 @@ func TestMaxVersion(t *testing.T) {
 			got := MaxVersion(test.versions...)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("TestMaxVersion() returned diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestSemVerSpecVersion_String(t *testing.T) {
-	for _, test := range []struct {
-		name        string
-		specVersion SemVerSpecVersion
-		want        string
-	}{
-		{
-			name:        "spec 2.0.0",
-			specVersion: SemVerSpecV2,
-			want:        "2.0.0",
-		},
-		{
-			name:        "spec 1.0.0",
-			specVersion: SemVerSpecV1,
-			want:        "1.0.0",
-		},
-		{
-			name:        "spec unknown",
-			specVersion: 100,
-			want:        "unknown",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if diff := cmp.Diff(test.want, test.specVersion.String()); diff != "" {
-				t.Errorf("SemVerSpecVersion.String(%v) returned diff (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}

@@ -29,28 +29,12 @@ import (
 const (
 	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
 	// https://semver.org/spec/v2.0.0.html.
-	SemVerSpecV2 = iota
+	SemVerSpecV2 = "2.0.0"
 
 	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
 	// https://semver.org/spec/v1.0.0.html.
-	SemVerSpecV1
+	SemVerSpecV1 = "1.0.0"
 )
-
-// SemVerSpecVersion represents the version of the SemVer specification in use
-// by a version string.
-type SemVerSpecVersion int
-
-// String converts a SemVerSpecVersion to its string representation.
-func (c SemVerSpecVersion) String() string {
-	switch c {
-	case SemVerSpecV2:
-		return "2.0.0"
-	case SemVerSpecV1:
-		return "1.0.0"
-	default:
-		return "unknown"
-	}
-}
 
 // version represents a semantic version.
 type version struct {
@@ -67,9 +51,8 @@ type version struct {
 	// field is nil.
 	PrereleaseNumber *int
 	// SpecVersion is the SemVer spec version detected in the version string.
-	// By default this is [SemVerSpecV2].
 	// Currently, this only impacts stringifying of prerelease numbers.
-	SpecVersion SemVerSpecVersion
+	SpecVersion string
 }
 
 var (
@@ -113,8 +96,10 @@ func parse(versionString string) (version, error) {
 	versionCore = strings.TrimSuffix(versionCore, prerelease)
 	vParts := strings.Split(versionCore, ".")
 
-	var v version
 	var err error
+	v := version{
+		SpecVersion: SemVerSpecV2,
+	}
 
 	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
