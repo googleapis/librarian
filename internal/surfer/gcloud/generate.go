@@ -23,11 +23,11 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/utils"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates gcloud commands for a service.
-func Generate(ctx context.Context, googleapis, gcloudconfig, output, includeList string) error {
+func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
 	overrides, err := readGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
