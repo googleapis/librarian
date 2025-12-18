@@ -1,13 +1,13 @@
 image: test-image:latest
 libraries:
   - id: go-google-cloud-pubsub-v1
-    version: v1.0.0
+    version: 1.0.0
     apis:
       - path: google/cloud/pubsub/v1
     source_roots:
       - pubsub
   - id: simulate-command-error-id
-    version: v2.0.0
+    version: 2.0.0
     apis:
       - path: google/cloud/future/v2
     source_roots:
