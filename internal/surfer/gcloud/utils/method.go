@@ -1,0 +1,44 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package utils
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/iancoleman/strcase"
+)
+
+// GetVerb maps an API method name to a standard gcloud command verb.
+func GetVerb(methodName string) (string, error) {
+	if methodName == "" {
+		return "", fmt.Errorf("method name cannot be empty")
+	}
+	switch {
+	case strings.HasPrefix(methodName, "Get"):
+		return "describe", nil
+	case strings.HasPrefix(methodName, "List"):
+		return "list", nil
+	case strings.HasPrefix(methodName, "Create"):
+		return "create", nil
+	case strings.HasPrefix(methodName, "Update"):
+		return "update", nil
+	case strings.HasPrefix(methodName, "Delete"):
+		return "delete", nil
+	default:
+		// For non-standard methods, we just use the snake_case version of the method name.
+		return strcase.ToSnake(methodName), nil
+	}
+}
