@@ -30,33 +30,47 @@ import (
 )
 
 type updateTestSetup struct {
-	server           *httptest.Server
-	configPath       string
-	initialConfig    string
-	googleapisCommit string
-	googleapisSHA    string
-	discoveryCommit  string
-	discoverySHA     string
+	server     *httptest.Server
+	configPath string
 }
 
-func setupUpdateTest(t *testing.T) *updateTestSetup {
-	const (
-		googleapisCommit = "123456"
-		discoveryCommit  = "abcdef"
-	)
-	googleapisTarball := "googleapis-tarball-content"
-	discoveryTarball := "discovery-tarball-content"
+const (
+	googleapisTestCommit  = "123456"
+	discoveryTestCommit   = "abcdef"
+	googleapisTestTarball = "googleapis-tarball-content"
+	discoveryTestTarball  = "discovery-tarball-content"
+	testBranch            = "other"
+)
+
+var (
+	googleapisTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
+	discoveryTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
+)
+
+func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
+	// Source.Branch can be empty in the config file. Update should default to
+	// using the branch configured in [sourceRepos], so we only setup the
+	// test server handlers with Source.Branch when it is explicitly set as it
+	// would be in the file on disk.
+	googleapisBranch := sourceRepos["googleapis"].Branch
+	if conf.Sources.Googleapis.Branch != "" {
+		googleapisBranch = conf.Sources.Googleapis.Branch
+	}
+	discoveryBranch := sourceRepos["discovery"].Branch
+	if conf.Sources.Discovery.Branch != "" {
+		discoveryBranch = conf.Sources.Discovery.Branch
+	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/repos/googleapis/googleapis/commits/master":
-			w.Write([]byte(googleapisCommit))
-		case "/repos/googleapis/discovery-artifact-manager/commits/master":
-			w.Write([]byte(discoveryCommit))
-		case "/googleapis/googleapis/archive/123456.tar.gz":
-			w.Write([]byte(googleapisTarball))
-		case "/googleapis/discovery-artifact-manager/archive/abcdef.tar.gz":
-			w.Write([]byte(discoveryTarball))
+		case "/repos/googleapis/googleapis/commits/" + googleapisBranch:
+			w.Write([]byte(googleapisTestCommit))
+		case "/repos/googleapis/discovery-artifact-manager/commits/" + discoveryBranch:
+			w.Write([]byte(discoveryTestCommit))
+		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
+			w.Write([]byte(googleapisTestTarball))
+		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
+			w.Write([]byte(discoveryTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -65,39 +79,17 @@ func setupUpdateTest(t *testing.T) *updateTestSetup {
 	githubAPI = ts.URL
 	githubDownload = ts.URL
 
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
-	configContent := `language: go
-sources:
-  googleapis:
-    commit: old-googleapis-commit
-    sha256: old-googleapis-sha
-  discovery:
-    commit: old-discovery-commit
-    sha256: old-discovery-sha
-`
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	googleapisSHA := fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTarball)))
-	discoverySHA := fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTarball)))
+	cp := setupTestConfig(t, conf)
 
 	return &updateTestSetup{
-		server:           ts,
-		configPath:       configPath,
-		initialConfig:    configContent,
-		googleapisCommit: googleapisCommit,
-		googleapisSHA:    googleapisSHA,
-		discoveryCommit:  discoveryCommit,
-		discoverySHA:     discoverySHA,
+		server:     ts,
+		configPath: cp,
 	}
 }
 
-func setupTestConfig(t *testing.T, conf *config.Config) {
+func setupTestConfig(t *testing.T, conf *config.Config) string {
 	if conf == nil {
-		return
+		return ""
 	}
 
 	data, err := yaml.Marshal(conf)
@@ -112,30 +104,43 @@ func setupTestConfig(t *testing.T, conf *config.Config) {
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		t.Fatal(err)
 	}
+
+	return configPath
 }
 
 func TestUpdateCommand(t *testing.T) {
-	setup := setupUpdateTest(t)
-	defer setup.server.Close()
-
 	for _, test := range []struct {
-		name       string
-		args       []string
-		wantConfig *config.Config
+		name          string
+		args          []string
+		initialConfig *config.Config
+		wantConfig    *config.Config
 	}{
 		{
 			name: "googleapis",
 			args: []string{"librarian", "update", "googleapis"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
 			wantConfig: &config.Config{
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: setup.googleapisCommit,
-						SHA256: setup.googleapisSHA,
+						Commit: googleapisTestCommit,
+						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
-						Commit: "old-discovery-commit",
-						SHA256: "old-discovery-sha",
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
 					},
 				},
 			},
@@ -143,16 +148,29 @@ func TestUpdateCommand(t *testing.T) {
 		{
 			name: "discovery",
 			args: []string{"librarian", "update", "discovery"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+				},
+			},
 			wantConfig: &config.Config{
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: "old-googleapis-commit",
-						SHA256: "old-googleapis-sha",
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
 					},
 					Discovery: &config.Source{
-						Commit: setup.discoveryCommit,
-						SHA256: setup.discoverySHA,
+						Commit: discoveryTestCommit,
+						SHA256: discoveryTestSHA,
 					},
 				},
 			},
@@ -160,26 +178,69 @@ func TestUpdateCommand(t *testing.T) {
 		{
 			name: "all",
 			args: []string{"librarian", "update", "--all"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+				},
+			},
 			wantConfig: &config.Config{
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: setup.googleapisCommit,
-						SHA256: setup.googleapisSHA,
+						Commit: googleapisTestCommit,
+						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
-						Commit: setup.discoveryCommit,
-						SHA256: setup.discoverySHA,
+						Commit: discoveryTestCommit,
+						SHA256: discoveryTestSHA,
+					},
+				},
+			},
+		},
+		{
+			name: "googleapis branch",
+			args: []string{"librarian", "update", "googleapis"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Branch: testBranch,
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Branch: testBranch,
+						Commit: googleapisTestCommit,
+						SHA256: googleapisTestSHA,
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
 					},
 				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// reset config file for each test
-			if err := os.WriteFile(setup.configPath, []byte(setup.initialConfig), 0644); err != nil {
-				t.Fatal(err)
-			}
+			setup := setupUpdateTest(t, test.initialConfig)
+			defer setup.server.Close()
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
