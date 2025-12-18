@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -34,6 +35,10 @@ var (
 		"googleapis": {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
 		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 	}
+
+	errBothSourceAndAllFlag   = errors.New("cannot specify a source when --all is set")
+	errMissingSourceOrAllFlag = errors.New("a source must be specified, or use the --all flag")
+	errUnknownSource          = errors.New("unknown source")
 )
 
 // updateCommand returns the `update` subcommand.
@@ -53,11 +58,20 @@ func updateCommand() *cli.Command {
 			source := cmd.Args().First()
 
 			if all && source != "" {
-				return fmt.Errorf("cannot specify a source when --all is set")
+				return errBothSourceAndAllFlag
 			}
 			if !all && source == "" {
-				return fmt.Errorf("a source must be specified, or use the --all flag")
+				return errMissingSourceOrAllFlag
 			}
+			if source != "" {
+				// Normalize to lowercase to simplify remainder of execution.
+				source = strings.ToLower(source)
+
+				if _, ok := sourceRepos[source]; !ok {
+					return fmt.Errorf("%w: %s", errUnknownSource, source)
+				}
+			}
+
 			return runUpdate(all, source)
 		},
 	}
@@ -86,11 +100,7 @@ func runUpdate(all bool, sourceName string) error {
 	if all {
 		sourceNamesToProcess = slices.Collect(maps.Keys(sourceRepos))
 	} else {
-		lowerSourceName := strings.ToLower(sourceName)
-		if _, ok := sourceRepos[lowerSourceName]; !ok {
-			return fmt.Errorf("unknown source: %s", sourceName)
-		}
-		sourceNamesToProcess = []string{lowerSourceName}
+		sourceNamesToProcess = []string{sourceName}
 	}
 
 	for _, name := range sourceNamesToProcess {

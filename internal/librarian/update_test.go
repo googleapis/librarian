@@ -102,19 +102,8 @@ func TestUpdateCommand(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		args       []string
-		wantErr    error
 		wantConfig *config.Config
 	}{
-		{
-			name:    "no args",
-			args:    []string{"librarian", "update"},
-			wantErr: fmt.Errorf("a source must be specified, or use the --all flag"),
-		},
-		{
-			name:    "both source and all flag",
-			args:    []string{"librarian", "update", "--all", "googleapis"},
-			wantErr: fmt.Errorf("cannot specify a source when --all is set"),
-		},
 		{
 			name: "googleapis",
 			args: []string{"librarian", "update", "googleapis"},
@@ -166,11 +155,6 @@ func TestUpdateCommand(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:    "unknown source",
-			args:    []string{"librarian", "update", "unknown"},
-			wantErr: fmt.Errorf("unknown source: unknown"),
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// reset config file for each test
@@ -179,15 +163,6 @@ func TestUpdateCommand(t *testing.T) {
 			}
 
 			err := Run(t.Context(), test.args...)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Fatalf("want error %v, got nil", test.wantErr)
-				}
-				if !errors.Is(err, test.wantErr) && err.Error() != test.wantErr.Error() {
-					t.Errorf("want error %v, got %v", test.wantErr, err)
-				}
-				return
-			}
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -199,6 +174,40 @@ func TestUpdateCommand(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantConfig, gotConfig); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestUpdateCommand_Errors(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		args       []string
+		wantErr    error
+		wantConfig *config.Config
+	}{
+		{
+			name:    "no args",
+			args:    []string{"librarian", "update"},
+			wantErr: errMissingSourceOrAllFlag,
+		},
+		{
+			name:    "both source and all flag",
+			args:    []string{"librarian", "update", "--all", "googleapis"},
+			wantErr: errBothSourceAndAllFlag,
+		},
+		{
+			name:    "unknown source",
+			args:    []string{"librarian", "update", "unknown"},
+			wantErr: errUnknownSource,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Run(t.Context(), test.args...)
+			if err == nil {
+				t.Errorf("want error %v, got nil", test.wantErr)
+			} else if !errors.Is(err, test.wantErr) {
+				t.Errorf("want error %v, got %v", test.wantErr, err)
 			}
 		})
 	}
