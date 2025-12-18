@@ -24,7 +24,7 @@ import (
 
 // GetPluralFromSegments infers the plural name of a resource from its structured path segments.
 // Per AIP-122, the plural is the literal segment before the final variable segment.
-// Example: `.../instances/{instance}` -> "instances"
+// Example: `.../instances/{instance}` -> "instances".
 func GetPluralFromSegments(segments []api.PathSegment) string {
 	if len(segments) >= 2 {
 		lastSegment := segments[len(segments)-1]
@@ -41,7 +41,7 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 
 // GetSingularFromSegments infers the singular name of a resource from its structured path segments.
 // The singular is the name of the final variable segment.
-// Example: `.../instances/{instance}` -> "instance"
+// Example: `.../instances/{instance}` -> "instance".
 func GetSingularFromSegments(segments []api.PathSegment) string {
 	if len(segments) > 0 {
 		last := segments[len(segments)-1]
@@ -57,7 +57,7 @@ func GetSingularFromSegments(segments []api.PathSegment) string {
 // GetCollectionPathFromSegments constructs the base gcloud collection path from a
 // structured resource pattern, according to AIP-122 conventions.
 // It joins the literal collection identifiers with dots.
-// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`
+// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`.
 func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	var collectionParts []string
 	for i := 0; i < len(segments)-1; i++ {
