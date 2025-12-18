@@ -282,6 +282,14 @@ func TestIsSimpleMethod(t *testing.T) {
 	}
 }
 
+func TestIsAIPStandard(t *testing.T) {
+	method := Method{}
+	// For now, IsStandardMethod should always return false.
+	if got := method.IsAIPStandard(); got != false {
+		t.Errorf("IsStandardMethod() got = %v, want %v", got, false)
+	}
+}
+
 func TestFieldTypePredicates(t *testing.T) {
 	type TestCase struct {
 		field    *Field

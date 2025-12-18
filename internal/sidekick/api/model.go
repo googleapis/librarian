@@ -363,10 +363,17 @@ func (m *Method) HasAutoPopulatedFields() bool {
 }
 
 // IsSimple returns true if the method is not a streaming, pagination or LRO method.
+// IsSimple simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsSimple() bool {
 	return m.Pagination == nil &&
 		!m.ClientSideStreaming && !m.ServerSideStreaming &&
 		m.OperationInfo == nil && m.DiscoveryLro == nil
+}
+
+// IsAIPStandard returns true if the method is one of the AIP standard methods.
+// IsAIPStandard simplifies writing mustache templates, mostly for samples.
+func (m *Method) IsAIPStandard() bool {
+	return false
 }
 
 // PathInfo contains normalized request path information.
