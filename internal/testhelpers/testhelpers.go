@@ -17,12 +17,10 @@
 package testhelpers
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -36,43 +34,6 @@ func RequireCommand(t *testing.T, cmd string) {
 	t.Helper()
 	if _, err := exec.LookPath(cmd); err != nil {
 		t.Skipf("skipping test because %s is not installed", cmd)
-	}
-}
-
-// SetupRepo creates a temporary git repository for testing.
-// It initializes a git repository, sets up a remote, and creates an initial commit with a tag.
-func SetupRepo(t *testing.T, tag string) {
-	t.Helper()
-	ctx := context.Background()
-	remoteDir := t.TempDir()
-	if err := command.Run(ctx, "git", "init", "--bare", remoteDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "clone", remoteDir, "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "config", "user.email", "test@example.com"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "config", "user.name", "Test User"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "commit", "--allow-empty", "-m", "initial commit"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "tag", tag); err != nil {
-		t.Fatal(err)
-	}
-	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD")
-	branch, err := cmd.Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "push", "upstream", strings.TrimSpace(string(branch))); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(ctx, "git", "push", "upstream", tag); err != nil {
-		t.Fatal(err)
 	}
 }
 

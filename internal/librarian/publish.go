@@ -19,8 +19,16 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	rust "github.com/googleapis/librarian/internal/librarian/internal/rust"
+	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+)
+
+var (
+	rustPublishCrates  = sidekickrust.PublishCrates
+	rustCargoPreFlight = sidekickrust.CargoPreFlight
 )
 
 func publishCommand() *cli.Command {
@@ -51,7 +59,45 @@ func publishCommand() *cli.Command {
 }
 
 func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChecks bool) error {
-	// TODO: Not yet implemented.
-	fmt.Printf("publish not implemented. ctx: %v, cfg: %v, dryRun: %v, skipSemverChecks: %v\n", ctx, cfg, dryRun, skipSemverChecks)
-	panic("not implemented")
+	if err := verifyRequiredTools(ctx, cfg.Language, cfg.Release); err != nil {
+		return err
+	}
+	gitExe := cfg.Release.GetExecutablePath("git")
+	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
+		return err
+	}
+	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	if err != nil {
+		return err
+	}
+	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	if err != nil {
+		return err
+	}
+	switch cfg.Language {
+	case "rust":
+		return rustPublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+	default:
+		return fmt.Errorf("publish not implemented for %q", cfg.Language)
+	}
+}
+
+// verifyRequiredTools verifies all the necessary language-agnostic tools are installed.
+func verifyRequiredTools(ctx context.Context, language string, cfg *config.Release) error {
+	gitExe := cfg.GetExecutablePath("git")
+	if err := githelpers.GitVersion(ctx, gitExe); err != nil {
+		return err
+	}
+	if err := githelpers.GitRemoteURL(ctx, gitExe, cfg.Remote); err != nil {
+		return err
+	}
+	switch language {
+	case "rust":
+		if err := rustCargoPreFlight(ctx, rust.ToSidekickReleaseConfig(cfg)); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown language: %s", language)
+	}
+	return nil
 }

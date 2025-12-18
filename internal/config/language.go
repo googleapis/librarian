@@ -51,6 +51,10 @@ type RustModule struct {
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
+	// ExtendGrpcTransport indicates whether the transport stub can be
+	// extended (in order to support streams).
+	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`
+
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 

@@ -289,6 +289,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.RoutingRequired {
 		codec["routing-required"] = "true"
 	}
+	if module.ExtendGrpcTransport {
+		codec["extend-grpc-transport"] = "true"
+	}
 	if module.Template != "" {
 		codec["template-override"] = "templates/" + module.Template
 	}

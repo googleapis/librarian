@@ -573,6 +573,7 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
 		routingRequired, _ := sidekick.Codec["routing-required"].(string)
+		extendGrpcTransport, _ := sidekick.Codec["extend-grpc-transport"].(string)
 		modulePath, _ := sidekick.Codec["module-path"].(string)
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
@@ -594,6 +595,7 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 			Output:                 filepath.Dir(path),
 			PostProcessProtos:      postProcessProtos,
 			RoutingRequired:        strToBool(routingRequired),
+			ExtendGrpcTransport:    strToBool(extendGrpcTransport),
 			ServiceConfig:          sidekick.General.ServiceConfig,
 			SkippedIds:             strToSlice(skippedIds, false),
 			Source:                 sidekick.General.SpecificationSource,
@@ -627,8 +629,15 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	for _, lib := range libraries {
 		// Get the API path for this library
 		apiPath := ""
+		serviceConfigDoesNotExist := false
 		if len(lib.Channels) > 0 {
 			apiPath = lib.Channels[0].Path
+			for _, ch := range lib.Channels {
+				if ch.ServiceConfig == "" {
+					ch.ServiceConfigDoesNotExist = true
+					serviceConfigDoesNotExist = true
+				}
+			}
 		}
 
 		// Derive expected library name from API path
@@ -640,11 +649,8 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 				lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples ||
 				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
 				lib.Rust.NameOverrides != ""))
-		// Only include in libraries section if:
-		// 1. Name doesn't match expected naming convention (name override)
-		// 2. Library has extra configuration
-		// 3. Library spans multiple APIs
-		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
+		// Only include in libraries section if specific data needs to be retained
+		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 || serviceConfigDoesNotExist {
 			libCopy := *lib
 			libList = append(libList, &libCopy)
 		}

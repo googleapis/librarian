@@ -82,7 +82,7 @@ func FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "cargo", "test", "--manifest-path", manifestPath); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "env", "RUSTDOCFLAGS=-D warnings", "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
+	if err := command.RunWithEnv(ctx, map[string]string{"RUSTDOCFLAGS": "-D warnings"}, "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
 		return err
 	}
 	if err := command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings"); err != nil {

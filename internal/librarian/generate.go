@@ -266,7 +266,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 			if ch.Path == "" {
 				ch.Path = deriveChannelPath(language, lib)
 			}
-			if ch.ServiceConfig == "" {
+			if ch.ServiceConfig == "" && !ch.ServiceConfigDoesNotExist {
 				ch.ServiceConfig = deriveServiceConfig(ch.Path)
 			}
 		}

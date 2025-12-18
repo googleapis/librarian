@@ -15,6 +15,7 @@
 package command
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -32,5 +33,30 @@ func TestRunError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid-subcommand-bad-bad-bad") {
 		t.Errorf("error should mention the invalid subcommand, got: %v", err)
+	}
+}
+
+func TestRunWithEnv_SetsAndVerifiesVariable(t *testing.T) {
+	ctx := t.Context()
+	const (
+		name  = "LIBRARIAN_TEST_VAR"
+		value = "value"
+	)
+	err := RunWithEnv(ctx, map[string]string{name: value},
+		"sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
+	if err != nil {
+		t.Fatalf("RunWithEnv() = %v, want %v", err, nil)
+	}
+}
+
+func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
+	ctx := t.Context()
+	const (
+		name  = "LIBRARIAN_TEST_VAR"
+		value = "value"
+	)
+	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
+	if err == nil {
+		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
 	}
 }

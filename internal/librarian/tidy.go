@@ -64,7 +64,7 @@ func RunTidy() error {
 			}
 		}
 		lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
-			return ch.Path == "" && ch.ServiceConfig == ""
+			return ch.Path == "" && ch.ServiceConfig == "" && !ch.ServiceConfigDoesNotExist
 		})
 
 		tidyLanguageConfig(lib, cfg.Language)

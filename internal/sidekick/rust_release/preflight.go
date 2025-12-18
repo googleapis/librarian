@@ -20,18 +20,13 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// PreFlight() verifies all the necessary tools are installed.
-func PreFlight(ctx context.Context, config *config.Release) error {
-	if err := command.Run(ctx, gitExe(config), "--version"); err != nil {
-		return err
-	}
+// CargoPreFlight() verifies all the necessary cargo tools are installed.
+func CargoPreFlight(ctx context.Context, config *config.Release) error {
 	if err := command.Run(ctx, cargoExe(config), "--version"); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, gitExe(config), "remote", "get-url", config.Remote); err != nil {
 		return err
 	}
 	tools, ok := config.Tools["cargo"]
@@ -44,6 +39,21 @@ func PreFlight(ctx context.Context, config *config.Release) error {
 		if err := command.Run(ctx, cargoExe(config), "install", "--locked", spec); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// PreFlight() verifies all the necessary  tools are installed.
+func PreFlight(ctx context.Context, config *config.Release) error {
+	gitExe := gitExe(config)
+	if err := githelpers.GitVersion(ctx, gitExe); err != nil {
+		return err
+	}
+	if err := githelpers.GitRemoteURL(ctx, gitExe, config.Remote); err != nil {
+		return err
+	}
+	if err := CargoPreFlight(ctx, config); err != nil {
+		return err
 	}
 	return nil
 }
