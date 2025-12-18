@@ -1283,10 +1283,10 @@ func TestCommitAndPush(t *testing.T) {
 		},
 		{
 			name: "No push or commit flags, and clean repo",
-			setupMockRepo: func(t *testing.T) legacygitrepo.Repository {
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				return &MockRepository{
 					Dir: t.TempDir(),
-					RemotesValue: []*legacygitrepo.Remote{
+					RemotesValue: []*gitrepo.Remote{
 						{
 							Name: "origin",
 							URLs: []string{"https://github.com/googleapis/librarian.git"},
@@ -1298,7 +1298,7 @@ func TestCommitAndPush(t *testing.T) {
 			setupMockClient: func(t *testing.T) GitHubClient {
 				return nil
 			},
-			state:          &legacyconfig.LibrarianState{},
+			state:          &config.LibrarianState{},
 			prType:         pullRequestRelease,
 			commit:         false,
 			push:           false,
