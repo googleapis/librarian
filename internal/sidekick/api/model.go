@@ -362,6 +362,13 @@ func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
+// IsSimple returns true if the method is not a streaming, pagination or LRO method.
+func (m *Method) IsSimple() bool {
+	return m.Pagination == nil &&
+		!m.ClientSideStreaming && !m.ServerSideStreaming &&
+		m.OperationInfo == nil && m.DiscoveryLro == nil
+}
+
 // PathInfo contains normalized request path information.
 type PathInfo struct {
 	// The list of bindings, including the top-level binding.

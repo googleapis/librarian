@@ -232,6 +232,56 @@ func TestPathTemplateBuilder(t *testing.T) {
 	}
 }
 
+func TestIsSimpleMethod(t *testing.T) {
+	somePagination := &Field{}
+	someOperationInfo := &OperationInfo{}
+	someDiscoverLro := &DiscoveryLro{}
+	testCases := []struct {
+		name     string
+		method   *Method
+		isSimple bool
+	}{
+		{
+			name:     "simple method",
+			method:   &Method{},
+			isSimple: true,
+		},
+		{
+			name:     "pagination method",
+			method:   &Method{Pagination: somePagination},
+			isSimple: false,
+		},
+		{
+			name:     "client streaming method",
+			method:   &Method{ClientSideStreaming: true},
+			isSimple: false,
+		},
+		{
+			name:     "server streaming method",
+			method:   &Method{ServerSideStreaming: true},
+			isSimple: false,
+		},
+		{
+			name:     "LRO method",
+			method:   &Method{OperationInfo: someOperationInfo},
+			isSimple: false,
+		},
+		{
+			name:     "Discovery LRO method",
+			method:   &Method{DiscoveryLro: someDiscoverLro},
+			isSimple: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsSimple(); got != tc.isSimple {
+				t.Errorf("IsSimple() = %v, want %v", got, tc.isSimple)
+			}
+		})
+	}
+}
+
 func TestFieldTypePredicates(t *testing.T) {
 	type TestCase struct {
 		field    *Field
