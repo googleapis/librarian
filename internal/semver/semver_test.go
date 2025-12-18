@@ -96,7 +96,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "valid version with format 1.2.3-beta<digits>",
-			version: "1.2.3-beta02",
+			version: "1.2.3-beta2",
 			want: &Version{
 				Major:            1,
 				Minor:            2,
