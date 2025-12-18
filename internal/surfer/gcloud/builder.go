@@ -259,7 +259,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
 // another resource type (e.g., a `--network` flag).
-func newResourceReferenceSpec(field *api.Field, model *api.API, overrides *Config, service *api.Service) (*ResourceSpec, error) {
+func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, service *api.Service) (*ResourceSpec, error) {
 	// We iterate through all the resource definitions in the API model to find the
 	// one that matches the type of our resource reference.
 	for _, def := range model.ResourceDefinitions {
@@ -351,7 +351,7 @@ func newRequest(method *api.Method, overrides *Config, model *api.API) *Request 
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(method *api.Method, overrides *Config) *Async {
+func newAsync(_ *api.Method, _ *Config) *Async {
 	return &Async{
 		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
 		Collection: []string{"parallelstore.projects.locations.operations"},
