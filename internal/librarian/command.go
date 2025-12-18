@@ -374,15 +374,20 @@ func getDirectoryFilenames(dir string) ([]string, error) {
 // It uses the GitHub client to create a PR with the specified branch, title, and
 // description to the repository.
 func commitAndPush(ctx context.Context, info *commitInfo) error {
+	repo := info.languageRepo
 	if !info.push && !info.commit {
 		slog.Info("push flag and commit flag are not specified, skipping committing")
+		isClean, err := repo.IsClean()
+		if err != nil {
+			return fmt.Errorf("failed to check if repo is clean: %w", err)
+		}
+		if isClean {
+			slog.Info("no changes to commit, skipping pull request body creation.")
+			return nil
+		}
 		return writePRBody(info)
 	}
 
-	repo := info.languageRepo
-	if err := repo.AddAll(); err != nil {
-		return fmt.Errorf("failed to add all files to git: %w", err)
-	}
 	isClean, err := repo.IsClean()
 	if err != nil {
 		return fmt.Errorf("failed to check if repo is clean: %w", err)
@@ -391,6 +396,10 @@ func commitAndPush(ctx context.Context, info *commitInfo) error {
 	if isClean {
 		slog.Info("no changes to commit, skipping commit and push.")
 		return nil
+	}
+
+	if err := repo.AddAll(); err != nil {
+		return fmt.Errorf("failed to add all files to git: %w", err)
 	}
 
 	datetimeNow := formatTimestamp(time.Now())
