@@ -210,6 +210,6 @@ type Channel struct {
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
 
-	// ServiceConfigDoesNotExist specifies if there is no service config for this library.
+	// ServiceConfigDoesNotExist specifies if there is no service config for this channel.
 	ServiceConfigDoesNotExist bool `yaml:"service_config_does_not_exist,omitempty"`
 }
