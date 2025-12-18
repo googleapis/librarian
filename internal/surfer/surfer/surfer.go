@@ -74,4 +74,3 @@ service config yaml, and gcloud.yaml.`,
 		},
 	}
 }
-
