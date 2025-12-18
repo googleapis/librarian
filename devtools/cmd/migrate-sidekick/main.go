@@ -591,9 +591,11 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 		serviceConfigDoesNotExist := false
 		if len(lib.Channels) > 0 {
 			apiPath = lib.Channels[0].Path
-			if lib.Channels[0].ServiceConfig == "" {
-				serviceConfigDoesNotExist = true
-				lib.Channels[0].ServiceConfigDoesNotExist = true
+			for _, ch := range lib.Channels {
+				if ch.ServiceConfig == "" {
+					ch.ServiceConfigDoesNotExist = true
+					serviceConfigDoesNotExist = true
+				}
 			}
 		}
 
