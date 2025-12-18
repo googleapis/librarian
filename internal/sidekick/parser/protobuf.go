@@ -605,7 +605,7 @@ func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api
 	return nil
 }
 
-// TODO(https://github.com/googleapis/librarian//issues/3036): This function needs
+// TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
 // to be made more robust. For methods that operate on
 //
 // collections (e.g., a `List` method), the `(google.api.resource_reference)`
