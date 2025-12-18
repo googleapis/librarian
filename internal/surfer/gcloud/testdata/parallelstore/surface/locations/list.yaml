@@ -33,15 +33,18 @@
   arguments:
     params:
       - help_text: The name of the location's parent resource.
-        resource_spec: !REF googlecloudsdk.command_lib.parallelstore.custom_resources:project
+        resource_spec:
+          name: project
+          plural_name: projects
+          collection: parallelstore.projects
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+          disable_auto_completers: true
         required: true
   request:
-    ALPHA:
-      api_version: v1alpha
-    BETA:
-      api_version: v1beta
-    GA:
-      api_version: v1
     collection:
       - parallelstore.projects.locations
   response:
