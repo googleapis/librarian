@@ -83,6 +83,138 @@ func TestParse(t *testing.T) {
 			wantErr:       true,
 			wantErrPhrase: "invalid version format",
 		},
+		{
+			name:    "valid version with format 1.2.3-alpha<digits>",
+			version: "1.2.3-alpha1",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "alpha",
+				PrereleaseNumber: "1",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-beta<digits>",
+			version: "1.2.3-beta02",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "beta",
+				PrereleaseNumber: "2",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-rc<digits>",
+			version: "1.2.3-rc3",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "rc",
+				PrereleaseNumber: "3",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-preview<digits>",
+			version: "1.2.3-preview4",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "preview",
+				PrereleaseNumber: "4",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-a<digits>",
+			version: "1.2.3-a5",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "a",
+				PrereleaseNumber: "5",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-b<digits>",
+			version: "1.2.3-b6",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "b",
+				PrereleaseNumber: "6",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3alpha<digits> (optional hyphen)",
+			version: "1.2.3alpha1",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "alpha",
+				PrereleaseNumber: "1",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3beta<digits> (optional hyphen)",
+			version: "1.2.3beta2",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "beta",
+				PrereleaseNumber: "2",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3rc<digits> (optional hyphen)",
+			version: "1.2.3rc3",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "rc",
+				PrereleaseNumber: "3",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3preview<digits> (optional hyphen)",
+			version: "1.2.3preview4",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "preview",
+				PrereleaseNumber: "4",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3a<digits> (optional hyphen)",
+			version: "1.2.3a5",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "a",
+				PrereleaseNumber: "5",
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3b<digits> (optional hyphen)",
+			version: "1.2.3b6",
+			want: &Version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "b",
+				PrereleaseNumber: "6",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actual, err := Parse(test.version)
