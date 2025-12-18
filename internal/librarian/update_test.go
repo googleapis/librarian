@@ -95,6 +95,25 @@ sources:
 	}
 }
 
+func setupTestConfig(t *testing.T, conf *config.Config) {
+	if conf == nil {
+		return
+	}
+
+	data, err := yaml.Marshal(conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdateCommand(t *testing.T) {
 	setup := setupUpdateTest(t)
 	defer setup.server.Close()
@@ -181,10 +200,10 @@ func TestUpdateCommand(t *testing.T) {
 
 func TestUpdateCommand_Errors(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		args       []string
-		wantErr    error
-		wantConfig *config.Config
+		name    string
+		args    []string
+		conf    *config.Config
+		wantErr error
 	}{
 		{
 			name:    "no args",
@@ -201,8 +220,17 @@ func TestUpdateCommand_Errors(t *testing.T) {
 			args:    []string{"librarian", "update", "unknown"},
 			wantErr: errUnknownSource,
 		},
+		{
+			name: "empty sources",
+			args: []string{"librarian", "update", "googleapis"},
+			conf: &config.Config{
+				Language: "go",
+			},
+			wantErr: errEmptySources,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			setupTestConfig(t, test.conf)
 			err := Run(t.Context(), test.args...)
 			if err == nil {
 				t.Errorf("want error %v, got nil", test.wantErr)
