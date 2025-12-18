@@ -168,5 +168,3 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	}
 	return nil
 }
-
-
