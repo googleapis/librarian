@@ -32,7 +32,21 @@
     params:
       - help_text: The name of the operation resource.
         is_positional: true
-        resource_spec: !REF googlecloudsdk.command_lib.parallelstore.default_resources:project_location_operation
+        resource_spec:
+          name: operation
+          plural_name: operations
+          collection: parallelstore.projects.locations.operations
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: operationsId
+              attribute_name: operation
+              help: The operation id of the {resource} resource.
         required: true
   request:
     api_version: v1
