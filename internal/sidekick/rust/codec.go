@@ -310,6 +310,9 @@ type codec struct {
 	routingRequired bool
 	// If true, the transport stub is extensible from outside of
 	// `transport.rs`. This is done to add ad-hoc streaming support.
+	//
+	// This is an option, because we don't want to change all of the client
+	// libraries for a feature only needed in one library (at the moment).
 	extendGrpcTransport bool
 	// If true, the generator will produce reference documentation samples for message fields setters.
 	generateSetterSamples bool
