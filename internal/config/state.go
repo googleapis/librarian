@@ -168,7 +168,7 @@ func (c *Commit) IsBulkCommit() bool {
 
 var (
 	libraryIDRegex = regexp.MustCompile(`^[a-zA-Z0-9/._-]+$`)
-	semverRegex    = regexp.MustCompile(`^\d+\.\d+\.\d+(?:-([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*))?$`)
+	semverRegex    = regexp.MustCompile(`^v?\d+\.\d+\.\d+(?:-([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*))?$`)
 	hexRegex       = regexp.MustCompile("^[a-fA-F0-9]+$")
 	tagFormatRegex = regexp.MustCompile(`{[^{}]*}`)
 )
