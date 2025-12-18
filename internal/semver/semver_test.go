@@ -15,6 +15,7 @@
 package semver
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -98,42 +99,42 @@ func TestParse(t *testing.T) {
 
 func TestParse_Errors(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		version       string
-		wantErrPhrase string
+		name    string
+		version string
+		wantErr error
 	}{
 		{
-			name:          "invalid version with v prefix",
-			version:       "v1.2.3",
-			wantErrPhrase: "invalid version format",
+			name:    "invalid version with v prefix",
+			version: "v1.2.3",
+			wantErr: ErrInvalidVersion,
 		},
 		{
-			name:          "invalid prerelease number with separator",
-			version:       "1.2.3-rc.abc",
-			wantErrPhrase: "invalid prerelease number",
+			name:    "invalid prerelease number with separator",
+			version: "1.2.3-rc.abc",
+			wantErr: ErrInvalidPrereleaseNumber,
 		},
 		{
-			name:          "invalid major number",
-			version:       "a.2.3",
-			wantErrPhrase: "invalid version format",
+			name:    "invalid major number",
+			version: "a.2.3",
+			wantErr: ErrInvalidVersion,
 		},
 		{
-			name:          "invalid minor number",
-			version:       "1.a.3",
-			wantErrPhrase: "invalid version format",
+			name:    "invalid minor number",
+			version: "1.a.3",
+			wantErr: ErrInvalidVersion,
 		},
 		{
-			name:          "invalid patch number",
-			version:       "1.2.a",
-			wantErrPhrase: "invalid version format",
+			name:    "invalid patch number",
+			version: "1.2.a",
+			wantErr: ErrInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := parse(test.version)
-			if err == nil {
+			_, gotErr := parse(test.version)
+			if gotErr == nil {
 				t.Errorf("Parse(%q) should have failed", test.version)
-			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
-				t.Errorf("Parse(%q) returned error %q, want to contain %q", test.version, err.Error(), test.wantErrPhrase)
+			} else if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("Parse(%q) returned error %v, wanted %v", test.version, gotErr, test.wantErr)
 			}
 		})
 	}
@@ -417,21 +418,21 @@ func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
 		name           string
 		changeLevel    ChangeLevel
 		currentVersion string
-		wantErrPhrase  string
+		wantErr        error
 	}{
 		{
 			name:           "bad version",
 			changeLevel:    Minor,
 			currentVersion: "abc123",
-			wantErrPhrase:  "failed to parse version",
+			wantErr:        ErrInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := DeriveNextOptions{}.DeriveNext(test.changeLevel, test.currentVersion)
 			if err == nil {
 				t.Errorf("DeriveNextOptions.DeriveNext(%v, %q) did not return an error as expected.", test.changeLevel, test.currentVersion)
-			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
-				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErrPhrase)
+			} else if !errors.Is(err, test.wantErr) {
+				t.Errorf("DeriveNextOptions.DeriveNext(%v, %q), returned error %v, wanted %v", test.changeLevel, test.currentVersion, err, test.wantErr)
 			}
 		})
 	}

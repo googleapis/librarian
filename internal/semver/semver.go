@@ -17,12 +17,23 @@
 package semver
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"golang.org/x/mod/semver"
+)
+
+const (
+	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
+	// https://semver.org/spec/v2.0.0.html.
+	SemVerSpecV2 = iota
+
+	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
+	// https://semver.org/spec/v1.0.0.html.
+	SemVerSpecV1
 )
 
 // SemVerSpecVersion represents the version of the SemVer specification in use
@@ -40,16 +51,6 @@ func (c SemVerSpecVersion) String() string {
 		return "unknown"
 	}
 }
-
-const (
-	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
-	// https://semver.org/spec/v2.0.0.html.
-	SemVerSpecV2 = iota
-
-	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
-	// https://semver.org/spec/v1.0.0.html.
-	SemVerSpecV1
-)
 
 // version represents a semantic version.
 type version struct {
@@ -71,18 +72,28 @@ type version struct {
 	SpecVersion SemVerSpecVersion
 }
 
-// semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
-// the prerelease portion of the SemVer 1.0.0 version string. For example, a
-// version string like "1.2.3-alpha01" is a SemVer 1.0.0. compliant, numbered
-// prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
-var semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
+var (
+	// semverV1PrereleaseNumberRegexp extracts the prerelease number, if present, in
+	// the prerelease portion of the SemVer 1.0.0 version string. For example, a
+	// version string like "1.2.3-alpha01" is a SemVer 1.0.0. compliant, numbered
+	// prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
+	semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
+
+	// ErrInvalidVersion is returned when the version string provided is invalid as
+	// per the SemVer spec - https://semver.org.
+	ErrInvalidVersion = errors.New("invalid version format")
+
+	// ErrInvalidPrereleaseNumber is returned when the prerelease number of a
+	// version string is invalid.
+	ErrInvalidPrereleaseNumber = errors.New("invalid prerelease number")
+)
 
 // parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [version]
 // struct.
 func parse(versionString string) (version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return version{}, fmt.Errorf("invalid version format: %s", versionString)
+		return version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -90,7 +101,7 @@ func parse(versionString string) (version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return version{}, fmt.Errorf("invalid version format: %s", versionString)
+		return version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -108,19 +119,19 @@ func parse(versionString string) (version, error) {
 	v.Major, err = strconv.Atoi(vParts[0])
 	if err != nil {
 		// This shouldn't happen, [semver.IsValid] should catch it above.
-		return version{}, fmt.Errorf("invalid major version: %w", err)
+		panic(fmt.Errorf("invalid major version: %w", err))
 	}
 
 	v.Minor, err = strconv.Atoi(vParts[1])
 	if err != nil {
 		// This shouldn't happen, [semver.IsValid] should catch it above.
-		return version{}, fmt.Errorf("invalid minor version: %w", err)
+		panic(fmt.Errorf("invalid minor version: %w", err))
 	}
 
 	v.Patch, err = strconv.Atoi(vParts[2])
 	if err != nil {
 		// This shouldn't happen, [semver.IsValid] should catch it above.
-		return version{}, fmt.Errorf("invalid patch version: %w", err)
+		panic(fmt.Errorf("invalid patch version: %w", err))
 	}
 
 	if prerelease == "" {
@@ -144,7 +155,7 @@ func parse(versionString string) (version, error) {
 	if numStr != "" {
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			return version{}, fmt.Errorf("invalid prerelease number: %w", err)
+			return version{}, errors.Join(ErrInvalidPrereleaseNumber, err)
 		}
 		v.PrereleaseNumber = &num
 	}
@@ -173,9 +184,22 @@ type stringifyOptions struct {
 // Stringify formats the given version as a string with the formatting options
 // configured in [stringifyOptions].
 func (o stringifyOptions) Stringify(v version) string {
-	vStr := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
+	var vStr strings.Builder
+
+	if o.IncludeVPrefix {
+		vStr.WriteString("v")
+	}
+
+	vStr.WriteString(strconv.Itoa(v.Major))
+	vStr.WriteString(".")
+	vStr.WriteString(strconv.Itoa(v.Minor))
+	vStr.WriteString(".")
+	vStr.WriteString(strconv.Itoa(v.Patch))
+
 	if v.Prerelease != "" && !o.VersionCoreOnly {
-		vStr += "-" + v.Prerelease
+		vStr.WriteString("-")
+		vStr.WriteString(v.Prerelease)
+
 		if v.PrereleaseNumber != nil {
 			var numStr string
 			if v.SpecVersion == SemVerSpecV1 {
@@ -183,13 +207,11 @@ func (o stringifyOptions) Stringify(v version) string {
 			} else {
 				numStr = strconv.Itoa(*v.PrereleaseNumber)
 			}
-			vStr += v.PrereleaseSeparator + numStr
+			vStr.WriteString(v.PrereleaseSeparator)
+			vStr.WriteString(numStr)
 		}
 	}
-	if o.IncludeVPrefix {
-		vStr = "v" + vStr
-	}
-	return vStr
+	return vStr.String()
 }
 
 // MaxVersion returns the largest semantic version string among the provided version strings.
