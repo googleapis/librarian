@@ -37,36 +37,62 @@
         is_positional: true
         is_primary_resource: true
         request_id_field: instanceId
-        resource_spec: !REF googlecloudsdk.command_lib.parallelstore.v1_resources:project_location_instance
+        resource_spec:
+          name: instance
+          plural_name: instances
+          collection: parallelstore.projects.locations.instances
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: instancesId
+              attribute_name: instance
+              help: The instance id of the {resource} resource.
         required: true
       - arg_name: description
         api_field: instance.description
         help_text: The description of the instance. 2048 characters or less.
       - arg_name: labels
         api_field: instance.labels
-        repeated: true
         help_text: |-
           Cloud Labels are a flexible and lightweight mechanism for organizing cloud
           resources into groups that reflect a customer's organizational needs and
           deployment strategies. See
           https://cloud.google.com/resource-manager/docs/labels-overview for details.
+        repeated: true
         spec:
           - api_field: key
           - api_field: value
       - arg_name: capacity-gib
         api_field: instance.capacityGib
-        type: long
         help_text: |-
           The instance's storage capacity in Gibibytes (GiB). Allowed values are
           between 12000 and 100000, in multiples of 4000; e.g., 12000, 16000,
           20000, ...
         required: true
+        type: long
       - arg_name: network
         help_text: |-
           The name of the Compute Engine
           [VPC network](https://cloud.google.com/vpc/docs/vpc) to which the
           instance is connected.
-        resource_spec: !REF googlecloudsdk.command_lib.parallelstore.v1_resources:project_global_network
+        resource_spec:
+          name: network
+          plural_name: networks
+          collection: parallelstore.projects.networks
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: networksId
+              attribute_name: network
+              help: The network id of the {resource} resource.
+          disable_auto_completers: true
         resource_method_params:
           instance.network: '{__relative_name__}'
       - arg_name: reserved-ip-range
@@ -76,7 +102,22 @@
           [Configure a VPC
           network](https://cloud.google.com/parallelstore/docs/vpc#create_and_configure_the_vpc).
           If no ID is provided, all ranges are considered.
-        resource_spec: !REF googlecloudsdk.command_lib.parallelstore.v1_resources:project_region_address
+        resource_spec:
+          name: address
+          plural_name: addresses
+          collection: parallelstore.projects.regions.addresses
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: regionsId
+              attribute_name: region
+              help: The region id of the {resource} resource.
+            - parameter_name: addressesId
+              attribute_name: address
+              help: The address id of the {resource} resource.
+          disable_auto_completers: true
         resource_method_params:
           instance.reservedIpRange: '{__relative_name__}'
       - arg_name: file-stripe-level
@@ -92,13 +133,10 @@
         choices:
           - arg_value: file-stripe-level-min
             enum_value: FILE_STRIPE_LEVEL_MIN
-            help_text: Minimum file striping
           - arg_value: file-stripe-level-balanced
             enum_value: FILE_STRIPE_LEVEL_BALANCED
-            help_text: Medium file striping
           - arg_value: file-stripe-level-max
             enum_value: FILE_STRIPE_LEVEL_MAX
-            help_text: Maximum file striping
       - arg_name: directory-stripe-level
         api_field: instance.directoryStripeLevel
         help_text: |-
@@ -113,13 +151,10 @@
         choices:
           - arg_value: directory-stripe-level-min
             enum_value: DIRECTORY_STRIPE_LEVEL_MIN
-            help_text: Minimum directory striping
           - arg_value: directory-stripe-level-balanced
             enum_value: DIRECTORY_STRIPE_LEVEL_BALANCED
-            help_text: Medium directory striping
           - arg_value: directory-stripe-level-max
             enum_value: DIRECTORY_STRIPE_LEVEL_MAX
-            help_text: Maximum directory striping
       - arg_name: deployment-type
         api_field: instance.deploymentType
         help_text: |-
@@ -130,10 +165,8 @@
         choices:
           - arg_value: scratch
             enum_value: SCRATCH
-            help_text: Scratch
           - arg_value: persistent
             enum_value: PERSISTENT
-            help_text: Persistent
       - arg_name: request-id
         api_field: requestId
         help_text: |-
