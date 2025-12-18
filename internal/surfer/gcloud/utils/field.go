@@ -34,5 +34,3 @@ func GetGcloudType(t api.Typez) string {
 		return ""
 	}
 }
-
-
