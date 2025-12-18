@@ -45,5 +45,3 @@ func TestGetGcloudType(t *testing.T) {
 		})
 	}
 }
-
-
