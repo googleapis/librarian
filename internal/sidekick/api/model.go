@@ -373,7 +373,44 @@ func (m *Method) IsSimple() bool {
 // IsAIPStandard returns true if the method is one of the AIP standard methods.
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
-	return false
+	return m.AIPStandardGetInfo() != nil
+}
+
+// AIPStandardGetInfo contains information relevant to get operations as defined by AIP-131.
+type AIPStandardGetInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the get operation should fetch.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardGetInfo returns information relevant to a get operation as defined by AIP-131
+// if the method is such and operation.
+func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
+	// A get operation is always a simple operation that returns a resource.
+	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty || m.OutputType.Resource == nil {
+		return nil
+	}
+
+	singular := strings.ToLower(m.OutputType.Resource.Singular)
+	// The method needs to be called getfoo and the request type needs to be called getfoorequest.
+	if strings.ToLower(m.Name) != fmt.Sprintf("get%s", singular) ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", singular) {
+		return nil
+	}
+
+	// The request needs to have a field for the resource name of the resource to obtain.
+	nameFieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
+		return f.IsResourceReference() &&
+			f.ResourceReference.Type == m.OutputType.Resource.Type
+	})
+
+	if nameFieldIndex == -1 {
+		return nil
+	}
+
+	return &AIPStandardGetInfo{
+		ResourceNameRequestField: m.InputType.Fields[nameFieldIndex],
+	}
 }
 
 // PathInfo contains normalized request path information.

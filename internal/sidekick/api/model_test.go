@@ -283,10 +283,195 @@ func TestIsSimpleMethod(t *testing.T) {
 }
 
 func TestIsAIPStandard(t *testing.T) {
-	method := Method{}
-	// For now, IsStandardMethod should always return false.
-	if got := method.IsAIPStandard(); got != false {
-		t.Errorf("IsStandardMethod() got = %v, want %v", got, false)
+	// Setup for a valid Get operation
+	resourceType := "google.cloud.secretmanager.v1/Secret"
+	resourceNameField := &Field{
+		ResourceReference: &ResourceReference{
+			Type: resourceType,
+		},
+	}
+	resource := &Resource{
+		Type:     resourceType,
+		Singular: "secret",
+	}
+	output := &Message{
+		Resource: resource,
+	}
+	validGetMethod := &Method{
+		Name:       "GetSecret",
+		InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+		OutputType: output,
+	}
+
+	// Setup for an invalid Get operation (e.g., wrong name)
+	invalidGetMethod := &Method{
+		Name:       "ListSecrets", // Not a Get method
+		InputType:  &Message{Name: "ListSecretsRequest"},
+		OutputType: output,
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "standard get method returns true",
+			method: validGetMethod,
+			want:   true,
+		},
+		{
+			name:   "non-standard method returns false",
+			method: invalidGetMethod,
+			want:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsAIPStandard(); got != tc.want {
+				t.Errorf("IsAIPStandard() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAIPStandardGetInfo(t *testing.T) {
+	resourceType := "google.cloud.secretmanager.v1/Secret"
+	resourceNameField := &Field{
+		ResourceReference: &ResourceReference{
+			Type: resourceType,
+		},
+	}
+	resource := &Resource{
+		Type:     resourceType,
+		Singular: "secret",
+	}
+	output := &Message{
+		Resource: resource,
+	}
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardGetInfo
+	}{
+		{
+			name: "valid get operation",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType: output,
+			},
+			want: &AIPStandardGetInfo{
+				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
+			name: "method name is incorrect",
+			method: &Method{
+				Name:       "Get",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType: output,
+			},
+			want: nil,
+		},
+		{
+			name: "request type name is incorrect",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetRequest", Fields: []*Field{resourceNameField}},
+				OutputType: output,
+			},
+			want: nil,
+		},
+		{
+			name: "returns empty",
+			method: &Method{
+				Name:         "GetSecret",
+				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType:   output,
+				ReturnsEmpty: true,
+			},
+			want: nil,
+		},
+		{
+			name: "output is not a resource",
+			method: &Method{
+				Name:      "GetSecret",
+				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType: &Message{
+					Resource: nil,
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "request does not contain resource name field",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest"},
+				OutputType: output,
+			},
+			want: nil,
+		},
+		{
+			name: "pagination method is not a standard get operation",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType: output,
+				Pagination: &Field{},
+			},
+			want: nil,
+		},
+		{
+			name: "client streaming method is not a standard get operation",
+			method: &Method{
+				Name:                "GetSecret",
+				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType:          output,
+				ClientSideStreaming: true,
+			},
+			want: nil,
+		},
+		{
+			name: "server streaming method is not a standard get operation",
+			method: &Method{
+				Name:                "GetSecret",
+				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType:          output,
+				ServerSideStreaming: true,
+			},
+			want: nil,
+		},
+		{
+			name: "LRO method is not a standard get operation",
+			method: &Method{
+				Name:          "GetSecret",
+				InputType:     &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType:    output,
+				OperationInfo: &OperationInfo{},
+			},
+			want: nil,
+		},
+		{
+			name: "Discovery LRO method is not a standard get operation",
+			method: &Method{
+				Name:         "GetSecret",
+				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType:   output,
+				DiscoveryLro: &DiscoveryLro{},
+			},
+			want: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardGetInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardGetInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
