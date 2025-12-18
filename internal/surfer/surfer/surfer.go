@@ -68,9 +68,8 @@ service config yaml, and gcloud.yaml.`,
 			config := cmd.Args().First()
 			googleapis := cmd.String("googleapis")
 			out := cmd.String("out")
-			// TODO: Pass includeList once gcloud.Generate supports it (feat-surfer-generator)
-			_ = cmd.String("proto-files-include-list")
-			return gcloud.Generate(ctx, googleapis, config, out)
+			includeList := cmd.String("proto-files-include-list")
+			return gcloud.Generate(ctx, googleapis, config, out, includeList)
 		},
 	}
 }
