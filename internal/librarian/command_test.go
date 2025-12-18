@@ -1282,6 +1282,30 @@ func TestCommitAndPush(t *testing.T) {
 			wantPRBodyFile: true,
 		},
 		{
+			name: "No push or commit flags, and clean repo",
+			setupMockRepo: func(t *testing.T) gitrepo.Repository {
+				return &MockRepository{
+					Dir: t.TempDir(),
+					RemotesValue: []*gitrepo.Remote{
+						{
+							Name: "origin",
+							URLs: []string{"https://github.com/googleapis/librarian.git"},
+						},
+					},
+					IsCleanValue: true,
+				}
+			},
+			setupMockClient: func(t *testing.T) GitHubClient {
+				return nil
+			},
+			state:          &config.LibrarianState{},
+			prType:         pullRequestRelease,
+			commit:         false,
+			push:           false,
+			wantErr:        false,
+			wantPRBodyFile: false,
+		},
+		{
 			name: "create a commit",
 			setupMockRepo: func(t *testing.T) gitrepo.Repository {
 				remote := &gitrepo.Remote{
