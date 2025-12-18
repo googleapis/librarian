@@ -30,7 +30,8 @@ import (
 	"time"
 )
 
-const defaultBranchMaster = "master"
+// DefaultBranchMaster represents the default git branch "master".
+const DefaultBranchMaster = "master"
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
@@ -51,14 +52,14 @@ type Endpoints struct {
 
 // Repo represents a GitHub repository name.
 type Repo struct {
+	// Branch is the name of the repository branch, such as `master` or `preview`.
+	Branch string
+
 	// Org defines the GitHub organization (or user), that owns the repository.
 	Org string
 
 	// Repo is the name of the repository, such as `googleapis` or `google-cloud-rust`.
 	Repo string
-
-	// Branch is the name of the repository branch, such as `master` or `preview`.
-	Branch string
 }
 
 // RepoFromTarballLink extracts the gitHub account and repository (such as
@@ -126,13 +127,8 @@ func latestSha(query string) (string, error) {
 
 // LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
 // commit from the GitHub API for the given repository.
-// Defaults to [defaultBranchMaster] if the provided [Repo.Branch] is unset.
 func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
-	branch := defaultBranchMaster
-	if repo.Branch != "" {
-		branch = repo.Branch
-	}
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, repo.Branch)
 	commit, err = latestSha(apiURL)
 	if err != nil {
 		return "", "", err

@@ -31,8 +31,8 @@ var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
 	sourceRepos    = map[string]fetch.Repo{
-		"googleapis": {Org: "googleapis", Repo: "googleapis", Branch: "master"},
-		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: "master"},
+		"googleapis": {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
+		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 	}
 )
 

@@ -558,29 +558,29 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 	expectedBranchTarballSHA256 := fmt.Sprintf("%x", hasher.Sum(nil))
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var responseBody string
 		switch r.URL.Path {
-		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, defaultBranchMaster):
+		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, DefaultBranchMaster):
 			// Mock response for LatestSha call
 			w.Header().Set("Accept", "application/vnd.github.VERSION.sha")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedMasterCommit))
+			responseBody = expectedMasterCommit
 		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedMasterCommit):
 			// Mock response for Sha256 call (tarball download)
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedMasterTarballContents))
+			responseBody = expectedMasterTarballContents
 		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, testBranch):
 			// Mock response for LatestSha call
 			w.Header().Set("Accept", "application/vnd.github.VERSION.sha")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedBranchCommit))
+			responseBody = expectedBranchCommit
 		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedBranchCommit):
 			// Mock response for Sha256 call (tarball download)
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedBranchTarballContents))
+			responseBody = expectedBranchTarballContents
 		default:
 			t.Errorf("unexpected request path: %s", r.URL.Path)
 			http.NotFound(w, r)
+			return
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(responseBody))
 	}))
 	defer server.Close()
 
@@ -598,8 +598,9 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 		{
 			name: "default branch master",
 			repo: &Repo{
-				Org:  testOrg,
-				Repo: testRepo,
+				Org:    testOrg,
+				Repo:   testRepo,
+				Branch: DefaultBranchMaster,
 			},
 			wantCommit:        expectedMasterCommit,
 			wantTarballSHA256: expectedTarballSHA256,

@@ -40,6 +40,9 @@ func UpdateRootConfig(rootConfig *Config, rootName string) error {
 	if err != nil {
 		return err
 	}
+	// Rust only uses the `master` branch at the moment. Once rust is migrated
+	// to internal/config.Config, it should respect the Source.Branch therein.
+	repo.Branch = fetch.DefaultBranchMaster
 
 	latestSha, newSha256, err := latestCommitAndChecksum(endpoints, repo)
 	if err != nil {

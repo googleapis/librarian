@@ -101,19 +101,19 @@ type Sources struct {
 
 // Source represents a source repository.
 type Source struct {
-	// Commit is the git commit hash or tag to use.
-	Commit string `yaml:"commit"`
-
-	// SHA256 is the expected hash of the tarball for this commit.
-	SHA256 string `yaml:"sha256,omitempty"`
-
 	// Branch is the source's git branch to pull updates from.
 	// Unset should be interpreted as the repository default branch.
 	Branch string `yaml:"branch,omitempty"`
 
+	// Commit is the git commit hash or tag to use.
+	Commit string `yaml:"commit"`
+
 	// Dir is a local directory path to use instead of fetching.
 	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"dir,omitempty"`
+
+	// SHA256 is the expected hash of the tarball for this commit.
+	SHA256 string `yaml:"sha256,omitempty"`
 
 	// Subpath is a directory inside the fetched archive that should be treated as
 	// the root for operations.

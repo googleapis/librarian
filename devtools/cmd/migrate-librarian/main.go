@@ -189,8 +189,9 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 		Download: "https://github.com",
 	}
 	repo := &fetch.Repo{
-		Org:  "googleapis",
-		Repo: "googleapis",
+		Org:    "googleapis",
+		Repo:   "googleapis",
+		Branch: fetch.DefaultBranchMaster,
 	}
 	latestCommit, sha256, err := fetch.LatestCommitAndChecksum(endpoint, repo)
 	if err != nil {
