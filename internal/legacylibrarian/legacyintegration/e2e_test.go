@@ -608,7 +608,7 @@ func TestReleaseTag(t *testing.T) {
 		### Features
 		- feat: new feature
 		</details>`,
-			repoURL: "https://cloud.google.com/go/librarian",
+			repoURL: "https://github.com/googleapis/librarian",
 		},
 		{
 			name: "runs successfully from cloned repo",
@@ -738,7 +738,7 @@ libraries:
 				"tag",
 				fmt.Sprintf("--repo=%s", repo),
 				fmt.Sprintf("--github-api-endpoint=%s/", server.URL),
-				"--pr=https://cloud.google.com/go/librarian/pull/123",
+				"--pr=https://github.com/googleapis/librarian/pull/123",
 			}
 			if test.push {
 				cmdArgs = append(cmdArgs, "--push")
@@ -790,7 +790,7 @@ func newMockGitHubServer(t *testing.T, prTitleFragment string, expectedContentIn
 				t.Errorf("unexpected PR base: got %q", *newPR.Base)
 			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"number": 123, "html_url": "https://cloud.google.com/go/librarian/pull/123"}`)
+			fmt.Fprint(w, `{"number": 123, "html_url": "https://github.com/googleapis/librarian/pull/123"}`)
 			return
 		}
 
@@ -817,7 +817,7 @@ func initRepo(t *testing.T, dir, source, message string) error {
 	runGit(t, dir, "config", "user.email", "test@github.com")
 	runGit(t, dir, "config", "user.name", "Test User")
 	runGit(t, dir, "commit", "-m", message)
-	runGit(t, dir, "remote", "add", "origin", "https://cloud.google.com/go/librarian.git")
+	runGit(t, dir, "remote", "add", "origin", "https://github.com/googleapis/librarian.git")
 	return nil
 }
 

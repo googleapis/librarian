@@ -29,7 +29,7 @@ func TestGoImports(t *testing.T) {
 	// goimports -d exits 0 even when it finds unformatted files, so check
 	// stdout instead. Only stdout is checked because stderr may contain
 	// download progress messages. See
-	// https://cloud.google.com/go/librarian/pull/2915.
+	// https://github.com/googleapis/librarian/pull/2915.
 	if out := rungo(t, "tool", "goimports", "-d", "."); out != "" {
 		t.Fatalf("goimports -d .:\n%s", out)
 	}
