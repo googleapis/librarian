@@ -50,7 +50,6 @@ func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
 }
 
 func release(cfg *config.Config, name string) (*config.Config, error) {
-
 	if name == "" {
 		for _, library := range cfg.Libraries {
 			if err := releaseLibrary(library, cfg); err != nil {
@@ -84,11 +83,8 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 }
 
 func releaseLibrary(library *config.Library, cfg *config.Config) error {
-	output, err := deriveSrcPath(library, cfg)
-	if err != nil {
-		return err
-	}
-	cargoFile := filepath.Join(output, "Cargo.toml")
+	srcPath := deriveSrcPath(library, cfg)
+	cargoFile := filepath.Join(srcPath, "Cargo.toml")
 	cargoContents, err := os.ReadFile(cargoFile)
 	if err != nil {
 		return err
@@ -114,9 +110,9 @@ func releaseLibrary(library *config.Library, cfg *config.Config) error {
 	return nil
 }
 
-func deriveSrcPath(libCfg *config.Library, cfg *config.Config) (string, error) {
+func deriveSrcPath(libCfg *config.Library, cfg *config.Config) string {
 	if libCfg.Output != "" {
-		return libCfg.Output, nil
+		return libCfg.Output
 	}
 	libSrcDir := ""
 	if len(libCfg.Channels) > 0 && libCfg.Channels[0].Path != "" {
@@ -124,9 +120,9 @@ func deriveSrcPath(libCfg *config.Library, cfg *config.Config) (string, error) {
 	} else {
 		libSrcDir = strings.ReplaceAll(libCfg.Name, "-", "/")
 		if cfg.Default == nil {
-			return "", nil
+			return ""
 		}
 	}
-	return DefaultOutput(libSrcDir, cfg.Default.Output), nil
+	return DefaultOutput(libSrcDir, cfg.Default.Output)
 
 }

@@ -81,10 +81,12 @@ func setupRelease(t *testing.T) *config.Config {
 			{
 				Name:    storageName,
 				Version: storageInitial,
+				Output:  storageDir,
 			},
 			{
 				Name:    secretmanagerName,
 				Version: secretmanagerInitial,
+				Output:  secretmanagerDir,
 			},
 		},
 	}
@@ -184,6 +186,62 @@ func TestLibraryByName(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDerivceSrcPath(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		config *config.Config
+		want   string
+	}{
+		{
+			name: "use library output",
+			config: &config.Config{
+				Default: &config.Default{
+					Output: "ignored",
+				},
+				Libraries: []*config.Library{
+					{Output: "src/lib/dir"},
+				},
+			},
+			want: "src/lib/dir",
+		},
+		{
+			name: "use channel path",
+			config: &config.Config{
+				Default: &config.Default{
+					Output: "src/",
+				},
+				Libraries: []*config.Library{{
+					Channels: []*config.Channel{
+						{Path: "channel/dir"},
+					},
+				},
+				},
+			},
+			want: "src/channel/dir",
+		},
+		{
+			name: "use library name",
+			config: &config.Config{
+				Default: &config.Default{
+					Output: "src/",
+				},
+				Libraries: []*config.Library{{
+					Name: "lib-name",
+				},
+				},
+			},
+			want: "src/lib/name",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveSrcPath(test.config.Libraries[0], test.config)
+			if got != test.want {
+				t.Errorf("got derived source path  %s, wanted %s", got, test.want)
 			}
 		})
 	}
