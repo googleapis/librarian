@@ -14,7 +14,7 @@
 
 package config
 
-import "github.com/googleapis/librarian/internal/yaml"
+import "cloud.google.com/go/librarian/internal/yaml"
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
