@@ -144,6 +144,17 @@ type Default struct {
 
 // Library represents a library configuration.
 type Library struct {
+	// Note: Properties should typically be added in alphabetical order, but
+	// because this order impacts YAML serialization, we keep Name and Version
+	// at the top for ease of consumption in file-form.
+
+	// Name is the library name, such as "secretmanager" or "storage". It is
+	// listed first so it appears at the top of each library entry in YAML.
+	Name string `yaml:"name"`
+
+	// Version is the library version.
+	Version string `yaml:"version,omitempty"`
+
 	// Channel specifies which googleapis Channel to generate from (for generated
 	// libraries).
 	Channels []*Channel `yaml:"channels,omitempty"`
@@ -159,10 +170,6 @@ type Library struct {
 
 	// Keep lists files and directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
-
-	// Name is the library name, such as "secretmanager" or "storage". It is
-	// listed first so it appears at the top of each library entry in YAML.
-	Name string `yaml:"name"`
 
 	// Output is the directory where code is written. This overrides
 	// Default.Output.
@@ -203,9 +210,6 @@ type Library struct {
 	// configuration (e.g., rust.modules) instead of generating a complete crate
 	// from channels.
 	Veneer bool `yaml:"veneer,omitempty"`
-
-	// Version is the library version.
-	Version string `yaml:"version,omitempty"`
 }
 
 // Channel describes a Channel to include in a library.
