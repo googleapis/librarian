@@ -148,8 +148,7 @@ type Library struct {
 	// because this order impacts YAML serialization, we keep Name and Version
 	// at the top for ease of consumption in file-form.
 
-	// Name is the library name, such as "secretmanager" or "storage". It is
-	// listed first so it appears at the top of each library entry in YAML.
+	// Name is the library name, such as "secretmanager" or "storage".
 	Name string `yaml:"name"`
 
 	// Version is the library version.
