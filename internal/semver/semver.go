@@ -278,7 +278,7 @@ func (o DeriveNextOptions) DeriveNext(changeLevel ChangeLevel, currentVersion st
 
 	v, err := parse(currentVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse version: %w", err)
+		return "", err
 	}
 
 	return o.deriveNext(changeLevel, v), nil
@@ -333,6 +333,18 @@ func (o DeriveNextOptions) deriveNext(changeLevel ChangeLevel, v version) string
 	return v.String()
 }
 
+var (
+	// errPreviewMissingPrerelease is returned when a version provided as a preview
+	// is missing the SemVer prerelease segment.
+	errPreviewMissingPrerelease = errors.New("preview version missing prerelease segment")
+	// errInvalidPreviewVersion is returned when the preview version provided cannot
+	// be parsed.
+	errInvalidPreviewVersion = errors.New("failed to parse preview version")
+	// errInvalidStableVersion is returned when the stable version provided cannot
+	// be parsed.
+	errInvalidStableVersion = errors.New("failed to parse stable version")
+)
+
 // DeriveNextPreview determines the next appropriate SemVer version bump for the
 // preview version relative to the provided stable version. Previews always lead
 // the stable version, so when the preview is equal with or behind the stable
@@ -342,14 +354,14 @@ func (o DeriveNextOptions) deriveNext(changeLevel ChangeLevel, v version) string
 func (o DeriveNextOptions) DeriveNextPreview(previewVersion, stableVersion string) (string, error) {
 	pv, err := parse(previewVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse preview version: %w", err)
+		return "", errors.Join(errInvalidPreviewVersion, err)
 	}
 	if pv.Prerelease == "" {
-		return "", fmt.Errorf("provided preview version has no prerelease segment: %s", previewVersion)
+		return "", fmt.Errorf("%w: %s", errPreviewMissingPrerelease, previewVersion)
 	}
 	sv, err := parse(stableVersion)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse stable version: %w", err)
+		return "", errors.Join(errInvalidStableVersion, err)
 	}
 
 	// Make a shallow copy of original options to retain any language-specific needs.

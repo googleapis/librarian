@@ -16,7 +16,6 @@ package semver
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -556,33 +555,33 @@ func TestDeriveNextOptions_DeriveNextPreview_Errors(t *testing.T) {
 		name           string
 		previewVersion string
 		stableVersion  string
-		wantErrPhrase  string
+		wantErr        error
 	}{
 		{
 			name:           "bad preview version",
 			previewVersion: "abc123",
 			stableVersion:  "1.2.3",
-			wantErrPhrase:  "parse preview version",
+			wantErr:        errInvalidPreviewVersion,
 		},
 		{
 			name:           "bad stable version",
 			previewVersion: "0.1.2-rc.3",
 			stableVersion:  "abc123",
-			wantErrPhrase:  "parse stable version",
+			wantErr:        errInvalidStableVersion,
 		},
 		{
 			name:           "non-prerelease preview version",
 			previewVersion: "0.1.3",
 			stableVersion:  "0.1.2",
-			wantErrPhrase:  "no prerelease segment",
+			wantErr:        errPreviewMissingPrerelease,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := DeriveNextOptions{}.DeriveNextPreview(test.previewVersion, test.stableVersion)
 			if err == nil {
 				t.Errorf("DeriveNextOptions.DeriveNextPreview(%q, %q) did not return an error as expected.", test.previewVersion, test.stableVersion)
-			} else if !strings.Contains(err.Error(), test.wantErrPhrase) {
-				t.Errorf("mismatch, got %q, wanted inclusion of %q", err, test.wantErrPhrase)
+			} else if !errors.Is(err, test.wantErr) {
+				t.Errorf("mismatch, got %v, wanted inclusion of %v", err, test.wantErr)
 			}
 		})
 	}
