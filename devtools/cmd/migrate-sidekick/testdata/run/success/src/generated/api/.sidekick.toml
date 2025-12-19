@@ -17,3 +17,11 @@ copyright-year = '2025'
 id = '.google.api.ProjectProperties'
 match = 'example match'
 replace = 'example replace'
+
+[[documentation-overrides]]
+id      = '.google.cloud.orgpolicy.v1.Policy.ListPolicy'
+match   = """
+Ancestry subtrees must be in one of the following formats:"""
+replace = """
+
+Ancestry subtrees must be in one of the following formats:"""

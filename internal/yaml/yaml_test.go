@@ -87,3 +87,19 @@ func TestWriteError(t *testing.T) {
 		t.Error("Write() expected error for invalid path")
 	}
 }
+
+func TestStringSlice_EmptySlice(t *testing.T) {
+	strSlice := StringSlice{}
+	got := strSlice.IsZero()
+	if diff := cmp.Diff(false, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestStringSlice_NilSlice(t *testing.T) {
+	var strSlice StringSlice
+	got := strSlice.IsZero()
+	if diff := cmp.Diff(true, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

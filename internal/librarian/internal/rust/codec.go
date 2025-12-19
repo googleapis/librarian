@@ -228,9 +228,13 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir string) *sidekickconfig.Config {
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir, protobufSrcDir string) *sidekickconfig.Config {
 	source := map[string]string{
-		"googleapis-root": googleapisDir,
+		"googleapis-root":   googleapisDir,
+		"protobuf-src-root": protobufSrcDir,
+	}
+	for root, dir := range module.ModuleRoots {
+		source[root] = dir
 	}
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
@@ -291,5 +295,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.Template != "" {
 		codec["template-override"] = "templates/" + module.Template
 	}
+	if module.DisabledRustdocWarnings != nil {
+		codec["disabled-rustdoc-warnings"] = strings.Join(module.DisabledRustdocWarnings, ",")
+	}
+
 	return codec
 }

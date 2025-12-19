@@ -80,6 +80,12 @@ type CargoConfig struct {
 	} `toml:"package"`
 }
 
+// RustOverrideData is used to store RustDocumentationOverride data to fix newlines.
+type RustOverrideData struct {
+	Match   string
+	Replace string
+}
+
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		slog.Error("migrate-sidekick failed", "error", err)
@@ -142,7 +148,7 @@ func run(args []string) error {
 		return errTidyFailed
 	}
 
-	return nil
+	return fixDocumentOverrideNewLines(*outputPath, cfg)
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
@@ -213,7 +219,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			ReleaseLevel: releaseLevel,
 			Rust: &config.RustDefault{
 				PackageDependencies:     packageDependencies,
-				DisabledRustdocWarnings: strToSlice(warnings),
+				DisabledRustdocWarnings: strToSlice(warnings, false),
 				GenerateSetterSamples:   generateSetterSamples,
 			},
 		},
@@ -358,7 +364,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if extraModules, ok := sidekick.Codec["extra-modules"].(string); ok {
-			for _, module := range strToSlice(extraModules) {
+			for _, module := range strToSlice(extraModules, false) {
 				if module == "" {
 					continue
 				}
@@ -421,7 +427,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		rustCrate := &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
-				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
+				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings, false),
 				GenerateSetterSamples:   generateSetterSamples,
 			},
 			PerServiceFeatures:        strToBool(perServiceFeatures),
@@ -430,12 +436,12 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			TitleOverride:             titleOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
-			Roots:                     strToSlice(roots),
-			DefaultFeatures:           strToSlice(defaultFeatures),
-			IncludeList:               strToSlice(includeList),
-			IncludedIds:               strToSlice(includeIds),
-			SkippedIds:                strToSlice(skippedIds),
-			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings),
+			Roots:                     strToSlice(roots, false),
+			DefaultFeatures:           strToSlice(defaultFeatures, false),
+			IncludeList:               strToSlice(includeList, false),
+			IncludedIds:               strToSlice(includeIds, false),
+			SkippedIds:                strToSlice(skippedIds, false),
+			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings, false),
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
@@ -522,15 +528,31 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 	return veneers, nil
 }
 
-func buildModules(path string) ([]*config.RustModule, error) {
+func buildModules(rootDir string) ([]*config.RustModule, error) {
 	var modules []*config.RustModule
-	err := filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if d.IsDir() || d.Name() != sidekickFile {
 			return nil
+		}
+
+		if strings.Contains(path, "tests") {
+			// Only use a .sidekick.toml in tests directory to represent a rust module if the following directory
+			// exists:
+			//
+			// |-src
+			// |  |-generated
+			// |     |-.sidekick.toml
+			// |-Cargo.toml
+			// Only one pair of Cargo.toml and .sidekick.toml (within tests directory) is not comply this structure in
+			// google-cloud-rust, which is wkt/Cargo.toml and src/wkt/tests/common/src/generated/.sidekick.toml.
+			srcDir := strings.TrimSuffix(path, fmt.Sprintf("/src/generated/%s", sidekickFile))
+			if rootDir != srcDir {
+				return nil
+			}
 		}
 
 		sidekick, err := readTOML[SidekickConfig](path)
@@ -542,6 +564,17 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		includeList, _ := sidekick.Source["include-list"].(string)
 		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
 		titleOverride, _ := sidekick.Source["title-override"].(string)
+		moduleRoots := make(map[string]string)
+		roots, ok := sidekick.Source["roots"].(string)
+		if ok {
+			for _, root := range strings.Split(roots, ",") {
+				root = fmt.Sprintf("%s-root", root)
+				modPath, ok := sidekick.Source[root].(string)
+				if ok {
+					moduleRoots[root] = modPath
+				}
+			}
+		}
 
 		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
 		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
@@ -551,15 +584,16 @@ func buildModules(path string) ([]*config.RustModule, error) {
 		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
 		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
 		templateOverride, _ := sidekick.Codec["template-override"].(string)
+
 		generateSetterSamples, ok := sidekick.Codec["generate-setter-samples"].(string)
 		if !ok {
 			generateSetterSamples = "true"
 		}
 
-		modules = append(modules, &config.RustModule{
+		module := &config.RustModule{
 			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
-			IncludedIds:            strToSlice(includedIds),
+			IncludedIds:            strToSlice(includedIds, false),
 			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
 			IncludeList:            includeList,
 			ModulePath:             modulePath,
@@ -569,11 +603,22 @@ func buildModules(path string) ([]*config.RustModule, error) {
 			RoutingRequired:        strToBool(routingRequired),
 			ExtendGrpcTransport:    strToBool(extendGrpcTransport),
 			ServiceConfig:          sidekick.General.ServiceConfig,
-			SkippedIds:             strToSlice(skippedIds),
+			SkippedIds:             strToSlice(skippedIds, false),
 			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
 			TitleOverride:          titleOverride,
-		})
+		}
+
+		if len(moduleRoots) > 0 {
+			module.ModuleRoots = moduleRoots
+		}
+
+		disabledRustdocWarnings, ok := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		if ok {
+			module.DisabledRustdocWarnings = strToSlice(disabledRustdocWarnings, true)
+		}
+
+		modules = append(modules, module)
 
 		return nil
 	})
@@ -657,8 +702,17 @@ func strToBool(s string) bool {
 	return s == "true"
 }
 
-func strToSlice(s string) []string {
+// strToSlice converts a comma-separated string into a slice of strings.
+//
+// The wantEmpty parameter controls the behavior when the input string is empty:
+//   - If true: Returns an empty initialized slice (make([]string, 0)).
+//   - If false: Returns nil.
+func strToSlice(s string, wantEmpty bool) []string {
 	if s == "" {
+		if wantEmpty {
+			return make([]string, 0)
+		}
+
 		return nil
 	}
 
@@ -681,4 +735,82 @@ func readTOML[T any](file string) (*T, error) {
 	}
 
 	return &tomlData, nil
+}
+
+// fixDocumentOverrideNewLines takes any toml content in rust.DocumentationOverrides that contains
+// newlines and appropriately adjusts them in the yaml file.
+func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
+	input, err := os.ReadFile(yamlFile)
+	if err != nil {
+		return err
+	}
+
+	content := string(input)
+	lookup := make(map[string]RustOverrideData)
+	for _, lib := range config.Libraries {
+		if lib.Rust == nil {
+			continue
+		}
+		for _, o := range lib.Rust.DocumentationOverrides {
+			key := o.ID + "|" + strings.Trim(o.Match, " \n\r")
+			lookup[key] = RustOverrideData{
+				Match:   o.Match,
+				Replace: o.Replace,
+			}
+		}
+	}
+	lines := strings.Split(content, "\n")
+	var newLines []string
+	var currentID string
+
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "- id: ") {
+			currentID = strings.TrimPrefix(trimmed, "- id: ")
+			newLines = append(newLines, line)
+			continue
+		}
+		if strings.Contains(line, "match: ") {
+			parts := strings.SplitN(line, "match: ", 2)
+			indent := parts[0]
+			currentVal := strings.Trim(parts[1], " '\"")
+
+			lookupKey := currentID + "|" + currentVal
+
+			if data, ok := lookup[lookupKey]; ok {
+				if strings.Contains(data.Match, "\n") {
+					newLines = append(newLines, fmt.Sprintf("%smatch: |", indent))
+					newLines = append(newLines, "") // Leading newline
+					newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Match))
+				} else {
+					newLines = append(newLines, line) // Keep original if no newline
+				}
+
+				// --- HANDLE REPLACE FIELD ---
+				// We assume the next line in the file is the 'replace' line
+				// We skip the original replace line by incrementing the loop counter 'i'
+				if i+1 < len(lines) && strings.Contains(lines[i+1], "replace: ") {
+					i++ // Skip the original line
+					if strings.Contains(data.Replace, "\n") {
+						newLines = append(newLines, fmt.Sprintf("%sreplace: |", indent))
+						newLines = append(newLines, "") // Leading newline
+						newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Replace))
+					} else {
+						newLines = append(newLines, lines[i])
+					}
+				}
+				continue
+			}
+		}
+
+		newLines = append(newLines, line)
+	}
+
+	content = strings.Join(newLines, "\n")
+	err = os.WriteFile(yamlFile, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }

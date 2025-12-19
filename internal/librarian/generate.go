@@ -49,7 +49,7 @@ type Generator interface {
 type Generate struct {
 }
 
-// Run encaspulates runGenerate command on Genrator interface.
+// Run encapsulates runGenerate command on Generator interface.
 func (g *Generate) Run(ctx context.Context, all bool, libraryName string) error {
 	return runGenerate(ctx, all, libraryName)
 }

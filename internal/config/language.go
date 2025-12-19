@@ -14,6 +14,8 @@
 
 package config
 
+import "github.com/googleapis/librarian/internal/yaml"
+
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
@@ -46,6 +48,9 @@ type RustDefault struct {
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
+	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
+	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
 	// ExtendGrpcTransport indicates whether the transport stub can be
 	// extended (in order to support streams).
 	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`
@@ -53,7 +58,7 @@ type RustModule struct {
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
 
-	// HasVeneer indicates whether this module has a hand-written wrapper.
+	// HasVeneer indicates whether this module has a handwritten wrapper.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
 
 	// IncludedIds is a list of proto IDs to include in generation.
@@ -68,6 +73,8 @@ type RustModule struct {
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
+
+	ModuleRoots map[string]string `yaml:"module_roots,omitempty"`
 
 	// NameOverrides contains codec-level overrides for type and service names.
 	NameOverrides string `yaml:"name_overrides,omitempty"`

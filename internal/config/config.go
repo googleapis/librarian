@@ -18,17 +18,11 @@ package config
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
-	// Language is the language for this workspace (go, python, rust).
-	Language string `yaml:"language"`
-
-	// Repo is the repository name, such as "googleapis/google-cloud-python".
-	Repo string `yaml:"repo,omitempty"`
-
-	// Sources references external source repositories.
-	Sources *Sources `yaml:"sources,omitempty"`
-
 	// Default contains default settings for all libraries.
 	Default *Default `yaml:"default,omitempty"`
+
+	// Language is the language for this workspace (go, python, rust).
+	Language string `yaml:"language"`
 
 	// Libraries contains configuration overrides for libraries that need
 	// special handling, and differ from default settings.
@@ -36,18 +30,21 @@ type Config struct {
 
 	// Release holds the configuration parameter for any `${lang}-release` subcommand.
 	Release *Release `yaml:"release,omitempty"`
+
+	// Repo is the repository name, such as "googleapis/google-cloud-python".
+	Repo string `yaml:"repo,omitempty"`
+
+	// Sources references external source repositories.
+	Sources *Sources `yaml:"sources,omitempty"`
 }
 
 // Release holds the configuration parameter for publish command.
 type Release struct {
-	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
-	Remote string `yaml:"remote,omitempty"`
-
 	// Branch sets the name of the release branch, typically `main`
 	Branch string `yaml:"branch,omitempty"`
 
-	// Tools defines the list of tools to install, indexed by installer.
-	Tools map[string][]Tool `yaml:"tools,omitempty"`
+	// IgnoredChanges defines globs that are ignored in change analysis.
+	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
 
 	// Preinstalled tools defines the list of tools that must be pre-installed.
 	//
@@ -56,12 +53,15 @@ type Release struct {
 	// cargo = /usr/bin/cargo
 	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
 
-	// IgnoredChanges defines globs that are ignored in change analysis.
-	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
+	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
+	Remote string `yaml:"remote,omitempty"`
 
 	// An alternative location for the `roots.pem` file. If empty it has no
 	// effect.
 	RootsPem string `yaml:"roots_pem,omitempty"`
+
+	// Tools defines the list of tools to install, indexed by installer.
+	Tools map[string][]Tool `yaml:"tools,omitempty"`
 }
 
 // GetExecutablePath finds the path for a given command, checking for an
@@ -77,26 +77,29 @@ func (r *Release) GetExecutablePath(commandName string) string {
 
 // Tool defines the configuration required to install helper tools.
 type Tool struct {
-	Name    string `yaml:"name"`
+	// Name is the name of the tool e.g. nox.
+	Name string `yaml:"name"`
+
+	// Version is the version of the tool e.g. 1.2.4.
 	Version string `yaml:"version,omitempty"`
 }
 
 // Sources references external source repositories.
 type Sources struct {
+	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
+	Conformance *Source `yaml:"conformance,omitempty"`
+
 	// Discovery is the discovery-artifact-manager repository configuration.
 	Discovery *Source `yaml:"discovery,omitempty"`
 
 	// Googleapis is the googleapis repository configuration.
 	Googleapis *Source `yaml:"googleapis,omitempty"`
 
-	// Showcase is the showcase repository configuration.
-	Showcase *Source `yaml:"showcase,omitempty"`
-
 	// ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`.
 	ProtobufSrc *Source `yaml:"protobuf,omitempty"`
 
-	// Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`.
-	Conformance *Source `yaml:"conformance,omitempty"`
+	// Showcase is the showcase repository configuration.
+	Showcase *Source `yaml:"showcase,omitempty"`
 }
 
 // Source represents a source repository.
@@ -104,12 +107,12 @@ type Source struct {
 	// Commit is the git commit hash or tag to use.
 	Commit string `yaml:"commit"`
 
-	// SHA256 is the expected hash of the tarball for this commit.
-	SHA256 string `yaml:"sha256,omitempty"`
-
 	// Dir is a local directory path to use instead of fetching.
 	// If set, Commit and SHA256 are ignored.
 	Dir string `yaml:"dir,omitempty"`
+
+	// SHA256 is the expected hash of the tarball for this commit.
+	SHA256 string `yaml:"sha256,omitempty"`
 
 	// Subpath is a directory inside the fetched archive that should be treated as
 	// the root for operations.
@@ -122,71 +125,27 @@ type Default struct {
 	// this is src/generated.
 	Output string `yaml:"output,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
-	Transport string `yaml:"transport,omitempty"`
-
 	// ReleaseLevel is either "stable" or "preview".
 	ReleaseLevel string `yaml:"release_level,omitempty"`
+
+	// Rust contains Rust-specific default configuration.
+	Rust *RustDefault `yaml:"rust,omitempty"`
 
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
 
-	// Rust contains Rust-specific default configuration.
-	Rust *RustDefault `yaml:"rust,omitempty"`
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
+	Transport string `yaml:"transport,omitempty"`
 }
 
 // Library represents a library configuration.
 type Library struct {
-	// Name is the library name, such as "secretmanager" or "storage". It is
-	// listed first so it appears at the top of each library entry in YAML.
-	Name string `yaml:"name"`
-
 	// Channel specifies which googleapis Channel to generate from (for generated
 	// libraries).
 	Channels []*Channel `yaml:"channels,omitempty"`
 
-	// Veneer indicates this library has hand-written code with generated
-	// submodules. When true, the library uses language-specific module
-	// configuration (e.g., rust.modules) instead of generating a complete crate
-	// from channels.
-	Veneer bool `yaml:"veneer,omitempty"`
-
-	// SkipGenerate disables code generation for this library.
-	SkipGenerate bool `yaml:"skip_generate,omitempty"`
-
-	// SkipRelease disables releasing for this library.
-	SkipRelease bool `yaml:"skip_release,omitempty"`
-
-	// SkipPublish disables publishing for this library.
-	SkipPublish bool `yaml:"skip_publish,omitempty"`
-
-	// Output is the directory where code is written. This overrides
-	// Default.Output.
-	Output string `yaml:"output,omitempty"`
-
-	// Version is the library version.
-	Version string `yaml:"version,omitempty"`
-
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
-
-	// Keep lists files and directories to preserve during regeneration.
-	Keep []string `yaml:"keep,omitempty"`
-
-	// ReleaseLevel is the release level, such as "stable" or "preview". This
-	// overrides Default.ReleaseLevel.
-	ReleaseLevel string `yaml:"release_level,omitempty"`
-
-	// SpecificationFormat specifies the API specification format. Valid values
-	// are "protobuf" (default) or "discovery".
-	SpecificationFormat string `yaml:"specification_format,omitempty"`
-
-	// Roots specifies the source roots to use for generation. Defaults to googleapis.
-	Roots []string `yaml:"roots,omitempty"`
-
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
-	// overrides Default.Transport.
-	Transport string `yaml:"transport,omitempty"`
 
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
@@ -194,11 +153,55 @@ type Library struct {
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
 
-	// Rust contains Rust-specific library configuration.
-	Rust *RustCrate `yaml:"rust,omitempty"`
+	// Keep lists files and directories to preserve during regeneration.
+	Keep []string `yaml:"keep,omitempty"`
+
+	// Name is the library name, such as "secretmanager" or "storage". It is
+	// listed first so it appears at the top of each library entry in YAML.
+	Name string `yaml:"name"`
+
+	// Output is the directory where code is written. This overrides
+	// Default.Output.
+	Output string `yaml:"output,omitempty"`
 
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
+
+	// ReleaseLevel is the release level, such as "stable" or "preview". This
+	// overrides Default.ReleaseLevel.
+	ReleaseLevel string `yaml:"release_level,omitempty"`
+
+	// Roots specifies the source roots to use for generation. Defaults to googleapis.
+	Roots []string `yaml:"roots,omitempty"`
+
+	// Rust contains Rust-specific library configuration.
+	Rust *RustCrate `yaml:"rust,omitempty"`
+
+	// SkipGenerate disables code generation for this library.
+	SkipGenerate bool `yaml:"skip_generate,omitempty"`
+
+	// SkipPublish disables publishing for this library.
+	SkipPublish bool `yaml:"skip_publish,omitempty"`
+
+	// SkipRelease disables releasing for this library.
+	SkipRelease bool `yaml:"skip_release,omitempty"`
+
+	// SpecificationFormat specifies the API specification format. Valid values
+	// are "protobuf" (default) or "discovery".
+	SpecificationFormat string `yaml:"specification_format,omitempty"`
+
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
+	// overrides Default.Transport.
+	Transport string `yaml:"transport,omitempty"`
+
+	// Veneer indicates this library has hand-written code with generated
+	// submodules. When true, the library uses language-specific module
+	// configuration (e.g., rust.modules) instead of generating a complete crate
+	// from channels.
+	Veneer bool `yaml:"veneer,omitempty"`
+
+	// Version is the library version.
+	Version string `yaml:"version,omitempty"`
 }
 
 // Channel describes a Channel to include in a library.

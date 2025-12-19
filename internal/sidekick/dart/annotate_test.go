@@ -844,6 +844,21 @@ func TestCreateFromJsonLine(t *testing.T) {
 			},
 		},
 	}
+	mapInt32ToBytes := &api.Message{
+		Name:  "$Int32ToBytes",
+		ID:    "..$Int32ToBytes",
+		IsMap: true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.INT32_TYPE,
+			},
+			{
+				Name:  "value",
+				Typez: api.BYTES_TYPE,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -993,10 +1008,17 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
 			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
+
+		// maps
 		{
-			// Map of bytes.
+			// string -> bytes
 			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
 			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
+		},
+		{
+			// int32 -> bytes
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt32ToBytes.ID},
+			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeIntKey(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -1006,7 +1028,10 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage, mapStringToBytes}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message,
+				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes},
+				[]*api.Enum{enumState, foreignEnumState},
+				[]*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{
 				"prefix:google.cloud.foo": "foo",
