@@ -237,6 +237,57 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestParse_Invalid(t *testing.T) {
+	for _, version := range []string{
+		"1",
+		"1.2",
+		"1.2.3-0123",
+		"1.2.3-0123.0123",
+		"1.1.2+.123",
+		"+invalid",
+		"-invalid",
+		"-invalid+invalid",
+		"-invalid.01",
+		"alpha",
+		"alpha.beta",
+		"alpha.beta.1",
+		"alpha.1",
+		"alpha+beta",
+		"alpha_beta",
+		"alpha.",
+		"alpha..",
+		"beta",
+		"1.0.0-alpha_beta",
+		"-alpha.",
+		"1.0.0-alpha..",
+		"1.0.0-alpha..1",
+		"1.0.0-alpha...1",
+		"1.0.0-alpha....1",
+		"1.0.0-alpha.....1",
+		"1.0.0-alpha......1",
+		"1.0.0-alpha.......1",
+		"01.1.1",
+		"1.01.1",
+		"1.1.01",
+		"1.2",
+		"1.2.3.DEV",
+		"1.2-SNAPSHOT",
+		"1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788",
+		"1.2-RC-SNAPSHOT",
+		"-1.0.3-gamma+b7718",
+		"+justmeta",
+		"9.8.7+meta+meta",
+		"9.8.7-whatever+meta+meta",
+		"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12",
+	} {
+		t.Run(version, func(t *testing.T) {
+			if _, err := Parse(version); err == nil {
+				t.Error("Parse() should have failed")
+			}
+		})
+	}
+}
+
 func TestVersion_String(t *testing.T) {
 	for _, test := range []struct {
 		name     string
