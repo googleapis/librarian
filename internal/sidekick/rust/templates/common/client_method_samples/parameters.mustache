@@ -13,6 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
+{{#AIPStandardGetInfo}}
+///    client: &{{Service.Codec.Name}},
+///    resource_name: &str
+{{/AIPStandardGetInfo}}
 {{^IsAIPStandard}}
 ///    client: &{{Service.Codec.Name}}
 {{/IsAIPStandard}}
