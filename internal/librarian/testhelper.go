@@ -26,21 +26,9 @@ import (
 // using the testhelper language implementation.
 const testReleaseVersion = "1.2.3"
 
-func testReleaseAll(cfg *config.Config) (*config.Config, error) {
-	for _, lib := range cfg.Libraries {
-		lib.Version = testReleaseVersion
-	}
+func testReleaseLibrary(cfg *config.Config, lib *config.Library) (*config.Config, error) {
+	lib.Version = testReleaseVersion
 	return cfg, nil
-}
-
-func testReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
-	for _, lib := range cfg.Libraries {
-		if lib.Name == name {
-			lib.Version = testReleaseVersion
-			return cfg, nil
-		}
-	}
-	return nil, fmt.Errorf("library %q not found", name)
 }
 
 func testGenerate(library *config.Library) error {

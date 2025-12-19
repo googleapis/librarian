@@ -16,8 +16,6 @@
 package rust
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,8 +26,6 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-var errLibraryNotFound = errors.New("library not found")
-
 type cargoPackage struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
@@ -39,75 +35,32 @@ type cargoManifest struct {
 	Package *cargoPackage `toml:"package"`
 }
 
-// ReleaseAll bumps versions for all Cargo.toml files and updates librarian.yaml.
-func ReleaseAll(cfg *config.Config) (*config.Config, error) {
-	return release(cfg, "")
-}
-
-// ReleaseLibrary bumps the version for a specific library and updates librarian.yaml.
-func ReleaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
-	return release(cfg, name)
-}
-
-func release(cfg *config.Config, name string) (*config.Config, error) {
-	if name == "" {
-		for _, library := range cfg.Libraries {
-			if err := releaseLibrary(library, cfg); err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		library, err := libraryByName(cfg, name)
-		if err != nil {
-			return nil, fmt.Errorf("library %q not found", name)
-		}
-		if err := releaseLibrary(library, cfg); err != nil {
-			return nil, err
-		}
-	}
-
-	return cfg, nil
-}
-
-// libraryByName returns a library with the given name from the config.
-func libraryByName(c *config.Config, name string) (*config.Library, error) {
-	if c.Libraries == nil {
-		return nil, errLibraryNotFound
-	}
-	for _, library := range c.Libraries {
-		if library.Name == name {
-			return library, nil
-		}
-	}
-	return nil, errLibraryNotFound
-}
-
-func releaseLibrary(library *config.Library, cfg *config.Config) error {
+func ReleaseLibrary(cfg *config.Config, library *config.Library) (*config.Config, error) {
 	srcPath := deriveSrcPath(library, cfg)
 	cargoFile := filepath.Join(srcPath, "Cargo.toml")
 	cargoContents, err := os.ReadFile(cargoFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var manifest cargoManifest
 	if err := toml.Unmarshal(cargoContents, &manifest); err != nil {
-		return err
+		return nil, err
 	}
 	if manifest.Package == nil {
-		return nil
+		return nil, err
 	}
 	newVersion, err := semver.DeriveNextOptions{
 		BumpVersionCore:       true,
 		DowngradePreGAChanges: true,
 	}.DeriveNext(semver.Minor, manifest.Package.Version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := rustrelease.UpdateCargoVersion(cargoFile, newVersion); err != nil {
-		return err
+		return nil, err
 	}
 	library.Version = newVersion
-	return nil
+	return cfg, err
 }
 
 func deriveSrcPath(libCfg *config.Library, cfg *config.Config) string {

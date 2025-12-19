@@ -28,6 +28,7 @@ import (
 
 func TestReleaseCommand(t *testing.T) {
 	const testlib = "test-lib"
+	const testlib2 = "test-lib2"
 
 	for _, test := range []struct {
 		name         string
@@ -49,14 +50,16 @@ func TestReleaseCommand(t *testing.T) {
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
 			wantVersions: map[string]string{
-				testlib: testReleaseVersion,
+				testlib:  testReleaseVersion,
+				testlib2: "0.1.0",
 			},
 		},
 		{
 			name: "all flag",
 			args: []string{"librarian", "release", "--all"},
 			wantVersions: map[string]string{
-				testlib: testReleaseVersion,
+				testlib:  testReleaseVersion,
+				testlib2: testReleaseVersion,
 			},
 		},
 	} {
@@ -69,7 +72,9 @@ func TestReleaseCommand(t *testing.T) {
 libraries:
   - name: %s
     version: 0.1.0
-`, testlib)
+  - name: %s
+    version: 0.1.0
+`, testlib, testlib2)
 			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -94,6 +99,62 @@ libraries:
 				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
+			}
+		})
+	}
+}
+
+func TestLibraryByName(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		config      *config.Config
+		want        *config.Library
+		wantErr     error
+	}{
+		{
+			name:        "find_a_library",
+			libraryName: "example-library",
+			config: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "example-library"},
+					{Name: "another-library"},
+				},
+			},
+			want: &config.Library{Name: "example-library"},
+		},
+		{
+			name:        "no_library_in_config",
+			libraryName: "example-library",
+			config:      &config.Config{},
+			wantErr:     errLibraryNotFound,
+		},
+		{
+			name:        "does_not_find_a_library",
+			libraryName: "non-existent-library",
+			config: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "example-library"},
+					{Name: "another-library"},
+				},
+			},
+			wantErr: errLibraryNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := libraryByName(test.config, test.libraryName)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("got error %v, want %v", err, test.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("libraryByName(%q): %v", test.libraryName, err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
