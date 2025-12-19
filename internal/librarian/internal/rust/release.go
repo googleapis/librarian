@@ -16,7 +16,7 @@
 package rust
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,11 +36,13 @@ type cargoManifest struct {
 	Package *cargoPackage `toml:"package"`
 }
 
+var errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
+
 // ReleaseLibrary bumps version for Librarian Cargo.toml files and updates librarian config version.
 func ReleaseLibrary(cfg *config.Config, library *config.Library) error {
 	srcPath := deriveSrcPath(library, cfg)
 	if srcPath == "" {
-		return fmt.Errorf("could not derive source path for library %q", library.Name)
+		return errCouldNotDeriveSrcPath
 	}
 	cargoFile := filepath.Join(srcPath, "Cargo.toml")
 	cargoContents, err := os.ReadFile(cargoFile)

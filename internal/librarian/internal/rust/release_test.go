@@ -168,3 +168,17 @@ func TestDeriveSrcPath(t *testing.T) {
 		})
 	}
 }
+
+func TestInvalidDerivedSource(t *testing.T) {
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name: storageName,
+			},
+		},
+	}
+	err := ReleaseLibrary(cfg, cfg.Libraries[0])
+	if err != errCouldNotDeriveSrcPath {
+		t.Errorf("wanted error %v, got %v", errCouldNotDeriveSrcPath, err)
+	}
+}
