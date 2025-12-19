@@ -507,6 +507,58 @@ func TestBuildVeneer(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "excluded_library",
+			files: []string{
+				"testdata/build-veneer/success/lib-1/Cargo.toml",
+				"testdata/build-veneer/success/echo-server/Cargo.toml",
+			},
+			want: map[string]*config.Library{
+				"google-cloud-storage": {
+					Name:          "google-cloud-storage",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/success/lib-1",
+					Version:       "1.5.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						Modules: []*config.RustModule{
+							{
+								DisabledRustdocWarnings: []string{},
+								GenerateSetterSamples:   true,
+								ModuleRoots:             nil,
+								HasVeneer:               true,
+								IncludedIds: []string{
+									".google.storage.v2.Storage.DeleteBucket",
+									".google.storage.v2.Storage.GetBucket",
+									".google.storage.v2.Storage.CreateBucket",
+									".google.storage.v2.Storage.ListBuckets",
+								},
+								IncludeGrpcOnlyMethods: true,
+								NameOverrides:          ".google.storage.v2.Storage=StorageControl",
+								Output:                 "testdata/build-veneer/success/lib-1/dir-1",
+								RoutingRequired:        true,
+								ServiceConfig:          "google/storage/v2/storage_v2.yaml",
+								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
+								Source:                 "google/storage/v2",
+								Template:               "grpc-client",
+								TitleOverride:          "Cloud Firestore API",
+							},
+							{
+								GenerateSetterSamples: false,
+								ModulePath:            "crate::generated::gapic_control::model",
+								ModuleRoots: map[string]string{
+									"project-root": ".",
+								},
+								NameOverrides: ".google.storage.control.v2.IntelligenceConfig.Filter.cloud_storage_buckets=CloudStorageBucketsOneOf",
+								Output:        "testdata/build-veneer/success/lib-1/dir-2/dirdir-2",
+								Source:        "google/storage/control/v2",
+								Template:      "convert-prost",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildVeneer(test.files)
