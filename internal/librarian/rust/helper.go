@@ -18,11 +18,9 @@ package rust
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 
 	"cloud.google.com/go/librarian/internal/command"
-	"github.com/pelletier/go-toml/v2"
 )
 
 // RustHelper interface used for mocking in tests.
@@ -43,20 +41,6 @@ func (r *RustHelp) HelperPrepareCargoWorkspace(ctx context.Context, outputDir st
 // HelperFormatAndValidateLibrary encapsulates formatAndValidateLibrary command.
 func (r *RustHelp) HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return FormatAndValidateLibrary(ctx, outputDir)
-}
-
-// getPackageName retrieves the packagename from a Cargo.toml file.
-func getPackageName(output string) (string, error) {
-	cargo := CargoConfig{}
-	filename := path.Join(output, "Cargo.toml")
-	contents, err := os.ReadFile(filename)
-	if err != nil {
-		return "", fmt.Errorf("failed to read %s: %w", filename, err)
-	}
-	if err = toml.Unmarshal(contents, &cargo); err != nil {
-		return "", fmt.Errorf("error unmarshaling %s: %w", filename, err)
-	}
-	return cargo.Package.Name, nil
 }
 
 // PrepareCargoWorkspace creates a new cargo package in the specified output directory.

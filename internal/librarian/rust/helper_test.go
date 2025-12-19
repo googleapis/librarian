@@ -26,17 +26,6 @@ import (
 	"cloud.google.com/go/librarian/internal/testhelpers"
 )
 
-func TestGetPackageName(t *testing.T) {
-	expectedPackageName := "new-lib-format"
-	got, err := getPackageName("testdata/new-lib-format")
-	if err != nil {
-		t.Fatalf("error getting package name %v", err)
-	}
-	if got != expectedPackageName {
-		t.Errorf("want packageName %s, got %s", expectedPackageName, got)
-	}
-}
-
 func TestPrepareCargoWorkspace(t *testing.T) {
 	testhelpers.RequireCommand(t, "cargo")
 	testhelpers.RequireCommand(t, "taplo")
