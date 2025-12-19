@@ -70,13 +70,16 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if all {
-		cfg, err = releaseAll(cfg)
+		err = releaseAll(cfg)
 	} else {
 		libConfg, err := libraryByName(cfg, libraryName)
 		if err != nil {
 			return err
 		}
-		cfg, err = releaseLibrary(cfg, libConfg)
+		err = releaseLibrary(cfg, libConfg)
+		if err != nil {
+			return err
+		}
 	}
 	if err != nil {
 		return err
@@ -84,23 +87,23 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	return yaml.Write(librarianConfigPath, cfg)
 }
 
-func releaseAll(cfg *config.Config) (*config.Config, error) {
+func releaseAll(cfg *config.Config) error {
 	for _, library := range cfg.Libraries {
-		if _, err := releaseLibrary(cfg, library); err != nil {
-			return nil, err
+		if err := releaseLibrary(cfg, library); err != nil {
+			return err
 		}
 	}
-	return cfg, nil
+	return nil
 }
 
-func releaseLibrary(cfg *config.Config, libConfig *config.Library) (*config.Config, error) {
+func releaseLibrary(cfg *config.Config, libConfig *config.Library) error {
 	switch cfg.Language {
 	case "testhelper":
-		return testReleaseLibrary(cfg, libConfig)
+		return testReleaseLibrary(libConfig)
 	case "rust":
 		return rust.ReleaseLibrary(cfg, libConfig)
 	default:
-		return nil, fmt.Errorf("language not supported for release: %q", cfg.Language)
+		return fmt.Errorf("language not supported for release: %q", cfg.Language)
 	}
 }
 

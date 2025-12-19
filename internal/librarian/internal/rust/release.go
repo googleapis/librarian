@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,32 +36,36 @@ type cargoManifest struct {
 	Package *cargoPackage `toml:"package"`
 }
 
-func ReleaseLibrary(cfg *config.Config, library *config.Library) (*config.Config, error) {
+// ReleaseLibrary bumps version for Librarian Cargo.toml files and updates librarian config version.
+func ReleaseLibrary(cfg *config.Config, library *config.Library) error {
 	srcPath := deriveSrcPath(library, cfg)
+	if srcPath == "" {
+		return fmt.Errorf("could not derive source path for library %q", library.Name)
+	}
 	cargoFile := filepath.Join(srcPath, "Cargo.toml")
 	cargoContents, err := os.ReadFile(cargoFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	var manifest cargoManifest
 	if err := toml.Unmarshal(cargoContents, &manifest); err != nil {
-		return nil, err
+		return err
 	}
 	if manifest.Package == nil {
-		return nil, err
+		return err
 	}
 	newVersion, err := semver.DeriveNextOptions{
 		BumpVersionCore:       true,
 		DowngradePreGAChanges: true,
 	}.DeriveNext(semver.Minor, manifest.Package.Version)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := rustrelease.UpdateCargoVersion(cargoFile, newVersion); err != nil {
-		return nil, err
+		return err
 	}
 	library.Version = newVersion
-	return cfg, err
+	return nil
 }
 
 func deriveSrcPath(libCfg *config.Library, cfg *config.Config) string {

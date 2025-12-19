@@ -40,15 +40,15 @@ const (
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	got, err := ReleaseLibrary(cfg, cfg.Libraries[0])
+	err := ReleaseLibrary(cfg, cfg.Libraries[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	checkCargoVersion(t, storageCargo, storageReleased)
 	checkCargoVersion(t, secretmanagerCargo, secretmanagerInitial)
-	checkLibraryVersion(t, got, storageName, storageReleased)
-	checkLibraryVersion(t, got, secretmanagerName, secretmanagerInitial)
+	checkLibraryVersion(t, cfg.Libraries[0], storageReleased)
+	checkLibraryVersion(t, cfg.Libraries[1], secretmanagerInitial)
 }
 
 func setupRelease(t *testing.T) *config.Config {
@@ -106,20 +106,14 @@ func checkCargoVersion(t *testing.T, path, wantVersion string) {
 	}
 }
 
-func checkLibraryVersion(t *testing.T, cfg *config.Config, name, wantVersion string) {
+func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion string) {
 	t.Helper()
-	for _, lib := range cfg.Libraries {
-		if lib.Name == name {
-			if lib.Version != wantVersion {
-				t.Errorf("library %q version mismatch: want %q, got %q", name, wantVersion, lib.Version)
-			}
-			return
-		}
+	if library.Version != wantVersion {
+		t.Errorf("library %q version mismatch: want %q, got %q", library.Name, wantVersion, library.Version)
 	}
-	t.Errorf("library %q not found in config", name)
 }
 
-func TestDerivceSrcPath(t *testing.T) {
+func TestDeriveSrcPath(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		config *config.Config

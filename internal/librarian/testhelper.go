@@ -26,9 +26,9 @@ import (
 // using the testhelper language implementation.
 const testReleaseVersion = "1.2.3"
 
-func testReleaseLibrary(cfg *config.Config, lib *config.Library) (*config.Config, error) {
+func testReleaseLibrary(lib *config.Library) error {
 	lib.Version = testReleaseVersion
-	return cfg, nil
+	return nil
 }
 
 func testGenerate(library *config.Library) error {
