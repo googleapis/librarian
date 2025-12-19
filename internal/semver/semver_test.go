@@ -110,27 +110,27 @@ func TestParse_Errors(t *testing.T) {
 		{
 			name:    "invalid version with v prefix",
 			version: "v1.2.3",
-			wantErr: ErrInvalidVersion,
+			wantErr: errInvalidVersion,
 		},
 		{
 			name:    "invalid prerelease number with separator",
 			version: "1.2.3-rc.abc",
-			wantErr: ErrInvalidPrereleaseNumber,
+			wantErr: errInvalidPrereleaseNumber,
 		},
 		{
 			name:    "invalid major number",
 			version: "a.2.3",
-			wantErr: ErrInvalidVersion,
+			wantErr: errInvalidVersion,
 		},
 		{
 			name:    "invalid minor number",
 			version: "1.a.3",
-			wantErr: ErrInvalidVersion,
+			wantErr: errInvalidVersion,
 		},
 		{
 			name:    "invalid patch number",
 			version: "1.2.a",
-			wantErr: ErrInvalidVersion,
+			wantErr: errInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -428,7 +428,7 @@ func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
 			name:           "bad version",
 			changeLevel:    Minor,
 			currentVersion: "abc123",
-			wantErr:        ErrInvalidVersion,
+			wantErr:        errInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -62,13 +62,13 @@ var (
 	// prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
 	semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
-	// ErrInvalidVersion is returned when the version string provided is invalid as
+	// errInvalidVersion is returned when the version string provided is invalid as
 	// per the SemVer spec - https://semver.org.
-	ErrInvalidVersion = errors.New("invalid version format")
+	errInvalidVersion = errors.New("invalid version format")
 
-	// ErrInvalidPrereleaseNumber is returned when the prerelease number of a
+	// errInvalidPrereleaseNumber is returned when the prerelease number of a
 	// version string is invalid.
-	ErrInvalidPrereleaseNumber = errors.New("invalid prerelease number")
+	errInvalidPrereleaseNumber = errors.New("invalid prerelease number")
 )
 
 // parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [version]
@@ -76,7 +76,7 @@ var (
 func parse(versionString string) (version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
+		return version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -84,7 +84,7 @@ func parse(versionString string) (version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
+		return version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -140,7 +140,7 @@ func parse(versionString string) (version, error) {
 	if numStr != "" {
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			return version{}, errors.Join(ErrInvalidPrereleaseNumber, err)
+			return version{}, errors.Join(errInvalidPrereleaseNumber, err)
 		}
 		v.PrereleaseNumber = &num
 	}
