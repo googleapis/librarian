@@ -375,7 +375,8 @@ func (m *Method) IsSimple() bool {
 // IsAIPStandard returns true if the method is one of the AIP standard methods.
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
-	return m.AIPStandardGetInfo() != nil
+	return m.AIPStandardGetInfo() != nil ||
+		m.AIPStandardDeleteInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations as defined by AIP-131.
@@ -412,6 +413,53 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 
 	return &AIPStandardGetInfo{
 		ResourceNameRequestField: m.InputType.Fields[nameFieldIndex],
+	}
+}
+
+// AIPStandardDeleteInfo contains information relevant to delete operations as defined by AIP-135.
+type AIPStandardDeleteInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the delete operation should delete.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardDeleteInfo returns information relevant to a delete operation as defined by AIP-135
+// if the method is such an operation.
+func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
+	// A delete operation is either simple or LRO.
+	if !m.IsSimple() && m.OperationInfo == nil {
+		return nil
+	}
+
+	// Standard delete methods for resource "Foo" should be named "DeleteFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "delete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "DeleteFooRequest".
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("delete%srequest", maybeSingular) {
+		return nil
+	}
+
+	// Find the field in the request that is a resource reference of a resource
+	// whose singular name is maybeSingular.
+	fieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
+		if f.ResourceReference == nil {
+			return false
+		}
+		resource, ok := m.Model.State.ResourceByType[f.ResourceReference.Type]
+		if !ok {
+			return false
+		}
+		return strings.ToLower(resource.Singular) == maybeSingular
+	})
+	if fieldIndex == -1 {
+		return nil
+	}
+
+	return &AIPStandardDeleteInfo{
+		ResourceNameRequestField: m.InputType.Fields[fieldIndex],
 	}
 }
 

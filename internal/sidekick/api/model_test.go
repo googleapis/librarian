@@ -303,6 +303,20 @@ func TestIsAIPStandard(t *testing.T) {
 		OutputType: output,
 	}
 
+	validDeleteMethod := &Method{
+		Name:         "DeleteSecret",
+		InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{{Name: "name", ResourceReference: &ResourceReference{Type: resourceType}}}},
+		ReturnsEmpty: true,
+		Model: &API{
+			ResourceDefinitions: []*Resource{resource},
+			State: &APIState{
+				ResourceByType: map[string]*Resource{
+					resourceType: resource,
+				},
+			},
+		},
+	}
+
 	// Setup for an invalid Get operation (e.g., wrong name)
 	invalidGetMethod := &Method{
 		Name:       "ListSecrets", // Not a Get method
@@ -318,6 +332,11 @@ func TestIsAIPStandard(t *testing.T) {
 		{
 			name:   "standard get method returns true",
 			method: validGetMethod,
+			want:   true,
+		},
+		{
+			name:   "standard delete method returns true",
+			method: validDeleteMethod,
 			want:   true,
 		},
 		{
@@ -470,6 +489,103 @@ func TestAIPStandardGetInfo(t *testing.T) {
 			got := tc.method.AIPStandardGetInfo()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("AIPStandardGetInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAIPStandardDeleteInfo(t *testing.T) {
+	resourceType := "google.cloud.secretmanager.v1/Secret"
+	resourceNameField := &Field{
+		Name: "name",
+		ResourceReference: &ResourceReference{
+			Type: resourceType,
+		},
+	}
+	resource := &Resource{
+		Type:     resourceType,
+		Singular: "secret",
+	}
+	model := &API{
+		ResourceDefinitions: []*Resource{resource},
+		State: &APIState{
+			ResourceByType: map[string]*Resource{
+				resourceType: resource,
+			},
+		},
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardDeleteInfo
+	}{
+		{
+			name: "valid simple delete",
+			method: &Method{
+				Name:         "DeleteSecret",
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
+				ReturnsEmpty: true,
+				Model:        model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
+			name: "valid lro delete",
+			method: &Method{
+				Name:          "DeleteSecret",
+				InputType:     &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
+				OperationInfo: &OperationInfo{},
+				Model:         model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
+			name: "incorrect method name",
+			method: &Method{
+				Name:      "RemoveSecret",
+				InputType: &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
+				Model:     model,
+			},
+			want: nil,
+		},
+		{
+			name: "incorrect request name",
+			method: &Method{
+				Name:      "DeleteSecret",
+				InputType: &Message{Name: "RemoveSecretRequest", Fields: []*Field{resourceNameField}},
+				Model:     model,
+			},
+			want: nil,
+		},
+		{
+			name: "resource not found in ResourceByType map",
+			method: &Method{
+				Name: "DeleteSecret",
+				InputType: &Message{
+					Name: "DeleteSecretRequest",
+					Fields: []*Field{
+						{
+							Name:              "name",
+							ResourceReference: &ResourceReference{Type: "nonexistent.googleapis.com/NonExistent"},
+						},
+					},
+				},
+				Model: model, // model's ResourceByType does not contain the nonexistent resource
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardDeleteInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardDeleteInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
