@@ -1891,6 +1891,23 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 	})
 
+	t.Run("API.State.ResourceByType", func(t *testing.T) {
+		if _, ok := test.State.ResourceByType["library.googleapis.com/Shelf"]; ok {
+			t.Errorf("Resource 'library.googleapis.com/Shelf' should not be in ResourceByType map")
+		}
+
+		bookResource, ok := test.State.ResourceByType["library.googleapis.com/Book"]
+		if !ok {
+			t.Fatalf("Expected resource 'library.googleapis.com/Book' not found in ResourceByType map")
+		}
+		if bookResource.Type != "library.googleapis.com/Book" {
+			t.Errorf("bookResource.Type = %q; want %q", bookResource.Type, "library.googleapis.com/Book")
+		}
+		if bookResource.Self.Name != "Book" {
+			t.Errorf("bookResource.Self.Name = %q; want %q", bookResource.Self.Name, "Book")
+		}
+	})
+
 	t.Run("Message.Resource", func(t *testing.T) {
 		bookMessage, ok := test.State.MessageByID[".test.Book"]
 		if !ok {

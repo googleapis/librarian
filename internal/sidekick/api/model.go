@@ -188,6 +188,8 @@ type APIState struct {
 	MessageByID map[string]*Message
 	// EnumByID returns a message that is associated with the API.
 	EnumByID map[string]*Enum
+	// ResourceByType returns a resource that is associated with the API.
+	ResourceByType map[string]*Resource
 }
 
 // Service represents a service in an API.
