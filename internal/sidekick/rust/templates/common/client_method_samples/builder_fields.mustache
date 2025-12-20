@@ -16,6 +16,9 @@ limitations under the License.
 {{#AIPStandardGetInfo}}
 ///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
 {{/AIPStandardGetInfo}}
+{{#AIPStandardDeleteInfo}}
+///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
+{{/AIPStandardDeleteInfo}}
 {{^IsAIPStandard}}
 ///         /* set fields */
 {{/IsAIPStandard}}
