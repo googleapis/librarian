@@ -186,6 +186,7 @@ func TestBuildGAPIC(t *testing.T) {
 					DescriptionOverride: "Description override",
 					SpecificationFormat: "discovery",
 					Output:              "testdata/read-sidekick-files/success-read/nested",
+					Roots:               []string{"discovery", "googleapis"},
 					Rust: &config.RustCrate{
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
@@ -197,7 +198,6 @@ func TestBuildGAPIC(t *testing.T) {
 						TitleOverride:             "Google Apps Script Types",
 						PackageNameOverride:       "google-cloud-security-publicca-v1",
 						RootName:                  "conformance-root",
-						Roots:                     []string{"discovery", "googleapis"},
 						DefaultFeatures:           []string{"instances", "projects"},
 						IncludeList:               []string{"api.proto", "source_context.proto", "type.proto", "descriptor.proto"},
 						IncludedIds:               []string{".google.iam.v2.Resource"},

@@ -133,9 +133,6 @@ type RustCrate struct {
 	// RootName is the root name for the crate.
 	RootName string `yaml:"root_name,omitempty"`
 
-	// Roots is a list of root names.
-	Roots []string `yaml:"roots,omitempty"`
-
 	// DefaultFeatures is a list of default features to enable.
 	DefaultFeatures []string `yaml:"default_features,omitempty"`
 
