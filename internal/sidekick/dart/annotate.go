@@ -869,18 +869,24 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 
 func encoder(typez api.Typez, name string) string {
 	switch typez {
-	case api.FIXED64_TYPE, api.INT64_TYPE,
+	case api.INT64_TYPE,
 		api.SINT64_TYPE,
 		api.SFIXED64_TYPE,
+		api.FIXED64_TYPE,
 		api.UINT64_TYPE:
+		// All 64-bit integer types are encoded as strings. In Dart, these may be
+		// encoded as `int` or `BigInt`.
 		return fmt.Sprintf("%s.toString()", name)
-	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
-		return name
+	case api.FLOAT_TYPE,
+		api.DOUBLE_TYPE:
+		// A special encoder is needed to handle NaN and Infinity.
+		return fmt.Sprintf("encodeDouble(%s)", name)
 	case api.INT32_TYPE,
 		api.FIXED32_TYPE,
 		api.SFIXED32_TYPE,
 		api.SINT32_TYPE,
 		api.UINT32_TYPE:
+		// All 32-bit integer types are encoded as JSON numbers.
 		return name
 	case api.BOOL_TYPE:
 		return name
@@ -902,7 +908,7 @@ func keyEncoder(typez api.Typez, name string) string {
 	switch typez {
 	case api.STRING_TYPE:
 		return name
-	case api.INT32_TYPE, // Integer types that can be decoded as Dart `int`.
+	case api.INT32_TYPE,
 		api.FIXED32_TYPE,
 		api.SFIXED32_TYPE,
 		api.SINT32_TYPE,
@@ -916,7 +922,6 @@ func keyEncoder(typez api.Typez, name string) string {
 	case api.BOOL_TYPE:
 		return fmt.Sprintf("%s.toString()", name)
 	default:
-		// TODO(https://github.com/googleapis/google-cloud-dart/issues/95): Support all key types.
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
 }
