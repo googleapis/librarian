@@ -1241,8 +1241,8 @@ func TestCreateToJsonLine(t *testing.T) {
 
 		// enums
 		{
-			&api.Field{Name: "enum", JSONName: "enum", Typez: api.ENUM_TYPE, TypezID: enum.ID},
-			"enum.toJson()",
+			&api.Field{Name: "enum1", JSONName: "enum1", Typez: api.ENUM_TYPE, TypezID: enum.ID},
+			"enum1.toJson()",
 		},
 
 		// messages
