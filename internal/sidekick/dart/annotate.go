@@ -1054,7 +1054,7 @@ func (annotate *annotateModel) buildQueryLines(
 
 func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	names := make(map[string]bool)
-	enumToName := make(map[*api.EnumValue]string)
+	enumValueToName := make(map[*api.EnumValue]string)
 	useOriginalCase := false
 
 	// Attempt to use Dart-style camelCase for enum values.
@@ -1065,7 +1065,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 		if _, hasConflict := reservedNames[name]; hasConflict {
 			name = name + deconflictChar
 		}
-		enumToName[ev] = name
+		enumValueToName[ev] = name
 		if _, ok := names[name]; ok {
 			useOriginalCase = true
 			break
@@ -1079,17 +1079,17 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 			if _, hasConflict := reservedNames[name]; hasConflict {
 				name = name + deconflictChar
 			}
-			enumToName[ev] = name
+			enumValueToName[ev] = name
 		}
 	}
 
 	defaultValue := ""
 	if len(enum.Values) > 0 {
-		defaultValue = enumToName[enum.Values[0]]
+		defaultValue = enumValueToName[enum.Values[0]]
 	}
 
 	for _, ev := range enum.Values {
-		annotate.annotateEnumValue(ev, enumToName)
+		annotate.annotateEnumValue(ev, enumValueToName)
 	}
 
 	enum.Codec = &enumAnnotation{
@@ -1100,9 +1100,9 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 }
 
-func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumToName map[*api.EnumValue]string) {
+func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
-		Name:     enumToName[ev],
+		Name:     enumValueToName[ev],
 		DocLines: formatDocComments(ev.Documentation, annotate.state),
 	}
 }
