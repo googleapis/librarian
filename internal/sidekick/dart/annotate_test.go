@@ -1381,7 +1381,7 @@ func TestCreateToJsonLine(t *testing.T) {
 
 			got := createToJsonLine(test.field, model.State)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
 		})
 	}
