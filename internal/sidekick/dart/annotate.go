@@ -911,7 +911,7 @@ func encoder(typez api.Typez, name string) (string, bool) {
 // keyEncoder(api.STRING_TYPE, "e.key") => ("e.key", false)
 // keyEncoder(api.INT32_TYPE, "e.key") => ("e.key.toString()", true)
 func keyEncoder(typez api.Typez, name string) (string, bool) {
-	// JSON objects can only contain string keys so non-String types need to use specialized decoders.
+// JSON objects can only contain string keys so non-String types need to be encoded as strings.
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
 	switch typez {
