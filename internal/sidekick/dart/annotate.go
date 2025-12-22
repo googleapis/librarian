@@ -868,8 +868,9 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 // field requires encoding.
 //
 // For example:
-// encoder(api.STRING_TYPE, "a_string_field") => ("a_string_field", false)
-// encoder(api.MESSAGE_TYPE, "a_message_field") => ("a_message_field.toJson()", true)
+//
+//	encoder(api.STRING_TYPE, "a_string_field") => ("a_string_field", false)
+//	encoder(api.MESSAGE_TYPE, "a_message_field") => ("a_message_field.toJson()", true)
 func encoder(typez api.Typez, name string) (string, bool) {
 	switch typez {
 	case api.INT64_TYPE,
@@ -908,10 +909,11 @@ func encoder(typez api.Typez, name string) (string, bool) {
 // field requires encoding
 //
 // For example:
-// keyEncoder(api.STRING_TYPE, "e.key") => ("e.key", false)
-// keyEncoder(api.INT32_TYPE, "e.key") => ("e.key.toString()", true)
+//
+//	keyEncoder(api.STRING_TYPE, "e.key") => ("e.key", false)
+//	keyEncoder(api.INT32_TYPE, "e.key") => ("e.key.toString()", true)
 func keyEncoder(typez api.Typez, name string) (string, bool) {
-// JSON objects can only contain string keys so non-String types need to be encoded as strings.
+	// JSON objects can only contain string keys so non-String types need to be encoded as strings.
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
 	switch typez {
