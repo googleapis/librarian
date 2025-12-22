@@ -101,7 +101,7 @@ func GetResourceName(method *api.Method) (string, error) {
 			return msg.Name, nil
 		}
 	}
-	return "", nil
+	return "", fmt.Errorf("resource message not found in input type")
 }
 
 // GetResourceForMethod finds the `api.Resource` definition associated with a method.

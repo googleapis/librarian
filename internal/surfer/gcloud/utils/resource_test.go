@@ -226,7 +226,7 @@ func TestGetResourceName(t *testing.T) {
 				},
 			},
 			want:    "",
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "Nil InputType",
