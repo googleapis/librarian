@@ -32,37 +32,20 @@ func TestGenerateCommand(t *testing.T) {
 		lib1Output = "output1"
 		lib2       = "library-two"
 		lib2Output = "output2"
+		lib3       = "library-three"
+		lib3Output = "output3"
 	)
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+	baseTempDir := t.TempDir()
+	googleapisDir := createGoogleapisServiceConfigs(t, baseTempDir, map[string]string{
 		"google/cloud/speech/v1":       "speech_v1.yaml",
 		"grafeas/v1":                   "grafeas_v1.yaml",
 		"google/cloud/texttospeech/v1": "texttospeech_v1.yaml",
 	})
-	configPath := filepath.Join(tempDir, librarianConfigPath)
-	configContent := fmt.Sprintf(`language: testhelper
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: %s
-    output: %s
-    channels:
-      - path: google/cloud/speech/v1
-      - path: grafeas/v1
-  - name: %s
-    output: %s
-    channels:
-      - path: google/cloud/texttospeech/v1
-`, googleapisDir, lib1, lib1Output, lib2, lib2Output)
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
 
 	allLibraries := map[string]string{
 		lib1: lib1Output,
 		lib2: lib2Output,
+		lib3: lib3Output,
 	}
 
 	for _, test := range []struct {
@@ -91,8 +74,39 @@ libraries:
 			args: []string{"librarian", "generate", "--all"},
 			want: []string{lib1, lib2},
 		},
+		{
+			name: "skip generate",
+			args: []string{"librarian", "generate", lib3},
+			want: []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configContent := fmt.Sprintf(`language: testhelper
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: %s
+    output: %s
+    channels:
+      - path: google/cloud/speech/v1
+      - path: grafeas/v1
+  - name: %s
+    output: %s
+    channels:
+      - path: google/cloud/texttospeech/v1
+  - name: %s
+    output: %s
+    skip_generate: true
+    channels:
+      - path: google/cloud/speech/v1
+`, googleapisDir, lib1, lib1Output, lib2, lib2Output, lib3, lib3Output)
+			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+
 			err := Run(t.Context(), test.args...)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {

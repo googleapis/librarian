@@ -94,6 +94,10 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if err != nil {
 		return err
 	}
+	if lib == nil {
+		// Skip formatting if generation skipped.
+		return nil
+	}
 	return formatLibrary(ctx, cfg.Language, lib)
 }
 
@@ -112,6 +116,10 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		lib, err := generateLibrary(ctx, cfg, lib.Name)
 		if err != nil {
 			return err
+		}
+		if lib == nil {
+			// Skip formatting if generation skipped.
+			continue
 		}
 		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
 			return err
@@ -315,6 +323,9 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 func formatLibrary(ctx context.Context, language string, library *config.Library) error {
 	switch language {
 	case "testhelper":
+		// Access library.Name to simulate a real formatter and trigger
+		// a panic if library is nil.
+		_ = library.Name
 		return nil
 	case "rust":
 		return rust.Format(ctx, library)
