@@ -455,6 +455,23 @@ func TestBuildVeneer(t *testing.T) {
 					Output:        "testdata/build-veneer/success/lib-2",
 					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipGenerate:  true,
+				},
+			},
+		},
+		{
+			name: "no_rust_modules",
+			files: []string{
+				"testdata/build-veneer/success/lib-2/Cargo.toml",
+			},
+			want: map[string]*config.Library{
+				"google-cloud-spanner": {
+					Name:          "google-cloud-spanner",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/success/lib-2",
+					Version:       "0.0.0",
+					CopyrightYear: "2025",
+					SkipGenerate:  true,
 				},
 			},
 		},

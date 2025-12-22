@@ -529,10 +529,12 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 			Version:       cargo.Package.Version,
 			CopyrightYear: "2025",
 		}
-		if rustModules != nil {
+		if len(rustModules) > 0 {
 			veneers[name].Rust = &config.RustCrate{
 				Modules: rustModules,
 			}
+		} else {
+			veneers[name].SkipGenerate = true
 		}
 	}
 
