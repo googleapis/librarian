@@ -21,16 +21,14 @@ import "strings"
 // e.g. "google.cloud.parallelstore.v1beta" -> "beta".
 func InferTrackFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
-	if len(parts) == 0 {
-		return "ga"
-	}
+
 	version := parts[len(parts)-1]
+
 	if strings.Contains(version, "alpha") {
 		return "alpha"
 	}
 	if strings.Contains(version, "beta") {
 		return "beta"
-
 	}
 	return "ga"
 }
