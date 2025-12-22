@@ -773,8 +773,6 @@ func TestRunMigrateCommand(t *testing.T) {
 					t.Logf("cleanup: remove %s: %v", outputPath, err)
 				}
 			})
-			wantReleaseBranch := "main"
-			wantReleaseRemote := "origin"
 
 			if err := run([]string{test.path}); err != nil {
 				if test.wantErr == nil {
@@ -805,15 +803,6 @@ func TestRunMigrateCommand(t *testing.T) {
 							t.Fatalf("expected checkDocumentOverrideValue: %s got: %s", expected, got)
 						}
 					}
-				}
-				if librarianConfig.Release == nil {
-					t.Fatalf("expected Release config to be set")
-				}
-				if librarianConfig.Release.Branch != wantReleaseBranch {
-					t.Fatalf("want Release.Branch to be %s got %s", wantReleaseBranch, librarianConfig.Release.Branch)
-				}
-				if librarianConfig.Release.Remote != wantReleaseRemote {
-					t.Fatalf("want Release.Remote to be %s got %s", wantReleaseRemote, librarianConfig.Release.Remote)
 				}
 			}
 

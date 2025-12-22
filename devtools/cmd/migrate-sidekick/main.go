@@ -143,11 +143,6 @@ func run(args []string) error {
 
 	cfg := buildConfig(allLibraries, defaults)
 
-	cfg.Release = &config.Release{
-		Branch: "main",
-		Remote: "origin",
-	}
-
 	if err := yaml.Write(*outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
