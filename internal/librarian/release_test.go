@@ -218,6 +218,9 @@ func TestReleaseRust(t *testing.T) {
 			libConfg := &config.Library{}
 			err := releaseLibrary(t.Context(), cfg, libConfg)
 
+			if (err != nil) != test.wantErr {
+				t.Fatalf("releaseLibrary() error = %v, wantErr %v", err, test.wantErr)
+			}
 			if releaseCalled != test.wantReleaseCalled {
 				t.Errorf("releaseCalled = %v, want %v", releaseCalled, test.wantReleaseCalled)
 			}
