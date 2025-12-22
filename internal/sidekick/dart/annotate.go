@@ -859,7 +859,6 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 	case api.BOOL_TYPE:
 		return "decodeBoolKey"
 	default:
-		// TODO(https://github.com/googleapis/google-cloud-dart/issues/95): Support all key types.
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
 }
@@ -879,7 +878,7 @@ func encoder(typez api.Typez, name string) (string, bool) {
 		api.FIXED64_TYPE,
 		api.UINT64_TYPE:
 		// All 64-bit integer types are encoded as strings. In Dart, these may be
-		// encoded as `int` or `BigInt`.
+		// represented as `int` or `BigInt`.
 		return fmt.Sprintf("%s.toString()", name), true
 	case api.FLOAT_TYPE,
 		api.DOUBLE_TYPE:
