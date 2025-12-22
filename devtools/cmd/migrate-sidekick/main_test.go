@@ -774,7 +774,7 @@ func TestRunMigrateCommand(t *testing.T) {
 				}
 			})
 			wantReleaseBranch := "main"
-			wantReleaseRemote := "origin"
+			wantReleaseRemote := "upstream"
 
 			if err := run([]string{test.path}); err != nil {
 				if test.wantErr == nil {
