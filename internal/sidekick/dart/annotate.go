@@ -797,7 +797,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
-		ToJson:                createToJsonLine(field, state, implicitPresence),
+		ToJson:                createToJsonLine(field, state),
 		ConstDefault:          constDefault,
 	}
 }
@@ -864,7 +864,13 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 	}
 }
 
-func encoder(typez api.Typez, name string) string {
+// encoder returns a string that encodes the given field name and a bool that indicates whether the
+// field requires encoding.
+//
+// For example:
+// encoder(api.STRING_TYPE, "a_string_field") => ("a_string_field", false)
+// encoder(api.MESSAGE_TYPE, "a_message_field") => ("a_message_field.toJson()", true)
+func encoder(typez api.Typez, name string) (string, bool) {
 	switch typez {
 	case api.INT64_TYPE,
 		api.SINT64_TYPE,
@@ -873,38 +879,44 @@ func encoder(typez api.Typez, name string) string {
 		api.UINT64_TYPE:
 		// All 64-bit integer types are encoded as strings. In Dart, these may be
 		// encoded as `int` or `BigInt`.
-		return fmt.Sprintf("%s.toString()", name)
+		return fmt.Sprintf("%s.toString()", name), true
 	case api.FLOAT_TYPE,
 		api.DOUBLE_TYPE:
 		// A special encoder is needed to handle NaN and Infinity.
-		return fmt.Sprintf("encodeDouble(%s)", name)
+		return fmt.Sprintf("encodeDouble(%s)", name), true
 	case api.INT32_TYPE,
 		api.FIXED32_TYPE,
 		api.SFIXED32_TYPE,
 		api.SINT32_TYPE,
 		api.UINT32_TYPE:
 		// All 32-bit integer types are encoded as JSON numbers.
-		return name
+		return name, false
 	case api.BOOL_TYPE:
-		return name
+		return name, false
 	case api.STRING_TYPE:
-		return name
+		return name, false
 	case api.BYTES_TYPE:
-		return fmt.Sprintf("encodeBytes(%s)", name)
+		return fmt.Sprintf("encodeBytes(%s)", name), true
 	case api.MESSAGE_TYPE, api.ENUM_TYPE:
-		return fmt.Sprintf("%s.toJson()", name)
+		return fmt.Sprintf("%s.toJson()", name), true
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
 	}
 }
 
-func keyEncoder(typez api.Typez, name string) string {
+// keyEncoder returns a string that encodes the given field name and a bool that indicates whether the
+// field requires encoding
+//
+// For example:
+// keyEncoder(api.STRING_TYPE, "e.key") => ("e.key", false)
+// keyEncoder(api.INT32_TYPE, "e.key") => ("e.key.toString()", true)
+func keyEncoder(typez api.Typez, name string) (string, bool) {
 	// JSON objects can only contain string keys so non-String types need to use specialized decoders.
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
 	switch typez {
 	case api.STRING_TYPE:
-		return name
+		return name, false
 	case api.INT32_TYPE,
 		api.FIXED32_TYPE,
 		api.SFIXED32_TYPE,
@@ -915,9 +927,9 @@ func keyEncoder(typez api.Typez, name string) string {
 		api.SFIXED64_TYPE,
 		api.UINT64_TYPE,
 		api.FIXED64_TYPE:
-		return fmt.Sprintf("%s.toString()", name)
+		return fmt.Sprintf("%s.toString()", name), true
 	case api.BOOL_TYPE:
-		return fmt.Sprintf("%s.toString()", name)
+		return fmt.Sprintf("%s.toString()", name), true
 	default:
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
@@ -968,29 +980,34 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, state *api.APIState, required bool) string {
+func createToJsonLine(field *api.Field, state *api.APIState) string {
 	name := fieldName(field)
 
 	switch {
 	case field.Repeated:
-		encoder := encoder(field.Typez, "i")
-		return fmt.Sprintf(
-			"[for (final i in %s) %s]",
-			name, encoder)
-
+		if encoder, encodingRequired := encoder(field.Typez, "i"); encodingRequired {
+			return fmt.Sprintf(
+				"[for (final i in %s) %s]",
+				name, encoder)
+		}
+		return name
 	case field.Map:
 		message := state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
-		keyEncoder := keyEncoder(keyType, "e.key")
+		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := message.Fields[1].Typez
-		valueEncoder := encoder(valueType, "e.value")
+		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
-		return fmt.Sprintf(
-			"{for (final e in %s.entries) %s: %s}",
-			name, keyEncoder, valueEncoder)
+		if keyEncodingRequired || valueEncodingRequired {
+			return fmt.Sprintf(
+				"{for (final e in %s.entries) %s: %s}",
+				name, keyEncoder, valueEncoder)
+		}
+		return name
 	}
 
-	return encoder(field.Typez, name)
+	enc, _ := encoder(field.Typez, name)
+	return enc
 }
 
 // buildQueryLines builds a string or strings representing query parameters for the given field.
