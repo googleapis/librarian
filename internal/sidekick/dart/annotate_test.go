@@ -1103,25 +1103,25 @@ func TestCreateToJsonLine(t *testing.T) {
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
-			"boolList",
+			"[for (final i in boolList) i]",
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
-			"int32List",
+			"[for (final i in int32List) i]",
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
-			"stringList",
+			"[for (final i in stringList) i]",
 		},
 
 		// repeated enums
 		{
 			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.ENUM_TYPE, TypezID: enum.ID, Repeated: true},
-			"encodeList(enumList)",
+			"[for (final i in enumList) i.toJson()]",
 		},
 
 		// repeated primitives w/ optional
 		{
 			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
-			"int32ListOpt",
+			"[for (final i in int32ListOpt) i]",
 		},
 
 		// bytes, repeated bytes
@@ -1130,7 +1130,7 @@ func TestCreateToJsonLine(t *testing.T) {
 			"encodeBytes(bytes)",
 		}, {
 			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			"encodeListBytes(bytesList)",
+			"[for (final i in bytesList) encodeBytes(i)]",
 		},
 
 		// enums
@@ -1146,11 +1146,11 @@ func TestCreateToJsonLine(t *testing.T) {
 		// messages
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
-			"message!.toJson()",
+			"message.toJson()",
 		},
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
-			"message!.toJson()",
+			"message.toJson()",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
