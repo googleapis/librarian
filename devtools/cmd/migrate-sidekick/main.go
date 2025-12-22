@@ -145,7 +145,7 @@ func run(args []string) error {
 
 	cfg.Release = &config.Release{
 		Branch: "main",
-		Remote: "origin",
+		Remote: "upstream",
 	}
 
 	if err := yaml.Write(*outputPath, cfg); err != nil {
