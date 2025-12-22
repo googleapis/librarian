@@ -404,6 +404,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	mainFileName := strcase.ToSnake(model.Name)
+	if mainFileName == "" {
+		mainFileName = pkgName
+	}
 	mainFileNameWithExtension := mainFileName + ".dart"
 
 	slices.Sort(devDependencies)
@@ -853,6 +856,65 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 		api.SINT64_TYPE,
 		api.SFIXED64_TYPE:
 		return "decodeIntKey"
+	case api.UINT64_TYPE,
+		api.FIXED64_TYPE:
+		return "decodeUint64Key"
+	case api.BOOL_TYPE:
+		return "decodeBoolKey"
+	default:
+		// TODO(https://github.com/googleapis/google-cloud-dart/issues/95): Support all key types.
+		panic(fmt.Sprintf("unsupported key type: %d", typez))
+	}
+}
+
+func encoder(typez api.Typez, name string) string {
+	switch typez {
+	case api.FIXED64_TYPE, api.INT64_TYPE,
+		api.SINT64_TYPE,
+		api.SFIXED64_TYPE,
+		api.UINT64_TYPE:
+		return fmt.Sprintf("%s.toString()", name)
+	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
+		return name
+	case api.INT32_TYPE,
+		api.FIXED32_TYPE,
+		api.SFIXED32_TYPE,
+		api.SINT32_TYPE,
+		api.UINT32_TYPE:
+		return name
+	case api.BOOL_TYPE:
+		return name
+	case api.STRING_TYPE:
+		return name
+	case api.BYTES_TYPE:
+		return fmt.Sprintf("encodeBytes(%s)", name)
+	case api.MESSAGE_TYPE, api.ENUM_TYPE:
+		return fmt.Sprintf("%s.toJson()", name)
+	default:
+		panic(fmt.Sprintf("unsupported type: %d", typez))
+	}
+}
+
+func keyEncoder(typez api.Typez, name string) string {
+	// JSON objects can only contain string keys so non-String types need to use specialized decoders.
+	// Supported key types are defined here:
+	// https://protobuf.dev/programming-guides/proto3/#maps
+	switch typez {
+	case api.STRING_TYPE:
+		return name
+	case api.INT32_TYPE, // Integer types that can be decoded as Dart `int`.
+		api.FIXED32_TYPE,
+		api.SFIXED32_TYPE,
+		api.SINT32_TYPE,
+		api.UINT32_TYPE,
+		api.INT64_TYPE,
+		api.SINT64_TYPE,
+		api.SFIXED64_TYPE,
+		api.UINT64_TYPE,
+		api.FIXED64_TYPE:
+		return fmt.Sprintf("%s.toString()", name)
+	case api.BOOL_TYPE:
+		return fmt.Sprintf("%s.toString()", name)
 	default:
 		// TODO(https://github.com/googleapis/google-cloud-dart/issues/95): Support all key types.
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
@@ -906,55 +968,27 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 
 func createToJsonLine(field *api.Field, state *api.APIState, required bool) string {
 	name := fieldName(field)
-	message := state.MessageByID[field.TypezID]
-
-	isList := field.Repeated
-	isMap := message != nil && message.IsMap
-
-	bang := "!"
-	if required {
-		bang = ""
-	}
 
 	switch {
-	case isList:
-		switch field.Typez {
-		case api.BYTES_TYPE:
-			return fmt.Sprintf("encodeListBytes(%s)", name)
-		case api.MESSAGE_TYPE, api.ENUM_TYPE:
-			return fmt.Sprintf("encodeList(%s)", name)
-		default:
-			// identity
-			return name
-		}
-	case isMap:
-		valueField := message.Fields[1]
+	case field.Repeated:
+		encoder := encoder(field.Typez, "i")
+		return fmt.Sprintf(
+			"[for (final i in %s) %s]",
+			name, encoder)
 
-		switch valueField.Typez {
-		case api.BYTES_TYPE:
-			return fmt.Sprintf("encodeMapBytes(%s)", name)
-		case api.MESSAGE_TYPE, api.ENUM_TYPE:
-			return fmt.Sprintf("encodeMap(%s)", name)
-		default:
-			// identity
-			return name
-		}
-	case field.Typez == api.MESSAGE_TYPE || field.Typez == api.ENUM_TYPE:
-		return fmt.Sprintf("%s%s.toJson()", name, bang)
-	case field.Typez == api.BYTES_TYPE:
-		return fmt.Sprintf("encodeBytes(%s)", name)
-	case field.Typez == api.INT64_TYPE || field.Typez == api.SINT64_TYPE ||
-		field.Typez == api.SFIXED64_TYPE:
-		return fmt.Sprintf("encodeInt64(%s)", name)
-	case field.Typez == api.FIXED64_TYPE || field.Typez == api.UINT64_TYPE:
-		return fmt.Sprintf("encodeUint64(%s)", name)
-	case field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
-		return fmt.Sprintf("encodeDouble(%s)", name)
-	default:
+	case field.Map:
+		message := state.MessageByID[field.TypezID]
+		keyType := message.Fields[0].Typez
+		keyEncoder := keyEncoder(keyType, "e.key")
+		valueType := message.Fields[1].Typez
+		valueEncoder := encoder(valueType, "e.value")
+
+		return fmt.Sprintf(
+			"{for (final e in %s.entries) %s: %s}",
+			name, keyEncoder, valueEncoder)
 	}
 
-	// No encoding necessary.
-	return name
+	return encoder(field.Typez, name)
 }
 
 // buildQueryLines builds a string or strings representing query parameters for the given field.
@@ -1053,13 +1087,43 @@ func (annotate *annotateModel) buildQueryLines(
 }
 
 func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
+	names := make(map[string]bool)
+	enumToName := make(map[*api.EnumValue]string)
+	useOriginalCase := false
+
+	// Attempt to use Dart-style camelCase for enum values.
+	// If there is a conflict, it must mean that there are enum values that differ only by case.
+	// If there are values that differ only in case, use the original case for all enum values.
 	for _, ev := range enum.Values {
-		annotate.annotateEnumValue(ev)
+		name := strcase.ToLowerCamel(ev.Name)
+		if _, hasConflict := reservedNames[name]; hasConflict {
+			name = name + deconflictChar
+		}
+		enumToName[ev] = name
+		if _, ok := names[name]; ok {
+			useOriginalCase = true
+			break
+		}
+		names[name] = true
+	}
+
+	if useOriginalCase {
+		for _, ev := range enum.Values {
+			name := ev.Name
+			if _, hasConflict := reservedNames[name]; hasConflict {
+				name = name + deconflictChar
+			}
+			enumToName[ev] = name
+		}
 	}
 
 	defaultValue := ""
 	if len(enum.Values) > 0 {
-		defaultValue = enumValueName(enum.Values[0])
+		defaultValue = enumToName[enum.Values[0]]
+	}
+
+	for _, ev := range enum.Values {
+		annotate.annotateEnumValue(ev, enumToName)
 	}
 
 	enum.Codec = &enumAnnotation{
@@ -1070,9 +1134,9 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 }
 
-func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue) {
+func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
-		Name:     enumValueName(ev),
+		Name:     enumToName[ev],
 		DocLines: formatDocComments(ev.Documentation, annotate.state),
 	}
 }
