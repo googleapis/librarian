@@ -383,9 +383,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		titleOverride, _ := sidekick.Source["title-override"].(string)
-		roots, _ := sidekick.Source["roots"].(string)
-		lib.Roots = strToSlice(roots, false)
-
+		if roots, ok := sidekick.Source["roots"].(string); ok {
+			lib.Roots = strToSlice(roots, false)
+		}
 		includeList, _ := sidekick.Source["include-list"].(string)
 		includeIds, _ := sidekick.Source["include-ids"].(string)
 		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
