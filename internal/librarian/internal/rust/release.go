@@ -38,7 +38,7 @@ type cargoManifest struct {
 
 var errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
 
-// ReleaseLibrary bumps version for Librarian Cargo.toml files and updates librarian config version.
+// ReleaseLibrary bumps version for Cargo.toml files and updates librarian config version.
 func ReleaseLibrary(cfg *config.Config, library *config.Library) error {
 	srcPath := deriveSrcPath(library, cfg)
 	if srcPath == "" {
