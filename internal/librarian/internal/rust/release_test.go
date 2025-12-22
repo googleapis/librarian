@@ -161,7 +161,7 @@ func TestDeriveSrcPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveSrcPath(test.config.Libraries[0], test.config)
+			got := DeriveSrcPath(test.config.Libraries[0], test.config)
 			if got != test.want {
 				t.Errorf("got derived source path  %s, wanted %s", got, test.want)
 			}

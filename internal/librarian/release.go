@@ -18,8 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -69,9 +71,12 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if all && libraryName != "" {
 		return errBothLibraryAndAllFlag
 	}
-
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
+		return err
+	}
+	gitExe := cfg.Release.GetExecutablePath("git")
+	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
 	if all {
@@ -102,15 +107,23 @@ func releaseAll(ctx context.Context, cfg *config.Config) error {
 }
 
 func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library) error {
+
 	switch cfg.Language {
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		if err := rustReleaseLibrary(cfg, libConfig); err != nil {
+		path := rust.DeriveSrcPath(libConfig, cfg)
+		release, err := shouldReleaseLibrary(ctx, cfg, path)
+		if err != nil {
 			return err
 		}
-		if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
-			return err
+		if release {
+			if err := rustReleaseLibrary(cfg, libConfig); err != nil {
+				return err
+			}
+			/*if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
+				return err
+			}*/
 		}
 		return nil
 	default:
@@ -129,4 +142,19 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) (bool, error) {
+
+	gitExe := cfg.Release.GetExecutablePath("git")
+	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	if err != nil {
+		return false, err
+	}
+	numberOfChanges, err := githelpers.NumberOfChangesInDirectorySinceLastRelease(ctx, gitExe, lastTag, path)
+	if err != nil {
+		return false, err
+	}
+	slog.Info("got number of changes ", "num changes", numberOfChanges, "path", path)
+	return numberOfChanges > 0, nil
 }
