@@ -404,9 +404,6 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	mainFileName := strcase.ToSnake(model.Name)
-	if mainFileName == "" {
-		mainFileName = pkgName
-	}
 	mainFileNameWithExtension := mainFileName + ".dart"
 
 	slices.Sort(devDependencies)
@@ -1092,43 +1089,13 @@ func (annotate *annotateModel) buildQueryLines(
 }
 
 func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
-	names := make(map[string]bool)
-	enumToName := make(map[*api.EnumValue]string)
-	useOriginalCase := false
-
-	// Attempt to use Dart-style camelCase for enum values.
-	// If there is a conflict, it must mean that there are enum values that differ only by case.
-	// If there are values that differ only in case, use the original case for all enum values.
 	for _, ev := range enum.Values {
-		name := strcase.ToLowerCamel(ev.Name)
-		if _, hasConflict := reservedNames[name]; hasConflict {
-			name = name + deconflictChar
-		}
-		enumToName[ev] = name
-		if _, ok := names[name]; ok {
-			useOriginalCase = true
-			break
-		}
-		names[name] = true
-	}
-
-	if useOriginalCase {
-		for _, ev := range enum.Values {
-			name := ev.Name
-			if _, hasConflict := reservedNames[name]; hasConflict {
-				name = name + deconflictChar
-			}
-			enumToName[ev] = name
-		}
+		annotate.annotateEnumValue(ev)
 	}
 
 	defaultValue := ""
 	if len(enum.Values) > 0 {
-		defaultValue = enumToName[enum.Values[0]]
-	}
-
-	for _, ev := range enum.Values {
-		annotate.annotateEnumValue(ev, enumToName)
+		defaultValue = enumValueName(enum.Values[0])
 	}
 
 	enum.Codec = &enumAnnotation{
@@ -1139,9 +1106,9 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 }
 
-func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumToName map[*api.EnumValue]string) {
+func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue) {
 	ev.Codec = &enumValueAnnotation{
-		Name:     enumToName[ev],
+		Name:     enumValueName(ev),
 		DocLines: formatDocComments(ev.Documentation, annotate.state),
 	}
 }

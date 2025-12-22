@@ -157,6 +157,14 @@ func enumName(e *api.Enum) string {
 	return name
 }
 
+func enumValueName(e *api.EnumValue) string {
+	name := strcase.ToLowerCamel(e.Name)
+	if _, hasConflict := reservedNames[name]; hasConflict {
+		name = name + deconflictChar
+	}
+	return name
+}
+
 func httpPathFmt(pathInfo *api.PathInfo) string {
 	var builder strings.Builder
 	t := pathInfo.Bindings[0].PathTemplate
