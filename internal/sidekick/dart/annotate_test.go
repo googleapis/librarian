@@ -1305,6 +1305,12 @@ func TestCreateToJsonLine(t *testing.T) {
 			"[for (final i in enumList) i.toJson()]",
 		},
 
+		// repeated messages
+		{
+			&api.Field{Name: "messageList", JSONName: "messageList", Typez: api.MESSAGE_TYPE, TypezID: secret.ID, Repeated: true},
+			"[for (final i in messageList) i.toJson()]",
+		},
+
 		// maps
 		{
 			&api.Field{Name: "map_string_to_string", JSONName: "mapStringToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToString.ID},
