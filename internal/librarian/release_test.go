@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -157,5 +158,81 @@ func TestLibraryByName(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestReleaseRust(t *testing.T) {
+	origRustReleaseLibrary := rustReleaseLibrary
+	origLibrarianGenerateLibrary := librarianGenerateLibrary
+	defer func() {
+		rustReleaseLibrary = origRustReleaseLibrary
+		librarianGenerateLibrary = origLibrarianGenerateLibrary
+	}()
+
+	tests := []struct {
+		name               string
+		releaseError       error
+		generateError      error
+		wantReleaseCalled  bool
+		wantGenerateCalled bool
+		wantErr            bool
+	}{
+		{
+			name:               "rust success",
+			wantReleaseCalled:  true,
+			wantGenerateCalled: true,
+		},
+		{
+			name:               "generate error",
+			wantReleaseCalled:  true,
+			wantGenerateCalled: true,
+			generateError:      errors.New("generate error"),
+			wantErr:            true,
+		},
+		{
+			name:               "rust release error",
+			wantReleaseCalled:  true,
+			wantGenerateCalled: false,
+			releaseError:       errors.New("release error"),
+			wantErr:            true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var (
+				generateCalled bool
+				releaseCalled  bool
+			)
+			rustReleaseLibrary = func(cfg *config.Config, library *config.Library) error {
+				releaseCalled = true
+				return test.releaseError
+			}
+			librarianGenerateLibrary = func(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
+				generateCalled = true
+				return nil, test.generateError
+			}
+			cfg := &config.Config{
+				Language: "rust",
+			}
+			libConfg := &config.Library{}
+			err := releaseLibrary(t.Context(), cfg, libConfg)
+
+			if releaseCalled != test.wantReleaseCalled {
+				t.Errorf("releaseCalled = %v, want %v", releaseCalled, test.wantReleaseCalled)
+			}
+			if generateCalled != test.wantGenerateCalled {
+				t.Errorf("generateCalled = %v, want %v", generateCalled, test.wantGenerateCalled)
+			}
+			if test.releaseError != nil && test.releaseError != err {
+				t.Errorf("releaseError= %v, want %v", err, test.releaseError)
+
+			}
+			if test.generateError != nil && test.generateError != err {
+				t.Errorf("generateError= %v, want %v", err, test.generateError)
+
+			}
+		})
+
 	}
 }

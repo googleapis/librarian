@@ -27,6 +27,11 @@ import (
 
 var errLibraryNotFound = errors.New("library not found")
 
+var (
+	rustReleaseLibrary       = rust.ReleaseLibrary
+	librarianGenerateLibrary = generateLibrary
+)
+
 func releaseCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
@@ -70,13 +75,13 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if all {
-		err = releaseAll(cfg)
+		err = releaseAll(ctx, cfg)
 	} else {
 		libConfg, err := libraryByName(cfg, libraryName)
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(cfg, libConfg)
+		err = releaseLibrary(ctx, cfg, libConfg)
 		if err != nil {
 			return err
 		}
@@ -87,21 +92,27 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	return yaml.Write(librarianConfigPath, cfg)
 }
 
-func releaseAll(cfg *config.Config) error {
+func releaseAll(ctx context.Context, cfg *config.Config) error {
 	for _, library := range cfg.Libraries {
-		if err := releaseLibrary(cfg, library); err != nil {
+		if err := releaseLibrary(ctx, cfg, library); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func releaseLibrary(cfg *config.Config, libConfig *config.Library) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library) error {
 	switch cfg.Language {
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		return rust.ReleaseLibrary(cfg, libConfig)
+		if err := rustReleaseLibrary(cfg, libConfig); err != nil {
+			return err
+		}
+		if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
+			return err
+		}
+		return nil
 	default:
 		return fmt.Errorf("language not supported for release: %q", cfg.Language)
 	}
