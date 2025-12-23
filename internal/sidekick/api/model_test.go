@@ -386,6 +386,19 @@ func TestAIPStandardGetInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "valid get operation with missing singular name on resource",
+			method: &Method{
+				Name:      "GetSecret",
+				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
+				OutputType: &Message{
+					Resource: &Resource{Type: resourceType, Singular: ""},
+				},
+			},
+			want: &AIPStandardGetInfo{
+				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
 			name: "method name is incorrect",
 			method: &Method{
 				Name:       "Get",

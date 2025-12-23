@@ -394,10 +394,19 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 		return nil
 	}
 
-	singular := strings.ToLower(m.OutputType.Resource.Singular)
-	// The method needs to be called getfoo and the request type needs to be called getfoorequest.
-	if strings.ToLower(m.Name) != fmt.Sprintf("get%s", singular) ||
-		strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", singular) {
+	// Standard get methods for resource "Foo" should be named "GetFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "get")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "GetFooRequest".
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", maybeSingular) {
+		return nil
+	}
+
+	// If the resource has a singular name, it must match.
+	if m.OutputType.Resource.Singular != "" &&
+		strings.ToLower(m.OutputType.Resource.Singular) != maybeSingular {
 		return nil
 	}
 
