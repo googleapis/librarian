@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/githelpers"
@@ -35,7 +34,7 @@ var (
 var (
 	librarianGenerateLibrary = generateLibrary
 	rustReleaseLibrary       = rust.ReleaseLibrary
-rustDeriveSrcPath       = rust.DeriveSrcPath
+	rustDeriveSrcPath        = rust.DeriveSrcPath
 )
 
 func releaseCommand() *cli.Command {
@@ -119,10 +118,9 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		path := rustDerivceSrcPath(libConfig, cfg)
+		path := rustDeriveSrcPath(libConfig, cfg)
 		release, err := shouldReleaseLibrary(ctx, cfg, path)
 		if err != nil {
-			slog.Error("error", "error", err)
 			return err
 		}
 		if release {

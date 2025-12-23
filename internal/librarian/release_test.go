@@ -17,8 +17,6 @@ package librarian
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -34,10 +32,11 @@ func TestReleaseCommand(t *testing.T) {
 	const testlib2 = "test-lib2"
 
 	for _, test := range []struct {
-		name         string
-		args         []string
-		wantErr      error
-		wantVersions map[string]string
+		name            string
+		args            []string
+		noReleaseConfig bool
+		wantErr         error
+		wantVersions    map[string]string
 	}{
 		{
 			name:    "no args",
@@ -65,6 +64,12 @@ func TestReleaseCommand(t *testing.T) {
 				testlib2: testReleaseVersion,
 			},
 		},
+		{
+			name:            "missing release config",
+			args:            []string{"librarian", "release", "--all"},
+			noReleaseConfig: true,
+			wantErr:         errReleaseConfigEmpty,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelpers.RequireCommand(t, "git")
@@ -72,14 +77,24 @@ func TestReleaseCommand(t *testing.T) {
 			testhelpers.CloneRepository(t, remoteDir)
 			t.Chdir(remoteDir)
 			configPath := filepath.Join(remoteDir, librarianConfigPath)
-			configContent := fmt.Sprintf(`language: testhelper
-libraries:
-  - name: %s
-    version: 0.1.0
-  - name: %s
-    version: 0.1.0
-`, testlib, testlib2)
-			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+			cfg := &config.Config{
+				Language: "testhelper",
+				Libraries: []*config.Library{
+					{
+						Name:    testlib,
+						Version: "0.1.0",
+					},
+					{
+						Name:    testlib2,
+						Version: "0.1.0",
+					},
+				},
+			}
+			if !test.noReleaseConfig {
+				cfg.Release = &config.Release{}
+			}
+
+			if err := yaml.Write(configPath, cfg); err != nil {
 				t.Fatal(err)
 			}
 			if err := command.Run(t.Context(), "git", "add", "."); err != nil {
@@ -173,11 +188,12 @@ func TestLibraryByName(t *testing.T) {
 func TestReleaseRust(t *testing.T) {
 	origRustReleaseLibrary := rustReleaseLibrary
 	origLibrarianGenerateLibrary := librarianGenerateLibrary
-origRustDeriveSrcPath := rustDeriveSrcPath
+	origRustDeriveSrcPath := rustDeriveSrcPath
+
 	defer func() {
 		rustReleaseLibrary = origRustReleaseLibrary
 		librarianGenerateLibrary = origLibrarianGenerateLibrary
-		rustDerivceSrcPath = origRustDerivceSrcPath
+		rustDeriveSrcPath = origRustDeriveSrcPath
 	}()
 
 	tests := []struct {
@@ -243,7 +259,7 @@ origRustDeriveSrcPath := rustDeriveSrcPath
 				generateCalled = true
 				return nil, test.generateError
 			}
-			rustDerivceSrcPath = func(ibCfg *config.Library, cfg *config.Config) string {
+			rustDeriveSrcPath = func(ibCfg *config.Library, cfg *config.Config) string {
 				return test.srcPath
 			}
 			libConfg := &config.Library{}
