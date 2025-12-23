@@ -32,11 +32,13 @@ func TestReleaseCommand(t *testing.T) {
 	const testlib2 = "test-lib2"
 
 	for _, test := range []struct {
-		name         string
-		args         []string
-		srcPaths     map[string]string
-		wantErr      error
-		wantVersions map[string]string
+		name             string
+		args             []string
+		srcPaths         map[string]string
+		skipYamlCreation bool
+		dirtyGitStatus   bool
+		wantErr          error
+		wantVersions     map[string]string
 	}{
 		{
 			name:    "no args",
@@ -88,6 +90,16 @@ func TestReleaseCommand(t *testing.T) {
 			args:    []string{"librarian", "release", "--all"},
 			wantErr: errCouldNotDeriveSrcPath,
 		},
+		{
+			name:             "missing librarian yaml file",
+			args:             []string{"librarian", "release", "--all"},
+			skipYamlCreation: true,
+		},
+		{
+			name:           "local repo is dirty",
+			args:           []string{"librarian", "release", "--all"},
+			dirtyGitStatus: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelpers.RequireCommand(t, "git")
@@ -114,18 +126,24 @@ func TestReleaseCommand(t *testing.T) {
 					},
 				},
 			}
+			if !test.skipYamlCreation {
+				if err := yaml.Write(configPath, cfg); err != nil {
+					t.Fatal(err)
+				}
+				if !test.dirtyGitStatus {
+					if err := command.Run(t.Context(), "git", "add", "."); err != nil {
+						t.Fatal(err)
+					}
 
-			if err := yaml.Write(configPath, cfg); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-				t.Fatal(err)
-			}
-
-			if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
-				t.Fatal(err)
+					if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
+						t.Fatal(err)
+					}
+				}
 			}
 			err := Run(t.Context(), test.args...)
+			if (test.skipYamlCreation || test.dirtyGitStatus) && err != nil {
+				return
+			}
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -272,9 +290,6 @@ func TestReleaseRust(t *testing.T) {
 				generateCalled = true
 				return nil, test.generateError
 			}
-			/*rustDeriveSrcPath = func(libCfg *config.Library, cfg *config.Config) string {
-				return test.srcPath
-			}*/
 			libConfg := &config.Library{}
 			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
 
@@ -298,4 +313,13 @@ func TestReleaseRust(t *testing.T) {
 		})
 
 	}
+}
+
+func TestMissingReleaseConfig(t *testing.T) {
+	cfg := &config.Config{}
+	_, err := shouldReleaseLibrary(t.Context(), cfg, "")
+	if !errors.Is(err, errReleaseConfigEmpty) {
+		t.Fatalf("Run() error = %v, wantErr %v", err, errReleaseConfigEmpty)
+	}
+
 }

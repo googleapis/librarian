@@ -168,3 +168,10 @@ func TestDeriveSrcPath(t *testing.T) {
 		})
 	}
 }
+
+func TestNoCargoFile(t *testing.T) {
+	got := ReleaseLibrary(&config.Library{}, "")
+	if got == nil {
+		t.Errorf("Expected error reading cargo file but got %v", got)
+	}
+}
