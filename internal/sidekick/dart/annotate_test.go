@@ -52,7 +52,7 @@ func TestAnnotateModel(t *testing.T) {
 	if diff := cmp.Diff("google_cloud_test", codec.PackageName); diff != "" {
 		t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff("test", codec.MainFileName); diff != "" {
+	if diff := cmp.Diff("test.dart", codec.MainFileNameWithExtension); diff != "" {
 		t.Errorf("mismatch in Codec.MainFileName (-want, +got)\n:%s", diff)
 	}
 }
@@ -64,6 +64,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 		options map[string]string
 		verify  func(*testing.T, *annotateModel)
 	}{
+		{
+			map[string]string{"library-path-override": "src/buffers.dart"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("src/buffers.dart", codec.MainFileNameWithExtension); diff != "" {
+					t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
+				}
+			},
+		},
 		{
 			map[string]string{"package-name-override": "google-cloud-type"},
 			func(t *testing.T, am *annotateModel) {
