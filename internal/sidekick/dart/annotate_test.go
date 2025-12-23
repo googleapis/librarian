@@ -53,7 +53,7 @@ func TestAnnotateModel(t *testing.T) {
 		t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
 	}
 	if diff := cmp.Diff("test.dart", codec.MainFileNameWithExtension); diff != "" {
-t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
 	}
 }
 
