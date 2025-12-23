@@ -603,8 +603,17 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 		if !ok {
 			generateSetterSamples = "true"
 		}
-
+		// Parse documentation overrides
+		var documentationOverrides []config.RustDocumentationOverride
+		for _, do := range sidekick.DocumentationOverrides {
+			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
+				ID:      do.ID,
+				Match:   do.Match,
+				Replace: do.Replace,
+			})
+		}
 		module := &config.RustModule{
+			DocumentationOverrides: documentationOverrides,
 			GenerateSetterSamples:  strToBool(generateSetterSamples),
 			HasVeneer:              strToBool(hasVeneer),
 			IncludedIds:            strToSlice(includedIds, false),

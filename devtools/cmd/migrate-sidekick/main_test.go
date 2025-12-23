@@ -460,6 +460,48 @@ func TestBuildVeneer(t *testing.T) {
 			},
 		},
 		{
+			name: "with_overrides",
+			files: []string{
+				"testdata/build-veneer/with-overrides/lib-1/Cargo.toml",
+			},
+			want: map[string]*config.Library{
+				"google-cloud-storage-overridden": {
+					Name:          "google-cloud-storage-overridden",
+					Veneer:        true,
+					Output:        "testdata/build-veneer/with-overrides/lib-1",
+					Version:       "1.5.0",
+					CopyrightYear: "2025",
+					Rust: &config.RustCrate{
+						Modules: []*config.RustModule{
+							{
+								DocumentationOverrides: []config.RustDocumentationOverride{
+									{
+										ID:      ".google.storage.v2.Storage",
+										Match:   "The service helps to manage cloud storage.",
+										Replace: "The service helps to manage cloud storage resources.",
+									},
+								},
+								GenerateSetterSamples:  true,
+								HasVeneer:              true,
+								IncludeGrpcOnlyMethods: true,
+								NameOverrides:          ".google.storage.v2.Storage=StorageControl",
+								Output:                 "testdata/build-veneer/with-overrides/lib-1/dir-1",
+								RoutingRequired:        true,
+								ServiceConfig:          "google/storage/v2/storage_v2.yaml",
+								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
+								Source:                 "google/storage/v2",
+								TitleOverride:          "Cloud Firestore API",
+								ModuleRoots: map[string]string{
+									"discovery-root":  "",
+									"googleapis-root": "",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "no_rust_modules",
 			files: []string{
 				"testdata/build-veneer/success/lib-2/Cargo.toml",

@@ -51,6 +51,9 @@ type RustModule struct {
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
+	// DocumentationOverrides contains overrides for element documentation.
+	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
+
 	// ExtendGrpcTransport indicates whether the transport stub can be
 	// extended (in order to support streams).
 	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`

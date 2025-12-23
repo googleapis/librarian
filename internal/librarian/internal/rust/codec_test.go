@@ -295,6 +295,70 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with veneer documentation overrides",
+			library: &config.Library{
+				Name: "google-cloud-storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							DocumentationOverrides: []config.RustDocumentationOverride{
+								{
+									ID:      ".google.cloud.storage.v1.Bucket.name",
+									Match:   "bucket name",
+									Replace: "the name of the bucket",
+								},
+							},
+						},
+						{
+							DocumentationOverrides: []config.RustDocumentationOverride{
+								{
+									ID:      ".google.cloud.storage.v1.Bucket.id",
+									Match:   "bucket id",
+									Replace: "the id of the bucket",
+								},
+							},
+						},
+					},
+				},
+			},
+			channel: &config.Channel{
+				Path:          "google/cloud/storage/v1",
+				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+			},
+			googleapisDir:  "/tmp/googleapis",
+			discoveryDir:   "",
+			protobufDir:    "",
+			conformanceDir: "",
+			showcaseDir:    "",
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
+					SpecificationSource: "google/cloud/storage/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": "/tmp/googleapis",
+					"roots":           "googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "google-cloud-storage",
+				},
+				CommentOverrides: []sidekickconfig.DocumentationOverride{
+					{
+						ID:      ".google.cloud.storage.v1.Bucket.name",
+						Match:   "bucket name",
+						Replace: "the name of the bucket",
+					},
+					{
+						ID:      ".google.cloud.storage.v1.Bucket.id",
+						Match:   "bucket id",
+						Replace: "the id of the bucket",
+					},
+				},
+			},
+		},
+		{
 			name: "with pagination overrides",
 			library: &config.Library{
 				Name: "google-cloud-storage",
@@ -647,9 +711,20 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.protobufSubDir, tt.conformanceDir, tt.showcaseDir)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if tt.library.Rust != nil && tt.library.Rust.Modules != nil {
+				var commentOverrides []sidekickconfig.DocumentationOverride
+				for _, module := range tt.library.Rust.Modules {
+					got := moduleToSidekickConfig(tt.library, module, tt.googleapisDir, tt.protobufDir)
+					commentOverrides = append(commentOverrides, got.CommentOverrides...)
+				}
+				if diff := cmp.Diff(tt.want.CommentOverrides, commentOverrides); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			} else {
+				got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.protobufSubDir, tt.conformanceDir, tt.showcaseDir)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

@@ -263,6 +263,16 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		Source: source,
 		Codec:  buildModuleCodec(library, module),
 	}
+	if len(module.DocumentationOverrides) > 0 {
+		sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
+		for i, override := range module.DocumentationOverrides {
+			sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+				ID:      override.ID,
+				Match:   override.Match,
+				Replace: override.Replace,
+			}
+		}
+	}
 	return sidekickCfg
 }
 
