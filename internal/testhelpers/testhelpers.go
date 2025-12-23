@@ -131,10 +131,10 @@ func AddCrate(t *testing.T, location, name string) {
 	}
 }
 
-// SetupForPublish creates a git repository for testing publish scenarios,
+// SetupRepoWithChange creates a git repository for testing publish scenarios,
 // including initial content, a tag, and a committed change.
 // It returns the path to the remote repository.
-func SetupForPublish(t *testing.T, wantTag string) string {
+func SetupRepoWithChange(t *testing.T, wantTag string) string {
 	remoteDir := t.TempDir()
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)

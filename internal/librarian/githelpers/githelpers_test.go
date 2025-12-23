@@ -33,7 +33,7 @@ const (
 
 func TestGetLastTag(t *testing.T) {
 	const wantTag = "v1.2.3"
-	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
 	testhelpers.CloneRepository(t, remoteDir)
 	cfg := &config.Release{
 		Remote: "origin",
@@ -118,7 +118,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
 	testhelpers.CloneRepository(t, remoteDir)
 
 	got, err := FilesChangedSince(t.Context(), wantTag, release.GetExecutablePath("git"), release.IgnoredChanges)
@@ -137,7 +137,7 @@ func TestFilesBadRef(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupForPublish(t, wantTag)
+	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
 	testhelpers.CloneRepository(t, remoteDir)
 	if got, err := FilesChangedSince(t.Context(), "--invalid--", release.GetExecutablePath("git"), release.IgnoredChanges); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
@@ -224,7 +224,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 		{
 			name: "clean",
 			setup: func(t *testing.T) {
-				remoteDir := testhelpers.SetupForPublish(t, "release-1.2.3")
+				remoteDir := testhelpers.SetupRepoWithChange(t, "release-1.2.3")
 				testhelpers.CloneRepository(t, remoteDir)
 			},
 			wantErr: false,
@@ -232,7 +232,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 		{
 			name: "dirty",
 			setup: func(t *testing.T) {
-				remoteDir := testhelpers.SetupForPublish(t, "release-1.2.3")
+				remoteDir := testhelpers.SetupRepoWithChange(t, "release-1.2.3")
 				testhelpers.CloneRepository(t, remoteDir)
 				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
 					t.Fatal(err)
@@ -259,7 +259,7 @@ func TestMatchesBranchPointSuccess(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
 		t.Fatal(err)
@@ -272,7 +272,7 @@ func TestMatchesBranchDiffError(t *testing.T) {
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with an invalid branch")
@@ -285,7 +285,7 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
 	testhelpers.CloneRepository(t, remoteDir)
 	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
@@ -297,5 +297,38 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with a dirty clone")
+	}
+}
+
+func TestChangesInDirectorySinceTag(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dir  string
+		want int
+	}{
+		{
+			name: "changes exist in directory",
+			dir:  "src/storage",
+			want: 1,
+		},
+		{
+			name: "changes do not exist in directory",
+			dir:  "src/gax-internal",
+			want: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testhelpers.RequireCommand(t, "git")
+			tag := "v1.2.3"
+			remoteDir := testhelpers.SetupRepoWithChange(t, tag)
+			testhelpers.CloneRepository(t, remoteDir)
+			got, err := ChangesInDirectorySinceTag(t.Context(), "git", tag, test.dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("ChangesInDirectorySinceTag() = %d, want %d", got, test.want)
+			}
+		})
 	}
 }

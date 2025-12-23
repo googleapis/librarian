@@ -42,7 +42,7 @@ func TestPublishSuccess(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
@@ -66,7 +66,7 @@ func TestPublishWithNewCrate(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-with-new-crate")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-with-new-crate")
 	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
@@ -103,7 +103,7 @@ func TestPublishWithRootsPem(t *testing.T) {
 		},
 		RootsPem: rootsPem,
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-with-roots-pem")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-with-roots-pem")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err != nil {
 		t.Fatal(err)
@@ -127,7 +127,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-with-local-changes-error")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-with-local-changes-error")
 	testhelpers.CloneRepository(t, remoteDir)
 	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
@@ -163,7 +163,7 @@ func TestPublishLastTagError(t *testing.T) {
 			"cargo": echo,
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), &config, true, false); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
@@ -187,7 +187,7 @@ func TestPublishBadManifest(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
@@ -215,7 +215,7 @@ func TestPublishGetPlanError(t *testing.T) {
 			"cargo": "git",
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan generation")
@@ -239,7 +239,7 @@ func TestPublishPlanMismatchError(t *testing.T) {
 			},
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelpers.CloneRepository(t, remoteDir)
 	if err := Publish(t.Context(), config, true, false); err == nil {
 		t.Fatalf("expected an error during plan comparison")
@@ -277,7 +277,7 @@ fi
 			"cargo": cargoScript,
 		},
 	}
-	remoteDir := testhelpers.SetupForPublish(t, "release-2001-02-03")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelpers.CloneRepository(t, remoteDir)
 
 	// This should fail because semver-checks fails.

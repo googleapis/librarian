@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
@@ -116,4 +117,17 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, string(output))
 	}
 	return nil
+}
+
+// ChangesInDirectorySinceTag checks if there have been any changes in directory since tag.
+func ChangesInDirectorySinceTag(ctx context.Context, gitExe, tag, dir string) (int, error) {
+	delta := fmt.Sprintf("%s...HEAD", tag)
+	cmd := exec.CommandContext(ctx, gitExe, "rev-list", "--count", delta, "--", dir)
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, err
+	}
+	outputSplit := strings.Split(string(output), "\n")
+	return strconv.Atoi(outputSplit[0])
 }
