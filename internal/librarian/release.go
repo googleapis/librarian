@@ -29,7 +29,7 @@ var errLibraryNotFound = errors.New("library not found")
 
 var (
 	rustReleaseLibrary       = rust.ReleaseLibrary
-	librarianGenerateLibrary = generateLibrary
+	librarianGenerateLibrary = runGenerate
 )
 
 func releaseCommand() *cli.Command {
@@ -109,7 +109,7 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if err := rustReleaseLibrary(cfg, libConfig); err != nil {
 			return err
 		}
-		if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
+		if err := librarianGenerateLibrary(ctx, false, libConfig.Name); err != nil {
 			return err
 		}
 		return nil
