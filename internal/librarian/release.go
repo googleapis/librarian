@@ -151,7 +151,7 @@ func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) 
 	if err != nil {
 		return false, err
 	}
-	numberOfChanges, err := githelpers.NumberOfChangesInDirectorySinceLastRelease(ctx, gitExe, lastTag, path)
+	numberOfChanges, err := githelpers.ChangesInDirectorySinceTag(ctx, gitExe, lastTag, path)
 	if err != nil {
 		return false, err
 	}
