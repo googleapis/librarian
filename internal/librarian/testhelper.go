@@ -31,6 +31,10 @@ func testReleaseLibrary(lib *config.Library) error {
 	return nil
 }
 
+func testDeriveSrcPath(library *config.Library) string {
+	return library.Output
+}
+
 func testGenerate(library *config.Library) error {
 	if err := os.MkdirAll(library.Output, 0755); err != nil {
 		return err

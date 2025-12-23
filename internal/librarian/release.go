@@ -27,14 +27,14 @@ import (
 )
 
 var (
-	errLibraryNotFound    = errors.New("library not found")
-	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
+	errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
+	errLibraryNotFound       = errors.New("library not found")
+	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
 )
 
 var (
 	librarianGenerateLibrary = generateLibrary
 	rustReleaseLibrary       = rust.ReleaseLibrary
-	rustDeriveSrcPath        = rust.DeriveSrcPath
 )
 
 func releaseCommand() *cli.Command {
@@ -78,9 +78,6 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Release == nil {
-		return errReleaseConfigEmpty
-	}
 	gitExe := cfg.Release.GetExecutablePath("git")
 	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
@@ -93,7 +90,11 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(ctx, cfg, libConfg)
+		srcPath, err := getSrcPathForLanguage(cfg, libConfg)
+		if err != nil {
+			return err
+		}
+		err = releaseLibrary(ctx, cfg, libConfg, srcPath)
 		if err != nil {
 			return err
 		}
@@ -106,30 +107,47 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 
 func releaseAll(ctx context.Context, cfg *config.Config) error {
 	for _, library := range cfg.Libraries {
-		if err := releaseLibrary(ctx, cfg, library); err != nil {
+		srcPath, err := getSrcPathForLanguage(cfg, library)
+		if err != nil {
 			return err
+		}
+		release, err := shouldReleaseLibrary(ctx, cfg, srcPath)
+		if err != nil {
+			return err
+		}
+		if release {
+			if err := releaseLibrary(ctx, cfg, library, srcPath); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library) error {
+func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
+	srcPath := ""
+	switch cfg.Language {
+	case "testhelper":
+		srcPath = testDeriveSrcPath(libConfig)
+	case "rust":
+		srcPath = rust.DeriveSrcPath(libConfig, cfg)
+	}
+	if srcPath == "" {
+		return "", errCouldNotDeriveSrcPath
+	}
+	return srcPath, nil
+}
+
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath string) error {
 	switch cfg.Language {
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		path := rustDeriveSrcPath(libConfig, cfg)
-		release, err := shouldReleaseLibrary(ctx, cfg, path)
-		if err != nil {
+		if err := rustReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
-		if release {
-			if err := rustReleaseLibrary(libConfig, path); err != nil {
-				return err
-			}
-			if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
-				return err
-			}
+		if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
+			return err
 		}
 		return nil
 	default:

@@ -32,11 +32,11 @@ func TestReleaseCommand(t *testing.T) {
 	const testlib2 = "test-lib2"
 
 	for _, test := range []struct {
-		name            string
-		args            []string
-		noReleaseConfig bool
-		wantErr         error
-		wantVersions    map[string]string
+		name         string
+		args         []string
+		srcPaths     map[string]string
+		wantErr      error
+		wantVersions map[string]string
 	}{
 		{
 			name:    "no args",
@@ -51,47 +51,68 @@ func TestReleaseCommand(t *testing.T) {
 		{
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
+			srcPaths: map[string]string{
+				testlib: "src/storage",
+			},
 			wantVersions: map[string]string{
 				testlib:  testReleaseVersion,
 				testlib2: "0.1.0",
 			},
 		},
 		{
-			name: "all flag",
+			name: "all flag all have changes",
 			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/storage",
+			},
 			wantVersions: map[string]string{
 				testlib:  testReleaseVersion,
 				testlib2: testReleaseVersion,
 			},
 		},
 		{
-			name:            "missing release config",
-			args:            []string{"librarian", "release", "--all"},
-			noReleaseConfig: true,
-			wantErr:         errReleaseConfigEmpty,
+			name: "all flag 1 has changes",
+			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/gax-internal",
+			},
+			wantVersions: map[string]string{
+				testlib:  testReleaseVersion,
+				testlib2: "0.1.0",
+			},
+		},
+		{
+			name:    "no src path provided",
+			args:    []string{"librarian", "release", "--all"},
+			wantErr: errCouldNotDeriveSrcPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelpers.RequireCommand(t, "git")
 			remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
 			testhelpers.CloneRepository(t, remoteDir)
-			t.Chdir(remoteDir)
-			configPath := filepath.Join(remoteDir, librarianConfigPath)
+
+			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
 				Language: "testhelper",
+				Release: &config.Release{
+					Remote: "origin",
+					Branch: "main",
+				},
 				Libraries: []*config.Library{
 					{
 						Name:    testlib,
 						Version: "0.1.0",
+						Output:  test.srcPaths[testlib],
 					},
 					{
 						Name:    testlib2,
 						Version: "0.1.0",
+						Output:  test.srcPaths[testlib2],
 					},
 				},
-			}
-			if !test.noReleaseConfig {
-				cfg.Release = &config.Release{}
 			}
 
 			if err := yaml.Write(configPath, cfg); err != nil {
@@ -188,12 +209,10 @@ func TestLibraryByName(t *testing.T) {
 func TestReleaseRust(t *testing.T) {
 	origRustReleaseLibrary := rustReleaseLibrary
 	origLibrarianGenerateLibrary := librarianGenerateLibrary
-	origRustDeriveSrcPath := rustDeriveSrcPath
 
 	defer func() {
 		rustReleaseLibrary = origRustReleaseLibrary
 		librarianGenerateLibrary = origLibrarianGenerateLibrary
-		rustDeriveSrcPath = origRustDeriveSrcPath
 	}()
 
 	tests := []struct {
@@ -210,12 +229,6 @@ func TestReleaseRust(t *testing.T) {
 			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: true,
-		},
-		{
-			name:               "library skipped",
-			srcPath:            "src/gax-internal",
-			wantReleaseCalled:  false,
-			wantGenerateCalled: false,
 		},
 		{
 			name:               "generate error",
@@ -259,11 +272,11 @@ func TestReleaseRust(t *testing.T) {
 				generateCalled = true
 				return nil, test.generateError
 			}
-			rustDeriveSrcPath = func(ibCfg *config.Library, cfg *config.Config) string {
+			/*rustDeriveSrcPath = func(libCfg *config.Library, cfg *config.Config) string {
 				return test.srcPath
-			}
+			}*/
 			libConfg := &config.Library{}
-			err := releaseLibrary(t.Context(), cfg, libConfg)
+			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
 
 			if (err != nil) != test.wantErr {
 				t.Fatalf("releaseLibrary() error = %v, wantErr %v", err, test.wantErr)
