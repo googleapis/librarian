@@ -120,7 +120,7 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 }
 
 // NumberOfChangesInDirectorySinceLastRelease checks if there have been any changes in directory since lastTag.
-func NumberOfChangesInDirectorySinceLastRelease(ctx context.Context, gitExe, lastTag, dir string) (int, error) {
+func ChangesInDirectorySinceTag(ctx context.Context, gitExe, lastTag, dir string) (int, error) {
 	delta := fmt.Sprintf("%s...HEAD", lastTag)
 	cmd := exec.CommandContext(ctx, gitExe, "rev-list", "--count", delta, "--", dir)
 	cmd.Dir = "."

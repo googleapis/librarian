@@ -27,11 +27,15 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var errLibraryNotFound = errors.New("library not found")
+var (
+	errLibraryNotFound    = errors.New("library not found")
+	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
+)
 
 var (
-	rustReleaseLibrary       = rust.ReleaseLibrary
 	librarianGenerateLibrary = generateLibrary
+	rustReleaseLibrary       = rust.ReleaseLibrary
+	rustDerivceSrcPath       = rust.DeriveSrcPath
 )
 
 func releaseCommand() *cli.Command {
@@ -112,18 +116,19 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		path := rust.DeriveSrcPath(libConfig, cfg)
+		path := rustDerivceSrcPath(libConfig, cfg)
 		release, err := shouldReleaseLibrary(ctx, cfg, path)
 		if err != nil {
+			slog.Error("error", "error", err)
 			return err
 		}
 		if release {
 			if err := rustReleaseLibrary(cfg, libConfig); err != nil {
 				return err
 			}
-			/*if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
+			if _, err := librarianGenerateLibrary(ctx, cfg, libConfig.Name); err != nil {
 				return err
-			}*/
+			}
 		}
 		return nil
 	default:
@@ -145,7 +150,9 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 }
 
 func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) (bool, error) {
-
+	if cfg.Release == nil {
+		return false, errReleaseConfigEmpty
+	}
 	gitExe := cfg.Release.GetExecutablePath("git")
 	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
@@ -155,6 +162,6 @@ func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) 
 	if err != nil {
 		return false, err
 	}
-	slog.Info("got number of changes ", "num changes", numberOfChanges, "path", path)
+
 	return numberOfChanges > 0, nil
 }

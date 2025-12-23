@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -65,10 +67,11 @@ func TestReleaseCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			t.Chdir(tempDir)
-
-			configPath := filepath.Join(tempDir, librarianConfigPath)
+			testhelpers.RequireCommand(t, "git")
+			remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+			testhelpers.CloneRepository(t, remoteDir)
+			t.Chdir(remoteDir)
+			configPath := filepath.Join(remoteDir, librarianConfigPath)
 			configContent := fmt.Sprintf(`language: testhelper
 libraries:
   - name: %s
@@ -79,7 +82,13 @@ libraries:
 			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
+			if err := command.Run(t.Context(), "git", "add", "."); err != nil {
+				t.Fatal(err)
+			}
 
+			if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
+				t.Fatal(err)
+			}
 			err := Run(t.Context(), test.args...)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
@@ -164,13 +173,16 @@ func TestLibraryByName(t *testing.T) {
 func TestReleaseRust(t *testing.T) {
 	origRustReleaseLibrary := rustReleaseLibrary
 	origLibrarianGenerateLibrary := librarianGenerateLibrary
+	origRustDerivceSrcPath := rustDerivceSrcPath
 	defer func() {
 		rustReleaseLibrary = origRustReleaseLibrary
 		librarianGenerateLibrary = origLibrarianGenerateLibrary
+		rustDerivceSrcPath = origRustDerivceSrcPath
 	}()
 
 	tests := []struct {
 		name               string
+		srcPath            string
 		releaseError       error
 		generateError      error
 		wantReleaseCalled  bool
@@ -178,12 +190,20 @@ func TestReleaseRust(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name:               "rust success",
+			name:               "library released",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: true,
 		},
 		{
+			name:               "library skipped",
+			srcPath:            "src/gax-internal",
+			wantReleaseCalled:  false,
+			wantGenerateCalled: false,
+		},
+		{
 			name:               "generate error",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: true,
 			generateError:      errors.New("generate error"),
@@ -191,10 +211,21 @@ func TestReleaseRust(t *testing.T) {
 		},
 		{
 			name:               "rust release error",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: false,
 			releaseError:       errors.New("release error"),
 			wantErr:            true,
+		},
+	}
+	testhelpers.RequireCommand(t, "git")
+	remoteDir := testhelpers.SetupForPublish(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	cfg := &config.Config{
+		Language: "rust",
+		Release: &config.Release{
+			Remote: "origin",
+			Branch: "main",
 		},
 	}
 
@@ -212,8 +243,8 @@ func TestReleaseRust(t *testing.T) {
 				generateCalled = true
 				return nil, test.generateError
 			}
-			cfg := &config.Config{
-				Language: "rust",
+			rustDerivceSrcPath = func(ibCfg *config.Library, cfg *config.Config) string {
+				return test.srcPath
 			}
 			libConfg := &config.Library{}
 			err := releaseLibrary(t.Context(), cfg, libConfg)
