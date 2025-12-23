@@ -35,7 +35,7 @@ var (
 var (
 	librarianGenerateLibrary = generateLibrary
 	rustReleaseLibrary       = rust.ReleaseLibrary
-	rustDerivceSrcPath       = rust.DeriveSrcPath
+rustDeriveSrcPath       = rust.DeriveSrcPath
 )
 
 func releaseCommand() *cli.Command {
