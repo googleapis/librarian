@@ -173,7 +173,7 @@ func TestLibraryByName(t *testing.T) {
 func TestReleaseRust(t *testing.T) {
 	origRustReleaseLibrary := rustReleaseLibrary
 	origLibrarianGenerateLibrary := librarianGenerateLibrary
-	origRustDerivceSrcPath := rustDerivceSrcPath
+origRustDeriveSrcPath := rustDeriveSrcPath
 	defer func() {
 		rustReleaseLibrary = origRustReleaseLibrary
 		librarianGenerateLibrary = origLibrarianGenerateLibrary
