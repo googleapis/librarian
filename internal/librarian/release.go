@@ -79,6 +79,9 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	if cfg.Release == nil {
+		return errReleaseConfigEmpty
+	}
 	gitExe := cfg.Release.GetExecutablePath("git")
 	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
