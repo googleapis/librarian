@@ -850,7 +850,7 @@ func TestRunMigrateCommand(t *testing.T) {
 						}
 						gotMatch := librarianConfig.Libraries[0].Rust.DocumentationOverrides[index].Match
 						if expected := test.checkDocumentOverrideMatch[index]; gotMatch != expected {
-							t.Fatalf("expected checkDocumentOverrideValue: %s got: %s", expected, gotMatch)
+							t.Fatalf("expected checkDocumentOverrideMatch: %s got: %s", expected, gotMatch)
 						}
 
 					}
