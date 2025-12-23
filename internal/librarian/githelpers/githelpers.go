@@ -125,8 +125,8 @@ func ChangesInDirectorySinceTag(ctx context.Context, gitExe, tag, dir string) (i
 	cmd := exec.CommandContext(ctx, gitExe, "rev-list", "--count", delta, "--", dir)
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
-    if err != nil {
-        return 0, fmt.Errorf("running %s failed: %w\noutput: %s", cmd.String(), err, string(output))
-    }
-    return strconv.Atoi(strings.TrimSpace(string(output)))
+	if err != nil {
+		return 0, fmt.Errorf("running %s failed: %w\noutput: %s", cmd.String(), err, string(output))
+	}
+	return strconv.Atoi(strings.TrimSpace(string(output)))
 }
