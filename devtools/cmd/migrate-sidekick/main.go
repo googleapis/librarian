@@ -807,9 +807,9 @@ func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
 			lookupKey := currentID + "|" + currentVal
 
 			if data, ok := lookup[lookupKey]; ok {
-				if strings.Contains(data.Match, "\n") {
+				// brittle: if replace has new lines, match has new line at start
+				if strings.Contains(data.Replace, "\n") {
 					newLines = append(newLines, fmt.Sprintf("%smatch: |", indent))
-					newLines = append(newLines, "") // Leading newline
 					newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Match))
 				} else {
 					newLines = append(newLines, line) // Keep original if no newline

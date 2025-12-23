@@ -789,15 +789,17 @@ func TestBuildConfig(t *testing.T) {
 
 func TestRunMigrateCommand(t *testing.T) {
 	for _, test := range []struct {
-		name                        string
-		path                        string
-		wantErr                     error
-		checkDocumentOverrideValues []string
+		name                         string
+		path                         string
+		wantErr                      error
+		checkDocumentOverrideReplace []string
+		checkDocumentOverrideMatch   []string
 	}{
 		{
-			name:                        "success",
-			path:                        "testdata/run/success",
-			checkDocumentOverrideValues: []string{"example replace", "\nAncestry subtrees must be in one of the following formats:\n"},
+			name:                         "success",
+			path:                         "testdata/run/success",
+			checkDocumentOverrideMatch:   []string{"example match", "Ancestry subtrees must be in one of the following formats:\n"},
+			checkDocumentOverrideReplace: []string{"example replace", "\nAncestry subtrees must be in one of the following formats:\n"},
 		},
 		{
 			name:    "tidy_command_fails",
@@ -840,12 +842,17 @@ func TestRunMigrateCommand(t *testing.T) {
 				if len(librarianConfig.Libraries) != 1 {
 					t.Fatalf("librarian yaml does not contain library")
 				}
-				if len(test.checkDocumentOverrideValues) > 0 {
-					for index, expected := range test.checkDocumentOverrideValues {
+				if len(test.checkDocumentOverrideReplace) > 0 {
+					for index, expected := range test.checkDocumentOverrideReplace {
 						got := librarianConfig.Libraries[0].Rust.DocumentationOverrides[index].Replace
 						if got != expected {
 							t.Fatalf("expected checkDocumentOverrideValue: %s got: %s", expected, got)
 						}
+						gotMatch := librarianConfig.Libraries[0].Rust.DocumentationOverrides[index].Match
+						if expected := test.checkDocumentOverrideMatch[index]; gotMatch != expected {
+							t.Fatalf("expected checkDocumentOverrideMatch: %s got: %s", expected, gotMatch)
+						}
+
 					}
 				}
 				if librarianConfig.Release == nil {

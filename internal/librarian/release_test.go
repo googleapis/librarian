@@ -17,13 +17,13 @@ package librarian
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -32,10 +32,13 @@ func TestReleaseCommand(t *testing.T) {
 	const testlib2 = "test-lib2"
 
 	for _, test := range []struct {
-		name         string
-		args         []string
-		wantErr      error
-		wantVersions map[string]string
+		name             string
+		args             []string
+		srcPaths         map[string]string
+		skipYamlCreation bool
+		dirtyGitStatus   bool
+		wantErr          error
+		wantVersions     map[string]string
 	}{
 		{
 			name:    "no args",
@@ -50,37 +53,97 @@ func TestReleaseCommand(t *testing.T) {
 		{
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
+			srcPaths: map[string]string{
+				testlib: "src/storage",
+			},
 			wantVersions: map[string]string{
 				testlib:  testReleaseVersion,
 				testlib2: "0.1.0",
 			},
 		},
 		{
-			name: "all flag",
+			name: "all flag all have changes",
 			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/storage",
+			},
 			wantVersions: map[string]string{
 				testlib:  testReleaseVersion,
 				testlib2: testReleaseVersion,
 			},
 		},
+		{
+			name: "all flag 1 has changes",
+			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/gax-internal",
+			},
+			wantVersions: map[string]string{
+				testlib:  testReleaseVersion,
+				testlib2: "0.1.0",
+			},
+		},
+		{
+			name:    "no src path provided",
+			args:    []string{"librarian", "release", "--all"},
+			wantErr: errCouldNotDeriveSrcPath,
+		},
+		{
+			name:             "missing librarian yaml file",
+			args:             []string{"librarian", "release", "--all"},
+			skipYamlCreation: true,
+		},
+		{
+			name:           "local repo is dirty",
+			args:           []string{"librarian", "release", "--all"},
+			dirtyGitStatus: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			t.Chdir(tempDir)
+			testhelpers.RequireCommand(t, "git")
+			remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
+			testhelpers.CloneRepository(t, remoteDir)
 
-			configPath := filepath.Join(tempDir, librarianConfigPath)
-			configContent := fmt.Sprintf(`language: testhelper
-libraries:
-  - name: %s
-    version: 0.1.0
-  - name: %s
-    version: 0.1.0
-`, testlib, testlib2)
-			if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-				t.Fatal(err)
+			configPath := filepath.Join("./", librarianConfigPath)
+			cfg := &config.Config{
+				Language: "testhelper",
+				Release: &config.Release{
+					Remote: "origin",
+					Branch: "main",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    testlib,
+						Version: "0.1.0",
+						Output:  test.srcPaths[testlib],
+					},
+					{
+						Name:    testlib2,
+						Version: "0.1.0",
+						Output:  test.srcPaths[testlib2],
+					},
+				},
 			}
+			if !test.skipYamlCreation {
+				if err := yaml.Write(configPath, cfg); err != nil {
+					t.Fatal(err)
+				}
+				if !test.dirtyGitStatus {
+					if err := command.Run(t.Context(), "git", "add", "."); err != nil {
+						t.Fatal(err)
+					}
 
+					if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
 			err := Run(t.Context(), test.args...)
+			if (test.skipYamlCreation || test.dirtyGitStatus) && err != nil {
+				return
+			}
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -164,6 +227,7 @@ func TestLibraryByName(t *testing.T) {
 func TestReleaseRust(t *testing.T) {
 	origRustReleaseLibrary := rustReleaseLibrary
 	origLibrarianGenerateLibrary := librarianGenerateLibrary
+
 	defer func() {
 		rustReleaseLibrary = origRustReleaseLibrary
 		librarianGenerateLibrary = origLibrarianGenerateLibrary
@@ -171,6 +235,7 @@ func TestReleaseRust(t *testing.T) {
 
 	tests := []struct {
 		name               string
+		srcPath            string
 		releaseError       error
 		generateError      error
 		wantReleaseCalled  bool
@@ -178,12 +243,14 @@ func TestReleaseRust(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name:               "rust success",
+			name:               "library released",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: true,
 		},
 		{
 			name:               "generate error",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: true,
 			generateError:      errors.New("generate error"),
@@ -191,10 +258,21 @@ func TestReleaseRust(t *testing.T) {
 		},
 		{
 			name:               "rust release error",
+			srcPath:            "src/storage",
 			wantReleaseCalled:  true,
 			wantGenerateCalled: false,
 			releaseError:       errors.New("release error"),
 			wantErr:            true,
+		},
+	}
+	testhelpers.RequireCommand(t, "git")
+	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
+	testhelpers.CloneRepository(t, remoteDir)
+	cfg := &config.Config{
+		Language: "rust",
+		Release: &config.Release{
+			Remote: "origin",
+			Branch: "main",
 		},
 	}
 
@@ -204,7 +282,7 @@ func TestReleaseRust(t *testing.T) {
 				generateCalled bool
 				releaseCalled  bool
 			)
-			rustReleaseLibrary = func(cfg *config.Config, library *config.Library) error {
+			rustReleaseLibrary = func(library *config.Library, srcPath string) error {
 				releaseCalled = true
 				return test.releaseError
 			}
@@ -212,11 +290,8 @@ func TestReleaseRust(t *testing.T) {
 				generateCalled = true
 				return test.generateError
 			}
-			cfg := &config.Config{
-				Language: "rust",
-			}
 			libConfg := &config.Library{}
-			err := releaseLibrary(t.Context(), cfg, libConfg)
+			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
 
 			if (err != nil) != test.wantErr {
 				t.Fatalf("releaseLibrary() error = %v, wantErr %v", err, test.wantErr)
@@ -238,4 +313,13 @@ func TestReleaseRust(t *testing.T) {
 		})
 
 	}
+}
+
+func TestMissingReleaseConfig(t *testing.T) {
+	cfg := &config.Config{}
+	_, err := shouldReleaseLibrary(t.Context(), cfg, "")
+	if !errors.Is(err, errReleaseConfigEmpty) {
+		t.Fatalf("Run() error = %v, wantErr %v", err, errReleaseConfigEmpty)
+	}
+
 }

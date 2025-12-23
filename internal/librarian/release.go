@@ -20,12 +20,17 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/githelpers"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
-var errLibraryNotFound = errors.New("library not found")
+var (
+	errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
+	errLibraryNotFound       = errors.New("library not found")
+	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
+)
 
 var (
 	rustReleaseLibrary       = rust.ReleaseLibrary
@@ -69,11 +74,15 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if all && libraryName != "" {
 		return errBothLibraryAndAllFlag
 	}
-
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return err
 	}
+	gitExe := cfg.Release.GetExecutablePath("git")
+	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
+		return err
+	}
+
 	if all {
 		err = releaseAll(ctx, cfg)
 	} else {
@@ -81,7 +90,11 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(ctx, cfg, libConfg)
+		srcPath, err := getSrcPathForLanguage(cfg, libConfg)
+		if err != nil {
+			return err
+		}
+		err = releaseLibrary(ctx, cfg, libConfg, srcPath)
 		if err != nil {
 			return err
 		}
@@ -94,19 +107,43 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 
 func releaseAll(ctx context.Context, cfg *config.Config) error {
 	for _, library := range cfg.Libraries {
-		if err := releaseLibrary(ctx, cfg, library); err != nil {
+		srcPath, err := getSrcPathForLanguage(cfg, library)
+		if err != nil {
 			return err
+		}
+		release, err := shouldReleaseLibrary(ctx, cfg, srcPath)
+		if err != nil {
+			return err
+		}
+		if release {
+			if err := releaseLibrary(ctx, cfg, library, srcPath); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library) error {
+func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
+	srcPath := ""
+	switch cfg.Language {
+	case "testhelper":
+		srcPath = testDeriveSrcPath(libConfig)
+	case "rust":
+		srcPath = rust.DeriveSrcPath(libConfig, cfg)
+	}
+	if srcPath == "" {
+		return "", errCouldNotDeriveSrcPath
+	}
+	return srcPath, nil
+}
+
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath string) error {
 	switch cfg.Language {
 	case "testhelper":
 		return testReleaseLibrary(libConfig)
 	case "rust":
-		if err := rustReleaseLibrary(cfg, libConfig); err != nil {
+		if err := rustReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
 		if err := librarianGenerateLibrary(ctx, false, libConfig.Name); err != nil {
@@ -129,4 +166,23 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+// shouldReleaseLibrary looks up last release tag and returns true if any commits have been made
+// in the provided path since then.
+func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) (bool, error) {
+	if cfg.Release == nil {
+		return false, errReleaseConfigEmpty
+	}
+	gitExe := cfg.Release.GetExecutablePath("git")
+	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	if err != nil {
+		return false, err
+	}
+	numberOfChanges, err := githelpers.ChangesInDirectorySinceTag(ctx, gitExe, lastTag, path)
+	if err != nil {
+		return false, err
+	}
+
+	return numberOfChanges > 0, nil
 }

@@ -40,7 +40,7 @@ const (
 
 func TestReleaseOne(t *testing.T) {
 	cfg := setupRelease(t)
-	err := ReleaseLibrary(cfg, cfg.Libraries[0])
+	err := ReleaseLibrary(cfg.Libraries[0], storageDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestDeriveSrcPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveSrcPath(test.config.Libraries[0], test.config)
+			got := DeriveSrcPath(test.config.Libraries[0], test.config)
 			if got != test.want {
 				t.Errorf("got derived source path  %s, wanted %s", got, test.want)
 			}
@@ -169,16 +169,9 @@ func TestDeriveSrcPath(t *testing.T) {
 	}
 }
 
-func TestInvalidDerivedSource(t *testing.T) {
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{
-				Name: storageName,
-			},
-		},
-	}
-	err := ReleaseLibrary(cfg, cfg.Libraries[0])
-	if err != errCouldNotDeriveSrcPath {
-		t.Errorf("wanted error %v, got %v", errCouldNotDeriveSrcPath, err)
+func TestNoCargoFile(t *testing.T) {
+	got := ReleaseLibrary(&config.Library{}, "")
+	if got == nil {
+		t.Errorf("Expected error reading cargo file but got %v", got)
 	}
 }
