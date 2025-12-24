@@ -78,7 +78,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	// in the format "{resource}_id" (e.g., "instance_id").
 	if strings.HasPrefix(method.Name, "Create") {
 		resourceName, err := GetResourceName(method)
-		if err == nil && resourceName != "" && field.Name == strcase.ToSnake(resourceName)+"_id" {
+		if err == nil && field.Name == strcase.ToSnake(resourceName)+"_id" {
 			return true
 		}
 	}
