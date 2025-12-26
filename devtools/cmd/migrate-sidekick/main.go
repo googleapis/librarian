@@ -472,19 +472,17 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if sidekick.Discovery != nil {
-			if lib.Rust == nil {
-				lib.Rust = &config.RustCrate{}
-			}
-			discovery := &config.RustDiscovery{
-				OperationID: sidekick.Discovery.OperationID,
-			}
-			for _, p := range sidekick.Discovery.Pollers {
-				discovery.Pollers = append(discovery.Pollers, config.RustPoller{
+			pollers := make([]config.RustPoller, len(sidekick.Discovery.Pollers))
+			for i, p := range sidekick.Discovery.Pollers {
+				pollers[i] = config.RustPoller{
 					Prefix:   p.Prefix,
 					MethodID: p.MethodID,
-				})
+				}
 			}
-			rustCrate.Discovery = discovery
+			rustCrate.Discovery = &config.RustDiscovery{
+				OperationID: sidekick.Discovery.OperationID,
+				Pollers:     pollers,
+			}
 		}
 
 		if !isEmptyRustCrate(rustCrate) {
