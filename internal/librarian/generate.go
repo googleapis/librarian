@@ -32,7 +32,12 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-const googleapisRepo = "github.com/googleapis/googleapis"
+const (
+	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	googleapisRepo = "github.com/googleapis/googleapis"
+	protobufRepo   = "github.com/protocolbuffers/protobuf"
+	showcaseRepo   = "github.com/googleapis/gapic-showcase"
+)
 
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
@@ -88,7 +93,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
-	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
@@ -195,7 +200,7 @@ func dirExists(path string) bool {
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
-	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -249,13 +254,47 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return fillDefaults(lib, defaults), nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
+func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {
+	googleapisDir, err := fetchSource(ctx, cfgSources.Googleapis, googleapisRepo)
+	if err != nil {
+		return nil, err
+	}
+
 	switch language {
 	case languageFake:
 		if err := fakeGenerate(library); err != nil {
 			return nil, err
 		}
+	case languagePython:
+		if err := cleanOutput(library.Output, library.Keep); err != nil {
+			return nil, err
+		}
+		if err := python.Generate(ctx, library, googleapisDir); err != nil {
+			return nil, err
+		}
 	case languageRust:
+		sources := &rust.Sources{
+			Googleapis: googleapisDir,
+		}
+		sources.Discovery, err = fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		if err != nil {
+			return nil, err
+		}
+		sources.Conformance, err = fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		if err != nil {
+			return nil, err
+		}
+		sources.Showcase, err = fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		if err != nil {
+			return nil, err
+		}
+		if cfgSources.ProtobufSrc != nil {
+			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+			if err != nil {
+				return nil, err
+			}
+			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
+		}
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
@@ -264,13 +303,6 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
 		if err := rust.Generate(ctx, library, sources); err != nil {
-			return nil, err
-		}
-	case languagePython:
-		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return nil, err
-		}
-		if err := python.Generate(ctx, library, sources); err != nil {
 			return nil, err
 		}
 	default:
@@ -290,14 +322,19 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 	return fmt.Errorf("format not implemented for %q", language)
 }
 
-func fetchGoogleapisDir(ctx context.Context, sources *config.Sources) (string, error) {
-	if sources == nil || sources.Googleapis == nil {
-		return "", errors.New("googleapis source is required")
+func fetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
+	if source == nil {
+		return "", nil
 	}
-	if sources.Googleapis.Dir != "" {
-		return sources.Googleapis.Dir, nil
+	if source.Dir != "" {
+		return source.Dir, nil
 	}
-	return fetch.RepoDir(ctx, googleapisRepo, sources.Googleapis.Commit, sources.Googleapis.SHA256)
+
+	dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
+	}
+	return dir, nil
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list

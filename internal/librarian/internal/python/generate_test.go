@@ -15,7 +15,6 @@
 package python
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -142,54 +141,6 @@ func TestCreateProtocOptions(t *testing.T) {
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestSourceDir(t *testing.T) {
-	originalFetchRepoDir := fetchRepoDir
-	t.Cleanup(func() {
-		fetchRepoDir = originalFetchRepoDir
-	})
-
-	fetchRepoDir = func(ctx context.Context, repo, commit, sha256 string) (string, error) {
-		return "fetched", nil
-	}
-	for _, test := range []struct {
-		name        string
-		source      *config.Source
-		expected    string
-		expectedErr bool
-	}{
-		{
-			name:     "source is nil",
-			source:   nil,
-			expected: "",
-		},
-		{
-			name: "source has dir",
-			source: &config.Source{
-				Dir: "path/to/dir",
-			},
-			expected: "path/to/dir",
-		},
-		{
-			name: "source needs fetching",
-			source: &config.Source{
-				Commit: "commit",
-				SHA256: "sha256",
-			},
-			expected: "fetched",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := sourceDir(t.Context(), test.source, "repo")
-			if (err != nil) != test.expectedErr {
-				t.Fatalf("sourceDir() error = %v, wantErr %v", err, test.expectedErr)
-			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Errorf("sourceDir() returned diff (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -408,17 +359,9 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	sources := &config.Sources{
-		Googleapis: &config.Source{
-			Dir: googleapisDir,
-		},
-	}
-
-	err = Generate(t.Context(), library, sources)
-	if err != nil {
+	if err := Generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
-
 	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {
 		t.Fatal(err)
 	}

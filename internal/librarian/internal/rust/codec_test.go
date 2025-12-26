@@ -32,7 +32,6 @@ func TestToSidekickConfig(t *testing.T) {
 		protobufDir    string
 		conformanceDir string
 		showcaseDir    string
-		protobufSubDir string
 		want           *sidekickconfig.Config
 	}{
 		{
@@ -661,9 +660,8 @@ func TestToSidekickConfig(t *testing.T) {
 				ServiceConfig: "google/cloud/vision/v1/vision_v1.yaml",
 			},
 			googleapisDir:  "/tmp/googleapis",
-			protobufDir:    "/tmp/protobuf",
+			protobufDir:    "/tmp/protobuf/src",
 			conformanceDir: "/tmp/conformance",
-			protobufSubDir: "src",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -721,7 +719,7 @@ func TestToSidekickConfig(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			} else {
-				got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.protobufSubDir, tt.conformanceDir, tt.showcaseDir)
+				got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.conformanceDir, tt.showcaseDir)
 				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}

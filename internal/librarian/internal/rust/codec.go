@@ -15,14 +15,13 @@
 package rust
 
 import (
-	"path"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufRootDir, protobufSubDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {
+func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufRootDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {
 	source := map[string]string{}
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
@@ -45,7 +44,7 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 			"googleapis":   {path: googleapisDir, key: "googleapis-root"},
 			"discovery":    {path: discoveryDir, key: "discovery-root"},
 			"showcase":     {path: showcaseDir, key: "showcase-root"},
-			"protobuf-src": {path: path.Join(protobufRootDir, protobufSubDir), key: "protobuf-src-root"},
+			"protobuf-src": {path: protobufRootDir, key: "protobuf-src-root"},
 			"conformance":  {path: conformanceDir, key: "conformance-root"},
 		}
 		for _, root := range library.Roots {

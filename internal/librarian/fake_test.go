@@ -28,16 +28,14 @@ func TestGenerate(t *testing.T) {
 		libraryName = "test-library"
 		outputDir   = "output"
 	)
-
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-
 	library := &config.Library{
 		Name:   libraryName,
 		Output: outputDir,
 	}
 
-	if _, err := generate(t.Context(), "fake", library, nil); err != nil {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	if _, err := generate(t.Context(), "fake", library, &config.Sources{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -46,7 +44,6 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	want := "# test-library\n\nGenerated library\n"
 	if diff := cmp.Diff(want, string(content)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

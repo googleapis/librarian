@@ -24,28 +24,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
-const (
-	googleapisRepo = "github.com/googleapis/googleapis"
-)
-
-// Variables used for mocking.
-var (
-	fetchRepoDir = fetch.RepoDir
-)
-
 // Generate generates a Python client library.
-func Generate(ctx context.Context, library *config.Library, sources *config.Sources) error {
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.Channels) == 0 {
 		return fmt.Errorf("no channels specified for library %s", library.Name)
-	}
-
-	googleapisDir, err := sourceDir(ctx, sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
 	}
 
 	// Convert library.Output to absolute path since protoc runs from a
@@ -221,18 +206,6 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 		fmt.Sprintf("--python_gapic_out=%s", stagingDir),
 		fmt.Sprintf("--python_gapic_opt=%s", strings.Join(opts, ",")),
 	}, nil
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/3160): remove this code,
-// instead making sure that the Googleapis source already has Dir populated.
-func sourceDir(ctx context.Context, source *config.Source, repo string) (string, error) {
-	if source == nil {
-		return "", nil
-	}
-	if source.Dir != "" {
-		return source.Dir, nil
-	}
-	return fetchRepoDir(ctx, repo, source.Commit, source.SHA256)
 }
 
 // getStagingChildDirectory determines where within owl-bot-staging/{library-name} the
