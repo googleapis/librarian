@@ -29,6 +29,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -54,33 +55,6 @@ var (
 var excludedVeneerLibraries = map[string]struct{}{
 	"echo-server": {},
 	"gcp-sdk":     {},
-}
-
-// SidekickConfig represents the structure of a .sidekick.toml file.
-type SidekickConfig struct {
-	General struct {
-		SpecificationSource string `toml:"specification-source"`
-		ServiceConfig       string `toml:"service-config"`
-		SpecificationFormat string `toml:"specification-format"`
-	} `toml:"general"`
-	Source    map[string]interface{} `toml:"source"`
-	Codec     map[string]interface{} `toml:"codec"`
-	Discovery *struct {
-		OperationID string `toml:"operation-id"`
-		Pollers     []struct {
-			Prefix   string `toml:"prefix"`
-			MethodID string `toml:"method-id"`
-		} `toml:"pollers"`
-	} `toml:"discovery"`
-	DocumentationOverrides []struct {
-		ID      string `toml:"id"`
-		Match   string `toml:"match"`
-		Replace string `toml:"replace"`
-	} `toml:"documentation-overrides"`
-	PaginationOverrides []struct {
-		ID        string `toml:"id"`
-		ItemField string `toml:"item-field"`
-	} `toml:"pagination-overrides"`
 }
 
 // CargoConfig represents relevant fields from Cargo.toml.
@@ -177,25 +151,25 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	}
 
 	// Parse as generic map to handle the dynamic package keys
-	var sidekick SidekickConfig
+	var sidekick sidekickconfig.Config
 	if err := toml.Unmarshal(data, &sidekick); err != nil {
 		return nil, err
 	}
 
-	releaseLevel, _ := sidekick.Codec["release-level"].(string)
-	warnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
-	discoverySHA256, _ := sidekick.Source["discovery-sha256"].(string)
-	discoveryRoot, _ := sidekick.Source["discovery-root"].(string)
-	googleapisSHA256, _ := sidekick.Source["googleapis-sha256"].(string)
-	googleapisRoot, _ := sidekick.Source["googleapis-root"].(string)
-	showcaseRoot, _ := sidekick.Source["showcase-root"].(string)
-	showcaseSHA256, _ := sidekick.Source["showcase-sha256"].(string)
-	protobufRoot, _ := sidekick.Source["protobuf-src-root"].(string)
-	protobufSHA256, _ := sidekick.Source["protobuf-src-sha256"].(string)
-	protobufSubDir, _ := sidekick.Source["protobuf-src-subdir"].(string)
-	conformanceRoot, _ := sidekick.Source["conformance-root"].(string)
-	conformanceSHA256, _ := sidekick.Source["conformance-sha256"].(string)
-	generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
+	releaseLevel := sidekick.Codec["release-level"]
+	warnings := sidekick.Codec["disabled-rustdoc-warnings"]
+	discoverySHA256 := sidekick.Source["discovery-sha256"]
+	discoveryRoot := sidekick.Source["discovery-root"]
+	googleapisSHA256 := sidekick.Source["googleapis-sha256"]
+	googleapisRoot := sidekick.Source["googleapis-root"]
+	showcaseRoot := sidekick.Source["showcase-root"]
+	showcaseSHA256 := sidekick.Source["showcase-sha256"]
+	protobufRoot := sidekick.Source["protobuf-src-root"]
+	protobufSHA256 := sidekick.Source["protobuf-src-sha256"]
+	protobufSubDir := sidekick.Source["protobuf-src-subdir"]
+	conformanceRoot := sidekick.Source["conformance-root"]
+	conformanceSHA256 := sidekick.Source["conformance-sha256"]
+	generateSetterSamples := sidekick.Codec["generate-setter-samples"]
 
 	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
@@ -312,7 +286,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			return nil, fmt.Errorf("failed to read %s: %w", file, err)
 		}
 
-		var sidekick SidekickConfig
+		var sidekick sidekickconfig.Config
 		if err := toml.Unmarshal(data, &sidekick); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
 		}
@@ -366,7 +340,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		// Set version from Cargo.toml (more authoritative than sidekick)
 		if cargo.Package.Version != "" {
 			lib.Version = cargo.Package.Version
-		} else if version, ok := sidekick.Codec["version"].(string); ok && lib.Version == "" {
+		} else if version, ok := sidekick.Codec["version"]; ok && lib.Version == "" {
 			lib.Version = version
 		}
 
@@ -376,11 +350,11 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		// Parse library-level configuration
-		if copyrightYear, ok := sidekick.Codec["copyright-year"].(string); ok && copyrightYear != "" {
+		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
 
-		if extraModules, ok := sidekick.Codec["extra-modules"].(string); ok {
+		if extraModules, ok := sidekick.Codec["extra-modules"]; ok {
 			for _, module := range strToSlice(extraModules, false) {
 				if module == "" {
 					continue
@@ -390,42 +364,42 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		// Parse Rust-specific configuration from .sidekick.toml source section
-		if descriptionOverride, ok := sidekick.Source["description-override"].(string); ok {
+		if descriptionOverride, ok := sidekick.Source["description-override"]; ok {
 			lib.DescriptionOverride = descriptionOverride
 		}
 
-		titleOverride, _ := sidekick.Source["title-override"].(string)
-		if roots, ok := sidekick.Source["roots"].(string); ok {
+		titleOverride := sidekick.Source["title-override"]
+		if roots, ok := sidekick.Source["roots"]; ok {
 			lib.Roots = strToSlice(roots, false)
 		}
-		includeList, _ := sidekick.Source["include-list"].(string)
-		includeIds, _ := sidekick.Source["include-ids"].(string)
-		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
+		includeList := sidekick.Source["include-list"]
+		includeIds := sidekick.Source["include-ids"]
+		skippedIds := sidekick.Source["skipped-ids"]
 
 		// Parse Rust-specific configuration from sidekick.toml codec section
-		disabledRustdocWarnings, _ := sidekick.Codec["disabled-rustdoc-warnings"].(string)
-		perServiceFeatures, _ := sidekick.Codec["per-service-features"].(string)
-		modulePath, _ := sidekick.Codec["module-path"].(string)
-		templateOverride, _ := sidekick.Codec["template-override"].(string)
-		packageNameOverride, _ := sidekick.Codec["package-name-override"].(string)
-		rootName, _ := sidekick.Codec["root-name"].(string)
-		defaultFeatures, _ := sidekick.Codec["default-features"].(string)
-		disabledClippyWarnings, _ := sidekick.Codec["disabled-clippy-warnings"].(string)
-		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
-		routingRequired, _ := sidekick.Codec["routing-required"].(string)
-		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
-		generateSetterSamples, _ := sidekick.Codec["generate-setter-samples"].(string)
-		generateRpcSamples, _ := sidekick.Codec["generate-rpc-samples"].(string)
-		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
-		detailedTracingAttributes, _ := sidekick.Codec["detailed-tracing-attributes"].(string)
-		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
+		disabledRustdocWarnings := sidekick.Codec["disabled-rustdoc-warnings"]
+		perServiceFeatures := sidekick.Codec["per-service-features"]
+		modulePath := sidekick.Codec["module-path"]
+		templateOverride := sidekick.Codec["template-override"]
+		packageNameOverride := sidekick.Codec["package-name-override"]
+		rootName := sidekick.Codec["root-name"]
+		defaultFeatures := sidekick.Codec["default-features"]
+		disabledClippyWarnings := sidekick.Codec["disabled-clippy-warnings"]
+		hasVeneer := sidekick.Codec["has-veneer"]
+		routingRequired := sidekick.Codec["routing-required"]
+		includeGrpcOnlyMethods := sidekick.Codec["include-grpc-only-methods"]
+		generateSetterSamples := sidekick.Codec["generate-setter-samples"]
+		generateRpcSamples := sidekick.Codec["generate-rpc-samples"]
+		postProcessProtos := sidekick.Codec["post-process-protos"]
+		detailedTracingAttributes := sidekick.Codec["detailed-tracing-attributes"]
+		nameOverrides := sidekick.Codec["name-overrides"]
 
 		// Parse package dependencies
 		packageDeps := parsePackageDependencies(sidekick.Codec)
 
 		// Parse documentation overrides
 		var documentationOverrides []config.RustDocumentationOverride
-		for _, do := range sidekick.DocumentationOverrides {
+		for _, do := range sidekick.CommentOverrides {
 			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
 				ID:      do.ID,
 				Match:   do.Match,
@@ -472,6 +446,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if sidekick.Discovery != nil {
+			if lib.Rust == nil {
+				lib.Rust = &config.RustCrate{}
+			}
 			pollers := make([]config.RustPoller, len(sidekick.Discovery.Pollers))
 			for i, p := range sidekick.Discovery.Pollers {
 				pollers[i] = config.RustPoller{
@@ -596,43 +573,43 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 			}
 		}
 
-		sidekick, err := readTOML[SidekickConfig](path)
+		sidekick, err := readTOML[sidekickconfig.Config](path)
 		if err != nil {
 			return err
 		}
 
-		includedIds, _ := sidekick.Source["included-ids"].(string)
-		includeList, _ := sidekick.Source["include-list"].(string)
-		skippedIds, _ := sidekick.Source["skipped-ids"].(string)
-		titleOverride, _ := sidekick.Source["title-override"].(string)
+		includedIds := sidekick.Source["included-ids"]
+		includeList := sidekick.Source["include-list"]
+		skippedIds := sidekick.Source["skipped-ids"]
+		titleOverride := sidekick.Source["title-override"]
 		moduleRoots := make(map[string]string)
-		roots, ok := sidekick.Source["roots"].(string)
+		roots, ok := sidekick.Source["roots"]
 		if ok {
 			for _, root := range strings.Split(roots, ",") {
 				root = fmt.Sprintf("%s-root", root)
-				modPath, ok := sidekick.Source[root].(string)
+				modPath, ok := sidekick.Source[root]
 				if ok {
 					moduleRoots[root] = modPath
 				}
 			}
 		}
 
-		hasVeneer, _ := sidekick.Codec["has-veneer"].(string)
-		includeGrpcOnlyMethods, _ := sidekick.Codec["include-grpc-only-methods"].(string)
-		routingRequired, _ := sidekick.Codec["routing-required"].(string)
-		extendGrpcTransport, _ := sidekick.Codec["extend-grpc-transport"].(string)
-		modulePath, _ := sidekick.Codec["module-path"].(string)
-		nameOverrides, _ := sidekick.Codec["name-overrides"].(string)
-		postProcessProtos, _ := sidekick.Codec["post-process-protos"].(string)
-		templateOverride, _ := sidekick.Codec["template-override"].(string)
+		hasVeneer := sidekick.Codec["has-veneer"]
+		includeGrpcOnlyMethods := sidekick.Codec["include-grpc-only-methods"]
+		routingRequired := sidekick.Codec["routing-required"]
+		extendGrpcTransport := sidekick.Codec["extend-grpc-transport"]
+		modulePath := sidekick.Codec["module-path"]
+		nameOverrides := sidekick.Codec["name-overrides"]
+		postProcessProtos := sidekick.Codec["post-process-protos"]
+		templateOverride := sidekick.Codec["template-override"]
 
-		generateSetterSamples, ok := sidekick.Codec["generate-setter-samples"].(string)
+		generateSetterSamples, ok := sidekick.Codec["generate-setter-samples"]
 		if !ok {
 			generateSetterSamples = "true"
 		}
 		// Parse documentation overrides
 		var documentationOverrides []config.RustDocumentationOverride
-		for _, do := range sidekick.DocumentationOverrides {
+		for _, do := range sidekick.CommentOverrides {
 			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
 				ID:      do.ID,
 				Match:   do.Match,
@@ -663,7 +640,7 @@ func buildModules(rootDir string) ([]*config.RustModule, error) {
 			module.ModuleRoots = moduleRoots
 		}
 
-		disabledRustdocWarnings, ok := sidekick.Codec["disabled-rustdoc-warnings"].(string)
+		disabledRustdocWarnings, ok := sidekick.Codec["disabled-rustdoc-warnings"]
 		if ok {
 			module.DisabledRustdocWarnings = strToSlice(disabledRustdocWarnings, true)
 		}
@@ -722,19 +699,15 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	return cfg
 }
 
-func parsePackageDependencies(codec map[string]interface{}) []*config.RustPackageDependency {
+func parsePackageDependencies(codec map[string]string) []*config.RustPackageDependency {
 	var packageDeps []*config.RustPackageDependency
 	for key, value := range codec {
 		if !strings.HasPrefix(key, "package:") {
 			continue
 		}
 		pkgName := strings.TrimPrefix(key, "package:")
-		pkgSpec, ok := value.(string)
-		if !ok {
-			continue
-		}
 
-		dep := parsePackageDependency(pkgName, pkgSpec)
+		dep := parsePackageDependency(pkgName, value)
 		if dep != nil {
 			packageDeps = append(packageDeps, dep)
 		}
