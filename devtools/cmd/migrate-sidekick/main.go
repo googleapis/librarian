@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -57,13 +58,20 @@ var excludedVeneerLibraries = map[string]struct{}{
 	"gcp-sdk":     {},
 }
 
-// CargoConfig represents relevant fields from Cargo.toml.
-type CargoConfig struct {
-	Package struct {
-		Name    string      `toml:"name"`
-		Version string      `toml:"version"`
-		Publish interface{} `toml:"publish"` // Can be bool or array of strings
-	} `toml:"package"`
+func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
+	cargoData, err := os.ReadFile(filepath.Join(dir, cargoFile))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read cargo: %w", err)
+	}
+	cargo := rustrelease.Cargo{
+		Package: &rustrelease.CrateInfo{
+			Publish: true,
+		},
+	}
+	if err := toml.Unmarshal(cargoData, &cargo); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cargo: %w", err)
+	}
+	return &cargo, nil
 }
 
 func main() {
@@ -300,9 +308,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 
 		// Read Cargo.toml in the same directory to get the actual library name
 		dir := filepath.Dir(file)
-		cargo, err := readTOML[CargoConfig](filepath.Join(dir, cargoFile))
+		cargo, err := readCargoConfig(dir)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read cargo: %w", err)
+			return nil, err
 		}
 
 		libraryName := cargo.Package.Name
@@ -339,7 +347,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		// Set publish disabled from Cargo.toml
-		if publishValue, ok := cargo.Package.Publish.(bool); ok && !publishValue {
+		if !cargo.Package.Publish {
 			lib.SkipPublish = true
 		}
 
@@ -505,7 +513,7 @@ func findCargos(path string) ([]string, error) {
 func buildVeneer(files []string) (map[string]*config.Library, error) {
 	veneers := make(map[string]*config.Library)
 	for _, file := range files {
-		cargo, err := readTOML[CargoConfig](file)
+		cargo, err := readCargoConfig(filepath.Dir(file))
 		if err != nil {
 			return nil, err
 		}

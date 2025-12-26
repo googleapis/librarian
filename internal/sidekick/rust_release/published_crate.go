@@ -25,8 +25,8 @@ func publishedCrate(manifest string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	info := cargo{
-		Package: &crateInfo{
+	info := Cargo{
+		Package: &CrateInfo{
 			Publish: true,
 		},
 	}

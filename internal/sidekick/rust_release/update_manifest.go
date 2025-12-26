@@ -26,15 +26,16 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// crateInfo contains the package information.
-type crateInfo struct {
+// CrateInfo contains the package information.
+type CrateInfo struct {
 	Name    string `toml:"name"`
 	Version string `toml:"version"`
 	Publish bool   `toml:"publish"`
 }
 
-type cargo struct {
-	Package *crateInfo `toml:"package"`
+// Cargo is a wrapper for CrateInfo for parsing Cargo.toml files.
+type Cargo struct {
+	Package *CrateInfo `toml:"package"`
 }
 
 func updateManifest(config *config.Release, lastTag, manifest string) ([]string, error) {
@@ -49,8 +50,8 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if err != nil {
 		return nil, err
 	}
-	info := cargo{
-		Package: &crateInfo{
+	info := Cargo{
+		Package: &CrateInfo{
 			Publish: true,
 		},
 	}
