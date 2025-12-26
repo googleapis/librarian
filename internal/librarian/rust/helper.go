@@ -23,26 +23,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// RustHelper interface used for mocking in tests.
-type RustHelper interface {
-	HelperPrepareCargoWorkspace(ctx context.Context, outputDir string) error
-	HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error
-}
-
-// RustHelp struct implements RustHelper interface.
-type RustHelp struct {
-}
-
-// HelperPrepareCargoWorkspace encapsulates prepareCargoWorkspace command.
-func (r *RustHelp) HelperPrepareCargoWorkspace(ctx context.Context, outputDir string) error {
-	return PrepareCargoWorkspace(ctx, outputDir)
-}
-
-// HelperFormatAndValidateLibrary encapsulates formatAndValidateLibrary command.
-func (r *RustHelp) HelperFormatAndValidateLibrary(ctx context.Context, outputDir string) error {
-	return FormatAndValidateLibrary(ctx, outputDir)
-}
-
 // PrepareCargoWorkspace creates a new cargo package in the specified output directory.
 func PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
 	if err := VerifyRustTools(ctx); err != nil {

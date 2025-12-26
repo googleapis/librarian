@@ -63,52 +63,48 @@ func createCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			libraryName := c.Args().First()
-			if libraryName == "" {
+			name := c.Args().First()
+			if name == "" {
 				return errMissingLibraryName
 			}
 			specSource := c.String("specification-source")
 			serviceConfig := c.String("service-config")
 			output := c.String("output")
 			specFormat := c.String("specification-format")
-			return runCreate(ctx, libraryName, specSource, serviceConfig, output, specFormat)
+			return runCreate(ctx, name, specSource, serviceConfig, output, specFormat)
 		},
 	}
 }
 
 func runCreate(ctx context.Context, name, specSource, serviceConfig, output, specFormat string) error {
-	return create(ctx, name, specSource, serviceConfig, output, specFormat, &Generate{}, &rust.RustHelp{})
-}
-
-func create(ctx context.Context, libraryName, specSource, serviceConfig, output, specFormat string, gen Generator, rustHelper rust.RustHelper) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
 	}
 	// check for existing libraries, if it exists just run generate
 	for _, lib := range cfg.Libraries {
-		if lib.Name == libraryName {
-			return gen.Run(ctx, false, libraryName)
+		if lib.Name == name {
+			return runGenerate(ctx, false, name)
 		}
 	}
 	specSource = deriveSpecSource(specSource, serviceConfig, cfg.Language)
-	if output, err = deriveOutput(output, cfg, libraryName, specSource, cfg.Language); err != nil {
+	if output, err = deriveOutput(output, cfg, name, specSource, cfg.Language); err != nil {
 		return err
 	}
-	if err := addLibraryToLibrarianConfig(cfg, libraryName, output, specSource, serviceConfig, specFormat); err != nil {
+	if err := addLibraryToLibrarianConfig(cfg, name, output, specSource, serviceConfig, specFormat); err != nil {
 		return err
 	}
 	switch cfg.Language {
 	case languageFake:
-		return gen.Run(ctx, false, libraryName)
+		return runGenerate(ctx, false, name)
 	case languageRust:
-		if err := rustHelper.HelperPrepareCargoWorkspace(ctx, output); err != nil {
+		if err := rust.PrepareCargoWorkspace(ctx, output); err != nil {
 			return err
 		}
-		if err := gen.Run(ctx, false, libraryName); err != nil {
+		if err := runGenerate(ctx, false, name); err != nil {
 			return err
 		}
-		return rustHelper.HelperFormatAndValidateLibrary(ctx, output)
+		return rust.FormatAndValidateLibrary(ctx, output)
 	default:
 		return errUnsupportedLanguage
 	}

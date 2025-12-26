@@ -82,7 +82,7 @@ func TestCreateLibrary(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := create(t.Context(), test.libName, "", "", test.output, "", &Generate{}, nil); err != nil {
+			if err := runCreate(t.Context(), test.libName, "", "", test.output, ""); err != nil {
 				t.Fatal(err)
 			}
 
@@ -128,7 +128,7 @@ func TestCreateLibraryNoYaml(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	err := create(t.Context(), "newlib", "", "", "output/newlib", "protobuf", &Generate{}, nil)
+	err := runCreate(t.Context(), "newlib", "", "", "output/newlib", "protobuf")
 	if !errors.Is(err, errNoYaml) {
 		t.Errorf("want error %v, got %v", errNoYaml, err)
 	}
