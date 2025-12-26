@@ -236,7 +236,6 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
 			if lib.SkipGenerate {
-				fmt.Printf("⊘ Skipping %s (skip_generate is set)\n", lib.Name)
 				return nil, nil
 			}
 			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default)
