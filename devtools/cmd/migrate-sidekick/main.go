@@ -66,12 +66,6 @@ type CargoConfig struct {
 	} `toml:"package"`
 }
 
-// RustOverrideData is used to store RustDocumentationOverride data to fix newlines.
-type RustOverrideData struct {
-	Match   string
-	Replace string
-}
-
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		slog.Error("migrate-sidekick failed", "error", err)
@@ -769,14 +763,15 @@ func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
 	}
 
 	content := string(input)
-	lookup := make(map[string]RustOverrideData)
+	lookup := make(map[string]sidekickconfig.DocumentationOverride)
 	for _, lib := range config.Libraries {
 		if lib.Rust == nil {
 			continue
 		}
 		for _, o := range lib.Rust.DocumentationOverrides {
 			key := o.ID + "|" + strings.Trim(o.Match, " \n\r")
-			lookup[key] = RustOverrideData{
+			lookup[key] = sidekickconfig.DocumentationOverride{
+				ID:      o.ID,
 				Match:   o.Match,
 				Replace: o.Replace,
 			}
