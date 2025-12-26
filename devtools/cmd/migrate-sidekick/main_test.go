@@ -283,6 +283,40 @@ func TestBuildGAPIC(t *testing.T) {
 			},
 			want: map[string]*config.Library{},
 		},
+		{
+			name: "with_discovery",
+			files: []string{
+				"testdata/read-sidekick-files/discovery/.sidekick.toml",
+			},
+			want: map[string]*config.Library{
+				"google-cloud-compute-v1": {
+					Name: "google-cloud-compute-v1",
+					Channels: []*config.Channel{
+						{
+							Path: "google/cloud/compute/v1",
+						},
+					},
+					Version:             "0.1.0",
+					SpecificationFormat: "discovery",
+					Output:              "testdata/read-sidekick-files/discovery",
+					Rust: &config.RustCrate{
+						Discovery: &config.RustDiscovery{
+							OperationID: ".google.cloud.compute.v1.Operation",
+							Pollers: []config.RustPoller{
+								{
+									Prefix:   "compute/v1/projects/{project}/global/operations",
+									MethodID: ".google.cloud.compute.v1.globalOperations.get",
+								},
+								{
+									Prefix:   "compute/v1/projects/{project}/regions/{region}/operations",
+									MethodID: ".google.cloud.compute.v1.regionOperations.get",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGAPIC(test.files, test.repoName)

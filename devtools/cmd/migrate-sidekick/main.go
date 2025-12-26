@@ -63,8 +63,15 @@ type SidekickConfig struct {
 		ServiceConfig       string `toml:"service-config"`
 		SpecificationFormat string `toml:"specification-format"`
 	} `toml:"general"`
-	Source                 map[string]interface{} `toml:"source"`
-	Codec                  map[string]interface{} `toml:"codec"`
+	Source    map[string]interface{} `toml:"source"`
+	Codec     map[string]interface{} `toml:"codec"`
+	Discovery *struct {
+		OperationID string `toml:"operation-id"`
+		Pollers     []struct {
+			Prefix   string `toml:"prefix"`
+			MethodID string `toml:"method-id"`
+		} `toml:"pollers"`
+	} `toml:"discovery"`
 	DocumentationOverrides []struct {
 		ID      string `toml:"id"`
 		Match   string `toml:"match"`
@@ -463,6 +470,23 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			PaginationOverrides:       paginationOverrides,
 			NameOverrides:             nameOverrides,
 		}
+
+		if sidekick.Discovery != nil {
+			if lib.Rust == nil {
+				lib.Rust = &config.RustCrate{}
+			}
+			discovery := &config.RustDiscovery{
+				OperationID: sidekick.Discovery.OperationID,
+			}
+			for _, p := range sidekick.Discovery.Pollers {
+				discovery.Pollers = append(discovery.Pollers, config.RustPoller{
+					Prefix:   p.Prefix,
+					MethodID: p.MethodID,
+				})
+			}
+			rustCrate.Discovery = discovery
+		}
+
 		if !isEmptyRustCrate(rustCrate) {
 			lib.Rust = rustCrate
 		}
