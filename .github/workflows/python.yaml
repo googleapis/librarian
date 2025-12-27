@@ -25,9 +25,9 @@ jobs:
           go-version-file: "go.mod"
       - name: Display Go version
         run: go version
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.13"
       - name: Display Python version
         run: python3 --version
       - uses: ./.github/actions/install-protoc
