@@ -375,7 +375,6 @@ func TestRunPostProcessor(t *testing.T) {
 }
 
 func TestGenerateChannel(t *testing.T) {
-	t.Skip("requires complete test environment")
 	testhelpers.RequireCommand(t, "protoc")
 	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
 	repoRoot := t.TempDir()
@@ -392,7 +391,6 @@ func TestGenerateChannel(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	t.Skip("requires complete test environment")
 	testhelpers.RequireCommand(t, "protoc")
 	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelpers.RequireCommand(t, "python3")
