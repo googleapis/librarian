@@ -403,8 +403,6 @@ func TestGenerateChannel(t *testing.T) {
 func TestGenerate(t *testing.T) {
 
 	testhelpers.RequireCommand(t, "protoc")
-	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
-	testhelpers.RequireCommand(t, "python3")
 	requirePythonModule(t, "synthtool")
 	repoRoot := t.TempDir()
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "test"))
