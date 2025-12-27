@@ -1,5 +1,4 @@
 name: Install protoc
-description: Install Protocol Buffers compiler
 runs:
   using: composite
   steps:
