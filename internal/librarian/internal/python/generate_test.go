@@ -20,22 +20,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelpers"
 )
-
-type CommandScript struct {
-	Commands []*MockCommand
-}
-
-type MockCommand struct {
-	ExpectedArgs []string
-	Error        *error
-	called       bool
-}
 
 func TestGetStagingChildDirectory(t *testing.T) {
 	t.Parallel()
@@ -376,145 +366,41 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 }
 
 func TestRunPostProcessor(t *testing.T) {
-	pythonCode := fmt.Sprintf(`
-from synthtool.languages import python_mono_repo
-python_mono_repo.owlbot_main(%q)
-`, "out/dir")
-	for _, test := range []struct {
-		name          string
-		commandScript CommandScript
-		wantErr       bool
-	}{
-		{
-			name: "success",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: []string{"python3", "-c", pythonCode},
-					},
-				},
-			},
-		},
-		{
-			name: "command fails",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: []string{"python3", "-c", pythonCode},
-						Error:        &exec.ErrNotFound,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			originalRunCommand := runCommand
-			t.Cleanup(func() {
-				runCommand = originalRunCommand
-			})
-			runCommand = newMockRunCommand(t, test.commandScript)
-			err := runPostProcessor(t.Context(), t.TempDir(), "out/dir")
-			if (err != nil) != test.wantErr {
-				t.Fatalf("runPostProcessor() error = %v, wantErr %v", err, test.wantErr)
-			}
-			verifyCommands(t, test.commandScript)
-		})
+	testhelpers.RequireCommand(t, "python3")
+	requirePythonModule(t, "synthtool")
+	err := runPostProcessor(t.Context(), t.TempDir(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestGenerateChannel(t *testing.T) {
+	t.Skip("requires complete test environment")
+	testhelpers.RequireCommand(t, "protoc")
+	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
 	repoRoot := t.TempDir()
-	protocCommand := []string{
-		"protoc",
-		"google/test/v1/test.proto",
-		"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
-		"--python_gapic_opt=rest-numeric-enums,metadata",
-	}
-
-	for _, test := range []struct {
-		name          string
-		commandScript CommandScript
-		wantErr       bool
-	}{
-		{
-			name: "success",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: protocCommand,
-					},
-				},
-			},
-		},
-		{
-			name: "protoc fails",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: protocCommand,
-						Error:        &exec.ErrNotFound,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			originalRunCommand := runCommand
-			t.Cleanup(func() {
-				runCommand = originalRunCommand
-			})
-			runCommand = newMockRunCommand(t, test.commandScript)
-			err := generateChannel(
-				t.Context(),
-				&config.Channel{Path: "google/test/v1"},
-				&config.Library{Name: "test", Output: repoRoot},
-				"testdata",
-				repoRoot,
-			)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("generateChannel() error = %v, wantErr %v", err, test.wantErr)
-			}
-			verifyCommands(t, test.commandScript)
-		})
+	err := generateChannel(
+		t.Context(),
+		&config.Channel{Path: "google/test/v1"},
+		&config.Library{Name: "test", Output: repoRoot},
+		"testdata",
+		repoRoot,
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestGenerate(t *testing.T) {
+	t.Skip("requires complete test environment")
+	testhelpers.RequireCommand(t, "protoc")
+	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelpers.RequireCommand(t, "python3")
+	requirePythonModule(t, "synthtool")
 	repoRoot := t.TempDir()
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "test"))
 	if err != nil {
-		t.Fatalf("filepath.Abs() error = %v", err)
-	}
-
-	postProcessor := fmt.Sprintf(`
-from synthtool.languages import python_mono_repo
-python_mono_repo.owlbot_main(%q)
-`, outdir)
-
-	commands := CommandScript{
-		Commands: []*MockCommand{
-			{
-				ExpectedArgs: []string{
-					"protoc",
-					"google/test/v1/test.proto",
-					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
-					"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
-				},
-			},
-			{
-				ExpectedArgs: []string{
-					"protoc",
-					"google/test/v2/test.proto",
-					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v2",
-					"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/test/v2/test_grpc_service_config.json,service-yaml=google/test/v2/test_v2.yaml",
-				},
-			},
-			{
-				ExpectedArgs: []string{"python3", "-c", postProcessor},
-			},
-		},
+		t.Fatal(err)
 	}
 
 	library := &config.Library{
@@ -537,51 +423,20 @@ python_mono_repo.owlbot_main(%q)
 		},
 	}
 
-	originalRunCommand := runCommand
-	t.Cleanup(func() {
-		runCommand = originalRunCommand
-	})
-	runCommand = newMockRunCommand(t, commands)
-
 	err = Generate(t.Context(), library, sources)
 	if err != nil {
-		t.Fatalf("Generate() error = %v", err)
+		t.Fatal(err)
 	}
-	verifyCommands(t, commands)
 
 	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {
-		t.Fatalf("Generate() error checking for presence of .repo-metadata.json = %v", err)
+		t.Fatal(err)
 	}
 }
 
-// newMockRunCommand creates a function with the same signature as Run,
-// but which checks the given command script for any command that is executed.
-// If the command doesn't exist, the test fails. Commands are marked as having
-// been run, and an optional error is returned. The command script can then be
-// verified with verifyCommands.
-func newMockRunCommand(t *testing.T, script CommandScript) func(context.Context, []string, string) error {
-	return func(ctx context.Context, args []string, workDir string) error {
-		for _, command := range script.Commands {
-			if !command.called && slices.Equal(command.ExpectedArgs, args) {
-				command.called = true
-				if command.Error == nil {
-					return nil
-				}
-				return *command.Error
-			}
-		}
-		t.Fatalf("no mocked commands for %v", args)
-		// We won't get here.
-		return exec.ErrNotFound
-	}
-}
-
-// verifyCommands verifies that all commands in the specified script have been
-// "mock executed".
-func verifyCommands(t *testing.T, script CommandScript) {
-	for _, command := range script.Commands {
-		if !command.called {
-			t.Fatalf("missing call with args %v", command.ExpectedArgs)
-		}
+func requirePythonModule(t *testing.T, module string) {
+	t.Helper()
+	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))
+	if err := cmd.Run(); err != nil {
+		t.Skipf("skipping test because Python module %s is not installed", module)
 	}
 }

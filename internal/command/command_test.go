@@ -60,3 +60,24 @@ func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
 	}
 }
+
+func TestRunInDir(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		dir     string
+		wantErr bool
+	}{
+		{"valid directory", t.TempDir(), false},
+		{"invalid directory", "/nonexistent/directory", true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := RunInDir(t.Context(), test.dir, "go", "version")
+			if test.wantErr && err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !test.wantErr && err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}

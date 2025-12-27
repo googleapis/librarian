@@ -28,13 +28,7 @@ jobs:
         run: go version
       - name: Install Go tools
         run: go install tool
-      - name: Install protoc
-        run: |
-          set -e
-          curl -fSSL -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
-          cd /usr/local
-          sudo unzip -x /tmp/protoc.zip
-          protoc --version
+      - uses: ./.github/actions/install-protoc
       - name: Run tests
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage report
