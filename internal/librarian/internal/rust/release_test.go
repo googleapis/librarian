@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 const (
@@ -53,8 +53,8 @@ func TestReleaseOne(t *testing.T) {
 
 func setupRelease(t *testing.T) *config.Config {
 	t.Helper()
-	testhelpers.RequireCommand(t, "cargo")
-	testhelpers.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "taplo")
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 

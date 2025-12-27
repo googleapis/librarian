@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPublish(t *testing.T) {
@@ -81,7 +81,7 @@ func TestPublish(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			testhelpers.SetupForVersionBump(t, "v1.0.0")
+			testhelper.SetupForVersionBump(t, "v1.0.0")
 
 			var (
 				preflightCalled bool

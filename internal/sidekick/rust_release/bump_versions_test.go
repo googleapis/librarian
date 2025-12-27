@@ -21,12 +21,12 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestBumpVersionsSuccess(t *testing.T) {
-	testhelpers.RequireCommand(t, "/bin/echo")
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -40,9 +40,9 @@ func TestBumpVersionsSuccess(t *testing.T) {
 			},
 		},
 	}
-	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
+	testhelper.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
@@ -53,8 +53,8 @@ func TestBumpVersionsSuccess(t *testing.T) {
 	}
 }
 func TestBumpVersionsNoCargoTools(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
-	testhelpers.RequireCommand(t, "/bin/echo")
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -68,9 +68,9 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 			},
 		},
 	}
-	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
+	testhelper.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
@@ -81,8 +81,8 @@ func TestBumpVersionsNoCargoTools(t *testing.T) {
 	}
 }
 func TestBumpVersionsNoSemverChecks(t *testing.T) {
-	testhelpers.RequireCommand(t, "/bin/echo")
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -96,9 +96,9 @@ func TestBumpVersionsNoSemverChecks(t *testing.T) {
 			},
 		},
 	}
-	testhelpers.SetupForVersionBump(t, "release-2001-02-03")
+	testhelper.SetupForVersionBump(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(testhelpers.NewLibRsContents), 0644); err != nil {
+	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
@@ -122,8 +122,8 @@ func TestBumpVersionsPreflightError(t *testing.T) {
 
 func TestBumpVersionsLastTagError(t *testing.T) {
 	const echo = "/bin/echo"
-	testhelpers.RequireCommand(t, "git")
-	testhelpers.RequireCommand(t, echo)
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, echo)
 	config := config.Release{
 		Remote: "origin",
 		Branch: "invalid-branch",
@@ -131,14 +131,14 @@ func TestBumpVersionsLastTagError(t *testing.T) {
 			"cargo": echo,
 		},
 	}
-	testhelpers.SetupForVersionBump(t, "last-tag-error")
+	testhelper.SetupForVersionBump(t, "last-tag-error")
 	if err := BumpVersions(t.Context(), &config); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
 	}
 }
 
 func TestBumpVersionsManifestError(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -147,7 +147,7 @@ func TestBumpVersionsManifestError(t *testing.T) {
 			"cargo": "git",
 		},
 	}
-	testhelpers.SetupForVersionBump(t, "release-bad-manifest")
+	testhelper.SetupForVersionBump(t, "release-bad-manifest")
 	name := path.Join("src", "storage", "Cargo.toml")
 	if err := os.WriteFile(name, []byte("invalid-toml-file = {"), 0644); err != nil {
 		t.Fatal(err)

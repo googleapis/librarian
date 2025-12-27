@@ -23,12 +23,12 @@ import (
 	"testing"
 
 	cmdtest "github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPrepareCargoWorkspace(t *testing.T) {
-	testhelpers.RequireCommand(t, "cargo")
-	testhelpers.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "taplo")
 	libName := "new-lib"
 	testdataDir, err := filepath.Abs("./testdata")
 	if err != nil {
@@ -56,9 +56,9 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 }
 
 func TestFormatAndValidateCreatedLibrary(t *testing.T) {
-	testhelpers.RequireCommand(t, "cargo")
-	testhelpers.RequireCommand(t, "env")
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "env")
+	testhelper.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata")
 	libName := "new-lib-format"
 	t.Chdir(testdataDir)

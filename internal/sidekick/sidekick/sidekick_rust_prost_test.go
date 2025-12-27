@@ -20,12 +20,12 @@ import (
 	"path"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestRustProstFromProtobuf(t *testing.T) {
-	testhelpers.RequireCommand(t, "cargo")
-	testhelpers.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
 	specificationSource := path.Join(testdataDir, "googleapis/google/type")

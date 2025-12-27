@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package testhelpers provides helper functions for tests.
+// Package testhelper provides helper functions for tests.
 // These are used across packages
-package testhelpers
+package testhelper
 
 import (
 	"fmt"

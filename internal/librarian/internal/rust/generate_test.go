@@ -23,11 +23,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestGenerateVeneer(t *testing.T) {
-	testhelpers.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc")
 	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
 	if err != nil {
 		t.Fatal(err)
@@ -135,9 +135,9 @@ func TestKeepVeneer(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	testhelpers.RequireCommand(t, "protoc")
-	testhelpers.RequireCommand(t, "rustfmt")
-	testhelpers.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "rustfmt")
+	testhelper.RequireCommand(t, "taplo")
 	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
 	if err != nil {
 		t.Fatal(err)

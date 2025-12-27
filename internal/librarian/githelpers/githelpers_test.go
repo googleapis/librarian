@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 const (
@@ -33,8 +33,8 @@ const (
 
 func TestGetLastTag(t *testing.T) {
 	const wantTag = "v1.2.3"
-	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
-	testhelpers.CloneRepository(t, remoteDir)
+	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
+	testhelper.CloneRepository(t, remoteDir)
 	cfg := &config.Release{
 		Remote: "origin",
 		Branch: "main",
@@ -64,7 +64,7 @@ func TestLastTagGitError(t *testing.T) {
 }
 
 func TestIsNewFileSuccess(t *testing.T) {
-	testhelpers.SetupForVersionBump(t, "dummy-tag")
+	testhelper.SetupForVersionBump(t, "dummy-tag")
 	// Get the HEAD commit hash, which serves as a unique reference for this test.
 	cmd := exec.CommandContext(t.Context(), "git", "rev-parse", "HEAD")
 	out, err := cmd.Output()
@@ -103,7 +103,7 @@ func TestIsNewFileSuccess(t *testing.T) {
 func TestIsNewFileDiffError(t *testing.T) {
 	const wantTag = "new-file-success"
 	t.Chdir(t.TempDir())
-	testhelpers.SetupForVersionBump(t, wantTag)
+	testhelper.SetupForVersionBump(t, wantTag)
 	cfg := &config.Release{}
 	gitExe := cfg.GetExecutablePath("git")
 	existingName := path.Join("src", "storage", "src", "lib.rs")
@@ -118,8 +118,8 @@ func TestFilesChangedSuccess(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
-	testhelpers.CloneRepository(t, remoteDir)
+	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
+	testhelper.CloneRepository(t, remoteDir)
 
 	got, err := FilesChangedSince(t.Context(), wantTag, release.GetExecutablePath("git"), release.IgnoredChanges)
 	if err != nil {
@@ -137,8 +137,8 @@ func TestFilesBadRef(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupRepoWithChange(t, wantTag)
-	testhelpers.CloneRepository(t, remoteDir)
+	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
+	testhelper.CloneRepository(t, remoteDir)
 	if got, err := FilesChangedSince(t.Context(), "--invalid--", release.GetExecutablePath("git"), release.IgnoredChanges); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
@@ -224,16 +224,16 @@ func TestAssertGitStatusClean(t *testing.T) {
 		{
 			name: "clean",
 			setup: func(t *testing.T) {
-				remoteDir := testhelpers.SetupRepoWithChange(t, "release-1.2.3")
-				testhelpers.CloneRepository(t, remoteDir)
+				remoteDir := testhelper.SetupRepoWithChange(t, "release-1.2.3")
+				testhelper.CloneRepository(t, remoteDir)
 			},
 			wantErr: false,
 		},
 		{
 			name: "dirty",
 			setup: func(t *testing.T) {
-				remoteDir := testhelpers.SetupRepoWithChange(t, "release-1.2.3")
-				testhelpers.CloneRepository(t, remoteDir)
+				remoteDir := testhelper.SetupRepoWithChange(t, "release-1.2.3")
+				testhelper.CloneRepository(t, remoteDir)
 				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -254,40 +254,40 @@ func TestAssertGitStatusClean(t *testing.T) {
 }
 
 func TestMatchesBranchPointSuccess(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "main",
 	}
-	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
-	testhelpers.CloneRepository(t, remoteDir)
+	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+	testhelper.CloneRepository(t, remoteDir)
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMatchesBranchDiffError(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
-	testhelpers.CloneRepository(t, remoteDir)
+	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+	testhelper.CloneRepository(t, remoteDir)
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
 
 func TestMatchesDirtyCloneError(t *testing.T) {
-	testhelpers.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "git")
 	config := &config.Release{
 		Remote: "origin",
 		Branch: "not-a-valid-branch",
 	}
-	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
-	testhelpers.CloneRepository(t, remoteDir)
-	testhelpers.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+	testhelper.CloneRepository(t, remoteDir)
+	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
 		t.Fatal(err)
 	}
@@ -318,10 +318,10 @@ func TestChangesInDirectorySinceTag(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			testhelpers.RequireCommand(t, "git")
+			testhelper.RequireCommand(t, "git")
 			tag := "v1.2.3"
-			remoteDir := testhelpers.SetupRepoWithChange(t, tag)
-			testhelpers.CloneRepository(t, remoteDir)
+			remoteDir := testhelper.SetupRepoWithChange(t, tag)
+			testhelper.CloneRepository(t, remoteDir)
 			got, err := ChangesInDirectorySinceTag(t.Context(), "git", tag, test.dir)
 			if err != nil {
 				t.Fatal(err)

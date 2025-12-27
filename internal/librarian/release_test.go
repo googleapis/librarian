@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -102,9 +102,9 @@ func TestReleaseCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			testhelpers.RequireCommand(t, "git")
-			remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
-			testhelpers.CloneRepository(t, remoteDir)
+			testhelper.RequireCommand(t, "git")
+			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+			testhelper.CloneRepository(t, remoteDir)
 
 			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
@@ -265,9 +265,9 @@ func TestReleaseRust(t *testing.T) {
 			wantErr:            true,
 		},
 	}
-	testhelpers.RequireCommand(t, "git")
-	remoteDir := testhelpers.SetupRepoWithChange(t, "v1.0.0")
-	testhelpers.CloneRepository(t, remoteDir)
+	testhelper.RequireCommand(t, "git")
+	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+	testhelper.CloneRepository(t, remoteDir)
 	cfg := &config.Config{
 		Language: "rust",
 		Release: &config.Release{

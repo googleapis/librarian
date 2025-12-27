@@ -18,11 +18,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestFindManifest(t *testing.T) {
-	testhelpers.SetupForVersionBump(t, "find-manifest-0.0.1")
+	testhelper.SetupForVersionBump(t, "find-manifest-0.0.1")
 	// A hypothetical set of file changes.
 	input := []string{
 		"doc/not-in-a-Cargo-file",
