@@ -368,6 +368,7 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 func TestRunPostProcessor(t *testing.T) {
 	t.Skip("requires complete test environment")
 	testhelpers.RequireCommand(t, "python3")
+	testhelpers.RequireCommand(t, "nox")
 	requirePythonModule(t, "synthtool")
 	repoRoot := t.TempDir()
 	outDir := t.TempDir()
@@ -405,6 +406,7 @@ func TestGenerate(t *testing.T) {
 	testhelpers.RequireCommand(t, "protoc")
 	testhelpers.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelpers.RequireCommand(t, "python3")
+	testhelpers.RequireCommand(t, "nox")
 	requirePythonModule(t, "synthtool")
 	repoRoot := t.TempDir()
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "test"))
