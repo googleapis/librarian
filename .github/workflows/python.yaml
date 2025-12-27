@@ -40,9 +40,7 @@ jobs:
         env:
           VERSION: 3.8.2
       - name: Install gapic-generator
-        run: |
-          pip install gapic-generator==1.28.3
-          protoc-gen-python_gapic --version
+        run: pip install gapic-generator==1.28.3
       - name: Install synthtool
         run: |
           pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
