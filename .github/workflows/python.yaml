@@ -45,7 +45,9 @@ jobs:
         run: |
           pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
       - name: Install nox
-        run: pip install nox
+        run: |
+          python -m pip install --upgrade setuptools pip wheel
+          python -m pip install nox
       - name: Verify git is available
         run: git --version
       - name: Run internal/librarian/internal/python tests
