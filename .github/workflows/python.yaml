@@ -39,16 +39,13 @@ jobs:
           pandoc --version
         env:
           VERSION: 3.8.2
-      - name: Install gapic-generator-python
+      - name: Install gapic-generator
         run: |
-          pip install gapic-generator-python
+          pip install gapic-generator==1.28.3
           protoc-gen-python_gapic --version
       - name: Install synthtool
         run: |
-          git clone https://github.com/googleapis/synthtool.git /tmp/synthtool
-          cd /tmp/synthtool
-          git checkout 6702a344265de050bceaff45d62358bb0023ba7d
-          pip install -e .
+          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
       - name: Verify git is available
         run: git --version
       - name: Run internal/librarian/internal/python tests
