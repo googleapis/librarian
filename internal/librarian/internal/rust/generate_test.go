@@ -134,7 +134,6 @@ func TestKeepVeneer(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	// Change to testdata directory so cargo fmt can find Cargo.toml
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
