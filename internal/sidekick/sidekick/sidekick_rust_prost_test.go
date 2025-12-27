@@ -27,9 +27,8 @@ func TestRustProstFromProtobuf(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
 	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
-	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
-	specificationSource := path.Join(testdataDir, "googleapis/google/type")
-	googleapisRoot := path.Join(testdataDir, "googleapis")
+	svcConfig := path.Join(googleapisRoot, "google/type/type.yaml")
+	specificationSource := path.Join(googleapisRoot, "google/type")
 
 	cmdLine := &CommandLine{
 		Command:             []string{},

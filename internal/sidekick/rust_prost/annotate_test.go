@@ -27,7 +27,7 @@ func TestModelAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			SpecificationSource: "../testdata/googleapis/google/type",
+			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
 			"include-list": "f1.proto,f2.proto",
@@ -47,8 +47,8 @@ func TestModelAnnotations(t *testing.T) {
 		PackageName:   "google-cloud-workflows-v1",
 		CopyrightYear: "2035",
 		Files: []string{
-			"../testdata/googleapis/google/type/f1.proto",
-			"../testdata/googleapis/google/type/f2.proto",
+			"../../testdata/googleapis/google/type/f1.proto",
+			"../../testdata/googleapis/google/type/f2.proto",
 		},
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
@@ -60,7 +60,7 @@ func TestServiceAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			SpecificationSource: "../testdata/googleapis/google/type",
+			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
 			"include-list": "unused.proto",
@@ -98,7 +98,7 @@ func TestMethodAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			SpecificationSource: "../testdata/googleapis/google/type",
+			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
 			"include-list": "unused.proto",

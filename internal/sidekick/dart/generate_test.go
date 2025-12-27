@@ -44,7 +44,7 @@ func TestFromProtobuf(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 		Codec: map[string]string{
 			"api-keys-environment-variables": "GOOGLE_API_KEY,GEMINI_API_KEY",

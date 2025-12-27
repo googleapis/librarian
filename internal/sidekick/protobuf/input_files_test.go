@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	testdataDir, _ = filepath.Abs("../testdata")
+	testdataDir, _ = filepath.Abs("../../testdata")
 )
 
 const (

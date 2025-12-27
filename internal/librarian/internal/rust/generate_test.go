@@ -28,14 +28,13 @@ import (
 
 func TestGenerateVeneer(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
-	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
 	outDir := t.TempDir()
 	module1Dir := filepath.Join(outDir, "src", "generated", "v1")
 	module2Dir := filepath.Join(outDir, "src", "generated", "v1beta")
-	googleapisDir := filepath.Join(testdataDir, "googleapis")
+	googleapisDir, err := filepath.Abs("../../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	library := &config.Library{
 		Name:          "test-veneer",
@@ -135,23 +134,24 @@ func TestKeepVeneer(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
+	// Change to testdata directory so cargo fmt can find Cargo.toml
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
-	testdataDir, err := filepath.Abs("../../../sidekick/testdata")
+	googleapisDir, err := filepath.Abs("../../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Change to testdata directory so cargo fmt can find Cargo.toml
 	workspaceDir, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 	outDir := filepath.Join(workspaceDir, "google-cloud-secretmanager-v1")
 	t.Cleanup(func() { os.RemoveAll(outDir) })
+
+	// Change to testdata directory so cargo fmt can find Cargo.toml
 	t.Chdir(workspaceDir)
-	googleapisDir := filepath.Join(testdataDir, "googleapis")
+
 	library := &config.Library{
 		Name:          "google-cloud-secretmanager-v1",
 		Version:       "0.1.0",

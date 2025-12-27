@@ -25,7 +25,7 @@ func TestParseOptions(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "protobuf",
-			SpecificationSource: "../testdata/googleapis/google/type",
+			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
 			"include-list": "f1.proto,f2.proto",

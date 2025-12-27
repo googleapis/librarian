@@ -31,7 +31,7 @@ const (
 var (
 	testdataDir, _            = filepath.Abs("../testdata")
 	discoSourceFile           = path.Join(testdataDir, discoSourceFileRelative)
-	secretManagerYamlFullPath = path.Join(testdataDir, "googleapis", secretManagerYamlRelative)
+	secretManagerYamlFullPath = path.Join(testdataDir, "../../testdata/googleapis", secretManagerYamlRelative)
 	openAPIFile               = path.Join(testdataDir, "openapi", "secretmanager_openapi_v1.json")
 	protobufFile              = path.Join("testdata", "scalar.proto")
 )
@@ -100,7 +100,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
 	model, err := CreateModel(cfg)
@@ -123,7 +123,7 @@ func TestCreateModelOverrides(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
 			"title-override":       "Title Override",
 			"description-override": "Description Override",
@@ -158,7 +158,7 @@ func TestCreateModelNone(t *testing.T) {
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
 			"title-override":       "Title Override",
 			"description-override": "Description Override",
@@ -181,7 +181,7 @@ func TestCreateModelUnknown(t *testing.T) {
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
 			"title-override":       "Title Override",
 			"description-override": "Description Override",
@@ -201,7 +201,7 @@ func TestCreateModelBadParse(t *testing.T) {
 			SpecificationSource: discoSourceFile,
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "googleapis"),
+			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
 			"title-override":       "Title Override",
 			"description-override": "Description Override",
