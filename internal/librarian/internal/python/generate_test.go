@@ -368,7 +368,15 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 func TestRunPostProcessor(t *testing.T) {
 	testhelpers.RequireCommand(t, "python3")
 	requirePythonModule(t, "synthtool")
-	err := runPostProcessor(t.Context(), t.TempDir(), t.TempDir())
+	repoRoot := t.TempDir()
+	outDir := t.TempDir()
+
+	// Create minimal .repo-metadata.json that synthtool expects
+	if err := os.WriteFile(filepath.Join(outDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runPostProcessor(t.Context(), repoRoot, outDir)
 	if err != nil {
 		t.Fatal(err)
 	}
