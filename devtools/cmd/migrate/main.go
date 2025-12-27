@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command migrate-sidekick is a tool for migrating .sidekick.toml to librarian configuration.
+// Command migrate is a tool for migrating .sidekick.toml to librarian configuration.
 package main
 
 import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"log/slog"
 	"maps"
 	"os"
@@ -76,13 +77,12 @@ func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		slog.Error("migrate-sidekick failed", "error", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
 
 func run(args []string) error {
-	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
