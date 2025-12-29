@@ -228,14 +228,6 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return info.Mode().IsRegular()
-}
-
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
 	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
 	if err != nil {
@@ -283,8 +275,11 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 			}
 			if ch.ServiceConfig == "" {
 				derived := deriveServiceConfig(ch.Path)
-				// Only set if the file actually exists
-				if derived != "" && fileExists(filepath.Join(googleapisDir, derived)) {
+				if derived == "" {
+					continue
+				}
+				// Only set if the file actually exists.
+				if _, err := os.Stat(filepath.Join(googleapisDir, derived)); err == nil {
 					ch.ServiceConfig = derived
 				}
 			}
