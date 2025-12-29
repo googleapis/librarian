@@ -90,7 +90,7 @@ func TestKeepNonVeneer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"src/custom.rs", "Cargo.toml"}
+	want := []string{"src/custom.rs"}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
