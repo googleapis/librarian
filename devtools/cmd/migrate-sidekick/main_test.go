@@ -15,7 +15,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"os"
 	"testing"
@@ -854,7 +853,7 @@ func TestRunMigrateCommand(t *testing.T) {
 			wantReleaseBranch := "main"
 			wantReleaseRemote := "upstream"
 
-			if err := run(context.Background(), []string{test.path}); err != nil {
+			if err := run(t.Context(), []string{test.path}); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}

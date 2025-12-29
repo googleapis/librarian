@@ -28,8 +28,9 @@ import (
 )
 
 var (
-	errDuplicateLibraryName = errors.New("duplicate library name")
-	errDuplicateChannelPath = errors.New("duplicate channel path")
+	errDuplicateLibraryName  = errors.New("duplicate library name")
+	errDuplicateChannelPath  = errors.New("duplicate channel path")
+	errNoGoogleapiSourceInfo = errors.New("googleapis source informtion is not provided in Librarian.yaml file")
 )
 
 func tidyCommand() *cli.Command {
@@ -54,7 +55,7 @@ func RunTidy(ctx context.Context) error {
 	}
 
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return nil
+		return errNoGoogleapiSourceInfo
 	}
 	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
@@ -69,11 +70,7 @@ func RunTidy(ctx context.Context) error {
 			if isDerivableChannelPath(cfg.Language, lib, ch) {
 				ch.Path = ""
 			}
-			isDerivable, err := isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir)
-			if err != nil {
-				return err
-			}
-			if isDerivable {
+			if isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir) {
 				ch.ServiceConfig = ""
 			}
 		}
@@ -95,9 +92,9 @@ func isDerivableChannelPath(language string, lib *config.Library, ch *config.Cha
 	return ch.Path == deriveChannelPath(language, lib)
 }
 
-func isDerivableServiceConfig(language string, lib *config.Library, ch *config.Channel, googleapisDir string) (bool, error) {
+func isDerivableServiceConfig(language string, lib *config.Library, ch *config.Channel, googleapisDir string) bool {
 	if ch.ServiceConfig == "" {
-		return false, nil
+		return false
 	}
 	path := ch.Path
 	if path == "" {
@@ -105,9 +102,9 @@ func isDerivableServiceConfig(language string, lib *config.Library, ch *config.C
 	}
 	derived, err := serviceconfig.Find(googleapisDir, path)
 	if err != nil {
-		derived = ""
+		return false
 	}
-	return ch.ServiceConfig == derived, nil
+	return ch.ServiceConfig == derived
 }
 
 func validateLibraries(cfg *config.Config) error {

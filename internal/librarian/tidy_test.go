@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -296,6 +295,10 @@ func TestTidy_DerivableOutput(t *testing.T) {
 language: rust
 default:
   output: generated/
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-secretmanager-v1
     output: generated/cloud/secretmanager/v1
@@ -305,7 +308,7 @@ libraries:
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := RunTidy(context.Background()); err != nil {
+	if err := RunTidy(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := yaml.Read[config.Config](configPath)
@@ -331,6 +334,10 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 			name: "empty_module_removed",
 			configContent: `
 language: rust
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 default:
   output: generated/
 libraries:
@@ -373,5 +380,26 @@ libraries:
 				t.Fatalf("wrong number of modules")
 			}
 		})
+	}
+}
+
+func TestTidyCommandMissingGoogleApisSource(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configContent := `language: rust
+libraries:
+  - name: google-cloud-storage-v1
+    version: "1.0.0"
+  - name: google-cloud-bigquery-v1
+    version: "2.0.0"
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := Run(t.Context(), "librarian", "tidy")
+
+	if !errors.Is(err, errNoGoogleapiSourceInfo) {
+		t.Errorf("mismatch error want %v got %v", errNoGoogleapiSourceInfo, err)
 	}
 }
