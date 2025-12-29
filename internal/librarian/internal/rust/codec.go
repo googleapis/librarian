@@ -22,7 +22,7 @@ import (
 )
 
 func toSidekickConfig(library *config.Library, channel *config.Channel,
-	googleapisDir, discoveryDir, protobufRootDir, protobufSubDir, conformanceDir, showcaseDir, copyrightYear string) *sidekickconfig.Config {
+	googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir, copyrightYear string) *sidekickconfig.Config {
 	source := map[string]string{}
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
@@ -45,7 +45,7 @@ func toSidekickConfig(library *config.Library, channel *config.Channel,
 			"googleapis":   {path: googleapisDir, key: "googleapis-root"},
 			"discovery":    {path: discoveryDir, key: "discovery-root"},
 			"showcase":     {path: showcaseDir, key: "showcase-root"},
-			"protobuf-src": {path: protobufRootDir, key: "protobuf-src-root"},
+			"protobuf-src": {path: protobufDir, key: "protobuf-src-root"},
 			"conformance":  {path: conformanceDir, key: "conformance-root"},
 		}
 		for _, root := range library.Roots {

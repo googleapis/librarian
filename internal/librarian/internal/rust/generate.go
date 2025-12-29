@@ -39,9 +39,9 @@ type Sources struct {
 }
 
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
+func Generate(ctx context.Context, library *config.Library, sources *Sources, copyrightYear string) error {
 	if library.Veneer {
-		return generateVeneer(ctx, library, googleapisDir, protobufSrcDir, copyrightYear)
+		return generateVeneer(ctx, library, sources.Googleapis, sources.ProtobufSrc, copyrightYear)
 	}
 	if len(library.Channels) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
