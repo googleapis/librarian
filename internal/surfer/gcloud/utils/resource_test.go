@@ -188,67 +188,7 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 	}
 }
 
-func TestGetResourceName(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		method  *api.Method
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "With Resource Message",
-			method: &api.Method{
-				InputType: &api.Message{
-					Fields: []*api.Field{
-						{
-							MessageType: &api.Message{
-								Name: "Instance",
-								Resource: &api.Resource{
-									Type: "example.googleapis.com/Instance",
-								},
-							},
-						},
-					},
-				},
-			},
-			want:    "Instance",
-			wantErr: false,
-		},
-		{
-			name: "Without Resource Message",
-			method: &api.Method{
-				InputType: &api.Message{
-					Fields: []*api.Field{
-						{
-							Name: "parent",
-						},
-					},
-				},
-			},
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name: "Nil InputType",
-			method: &api.Method{
-				InputType: nil,
-			},
-			want:    "",
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := GetResourceName(test.method)
-			if (err != nil) != test.wantErr {
-				t.Errorf("GetResourceName() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetResourceName mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
+
 
 func TestIsPrimaryResource(t *testing.T) {
 	for _, test := range []struct {

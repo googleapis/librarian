@@ -21,8 +21,12 @@ import "strings"
 // e.g. "google.cloud.parallelstore.v1beta" -> "beta".
 func InferTrackFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
-
 	version := parts[len(parts)-1]
+
+	// AIP-191: The version component MUST follow the pattern `v[0-9]+...`.
+	if !strings.HasPrefix(version, "v") {
+		return "ga"
+	}
 
 	if strings.Contains(version, "alpha") {
 		return "alpha"

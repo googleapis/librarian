@@ -26,32 +26,35 @@ import (
 // Per AIP-122, the plural is the literal segment before the final variable segment.
 // Example: `.../instances/{instance}` -> "instances".
 func GetPluralFromSegments(segments []api.PathSegment) string {
-	if len(segments) >= 2 {
-		lastSegment := segments[len(segments)-1]
-		if lastSegment.Variable != nil {
-			// The second to last segment should be the literal plural name
-			secondLastSegment := segments[len(segments)-2]
-			if secondLastSegment.Literal != nil {
-				return *secondLastSegment.Literal
-			}
-		}
+	if len(segments) < 2 {
+		return ""
 	}
-	return ""
+	lastSegment := segments[len(segments)-1]
+	if lastSegment.Variable == nil {
+		return ""
+	}
+	// The second to last segment should be the literal plural name
+	secondLastSegment := segments[len(segments)-2]
+	if secondLastSegment.Literal == nil {
+		return ""
+	}
+	return *secondLastSegment.Literal
 }
 
 // GetSingularFromSegments infers the singular name of a resource from its structured path segments.
-// The singular is the name of the final variable segment.
+// According to AIP-123, the last segment of a resource pattern MUST be a variable representing
+// the resource ID, and its name MUST be the singular form of the resource noun.
 // Example: `.../instances/{instance}` -> "instance".
 func GetSingularFromSegments(segments []api.PathSegment) string {
-	if len(segments) > 0 {
-		last := segments[len(segments)-1]
-		if last.Variable != nil && len(last.Variable.FieldPath) > 0 {
-			// Typically the variable name is the last component of the field path
-			// e.g. for `name` binding it might be implied? No, httprule parser populates FieldPath.
-			return last.Variable.FieldPath[len(last.Variable.FieldPath)-1]
-		}
+	if len(segments) == 0 {
+		return ""
 	}
-	return ""
+	last := segments[len(segments)-1]
+	if last.Variable == nil || len(last.Variable.FieldPath) == 0 {
+		return ""
+	}
+	// Per AIP-123, the last variable name is the singular form of the resource noun.
+	return last.Variable.FieldPath[len(last.Variable.FieldPath)-1]
 }
 
 // GetCollectionPathFromSegments constructs the base gcloud collection path from a
@@ -62,9 +65,10 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	var collectionParts []string
 	for i := 0; i < len(segments)-1; i++ {
 		// A collection identifier is a literal segment followed by a variable segment.
-		if segments[i].Literal != nil && segments[i+1].Variable != nil {
-			collectionParts = append(collectionParts, *segments[i].Literal)
+		if segments[i].Literal == nil || segments[i+1].Variable == nil {
+			continue
 		}
+		collectionParts = append(collectionParts, *segments[i].Literal)
 	}
 	return strings.Join(collectionParts, ".")
 }
@@ -76,32 +80,47 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Create` methods, the primary resource is identified by a field named
 	// in the format "{resource}_id" (e.g., "instance_id").
-	if strings.HasPrefix(method.Name, "Create") {
-		resourceName, err := GetResourceName(method)
-		if err == nil && field.Name == strcase.ToSnake(resourceName)+"_id" {
-			return true
+	if IsCreate(method.Name) {
+		resource, err := getResourceFromMethod(method)
+		if err == nil {
+			name := getResourceNameFromType(resource.Type)
+			// TODO(issues/audit_case_transformations.md): Verify that this case transformation
+			// is consistent with gcloud conventions and doesn't introduce traceability issues.
+			if name != "" && field.Name == strcase.ToSnake(name)+"_id" {
+				return true
+			}
 		}
 	}
 	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
 	// by a field named "name", which holds the full resource name.
-	if (strings.HasPrefix(method.Name, "Get") || strings.HasPrefix(method.Name, "Delete") || strings.HasPrefix(method.Name, "Update")) && field.Name == "name" {
+	if (IsGet(method.Name) || IsDelete(method.Name) || IsUpdate(method.Name)) && field.Name == "name" {
 		return true
 	}
 	return false
 }
 
-// GetResourceName extracts the name of the resource from a method's input message.
-// For example, for `CreateInstanceRequest`, it would return "Instance".
-func GetResourceName(method *api.Method) (string, error) {
+// getResourceNameFromType extracts the singular resource name from a resource type string.
+// According to AIP-123, the format of a resource type is {Service Name}/{Type}, where
+// {Type} is the singular form of the resource noun.
+func getResourceNameFromType(typeStr string) string {
+	parts := strings.Split(typeStr, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
+// getResourceFromMethod extracts the resource definition from a method's input message if it exists.
+func getResourceFromMethod(method *api.Method) (*api.Resource, error) {
 	if method.InputType == nil {
-		return "", fmt.Errorf("method input type is nil")
+		return nil, fmt.Errorf("method %q does not have an input type", method.Name)
 	}
 	for _, f := range method.InputType.Fields {
-		if msg := f.MessageType; msg != nil && msg.Resource != nil {
-			return msg.Name, nil
+		if f.MessageType != nil && f.MessageType.Resource != nil {
+			return f.MessageType.Resource, nil
 		}
 	}
-	return "", fmt.Errorf("resource message not found in input type")
+	return nil, fmt.Errorf("resource message not found in input type for method %q", method.Name)
 }
 
 // GetResourceForMethod finds the `api.Resource` definition associated with a method.
@@ -111,21 +130,19 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		return nil
 	}
 
-	// Strategy 1: For `Create` and `Update`, the request message usually contains
-	// a field that *is* the resource message. This message is annotated with `(google.api.resource)`.
-	for _, f := range method.InputType.Fields {
-		if msg := f.MessageType; msg != nil && msg.Resource != nil {
-			return msg.Resource
-		}
+	// Strategy 1: For Create (AIP-133) and Update (AIP-134), the request message
+	// usually contains a field that *is* the resource message.
+	if resource, err := getResourceFromMethod(method); err == nil {
+		return resource
 	}
 
-	// Strategy 2: For `Get`, `Delete`, and `List`, the request message has a `name`
-	// or `parent` field with a `(google.api.resource_reference)`.
+	// Strategy 2: For Get (AIP-131), Delete (AIP-135), and List (AIP-132), the
+	// request message has a `name` or `parent` field with a `(google.api.resource_reference)`.
 	var resourceType string
 	for _, field := range method.InputType.Fields {
 		if (field.Name == "name" || field.Name == "parent") && field.ResourceReference != nil {
-			// For collection methods (like List), the reference is to the parent,
-			// and the resource we care about is the `child_type`.
+			// AIP-132 (List): The "parent" field refers to the parent collection, but the
+			// annotation's `child_type` field (if present) points to the resource being listed.
 			if field.ResourceReference.ChildType != "" {
 				resourceType = field.ResourceReference.ChildType
 			} else {
@@ -138,6 +155,9 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	if resourceType == "" {
 		return nil
 	}
+
+	// TODO(issues/resolve_resource_references.md): Avoid this lookup by linking the ResourceReference
+	// to the Resource definition during model creation or post-processing.
 
 	// Use the API model's indexed maps for an efficient lookup.
 	for _, r := range model.ResourceDefinitions {

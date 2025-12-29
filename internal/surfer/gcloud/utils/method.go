@@ -27,18 +27,44 @@ func GetVerb(methodName string) (string, error) {
 		return "", fmt.Errorf("method name cannot be empty")
 	}
 	switch {
-	case strings.HasPrefix(methodName, "Get"):
+	case IsGet(methodName):
 		return "describe", nil
-	case strings.HasPrefix(methodName, "List"):
+	case IsList(methodName):
 		return "list", nil
-	case strings.HasPrefix(methodName, "Create"):
+	case IsCreate(methodName):
 		return "create", nil
-	case strings.HasPrefix(methodName, "Update"):
+	case IsUpdate(methodName):
 		return "update", nil
-	case strings.HasPrefix(methodName, "Delete"):
+	case IsDelete(methodName):
 		return "delete", nil
 	default:
 		// For non-standard methods, we just use the snake_case version of the method name.
 		return strcase.ToSnake(methodName), nil
 	}
+}
+
+// TODO(issues/robust_method_identification.md): implement a robust AIP-compliant method idetification.
+// IsCreate determines if the method is a Create method.
+func IsCreate(methodName string) bool {
+	return strings.HasPrefix(methodName, "Create")
+}
+
+// IsGet determines if the method is a Get method.
+func IsGet(methodName string) bool {
+	return strings.HasPrefix(methodName, "Get")
+}
+
+// IsList determines if the method is a List method.
+func IsList(methodName string) bool {
+	return strings.HasPrefix(methodName, "List")
+}
+
+// IsUpdate determines if the method is a Update method.
+func IsUpdate(methodName string) bool {
+	return strings.HasPrefix(methodName, "Update")
+}
+
+// IsDelete determines if the method is a Delete method.
+func IsDelete(methodName string) bool {
+	return strings.HasPrefix(methodName, "Delete")
 }
