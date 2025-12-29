@@ -126,9 +126,7 @@ func TestCreateLibrary(t *testing.T) {
 
 func TestCreateLibraryNoYaml(t *testing.T) {
 	tmpDir := t.TempDir()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(tmpDir)
 
 	err := create(t.Context(), "newlib", "", "", "output/newlib", "protobuf", &Generate{}, nil)
 	if !errors.Is(err, errNoYaml) {
