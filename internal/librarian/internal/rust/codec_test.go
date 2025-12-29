@@ -23,7 +23,7 @@ import (
 )
 
 func TestToSidekickConfig(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name           string
 		library        *config.Library
 		channel        *config.Channel
@@ -708,19 +708,19 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.library.Rust != nil && tt.library.Rust.Modules != nil {
+		t.Run(test.name, func(t *testing.T) {
+			if test.library.Rust != nil && test.library.Rust.Modules != nil {
 				var commentOverrides []sidekickconfig.DocumentationOverride
-				for _, module := range tt.library.Rust.Modules {
-					got := moduleToSidekickConfig(tt.library, module, tt.googleapisDir, tt.protobufDir)
+				for _, module := range test.library.Rust.Modules {
+					got := moduleToSidekickConfig(test.library, module, test.googleapisDir, test.protobufDir)
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
-				if diff := cmp.Diff(tt.want.CommentOverrides, commentOverrides); diff != "" {
+				if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			} else {
-				got := toSidekickConfig(tt.library, tt.channel, tt.googleapisDir, tt.discoveryDir, tt.protobufDir, tt.conformanceDir, tt.showcaseDir)
-				if diff := cmp.Diff(tt.want, got); diff != "" {
+				got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir, test.protobufDir, test.conformanceDir, test.showcaseDir)
+				if diff := cmp.Diff(test.want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
