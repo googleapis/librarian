@@ -87,10 +87,10 @@ func isDerivableServiceConfig(language string, lib *config.Library, ch *config.C
 	if path == "" {
 		path = deriveChannelPath(language, lib)
 	}
-	return ch.ServiceConfig != "" && ch.ServiceConfig == conventionServiceConfig(path)
+	return ch.ServiceConfig != "" && ch.ServiceConfig == deriveServiceConfig(path)
 }
 
-// conventionServiceConfig returns the conventionally derived service config
+// deriveServiceConfig returns the conventionally derived service config
 // path for a given channel. For example, if resolved_path is
 // "google/cloud/speech/v1", it derives to
 // "google/cloud/speech/v1/speech_v1.yaml".
@@ -102,9 +102,9 @@ func isDerivableServiceConfig(language string, lib *config.Library, ch *config.C
 // since that command currently does not have access to the googleapis
 // directory.
 //
-// TODO(https://github.com/googleapis/librarian/issues/3358): use googleapis
-// repo for validation.
-func conventionServiceConfig(resolvedPath string) string {
+// TODO(https://github.com/googleapis/librarian/issues/3358): use
+// serviceconfig.Find instead.
+func deriveServiceConfig(resolvedPath string) string {
 	parts := strings.Split(resolvedPath, "/")
 	if len(parts) >= 2 {
 		version := parts[len(parts)-1]
