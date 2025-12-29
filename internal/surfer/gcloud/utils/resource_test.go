@@ -188,8 +188,6 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 	}
 }
 
-
-
 func TestIsPrimaryResource(t *testing.T) {
 	for _, test := range []struct {
 		name   string

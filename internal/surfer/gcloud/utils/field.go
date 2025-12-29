@@ -16,21 +16,28 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// GetGcloudType maps a proto data type to its corresponding gcloud type.
+// GetGcloudType maps an API field type to the corresponding gcloud argparse type.
 func GetGcloudType(t api.Typez) string {
 	switch t {
-	case api.STRING_TYPE:
-		return "" // Default is string
-	case api.INT32_TYPE, api.INT64_TYPE, api.UINT32_TYPE, api.UINT64_TYPE:
-		return "long"
-	case api.BOOL_TYPE:
-		return "boolean"
-	case api.FLOAT_TYPE, api.DOUBLE_TYPE:
+	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
 		return "float"
+	case api.INT64_TYPE, api.UINT64_TYPE, api.INT32_TYPE, api.UINT32_TYPE,
+		api.FIXED64_TYPE, api.FIXED32_TYPE, api.SFIXED32_TYPE, api.SFIXED64_TYPE,
+		api.SINT32_TYPE, api.SINT64_TYPE:
+		return "int"
+	case api.BOOL_TYPE:
+		return "bool"
+	case api.STRING_TYPE, api.ENUM_TYPE:
+		return "str"
+	case api.BYTES_TYPE:
+		return "bytes"
+	case api.MESSAGE_TYPE, api.GROUP_TYPE:
+		return "arg_object"
 	default:
-		return ""
+		panic(fmt.Sprintf("unsupported API type: %v", t))
 	}
 }

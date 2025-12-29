@@ -17,7 +17,6 @@ package utils
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -27,20 +26,22 @@ func TestGetGcloudType(t *testing.T) {
 		typez api.Typez
 		want  string
 	}{
-		{"String", api.STRING_TYPE, ""},
-		{"Int32", api.INT32_TYPE, "long"},
-		{"Int64", api.INT64_TYPE, "long"},
-		{"UInt32", api.UINT32_TYPE, "long"},
-		{"UInt64", api.UINT64_TYPE, "long"},
-		{"Bool", api.BOOL_TYPE, "boolean"},
+		{"String", api.STRING_TYPE, "str"},
+		{"Int32", api.INT32_TYPE, "int"},
+		{"Int64", api.INT64_TYPE, "int"},
+		{"UInt32", api.UINT32_TYPE, "int"},
+		{"UInt64", api.UINT64_TYPE, "int"},
+		{"Bool", api.BOOL_TYPE, "bool"},
 		{"Float", api.FLOAT_TYPE, "float"},
 		{"Double", api.DOUBLE_TYPE, "float"},
-		{"Undefined", api.UNDEFINED_TYPE, ""},
+		{"Bytes", api.BYTES_TYPE, "bytes"},
+		{"Enum", api.ENUM_TYPE, "str"},
+		{"Message", api.MESSAGE_TYPE, "arg_object"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := GetGcloudType(test.typez)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetGcloudType(%v) mismatch (-want +got):\n%s", test.typez, diff)
+			if got != test.want {
+				t.Errorf("GetGcloudType(%v) = %q, want %q", test.typez, got, test.want)
 			}
 		})
 	}

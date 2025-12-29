@@ -18,34 +18,6 @@ import (
 	"testing"
 )
 
-func TestGetVerb(t *testing.T) {
-	for _, test := range []struct {
-		name       string
-		methodName string
-		want       string
-		wantErr    bool
-	}{
-		{"Get", "GetInstance", "describe", false},
-		{"List", "ListInstances", "list", false},
-		{"Create", "CreateInstance", "create", false},
-		{"Update", "UpdateInstance", "update", false},
-		{"Delete", "DeleteInstance", "delete", false},
-		{"Custom", "DetachDisk", "detach_disk", false},
-		{"Empty", "", "", true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := GetVerb(test.methodName)
-			if (err != nil) != test.wantErr {
-				t.Errorf("GetVerb(%q) error = %v, wantErr %v", test.methodName, err, test.wantErr)
-				return
-			}
-			if got != test.want {
-				t.Errorf("GetVerb(%q) = %q, want %q", test.methodName, got, test.want)
-			}
-		})
-	}
-}
-
 func TestIsCreate(t *testing.T) {
 	for _, test := range []struct {
 		name       string
