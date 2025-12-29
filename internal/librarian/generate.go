@@ -175,7 +175,7 @@ func deriveDefaultLibraries(cfg *config.Config, googleapisDir string) ([]*config
 
 func defaultLibraryName(language, channel string) string {
 	switch language {
-	case "rust":
+	case languageRust:
 		return rust.DefaultLibraryName(channel)
 	default:
 		return channel
@@ -184,7 +184,7 @@ func defaultLibraryName(language, channel string) string {
 
 func defaultOutput(language, channel, defaultOut string) string {
 	switch language {
-	case "rust":
+	case languageRust:
 		return rust.DefaultOutput(channel, defaultOut)
 	default:
 		return defaultOut
@@ -193,7 +193,7 @@ func defaultOutput(language, channel, defaultOut string) string {
 
 func deriveChannelPath(language string, lib *config.Library) string {
 	switch language {
-	case "rust":
+	case languageRust:
 		return rust.DeriveChannelPath(lib.Name)
 	default:
 		return strings.ReplaceAll(lib.Name, "-", "/")
@@ -290,11 +290,11 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 
 func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
 	switch language {
-	case "testhelper":
-		if err := testGenerate(library); err != nil {
+	case languageFake:
+		if err := fakeGenerate(library); err != nil {
 			return nil, err
 		}
-	case "rust":
+	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
@@ -305,7 +305,7 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 		if err := rust.Generate(ctx, library, sources); err != nil {
 			return nil, err
 		}
-	case "python":
+	case languagePython:
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
 			return nil, err
 		}
@@ -321,12 +321,9 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 
 func formatLibrary(ctx context.Context, language string, library *config.Library) error {
 	switch language {
-	case "testhelper":
-		// Access library.Name to simulate a real formatter and trigger
-		// a panic if library is nil.
-		_ = library.Name
-		return nil
-	case "rust":
+	case languageFake:
+		return fakeFormat(library)
+	case languageRust:
 		return rust.Format(ctx, library)
 	}
 	return fmt.Errorf("format not implemented for %q", language)

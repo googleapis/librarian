@@ -123,7 +123,7 @@ func validateLibraries(cfg *config.Config) error {
 
 func tidyLanguageConfig(lib *config.Library, language string) {
 	switch language {
-	case "rust":
+	case languageRust:
 		tidyRustConfig(lib)
 	}
 }

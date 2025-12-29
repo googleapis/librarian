@@ -57,7 +57,7 @@ func TestReleaseCommand(t *testing.T) {
 				testlib: "src/storage",
 			},
 			wantVersions: map[string]string{
-				testlib:  testReleaseVersion,
+				testlib:  fakeReleaseVersion,
 				testlib2: "0.1.0",
 			},
 		},
@@ -69,8 +69,8 @@ func TestReleaseCommand(t *testing.T) {
 				testlib2: "src/storage",
 			},
 			wantVersions: map[string]string{
-				testlib:  testReleaseVersion,
-				testlib2: testReleaseVersion,
+				testlib:  fakeReleaseVersion,
+				testlib2: fakeReleaseVersion,
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestReleaseCommand(t *testing.T) {
 				testlib2: "src/gax-internal",
 			},
 			wantVersions: map[string]string{
-				testlib:  testReleaseVersion,
+				testlib:  fakeReleaseVersion,
 				testlib2: "0.1.0",
 			},
 		},
@@ -108,7 +108,7 @@ func TestReleaseCommand(t *testing.T) {
 
 			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
-				Language: "testhelper",
+				Language: languageFake,
 				Release: &config.Release{
 					Remote: "origin",
 					Branch: "main",
@@ -269,7 +269,7 @@ func TestReleaseRust(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: languageRust,
 		Release: &config.Release{
 			Remote: "origin",
 			Branch: "main",

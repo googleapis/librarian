@@ -127,9 +127,9 @@ func releaseAll(ctx context.Context, cfg *config.Config) error {
 func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
 	srcPath := ""
 	switch cfg.Language {
-	case "testhelper":
-		srcPath = testDeriveSrcPath(libConfig)
-	case "rust":
+	case languageFake:
+		srcPath = fakeDeriveSrcPath(libConfig)
+	case languageRust:
 		srcPath = rust.DeriveSrcPath(libConfig, cfg)
 	}
 	if srcPath == "" {
@@ -140,9 +140,9 @@ func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (strin
 
 func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath string) error {
 	switch cfg.Language {
-	case "testhelper":
-		return testReleaseLibrary(libConfig)
-	case "rust":
+	case languageFake:
+		return fakeReleaseLibrary(libConfig)
+	case languageRust:
 		if err := rustReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}

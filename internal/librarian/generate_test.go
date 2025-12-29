@@ -83,7 +83,7 @@ func TestGenerateCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configContent := fmt.Sprintf(`language: testhelper
+			configContent := fmt.Sprintf(`language: fake
 sources:
   googleapis:
     dir: %s
@@ -143,7 +143,7 @@ libraries:
 				if err != nil {
 					t.Fatalf("could not read generated file for %q: %v", libName, err)
 				}
-				want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
+				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", libName)
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
@@ -189,7 +189,7 @@ func TestGenerateSkip(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configContent := fmt.Sprintf(`language: testhelper
+			configContent := fmt.Sprintf(`language: fake
 sources:
   googleapis:
     dir: %s
@@ -460,7 +460,7 @@ func TestCleanOutput(t *testing.T) {
 
 func TestDeriveDefaultLibrariesSkipsConfigured(t *testing.T) {
 	cfg := &config.Config{
-		Language: "rust",
+		Language: languageRust,
 		Default:  &config.Default{Output: t.TempDir()},
 		Libraries: []*config.Library{{
 			Name:     "secretmanager",
@@ -486,7 +486,7 @@ func TestDeriveDefaultLibrariesWithOutputDir(t *testing.T) {
 	}
 
 	cfg := &config.Config{
-		Language: "rust",
+		Language: languageRust,
 		Default:  &config.Default{Output: outputDir},
 	}
 	derived, err := deriveDefaultLibraries(cfg, googleapisDir)

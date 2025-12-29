@@ -99,7 +99,9 @@ func create(ctx context.Context, libraryName, specSource, serviceConfig, output,
 		return err
 	}
 	switch cfg.Language {
-	case "rust":
+	case languageFake:
+		return gen.Run(ctx, false, libraryName)
+	case languageRust:
 		if err := rustHelper.HelperPrepareCargoWorkspace(ctx, output); err != nil {
 			return err
 		}
@@ -114,7 +116,7 @@ func create(ctx context.Context, libraryName, specSource, serviceConfig, output,
 
 func deriveSpecSource(specSource string, serviceConfig string, language string) string {
 	switch language {
-	case "rust":
+	case languageRust:
 		if specSource == "" && serviceConfig != "" {
 			return path.Dir(serviceConfig)
 		}
@@ -123,26 +125,22 @@ func deriveSpecSource(specSource string, serviceConfig string, language string) 
 }
 
 func deriveOutput(output string, cfg *config.Config, libraryName string, specSource string, language string) (string, error) {
-	if output == "" && (cfg.Default == nil || cfg.Default.Output == "") {
+	if output != "" {
+		return output, nil
+	}
+	if cfg.Default == nil || cfg.Default.Output == "" {
 		return "", errOutputFlagRequired
 	}
 	switch language {
-	case "rust":
-		if output == "" {
-			if cfg.Default == nil || cfg.Default.Output == "" {
-				return "", errOutputFlagRequired
-			}
-			if specSource != "" {
-				return defaultOutput(language, specSource, cfg.Default.Output), nil
-			}
-			libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
-			return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
+	case languageRust:
+		if specSource != "" {
+			return defaultOutput(language, specSource, cfg.Default.Output), nil
 		}
+		libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
+		return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
 	default:
 		return defaultOutput(language, specSource, cfg.Default.Output), nil
 	}
-
-	return output, nil
 }
 
 func addLibraryToLibrarianConfig(rootConfig *config.Config, name, output, specificationSource, serviceConfig, specificationFormat string) error {

@@ -75,7 +75,9 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 		return err
 	}
 	switch cfg.Language {
-	case "rust":
+	case languageFake:
+		return fakePublish()
+	case languageRust:
 		return rustPublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
@@ -92,7 +94,9 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 		return err
 	}
 	switch language {
-	case "rust":
+	case languageFake:
+		return nil
+	case languageRust:
 		if err := rustCargoPreFlight(ctx, rust.ToSidekickReleaseConfig(cfg)); err != nil {
 			return err
 		}
