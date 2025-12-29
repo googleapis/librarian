@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -143,13 +143,13 @@ func deriveOutput(output string, cfg *config.Config, libraryName string, specSou
 	}
 }
 
-func addLibraryToLibrarianConfig(rootConfig *config.Config, name, output, specificationSource, serviceConfig, specificationFormat string) error {
+func addLibraryToLibrarianConfig(cfg *config.Config, name, output, specificationSource, serviceConfig, specificationFormat string) error {
 	lib := &config.Library{
 		Name:                name,
 		Output:              output,
-		Version:             "0.1.0",
 		SpecificationFormat: specificationFormat,
 		CopyrightYear:       strconv.Itoa(time.Now().Year()),
+		Version:             "0.1.0",
 	}
 	if serviceConfig != "" || specificationSource != "" {
 		lib.Channels = []*config.Channel{
@@ -159,14 +159,9 @@ func addLibraryToLibrarianConfig(rootConfig *config.Config, name, output, specif
 			},
 		}
 	}
-	rootConfig.Libraries = append(rootConfig.Libraries, lib)
-	data, err := yaml.Marshal(rootConfig)
-	if err != nil {
-		return fmt.Errorf("error marshaling librarian config: %w", err)
-	}
-
-	if err := os.WriteFile(librarianConfigPath, data, 0o644); err != nil {
-		return fmt.Errorf("error writing librarian.yaml: %w", err)
-	}
-	return nil
+	cfg.Libraries = append(cfg.Libraries, lib)
+	sort.Slice(cfg.Libraries, func(i, j int) bool {
+		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
+	})
+	return yaml.Write(librarianConfigPath, cfg)
 }
