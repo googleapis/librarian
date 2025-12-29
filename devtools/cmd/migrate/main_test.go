@@ -854,7 +854,7 @@ func TestRunMigrateCommand(t *testing.T) {
 			wantReleaseBranch := "main"
 			wantReleaseRemote := "upstream"
 
-			if err := run([]string{test.path}); err != nil {
+			if err := runSidekickMigration(test.path, outputPath); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}

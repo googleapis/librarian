@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command migrate-librarian is a tool for migrating .librarian/state.yaml and .librarian/config.yaml to librarian
-// configuration.
 package main
 
 import (
 	"context"
-	"errors"
-	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -33,23 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
-)
-
-const (
-	librarianDir        = ".librarian"
-	librarianStateFile  = "state.yaml"
-	librarianConfigFile = "config.yaml"
-	defaultTagFormat    = "{name}/v{version}"
-	googleapisRepo      = "github.com/googleapis/googleapis"
-)
-
-var (
-	errFetchSource      = errors.New("cannot fetch source")
-	errLangNotSupported = errors.New("only go and python are supported")
-	errRepoNotFound     = errors.New("exactly one repo path argument is required")
-	errTidyFailed       = errors.New("librarian tidy failed")
-
-	fetchSource = fetchGoogleapis
 )
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
@@ -82,24 +60,7 @@ type MigrationInput struct {
 	lang            string
 }
 
-func main() {
-	ctx := context.Background()
-	if err := run(ctx, os.Args[1:]); err != nil {
-		log.Fatalf("migrate-librarian failed: %q", err)
-	}
-}
-
-func run(ctx context.Context, args []string) error {
-	flagSet := flag.NewFlagSet("migrate-librarian", flag.ContinueOnError)
-	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
-	if err := flagSet.Parse(args); err != nil {
-		return err
-	}
-	if flagSet.NArg() != 1 {
-		return errRepoNotFound
-	}
-	repoPath := flagSet.Arg(0)
-
+func runLibrarianMigration(ctx context.Context, repoPath, outputPath string) error {
 	language, err := deriveLanguage(repoPath)
 	if err != nil {
 		return err
@@ -120,7 +81,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	cfg, err := buildConfig(ctx, &MigrationInput{
+	cfg, err := buildConfigFromLibrarian(ctx, &MigrationInput{
 		librarianState:  librarianState,
 		librarianConfig: librarianConfig,
 		repoConfig:      repoConfig,
@@ -131,7 +92,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 
-	if err := yaml.Write(*outputPath, cfg); err != nil {
+	if err := yaml.Write(outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
@@ -154,7 +115,7 @@ func deriveLanguage(repoPath string) (string, error) {
 	}
 }
 
-func buildConfig(
+func buildConfigFromLibrarian(
 	ctx context.Context,
 	input *MigrationInput) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"

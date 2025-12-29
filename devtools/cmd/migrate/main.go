@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command migrate is a tool for migrating .sidekick.toml to librarian configuration.
+// Command migrate is a tool for migrating .sidekick.toml or .librarian configuration to librarian.yaml.
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -45,6 +46,11 @@ const (
 	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
 	conformanceArchivePrefix = "https://github.com/protocolbuffers/protobuf/archive/"
 	tarballSuffix            = ".tar.gz"
+	librarianDir             = ".librarian"
+	librarianStateFile       = "state.yaml"
+	librarianConfigFile      = "config.yaml"
+	defaultTagFormat         = "{name}/v{version}"
+	googleapisRepo           = "github.com/googleapis/googleapis"
 )
 
 var (
@@ -52,6 +58,10 @@ var (
 	errSidekickNotFound            = errors.New(".sidekick.toml not found")
 	errTidyFailed                  = errors.New("librarian tidy failed")
 	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
+	errFetchSource                 = errors.New("cannot fetch source")
+	errLangNotSupported            = errors.New("only go and python are supported")
+
+	fetchSource = fetchGoogleapis
 )
 
 var excludedVeneerLibraries = map[string]struct{}{
@@ -76,12 +86,13 @@ func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
 }
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	ctx := context.Background()
+	if err := run(ctx, os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(args []string) error {
+func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
@@ -93,6 +104,23 @@ func run(args []string) error {
 	}
 	repoPath := flagSet.Arg(0)
 
+	// Auto-detect migration type based on path
+	base := filepath.Base(repoPath)
+
+	if strings.HasSuffix(base, "rust") || strings.HasSuffix(base, "dart") {
+		// Sidekick migration (Rust/Dart)
+		return runSidekickMigration(repoPath, *outputPath)
+	}
+
+	if strings.HasSuffix(base, "go") || strings.HasSuffix(base, "python") {
+		// Librarian migration (Go/Python)
+		return runLibrarianMigration(ctx, repoPath, *outputPath)
+	}
+
+	return fmt.Errorf("unable to detect migration type: path must end with 'rust', 'dart', 'go', or 'python'")
+}
+
+func runSidekickMigration(repoPath, outputPath string) error {
 	// Read root .sidekick.toml for defaults
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
@@ -131,17 +159,17 @@ func run(args []string) error {
 		Remote: "upstream",
 	}
 
-	if err := yaml.Write(*outputPath, cfg); err != nil {
+	if err := yaml.Write(outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	slog.Info("Wrote config to output file", "path", *outputPath)
+	slog.Info("Wrote config to output file", "path", outputPath)
 
 	if err := librarian.RunTidy(); err != nil {
 		slog.Error(errTidyFailed.Error(), "error", err)
 		return errTidyFailed
 	}
 
-	return fixDocumentOverrideNewLines(*outputPath, cfg)
+	return fixDocumentOverrideNewLines(outputPath, cfg)
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
