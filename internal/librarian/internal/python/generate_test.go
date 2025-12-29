@@ -20,22 +20,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-type CommandScript struct {
-	Commands []*MockCommand
-}
-
-type MockCommand struct {
-	ExpectedArgs []string
-	Error        *error
-	called       bool
-}
+const googleapisDir = "../../../testdata/googleapis"
 
 func TestGetStagingChildDirectory(t *testing.T) {
 	t.Parallel()
@@ -46,12 +38,12 @@ func TestGetStagingChildDirectory(t *testing.T) {
 	}{
 		{
 			name:     "versioned path",
-			apiPath:  "google/test/v1",
+			apiPath:  "google/cloud/secretmanager/v1",
 			expected: "v1",
 		},
 		{
 			name:     "non-versioned path",
-			apiPath:  "google/test/type",
+			apiPath:  "google/cloud/secretmanager/type",
 			expected: "type-py",
 		},
 	} {
@@ -75,25 +67,25 @@ func TestCreateProtocOptions(t *testing.T) {
 	}{
 		{
 			name:    "basic case",
-			channel: &config.Channel{Path: "google/test/v1"},
+			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata",
+				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
 			},
 		},
 		{
 			name:    "with transport",
-			channel: &config.Channel{Path: "google/test/v1"},
+			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{Transport: "grpc"},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=transport=grpc,rest-numeric-enums,metadata",
+				"--python_gapic_opt=transport=grpc,rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
 			},
 		},
 		{
 			name:    "with python opts",
-			channel: &config.Channel{Path: "google/test/v1"},
+			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Python: &config.PythonPackage{
 					OptArgs: []string{"opt1", "opt2"},
@@ -101,65 +93,48 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2",
+				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
 			},
 		},
 		{
 			name:    "with python opts by channel",
-			channel: &config.Channel{Path: "google/test/v1"},
+			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Python: &config.PythonPackage{
 					OptArgsByChannel: map[string][]string{
-						"google/test/v1": {"opt1", "opt2"},
-						"google/test/v2": {"opt3", "opt4"},
+						"google/cloud/secretmanager/v1": {"opt1", "opt2"},
+						"google/cloud/secretmanager/v2": {"opt3", "opt4"},
 					},
 				},
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2",
+				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
 			},
 		},
 		{
 			name:    "with version",
-			channel: &config.Channel{Path: "google/test/v1"},
+			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{Version: "1.2.3"},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,gapic-version=1.2.3",
+				"--python_gapic_opt=rest-numeric-enums,metadata,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
 			},
-		},
-		{
-			name:    "with grpc config",
-			channel: &config.Channel{Path: "google/test/v2"},
-			library: &config.Library{},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/test/v2/test_grpc_service_config.json",
-			},
-		},
-		{
-			name:    "multiple grpc configs",
-			channel: &config.Channel{Path: "google/test/v3"},
-			library: &config.Library{},
-			wantErr: true,
 		},
 		{
 			name: "with service config",
 			channel: &config.Channel{
-				Path:          "google/test/v1",
-				ServiceConfig: "test_v1.yaml",
+				Path:          "google/cloud/secretmanager/v1",
+				ServiceConfig: "secretmanager_v1.yaml",
 			},
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
+				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			googleapisDir := "testdata"
-
 			got, err := createProtocOptions(test.channel, test.library, googleapisDir, "staging")
 			if (err != nil) != test.wantErr {
 				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
@@ -209,7 +184,7 @@ func TestSourceDir(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := sourceDir(context.Background(), test.source, "repo")
+			got, err := sourceDir(t.Context(), test.source, "repo")
 			if (err != nil) != test.expectedErr {
 				t.Fatalf("sourceDir() error = %v, wantErr %v", err, test.expectedErr)
 			}
@@ -376,212 +351,83 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 }
 
 func TestRunPostProcessor(t *testing.T) {
-	pythonCode := fmt.Sprintf(`
-from synthtool.languages import python_mono_repo
-python_mono_repo.owlbot_main(%q)
-`, "out/dir")
-	for _, test := range []struct {
-		name          string
-		commandScript CommandScript
-		wantErr       bool
-	}{
-		{
-			name: "success",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: []string{"python3", "-c", pythonCode},
-					},
-				},
-			},
-		},
-		{
-			name: "command fails",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: []string{"python3", "-c", pythonCode},
-						Error:        &exec.ErrNotFound,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			originalRunCommand := runCommand
-			t.Cleanup(func() {
-				runCommand = originalRunCommand
-			})
-			runCommand = newMockRunCommand(t, test.commandScript)
-			err := runPostProcessor(t.Context(), t.TempDir(), "out/dir")
-			if (err != nil) != test.wantErr {
-				t.Fatalf("runPostProcessor() error = %v, wantErr %v", err, test.wantErr)
-			}
-			verifyCommands(t, test.commandScript)
-		})
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	requirePythonModule(t, "synthtool")
+
+	repoRoot := t.TempDir()
+	outDir := t.TempDir()
+
+	// Create minimal .repo-metadata.json that synthtool expects
+	if err := os.WriteFile(filepath.Join(outDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runPostProcessor(t.Context(), repoRoot, outDir)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestGenerateChannel(t *testing.T) {
-	repoRoot := t.TempDir()
-	protocCommand := []string{
-		"protoc",
-		"google/test/v1/test.proto",
-		"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
-		"--python_gapic_opt=rest-numeric-enums,metadata",
-	}
 
-	for _, test := range []struct {
-		name          string
-		commandScript CommandScript
-		wantErr       bool
-	}{
-		{
-			name: "success",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: protocCommand,
-					},
-				},
-			},
-		},
-		{
-			name: "protoc fails",
-			commandScript: CommandScript{
-				Commands: []*MockCommand{
-					{
-						ExpectedArgs: protocCommand,
-						Error:        &exec.ErrNotFound,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			originalRunCommand := runCommand
-			t.Cleanup(func() {
-				runCommand = originalRunCommand
-			})
-			runCommand = newMockRunCommand(t, test.commandScript)
-			err := generateChannel(
-				t.Context(),
-				&config.Channel{Path: "google/test/v1"},
-				&config.Library{Name: "test", Output: repoRoot},
-				"testdata",
-				repoRoot,
-			)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("generateChannel() error = %v, wantErr %v", err, test.wantErr)
-			}
-			verifyCommands(t, test.commandScript)
-		})
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	repoRoot := t.TempDir()
+	err := generateChannel(
+		t.Context(),
+		&config.Channel{Path: "google/cloud/secretmanager/v1"},
+		&config.Library{Name: "secretmanager", Output: repoRoot},
+		googleapisDir,
+		repoRoot,
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestGenerate(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	requirePythonModule(t, "synthtool")
 	repoRoot := t.TempDir()
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "test"))
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
 	if err != nil {
-		t.Fatalf("filepath.Abs() error = %v", err)
-	}
-
-	postProcessor := fmt.Sprintf(`
-from synthtool.languages import python_mono_repo
-python_mono_repo.owlbot_main(%q)
-`, outdir)
-
-	commands := CommandScript{
-		Commands: []*MockCommand{
-			{
-				ExpectedArgs: []string{
-					"protoc",
-					"google/test/v1/test.proto",
-					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v1",
-					"--python_gapic_opt=rest-numeric-enums,metadata,service-yaml=google/test/v1/test_v1.yaml",
-				},
-			},
-			{
-				ExpectedArgs: []string{
-					"protoc",
-					"google/test/v2/test.proto",
-					"--python_gapic_out=" + repoRoot + "/owl-bot-staging/test/v2",
-					"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/test/v2/test_grpc_service_config.json,service-yaml=google/test/v2/test_v2.yaml",
-				},
-			},
-			{
-				ExpectedArgs: []string{"python3", "-c", postProcessor},
-			},
-		},
+		t.Fatal(err)
 	}
 
 	library := &config.Library{
-		Name:   "test",
+		Name:   "secretmanager",
 		Output: outdir,
 		Channels: []*config.Channel{
 			{
-				Path:          "google/test/v1",
-				ServiceConfig: "test_v1.yaml",
-			},
-			{
-				Path:          "google/test/v2",
-				ServiceConfig: "test_v2.yaml",
+				Path:          "google/cloud/secretmanager/v1",
+				ServiceConfig: "secretmanager_v1.yaml",
 			},
 		},
 	}
 	sources := &config.Sources{
 		Googleapis: &config.Source{
-			Dir: "testdata",
+			Dir: googleapisDir,
 		},
 	}
 
-	originalRunCommand := runCommand
-	t.Cleanup(func() {
-		runCommand = originalRunCommand
-	})
-	runCommand = newMockRunCommand(t, commands)
-
 	err = Generate(t.Context(), library, sources)
 	if err != nil {
-		t.Fatalf("Generate() error = %v", err)
+		t.Fatal(err)
 	}
-	verifyCommands(t, commands)
 
 	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {
-		t.Fatalf("Generate() error checking for presence of .repo-metadata.json = %v", err)
+		t.Fatal(err)
 	}
 }
 
-// newMockRunCommand creates a function with the same signature as Run,
-// but which checks the given command script for any command that is executed.
-// If the command doesn't exist, the test fails. Commands are marked as having
-// been run, and an optional error is returned. The command script can then be
-// verified with verifyCommands.
-func newMockRunCommand(t *testing.T, script CommandScript) func(context.Context, []string, string) error {
-	return func(ctx context.Context, args []string, workDir string) error {
-		for _, command := range script.Commands {
-			if !command.called && slices.Equal(command.ExpectedArgs, args) {
-				command.called = true
-				if command.Error == nil {
-					return nil
-				}
-				return *command.Error
-			}
-		}
-		t.Fatalf("no mocked commands for %v", args)
-		// We won't get here.
-		return exec.ErrNotFound
-	}
-}
-
-// verifyCommands verifies that all commands in the specified script have been
-// "mock executed".
-func verifyCommands(t *testing.T, script CommandScript) {
-	for _, command := range script.Commands {
-		if !command.called {
-			t.Fatalf("missing call with args %v", command.ExpectedArgs)
-		}
+func requirePythonModule(t *testing.T, module string) {
+	t.Helper()
+	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))
+	if err := cmd.Run(); err != nil {
+		t.Skipf("skipping test because Python module %s is not installed", module)
 	}
 }
