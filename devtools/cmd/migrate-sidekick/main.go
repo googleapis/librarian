@@ -351,11 +351,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			lib.SkipPublish = true
 		}
 
-		// Parse library-level configuration
-		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
-			lib.CopyrightYear = copyrightYear
-		}
-
 		if extraModules, ok := sidekick.Codec["extra-modules"]; ok {
 			for _, module := range strToSlice(extraModules, false) {
 				if module == "" {
@@ -530,11 +525,10 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 		}
 		name := cargo.Package.Name
 		veneers[name] = &config.Library{
-			Name:          name,
-			Veneer:        true,
-			Output:        dir,
-			Version:       cargo.Package.Version,
-			CopyrightYear: "2025",
+			Name:    name,
+			Veneer:  true,
+			Output:  dir,
+			Version: cargo.Package.Version,
 		}
 		if len(rustModules) > 0 {
 			veneers[name].Rust = &config.RustCrate{
@@ -672,11 +666,10 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 		expectedName := deriveLibraryName(apiPath)
 		nameMatchesConvention := lib.Name == expectedName
 		// Check if library has extra configuration beyond just name/api/version
-		hasExtraConfig := lib.CopyrightYear != "" ||
-			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
-				lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples ||
-				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
-				lib.Rust.NameOverrides != ""))
+		hasExtraConfig := (lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
+			lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples ||
+			len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
+			lib.Rust.NameOverrides != ""))
 		// Only include in libraries section if specific data needs to be retained
 		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
 			libCopy := *lib

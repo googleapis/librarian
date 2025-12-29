@@ -20,9 +20,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -144,7 +142,6 @@ func addLibraryToLibrarianConfig(cfg *config.Config, name, output, specification
 		Name:                name,
 		Output:              output,
 		SpecificationFormat: specificationFormat,
-		CopyrightYear:       strconv.Itoa(time.Now().Year()),
 		Version:             "0.1.0",
 	}
 	if serviceConfig != "" || specificationSource != "" {

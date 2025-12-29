@@ -254,8 +254,12 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return fillDefaults(lib, defaults), nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {
-	googleapisDir, err := fetchSource(ctx, cfgSources.Googleapis, googleapisRepo)
+func generate(ctx context.Context, language string, library *config.Library, sources *config.Sources) (*config.Library, error) {
+	copyrightYear, err := extractCopyrightYear(library.Output, language)
+	if err != nil {
+		return nil, fmt.Errorf("library %s: %w", library.Name, err)
+	}
+	googleapisDir, err := fetchSource(ctx, sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -273,27 +277,27 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 			return nil, err
 		}
 	case languageRust:
-		sources := &rust.Sources{
+		rsources := &rust.Sources{
 			Googleapis: googleapisDir,
 		}
-		sources.Discovery, err = fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		rsources.Discovery, err = fetchSource(ctx, sources.Discovery, discoveryRepo)
 		if err != nil {
 			return nil, err
 		}
-		sources.Conformance, err = fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		rsources.Conformance, err = fetchSource(ctx, sources.Conformance, protobufRepo)
 		if err != nil {
 			return nil, err
 		}
-		sources.Showcase, err = fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		rsources.Showcase, err = fetchSource(ctx, sources.Showcase, showcaseRepo)
 		if err != nil {
 			return nil, err
 		}
-		if cfgSources.ProtobufSrc != nil {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+		if sources.ProtobufSrc != nil {
+			dir, err := fetchSource(ctx, sources.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return nil, err
 			}
-			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
+			rsources.ProtobufSrc = filepath.Join(dir, sources.ProtobufSrc.Subpath)
 		}
 		keep, err := rust.Keep(library)
 		if err != nil {
@@ -302,7 +306,7 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 		if err := cleanOutput(library.Output, keep); err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
 		}
-		if err := rust.Generate(ctx, library, sources); err != nil {
+		if err := rust.Generate(ctx, library, rsources, copyrightYear); err != nil {
 			return nil, err
 		}
 	default:
