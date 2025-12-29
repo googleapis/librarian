@@ -51,6 +51,7 @@ func RunTidy() error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
+
 	for _, lib := range cfg.Libraries {
 		if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
 			lib.Output = ""
@@ -64,7 +65,7 @@ func RunTidy() error {
 			}
 		}
 		lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
-			return ch.Path == "" && ch.ServiceConfig == "" && !ch.ServiceConfigDoesNotExist
+			return ch.Path == "" && ch.ServiceConfig == ""
 		})
 
 		tidyLanguageConfig(lib, cfg.Language)

@@ -765,11 +765,11 @@ func TestBuildConfig(t *testing.T) {
 			name:     "service does not exist",
 			defaults: &config.Config{},
 			libraries: map[string]*config.Library{
-				"google-cloud-security-publicca-v1": {
-					Name: "google-cloud-security-publicca-v1",
+				"google-cloud-orgpolicy-v1": {
+					Name: "google-cloud-orgpolicy-v1",
 					Channels: []*config.Channel{
 						{
-							Path: "google/cloud/security/publicca/v1",
+							Path: "google/cloud/orgpolicy/v1",
 						},
 					},
 					Version:       "1.1.0",
@@ -781,19 +781,18 @@ func TestBuildConfig(t *testing.T) {
 						},
 						PerServiceFeatures: true,
 						GenerateRpcSamples: true,
-						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
+						NameOverrides:      ".google.cloud.orgpolicy.v1.OrgPolicy=OrgPolicyControl",
 					},
 				},
 			},
 			want: &config.Config{
 				Libraries: []*config.Library{
 					{
-						Name: "google-cloud-security-publicca-v1",
+						Name: "google-cloud-orgpolicy-v1",
 						Channels: []*config.Channel{
 							{
-								ServiceConfigDoesNotExist: true,
-								Path:                      "google/cloud/security/publicca/v1",
-								ServiceConfig:             "",
+								Path:          "google/cloud/orgpolicy/v1",
+								ServiceConfig: "",
 							},
 						},
 						Version:       "1.1.0",
@@ -805,7 +804,7 @@ func TestBuildConfig(t *testing.T) {
 							},
 							PerServiceFeatures: true,
 							GenerateRpcSamples: true,
-							NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
+							NameOverrides:      ".google.cloud.orgpolicy.v1.OrgPolicy=OrgPolicyControl",
 						},
 					},
 				},

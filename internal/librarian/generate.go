@@ -228,6 +228,14 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
+}
+
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
 	googleapisDir, err := fetchGoogleapisDir(ctx, cfg.Sources)
 	if err != nil {
@@ -238,7 +246,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			if lib.SkipGenerate {
 				return nil, nil
 			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default)
+			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir)
 			if err != nil {
 				return nil, err
 			}
@@ -260,7 +268,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+func prepareLibrary(language string, lib *config.Library, defaults *config.Default, googleapisDir string) (*config.Library, error) {
 	if len(lib.Channels) == 0 {
 		// If no channels are specified, create an empty channel first
 		lib.Channels = append(lib.Channels, &config.Channel{})
@@ -273,8 +281,12 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 			if ch.Path == "" {
 				ch.Path = deriveChannelPath(language, lib)
 			}
-			if ch.ServiceConfig == "" && !ch.ServiceConfigDoesNotExist {
-				ch.ServiceConfig = deriveServiceConfig(ch.Path)
+			if ch.ServiceConfig == "" {
+				derived := deriveServiceConfig(ch.Path)
+				// Only set if the file actually exists
+				if derived != "" && fileExists(filepath.Join(googleapisDir, derived)) {
+					ch.ServiceConfig = derived
+				}
 			}
 		}
 	}

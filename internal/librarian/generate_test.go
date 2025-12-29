@@ -234,6 +234,8 @@ libraries:
 }
 
 func TestPrepareLibrary(t *testing.T) {
+	googleapisDir := filepath.Join("..", "testdata", "googleapis")
+
 	for _, test := range []struct {
 		name              string
 		language          string
@@ -246,31 +248,34 @@ func TestPrepareLibrary(t *testing.T) {
 		wantServiceConfig string
 	}{
 		{
-			name:       "empty output derives path from channel",
-			language:   "rust",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated/cloud/secretmanager/v1",
+			name:              "empty output derives path from channel",
+			language:          "rust",
+			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			wantOutput:        "src/generated/cloud/secretmanager/v1",
+			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		},
 		{
-			name:       "explicit output keeps explicit path",
-			language:   "rust",
-			output:     "custom/output",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "custom/output",
+			name:              "explicit output keeps explicit path",
+			language:          "rust",
+			output:            "custom/output",
+			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			wantOutput:        "custom/output",
+			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		},
 		{
-			name:       "empty output uses default for non-rust",
-			language:   "go",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated",
+			name:              "empty output uses default for non-rust",
+			language:          "go",
+			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			wantOutput:        "src/generated",
+			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		},
 		{
 			name:              "rust with no channels creates default and derives path",
 			language:          "rust",
 			channels:          nil,
-			wantOutput:        "src/generated/cloud/test/v1",
-			wantChannelPath:   "google/cloud/test/v1",
-			wantServiceConfig: "google/cloud/test/v1/test_v1.yaml",
+			wantOutput:        "src/generated/cloud/secretmanager/v1",
+			wantChannelPath:   "google/cloud/secretmanager/v1",
+			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		},
 		{
 			name:              "veneer rust with no channels does not derive path and service config",
@@ -296,15 +301,15 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:              "rust lib without service config does not derive service config",
 			language:          "rust",
-			channels:          []*config.Channel{{ServiceConfigDoesNotExist: true}},
-			wantOutput:        "src/generated/cloud/test/v1",
-			wantChannelPath:   "google/cloud/test/v1",
+			channels:          []*config.Channel{{Path: "google/cloud/orgpolicy/v1"}},
+			wantOutput:        "src/generated/cloud/orgpolicy/v1",
+			wantChannelPath:   "google/cloud/orgpolicy/v1",
 			wantServiceConfig: "",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
-				Name:     "google-cloud-test-v1",
+				Name:     "google-cloud-secretmanager-v1",
 				Output:   test.output,
 				Veneer:   test.veneer,
 				Channels: test.channels,
@@ -312,7 +317,7 @@ func TestPrepareLibrary(t *testing.T) {
 			defaults := &config.Default{
 				Output: "src/generated",
 			}
-			got, err := prepareLibrary(test.language, lib, defaults)
+			got, err := prepareLibrary(test.language, lib, defaults, googleapisDir)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
@@ -325,15 +330,12 @@ func TestPrepareLibrary(t *testing.T) {
 			if got.Output != test.wantOutput {
 				t.Errorf("got output %q, want %q", got.Output, test.wantOutput)
 			}
-			if test.wantChannelPath != "" || test.wantServiceConfig != "" {
-				if len(got.Channels) == 0 {
-					t.Fatalf("expected a channel, got none")
-				}
+			if len(got.Channels) > 0 {
 				ch := got.Channels[0]
 				if test.wantChannelPath != "" && ch.Path != test.wantChannelPath {
 					t.Errorf("got channel path %q, want %q", ch.Path, test.wantChannelPath)
 				}
-				if test.wantServiceConfig != "" && ch.ServiceConfig != test.wantServiceConfig {
+				if ch.ServiceConfig != test.wantServiceConfig {
 					t.Errorf("got service config %q, want %q", ch.ServiceConfig, test.wantServiceConfig)
 				}
 			}
