@@ -17,6 +17,7 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
