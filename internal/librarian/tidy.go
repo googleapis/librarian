@@ -57,7 +57,7 @@ func RunTidy(ctx context.Context) error {
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
-	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}

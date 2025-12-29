@@ -92,7 +92,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
-	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func dirExists(path string) bool {
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
-	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +258,7 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 	if err != nil {
 		return nil, fmt.Errorf("library %s: %w", library.Name, err)
 	}
-	googleapisDir, err := FetchSource(ctx, sources.Googleapis, googleapisRepo)
+	googleapisDir, err := fetchSource(ctx, sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -279,20 +279,20 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 		rsources := &rust.Sources{
 			Googleapis: googleapisDir,
 		}
-		rsources.Discovery, err = FetchSource(ctx, sources.Discovery, discoveryRepo)
+		rsources.Discovery, err = fetchSource(ctx, sources.Discovery, discoveryRepo)
 		if err != nil {
 			return nil, err
 		}
-		rsources.Conformance, err = FetchSource(ctx, sources.Conformance, protobufRepo)
+		rsources.Conformance, err = fetchSource(ctx, sources.Conformance, protobufRepo)
 		if err != nil {
 			return nil, err
 		}
-		rsources.Showcase, err = FetchSource(ctx, sources.Showcase, showcaseRepo)
+		rsources.Showcase, err = fetchSource(ctx, sources.Showcase, showcaseRepo)
 		if err != nil {
 			return nil, err
 		}
 		if sources.ProtobufSrc != nil {
-			dir, err := FetchSource(ctx, sources.ProtobufSrc, protobufRepo)
+			dir, err := fetchSource(ctx, sources.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return nil, err
 			}

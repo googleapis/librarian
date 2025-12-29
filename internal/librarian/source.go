@@ -22,8 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-// FetchSource fetches a repository source.
-func FetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
+// fetchSource fetches a repository source.
+func fetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
 	if source == nil {
 		return "", nil
 	}
