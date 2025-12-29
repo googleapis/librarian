@@ -398,7 +398,9 @@ libraries:
 		t.Fatal(err)
 	}
 	err := Run(t.Context(), "librarian", "tidy")
-
+	if err == nil {
+		t.Fatalf("expected error, got %v", nil)
+	}
 	if !errors.Is(err, errNoGoogleapiSourceInfo) {
 		t.Errorf("mismatch error want %v got %v", errNoGoogleapiSourceInfo, err)
 	}
