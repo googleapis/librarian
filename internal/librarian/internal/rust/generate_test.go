@@ -37,10 +37,9 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:          "test-veneer",
-		Veneer:        true,
-		Output:        outDir,
-		CopyrightYear: "2025",
+		Name:   "test-veneer",
+		Veneer: true,
+		Output: outDir,
 		Rust: &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies: []*config.RustPackageDependency{
@@ -68,7 +67,7 @@ func TestGenerateVeneer(t *testing.T) {
 	sources := &Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources, "2025"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -152,11 +151,10 @@ func TestGenerate(t *testing.T) {
 	t.Chdir(workspaceDir)
 
 	library := &config.Library{
-		Name:          "google-cloud-secretmanager-v1",
-		Version:       "0.1.0",
-		Output:        outDir,
-		ReleaseLevel:  "preview",
-		CopyrightYear: "2025",
+		Name:         "google-cloud-secretmanager-v1",
+		Version:      "0.1.0",
+		Output:       outDir,
+		ReleaseLevel: "preview",
 		Channels: []*config.Channel{
 			{
 				Path:          "google/cloud/secretmanager/v1",
@@ -176,7 +174,7 @@ func TestGenerate(t *testing.T) {
 	sources := &Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources, "2025"); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {
