@@ -200,26 +200,6 @@ func deriveChannelPath(language string, lib *config.Library) string {
 	}
 }
 
-// deriveServiceConfig returns the conventionally derived service config path for a given channel.
-//
-// The final service config path is constructed using the pattern: "[resolved_path]/[service_name]_[version].yaml".
-//
-// For example, if resolved_path is "google/cloud/speech/v1", it derives to "google/cloud/speech/v1/speech_v1.yaml".
-//
-// It returns an empty string if the resolved path does not contain sufficient components
-// (e.g., missing version or service name) or if the version component does not start with 'v'.
-func deriveServiceConfig(resolvedPath string) string {
-	parts := strings.Split(resolvedPath, "/")
-	if len(parts) >= 2 {
-		version := parts[len(parts)-1]
-		service := parts[len(parts)-2]
-		if strings.HasPrefix(version, "v") {
-			return fmt.Sprintf("%s/%s_%s.yaml", resolvedPath, service, version)
-		}
-	}
-	return ""
-}
-
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -241,15 +221,6 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir)
 			if err != nil {
 				return nil, err
-			}
-			for _, api := range lib.Channels {
-				if api.ServiceConfig == "" {
-					serviceConfig, err := serviceconfig.Find(googleapisDir, api.Path)
-					if err != nil {
-						return nil, err
-					}
-					api.ServiceConfig = serviceConfig
-				}
 			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
@@ -274,14 +245,11 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 				ch.Path = deriveChannelPath(language, lib)
 			}
 			if ch.ServiceConfig == "" {
-				derived := deriveServiceConfig(ch.Path)
-				if derived == "" {
-					continue
+				sc, err := serviceconfig.Find(googleapisDir, ch.Path)
+				if err != nil {
+					return nil, err
 				}
-				// Only set if the file actually exists.
-				if _, err := os.Stat(filepath.Join(googleapisDir, derived)); err == nil {
-					ch.ServiceConfig = derived
-				}
+				ch.ServiceConfig = sc
 			}
 		}
 	}
