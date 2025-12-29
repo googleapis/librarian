@@ -16,12 +16,10 @@ package sidekick
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"path"
 	"strings"
 
-	cmd "github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -54,34 +52,8 @@ func rustGenerate(ctx context.Context, rootConfig *config.Config, cmdLine *Comma
 		cmdLine.Output = path.Join("src/generated", strings.TrimPrefix(cmdLine.SpecificationSource, "google/"))
 	}
 
-	// As part of migration to librarian we removed call to typos, so specifically call it here.
-	if err := cmd.Run(ctx, "typos", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `typos --version`, please install using `cargo install typos-cli`: %w", err)
-	}
-
-	if err := rust.VerifyRustTools(ctx); err != nil {
-		return err
-	}
-
-	if err := rust.PrepareCargoWorkspace(ctx, cmdLine.Output); err != nil {
-		return err
-	}
 	slog.Info("generating new library code and adding it to git")
-	if err := generate(ctx, rootConfig, cmdLine); err != nil {
-		return err
-	}
-	return PostGenerate(ctx, cmdLine.Output)
-}
-
-// PostGenerate runs post-generation tasks on the specified output directory.
-func PostGenerate(ctx context.Context, outdir string) error {
-	if err := rust.FormatAndValidateLibrary(ctx, outdir); err != nil {
-		return nil
-	}
-	slog.Info("running `typos` on new client library")
-	if err := cmd.Run(ctx, "typos"); err != nil {
-		slog.Info("please manually add the typos to `.typos.toml` and fix the problem upstream")
-		return err
-	}
-	return nil
+	return rust.Create(ctx, cmdLine.Output, func(ctx context.Context) error {
+		return generate(ctx, rootConfig, cmdLine)
+	})
 }

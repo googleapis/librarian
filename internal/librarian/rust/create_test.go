@@ -29,14 +29,15 @@ import (
 func TestPrepareCargoWorkspace(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
 	testhelper.RequireCommand(t, "taplo")
-	libName := "new-lib"
+
 	testdataDir, err := filepath.Abs("./testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(testdataDir)
-	outputDir := path.Join(testdataDir, libName)
-	if err := PrepareCargoWorkspace(t.Context(), outputDir); err != nil {
+	outputDir := t.TempDir()
+
+	if err := prepareCargoWorkspace(t.Context(), outputDir); err != nil {
 		t.Fatal(err)
 	}
 	expectedFile := path.Join(outputDir, "Cargo.toml")
@@ -47,7 +48,7 @@ func TestPrepareCargoWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedCargoContent := "name = \"new-lib\""
+	expectedCargoContent := "name = \"google-cloud-secretmanager-v1\""
 	if !strings.Contains(string(got), expectedCargoContent) {
 		t.Errorf("%q missing expected string: %q", got, expectedCargoContent)
 	}
@@ -60,10 +61,10 @@ func TestFormatAndValidateCreatedLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "env")
 	testhelper.RequireCommand(t, "git")
 	testdataDir, err := filepath.Abs("./testdata")
-	libName := "new-lib-format"
+	libName := "google-cloud-secretmanager-v1"
 	t.Chdir(testdataDir)
 	fileToFormat := path.Join(testdataDir, libName, "src", "main.rs")
-	if err := FormatAndValidateLibrary(t.Context(), path.Join(testdataDir, libName)); err != nil {
+	if err := formatAndValidateLibrary(t.Context(), path.Join(testdataDir, libName)); err != nil {
 		t.Fatal(err)
 	}
 	if err != nil {

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package rust provides Rust functionality for librarian that is also being used by sidekick package.
+// Package rust provides Rust specific functionality for creating, generating,
+// and releasing client libraries.
 package rust
 
 import (
@@ -23,22 +24,45 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// PrepareCargoWorkspace creates a new cargo package in the specified output directory.
-func PrepareCargoWorkspace(ctx context.Context, outputDir string) error {
-	if err := VerifyRustTools(ctx); err != nil {
+// CargoConfig is the configuration for a cargo package.
+type CargoConfig struct {
+	Package CargoPackage `toml:"package"`
+}
+
+// CargoPackage is a cargo package.
+type CargoPackage struct {
+	Name string `toml:"name"`
+}
+
+// Create creates a cargo workspace, runs the provided generation function, and
+// validates the library.
+//
+// TODO(https://github.com/googleapis/librarian/issues/3219): generateFn can be
+// removed once sidekick.rustGenerate is deprecated.
+func Create(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
+	if err := prepareCargoWorkspace(ctx, outputDir); err != nil {
+		return err
+	}
+	if err := generateFn(ctx); err != nil {
+		return err
+	}
+	return formatAndValidateLibrary(ctx, outputDir)
+}
+
+// prepareCargoWorkspace creates a new cargo package in the specified output directory.
+func prepareCargoWorkspace(ctx context.Context, outputDir string) error {
+	if err := verifyRustTools(ctx); err != nil {
 		return err
 	}
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "taplo", "fmt", "Cargo.toml"); err != nil {
-		return err
-	}
-	return nil
+	return command.Run(ctx, "taplo", "fmt", "Cargo.toml")
 }
 
-// FormatAndValidateLibrary runs formatter, typos checks, tests  tasks on the specified output directory.
-func FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
+// formatAndValidateLibrary runs formatter, tests, and validation tasks on the
+// specified output directory.
+func formatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	manifestPath := path.Join(outputDir, "Cargo.toml")
 	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {
 		return err
@@ -55,8 +79,8 @@ func FormatAndValidateLibrary(ctx context.Context, outputDir string) error {
 	return addNewFilesToGit(ctx, outputDir)
 }
 
-// VerifyRustTools verifies that all required Rust tools are installed.
-func VerifyRustTools(ctx context.Context) error {
+// verifyRustTools verifies that all required Rust tools are installed.
+func verifyRustTools(ctx context.Context) error {
 	if err := command.Run(ctx, "cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
@@ -75,14 +99,4 @@ func addNewFilesToGit(ctx context.Context, outputDir string) error {
 		return err
 	}
 	return command.Run(ctx, "git", "add", "Cargo.lock", "Cargo.toml")
-}
-
-// CargoConfig is the configuration for a cargo package.
-type CargoConfig struct {
-	Package CargoPackage `toml:"package"`
-}
-
-// CargoPackage is a cargo package.
-type CargoPackage struct {
-	Name string `toml:"name"`
 }
