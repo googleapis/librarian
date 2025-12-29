@@ -292,7 +292,7 @@ func generate(ctx context.Context, language string, library *config.Library, sou
 			return nil, err
 		}
 		if sources.ProtobufSrc != nil {
-			dir, err := fetchSource(ctx, sources.ProtobufSrc, protobufRepo)
+			dir, err := FetchSource(ctx, sources.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return nil, err
 			}
