@@ -30,7 +30,7 @@ import (
 var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateChannelPath  = errors.New("duplicate channel path")
-	errNoGoogleapiSourceInfo = errors.New("googleapis source informtion is not provided in Librarian.yaml file")
+errNoGoogleapiSourceInfo = errors.New("googleapis source information is not provided in Librarian.yaml file")
 )
 
 func tidyCommand() *cli.Command {
