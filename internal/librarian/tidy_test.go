@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -95,7 +96,8 @@ func TestTidyCommand(t *testing.T) {
 	configContent := `language: rust
 sources:
   googleapis:
-    commit: abc123
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-storage-v1
     version: "1.0.0"
@@ -139,6 +141,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 		{
 			name: "derivable fields removed",
 			configContent: `
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-accessapproval-v1
     channels:
@@ -153,34 +159,28 @@ libraries:
 		{
 			name: "non-derivable path not removed",
 			configContent: `
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
-  - name: google-cloud-api-servicecontrol-v1
+  - name: google-cloud-aiplatform-v1-schema-predict-instance
     channels:
-      - path: google/api/servicecontrol/v1
-        service_config: google/api/servicecontrol/v1/servicecontrol.yaml
+      - path: src/generated/cloud/aiplatform/schema/predict/instance
+        service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
 `,
-			wantPath:     "google/api/servicecontrol/v1",
-			wantSvcCfg:   "google/api/servicecontrol/v1/servicecontrol.yaml",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
-		},
-		{
-			name: "only derivable service config removed",
-			configContent: `
-libraries:
-  - name: google-cloud-vision-v1
-    channels:
-      - path: google/some/other/domain/vision/v1
-        service_config: google/some/other/domain/vision/v1/vision_v1.yaml
-`,
-			wantPath:     "google/some/other/domain/vision/v1",
-			wantSvcCfg:   "",
+			wantPath:     "src/generated/cloud/aiplatform/schema/predict/instance",
+			wantSvcCfg:   "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
 		{
 			name: "path needs to be resolved",
 			configContent: `
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-vision-v1
     channels:
@@ -194,6 +194,10 @@ libraries:
 		{
 			name: "service config not derivable (no version at end of path)",
 			configContent: `
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-speech
     channels:
@@ -208,6 +212,10 @@ libraries:
 		{
 			name: "channel removed if service config does not exist",
 			configContent: `
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-orgpolicy-v1
     channels:
@@ -297,7 +305,7 @@ libraries:
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := RunTidy(); err != nil {
+	if err := RunTidy(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := yaml.Read[config.Config](configPath)

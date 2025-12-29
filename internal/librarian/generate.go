@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/internal/python"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -93,7 +92,7 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 }
 
 func generateAll(ctx context.Context, cfg *config.Config) error {
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
@@ -200,7 +199,7 @@ func dirExists(path string) bool {
 }
 
 func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	googleapisDir, err := FetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +254,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 }
 
 func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {
-	googleapisDir, err := fetchSource(ctx, cfgSources.Googleapis, googleapisRepo)
+	googleapisDir, err := FetchSource(ctx, cfgSources.Googleapis, googleapisRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -276,20 +275,20 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 		sources := &rust.Sources{
 			Googleapis: googleapisDir,
 		}
-		sources.Discovery, err = fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		sources.Discovery, err = FetchSource(ctx, cfgSources.Discovery, discoveryRepo)
 		if err != nil {
 			return nil, err
 		}
-		sources.Conformance, err = fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		sources.Conformance, err = FetchSource(ctx, cfgSources.Conformance, protobufRepo)
 		if err != nil {
 			return nil, err
 		}
-		sources.Showcase, err = fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		sources.Showcase, err = FetchSource(ctx, cfgSources.Showcase, showcaseRepo)
 		if err != nil {
 			return nil, err
 		}
 		if cfgSources.ProtobufSrc != nil {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+			dir, err := FetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return nil, err
 			}
@@ -320,21 +319,6 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return rust.Format(ctx, library)
 	}
 	return fmt.Errorf("format not implemented for %q", language)
-}
-
-func fetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
-	if source == nil {
-		return "", nil
-	}
-	if source.Dir != "" {
-		return source.Dir, nil
-	}
-
-	dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
-	}
-	return dir, nil
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list

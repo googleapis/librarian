@@ -135,7 +135,7 @@ func run(ctx context.Context, args []string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	if err := librarian.RunTidy(); err != nil {
+	if err := librarian.RunTidy(ctx); err != nil {
 		return errTidyFailed
 	}
 

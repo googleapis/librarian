@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -75,13 +76,13 @@ func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
 }
 
 func main() {
-	if err := run(os.Args[1:]); err != nil {
+	if err := run(context.Background(), os.Args[1:]); err != nil {
 		slog.Error("migrate-sidekick failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(args []string) error {
+func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
@@ -136,7 +137,7 @@ func run(args []string) error {
 	}
 	slog.Info("Wrote config to output file", "path", *outputPath)
 
-	if err := librarian.RunTidy(); err != nil {
+	if err := librarian.RunTidy(ctx); err != nil {
 		slog.Error(errTidyFailed.Error(), "error", err)
 		return errTidyFailed
 	}
