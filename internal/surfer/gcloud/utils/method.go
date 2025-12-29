@@ -43,7 +43,7 @@ func GetVerb(methodName string) (string, error) {
 	}
 }
 
-// TODO(issues/robust_method_identification.md): implement a robust AIP-compliant method idetification.
+// TODO(https://github.com/googleapis/librarian/issues/3362): implement a robust AIP-compliant method idetification.
 // IsCreate determines if the method is a Create method.
 func IsCreate(methodName string) bool {
 	return strings.HasPrefix(methodName, "Create")

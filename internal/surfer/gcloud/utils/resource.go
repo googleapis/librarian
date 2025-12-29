@@ -84,7 +84,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
-			// TODO(issues/audit_case_transformations.md): Verify that this case transformation
+			// TODO(https://github.com/googleapis/librarian/issues/3361): Verify that this case transformation
 			// is consistent with gcloud conventions and doesn't introduce traceability issues.
 			if name != "" && field.Name == strcase.ToSnake(name)+"_id" {
 				return true
@@ -156,7 +156,7 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		return nil
 	}
 
-	// TODO(issues/resolve_resource_references.md): Avoid this lookup by linking the ResourceReference
+	// TODO(https://github.com/googleapis/librarian/issues/3363): Avoid this lookup by linking the ResourceReference
 	// to the Resource definition during model creation or post-processing.
 
 	// Use the API model's indexed maps for an efficient lookup.
