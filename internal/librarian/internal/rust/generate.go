@@ -31,10 +31,10 @@ import (
 // Sources contains the directory paths for source repositories used by
 // sidekick.
 type Sources struct {
-	Googleapis  string
-	Discovery   string
-	ProtobufSrc string
 	Conformance string
+	Discovery   string
+	Googleapis  string
+	ProtobufSrc string
 	Showcase    string
 }
 
