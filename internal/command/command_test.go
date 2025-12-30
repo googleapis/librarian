@@ -98,19 +98,14 @@ func TestGetExecutablePath(t *testing.T) {
 			executableName: "cargo",
 			want:           "cargo",
 		},
-		{
-			name:           "Nil release config",
-			releaseConfig:  nil,
-			executableName: "cargo",
-			want:           "cargo",
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetExecutablePath(test.releaseConfig, test.executableName)
+			got := GetExecutablePath(test.releaseConfig.Preinstalled, test.executableName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-                                t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
+

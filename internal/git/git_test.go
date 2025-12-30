@@ -39,7 +39,7 @@ func TestGetLastTag(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg, "git"), cfg.Remote, cfg.Branch)
+	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestLastTagGitError(t *testing.T) {
 		Remote: "origin",
 		Branch: "main",
 	}
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg, "git"), cfg.Remote, cfg.Branch)
+	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -77,7 +77,7 @@ func TestIsNewFileSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg, "git")
+	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
 
 	newName := path.Join("src", "storage", "src", "new.rs")
 	if err := os.MkdirAll(path.Dir(newName), 0755); err != nil {
@@ -105,7 +105,7 @@ func TestIsNewFileDiffError(t *testing.T) {
 	t.Chdir(t.TempDir())
 	testhelper.SetupForVersionBump(t, wantTag)
 	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg, "git")
+	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
 	existingName := path.Join("src", "storage", "src", "lib.rs")
 	if IsNewFile(t.Context(), gitExe, "invalid-tag", existingName) {
 		t.Errorf("diff errors should return false for isNewFile(): %s", existingName)
@@ -114,14 +114,10 @@ func TestIsNewFileDiffError(t *testing.T) {
 
 func TestFilesChangedSuccess(t *testing.T) {
 	const wantTag = "release-2001-02-03"
-	release := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(t.Context(), wantTag, command.GetExecutablePath(release, "git"), release.IgnoredChanges)
+	got, err := FilesChangedSince(t.Context(), wantTag, command.GetExecutablePath(nil, "git"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,13 +129,9 @@ func TestFilesChangedSuccess(t *testing.T) {
 
 func TestFilesBadRef(t *testing.T) {
 	const wantTag = "release-2002-03-04"
-	release := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	if got, err := FilesChangedSince(t.Context(), "--invalid--", command.GetExecutablePath(release, "git"), release.IgnoredChanges); err == nil {
+	if got, err := FilesChangedSince(t.Context(), "--invalid--", command.GetExecutablePath(nil, "git"), nil); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
@@ -245,7 +237,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 			test.setup(t)
-			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg, "git"))
+			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"))
 			if (err != nil) != test.wantErr {
 				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
 			}

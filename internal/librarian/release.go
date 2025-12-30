@@ -79,7 +79,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Release, "git")
+	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) 
 	if cfg.Release == nil {
 		return false, errReleaseConfigEmpty
 	}
-	gitExe := command.GetExecutablePath(cfg.Release, "git")
+	gitExe := command.GetExecutablePath(cfg.Release.GetPreinstalled(), "git")
 	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return false, err
