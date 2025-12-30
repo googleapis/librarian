@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -91,20 +90,13 @@ func setupTestConfig(t *testing.T, conf *config.Config) string {
 	if conf == nil {
 		return ""
 	}
-
-	data, err := yaml.Marshal(conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
 	configPath := filepath.Join(tempDir, librarianConfigPath)
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := yaml.Write(configPath, conf); err != nil {
 		t.Fatal(err)
 	}
-
 	return configPath
 }
 
