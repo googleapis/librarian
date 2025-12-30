@@ -20,13 +20,14 @@ import (
 	"log/slog"
 	"maps"
 	"os"
-	stdexec "os/exec"
+	"os/exec"
 	"slices"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -53,8 +54,8 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 // PublishCrates publishes the crates that have changed.
 func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
-	for _, manifest := range findCargoManifests(files) {
-		names, err := publishedCrate(manifest)
+	for _, manifest := range rust.FindCargoManifests(files) {
+		names, err := rust.PublishedCrate(manifest)
 		if err != nil {
 			return err
 		}
@@ -63,7 +64,7 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	cmd := stdexec.CommandContext(ctx, cargoExe(config), "workspaces", "plan", "--skip-published")
+	cmd := exec.CommandContext(ctx, cargoExe(config), "workspaces", "plan", "--skip-published")
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
@@ -102,10 +103,11 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	if dryRun {
 		args = append(args, "--dry-run")
 	}
-	cmd = stdexec.CommandContext(ctx, cargoExe(config), args...)
+	cmd = exec.CommandContext(ctx, cargoExe(config), args...)
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
 	cmd.Dir = "."
 	return cmd.Run()
 }
+

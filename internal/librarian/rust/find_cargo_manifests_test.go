@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"testing"
@@ -34,7 +34,7 @@ func TestFindManifest(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/stub/subdir/file.rs",
 		"src/gax-internal/echo-server/src/lib.rs",
 	}
-	got := findCargoManifests(input)
+	got := FindCargoManifests(input)
 	want := []string{
 		"src/gax-internal/echo-server/Cargo.toml",
 		"src/generated/cloud/secretmanager/v1/Cargo.toml",

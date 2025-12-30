@@ -22,7 +22,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -56,7 +55,7 @@ func ReleaseLibrary(library *config.Library, srcPath string) error {
 	if err != nil {
 		return err
 	}
-	if err := rustrelease.UpdateCargoVersion(cargoFile, newVersion); err != nil {
+	if err := UpdateCargoVersion(cargoFile, newVersion); err != nil {
 		return err
 	}
 	library.Version = newVersion
