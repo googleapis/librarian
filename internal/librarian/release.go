@@ -79,7 +79,10 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	gitExe := "git"
+	if cfg.Release != nil {
+		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	}
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}

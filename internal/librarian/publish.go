@@ -63,7 +63,10 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if err := verifyRequiredTools(ctx, cfg.Language, cfg.Release); err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	gitExe := "git"
+	if cfg.Release != nil {
+		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	}
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
