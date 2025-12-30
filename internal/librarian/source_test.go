@@ -15,15 +15,15 @@
 package librarian
 
 import (
-	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestFetchSource(t *testing.T) {
-    ctx := t.Context()
-	tests := []struct {
+	ctx := t.Context()
+	for _, tt := range []struct {
 		name    string
 		source  *config.Source
 		wantDir string
@@ -39,17 +39,15 @@ func TestFetchSource(t *testing.T) {
 			source:  &config.Source{Dir: "local/dir"},
 			wantDir: "local/dir",
 		},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			gotDir, err := fetchSource(ctx, tt.source, "some-repo")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fetchSource() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if gotDir != tt.wantDir {
-				t.Errorf("fetchSource() = %q, want %q", gotDir, tt.wantDir)
+			if diff := cmp.Diff(tt.wantDir, gotDir); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
