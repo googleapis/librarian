@@ -51,7 +51,7 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 // GetExecutablePath finds the path for a given command, checking for an
 // override in the configuration first.
 func GetExecutablePath(release *config.Release, commandName string) string {
-	if release != nil && release.Preinstalled != nil {
+    if release != nil {
 		if exe, ok := release.Preinstalled[commandName]; ok {
 			return exe
 		}
