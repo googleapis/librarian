@@ -17,6 +17,7 @@ package main
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -828,7 +829,6 @@ func TestRunMigrateCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-
 			// ensure librarian.yaml generated is removed after the test,
 			// even if the test fails
 			outputPath := "librarian.yaml"
@@ -839,8 +839,11 @@ func TestRunMigrateCommand(t *testing.T) {
 			})
 			wantReleaseBranch := "main"
 			wantReleaseRemote := "upstream"
-
-			if err := run(t.Context(), []string{test.path}); err != nil {
+			abs, err := filepath.Abs(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := runSidekickMigration(t.Context(), abs, outputPath); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}

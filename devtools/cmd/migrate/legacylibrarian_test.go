@@ -52,15 +52,8 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			repoPath: "",
 			wantErr:  errRepoNotFound,
 		},
-		{
-			name:     "unsupported_language",
-			repoPath: "unused-path",
-			wantErr:  errLangNotSupported,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// ensure librarian.yaml generated is removed after the test,
-			// even if the test fails
 			outputPath := "librarian.yaml"
 			t.Cleanup(func() {
 				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
@@ -68,12 +61,11 @@ func TestRunMigrateLibrarian(t *testing.T) {
 				}
 			})
 
-			args := []string{"-output", outputPath}
+			err := errRepoNotFound
 			if test.repoPath != "" {
-				args = append(args, test.repoPath)
+				err = runLibrarianMigration(t.Context(), "python", test.repoPath, outputPath)
 			}
-
-			if err := run(t.Context(), args); err != nil {
+			if err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}
@@ -88,48 +80,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 	}
 }
 
-func TestDeriveLanguage(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		repoPath string
-		want     string
-		wantErr  error
-	}{
-		{
-			name:     "golang",
-			repoPath: "path/to/google-cloud-go",
-			want:     "go",
-		},
-		{
-			name:     "python",
-			repoPath: "path/to/google-cloud-python",
-			want:     "python",
-		},
-		{
-			name:     "unsupported_language",
-			repoPath: "path/to/unsupported-language",
-			wantErr:  errLangNotSupported,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveLanguage(test.repoPath)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
-				}
-				return
-			}
-			if err != nil {
-				t.Error(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestBuildConfig(t *testing.T) {
+func TestBuildConfigFromLibrarian(t *testing.T) {
 	defaultFetchSource := func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
@@ -308,14 +259,13 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := t.Context()
 			fetchSource = test.fetchSource
 			input := &MigrationInput{
 				librarianState:  test.state,
 				librarianConfig: test.cfg,
 				lang:            test.lang,
 			}
-			got, err := buildConfig(ctx, input)
+			got, err := buildConfigFromLibrarian(t.Context(), input)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)

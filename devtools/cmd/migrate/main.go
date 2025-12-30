@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command migrate-sidekick is a tool for migrating .sidekick.toml to librarian configuration.
+// Command migrate is a tool for migrating .sidekick.toml or .librarian configuration to librarian.yaml.
 package main
 
 import (
@@ -20,7 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log/slog"
+	"log"
 	"maps"
 	"os"
 	"path/filepath"
@@ -45,6 +45,11 @@ const (
 	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
 	conformanceArchivePrefix = "https://github.com/protocolbuffers/protobuf/archive/"
 	tarballSuffix            = ".tar.gz"
+	librarianDir             = ".librarian"
+	librarianStateFile       = "state.yaml"
+	librarianConfigFile      = "config.yaml"
+	defaultTagFormat         = "{name}/v{version}"
+	googleapisRepo           = "github.com/googleapis/googleapis"
 )
 
 var (
@@ -52,6 +57,9 @@ var (
 	errSidekickNotFound            = errors.New(".sidekick.toml not found")
 	errTidyFailed                  = errors.New("librarian tidy failed")
 	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
+	errFetchSource                 = errors.New("cannot fetch source")
+
+	fetchSource = fetchGoogleapis
 )
 
 var excludedVeneerLibraries = map[string]struct{}{
@@ -59,90 +67,78 @@ var excludedVeneerLibraries = map[string]struct{}{
 	"gcp-sdk":     {},
 }
 
-func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
-	cargoData, err := os.ReadFile(filepath.Join(dir, cargoFile))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read cargo: %w", err)
-	}
-	cargo := rustrelease.Cargo{
-		Package: &rustrelease.CrateInfo{
-			Publish: true,
-		},
-	}
-	if err := toml.Unmarshal(cargoData, &cargo); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cargo: %w", err)
-	}
-	return &cargo, nil
-}
-
 func main() {
-	if err := run(context.Background(), os.Args[1:]); err != nil {
-		slog.Error("migrate-sidekick failed", "error", err)
-		os.Exit(1)
+	ctx := context.Background()
+	if err := run(ctx, os.Args[1:]); err != nil {
+		log.Fatal(err)
 	}
 }
 
 func run(ctx context.Context, args []string) error {
-	flagSet := flag.NewFlagSet("migrate-sidekick", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
-
 	if flagSet.NArg() < 1 {
 		return errRepoNotFound
 	}
-	repoPath := flagSet.Arg(0)
 
-	// Read root .sidekick.toml for defaults
+	repoPath := flagSet.Arg(0)
+	abs, err := filepath.Abs(repoPath)
+	if err != nil {
+		return err
+	}
+	base := filepath.Base(abs)
+	switch base {
+	case "google-cloud-rust", "google-cloud-dart":
+		return runSidekickMigration(ctx, abs, *outputPath)
+	case "google-cloud-python", "google-cloud-go":
+		parts := strings.SplitN(base, "-", 3)
+		return runLibrarianMigration(ctx, parts[2], abs, *outputPath)
+	default:
+		return fmt.Errorf("invalid path: %q", repoPath)
+	}
+}
+
+func runSidekickMigration(ctx context.Context, repoPath, outputPath string) error {
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
-		return fmt.Errorf("failed to read root .sidekick.toml: %w", err)
+		return fmt.Errorf("failed to read root .sidekick.toml from %q: %w", repoPath, err)
 	}
 
-	// Find all .sidekick.toml files for GAPIC libraries.
 	sidekickFiles, err := findSidekickFiles(filepath.Join(repoPath, "src", "generated"))
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
-
 	libraries, err := buildGAPIC(sidekickFiles, repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
-
 	cargoFiles, err := findCargos(filepath.Join(repoPath, "src"))
 	if err != nil {
 		return fmt.Errorf("failed to find Cargo.toml files: %w", err)
 	}
-
 	veneers, err := buildVeneer(cargoFiles)
 	if err != nil {
 		return fmt.Errorf("failed to build veneers: %w", err)
 	}
-
 	allLibraries := make(map[string]*config.Library, len(libraries)+len(veneers))
 	maps.Copy(allLibraries, libraries)
 	maps.Copy(allLibraries, veneers)
 
 	cfg := buildConfig(allLibraries, defaults)
-
 	cfg.Release = &config.Release{
 		Branch: "main",
 		Remote: "upstream",
 	}
-
-	if err := yaml.Write(*outputPath, cfg); err != nil {
+	if err := yaml.Write(outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	slog.Info("Wrote config to output file", "path", *outputPath)
-
 	if err := librarian.RunTidy(ctx); err != nil {
-		slog.Error(errTidyFailed.Error(), "error", err)
 		return errTidyFailed
 	}
-
-	return fixDocumentOverrideNewLines(*outputPath, cfg)
+	return fixDocumentOverrideNewLines(outputPath, cfg)
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
@@ -515,7 +511,6 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 		}
 
 		if _, ok := excludedVeneerLibraries[cargo.Package.Name]; ok {
-			slog.Info("Excluding hardcoded veneer library", "name", cargo.Package.Name)
 			continue
 		}
 
@@ -826,4 +821,20 @@ func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
 		return err
 	}
 	return nil
+}
+
+func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
+	cargoData, err := os.ReadFile(filepath.Join(dir, cargoFile))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read cargo: %w", err)
+	}
+	cargo := rustrelease.Cargo{
+		Package: &rustrelease.CrateInfo{
+			Publish: true,
+		},
+	}
+	if err := toml.Unmarshal(cargoData, &cargo); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cargo: %w", err)
+	}
+	return &cargo, nil
 }
