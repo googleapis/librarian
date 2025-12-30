@@ -26,11 +26,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var (
-	rustPublishCrates  = sidekickrust.PublishCrates
-	rustCargoPreFlight = sidekickrust.CargoPreFlight
-)
-
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
@@ -78,7 +73,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	case languageFake:
 		return fakePublish()
 	case languageRust:
-		return rustPublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+		return sidekickrust.PublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}
@@ -97,7 +92,7 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 	case languageFake:
 		return nil
 	case languageRust:
-		if err := rustCargoPreFlight(ctx, rust.ToSidekickReleaseConfig(cfg)); err != nil {
+		if err := sidekickrust.CargoPreFlight(ctx, rust.ToSidekickReleaseConfig(cfg)); err != nil {
 			return err
 		}
 	default:
