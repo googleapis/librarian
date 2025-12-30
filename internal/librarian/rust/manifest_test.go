@@ -18,8 +18,12 @@ import (
 	"bytes"
 	"os"
 	"path"
+	"slices"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -55,5 +59,83 @@ func TestUpdateCargoVersionMissingVersion(t *testing.T) {
 	}
 	if err := UpdateCargoVersion(manifest, "1.2.3"); err == nil {
 		t.Error("expected an error, got none")
+	}
+}
+
+func TestUpdateManifestSuccess(t *testing.T) {
+	const tag = "update-manifest-success"
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupForVersionBump(t, tag)
+	name := path.Join("src", "storage", "Cargo.toml")
+
+	version, crateName, err := UpdateManifest("git", tag, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("1.1.0", version); diff != "" {
+		t.Errorf("version mismatch (-want, +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("google-cloud-storage", crateName); diff != "" {
+		t.Errorf("crate name mismatch (-want, +got):\n%s", diff)
+	}
+	contents, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx := bytes.Index(contents, []byte(`version                = "1.1.0"`))
+	if idx == -1 {
+		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", "update version", "."); err != nil {
+		t.Fatal(err)
+	}
+
+	// Calling this a second time has no effect.
+	version, crateName, err = UpdateManifest("git", tag, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if version != "" || crateName != "" {
+		t.Errorf("expected empty version and crate name, got %q and %q", version, crateName)
+	}
+	contents, err = os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx = bytes.Index(contents, []byte(`version                = "1.1.0"`))
+	if idx == -1 {
+		t.Errorf("expected version = 1.1.0 in new file, got=%s", contents)
+	}
+}
+
+func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
+	const tag = "manifest-version-update-success"
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupForVersionBump(t, tag)
+
+	name := path.Join("src", "storage", "Cargo.toml")
+	contents, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(contents), "\n")
+	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
+	if idx == -1 {
+		t.Fatalf("expected a line starting with `version ` in %v", lines)
+	}
+	lines[idx] = `version = "2.3.4"`
+	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", "updated version", "."); err != nil {
+		t.Fatal(err)
+	}
+
+	needsBump, err := manifestVersionNeedsBump("git", tag, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if needsBump {
+		t.Errorf("expected no need for a bump for %s", name)
 	}
 }
