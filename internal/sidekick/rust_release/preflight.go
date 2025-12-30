@@ -16,32 +16,11 @@ package rustrelease
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
-
-// CargoPreFlight() verifies all the necessary cargo tools are installed.
-func CargoPreFlight(ctx context.Context, config *config.Release) error {
-	if err := command.Run(ctx, cargoExe(config), "--version"); err != nil {
-		return err
-	}
-	tools, ok := config.Tools["cargo"]
-	if !ok {
-		return nil
-	}
-	for _, tool := range tools {
-		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
-		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.Run(ctx, cargoExe(config), "install", "--locked", spec); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 // PreFlight() verifies all the necessary  tools are installed.
 func PreFlight(ctx context.Context, config *config.Release) error {
@@ -52,8 +31,14 @@ func PreFlight(ctx context.Context, config *config.Release) error {
 	if err := git.GitRemoteURL(ctx, gitExe, config.Remote); err != nil {
 		return err
 	}
-	if err := CargoPreFlight(ctx, config); err != nil {
-		return err
+	if tools, ok := config.Tools["cargo"]; ok {
+		var rustTools []rust.Tool
+		for _, t := range tools {
+			rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
+		}
+		if err := rust.CargoPreFlight(ctx, cargoExe(config), rustTools); err != nil {
+			return err
+		}
 	}
 	return nil
 }

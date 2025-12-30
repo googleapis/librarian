@@ -30,8 +30,8 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -823,13 +823,13 @@ func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
 	return nil
 }
 
-func readCargoConfig(dir string) (*rustrelease.Cargo, error) {
+func readCargoConfig(dir string) (*rust.Cargo, error) {
 	cargoData, err := os.ReadFile(filepath.Join(dir, cargoFile))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cargo: %w", err)
 	}
-	cargo := rustrelease.Cargo{
-		Package: &rustrelease.CrateInfo{
+	cargo := rust.Cargo{
+		Package: &rust.CrateInfo{
 			Publish: true,
 		},
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"bytes"
@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -32,14 +31,9 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	const tag = "update-manifest-success"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 
-	got, err := updateManifest(&release, tag, name)
+	got, err := UpdateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +54,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	}
 
 	// Calling this a second time has no effect.
-	got, err = updateManifest(&release, tag, name)
+	got, err = UpdateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,14 +76,9 @@ func TestUpdateManifestBadDelta(t *testing.T) {
 	const tag = "update-manifest-bad-delta"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 
-	if got, err := updateManifest(&release, "invalid-tag", name); err == nil {
+	if got, err := UpdateManifest("git", "invalid-tag", name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -98,17 +87,12 @@ func TestUpdateManifestBadManifest(t *testing.T) {
 	const tag = "update-manifest-bad-manifest"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	if err := os.Remove(name); err != nil {
 		t.Fatal(err)
 	}
 
-	if got, err := updateManifest(&release, tag, name); err == nil {
+	if got, err := UpdateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -117,17 +101,12 @@ func TestUpdateManifestBadContents(t *testing.T) {
 	const tag = "update-manifest-bad-contents"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	if err := os.WriteFile(name, []byte("invalid = {\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	if got, err := updateManifest(&release, tag, name); err == nil {
+	if got, err := UpdateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -136,11 +115,6 @@ func TestUpdateManifestSkipUnpublished(t *testing.T) {
 	const tag = "update-manifest-skip-unpublished"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	contents, err := os.ReadFile(name)
 	if err != nil {
@@ -151,7 +125,7 @@ func TestUpdateManifestSkipUnpublished(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := updateManifest(&release, tag, name)
+	got, err := UpdateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,11 +139,6 @@ func TestUpdateManifestBadVersion(t *testing.T) {
 	const tag = "update-manifest-bad-version"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	contents := `# Bad version
 [package]
@@ -186,7 +155,7 @@ version = "a.b.c"
 		t.Fatal(err)
 	}
 
-	if got, err := updateManifest(&release, "bad-version-tag", name); err == nil {
+	if got, err := UpdateManifest("git", "bad-version-tag", name); err == nil {
 		t.Errorf("expected an error when using a bad version, got=%v", got)
 	}
 }
@@ -195,11 +164,6 @@ func TestUpdateManifestNoVersion(t *testing.T) {
 	const tag = "update-manifest-no-version"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	contents := `# No Version
 [package]
@@ -209,7 +173,7 @@ name = "google-cloud-storage"
 		t.Fatal(err)
 	}
 
-	if got, err := updateManifest(&release, tag, name); err == nil {
+	if got, err := UpdateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using a bad version, got=%v", got)
 	}
 }
@@ -218,17 +182,12 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 	const tag = "update-manifest-bad-sidekick"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
 	if err := os.WriteFile(path.Join("src", "storage", ".sidekick.toml"), []byte{}, 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	if got, err := updateManifest(&release, tag, name); err == nil {
+	if got, err := UpdateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using a bad sidekick file, got=%v", got)
 	}
 }
@@ -237,11 +196,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
+
 	name := path.Join("src", "storage", "Cargo.toml")
 	contents, err := os.ReadFile(name)
 	if err != nil {
@@ -260,7 +215,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
+	needsBump, err := manifestVersionNeedsBump("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,11 +228,7 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 	const tag = "manifest-version-update-new-crate"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
+
 	testhelper.AddCrate(t, path.Join("src", "new"), "google-cloud-new")
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
@@ -287,7 +238,7 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 	}
 	name := path.Join("src", "new", "Cargo.toml")
 
-	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
+	needsBump, err := manifestVersionNeedsBump("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,13 +251,8 @@ func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
 	const tag = "manifest-version-update-no-change"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
-	needsBump, err := manifestVersionNeedsBump(&release, tag, name)
+	needsBump, err := manifestVersionNeedsBump("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,13 +265,8 @@ func TestManifestVersionNeedsBumpBadDiff(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
-	release := config.Release{
-		Remote:       "upstream",
-		Branch:       "main",
-		Preinstalled: map[string]string{},
-	}
 	name := path.Join("src", "storage", "Cargo.toml")
-	if updated, err := manifestVersionNeedsBump(&release, "not-a-valid-tag", name); err == nil {
+	if updated, err := manifestVersionNeedsBump("git", "not-a-valid-tag", name); err == nil {
 		t.Errorf("expected an error with an valid tag, got=%v", updated)
 	}
 }

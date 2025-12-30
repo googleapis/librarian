@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"os"
@@ -20,7 +20,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func publishedCrate(manifest string) ([]string, error) {
+func PublishedCrate(manifest string) ([]string, error) {
 	contents, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err

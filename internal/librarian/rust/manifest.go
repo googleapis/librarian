@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"fmt"
@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/semver"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -38,8 +37,8 @@ type Cargo struct {
 	Package *CrateInfo `toml:"package"`
 }
 
-func updateManifest(config *config.Release, lastTag, manifest string) ([]string, error) {
-	needsBump, err := manifestVersionNeedsBump(config, lastTag, manifest)
+func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
+	needsBump, err := manifestVersionNeedsBump(gitExe, lastTag, manifest)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +71,7 @@ func updateManifest(config *config.Release, lastTag, manifest string) ([]string,
 	if err := UpdateCargoVersion(manifest, newVersion); err != nil {
 		return nil, err
 	}
-	if err := updateSidekickConfig(manifest, newVersion); err != nil {
+	if err := UpdateSidekickConfig(manifest, newVersion); err != nil {
 		return nil, err
 	}
 	return []string{info.Package.Name}, nil
@@ -99,9 +98,9 @@ func UpdateCargoVersion(path, newVersion string) error {
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 
-func manifestVersionNeedsBump(config *config.Release, lastTag, manifest string) (bool, error) {
+func manifestVersionNeedsBump(gitExe, lastTag, manifest string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
-	cmd := exec.Command(gitExe(config), "diff", delta, "--", manifest)
+	cmd := exec.Command(gitExe, "diff", delta, "--", manifest)
 	cmd.Dir = "."
 	contents, err := cmd.CombinedOutput()
 	if err != nil {

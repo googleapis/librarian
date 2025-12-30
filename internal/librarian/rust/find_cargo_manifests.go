@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"maps"
@@ -21,7 +21,7 @@ import (
 	"slices"
 )
 
-func findCargoManifests(files []string) []string {
+func FindCargoManifests(files []string) []string {
 	isCandidate := func(parent string) bool {
 		return parent != "/" && parent != "." && parent != ""
 	}

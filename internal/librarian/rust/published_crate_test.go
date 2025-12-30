@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ func TestPublishedCrateSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	testhelper.AddCrate(t, tmpDir, "google-cloud-storage")
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	got, err := publishedCrate(manifest)
+	got, err := PublishedCrate(manifest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func TestPublishedCrateSuccess(t *testing.T) {
 func TestPublishedCrateReadError(t *testing.T) {
 	tmpDir := t.TempDir()
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	if got, err := publishedCrate(manifest); err == nil {
+	if got, err := PublishedCrate(manifest); err == nil {
 		t.Errorf("expected error on missing manifest, got=%v", got)
 	}
 }
@@ -53,7 +53,7 @@ func TestPublishedCrateUnmarshalError(t *testing.T) {
 	if err := os.WriteFile(manifest, []byte("invalid-toml={\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := publishedCrate(manifest); err == nil {
+	if got, err := PublishedCrate(manifest); err == nil {
 		t.Errorf("expected error on unmarshaling error, got=%v", got)
 	}
 }
@@ -67,7 +67,7 @@ func TestPublishedCrateNotForPublication(t *testing.T) {
 	if err := os.WriteFile(manifest, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	got, err := publishedCrate(manifest)
+	got, err := PublishedCrate(manifest)
 	if err != nil {
 		t.Fatal(err)
 	}
