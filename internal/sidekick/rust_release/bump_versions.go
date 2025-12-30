@@ -21,7 +21,7 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -31,11 +31,11 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
-	lastTag, err := githelpers.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
 	if err != nil {
 		return err
 	}

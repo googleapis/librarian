@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	"github.com/googleapis/librarian/internal/git"
 	rust "github.com/googleapis/librarian/internal/librarian/internal/rust"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -63,14 +63,14 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 		return err
 	}
 	gitExe := cfg.Release.GetExecutablePath("git")
-	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
+	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -87,10 +87,10 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 // verifyRequiredTools verifies all the necessary language-agnostic tools are installed.
 func verifyRequiredTools(ctx context.Context, language string, cfg *config.Release) error {
 	gitExe := cfg.GetExecutablePath("git")
-	if err := githelpers.GitVersion(ctx, gitExe); err != nil {
+	if err := git.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := githelpers.GitRemoteURL(ctx, gitExe, cfg.Remote); err != nil {
+	if err := git.GitRemoteURL(ctx, gitExe, cfg.Remote); err != nil {
 		return err
 	}
 	switch language {

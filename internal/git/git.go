@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package githelpers provides functions for determining changes in a git repository.
-package githelpers
+// Package git provides functions for determining changes in a git repository.
+package git
 
 import (
 	"bytes"

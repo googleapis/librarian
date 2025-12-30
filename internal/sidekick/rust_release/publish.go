@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -36,14 +36,14 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
-	lastTag, err := githelpers.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	if err := githelpers.MatchesBranchPoint(ctx, gitExe(config), config.Remote, config.Branch); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitExe(config), config.Remote, config.Branch); err != nil {
 		return err
 	}
-	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
-			if githelpers.IsNewFile(ctx, gitExe(config), lastTag, manifest) {
+			if git.IsNewFile(ctx, gitExe(config), lastTag, manifest) {
 				continue
 			}
 			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)

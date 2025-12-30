@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/internal/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -79,7 +79,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	gitExe := cfg.Release.GetExecutablePath("git")
-	if err := githelpers.AssertGitStatusClean(ctx, gitExe); err != nil {
+	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
 
@@ -175,11 +175,11 @@ func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) 
 		return false, errReleaseConfigEmpty
 	}
 	gitExe := cfg.Release.GetExecutablePath("git")
-	lastTag, err := githelpers.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return false, err
 	}
-	numberOfChanges, err := githelpers.ChangesInDirectorySinceTag(ctx, gitExe, lastTag, path)
+	numberOfChanges, err := git.ChangesInDirectorySinceTag(ctx, gitExe, lastTag, path)
 	if err != nil {
 		return false, err
 	}
