@@ -205,3 +205,55 @@ func TestGenerate(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		channel string
+		want    string
+	}{
+		{
+			name:    "simple",
+			channel: "google/cloud/secretmanager/v1",
+			want:    "google-cloud-secretmanager-v1",
+		},
+		{
+			name:    "no slashes",
+			channel: "name",
+			want:    "name",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultLibraryName(test.channel)
+			if got != test.want {
+				t.Errorf("DefaultLibraryName(%q) = %q; want %q", test.channel, got, test.want)
+			}
+		})
+	}
+}
+
+func TestDeriveChannelPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  string
+		want string
+	}{
+		{
+			name: "simple",
+			lib:  "google-cloud-secretmanager-v1",
+			want: "google/cloud/secretmanager/v1",
+		},
+		{
+			name: "no dashes",
+			lib:  "name",
+			want: "name",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DeriveChannelPath(test.lib)
+			if got != test.want {
+				t.Errorf("DeriveChannelPath(%q) = %q; want %q", test.lib, got, test.want)
+			}
+		})
+	}
+}

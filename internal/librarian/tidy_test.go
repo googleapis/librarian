@@ -68,23 +68,78 @@ func TestValidateLibraries(t *testing.T) {
 
 func TestFormatConfig(t *testing.T) {
 	cfg := formatConfig(&config.Config{
+		Default: &config.Default{
+			Rust: &config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "z"},
+					{Name: "a"},
+				},
+			},
+		},
 		Libraries: []*config.Library{
-			{Name: "google-cloud-storage-v1", Version: "1.0.0"},
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "1.0.0",
+				Channels: []*config.Channel{
+					{Path: "c"},
+					{Path: "a"},
+				},
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "y"},
+							{Name: "b"},
+						},
+					},
+				},
+			},
 			{Name: "google-cloud-bigquery-v1", Version: "2.0.0"},
 			{Name: "google-cloud-secretmanager-v1", Version: "3.0.0"},
 		},
 	})
-	want := []string{
+	wantLibs := []string{
 		"google-cloud-bigquery-v1",
 		"google-cloud-secretmanager-v1",
 		"google-cloud-storage-v1",
 	}
-	var got []string
+	var gotLibs []string
 	for _, lib := range cfg.Libraries {
-		got = append(got, lib.Name)
+		gotLibs = append(gotLibs, lib.Name)
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(wantLibs, gotLibs); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Check channel sorting
+	libWithChannels := cfg.Libraries[2]
+	wantChannels := []string{"a", "c"}
+	var gotChannels []string
+	for _, ch := range libWithChannels.Channels {
+		gotChannels = append(gotChannels, ch.Path)
+	}
+	if diff := cmp.Diff(wantChannels, gotChannels); diff != "" {
+		t.Errorf("channel sorting mismatch (-want +got):\n%s", diff)
+	}
+
+	// Check default rust dependency sorting
+	wantDefaultDeps := []string{"a", "z"}
+	var gotDefaultDeps []string
+	for _, dep := range cfg.Default.Rust.PackageDependencies {
+		gotDefaultDeps = append(gotDefaultDeps, dep.Name)
+	}
+	if diff := cmp.Diff(wantDefaultDeps, gotDefaultDeps); diff != "" {
+		t.Errorf("default rust dependency sorting mismatch (-want +got):\n%s", diff)
+	}
+
+	// Check library rust dependency sorting
+	libWithRust := cfg.Libraries[2]
+	wantLibDeps := []string{"b", "y"}
+	var gotLibDeps []string
+	for _, dep := range libWithRust.Rust.PackageDependencies {
+		gotLibDeps = append(gotLibDeps, dep.Name)
+	}
+	if diff := cmp.Diff(wantLibDeps, gotLibDeps); diff != "" {
+		t.Errorf("library rust dependency sorting mismatch (-want +got):\n%s", diff)
 	}
 }
 
