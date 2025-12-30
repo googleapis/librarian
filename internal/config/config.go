@@ -206,12 +206,3 @@ type Channel struct {
 	// ServiceConfig is the path to the service config file.
 	ServiceConfig string `yaml:"service_config,omitempty"`
 }
-
-// GetPreinstalled returns the Preinstalled value on release object or nil if release
-// object is empty.
-func (r *Release) GetPreinstalled() map[string]string {
-	if r == nil {
-		return nil
-	}
-	return r.Preinstalled
-}

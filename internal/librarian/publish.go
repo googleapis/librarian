@@ -87,7 +87,10 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 
 // verifyRequiredTools verifies all the necessary language-agnostic tools are installed.
 func verifyRequiredTools(ctx context.Context, language string, cfg *config.Release) error {
-	gitExe := command.GetExecutablePath(cfg.GetPreinstalled(), "git")
+	gitExe := "git"
+	if cfg != nil {
+		gitExe = command.GetExecutablePath(cfg.Preinstalled, "git")
+	}
 	if err := git.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
