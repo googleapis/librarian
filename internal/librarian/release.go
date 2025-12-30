@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -78,7 +79,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	gitExe := cfg.Release.GetExecutablePath("git")
+	gitExe := command.GetExecutablePath(cfg.Release, "git")
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -174,7 +175,7 @@ func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) 
 	if cfg.Release == nil {
 		return false, errReleaseConfigEmpty
 	}
-	gitExe := cfg.Release.GetExecutablePath("git")
+	gitExe := command.GetExecutablePath(cfg.Release, "git")
 	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return false, err

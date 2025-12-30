@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 // Run executes a program (with arguments) and captures any error output. It is a
@@ -44,4 +46,15 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
 	}
 	return nil
+}
+
+// GetExecutablePath finds the path for a given command, checking for an
+// override in the configuration first.
+func GetExecutablePath(release *config.Release, commandName string) string {
+	if release != nil && release.Preinstalled != nil {
+		if exe, ok := release.Preinstalled[commandName]; ok {
+			return exe
+		}
+	}
+	return commandName
 }

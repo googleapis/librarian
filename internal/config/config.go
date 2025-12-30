@@ -64,17 +64,6 @@ type Release struct {
 	Tools map[string][]Tool `yaml:"tools,omitempty"`
 }
 
-// GetExecutablePath finds the path for a given command, checking for an
-// override in the configuration first.
-func (r *Release) GetExecutablePath(commandName string) string {
-	if r != nil && r.Preinstalled != nil {
-		if exe, ok := r.Preinstalled[commandName]; ok {
-			return exe
-		}
-	}
-	return commandName
-}
-
 // Tool defines the configuration required to install helper tools.
 type Tool struct {
 	// Name is the name of the tool e.g. nox.
