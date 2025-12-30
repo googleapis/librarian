@@ -17,9 +17,9 @@ package rustrelease
 import (
 	"context"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 

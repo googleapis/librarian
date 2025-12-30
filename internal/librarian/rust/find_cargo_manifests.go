@@ -21,6 +21,8 @@ import (
 	"slices"
 )
 
+// FindCargoManifests identifies all unique Cargo.toml file paths relevant to a given set of changed files.
+// It traverses up the directory tree from each changed file to find the nearest Cargo.toml.
 func FindCargoManifests(files []string) []string {
 	isCandidate := func(parent string) bool {
 		return parent != "/" && parent != "." && parent != ""
