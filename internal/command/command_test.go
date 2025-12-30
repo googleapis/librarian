@@ -108,4 +108,3 @@ func TestGetExecutablePath(t *testing.T) {
 		})
 	}
 }
-
