@@ -109,7 +109,7 @@ func TestGetExecutablePath(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := GetExecutablePath(test.releaseConfig, test.executableName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetExecutablePath() mismatch (-want +got):\n%s", diff)
+                                t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
