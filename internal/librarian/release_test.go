@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -224,52 +223,24 @@ func TestLibraryByName(t *testing.T) {
 	}
 }
 
-func TestReleaseRust(t *testing.T) {
-	origRustReleaseLibrary := rustReleaseLibrary
-	origLibrarianGenerateLibrary := librarianGenerateLibrary
-
-	defer func() {
-		rustReleaseLibrary = origRustReleaseLibrary
-		librarianGenerateLibrary = origLibrarianGenerateLibrary
-	}()
+func TestRelease(t *testing.T) {
 
 	tests := []struct {
-		name               string
-		srcPath            string
-		releaseError       error
-		generateError      error
-		wantReleaseCalled  bool
-		wantGenerateCalled bool
-		wantErr            bool
+		name    string
+		srcPath string
+		version string
 	}{
 		{
-			name:               "library released",
-			srcPath:            "src/storage",
-			wantReleaseCalled:  true,
-			wantGenerateCalled: true,
-		},
-		{
-			name:               "generate error",
-			srcPath:            "src/storage",
-			wantReleaseCalled:  true,
-			wantGenerateCalled: true,
-			generateError:      errors.New("generate error"),
-			wantErr:            true,
-		},
-		{
-			name:               "rust release error",
-			srcPath:            "src/storage",
-			wantReleaseCalled:  true,
-			wantGenerateCalled: false,
-			releaseError:       errors.New("release error"),
-			wantErr:            true,
+			name:    "library released",
+			srcPath: "src/storage",
+			version: "1.2.3",
 		},
 	}
 	testhelper.RequireCommand(t, "git")
-	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
+	remoteDir := testhelper.SetupRepoWithChange(t, "v1.2.2")
 	testhelper.CloneRepository(t, remoteDir)
 	cfg := &config.Config{
-		Language: languageRust,
+		Language: languageFake,
 		Release: &config.Release{
 			Remote: "origin",
 			Branch: "main",
@@ -278,37 +249,13 @@ func TestReleaseRust(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var (
-				generateCalled bool
-				releaseCalled  bool
-			)
-			rustReleaseLibrary = func(library *config.Library, srcPath string) error {
-				releaseCalled = true
-				return test.releaseError
-			}
-			librarianGenerateLibrary = func(ctx context.Context, all bool, libraryName string) error {
-				generateCalled = true
-				return test.generateError
-			}
 			libConfg := &config.Library{}
 			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
-
-			if (err != nil) != test.wantErr {
-				t.Fatalf("releaseLibrary() error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				t.Fatalf("releaseLibrary() error = %v", err)
 			}
-			if releaseCalled != test.wantReleaseCalled {
-				t.Errorf("releaseCalled = %v, want %v", releaseCalled, test.wantReleaseCalled)
-			}
-			if generateCalled != test.wantGenerateCalled {
-				t.Errorf("generateCalled = %v, want %v", generateCalled, test.wantGenerateCalled)
-			}
-			if test.releaseError != nil && test.releaseError != err {
-				t.Errorf("releaseError= %v, want %v", err, test.releaseError)
-
-			}
-			if test.generateError != nil && test.generateError != err {
-				t.Errorf("generateError= %v, want %v", err, test.generateError)
-
+			if libConfg.Version != test.version {
+				t.Errorf("library %q version mismatch: want %q, got %q", libConfg.Name, test.version, libConfg.Version)
 			}
 		})
 
