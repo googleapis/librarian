@@ -23,26 +23,34 @@ import (
 
 func TestFetchSource(t *testing.T) {
 	ctx := context.Background()
+	tests := []struct {
+		name    string
+		source  *config.Source
+		wantDir string
+		wantErr bool
+	}{
+		{
+			name:    "nil source",
+			source:  nil,
+			wantDir: "",
+		},
+		{
+			name:    "source with dir",
+			source:  &config.Source{Dir: "local/dir"},
+			wantDir: "local/dir",
+		},
+	}
 
-	t.Run("nil source", func(t *testing.T) {
-		dir, err := fetchSource(ctx, nil, "some-repo")
-		if err != nil {
-			t.Errorf("fetchSource() error = %v, wantErr %v", err, false)
-		}
-		if dir != "" {
-			t.Errorf("fetchSource() = %q, want %q", dir, "")
-		}
-	})
-
-	t.Run("source with dir", func(t *testing.T) {
-		wantDir := "local/dir"
-		source := &config.Source{Dir: wantDir}
-		gotDir, err := fetchSource(ctx, source, "some-repo")
-		if err != nil {
-			t.Errorf("fetchSource() error = %v, wantErr %v", err, false)
-		}
-		if gotDir != wantDir {
-			t.Errorf("fetchSource() = %q, want %q", gotDir, wantDir)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDir, err := fetchSource(ctx, tt.source, "some-repo")
+			if (err != nil) != tt.wantErr {
+				t.Errorf("fetchSource() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotDir != tt.wantDir {
+				t.Errorf("fetchSource() = %q, want %q", gotDir, tt.wantDir)
+			}
+		})
+	}
 }
