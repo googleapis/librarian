@@ -15,35 +15,38 @@
 package rust
 
 import (
+	"context"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestCargoPreFlightSuccess(t *testing.T) {
-	tools := []Tool{
+	testhelper.RequireCommand(t, "cargo")
+	tools := []config.Tool{
 		{Name: "cargo-semver-checks"},
 	}
-	if err := VerifyCargoTools(t.Context(), "cargo", tools); err != nil {
+	if err := CargoPreFlight(context.Background(), "cargo", tools); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCargoPreFlightBadCargo(t *testing.T) {
-	tools := []Tool{
+	tools := []config.Tool{
 		{Name: "cargo-semver-checks"},
 	}
-	if err := VerifyCargoTools(t.Context(), "not-a-valid-cargo", tools); err == nil {
+	if err := CargoPreFlight(context.Background(), "not-a-valid-cargo", tools); err == nil {
 		t.Error("expected an error, got none")
 	}
 }
 
 func TestCargoPreFlightBadTool(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
-	tools := []Tool{
+	tools := []config.Tool{
 		{Name: "not-a-valid-tool", Version: "0.0.1"},
 	}
-	if err := VerifyCargoTools(t.Context(), "cargo", tools); err == nil {
+	if err := CargoPreFlight(context.Background(), "cargo", tools); err == nil {
 		t.Error("expected an error, got none")
 	}
 }

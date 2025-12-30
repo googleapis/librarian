@@ -22,15 +22,13 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	librarianrust "github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
 var (
-	rustPublishCrates  = sidekickrust.PublishCrates
-	rustCargoPreFlight = librarianrust.VerifyCargoTools
+	rustPublishCrates = sidekickrust.PublishCrates
 )
 
 func publishCommand() *cli.Command {
@@ -83,7 +81,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	case languageFake:
 		return fakePublish()
 	case languageRust:
-		return rustPublishCrates(ctx, librarianrust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+		return rustPublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}
@@ -105,19 +103,8 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 	case languageFake:
 		return nil
 	case languageRust:
-		var rustTools []rust.Tool
-		for _, t := range cfg.Tools["cargo"] {
-			rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
-		}
-		cargoExe := "cargo"
-		if cfg != nil {
-			cargoExe = command.GetExecutablePath(cfg.Preinstalled, "cargo")
-		}
-		if err := rustCargoPreFlight(ctx, cargoExe, rustTools); err != nil {
-			return err
-		}
+		return rust.CargoPreFlight(ctx, command.GetExecutablePath(cfg.Preinstalled, "cargo"), cfg.Tools["cargo"])
 	default:
 		return fmt.Errorf("unknown language: %s", language)
 	}
-	return nil
 }
