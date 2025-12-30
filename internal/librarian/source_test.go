@@ -22,7 +22,7 @@ import (
 )
 
 func TestFetchSource(t *testing.T) {
-	ctx := context.Background()
+    ctx := t.Context()
 	tests := []struct {
 		name    string
 		source  *config.Source
