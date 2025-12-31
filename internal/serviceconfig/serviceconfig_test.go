@@ -102,6 +102,11 @@ func TestFind(t *testing.T) {
 			channel: "google/cloud/nonexistent/v1",
 			wantErr: true,
 		},
+		{
+			name:    "override",
+			channel: "google/cloud/aiplatform/schema/predict/instance",
+			want:    "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Find(googleapisDir, test.channel)
