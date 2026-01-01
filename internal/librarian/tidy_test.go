@@ -70,10 +70,10 @@ func TestFormatConfig(t *testing.T) {
 	cfg := formatConfig(&config.Config{
 		Default: &config.Default{
 			Rust: &config.RustDefault{
-				PackageDependencies: []*config.RustPackageDependency{
-					{Name: "z"},
-					{Name: "a"},
-				},
+					PackageDependencies: []*config.RustPackageDependency{
+						{Name: "z"},
+						{Name: "a"},
+					},
 			},
 		},
 		Libraries: []*config.Library{
@@ -472,5 +472,147 @@ libraries:
 	}
 	if !errors.Is(err, errNoGoogleapiSourceInfo) {
 		t.Errorf("mismatch error want %v got %v", errNoGoogleapiSourceInfo, err)
+	}
+}
+
+func TestIsDerivableOutput(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "derivable",
+			cfg: &config.Config{
+				Language: "rust",
+				Default: &config.Default{
+					Output: "generated/",
+				},
+			},
+			lib: &config.Library{
+				Output: "generated/cloud/secretmanager/v1",
+				Channels: []*config.Channel{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "not derivable",
+			cfg: &config.Config{
+				Language: "rust",
+				Default: &config.Default{
+					Output: "generated/",
+				},
+			},
+			lib: &config.Library{
+				Output: "custom/output",
+				Channels: []*config.Channel{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDerivableOutput(test.cfg, test.lib)
+			if got != test.want {
+				t.Errorf("isDerivableOutput() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsDerivableChannelPath(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		lib      *config.Library
+		ch       *config.Channel
+		want     bool
+	}{
+		{
+			name:     "derivable",
+			language: "rust",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+			},
+			ch: &config.Channel{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: true,
+		},
+		{
+			name:     "not derivable",
+			language: "rust",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+			},
+			ch: &config.Channel{
+				Path: "custom/path",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDerivableChannelPath(test.language, test.lib, test.ch)
+			if got != test.want {
+				t.Errorf("isDerivableChannelPath() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestIsDerivableServiceConfig(t *testing.T) {
+	googleapisDir := t.TempDir()
+	createGoogleapisServiceConfigs(t, googleapisDir, map[string]string{
+		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
+	})
+	for _, test := range []struct {
+		name     string
+		language string
+		lib      *config.Library
+		ch       *config.Channel
+		want     bool
+	}{
+		{
+			name:     "derivable",
+			language: "rust",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+			},
+			ch: &config.Channel{
+				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+			want: true,
+		},
+		{
+			name:     "not derivable",
+			language: "rust",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+			},
+			ch: &config.Channel{
+				ServiceConfig: "custom/path/service_config.yaml",
+			},
+			want: false,
+		},
+		{
+			name:     "no service config",
+			language: "rust",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+			},
+			ch:   &config.Channel{},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDerivableServiceConfig(test.language, test.lib, test.ch, googleapisDir)
+			if got != test.want {
+				t.Errorf("isDerivableServiceConfig() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }

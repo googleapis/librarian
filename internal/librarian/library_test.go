@@ -197,3 +197,52 @@ func TestFillDefaults_Rust(t *testing.T) {
 		})
 	}
 }
+
+func TestMergePackageDependencies(t *testing.T) {
+	defaults := []*config.RustPackageDependency{
+		{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+		{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+	}
+	for _, test := range []struct {
+		name string
+		lib  []*config.RustPackageDependency
+		want []*config.RustPackageDependency
+	}{
+		{
+			name: "no lib dependencies",
+			lib:  nil,
+			want: []*config.RustPackageDependency{
+				{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+				{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+			},
+		},
+		{
+			name: "lib with one dependency",
+			lib: []*config.RustPackageDependency{
+				{Name: "custom", Package: "custom-pkg"},
+			},
+			want: []*config.RustPackageDependency{
+				{Name: "custom", Package: "custom-pkg"},
+				{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+				{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+			},
+		},
+		{
+			name: "lib overrides default",
+			lib: []*config.RustPackageDependency{
+				{Name: "wkt", Package: "custom-wkt"},
+			},
+			want: []*config.RustPackageDependency{
+				{Name: "wkt", Package: "custom-wkt"},
+				{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := mergePackageDependencies(defaults, test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

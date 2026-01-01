@@ -453,8 +453,8 @@ func TestCleanOutput(t *testing.T) {
 			}
 			slices.Sort(got)
 			slices.Sort(test.want)
-			if !slices.Equal(got, test.want) {
-				t.Errorf("got %v, want %v", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
