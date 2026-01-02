@@ -18,24 +18,25 @@ package config
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
-	// Default contains default settings for all libraries.
-	Default *Default `yaml:"default,omitempty"`
 
 	// Language is the language for this workspace (go, python, rust).
 	Language string `yaml:"language"`
-
-	// Libraries contains configuration overrides for libraries that need
-	// special handling, and differ from default settings.
-	Libraries []*Library `yaml:"libraries,omitempty"`
-
-	// Release holds the configuration parameter for any `${lang}-release` subcommand.
-	Release *Release `yaml:"release,omitempty"`
 
 	// Repo is the repository name, such as "googleapis/google-cloud-python".
 	Repo string `yaml:"repo,omitempty"`
 
 	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
+
+	// Release holds the configuration parameter for any `${lang}-release` subcommand.
+	Release *Release `yaml:"release,omitempty"`
+
+	// Default contains default settings for all libraries.
+	Default *Default `yaml:"default,omitempty"`
+
+	// Libraries contains configuration overrides for libraries that need
+	// special handling, and differ from default settings.
+	Libraries []*Library `yaml:"libraries,omitempty"`
 }
 
 // Release holds the configuration parameter for publish command.
