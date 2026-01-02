@@ -26,6 +26,10 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+// partialsHeader is the directive that tells gcloud to look in the `_partials` directory
+// for command definitions. This allows for sharing definitions across release tracks.
+const partialsHeader = "_PARTIALS_: true\n"
+
 // Generate generates gcloud commands for a service.
 func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
 	overrides, err := readGcloudConfig(gcloudconfig)
@@ -56,13 +60,8 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 	// The `shortServiceName` is derived from `service.DefaultHost` (e.g., "parallelstore.googleapis.com" -> "parallelstore").
 	// `service.DefaultHost`  matches the name field in the service config file
 	// (e.g., `default_host` for parallelstore is derived from `parallelstore_v1.yaml` name field).
-	shortServiceName := ""
-	hostParts := strings.Split(service.DefaultHost, ".")
-	if len(hostParts) > 0 {
-		shortServiceName = hostParts[0]
-	}
-
-	if shortServiceName == "" {
+	shortServiceName, _, found := strings.Cut(service.DefaultHost, ".")
+	if !found {
 		return fmt.Errorf("failed to determine short service name for service %q: default_host is empty", service.Name)
 	}
 
@@ -140,11 +139,9 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		// even if there is only one.
 		cmdList := []*Command{cmd}
 
-		// We create the main command file (e.g., `create.yaml`). This file doesn't
-		// contain the command definition itself, but rather a directive that tells
-		// gcloud to look in the `_partials` directory.
+		// We create the main command file (e.g., `create.yaml`).
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
-		if err := os.WriteFile(mainCmdPath, []byte("_PARTIALS_: true\n"), 0644); err != nil {
+		if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {
 			return fmt.Errorf("failed to write main command file for %q: %w", method.Name, err)
 		}
 

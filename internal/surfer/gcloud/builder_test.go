@@ -47,7 +47,7 @@ func TestNewParam(t *testing.T) {
 			want: Param{
 				ArgName:  "description",
 				APIField: "description",
-				Type:     "", // String is default/empty
+				Type:     "str", // String is default/empty
 				HelpText: "Value for the `description` field.",
 				Required: false,
 				Repeated: false,
@@ -60,7 +60,7 @@ func TestNewParam(t *testing.T) {
 			want: Param{
 				ArgName:  "capacity-gib",
 				APIField: "capacityGib",
-				Type:     "long",
+				Type:     "int",
 				HelpText: "Value for the `capacity-gib` field.",
 				Required: false,
 				Repeated: false,
@@ -78,7 +78,7 @@ func TestNewParam(t *testing.T) {
 			want: Param{
 				ArgName:  "labels",
 				APIField: "labels",
-				Type:     "",
+				Type:     "str",
 				HelpText: "Value for the `labels` field.",
 				Required: false,
 				Repeated: true,
@@ -96,7 +96,7 @@ func TestNewParam(t *testing.T) {
 			want: Param{
 				ArgName:  "name",
 				APIField: "name",
-				Type:     "",
+				Type:     "str",
 				HelpText: "Value for the `name` field.",
 				Required: true,
 				Repeated: false,

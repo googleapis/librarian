@@ -81,6 +81,7 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 		return args, nil
 	}
 
+	// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern (IsIgnored, IsResourceArg, IsArg) to handle field processing.
 	// We iterate over each field in the method's request message (e.g., `CreateInstanceRequest`).
 	for _, field := range method.InputType.Fields {
 		// The "parent" field is a special case. Its information is captured by the
@@ -101,6 +102,7 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 		// For all other fields, we generate a standard flag argument. If the field
 		// is a nested message, its fields will be "flattened" into top-level flags.
 		// For example, a field `instance.description` becomes the `--description` flag.
+		// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error handling strategy (Error vs Skip) and messaging.
 		if err := addFlattenedParams(field, field.JSONName, &args, overrides, model, service); err != nil {
 			return Arguments{}, err
 		}
@@ -150,6 +152,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 // newParam creates a single command-line argument (a `Param` struct) from a proto field.
 func newParam(field *api.Field, apiField string, overrides *Config, model *api.API, service *api.Service) (Param, error) {
 	// We initialize the Param with the basic information derived from the field.
+	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	param := Param{
 		// The command-line flag name is the kebab-case version of the field name.
 		// Example: `requestId` -> `request-id`
@@ -217,6 +220,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	// We first need to get the full resource definition for the method.
 	resource := utils.GetResourceForMethod(method, model)
 	var segments []api.PathSegment
+	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
 		segments = resource.Patterns[0]
 	}
@@ -267,6 +271,7 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, servi
 			if len(def.Patterns) == 0 {
 				return nil, fmt.Errorf("resource definition for %q has no patterns", def.Type)
 			}
+			// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 			segments := def.Patterns[0]
 
 			// We determine the plural name, using the explicit `plural` field if available,
@@ -288,9 +293,10 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, servi
 
 			// We assemble and return the `ResourceSpec`.
 			return &ResourceSpec{
-				Name:                  name,
-				PluralName:            pluralName,
-				Collection:            fullCollectionPath,
+				Name:       name,
+				PluralName: pluralName,
+				Collection: fullCollectionPath,
+				// TODO(https://github.com/googleapis/librarian/issues/3416): Investigate and enable auto-completers for referenced resources.
 				DisableAutoCompleters: true,
 				Attributes:            newAttributesFromSegments(segments),
 			}, nil
@@ -307,36 +313,38 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 	// We iterate over the segments of the pattern.
 	for i, part := range segments {
 		// A variable segment is enclosed in curly braces.
-		if part.Variable != nil {
-			// The `attribute_name` is the name of the variable (e.g., "project").
-			if len(part.Variable.FieldPath) == 0 {
-				continue
-			}
-			name := part.Variable.FieldPath[len(part.Variable.FieldPath)-1]
-			var parameterName string
-
-			// The `parameter_name` is derived from the preceding literal segment
-			// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
-			if i > 0 && segments[i-1].Literal != nil {
-				parameterName = *segments[i-1].Literal + "Id"
-			} else {
-				// This is a fallback for the unlikely case that a pattern starts with a variable.
-				parameterName = name + "sId"
-			}
-
-			attr := Attribute{
-				AttributeName: name,
-				ParameterName: parameterName,
-				Help:          fmt.Sprintf("The %s id of the {resource} resource.", name),
-			}
-
-			// If the attribute is a project, we add the standard gcloud property fallback,
-			// so users don't have to specify `--project` if it's already configured.
-			if name == "project" {
-				attr.Property = "core/project"
-			}
-			attributes = append(attributes, attr)
+		if part.Variable == nil {
+			continue
 		}
+
+		// The `attribute_name` is the name of the variable (e.g., "project").
+		if len(part.Variable.FieldPath) == 0 {
+			continue
+		}
+		name := part.Variable.FieldPath[len(part.Variable.FieldPath)-1]
+		var parameterName string
+
+		// The `parameter_name` is derived from the preceding literal segment
+		// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
+		if i > 0 && segments[i-1].Literal != nil {
+			parameterName = *segments[i-1].Literal + "Id"
+		} else {
+			// This is a fallback for the unlikely case that a pattern starts with a variable.
+			parameterName = name + "sId"
+		}
+
+		attr := Attribute{
+			AttributeName: name,
+			ParameterName: parameterName,
+			Help:          fmt.Sprintf("The %s id of the {resource} resource.", name),
+		}
+
+		// If the attribute is a project, we add the standard gcloud property fallback,
+		// so users don't have to specify `--project` if it's already configured.
+		if name == "project" {
+			attr.Property = "core/project"
+		}
+		attributes = append(attributes, attr)
 	}
 	return attributes
 }
