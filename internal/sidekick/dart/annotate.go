@@ -381,6 +381,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
 		annotate.imports[serviceClientImport] = true
+		annotate.imports[serviceExceptionImport] = true
 	}
 
 	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum` or `message`.

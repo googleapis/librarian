@@ -28,11 +28,11 @@ import (
 )
 
 const (
-	typedDataImport     = "dart:typed_data"
-	httpImport          = "package:http/http.dart as http"
-	serviceClientImport = "package:google_cloud_rpc/service_client.dart"
-	encodingImport      = "package:google_cloud_protobuf/src/encoding.dart"
-	protobufImport      = "package:google_cloud_protobuf/protobuf.dart"
+	httpImport             = "package:http/http.dart as http"
+	serviceClientImport    = "package:google_cloud_rpc/service_client.dart"
+	serviceExceptionImport = "package:google_cloud_rpc/exceptions.dart"
+	encodingImport         = "package:google_cloud_protobuf/src/encoding.dart"
+	protobufImport         = "package:google_cloud_protobuf/protobuf.dart"
 )
 
 var needsCtorValidation = map[string]string{
