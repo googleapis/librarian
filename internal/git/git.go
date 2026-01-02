@@ -58,7 +58,7 @@ func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges [
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get files changed since tag %s: %w", ref, err)
+return nil, fmt.Errorf("failed to get files changed since tag %s: %w\noutput: %s", ref, err, string(output))
 	}
 	return filesFilter(ignoredChanges, strings.Split(string(output), "\n")), nil
 }
