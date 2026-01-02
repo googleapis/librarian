@@ -34,11 +34,11 @@ func PreFlight(ctx context.Context, preinstalled map[string]string, remote strin
 	if err := git.GitRemoteURL(ctx, gitExe, remote); err != nil {
 		return err
 	}
-	return CargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)
+	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)
 }
 
-// CargoPreFlight verifies all the necessary cargo tools are installed.
-func CargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
+// cargoPreFlight verifies all the necessary cargo tools are installed.
+func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
 	if err := command.Run(ctx, cargoExe, "--version"); err != nil {
 		return err
 	}

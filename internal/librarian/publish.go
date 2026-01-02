@@ -83,23 +83,13 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	}
 }
 
-// verifyRequiredTools verifies all the necessary language-agnostic tools are installed.
+// verifyRequiredTools verifies all the necessary tools are installed.
 func verifyRequiredTools(ctx context.Context, language string, cfg *config.Release) error {
-	gitExe := "git"
-	if cfg != nil {
-		gitExe = command.GetExecutablePath(cfg.Preinstalled, "git")
-	}
-	if err := git.GitVersion(ctx, gitExe); err != nil {
-		return err
-	}
-	if err := git.GitRemoteURL(ctx, gitExe, cfg.Remote); err != nil {
-		return err
-	}
 	switch language {
 	case languageFake:
 		return nil
 	case languageRust:
-		return rust.CargoPreFlight(ctx, command.GetExecutablePath(cfg.Preinstalled, "cargo"), cfg.Tools["cargo"])
+		return rust.PreFlight(ctx, cfg.Preinstalled, cfg.Remote, cfg.Tools["cargo"])
 	default:
 		return fmt.Errorf("unknown language: %s", language)
 	}
