@@ -37,14 +37,15 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
-	lastTag, err := git.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	if err := git.MatchesBranchPoint(ctx, gitExe(config), config.Remote, config.Branch); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
 		return err
 	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -64,7 +65,8 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	cmd := exec.CommandContext(ctx, cargoExe(config), "workspaces", "plan", "--skip-published")
+	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
+	cmd := exec.CommandContext(ctx, cargoPath, "workspaces", "plan", "--skip-published")
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}
@@ -78,7 +80,8 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	changedCrates := slices.Collect(maps.Keys(manifests))
 	slices.Sort(plannedCrates)
 	slices.Sort(changedCrates)
-	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoExe(config) != "/bin/echo" {
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoPath != "/bin/echo" {
 		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
 	}
 
@@ -89,11 +92,11 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
-			if git.IsNewFile(ctx, gitExe(config), lastTag, manifest) {
+			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
 				continue
 			}
 			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
-			if err := command.Run(ctx, cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+			if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
 				return err
 			}
 		}
@@ -103,7 +106,7 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	if dryRun {
 		args = append(args, "--dry-run")
 	}
-	cmd = exec.CommandContext(ctx, cargoExe(config), args...)
+	cmd = exec.CommandContext(ctx, cargoPath, args...)
 	if config.RootsPem != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
 	}

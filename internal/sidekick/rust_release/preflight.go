@@ -17,6 +17,7 @@ package rustrelease
 import (
 	"context"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -25,7 +26,7 @@ import (
 
 // PreFlight() verifies all the necessary  tools are installed.
 func PreFlight(ctx context.Context, sidekickConfig *sidekickconfig.Release) error {
-	gitExe := gitExe(sidekickConfig)
+	gitExe := command.GetExecutablePath(sidekickConfig.Preinstalled, "git")
 	if err := git.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
@@ -37,23 +38,9 @@ func PreFlight(ctx context.Context, sidekickConfig *sidekickconfig.Release) erro
 		for _, t := range tools {
 			configTools = append(configTools, config.Tool{Name: t.Name, Version: t.Version})
 		}
-		if err := rust.CargoPreFlight(ctx, cargoExe(sidekickConfig), configTools); err != nil {
+		if err := rust.CargoPreFlight(ctx, command.GetExecutablePath(sidekickConfig.Preinstalled, "cargo"), configTools); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func gitExe(config *sidekickconfig.Release) string {
-	if exe, ok := config.Preinstalled["git"]; ok {
-		return exe
-	}
-	return "git"
-}
-
-func cargoExe(config *sidekickconfig.Release) string {
-	if exe, ok := config.Preinstalled["cargo"]; ok {
-		return exe
-	}
-	return "cargo"
 }
