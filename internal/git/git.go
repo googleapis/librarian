@@ -47,7 +47,7 @@ func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, err
 	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
 	contents, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to get last tag for repo %s: %w", ref, err)
+return "", fmt.Errorf("failed to get last tag for repo %s: %w\noutput: %s", ref, err, string(contents))
 	}
 	tag := string(contents)
 	return strings.TrimSuffix(tag, "\n"), nil
