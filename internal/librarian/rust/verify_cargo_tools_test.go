@@ -28,7 +28,7 @@ func TestCargoPreFlightSuccess(t *testing.T) {
 	tools := []config.Tool{
 		{Name: "cargo-semver-checks"},
 	}
-	if err := CargoPreFlight(context.Background(), "cargo", tools); err != nil {
+	if err := cargoPreFlight(context.Background(), "cargo", tools); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -37,7 +37,7 @@ func TestCargoPreFlightBadCargo(t *testing.T) {
 	tools := []config.Tool{
 		{Name: "cargo-semver-checks"},
 	}
-	if err := CargoPreFlight(context.Background(), "not-a-valid-cargo", tools); err == nil {
+	if err := cargoPreFlight(context.Background(), "not-a-valid-cargo", tools); err == nil {
 		t.Error("expected an error, got none")
 	}
 }
@@ -47,7 +47,7 @@ func TestCargoPreFlightBadTool(t *testing.T) {
 	tools := []config.Tool{
 		{Name: "not-a-valid-tool", Version: "0.0.1"},
 	}
-	if err := CargoPreFlight(context.Background(), "cargo", tools); err == nil {
+	if err := cargoPreFlight(context.Background(), "cargo", tools); err == nil {
 		t.Error("expected an error, got none")
 	}
 }
