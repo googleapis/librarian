@@ -33,11 +33,6 @@ var (
 	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
 )
 
-var (
-	rustReleaseLibrary       = rust.ReleaseLibrary
-	librarianGenerateLibrary = runGenerate
-)
-
 func releaseCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
@@ -147,10 +142,10 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	case languageFake:
 		return fakeReleaseLibrary(libConfig)
 	case languageRust:
-		if err := rustReleaseLibrary(libConfig, srcPath); err != nil {
+		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
-		if err := librarianGenerateLibrary(ctx, false, libConfig.Name); err != nil {
+		if err := runGenerate(ctx, false, libConfig.Name); err != nil {
 			return err
 		}
 		return nil

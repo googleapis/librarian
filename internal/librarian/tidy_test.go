@@ -68,24 +68,93 @@ func TestValidateLibraries(t *testing.T) {
 
 func TestFormatConfig(t *testing.T) {
 	cfg := formatConfig(&config.Config{
+		Default: &config.Default{
+			Rust: &config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "z"},
+					{Name: "a"},
+				},
+			},
+		},
 		Libraries: []*config.Library{
-			{Name: "google-cloud-storage-v1", Version: "1.0.0"},
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "1.0.0",
+				Channels: []*config.Channel{
+					{Path: "c"},
+					{Path: "a"},
+				},
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "y"},
+							{Name: "b"},
+						},
+					},
+				},
+			},
 			{Name: "google-cloud-bigquery-v1", Version: "2.0.0"},
 			{Name: "google-cloud-secretmanager-v1", Version: "3.0.0"},
 		},
 	})
-	want := []string{
-		"google-cloud-bigquery-v1",
-		"google-cloud-secretmanager-v1",
-		"google-cloud-storage-v1",
-	}
-	var got []string
+	t.Run("sorts libraries by name", func(t *testing.T) {
+		want := []string{
+			"google-cloud-bigquery-v1",
+			"google-cloud-secretmanager-v1",
+			"google-cloud-storage-v1",
+		}
+		var got []string
+		for _, lib := range cfg.Libraries {
+			got = append(got, lib.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	var storageLib *config.Library
 	for _, lib := range cfg.Libraries {
-		got = append(got, lib.Name)
+		if lib.Name == "google-cloud-storage-v1" {
+			storageLib = lib
+			break
+		}
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if storageLib == nil {
+		t.Fatal("library google-cloud-storage-v1 not found after sorting")
 	}
+
+	t.Run("sorts channels by path", func(t *testing.T) {
+		want := []string{"a", "c"}
+		var got []string
+		for _, ch := range storageLib.Channels {
+			got = append(got, ch.Path)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts default rust dependencies by name", func(t *testing.T) {
+		want := []string{"a", "z"}
+		var got []string
+		for _, dep := range cfg.Default.Rust.PackageDependencies {
+			got = append(got, dep.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts library rust dependencies by name", func(t *testing.T) {
+		want := []string{"b", "y"}
+		var got []string
+		for _, dep := range storageLib.Rust.PackageDependencies {
+			got = append(got, dep.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
 
 func TestTidyCommand(t *testing.T) {

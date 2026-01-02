@@ -45,7 +45,6 @@ func AssertGitStatusClean(ctx context.Context, git string) error {
 func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, error) {
 	ref := fmt.Sprintf("%s/%s", remote, branch)
 	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
-	cmd.Dir = "."
 	contents, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err
@@ -57,7 +56,6 @@ func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, err
 // FilesChangedSince returns the files changed since the given git ref.
 func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges []string) ([]string, error) {
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
-	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -85,7 +83,6 @@ func filesFilter(ignoredChanges []string, files []string) []string {
 func IsNewFile(ctx context.Context, gitExe, ref, name string) bool {
 	delta := fmt.Sprintf("%s..HEAD", ref)
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--summary", delta, "--", name)
-	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return false
@@ -108,7 +105,6 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	remoteBranch := fmt.Sprintf("%s/%s", remote, branch)
 	delta := fmt.Sprintf("%s...HEAD", remoteBranch)
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
-	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return err
@@ -123,7 +119,6 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 func ChangesInDirectorySinceTag(ctx context.Context, gitExe, tag, dir string) (int, error) {
 	delta := fmt.Sprintf("%s...HEAD", tag)
 	cmd := exec.CommandContext(ctx, gitExe, "rev-list", "--count", delta, "--", dir)
-	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return 0, fmt.Errorf("running %s failed: %w\noutput: %s", cmd.String(), err, string(output))
