@@ -23,12 +23,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// Tool represents a cargo tool to be installed.
-type Tool struct {
-	Name    string
-	Version string
-}
-
 // CargoPreFlight verifies all the necessary cargo tools are installed.
 func CargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
 	if err := command.Run(ctx, cargoExe, "--version"); err != nil {

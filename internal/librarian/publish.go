@@ -103,5 +103,4 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 	default:
 		return fmt.Errorf("unknown language: %s", language)
 	}
-	return nil
 }
