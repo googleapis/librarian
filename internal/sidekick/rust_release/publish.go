@@ -34,7 +34,7 @@ import (
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := PreFlight(ctx, config); err != nil {
+	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
@@ -90,6 +90,7 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
 
 	if !skipSemverChecks {
+		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 		for name, manifest := range manifests {
 			gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
