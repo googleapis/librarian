@@ -212,6 +212,7 @@ func TestFromSidekickReleaseConfig(t *testing.T) {
 			} else {
 				if got == nil {
 					t.Errorf("FromSidekickReleaseConfig() got = nil, want %v", test.expected)
+					return
 				}
 				if got.Remote != test.expected.Remote {
 					t.Errorf("FromSidekickReleaseConfig() Remote got = %s, want %s", got.Remote, test.expected.Remote)
