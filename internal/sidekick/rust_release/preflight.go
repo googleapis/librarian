@@ -17,40 +17,41 @@ package rustrelease
 import (
 	"context"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // PreFlight() verifies all the necessary  tools are installed.
-func PreFlight(ctx context.Context, config *config.Release) error {
-	gitExe := gitExe(config)
+func PreFlight(ctx context.Context, sidekickConfig *sidekickconfig.Release) error {
+	gitExe := gitExe(sidekickConfig)
 	if err := git.GitVersion(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := git.GitRemoteURL(ctx, gitExe, config.Remote); err != nil {
+	if err := git.GitRemoteURL(ctx, gitExe, sidekickConfig.Remote); err != nil {
 		return err
 	}
-	if tools, ok := config.Tools["cargo"]; ok {
-		var rustTools []rust.Tool
+	if tools, ok := sidekickConfig.Tools["cargo"]; ok {
+		var configTools []config.Tool
 		for _, t := range tools {
-			rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
+			configTools = append(configTools, config.Tool{Name: t.Name, Version: t.Version})
 		}
-		if err := rust.CargoPreFlight(ctx, cargoExe(config), rustTools); err != nil {
+		if err := rust.CargoPreFlight(ctx, cargoExe(sidekickConfig), configTools); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func gitExe(config *config.Release) string {
+func gitExe(config *sidekickconfig.Release) string {
 	if exe, ok := config.Preinstalled["git"]; ok {
 		return exe
 	}
 	return "git"
 }
 
-func cargoExe(config *config.Release) string {
+func cargoExe(config *sidekickconfig.Release) string {
 	if exe, ok := config.Preinstalled["cargo"]; ok {
 		return exe
 	}

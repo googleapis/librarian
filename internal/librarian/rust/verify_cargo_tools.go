@@ -20,6 +20,7 @@ import (
 	"log/slog"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 // Tool represents a cargo tool to be installed.
@@ -29,15 +30,15 @@ type Tool struct {
 }
 
 // CargoPreFlight verifies all the necessary cargo tools are installed.
-func CargoPreFlight(ctx context.Context, cargoExe string, tools []Tool) error {
+func CargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
 	if err := command.Run(ctx, cargoExe, "--version"); err != nil {
 		return err
 	}
 	for _, tool := range tools {
-		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		if tool.Version == "" {
 			continue
 		}
+		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		if err := command.Run(ctx, cargoExe, "install", "--locked", spec); err != nil {
 			return err

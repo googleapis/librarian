@@ -99,19 +99,7 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 	case languageFake:
 		return nil
 	case languageRust:
-		var rustTools []rust.Tool
-		if cfg.Tools != nil {
-			for _, t := range cfg.Tools["cargo"] {
-				rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
-			}
-		}
-		cargoExe := "cargo"
-		if cfg != nil {
-			cargoExe = command.GetExecutablePath(cfg.Preinstalled, "cargo")
-		}
-		if err := rust.CargoPreFlight(ctx, cargoExe, rustTools); err != nil {
-			return err
-		}
+		return rust.CargoPreFlight(ctx, command.GetExecutablePath(cfg.Preinstalled, "cargo"), cfg.Tools["cargo"])
 	default:
 		return fmt.Errorf("unknown language: %s", language)
 	}
