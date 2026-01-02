@@ -106,33 +106,3 @@ func TestPreflightToolFailure(t *testing.T) {
 		t.Errorf("expected an error installing cargo-semver-checks")
 	}
 }
-
-func TestGitExe(t *testing.T) {
-	release := config.Release{}
-	if got := gitExe(&release); got != "git" {
-		t.Errorf("mismatch in gitExe(), want=git, got=%s", got)
-	}
-	release = config.Release{
-		Preinstalled: map[string]string{
-			"git": "alternative",
-		},
-	}
-	if got := gitExe(&release); got != "alternative" {
-		t.Errorf("mismatch in gitExe(), want=alternative, got=%s", got)
-	}
-}
-
-func TestCargoExe(t *testing.T) {
-	release := config.Release{}
-	if got := cargoExe(&release); got != "cargo" {
-		t.Errorf("mismatch in cargoExe(), want=cargo, got=%s", got)
-	}
-	release = config.Release{
-		Preinstalled: map[string]string{
-			"cargo": "alternative",
-		},
-	}
-	if got := cargoExe(&release); got != "alternative" {
-		t.Errorf("mismatch in cargoExe(), want=alternative, got=%s", got)
-	}
-}

@@ -32,17 +32,18 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	if err := PreFlight(ctx, config); err != nil {
 		return err
 	}
-	lastTag, err := git.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
 	var crates []string
 	for _, manifest := range rust.FindCargoManifests(files) {
-		names, err := rust.UpdateManifest(gitExe(config), lastTag, manifest)
+		names, err := rust.UpdateManifest(gitPath, lastTag, manifest)
 		if err != nil {
 			return err
 		}
@@ -55,9 +56,10 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	} else {
 		return nil
 	}
+	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
 	for _, name := range crates {
 		slog.Info("runnning cargo semver-checks", "crate", name)
-		if err := command.Run(ctx, cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+		if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}
