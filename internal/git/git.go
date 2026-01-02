@@ -47,7 +47,7 @@ func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, err
 	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
 	contents, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to get last tag for %s: %w", ref, err)
+		return "", fmt.Errorf("failed to get last tag for repo %s: %w", ref, err)
 	}
 	tag := string(contents)
 	return strings.TrimSuffix(tag, "\n"), nil
@@ -58,7 +58,7 @@ func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges [
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get files changed since %s: %w", ref, err)
+		return nil, fmt.Errorf("failed to get files changed since tag %s: %w", ref, err)
 	}
 	return filesFilter(ignoredChanges, strings.Split(string(output), "\n")), nil
 }
