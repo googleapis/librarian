@@ -107,7 +107,7 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to diff against branch %s: %w", remoteBranch, err)
+return fmt.Errorf("failed to diff against branch %s: %w\noutput: %s", remoteBranch, err, string(output))
 	}
 	if len(output) != 0 {
 		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, string(output))
