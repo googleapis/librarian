@@ -30,10 +30,10 @@ func CargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) e
 		return err
 	}
 	for _, tool := range tools {
-		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		if tool.Version == "" {
 			continue
 		}
+		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		if err := command.Run(ctx, cargoExe, "install", "--locked", spec); err != nil {
 			return err
