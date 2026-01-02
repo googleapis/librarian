@@ -67,7 +67,7 @@ func RunTidy(ctx context.Context) error {
 			lib.Output = ""
 		}
 		for _, ch := range lib.Channels {
-			if isDerivableChannelPath(cfg.Language, lib, ch) {
+			if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
 				ch.Path = ""
 			}
 			if isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir) {
@@ -88,8 +88,8 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	return lib.Output == derivedOutput
 }
 
-func isDerivableChannelPath(language string, lib *config.Library, ch *config.Channel) bool {
-	return ch.Path == deriveChannelPath(language, lib)
+func isDerivableChannelPath(language string, name, channel string) bool {
+	return channel == deriveChannelPath(language, name)
 }
 
 func isDerivableServiceConfig(language string, lib *config.Library, ch *config.Channel, googleapisDir string) bool {
@@ -98,7 +98,7 @@ func isDerivableServiceConfig(language string, lib *config.Library, ch *config.C
 	}
 	path := ch.Path
 	if path == "" {
-		path = deriveChannelPath(language, lib)
+		path = deriveChannelPath(language, lib.Name)
 	}
 	derived, err := serviceconfig.Find(googleapisDir, path)
 	if err != nil {

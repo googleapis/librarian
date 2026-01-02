@@ -117,12 +117,12 @@ func defaultOutput(language, channel, defaultOut string) string {
 	}
 }
 
-func deriveChannelPath(language string, lib *config.Library) string {
+func deriveChannelPath(language, name string) string {
 	switch language {
 	case languageRust:
-		return rust.DeriveChannelPath(lib.Name)
+		return rust.DeriveChannelPath(name)
 	default:
-		return strings.ReplaceAll(lib.Name, "-", "/")
+		return strings.ReplaceAll(name, "-", "/")
 	}
 }
 
@@ -160,7 +160,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	if !lib.Veneer {
 		for _, ch := range lib.Channels {
 			if ch.Path == "" {
-				ch.Path = deriveChannelPath(language, lib)
+				ch.Path = deriveChannelPath(language, lib.Name)
 			}
 			if ch.ServiceConfig == "" {
 				sc, err := serviceconfig.Find(googleapisDir, ch.Path)

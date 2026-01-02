@@ -171,7 +171,7 @@ func isUnderAnyPath(file string, paths []string) bool {
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
 func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string) (string, error) {
 	highestChange := getHighestChange(commits)
-	return semver.DeriveNext(highestChange, currentVersion)
+	return semver.DeriveNext(highestChange, currentVersion, semver.DeriveNextOptions{})
 }
 
 // getHighestChange determines the highest-ranking change type from a slice of commits.

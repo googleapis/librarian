@@ -47,7 +47,7 @@ func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, err
 	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
 	contents, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get last tag for repo %s: %w\noutput: %s", ref, err, string(contents))
 	}
 	tag := string(contents)
 	return strings.TrimSuffix(tag, "\n"), nil
@@ -58,7 +58,7 @@ func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges [
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get files changed since tag %s: %w\noutput: %s", ref, err, string(output))
 	}
 	return filesFilter(ignoredChanges, strings.Split(string(output), "\n")), nil
 }
@@ -107,7 +107,7 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to diff against branch %s: %w\noutput: %s", remoteBranch, err, string(output))
 	}
 	if len(output) != 0 {
 		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, string(output))

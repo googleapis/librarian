@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -29,7 +28,6 @@ import (
 
 var (
 	errUnsupportedLanguage = errors.New("library creation is not supported for the specified language")
-	errOutputFlagRequired  = errors.New("output flag is required when default.output is not set in librarian.yaml")
 	errMissingLibraryName  = errors.New("must provide library name as argument to create a new library")
 	errNoYaml              = errors.New("unable to read librarian.yaml")
 )
@@ -38,30 +36,29 @@ func createCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "create",
 		Usage:     "create a new client library",
-		UsageText: "librarian create <library> [flags]",
+		UsageText: "librarian create <library> [apis...] [flags]",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "specification-source",
-				Usage: "path to the specification source (e.g., google/cloud/secretmanager/v1)",
-			},
 			&cli.StringFlag{
 				Name:  "output",
 				Usage: "output directory (optional, will be derived if not provided)",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
-			name := c.Args().First()
+			args := c.Args()
+			name := args.First()
 			if name == "" {
 				return errMissingLibraryName
 			}
-			specSource := c.String("specification-source")
-			output := c.String("output")
-			return runCreate(ctx, name, specSource, output)
+			var channels []string
+			if len(args.Slice()) > 1 {
+				channels = args.Slice()[1:]
+			}
+			return runCreate(ctx, name, c.String("output"), channels...)
 		},
 	}
 }
 
-func runCreate(ctx context.Context, name, specSource, output string) error {
+func runCreate(ctx context.Context, name, output string, channel ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
@@ -72,10 +69,7 @@ func runCreate(ctx context.Context, name, specSource, output string) error {
 			return runGenerate(ctx, false, name)
 		}
 	}
-	if output, err = deriveOutput(output, cfg, name, specSource, cfg.Language); err != nil {
-		return err
-	}
-	if err := addLibraryToLibrarianConfig(cfg, name, output, specSource); err != nil {
+	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
 		return err
 	}
 	switch cfg.Language {
@@ -90,37 +84,17 @@ func runCreate(ctx context.Context, name, specSource, output string) error {
 	}
 }
 
-func deriveOutput(output string, cfg *config.Config, libraryName string, specSource string, language string) (string, error) {
-	if output != "" {
-		return output, nil
-	}
-	if cfg.Default == nil || cfg.Default.Output == "" {
-		return "", errOutputFlagRequired
-	}
-	switch language {
-	case languageRust:
-		if specSource != "" {
-			return defaultOutput(language, specSource, cfg.Default.Output), nil
-		}
-		libOutputDir := strings.ReplaceAll(libraryName, "-", "/")
-		return defaultOutput(language, libOutputDir, cfg.Default.Output), nil
-	default:
-		return defaultOutput(language, specSource, cfg.Default.Output), nil
-	}
-}
-
-func addLibraryToLibrarianConfig(cfg *config.Config, name, output, specificationSource string) error {
+func addLibraryToLibrarianConfig(cfg *config.Config, name, output string, channel ...string) error {
 	lib := &config.Library{
 		Name:    name,
 		Output:  output,
 		Version: "0.1.0",
 	}
-	if specificationSource != "" {
-		lib.Channels = []*config.Channel{
-			{
-				Path: specificationSource,
-			},
-		}
+
+	for _, c := range channel {
+		lib.Channels = append(lib.Channels, &config.Channel{
+			Path: c,
+		})
 	}
 	cfg.Libraries = append(cfg.Libraries, lib)
 	sort.Slice(cfg.Libraries, func(i, j int) bool {

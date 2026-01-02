@@ -82,10 +82,11 @@ func UpdateManifest(gitExe, lastTag, manifest string) (string, string, error) {
 	if !info.Package.Publish {
 		return "", "", nil
 	}
-	newVersion, err := semver.DeriveNextOptions{
-		BumpVersionCore:       true,
-		DowngradePreGAChanges: true,
-	}.DeriveNext(semver.Minor, info.Package.Version)
+	newVersion, err := semver.DeriveNext(semver.Minor, info.Package.Version,
+		semver.DeriveNextOptions{
+			BumpVersionCore:       true,
+			DowngradePreGAChanges: true,
+		})
 	if err != nil {
 		return "", "", err
 	}

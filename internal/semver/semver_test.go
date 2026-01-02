@@ -215,79 +215,79 @@ func TestVersion_String(t *testing.T) {
 
 func TestDeriveNext(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		highestChange   ChangeLevel
-		currentVersion  string
-		expectedVersion string
+		name           string
+		highestChange  ChangeLevel
+		currentVersion string
+		want           string
 	}{
 		{
-			name:            "major bump",
-			highestChange:   Major,
-			currentVersion:  "1.2.3",
-			expectedVersion: "2.0.0",
+			name:           "major bump",
+			highestChange:  Major,
+			currentVersion: "1.2.3",
+			want:           "2.0.0",
 		},
 		{
-			name:            "minor bump",
-			highestChange:   Minor,
-			currentVersion:  "1.2.3",
-			expectedVersion: "1.3.0",
+			name:           "minor bump",
+			highestChange:  Minor,
+			currentVersion: "1.2.3",
+			want:           "1.3.0",
 		},
 		{
-			name:            "patch bump",
-			highestChange:   Patch,
-			currentVersion:  "1.2.3",
-			expectedVersion: "1.2.4",
+			name:           "patch bump",
+			highestChange:  Patch,
+			currentVersion: "1.2.3",
+			want:           "1.2.4",
 		},
 		{
-			name:            "pre-1.0.0 feat is patch bump",
-			highestChange:   Minor, // feat is minor
-			currentVersion:  "0.2.3",
-			expectedVersion: "0.3.0",
+			name:           "pre-1.0.0 feat is patch bump",
+			highestChange:  Minor, // feat is minor
+			currentVersion: "0.2.3",
+			want:           "0.3.0",
 		},
 		{
-			name:            "pre-1.0.0 fix is patch bump",
-			highestChange:   Patch,
-			currentVersion:  "0.2.3",
-			expectedVersion: "0.2.4",
+			name:           "pre-1.0.0 fix is patch bump",
+			highestChange:  Patch,
+			currentVersion: "0.2.3",
+			want:           "0.2.4",
 		},
 		{
-			name:            "pre-1.0.0 breaking change is minor bump",
-			highestChange:   Major,
-			currentVersion:  "0.2.3",
-			expectedVersion: "0.3.0",
+			name:           "pre-1.0.0 breaking change is minor bump",
+			highestChange:  Major,
+			currentVersion: "0.2.3",
+			want:           "0.3.0",
 		},
 		{
-			name:            "prerelease bump with numeric trailer",
-			highestChange:   Minor,
-			currentVersion:  "1.2.3-beta.1",
-			expectedVersion: "1.2.3-beta.2",
+			name:           "prerelease bump with numeric trailer",
+			highestChange:  Minor,
+			currentVersion: "1.2.3-beta.1",
+			want:           "1.2.3-beta.2",
 		},
 		{
-			name:            "prerelease bump without numeric trailer",
-			highestChange:   Patch,
-			currentVersion:  "1.2.3-beta",
-			expectedVersion: "1.2.3-beta.1",
+			name:           "prerelease bump without numeric trailer",
+			highestChange:  Patch,
+			currentVersion: "1.2.3-beta",
+			want:           "1.2.3-beta.1",
 		},
 		{
-			name:            "prerelease bump with betaXX format",
-			highestChange:   Major,
-			currentVersion:  "1.2.3-beta21",
-			expectedVersion: "1.2.3-beta22",
+			name:           "prerelease bump with betaXX format",
+			highestChange:  Major,
+			currentVersion: "1.2.3-beta21",
+			want:           "1.2.3-beta22",
 		},
 		{
-			name:            "no bump",
-			highestChange:   None,
-			currentVersion:  "1.2.3",
-			expectedVersion: "1.2.3",
+			name:           "no bump",
+			highestChange:  None,
+			currentVersion: "1.2.3",
+			want:           "1.2.3",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion)
+			got, err := DeriveNext(test.highestChange, test.currentVersion, DeriveNextOptions{})
 			if err != nil {
-				t.Fatalf("DeriveNext() returned an error: %v", err)
+				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("DeriveNext(%v, %q) = %q, want %q", test.highestChange, test.currentVersion, got, test.want)
 			}
 		})
 	}
@@ -405,9 +405,9 @@ func TestDeriveNextOptions_DeriveNext(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			nextVersion, err := test.opts.DeriveNext(test.highestChange, test.currentVersion)
+			nextVersion, err := DeriveNext(test.highestChange, test.currentVersion, test.opts)
 			if err != nil {
-				t.Fatalf("DeriveNextOptions.DeriveNext() returned an error: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.expectedVersion, nextVersion); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -431,7 +431,7 @@ func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := DeriveNextOptions{}.DeriveNext(test.changeLevel, test.currentVersion)
+			_, err := DeriveNext(test.changeLevel, test.currentVersion, DeriveNextOptions{})
 			if err == nil {
 				t.Errorf("DeriveNextOptions.DeriveNext(%v, %q) did not return an error as expected.", test.changeLevel, test.currentVersion)
 			} else if !errors.Is(err, test.wantErr) {
@@ -539,9 +539,9 @@ func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			nextVersion, err := test.opts.DeriveNextPreview(test.previewVersion, test.stableVersion)
+			nextVersion, err := DeriveNextPreview(test.previewVersion, test.stableVersion, test.opts)
 			if err != nil {
-				t.Fatalf("DeriveNextOptions.DeriveNextPreview() returned an error: %v", err)
+				t.Fatalf("DeriveNextPreview() returned an error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, nextVersion); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -577,9 +577,9 @@ func TestDeriveNextOptions_DeriveNextPreview_Errors(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := DeriveNextOptions{}.DeriveNextPreview(test.previewVersion, test.stableVersion)
+			_, err := DeriveNextPreview(test.previewVersion, test.stableVersion, DeriveNextOptions{})
 			if err == nil {
-				t.Errorf("DeriveNextOptions.DeriveNextPreview(%q, %q) did not return an error as expected.", test.previewVersion, test.stableVersion)
+				t.Errorf("DeriveNextPreview(%q, %q) did not return an error as expected.", test.previewVersion, test.stableVersion)
 			} else if !errors.Is(err, test.wantErr) {
 				t.Errorf("mismatch, got %v, wanted inclusion of %v", err, test.wantErr)
 			}
