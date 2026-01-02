@@ -220,7 +220,6 @@ func TestFromSidekickReleaseConfig(t *testing.T) {
 				if got.Branch != test.expected.Branch {
 					t.Errorf("FromSidekickReleaseConfig() Branch got = %s, want %s", got.Branch, test.expected.Branch)
 				}
-				// ... other field checks
 			}
 		})
 	}
