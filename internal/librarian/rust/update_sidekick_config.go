@@ -23,6 +23,8 @@ import (
 	"strings"
 )
 
+// UpdateSidekickConfig updates the version in a .sidekick.toml file.
+// It uses a line-based approach to preserve comments and formatting.
 func UpdateSidekickConfig(manifest, newVersion string) error {
 	dir, _ := path.Split(manifest)
 	config := path.Join(dir, ".sidekick.toml")

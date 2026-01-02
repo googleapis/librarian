@@ -100,8 +100,10 @@ func verifyRequiredTools(ctx context.Context, language string, cfg *config.Relea
 		return nil
 	case languageRust:
 		var rustTools []rust.Tool
-		for _, t := range cfg.Tools["cargo"] {
-			rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
+		if cfg.Tools != nil {
+			for _, t := range cfg.Tools["cargo"] {
+				rustTools = append(rustTools, rust.Tool{Name: t.Name, Version: t.Version})
+			}
 		}
 		cargoExe := "cargo"
 		if cfg != nil {

@@ -37,6 +37,7 @@ type Cargo struct {
 	Package *CrateInfo `toml:"package"`
 }
 
+// UpdateManifest bumps the version of a crate if it has changed since the last tag.
 func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
 	needsBump, err := manifestVersionNeedsBump(gitExe, lastTag, manifest)
 	if err != nil {

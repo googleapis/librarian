@@ -110,4 +110,3 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	cmd.Dir = "."
 	return cmd.Run()
 }
-
