@@ -1,0 +1,19 @@
+image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/python-librarian-generator@sha256:72e9b62c0f8f3799651ee62d777a2905f5b72ff19ea46f2e7b7d682d7d1e9414
+libraries:
+  - id: google-ads-admanager
+    version: 0.6.0
+    last_generated_commit: e8365a7f88fabe8717cb8322b8ce784b03b6daea
+    apis:
+      - path: google/ads/admanager/v1
+        service_config: admanager_v1.yaml
+    source_roots:
+      - packages/google-ads-admanager
+    preserve_regex:
+      - packages/google-ads-admanager/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - samples/README.txt
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-ads-admanager/
+    tag_format: '{id}-v{version}'

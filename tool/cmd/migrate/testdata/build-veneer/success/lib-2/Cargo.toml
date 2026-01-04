@@ -1,0 +1,4 @@
+[package]
+name        = "google-cloud-spanner"
+publish     = false
+version     = "0.0.0"

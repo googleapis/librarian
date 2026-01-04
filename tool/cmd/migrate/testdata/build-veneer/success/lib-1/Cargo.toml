@@ -1,0 +1,3 @@
+[package]
+name        = "google-cloud-storage"
+version     = "1.5.0"

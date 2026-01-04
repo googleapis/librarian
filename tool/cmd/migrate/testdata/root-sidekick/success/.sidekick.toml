@@ -1,0 +1,33 @@
+[source]
+showcase-root            = 'https://github.com/googleapis/gapic-showcase/archive/69bdd62035d793f3d23a0c960dee547023c1c5ac.tar.gz'
+showcase-sha256          = '96491310ba1b5c0c71738d3d80327a95196c1b6ac16f033e3fa440870efbbf5c'
+googleapis-root             = 'https://github.com/googleapis/googleapis/archive/fe58211356a91f4140ed51893703910db05ade91.tar.gz'
+googleapis-sha256           = '839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085'
+discovery-root              = 'https://github.com/googleapis/discovery-artifact-manager/archive/0bb1100f52bf0bae06f4b4d76742e7eba5c59793.tar.gz'
+discovery-sha256            = '67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212'
+protobuf-src-root           = 'https://github.com/protocolbuffers/protobuf/archive/b407e8416e3893036aee5af9a12bd9b6a0e2b2e6.tar.gz'
+protobuf-src-sha256         = '55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d'
+protobuf-src-subdir         = 'src'
+conformance-root           = 'https://github.com/protocolbuffers/protobuf/archive/b407e8416e3893036aee5af9a12bd9b6a0e2b2e6.tar.gz'
+conformance-sha256         = '55912546338433f465a552e9ef09930c63b9eb697053937416890cff83a8622d'
+
+[codec]
+# The default version for all crates. This can be overridden in the crate's
+# `.sidekick.toml` file.
+version = "1.0.0"
+# The default release level for all crates.
+release-level = "stable"
+# Disable a number of warnings.
+# TODO(#1285) - remove `redundant_explicit_links` workaround when no longer needed
+# TODO(#742) - remove `broken_intro_doc_links` workaround when no longer needed
+disabled-rustdoc-warnings = "redundant_explicit_links,broken_intra_doc_links"
+# These are external (not part of `google-cloud-rust`) crates used by (nearly
+# all) generated crates.
+'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
+'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'
+'generate-setter-samples' = 'true'
+
+[release]
+remote          = 'upstream'
+branch          = 'main'
+ignored-changes = ['.repo-metadata.json', '.sidekick.toml']
