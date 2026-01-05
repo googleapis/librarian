@@ -128,10 +128,7 @@ func runSidekickMigration(ctx context.Context, repoPath, outputPath string) erro
 	maps.Copy(allLibraries, veneers)
 
 	cfg := buildConfig(allLibraries, defaults)
-	cfg.Release = &config.Release{
-		Branch: "main",
-		Remote: "upstream",
-	}
+
 	if err := yaml.Write(outputPath, cfg); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
@@ -214,7 +211,13 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			},
 		},
 	}
-
+	if sidekick.Release != nil {
+		cfg.Release = &config.Release{
+			Branch:         sidekick.Release.Branch,
+			Remote:         sidekick.Release.Remote,
+			IgnoredChanges: sidekick.Release.IgnoredChanges,
+		}
+	}
 	return cfg, nil
 }
 

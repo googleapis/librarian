@@ -99,6 +99,19 @@ func TestReleaseCommand(t *testing.T) {
 			args:           []string{"librarian", "release", "--all"},
 			dirtyGitStatus: true,
 		},
+		{
+			name: "release config empty",
+			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/storage",
+			},
+			wantVersions: map[string]string{
+				testlib:  fakeReleaseVersion,
+				testlib2: fakeReleaseVersion,
+			},
+			wantErr: errReleaseConfigEmpty,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelper.RequireCommand(t, "git")
@@ -124,6 +137,9 @@ func TestReleaseCommand(t *testing.T) {
 						Output:  test.srcPaths[testlib2],
 					},
 				},
+			}
+			if test.wantErr == errReleaseConfigEmpty {
+				cfg.Release = nil
 			}
 			if !test.skipYamlCreation {
 				if err := yaml.Write(configPath, cfg); err != nil {
@@ -229,6 +245,7 @@ func TestRelease(t *testing.T) {
 		name    string
 		srcPath string
 		version string
+		lastTag string
 	}{
 		{
 			name:    "library released",
@@ -250,7 +267,7 @@ func TestRelease(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			libConfg := &config.Library{}
-			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
+			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath, test.lastTag, "git")
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -260,13 +277,4 @@ func TestRelease(t *testing.T) {
 		})
 
 	}
-}
-
-func TestMissingReleaseConfig(t *testing.T) {
-	cfg := &config.Config{}
-	_, err := shouldReleaseLibrary(t.Context(), cfg, "")
-	if !errors.Is(err, errReleaseConfigEmpty) {
-		t.Fatalf("Run() error = %v, wantErr %v", err, errReleaseConfigEmpty)
-	}
-
 }

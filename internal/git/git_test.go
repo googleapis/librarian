@@ -291,36 +291,3 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 		t.Errorf("expected an error with a dirty clone")
 	}
 }
-
-func TestChangesInDirectorySinceTag(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		dir  string
-		want int
-	}{
-		{
-			name: "changes exist in directory",
-			dir:  "src/storage",
-			want: 1,
-		},
-		{
-			name: "changes do not exist in directory",
-			dir:  "src/gax-internal",
-			want: 0,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			testhelper.RequireCommand(t, "git")
-			tag := "v1.2.3"
-			remoteDir := testhelper.SetupRepoWithChange(t, tag)
-			testhelper.CloneRepository(t, remoteDir)
-			got, err := ChangesInDirectorySinceTag(t.Context(), "git", tag, test.dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != test.want {
-				t.Errorf("ChangesInDirectorySinceTag() = %d, want %d", got, test.want)
-			}
-		})
-	}
-}
