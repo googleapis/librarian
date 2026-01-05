@@ -109,7 +109,7 @@ func GitShowFile(ctx context.Context, gitExe, remote, branch, path string) (stri
 	if err != nil {
 		return "", fmt.Errorf("failed to show %s: %w\noutput: %s", remoteBranchPath, err, string(output))
 	}
-        return strings.TrimSuffix(string(output), "\n"), nil
+	return strings.TrimSuffix(string(output), "\n"), nil
 }
 
 // MatchesBranchPoint returns an error if the local repository has unpushed changes.
