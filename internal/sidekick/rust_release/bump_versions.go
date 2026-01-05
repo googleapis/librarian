@@ -58,7 +58,7 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	}
 	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
 	for _, name := range crates {
-		slog.Info("runnning cargo semver-checks", "crate", name)
+		slog.Info("running cargo semver-checks", "crate", name)
 		if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}

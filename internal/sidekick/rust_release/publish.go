@@ -80,7 +80,6 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	changedCrates := slices.Collect(maps.Keys(manifests))
 	slices.Sort(plannedCrates)
 	slices.Sort(changedCrates)
-	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoPath != "/bin/echo" {
 		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
 	}
@@ -92,10 +91,11 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 
 	if !skipSemverChecks {
 		for name, manifest := range manifests {
+			gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
 				continue
 			}
-			slog.Info("runnning cargo semver-checks to detect breaking changes", "crate", name)
+			slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
 			if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
 				return err
 			}
