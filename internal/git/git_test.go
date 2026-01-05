@@ -439,43 +439,17 @@ func TestGetFileChangesSinceLastTag(t *testing.T) {
 }
 
 func setupBareRepoWithChange(t *testing.T, wantTag string) string {
-	remoteDir := t.TempDir()
-	t.Chdir(remoteDir)
-	if err := command.Run(t.Context(), "git", "init", "--bare"); err != nil {
+	// Create a bare repository to act as the remote.
+	bareRepoDir := t.TempDir()
+	if err := command.Run(t.Context(), "git", "init", "--bare", bareRepoDir); err != nil {
 		t.Fatal(err)
 	}
-
-	workDir := t.TempDir()
-	testhelper.ContinueInNewGitRepository(t, workDir)
-	// initRepositoryContents(t)
-	if err := os.WriteFile("README.md", []byte("# Empty Repo"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	testhelper.AddCrate(t, path.Join("src", "storage"), "google-cloud-storage")
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "initial version"); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
-		t.Fatal(err)
-	}
-	name := path.Join("src", "storage", "src", "lib.rs")
-	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: adding a second commit after the first tag", "."); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := command.Run(t.Context(), "git", "remote", "add", "origin", remoteDir); err != nil {
+	testhelper.SetupRepoWithChange(t, wantTag)
+	if err := command.Run(t.Context(), "git", "remote", "add", "origin", bareRepoDir); err != nil {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "push", "-u", "origin", "main", "--tags"); err != nil {
 		t.Fatal(err)
 	}
-
-	return remoteDir
+	return bareRepoDir
 }
