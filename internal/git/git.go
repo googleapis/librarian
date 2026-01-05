@@ -113,7 +113,7 @@ func GitShowFile(ctx context.Context, gitExe, remote, branch, path string) (stri
 	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("%w %s: %w\noutput: %s", errGitShow, remoteBranchPath, err, string(output))
+		return "", errors.Join(fmt.Errorf("%w %s", errGitShow, remoteBranchPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
 	}
 	return strings.TrimSuffix(string(output), "\n"), nil
 }
