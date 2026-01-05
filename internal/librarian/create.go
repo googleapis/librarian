@@ -68,7 +68,7 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	// check for existing libraries, if it exists just run generate
 	for _, lib := range cfg.Libraries {
 		if lib.Name == name {
-			return runGenerate(ctx, false, name)
+			return runGenerateAndTidy(ctx, false, name)
 		}
 	}
 	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
@@ -76,14 +76,21 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	}
 	switch cfg.Language {
 	case languageFake:
-		return runGenerate(ctx, false, name)
+		return runGenerateAndTidy(ctx, false, name)
 	case languageRust:
 		return rust.Create(ctx, output, func(ctx context.Context) error {
-			return runGenerate(ctx, false, name)
+			return runGenerateAndTidy(ctx, false, name)
 		})
 	default:
 		return errUnsupportedLanguage
 	}
+}
+
+func runGenerateAndTidy(ctx context.Context, all bool, libraryName string) error {
+	if err := runGenerate(ctx, all, libraryName); err != nil {
+		return err
+	}
+	return RunTidy(ctx)
 }
 
 func addLibraryToLibrarianConfig(cfg *config.Config, name, output string, channel ...string) error {
