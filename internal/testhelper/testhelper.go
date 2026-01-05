@@ -50,6 +50,14 @@ version = "1.0.0"
 
 	// NewLibRsContents defines new content for a lib.rs file for testing changes.
 	NewLibRsContents = `pub fn hello() -> &'static str { "Hello World" }`
+
+	// ReadmeFile is the local file path for the README.md file initialized in
+	// the test repo.
+	ReadmeFile = "README.md"
+
+	// ReadmeContents is the contents of the [ReadmeFile] initialized in the
+	// test repo.
+	ReadmeContents = "# Empty Repo"
 )
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
@@ -92,7 +100,7 @@ func configNewGitRepository(t *testing.T) {
 func initRepositoryContents(t *testing.T) {
 	t.Helper()
 	RequireCommand(t, "git")
-	if err := os.WriteFile("README.md", []byte("# Empty Repo"), 0644); err != nil {
+	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0644); err != nil {
 		t.Fatal(err)
 	}
 	AddCrate(t, path.Join("src", "storage"), "google-cloud-storage")
@@ -131,13 +139,20 @@ func AddCrate(t *testing.T, location, name string) {
 	}
 }
 
+// SetupRepo creates a git repository for testing with some initial content. It
+// returns the path of the remote repository.
+func SetupRepo(t *testing.T) string {
+	remoteDir := t.TempDir()
+	ContinueInNewGitRepository(t, remoteDir)
+	initRepositoryContents(t)
+	return remoteDir
+}
+
 // SetupRepoWithChange creates a git repository for testing publish scenarios,
 // including initial content, a tag, and a committed change.
 // It returns the path to the remote repository.
 func SetupRepoWithChange(t *testing.T, wantTag string) string {
-	remoteDir := t.TempDir()
-	ContinueInNewGitRepository(t, remoteDir)
-	initRepositoryContents(t)
+	remoteDir := SetupRepo(t)
 	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}

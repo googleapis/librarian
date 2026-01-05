@@ -324,3 +324,26 @@ func TestChangesInDirectorySinceTag(t *testing.T) {
 		})
 	}
 }
+
+func TestGitShowFile(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	remoteDir := testhelper.SetupRepo(t)
+	testhelper.CloneRepository(t, remoteDir)
+	got, err := GitShowFile(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(testhelper.ReadmeContents, got); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestGitShowFile_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	remoteDir := testhelper.SetupRepo(t)
+	testhelper.CloneRepository(t, remoteDir)
+	_, err := GitShowFile(t.Context(), "git", "origin", "main", "does_not_exist")
+	if err == nil {
+		t.Errorf("expected an error showing file that should not exist")
+	}
+}

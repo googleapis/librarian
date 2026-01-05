@@ -100,6 +100,18 @@ func GitRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
 }
 
+// GitShowFile shows the contents of the file found at the given path on the
+// given remote/branch.
+func GitShowFile(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
+	remoteBranchPath := fmt.Sprintf("%s/%s:%s", remote, branch, path)
+	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to show %s: %w\noutput: %s", remoteBranchPath, err, string(output))
+	}
+	return string(output), nil
+}
+
 // MatchesBranchPoint returns an error if the local repository has unpushed changes.
 func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) error {
 	remoteBranch := fmt.Sprintf("%s/%s", remote, branch)
