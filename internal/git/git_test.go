@@ -15,6 +15,7 @@
 package git
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path"
@@ -344,6 +345,9 @@ func TestGitShowFile_Error(t *testing.T) {
 	testhelper.CloneRepository(t, remoteDir)
 	_, err := GitShowFile(t.Context(), "git", "origin", "main", "does_not_exist")
 	if err == nil {
-		t.Errorf("expected an error showing file that should not exist")
+		t.Fatal("expected an error showing file that should not exist")
+	}
+	if !errors.Is(err, errGitShow) {
+		t.Errorf("expected errGitShow but got %v", err)
 	}
 }

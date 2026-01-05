@@ -18,6 +18,7 @@ package git
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"slices"
@@ -26,6 +27,11 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/googleapis/librarian/internal/command"
+)
+
+var (
+	// errGitShow is included in any error returned by [GitShowFile].
+	errGitShow = errors.New("failed to show file")
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
@@ -107,7 +113,7 @@ func GitShowFile(ctx context.Context, gitExe, remote, branch, path string) (stri
 	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("failed to show %s: %w\noutput: %s", remoteBranchPath, err, string(output))
+		return "", fmt.Errorf("%w %s: %w\noutput: %s", errGitShow, remoteBranchPath, err, string(output))
 	}
 	return strings.TrimSuffix(string(output), "\n"), nil
 }
