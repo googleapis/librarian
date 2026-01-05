@@ -347,10 +347,12 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		if !cargo.Package.Publish {
 			lib.SkipPublish = true
 		}
-
 		// Parse library-level configuration
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
-			lib.CopyrightYear = copyrightYear
+			extractedCopyrightYear, err := librarian.ExtractCopyrightYear(dir, "rust")
+			if err != nil || extractedCopyrightYear != sidekick.Codec["copyright-year"] {
+				lib.CopyrightYear = sidekick.Codec["copyright-year"]
+			}
 		}
 
 		if extraModules, ok := sidekick.Codec["extra-modules"]; ok {
@@ -526,11 +528,10 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 		}
 		name := cargo.Package.Name
 		veneers[name] = &config.Library{
-			Name:          name,
-			Veneer:        true,
-			Output:        dir,
-			Version:       cargo.Package.Version,
-			CopyrightYear: "2025",
+			Name:    name,
+			Veneer:  true,
+			Output:  dir,
+			Version: cargo.Package.Version,
 		}
 		if len(rustModules) > 0 {
 			veneers[name].Rust = &config.RustCrate{
@@ -538,6 +539,17 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 			}
 		} else {
 			veneers[name].SkipGenerate = true
+		}
+		data, err := os.ReadFile(filepath.Join(dir, "src/generated/.sidekick.toml"))
+		if err == nil {
+			var sidekick sidekickconfig.Config
+			if err := toml.Unmarshal(data, &sidekick); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
+			}
+			extractedCopyrightYear, err := librarian.ExtractCopyrightYear(dir, "rust")
+			if err != nil || extractedCopyrightYear != sidekick.Codec["copyright-year"] {
+				veneers[name].CopyrightYear = sidekick.Codec["copyright-year"]
+			}
 		}
 	}
 

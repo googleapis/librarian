@@ -246,6 +246,7 @@ func TestPrepareLibrary(t *testing.T) {
 		wantErr           bool
 		wantChannelPath   string
 		wantServiceConfig string
+		wantCopyrightYear string
 	}{
 		{
 			name:              "empty output derives path from channel",
@@ -306,6 +307,14 @@ func TestPrepareLibrary(t *testing.T) {
 			wantChannelPath:   "google/cloud/orgpolicy/v1",
 			wantServiceConfig: "",
 		},
+		{
+			name:              "empty copyright year derives from file",
+			language:          "rust",
+			output:            "testdata/secretmanager",
+			wantOutput:        "testdata/secretmanager",
+			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			wantCopyrightYear: "2024",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
@@ -338,6 +347,9 @@ func TestPrepareLibrary(t *testing.T) {
 				if ch.ServiceConfig != test.wantServiceConfig {
 					t.Errorf("got service config %q, want %q", ch.ServiceConfig, test.wantServiceConfig)
 				}
+			}
+			if test.wantCopyrightYear != "" && got.CopyrightYear != test.wantCopyrightYear {
+				t.Errorf("got copyright year %q, want %q", got.CopyrightYear, test.wantCopyrightYear)
 			}
 		})
 	}

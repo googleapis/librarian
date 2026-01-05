@@ -178,6 +178,14 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 		}
 		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
 	}
+
+	if lib.CopyrightYear == "" {
+		copyrightYear, err := ExtractCopyrightYear(lib.Output, language)
+		if err == nil {
+			lib.CopyrightYear = copyrightYear
+		}
+	}
+
 	return fillDefaults(lib, defaults), nil
 }
 
