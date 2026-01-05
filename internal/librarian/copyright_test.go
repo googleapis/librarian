@@ -66,6 +66,13 @@ func TestExtractCopyrightYear(t *testing.T) {
 			content:  "# -*- coding: utf-8 -*-\n\nimport setuptools\n",
 			wantYear: currentYear,
 		},
+		{
+			name:     "unsupported language",
+			filename: "fake.txt",
+			language: languageFake,
+			content:  "",
+			wantYear: "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
