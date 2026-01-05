@@ -29,7 +29,7 @@ var copyrightYearRegex = regexp.MustCompile(`^(?://|#)\s*Copyright\s+(\d{4})\s+G
 
 // ExtractCopyrightYear reads the copyright year from language-specific files.
 // It returns the current year if the file does not exist or if no copyright
-// year is found.
+// year is found or language is unsupported.
 func ExtractCopyrightYear(dir, language string) (string, error) {
 	var filePath string
 	switch language {
