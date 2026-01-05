@@ -796,17 +796,6 @@ func TestBuildConfig(t *testing.T) {
 						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 					},
 				},
-				"skipped": {
-					Name: "google-cloud-sql-v1",
-					Channels: []*config.Channel{
-						{
-							Path:          "google/cloud/sql/v1",
-							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
-						},
-					},
-					SkipPublish: true,
-					Version:     "1.2.0",
-				},
 			},
 			want: &config.Config{
 				Libraries: []*config.Library{

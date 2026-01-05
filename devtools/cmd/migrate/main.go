@@ -540,15 +540,15 @@ func buildVeneer(files []string) (map[string]*config.Library, error) {
 		} else {
 			veneers[name].SkipGenerate = true
 		}
-		data, err := os.ReadFile(filepath.Join(dir, "src/generated/.sidekick.toml"))
+		sidekickPath := filepath.Join(dir, "src/generated/.sidekick.toml")
+		data, err := os.ReadFile(sidekickPath)
 		if err == nil {
 			var sidekick sidekickconfig.Config
-			if err := toml.Unmarshal(data, &sidekick); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
-			}
-			extractedCopyrightYear, err := librarian.ExtractCopyrightYear(dir, "rust")
-			if err != nil || extractedCopyrightYear != sidekick.Codec["copyright-year"] {
-				veneers[name].CopyrightYear = sidekick.Codec["copyright-year"]
+			if err := toml.Unmarshal(data, &sidekick); err == nil {
+				extractedCopyrightYear, err := librarian.ExtractCopyrightYear(dir, "rust")
+				if err != nil || extractedCopyrightYear != sidekick.Codec["copyright-year"] {
+					veneers[name].CopyrightYear = sidekick.Codec["copyright-year"]
+				}
 			}
 		}
 	}
@@ -670,26 +670,8 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	var libList []*config.Library
 
 	for _, lib := range libraries {
-		// Get the API path for this library
-		apiPath := ""
-		if len(lib.Channels) > 0 {
-			apiPath = lib.Channels[0].Path
-		}
-
-		// Derive expected library name from API path
-		expectedName := deriveLibraryName(apiPath)
-		nameMatchesConvention := lib.Name == expectedName
-		// Check if library has extra configuration beyond just name/api/version
-		hasExtraConfig := lib.CopyrightYear != "" ||
-			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
-				lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples ||
-				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
-				lib.Rust.NameOverrides != ""))
-		// Only include in libraries section if specific data needs to be retained
-		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
-			libCopy := *lib
-			libList = append(libList, &libCopy)
-		}
+		libCopy := *lib
+		libList = append(libList, &libCopy)
 	}
 
 	// Sort libraries by name
