@@ -131,3 +131,54 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestToConfigTools(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []sidekickconfig.Tool
+		expected    []config.Tool
+		expectedNil bool
+	}{
+		{
+			name:        "nil input",
+			input:       nil,
+			expected:    nil,
+			expectedNil: true,
+		},
+		{
+			name:        "empty slice",
+			input:       []sidekickconfig.Tool{},
+			expected:    []config.Tool{},
+			expectedNil: false,
+		},
+		{
+			name: "valid tools",
+			input: []sidekickconfig.Tool{
+				{Name: "tool1", Version: "1.0.0"},
+				{Name: "tool2", Version: "2.0.0"},
+			},
+			expected: []config.Tool{
+				{Name: "tool1", Version: "1.0.0"},
+				{Name: "tool2", Version: "2.0.0"},
+			},
+			expectedNil: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := ToConfigTools(test.input)
+			if test.expectedNil && got != nil {
+				t.Errorf("ToConfigTools() got = %v, want nil", got)
+			}
+			if !test.expectedNil && len(got) != len(test.expected) {
+				t.Errorf("ToConfigTools() got = %v, want %v", got, test.expected)
+			}
+			for i, v := range got {
+				if v.Name != test.expected[i].Name || v.Version != test.expected[i].Version {
+					t.Errorf("ToConfigTools() got = %v, want %v", got, test.expected)
+					break
+				}
+			}
+		})
+	}
+}

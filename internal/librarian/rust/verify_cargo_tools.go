@@ -22,7 +22,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // PreFlight performs all the necessary checks before a release.
@@ -53,39 +52,4 @@ func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) e
 		}
 	}
 	return nil
-}
-
-// FromSidekickReleaseConfig converts a sidekick Release config to a librarian Release config.
-func FromSidekickReleaseConfig(s *sidekickconfig.Release) *config.Release {
-	if s == nil {
-		return nil
-	}
-	tools := map[string][]config.Tool{}
-	for k, v := range s.Tools {
-		var l []config.Tool
-		for _, t := range v {
-			l = append(l, config.Tool{Name: t.Name, Version: t.Version})
-		}
-		tools[k] = l
-	}
-	return &config.Release{
-		Remote:         s.Remote,
-		Branch:         s.Branch,
-		Preinstalled:   s.Preinstalled,
-		IgnoredChanges: s.IgnoredChanges,
-		RootsPem:       s.RootsPem,
-		Tools:          tools,
-	}
-}
-
-// ToConfigTools converts a slice of sidekick tools to a slice of librarian tools.
-func ToConfigTools(sidekickTools []sidekickconfig.Tool) []config.Tool {
-	if sidekickTools == nil {
-		return nil
-	}
-	configTools := make([]config.Tool, len(sidekickTools))
-	for i, t := range sidekickTools {
-		configTools[i] = config.Tool{Name: t.Name, Version: t.Version}
-	}
-	return configTools
 }

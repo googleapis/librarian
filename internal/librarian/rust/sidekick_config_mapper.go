@@ -45,3 +45,15 @@ func ToSidekickReleaseConfig(cfg *config.Release) *sidekickconfig.Release {
 		RootsPem:       cfg.RootsPem,
 	}
 }
+
+// ToConfigTools converts a slice of sidekick tools to a slice of librarian tools.
+func ToConfigTools(sidekickTools []sidekickconfig.Tool) []config.Tool {
+	if sidekickTools == nil {
+		return nil
+	}
+	configTools := make([]config.Tool, len(sidekickTools))
+	for i, t := range sidekickTools {
+		configTools[i] = config.Tool{Name: t.Name, Version: t.Version}
+	}
+	return configTools
+}

@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -110,117 +109,5 @@ func TestPreflightToolFailure(t *testing.T) {
 	testhelper.SetupForVersionBump(t, "test-preflight-with-tools")
 	if err := PreFlight(t.Context(), preinstalled, "origin", tools); err == nil {
 		t.Errorf("expected an error installing cargo-semver-checks")
-	}
-}
-
-func TestToConfigTools(t *testing.T) {
-	tests := []struct {
-		name        string
-		input       []sidekickconfig.Tool
-		expected    []config.Tool
-		expectedNil bool
-	}{
-		{
-			name:        "nil input",
-			input:       nil,
-			expected:    nil,
-			expectedNil: true,
-		},
-		{
-			name:        "empty slice",
-			input:       []sidekickconfig.Tool{},
-			expected:    []config.Tool{},
-			expectedNil: false,
-		},
-		{
-			name: "valid tools",
-			input: []sidekickconfig.Tool{
-				{Name: "tool1", Version: "1.0.0"},
-				{Name: "tool2", Version: "2.0.0"},
-			},
-			expected: []config.Tool{
-				{Name: "tool1", Version: "1.0.0"},
-				{Name: "tool2", Version: "2.0.0"},
-			},
-			expectedNil: false,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := ToConfigTools(test.input)
-			if test.expectedNil && got != nil {
-				t.Errorf("ToConfigTools() got = %v, want nil", got)
-			}
-			if !test.expectedNil && len(got) != len(test.expected) {
-				t.Errorf("ToConfigTools() got = %v, want %v", got, test.expected)
-			}
-			for i, v := range got {
-				if v.Name != test.expected[i].Name || v.Version != test.expected[i].Version {
-					t.Errorf("ToConfigTools() got = %v, want %v", got, test.expected)
-					break
-				}
-			}
-		})
-	}
-}
-
-func TestFromSidekickReleaseConfig(t *testing.T) {
-	tests := []struct {
-		name        string
-		input       *sidekickconfig.Release
-		expected    *config.Release
-		expectedNil bool
-	}{
-		{
-			name:        "nil input",
-			input:       nil,
-			expected:    nil,
-			expectedNil: true,
-		},
-		{
-			name: "valid config",
-			input: &sidekickconfig.Release{
-				Remote:         "origin",
-				Branch:         "main",
-				Preinstalled:   map[string]string{"git": "/usr/bin/git"},
-				IgnoredChanges: []string{"README.md"},
-				RootsPem:       "roots.pem",
-				Tools: map[string][]sidekickconfig.Tool{
-					"cargo": {{Name: "cargo-semver-checks", Version: "0.42.0"}},
-				},
-			},
-			expected: &config.Release{
-				Remote:         "origin",
-				Branch:         "main",
-				Preinstalled:   map[string]string{"git": "/usr/bin/git"},
-				IgnoredChanges: []string{"README.md"},
-				RootsPem:       "roots.pem",
-				Tools: map[string][]config.Tool{
-					"cargo": {{Name: "cargo-semver-checks", Version: "0.42.0"}},
-				},
-			},
-			expectedNil: false,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := FromSidekickReleaseConfig(test.input)
-			if test.expectedNil {
-				if got != nil {
-					t.Errorf("FromSidekickReleaseConfig() got = %v, want nil", got)
-				}
-			} else {
-				if got == nil {
-					t.Errorf("FromSidekickReleaseConfig() got = nil, want %v", test.expected)
-					return
-				}
-				if got.Remote != test.expected.Remote {
-					t.Errorf("FromSidekickReleaseConfig() Remote got = %s, want %s", got.Remote, test.expected.Remote)
-				}
-				if got.Branch != test.expected.Branch {
-					t.Errorf("FromSidekickReleaseConfig() Branch got = %s, want %s", got.Branch, test.expected.Branch)
-				}
-			}
-		})
 	}
 }
