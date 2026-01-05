@@ -125,30 +125,3 @@ func ChangesInDirectorySinceTag(ctx context.Context, gitExe, tag, dir string) (i
 	}
 	return strconv.Atoi(strings.TrimSpace(string(output)))
 }
-
-// GetFileChangesSinceLastTag returns the files changed since the last tag.
-// Before returning the file changes, it ensures the git working directory is
-// clean and the local repository matches its branch point from the remote.
-func GetFileChangesSinceLastTag(ctx context.Context,
-	preinstalled map[string]string, remote, branch string,
-	ignoredChanges []string) (files []string, lastTag string, err error) {
-	gitExe := "git"
-	if preinstalled != nil {
-		gitExe = command.GetExecutablePath(preinstalled, "git")
-	}
-	if err := AssertGitStatusClean(ctx, gitExe); err != nil {
-		return nil, "", err
-	}
-	if err := MatchesBranchPoint(ctx, gitExe, remote, branch); err != nil {
-		return nil, "", err
-	}
-	lastTag, err = GetLastTag(ctx, gitExe, remote, branch)
-	if err != nil {
-		return nil, "", err
-	}
-	files, err = FilesChangedSince(ctx, lastTag, gitExe, ignoredChanges)
-	if err != nil {
-		return nil, "", err
-	}
-	return files, lastTag, nil
-}

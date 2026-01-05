@@ -37,7 +37,15 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
 		return err
 	}
-	files, lastTag, err := git.GetFileChangesSinceLastTag(ctx, config.Preinstalled, config.Remote, config.Branch, config.IgnoredChanges)
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
+	if err != nil {
+		return err
+	}
+	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
+		return err
+	}
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
