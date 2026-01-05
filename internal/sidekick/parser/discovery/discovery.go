@@ -181,7 +181,7 @@ type scope struct {
 	Description string
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (a *auth) UnmarshalJSON(data []byte) error {
 	// Pull out the oauth2 scopes and turn them into nice structs.
 	// Ignore other auth information.
@@ -347,7 +347,7 @@ type property struct {
 
 type propertyList []*property
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (pl *propertyList) UnmarshalJSON(data []byte) error {
 	// In the discovery doc, properties are a map. Convert to a list.
 	var m map[string]*schema
@@ -365,7 +365,7 @@ func (pl *propertyList) UnmarshalJSON(data []byte) error {
 
 type resourceList []*resource
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (rl *resourceList) UnmarshalJSON(data []byte) error {
 	// In the discovery doc, resources are a map. Convert to a list.
 	var m map[string]*resource
@@ -406,7 +406,7 @@ func (r *resource) init(parentFullName string, topLevelSchemas map[string]*schem
 
 type methodList []*method
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (ml *methodList) UnmarshalJSON(data []byte) error {
 	// In the discovery doc, resources are a map. Convert to a list.
 	var m map[string]*method
@@ -460,7 +460,7 @@ func (m *method) init(topLevelSchemas map[string]*schema) error {
 	return nil
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (m *method) UnmarshalJSON(data []byte) error {
 	type T method // avoid a recursive call to UnmarshalJSON
 	if err := json.Unmarshal(data, (*T)(m)); err != nil {
@@ -471,7 +471,7 @@ func (m *method) UnmarshalJSON(data []byte) error {
 
 type parameterList []*parameter
 
-// UnmarshalJSON implements the json.Unmarshaler interface.
+// UnmarshalJSON implements the [json.Unmarshaler] interface.
 func (pl *parameterList) UnmarshalJSON(data []byte) error {
 	// In the discovery doc, resources are a map. Convert to a list.
 	var m map[string]*parameter
