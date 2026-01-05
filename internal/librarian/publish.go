@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -58,18 +57,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if err := verifyRequiredTools(ctx, cfg.Language, cfg.Release); err != nil {
 		return err
 	}
-	gitExe := "git"
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
-	if err != nil {
-		return err
-	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	files, lastTag, err := git.GetFileChangesSinceLastTag(ctx, cfg.Release.Preinstalled, cfg.Release.Remote, cfg.Release.Branch, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
