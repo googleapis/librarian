@@ -1,0 +1,5 @@
+[general]
+specification-source = "google/cloud/test/v1"
+
+[codec]
+copyright-year = "2024"
