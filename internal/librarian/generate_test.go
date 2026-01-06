@@ -317,7 +317,7 @@ func TestPrepareLibrary(t *testing.T) {
 			defaults := &config.Default{
 				Output: "src/generated",
 			}
-			got, err := prepareLibrary(test.language, lib, defaults, googleapisDir)
+			got, err := prepareLibrary(test.language, lib, defaults, googleapisDir, true)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")

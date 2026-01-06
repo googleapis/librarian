@@ -125,6 +125,9 @@ func TestReleaseCommand(t *testing.T) {
 					Remote: "origin",
 					Branch: "main",
 				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{},
+				},
 				Libraries: []*config.Library{
 					{
 						Name:    testlib,

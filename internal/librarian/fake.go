@@ -31,10 +31,6 @@ func fakeReleaseLibrary(lib *config.Library) error {
 	return nil
 }
 
-func fakeDeriveSrcPath(library *config.Library) string {
-	return library.Output
-}
-
 func fakeGenerate(library *config.Library) error {
 	if err := os.MkdirAll(library.Output, 0755); err != nil {
 		return err
