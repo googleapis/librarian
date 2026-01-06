@@ -585,6 +585,15 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
+	_, omit := omitGeneration[m.ID]
+
+	if omit {
+		m.Codec = &messageAnnotation{
+			OmitGeneration: true,
+		}
+		return
+	}
+
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
 	}
@@ -607,8 +616,6 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	}
 
 	toStringLines := createToStringLines(m)
-
-	_, omit := omitGeneration[m.ID]
 
 	m.Codec = &messageAnnotation{
 		Parent:          m,
@@ -1252,6 +1259,9 @@ func (annotate *annotateModel) resolveMessageName(message *api.Message, returnVo
 
 func (annotate *annotateModel) updateUsedPackages(packageName string) {
 	selfReference := annotate.model.PackageName == packageName
+	if strings.Contains(packageName, "rpc") {
+		fmt.Println("debug") // Set a regular breakpoint here
+	}
 	if !selfReference {
 		// Use the packageMapping info to add any necessary import.
 		dartImport, ok := annotate.packageMapping[packageName]
