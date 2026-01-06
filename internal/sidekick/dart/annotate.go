@@ -300,6 +300,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			for i := range exports {
 				exports[i] = strings.TrimSpace(exports[i])
 			}
+		case key == "extra-imports":
+			// extra-imports = "dart:math;package:my_package/my_file.dart"
+			// Dart imports that should be included in the generated file.
+			extraImports := strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
+			for _, imp := range extraImports {
+				annotate.imports[strings.TrimSpace(imp)] = true
+			}
 		case key == "dependencies":
 			// dependencies = "http, googleapis_auth"
 			// A list of dependencies to add to pubspec.yaml. This can be used to add dependencies for hand-written code.

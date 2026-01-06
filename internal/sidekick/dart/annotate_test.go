@@ -118,6 +118,18 @@ func TestAnnotateModel_Options(t *testing.T) {
 			},
 		},
 		{
+			map[string]string{"extra-imports": "dart:math; package:my_package/my_file.dart", "package:my_package": "^1.0.0"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if !slices.Contains(codec.Imports, "import 'dart:math';") {
+					t.Errorf("missing 'dart:math' in Codec.Imports, got %v", codec.Imports)
+				}
+				if !slices.Contains(codec.Imports, "import 'package:my_package/my_file.dart';") {
+					t.Errorf("missing 'package:my_package/my_file.dart' in Codec.Imports, got %v", codec.Imports)
+				}
+			},
+		},
+		{
 			map[string]string{"version": "1.2.3"},
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
