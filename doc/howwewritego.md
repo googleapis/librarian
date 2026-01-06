@@ -243,8 +243,9 @@ Splitting success and failure cases into separate test functions can simplify
 your test code. See
 [details](https://google.github.io/styleguide/go/decisions.html#table-driven-tests). 
 
-When writing error tests, use test function name like `TestXxx_Error`, and when
-possible use [`errors.Is`](https://pkg.go.dev/errors#Is) for comparison.
+When writing error tests, use a test function name like `TestXxx_Error`, and
+when possible use [`errors.Is`](https://pkg.go.dev/errors#Is) for comparison
+(see [details](https://google.github.io/styleguide/go/decisions.html#test-error-semantics)).
 
 Example:
 
