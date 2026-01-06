@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -140,7 +139,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, googleapisDir, lib
 			if lib.SkipGenerate {
 				return nil, nil
 			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir)
+			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir, true)
 			if err != nil {
 				return nil, err
 			}
@@ -148,41 +147,6 @@ func generateLibrary(ctx context.Context, cfg *config.Config, googleapisDir, lib
 		}
 	}
 	return nil, fmt.Errorf("library %q not found", libraryName)
-}
-
-// prepareLibrary applies language-specific derivations and fills defaults.
-// For Rust libraries without an explicit output path, it derives the output
-// from the first channel path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default, googleapisDir string) (*config.Library, error) {
-	if len(lib.Channels) == 0 {
-		// If no channels are specified, create an empty channel first
-		lib.Channels = append(lib.Channels, &config.Channel{})
-	}
-
-	// The googleapis path of a veneer library lives in language-specific configurations,
-	// so we only need to derive the path and service config for non-veneer libraries.
-	if !lib.Veneer {
-		for _, ch := range lib.Channels {
-			if ch.Path == "" {
-				ch.Path = deriveChannelPath(language, lib.Name)
-			}
-			if ch.ServiceConfig == "" {
-				sc, err := serviceconfig.Find(googleapisDir, ch.Path)
-				if err != nil {
-					return nil, err
-				}
-				ch.ServiceConfig = sc
-			}
-		}
-	}
-
-	if lib.Output == "" {
-		if lib.Veneer {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
-		}
-		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
-	}
-	return fillDefaults(lib, defaults), nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {

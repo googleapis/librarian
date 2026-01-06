@@ -98,19 +98,17 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		srcPath, err := getSrcPathForLanguage(cfg, libConfg)
+		_, err = prepareLibrary(cfg.Language, libConfg, cfg.Default, "", false)
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(ctx, cfg, libConfg, srcPath, lastTag, gitExe)
+		err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe)
 		if err != nil {
 			return err
 		}
 	}
-	if err != nil {
-		return err
-	}
-	return yaml.Write(librarianConfigPath, cfg)
+	yaml.Write(librarianConfigPath, cfg)
+	return RunTidy(ctx)
 }
 
 func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
@@ -119,12 +117,12 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		return err
 	}
 	for _, library := range cfg.Libraries {
-		srcPath, err := getSrcPathForLanguage(cfg, library)
+		_, err := prepareLibrary(cfg.Language, library, cfg.Default, "", false)
 		if err != nil {
 			return err
 		}
-		if shouldRelease(library, filesChanged, srcPath) {
-			if err := releaseLibrary(ctx, cfg, library, srcPath, lastTag, gitExe); err != nil {
+		if shouldRelease(library, filesChanged, library.Output) {
+			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe); err != nil {
 				return err
 			}
 		}
@@ -146,20 +144,6 @@ func shouldRelease(library *config.Library, filesChanged []string, srcPath strin
 		}
 	}
 	return false
-}
-
-func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
-	srcPath := ""
-	switch cfg.Language {
-	case languageFake:
-		srcPath = fakeDeriveSrcPath(libConfig)
-	case languageRust:
-		srcPath = rust.DeriveSrcPath(libConfig, cfg)
-	}
-	if srcPath == "" {
-		return "", errCouldNotDeriveSrcPath
-	}
-	return srcPath, nil
 }
 
 func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe string) error {
