@@ -68,8 +68,8 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
 
 	if !skipSemverChecks {
+		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 		for name, manifest := range manifests {
-			gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
 				continue
 			}
