@@ -16,7 +16,6 @@ package rust
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/exec"
 	"slices"
@@ -45,9 +44,6 @@ func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
 		return nil, err
 	}
 	if !needsBump {
-		if strings.Contains(manifest, "firestore") || strings.Contains(manifest, "gax-internal") {
-			slog.Info("needsbump is false", "manifest", manifest)
-		}
 		return nil, nil
 	}
 	contents, err := os.ReadFile(manifest)
@@ -63,9 +59,6 @@ func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
 		return nil, err
 	}
 	if !info.Package.Publish {
-		if strings.Contains(manifest, "firestore") || strings.Contains(manifest, "gax-internal") {
-			slog.Info("publish is false", "manifest", manifest)
-		}
 		return nil, nil
 	}
 	newVersion, err := semver.DeriveNext(semver.Minor, info.Package.Version,
