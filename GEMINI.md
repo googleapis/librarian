@@ -17,8 +17,11 @@ After modifying code, you MUST run these commands:
 - **Format:** `gofmt -s -w .`
 - **Imports:** `goimports -w .`
 - **Lint:** `golangci-lint run`
-- **Tests:** `go test -race ./...`
+- **Tests:** `go test -short ./...` (for fast feedback)
 - **YAML:** `yamlfmt` (if YAML files were touched)
+
+Before submitting changes, run the full test suite:
+- **Full Tests:** `go test -race ./...`
 
 ## Codebase Map
 
