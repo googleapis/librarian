@@ -131,3 +131,41 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestToConfigTools(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []sidekickconfig.Tool
+		want  []config.Tool
+	}{
+		{
+			name:  "nil input",
+			input: nil,
+			want:  nil,
+		},
+		{
+			name:  "empty slice",
+			input: []sidekickconfig.Tool{},
+			want:  []config.Tool{},
+		},
+		{
+			name: "valid tools",
+			input: []sidekickconfig.Tool{
+				{Name: "tool1", Version: "1.0.0"},
+				{Name: "tool2", Version: "2.0.0"},
+			},
+			want: []config.Tool{
+				{Name: "tool1", Version: "1.0.0"},
+				{Name: "tool2", Version: "2.0.0"},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := ToConfigTools(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("ToConfigTools() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

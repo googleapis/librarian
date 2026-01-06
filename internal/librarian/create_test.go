@@ -32,6 +32,7 @@ func TestCreateLibrary(t *testing.T) {
 		output          string
 		existingLibrary *config.Library
 		wantOutput      string
+		wantError       error
 	}{
 		{
 			name:       "create new library",
@@ -40,13 +41,12 @@ func TestCreateLibrary(t *testing.T) {
 			wantOutput: "newlib-output",
 		},
 		{
-			name:    "regenerate existing library",
+			name:    "fail create existing library",
 			libName: "existinglib",
 			existingLibrary: &config.Library{
-				Name:   "existinglib",
-				Output: "existing-output",
+				Name: "existinglib",
 			},
-			wantOutput: "existing-output",
+			wantError: errLibraryAlreadyExists,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -81,11 +81,18 @@ func TestCreateLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := runCreate(t.Context(), test.libName, test.output); err != nil {
-				t.Fatal(err)
+			err := runCreate(t.Context(), test.libName, test.output)
+			if test.wantError != nil {
+				if !errors.Is(err, test.wantError) {
+					t.Errorf("expected error %v, got %v", test.wantError, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("runCreate() failed with unexpected error: %v", err)
 			}
 
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err = yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
 			}

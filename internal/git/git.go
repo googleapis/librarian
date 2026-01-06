@@ -18,6 +18,7 @@ package git
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"slices"
@@ -25,6 +26,11 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/googleapis/librarian/internal/command"
+)
+
+var (
+	// errGitShow is included in any error returned by [ShowFile].
+	errGitShow = errors.New("failed to show file")
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
@@ -97,6 +103,18 @@ func GitVersion(ctx context.Context, gitExe string) error {
 // GitRemoteURL checks the git remote URL.
 func GitRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
+}
+
+// ShowFile shows the contents of the file found at the given path on the
+// given remote/branch.
+func ShowFile(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
+	remoteBranchPath := fmt.Sprintf("%s/%s:%s", remote, branch, path)
+	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errors.Join(fmt.Errorf("%w %s", errGitShow, remoteBranchPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
+	}
+	return strings.TrimSuffix(string(output), "\n"), nil
 }
 
 // MatchesBranchPoint returns an error if the local repository has unpushed changes.

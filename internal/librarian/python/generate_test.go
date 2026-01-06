@@ -321,6 +321,10 @@ func TestRunPostProcessor(t *testing.T) {
 }
 
 func TestGenerateChannel(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Python GAPIC code generation")
+	}
 
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
@@ -338,6 +342,11 @@ func TestGenerateChannel(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Python code generation")
+	}
+
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelper.RequireCommand(t, "python3")

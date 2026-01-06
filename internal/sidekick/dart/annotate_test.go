@@ -1401,3 +1401,94 @@ func TestCreateToJsonLine(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateEnum(t *testing.T) {
+	type wantedValueAnnotation struct {
+		wantValueName string
+	}
+
+	enumValueSimple := &api.EnumValue{
+		Name: "NAME",
+		ID:   ".test.v1.SomeMessage.SomeEnum.NAME",
+	}
+	enumValueReservedName := &api.EnumValue{
+		Name: "in",
+		ID:   ".test.v1.SomeMessage.SomeEnum.in",
+	}
+	enumValueCompound := &api.EnumValue{
+		Name: "ENUM_VALUE",
+		ID:   ".test.v1.SomeMessage.SomeEnum.ENUM_VALUE",
+	}
+	enumValueNameDifferentCaseOnly := &api.EnumValue{
+		Name: "name",
+		ID:   ".test.v1.SomeMessage.SomeEnum.name",
+	}
+	someEnum := &api.Enum{
+		Name:    "SomeEnum",
+		ID:      ".test.v1.SomeMessage.SomeEnum",
+		Values:  []*api.EnumValue{enumValueSimple, enumValueReservedName, enumValueCompound},
+		Package: "test.v1",
+	}
+	noValuesEnum := &api.Enum{
+		Name:    "NoValuesEnum",
+		ID:      ".test.v1.NoValuesEnum",
+		Values:  []*api.EnumValue{},
+		Package: "test.v1",
+	}
+	someEnumNameDifferentCaseOnly := &api.Enum{
+		Name:    "DifferentCaseOnlyEnum",
+		ID:      ".test.v1.SomeMessage.SomeDifferentCaseOnlyEnum",
+		Values:  []*api.EnumValue{enumValueSimple, enumValueNameDifferentCaseOnly},
+		Package: "test.v1",
+	}
+
+	model := api.NewTestAPI(
+		[]*api.Message{},
+		[]*api.Enum{someEnum, noValuesEnum, someEnumNameDifferentCaseOnly},
+		[]*api.Service{})
+	model.PackageName = "test"
+	annotate := newAnnotateModel(model)
+
+	for _, test := range []struct {
+		enum                 *api.Enum
+		wantEnumName         string
+		wantEnumDefaultValue string
+		wantValueAnnotations []wantedValueAnnotation
+	}{
+		{enum: someEnum,
+			wantEnumName:         "SomeEnum",
+			wantEnumDefaultValue: "name",
+			wantValueAnnotations: []wantedValueAnnotation{{"name"}, {"in$"}, {"enumValue"}},
+		},
+		{enum: noValuesEnum,
+			wantEnumName:         "NoValuesEnum",
+			wantEnumDefaultValue: "",
+			wantValueAnnotations: []wantedValueAnnotation{},
+		},
+		{enum: someEnumNameDifferentCaseOnly,
+			wantEnumName:         "DifferentCaseOnlyEnum",
+			wantEnumDefaultValue: "NAME",
+			wantValueAnnotations: []wantedValueAnnotation{{"NAME"}, {"name"}},
+		},
+	} {
+		annotate.annotateEnum(test.enum)
+		codec := test.enum.Codec.(*enumAnnotation)
+		gotEnumName := codec.Name
+		gotEnumDefaultValue := codec.DefaultValue
+
+		if diff := cmp.Diff(test.wantEnumName, gotEnumName); diff != "" {
+			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
+		}
+		if diff := cmp.Diff(test.wantEnumDefaultValue, gotEnumDefaultValue); diff != "" {
+			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
+		}
+
+		for i, value := range test.enum.Values {
+			wantValueAnnotation := test.wantValueAnnotations[i]
+			gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+			if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
+				t.Errorf("mismatch in TestAnnotateEnum(%q) [value annotation %d] (-want, +got)\n:%s", test.enum.Name, i, diff)
+			}
+		}
+	}
+}

@@ -61,6 +61,12 @@ https://go.dev/wiki/Spelling. See
 - **Good**: `unmarshaling`, `marshaling`, `canceled`
 - **Bad**: `unmarshalling`, `marshalling`, `cancelled`
 
+### Avoid Redundancy with Package Names
+
+Go uses package names to provide context. Avoid repeating the package name within a type or function name.
+- **Good**: `git.ShowFile`, `client.New`
+- **Bad**: `git.GitShowFile`, `client.NewClient`
+
 ## Go Doc Comments
 
 "Doc comments" are comments that appear immediately before top-level package,
