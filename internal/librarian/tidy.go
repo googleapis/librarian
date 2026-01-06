@@ -75,8 +75,8 @@ func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) 
 		lib.Output = ""
 	}
 	if lib.Veneer {
-		// Veneers are never generated, so ensure skip_generate is false.
-		lib.SkipGenerate = false
+		// Veneers are never generated, so ensure skip_generate is true.
+		lib.SkipGenerate = true
 	}
 	for _, ch := range lib.Channels {
 		if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {

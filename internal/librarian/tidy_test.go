@@ -504,7 +504,7 @@ libraries:
 	if len(cfg.Libraries) != 1 {
 		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
 	}
-	if cfg.Libraries[0].SkipGenerate {
-		t.Errorf("expected skip_generate to be false for veneer library, got true")
+	if !cfg.Libraries[0].SkipGenerate {
+		t.Errorf("expected skip_generate to be true for veneer library, got false")
 	}
 }
