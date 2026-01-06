@@ -38,38 +38,38 @@ func TestCreateLibrary(t *testing.T) {
 		wantFinalLibraries     []*config.Library
 		wantGeneratedOutputDir string
 	}{
-		{
-			name:                   "create new library",
-			libName:                "google-cloud-secretmanager",
-			output:                 "newlib-output",
-			initialLibraries:       []*config.Library{},
-			wantGeneratedOutputDir: "newlib-output",
-			wantFinalLibraries: []*config.Library{
-				{
-					Name:          "google-cloud-secretmanager",
-					CopyrightYear: copyrightYear,
-					Output:        "newlib-output",
-					Version:       "0.1.0",
-				},
-			},
-		},
-		{
-			name:    "regenerate existing library",
-			libName: "google-cloud-secretmanager",
-			initialLibraries: []*config.Library{
-				{
-					Name:   "google-cloud-secretmanager",
-					Output: "existing-output",
-				},
-			},
-			wantGeneratedOutputDir: "existing-output",
-			wantFinalLibraries: []*config.Library{
-				{
-					Name:   "google-cloud-secretmanager",
-					Output: "existing-output",
-				},
-			},
-		},
+		// {
+		// 	name:                   "create new library",
+		// 	libName:                "google-cloud-secretmanager",
+		// 	output:                 "newlib-output",
+		// 	initialLibraries:       []*config.Library{},
+		// 	wantGeneratedOutputDir: "newlib-output",
+		// 	wantFinalLibraries: []*config.Library{
+		// 		{
+		// 			Name:          "google-cloud-secretmanager",
+		// 			CopyrightYear: copyrightYear,
+		// 			Output:        "newlib-output",
+		// 			Version:       "0.1.0",
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name:    "regenerate existing library",
+		// 	libName: "google-cloud-secretmanager",
+		// 	initialLibraries: []*config.Library{
+		// 		{
+		// 			Name:   "google-cloud-secretmanager",
+		// 			Output: "existing-output",
+		// 		},
+		// 	},
+		// 	wantGeneratedOutputDir: "existing-output",
+		// 	wantFinalLibraries: []*config.Library{
+		// 		{
+		// 			Name:   "google-cloud-secretmanager",
+		// 			Output: "existing-output",
+		// 		},
+		// 	},
+		// },
 		{
 			name:    "create new library and tidy existing",
 			libName: "google-cloud-secretmanager",

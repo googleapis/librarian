@@ -63,24 +63,31 @@ func RunTidy(ctx context.Context) error {
 	}
 
 	for _, lib := range cfg.Libraries {
-		if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
-			lib.Output = ""
+		if err := tidyLibrary(cfg, lib, googleapisDir); err != nil {
+			return err
 		}
-		for _, ch := range lib.Channels {
-			if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
-				ch.Path = ""
-			}
-			if isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir) {
-				ch.ServiceConfig = ""
-			}
-		}
-		lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
-			return ch.Path == "" && ch.ServiceConfig == ""
-		})
-
-		tidyLanguageConfig(lib, cfg.Language)
 	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+}
+
+func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) error {
+	if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
+		lib.Output = ""
+	}
+	for _, ch := range lib.Channels {
+		if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
+			ch.Path = ""
+		}
+		if isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir) {
+			ch.ServiceConfig = ""
+		}
+	}
+	lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
+		return ch.Path == "" && ch.ServiceConfig == ""
+	})
+
+	tidyLanguageConfig(lib, cfg.Language)
+	return nil
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
