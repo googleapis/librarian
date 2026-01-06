@@ -251,29 +251,31 @@ Example:
 
 ```go
 func TestSendMessage_Error(t *testing.T) {
-  for _, test := range {}struct{
+  for _, test := range []struct{
     name string
     recipient string
     message string
-    wantErr err
+    wantErr error
   }{
     {
-      name: "recipient does not exist"
+      name: "recipient does not exist",
       recipient: "Does Not Exist",
       message: "Hello, Mr. Not Exist",
       wantErr: errRecipientDoesNotExist,
     },
     {
-      name: "empty message"
+      name: "empty message",
       recipient: "Jane Doe",
       message: "",
       wantErr: errEmptyMessage,
     },
   }{
-    _, gotErr := SendMessage(test.recipient, test.message)
-    if !errors.Is(gotErr, wantErr) {
-      t.Errorf("want error %v, got %v", test.wantErr, gotErr)
-    }
+    t.Run(test.name, func(t *testing.T) {
+      _, gotErr := SendMessage(test.recipient, test.message)
+      if !errors.Is(gotErr, test.wantErr) {
+        t.Errorf("want error %v, got %v", test.wantErr, gotErr)
+      }
+    })
   }
 }
 ```
