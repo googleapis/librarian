@@ -303,7 +303,7 @@ func TestReleaseAll(t *testing.T) {
 			skipPublish: false,
 		},
 		{
-			name:        "library does not have any changes with trailing slash",
+			name:        "library does not have any changes on shared directory prefix",
 			libName:     "gax-internal",
 			dir:         "src/stor",
 			wantVersion: "1.2.2",

@@ -119,31 +119,34 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		return err
 	}
 	for _, library := range cfg.Libraries {
-		if library.SkipPublish {
-			continue
-		}
 		srcPath, err := getSrcPathForLanguage(cfg, library)
 		if err != nil {
 			return err
 		}
-		pathWithTrailingSlash := srcPath
-		if !strings.HasSuffix(pathWithTrailingSlash, "/") {
-			pathWithTrailingSlash = pathWithTrailingSlash + "/"
-		}
-		shouldRelease := false
-		for _, path := range filesChanged {
-			if strings.Contains(path, pathWithTrailingSlash) {
-				shouldRelease = true
-				break
-			}
-		}
-		if shouldRelease {
+		if shouldRelease(library, cfg, filesChanged, srcPath) {
 			if err := releaseLibrary(ctx, cfg, library, srcPath, lastTag, gitExe); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func shouldRelease(library *config.Library, cfg *config.Config, filesChanged []string, srcPath string) bool {
+	if library.SkipPublish {
+		return false
+	}
+
+	pathWithTrailingSlash := srcPath
+	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
+		pathWithTrailingSlash = pathWithTrailingSlash + "/"
+	}
+	for _, path := range filesChanged {
+		if strings.Contains(path, pathWithTrailingSlash) {
+			return true
+		}
+	}
+	return false
 }
 
 func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
