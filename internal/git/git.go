@@ -96,13 +96,13 @@ func IsNewFile(ctx context.Context, gitExe, ref, name string) bool {
 	return bytes.HasPrefix(output, []byte(" create mode "))
 }
 
-// Version returns the git version.
-func Version(ctx context.Context, gitExe string) error {
+// CheckVersion checks that the git version command can run.
+func CheckVersion(ctx context.Context, gitExe string) error {
 	return command.Run(ctx, gitExe, "--version")
 }
 
-// GetRemoteURL retrieves the git remote URL.
-func GetRemoteURL(ctx context.Context, gitExe, remote string) error {
+// CheckRemoteURL checks that the git remote URL exists.
+func CheckRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
 }
 
