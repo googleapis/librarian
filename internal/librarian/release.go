@@ -127,14 +127,14 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		if !strings.HasSuffix(pathWithTrailingSlash, "/") {
 			pathWithTrailingSlash = pathWithTrailingSlash + "/"
 		}
-		found := false
+		shouldRelease := false
 		for _, path := range filesChanged {
 			if strings.Contains(path, pathWithTrailingSlash) {
-				found = true
+				shouldRelease = true
 				break
 			}
 		}
-		if found {
+		if shouldRelease {
 			if err := releaseLibrary(ctx, cfg, library, srcPath, lastTag, gitExe); err != nil {
 				return err
 			}
