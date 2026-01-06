@@ -133,13 +133,12 @@ func TestCreateLibrary(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Sort for consistent comparison
 			sort.Slice(gotCfg.Libraries, func(i, j int) bool {
 				return gotCfg.Libraries[i].Name < gotCfg.Libraries[j].Name
 			})
 
 			if diff := cmp.Diff(test.wantFinalLibraries, gotCfg.Libraries); diff != "" {
-				t.Errorf("final libraries mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			readmePath := filepath.Join(test.wantGeneratedOutputDir, "README.md")
 			if _, err := os.Stat(readmePath); err != nil {
