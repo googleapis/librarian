@@ -381,6 +381,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	// Add the import for ServiceClient and related functionality.
 	if len(model.Services) > 0 {
 		annotate.imports[serviceClientImport] = true
+		annotate.imports[serviceExceptionImport] = true
 	}
 
 	// `protobuf.dart` defines `JsonEncodable`, which is needed by any API that defines an `enum` or `message`.
@@ -1114,13 +1115,43 @@ func (annotate *annotateModel) buildQueryLines(
 }
 
 func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
+	names := make(map[string]bool)
+	enumValueToName := make(map[*api.EnumValue]string)
+	useOriginalCase := false
+
+	// Attempt to use Dart-style camelCase for enum values.
+	// If there is a conflict, it must mean that there are enum values that differ only by case.
+	// If there are values that differ only in case, use the original case for all enum values.
 	for _, ev := range enum.Values {
-		annotate.annotateEnumValue(ev)
+		name := strcase.ToLowerCamel(ev.Name)
+		if _, hasConflict := reservedNames[name]; hasConflict {
+			name = name + deconflictChar
+		}
+		enumValueToName[ev] = name
+		if _, ok := names[name]; ok {
+			useOriginalCase = true
+			break
+		}
+		names[name] = true
+	}
+
+	if useOriginalCase {
+		for _, ev := range enum.Values {
+			name := ev.Name
+			if _, hasConflict := reservedNames[name]; hasConflict {
+				name = name + deconflictChar
+			}
+			enumValueToName[ev] = name
+		}
 	}
 
 	defaultValue := ""
 	if len(enum.Values) > 0 {
-		defaultValue = enumValueName(enum.Values[0])
+		defaultValue = enumValueToName[enum.Values[0]]
+	}
+
+	for _, ev := range enum.Values {
+		annotate.annotateEnumValue(ev, enumValueToName)
 	}
 
 	enum.Codec = &enumAnnotation{
@@ -1131,9 +1162,9 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 }
 
-func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue) {
+func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
-		Name:     enumValueName(ev),
+		Name:     enumValueToName[ev],
 		DocLines: formatDocComments(ev.Documentation, annotate.state),
 	}
 }

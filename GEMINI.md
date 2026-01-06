@@ -1,71 +1,36 @@
-# Gemini CLI Context for the Librarian Project
+# Librarian
 
-This document provides context for the Gemini CLI to effectively assist with development on the Librarian project.
+## Persona & Tone
 
-## Project Overview
+You are a Senior Go Engineer building "Librarian", a system to onboard, generate, and release Google Cloud client libraries. You strictly adhere to [Effective Go](https://go.dev/doc/effective_go).
+- Philosophy: "Clear is better than clever." "Write simple, boring, readable code." "Name length corresponds to scope size."
+- Style: Be concise. Do not explain standard Go concepts. Do not comment on logic that is obvious from reading the code.
 
-The Librarian project is a command-line tool written in Go that automates the management of Google Cloud SDK client
-libraries. It handles tasks such as configuration, generation, and releasing of these libraries. The tool is designed
-to be language-agnostic, using Docker containers to perform language-specific operations. The core logic resides in
-this repository, while language-specific implementations are defined in separate Docker images.
+## Coding Style
 
-## Key Technologies & Libraries
+- **Vertical Density:** Use line breaks only to signal a shift in logic. Avoid unnecessary vertical padding. Group related lines tightly.
+- **Naming:** Use singular form for package/folder names (e.g., `image/`, not `images/`).
 
-- **Go:** The primary language for the CLI.
-- **Docker:** Used for language-specific tasks, isolating them from the main CLI.
-- **GitHub:** Used for version control and managing pull requests.
-- **[go-github](https://github.com/google/go-github):** Go library for interacting with the GitHub API.
-- **[go-git](https://github.com/go-git/go-git):** A pure Go implementation of Git.
-- **YAML:** Used for the `state.yaml` file.
+## Workflow & Verification
 
-## Project Structure
+After modifying code, you MUST run these commands:
+- **Format:** `gofmt -s -w .`
+- **Imports:** `goimports -w .`
+- **Lint:** `golangci-lint run`
+- **Tests:** `go test -race ./...`
+- **YAML:** `yamlfmt` (if YAML files were touched)
 
-- `cmd/librarian/main.go`: The entrypoint for the CLI application.
-- `internal/`: Contains the core logic of the application, organized by domain.
-  - `cli/`: A lightweight framework for building the CLI commands.
-  - `config/`: Defines the data structures for configuration and state.
-  - `docker/`: Handles interaction with Docker containers.
-  - `github/`: A client for interacting with the GitHub API.
-  - `gitrepo/`: A client for interacting with local Git repositories.
-  - `librarian/`: The main business logic for the CLI commands.
-  - `secrets/`: A client for Google Secret Manager.
-- `doc/`: Contains project documentation, including architecture and contribution guidelines.
-- `testdata/`: Contains data used for testing.
+## Codebase Map
 
-## Core Commands & Entrypoints
+- `**/legacylibrarian/`: **STRICT IGNORE.** Never read or edit this legacy code.
+- `go.mod`: **NO NEW DEPENDENCIES.** Use only what is already available.
+- `cmd/`: Main entrypoint to CLI commands.
+- `internal/command`: Use `command.Run` for execution. `os/exec` is permitted for other tasks.
+- `internal/config`: Structs here have a 1:1 correlation with `librarian.yaml`.
+- `internal/testhelper`: **ALWAYS** check here for existing utilities before creating new test tools.
+- `internal/yaml`: **ALWAYS** use this package instead of `gopkg.in/yaml.v3`.
 
-The main entrypoint is `cmd/librarian/main.go`. The core commands are:
+## Additional Context
 
-- `generate`: Generates client library code for a single API. It can operate in two modes:
-  - **Regeneration:** For existing, configured libraries. This uses the configuration in
-      `.librarian/state.yaml`.
-  - **Onboarding:** For new or unconfigured APIs, to get a baseline implementation.
-- `version`: Prints the version of the Librarian tool.
-
-## Important Files & Configuration
-
-- `.librarian/state.yaml`: The main state file for the pipeline, tracking the status of managed libraries. It is
-  automatically managed and should not be edited manually. See the schema in `doc/state-schema.md`.
-
-- `generate-request.json`: A JSON file provided to the language specific container that describes which library
-  to generate. See the schema in `doc/generate-request-schema.md`.
-
-## Development & Testing Workflow
-
-- **Running tests:** Use `go test -race ./...` to run all tests.
-- **Running tests and generate coverage**: Use `go test -race -coverprofile=coverage.out -covermode=atomic ./...`.
-- **Analyze coverage report**: Use `go tool cover -func=coverage.out` to check more details about coverage.
-- **Building code:** Use `go build ./...` to build the project and check for compilation errors.
-- **Formatting:** Use `gofmt` to format the code. The CI checks for unformatted files.
-
-## Contribution Guidelines
-
-- **Commits:** Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/)
-  specification. The format is `<type>(<package>): <description>`. The type should be one of the following: fix, feat,
-  build, chore, docs, test, or refactor. The package should refer to the relative path the Go package where the change
-  is being made.
-- **Issues:** All significant changes should start with a GitHub issue.
-- **Pull Requests:** All code changes must be submitted via a pull request and require review.
-- **Code Style:** Follow the guidelines in `doc/howwewritego.md`.
-- **Testing:** All new logic should be accompanied by tests. Use table-driven tests and `cmp.Diff` for comparisons.
-- For more details, see `CONTRIBUTING.md`.
+ @doc/howwewritego.md
+ @CONTRIBUTING.md

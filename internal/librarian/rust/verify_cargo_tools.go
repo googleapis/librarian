@@ -21,10 +21,23 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/git"
 )
 
-// CargoPreFlight verifies all the necessary cargo tools are installed.
-func CargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
+// PreFlight performs all the necessary checks before a release.
+func PreFlight(ctx context.Context, preinstalled map[string]string, remote string, cargoTools []config.Tool) error {
+	gitExe := command.GetExecutablePath(preinstalled, "git")
+	if err := git.GitVersion(ctx, gitExe); err != nil {
+		return err
+	}
+	if err := git.GitRemoteURL(ctx, gitExe, remote); err != nil {
+		return err
+	}
+	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)
+}
+
+// cargoPreFlight verifies all the necessary cargo tools are installed.
+func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
 	if err := command.Run(ctx, cargoExe, "--version"); err != nil {
 		return err
 	}

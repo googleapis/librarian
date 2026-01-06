@@ -19,8 +19,8 @@ limitations under the License.
 {{/Codec.DocLines}}
 ///
 /// Throws a [http.ClientException] if there were problems communicating with
-/// the API service. Throws a [StatusException] if the API failed with a
-/// [Status] message. Throws a [ServiceException] for any other failure.
+/// the API service. Throws a [ServiceException] if the API method failed for
+/// any reason.
 {{#Codec.ServerSideStreaming}}
 Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
   final url = Uri.https(_host, '{{PathInfo.Codec.PathFmt}}'

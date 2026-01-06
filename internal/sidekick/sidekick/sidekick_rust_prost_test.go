@@ -24,6 +24,9 @@ import (
 )
 
 func TestRustProstFromProtobuf(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Rust Prost code generation")
+	}
 	testhelper.RequireCommand(t, "cargo")
 	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()

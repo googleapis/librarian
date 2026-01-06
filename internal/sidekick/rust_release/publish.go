@@ -34,7 +34,7 @@ import (
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := PreFlight(ctx, config); err != nil {
+	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")

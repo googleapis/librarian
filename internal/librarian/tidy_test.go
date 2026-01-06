@@ -474,3 +474,37 @@ libraries:
 		t.Errorf("mismatch error want %v got %v", errNoGoogleapiSourceInfo, err)
 	}
 }
+
+func TestTidy_VeneerSkipGenerate(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configContent := `
+language: rust
+sources:
+  googleapis:
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
+libraries:
+  - name: google-cloud-storage
+    veneer: true
+    skip_generate: true
+    output: src/storage
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RunTidy(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
+	}
+	if cfg.Libraries[0].SkipGenerate {
+		t.Errorf("expected skip_generate to be false for veneer library, got true")
+	}
+}

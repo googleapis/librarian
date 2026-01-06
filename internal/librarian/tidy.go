@@ -74,6 +74,10 @@ func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) 
 	if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
+	if lib.Veneer {
+		// Veneers are never generated, so ensure skip_generate is false.
+		lib.SkipGenerate = false
+	}
 	for _, ch := range lib.Channels {
 		if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
 			ch.Path = ""
@@ -85,7 +89,6 @@ func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) 
 	lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
 		return ch.Path == "" && ch.ServiceConfig == ""
 	})
-
 	tidyLanguageConfig(lib, cfg.Language)
 	return nil
 }

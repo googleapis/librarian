@@ -29,7 +29,7 @@ import (
 // BumpVersions finds all the crates that need a version bump and performs the
 // bump, changing both the Cargo.toml and sidekick.toml files.
 func BumpVersions(ctx context.Context, config *config.Release) error {
-	if err := PreFlight(ctx, config); err != nil {
+	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")

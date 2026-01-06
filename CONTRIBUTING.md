@@ -112,10 +112,9 @@ example, `librarian:` or `cli:`).
 
 For issues related to code outside this
 repository, use the repository name (for example, `google-cloud-python`).
-This repository also contains language-specific container-related code under
-[internal/container](https://github.com/googleapis/librarian/tree/main/internal/container).
-For these issues, use the lowercase language name as a prefix for brevity (for
-example, `java:`).
+This repository also contains language-specific code under
+`internal/librarian/<language>`. For these issues, use the lowercase language
+name as a prefix for brevity (for example, `java:`).
 
 Aside from proper nouns, issue titles should use lowercase.
 
@@ -143,6 +142,12 @@ Use the format:
 
 This helps provide context for future readers and keeps the TODO relevant and
 actionable as the project evolves.
+
+## Documentation
+
+All documentation should live in the root of the repository or in the `doc/`
+directory. Markdown files should follow the
+[Google Style Guide](https://google.github.io/styleguide/docguide/style.html).
 
 ## Sending a pull request
 
@@ -427,6 +432,6 @@ for information on how to configure your development environment.
 ### Handling Dependency Updates
 
 We only update dependencies for security vulnerabilities, bug fixes, or to add
-feature support. Security vulnerabilities are identified using Dependabot and 
-govulncheck. Dependency updates for bug fixes or new features must be associated 
+feature support. Security vulnerabilities are identified using Dependabot and
+govulncheck. Dependency updates for bug fixes or new features must be associated
 with an issue in this repository.

@@ -37,39 +37,35 @@ func TestCreateLibrary(t *testing.T) {
 		initialLibraries       []*config.Library
 		wantFinalLibraries     []*config.Library
 		wantGeneratedOutputDir string
+		wantError              error
 	}{
-		// {
-		// 	name:                   "create new library",
-		// 	libName:                "google-cloud-secretmanager",
-		// 	output:                 "newlib-output",
-		// 	initialLibraries:       []*config.Library{},
-		// 	wantGeneratedOutputDir: "newlib-output",
-		// 	wantFinalLibraries: []*config.Library{
-		// 		{
-		// 			Name:          "google-cloud-secretmanager",
-		// 			CopyrightYear: copyrightYear,
-		// 			Output:        "newlib-output",
-		// 			Version:       "0.1.0",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name:    "regenerate existing library",
-		// 	libName: "google-cloud-secretmanager",
-		// 	initialLibraries: []*config.Library{
-		// 		{
-		// 			Name:   "google-cloud-secretmanager",
-		// 			Output: "existing-output",
-		// 		},
-		// 	},
-		// 	wantGeneratedOutputDir: "existing-output",
-		// 	wantFinalLibraries: []*config.Library{
-		// 		{
-		// 			Name:   "google-cloud-secretmanager",
-		// 			Output: "existing-output",
-		// 		},
-		// 	},
-		// },
+		{
+			name:                   "create new library",
+			libName:                "google-cloud-secretmanager",
+			output:                 "newlib-output",
+			initialLibraries:       []*config.Library{},
+			wantGeneratedOutputDir: "newlib-output",
+			wantFinalLibraries: []*config.Library{
+				{
+					Name:          "google-cloud-secretmanager",
+					CopyrightYear: copyrightYear,
+					Output:        "newlib-output",
+					Version:       "0.1.0",
+				},
+			},
+		},
+		{
+			name:    "fail create existing library",
+			libName: "google-cloud-secretmanager",
+			initialLibraries: []*config.Library{
+				{
+					Name:   "google-cloud-secretmanager",
+					Output: "existing-output",
+				},
+			},
+			wantGeneratedOutputDir: "existing-output",
+			wantError:              errLibraryAlreadyExists,
+		},
 		{
 			name:    "create new library and tidy existing",
 			libName: "google-cloud-secretmanager",
@@ -125,8 +121,15 @@ func TestCreateLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := runCreate(t.Context(), test.libName, test.output); err != nil {
-				t.Fatal(err)
+			err = runCreate(t.Context(), test.libName, test.output)
+			if test.wantError != nil {
+				if !errors.Is(err, test.wantError) {
+					t.Errorf("expected error %v, got %v", test.wantError, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("runCreate() failed with unexpected error: %v", err)
 			}
 
 			gotCfg, err := yaml.Read[config.Config](librarianConfigPath)

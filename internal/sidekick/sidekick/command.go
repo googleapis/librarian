@@ -193,7 +193,7 @@ func newCommand(
 	return c
 }
 
-// printUsage prints the usage of the command to os.Stdout.
+// printUsage prints the usage of the command to [os.Stdout].
 func (c *command) printUsage() {
 	if len(c.longDescription) > 0 {
 		fmt.Println(c.longDescription)
