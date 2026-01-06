@@ -326,7 +326,7 @@ func TestChangesInDirectorySinceTag(t *testing.T) {
 	}
 }
 
-func TestGitShowFile(t *testing.T) {
+func TestShowFile(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
@@ -339,7 +339,7 @@ func TestGitShowFile(t *testing.T) {
 	}
 }
 
-func TestGitShowFile_Error(t *testing.T) {
+func TestShowFile_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
