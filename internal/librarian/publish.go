@@ -22,7 +22,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust_release"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -77,7 +76,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	case languageFake:
 		return fakePublish()
 	case languageRust:
-		return sidekickrust.PublishCrates(ctx, rust.ToSidekickReleaseConfig(cfg.Release), dryRun, skipSemverChecks, lastTag, files)
+		return rust.PublishCrates(ctx, cfg.Release, dryRun, skipSemverChecks, lastTag, files)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}

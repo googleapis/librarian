@@ -16,15 +16,7 @@ package rustrelease
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
-	"maps"
-	"os"
-	"os/exec"
-	"slices"
-	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -49,67 +41,5 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err != nil {
 		return err
 	}
-	return PublishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
-}
-
-// PublishCrates publishes the crates that have changed.
-func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
-	manifests := map[string]string{}
-	for _, manifest := range rust.FindCargoManifests(files) {
-		names, err := rust.PublishedCrate(manifest)
-		if err != nil {
-			return err
-		}
-		for _, name := range names {
-			manifests[name] = manifest
-		}
-	}
-	slog.Info("computing publication plan with: cargo workspaces plan")
-	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
-	cmd := exec.CommandContext(ctx, cargoPath, "workspaces", "plan", "--skip-published")
-	if config.RootsPem != "" {
-		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
-	}
-	cmd.Dir = "."
-	output, err := cmd.Output()
-	if err != nil {
-		return err
-	}
-	plannedCrates := strings.Split(string(output), "\n")
-	plannedCrates = slices.DeleteFunc(plannedCrates, func(a string) bool { return a == "" })
-	changedCrates := slices.Collect(maps.Keys(manifests))
-	slices.Sort(plannedCrates)
-	slices.Sort(changedCrates)
-	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoPath != "/bin/echo" {
-		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
-	}
-
-	crateSummary := slices.Collect(maps.Keys(manifests))
-	totalCrates := len(crateSummary)
-	crateSummary = crateSummary[0:min(20, totalCrates)]
-	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
-
-	if !skipSemverChecks {
-		for name, manifest := range manifests {
-			gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
-				continue
-			}
-			slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
-			if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
-				return err
-			}
-		}
-	}
-	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")
-	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
-	if dryRun {
-		args = append(args, "--dry-run")
-	}
-	cmd = exec.CommandContext(ctx, cargoPath, args...)
-	if config.RootsPem != "" {
-		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
-	}
-	cmd.Dir = "."
-	return cmd.Run()
+	return rust.PublishCrates(ctx, rust.ToConfigRelease(config), dryRun, skipSemverChecks, lastTag, files)
 }
