@@ -585,9 +585,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
-	_, omit := omitGeneration[m.ID]
-
-	if omit {
+	if _, omit := omitGeneration[m.ID]; omit {
 		m.Codec = &messageAnnotation{
 			OmitGeneration: true,
 		}
@@ -622,7 +620,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
 		DocLines:        formatDocComments(m.Documentation, annotate.state),
-		OmitGeneration:  omit || m.IsMap,
+		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
 		Model:           annotate.model,

@@ -486,7 +486,7 @@ func TestCalculateImports(t *testing.T) {
 	}
 }
 
-func TestAnnotateMessageToString(t *testing.T) {
+func TestAnnotateMessage_ToString(t *testing.T) {
 	model := api.NewTestAPI(
 		[]*api.Message{sample.Secret(), sample.SecretVersion(), sample.Replication(),
 			sample.Automatic(), sample.CustomerManagedEncryption()},
@@ -516,6 +516,86 @@ func TestAnnotateMessageToString(t *testing.T) {
 				t.Errorf("Expected list of length %d, got %d", test.expected, len(actual))
 			}
 		})
+	}
+}
+
+// Tests that messages that are whitelisted as not being generated are, in fact, not generated.
+func TestAnnotateMessage_OmitGeneration_Whitelisted(t *testing.T) {
+	status := &api.Message{
+		Name:    "Status",
+		ID:      ".google.rpc.Status",
+		Package: "google.rpc",
+	}
+	message := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+		Fields: []*api.Field{
+			{
+				Name:     "error",
+				JSONName: "error",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  status.ID,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{message, status}, []*api.Enum{}, []*api.Service{})
+	annotate := newAnnotateModel(model)
+	annotate.annotateMessage(message)
+
+	codec := message.Codec.(*messageAnnotation)
+	if !codec.OmitGeneration {
+		t.Errorf("Expected OmitGeneration to be true for .google.longrunning.Operation")
+	}
+
+	if len(annotate.imports) != 0 {
+		// The `error` field is of type `google.rpc.Status`, which would normally require that the
+		// `google.rpc` package be imported. However, since the message is not generated, the import
+		// should not be added.
+		t.Errorf("Expected no imports for .google.longrunning.Operation")
+	}
+}
+
+// Tests that map messages are not generated but that there key value types generate imports.
+func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
+	status := &api.Message{
+		Name:    "Status",
+		ID:      ".google.rpc.Status",
+		Package: "google.rpc",
+	}
+	message := &api.Message{
+		Name:    "Entry",
+		ID:      ".some.package.Entry",
+		Package: "some.package",
+		IsMap:   true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.STRING_TYPE,
+			},
+			{
+				Name:    "value",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: status.ID,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	model.State.MessageByID[status.ID] = status
+	annotate := newAnnotateModel(model)
+
+	annotate.annotateModel(map[string]string{
+		"proto:google.rpc": "package:google_cloud_rpc/google_cloud_rpc.dart",
+	})
+	annotate.annotateMessage(message)
+
+	codec := message.Codec.(*messageAnnotation)
+	if !codec.OmitGeneration {
+		t.Errorf("Expected OmitGeneration to be true for map entry")
+	}
+
+	if !annotate.imports["package:google_cloud_rpc/google_cloud_rpc.dart"] {
+		t.Errorf("Expected import for google.rpc")
 	}
 }
 
