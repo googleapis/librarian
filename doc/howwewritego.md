@@ -71,6 +71,8 @@ Good package names describe their purpose.
 - **Good:** `command`, `fetch`
 - **Bad:** `common`, `helper`, `util`
 
+See [details](https://go.dev/doc/effective_go#package-names).
+
 ## Go Doc Comments
 
 "Doc comments" are comments that appear immediately before top-level package,
