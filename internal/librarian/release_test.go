@@ -285,6 +285,7 @@ func TestReleaseAll(t *testing.T) {
 		name        string
 		libName     string
 		dir         string
+		skipPublish bool
 		wantVersion string
 	}{
 		{
@@ -292,18 +293,28 @@ func TestReleaseAll(t *testing.T) {
 			libName:     "google-cloud-storage",
 			dir:         "src/storage",
 			wantVersion: "1.2.3",
+			skipPublish: false,
 		},
 		{
 			name:        "library does not have any changes",
 			libName:     "gax-internal",
 			dir:         "src/gax-internal",
 			wantVersion: "1.2.2",
+			skipPublish: false,
 		},
 		{
 			name:        "library does not have any changes with trailing slash",
 			libName:     "gax-internal",
 			dir:         "src/stor",
 			wantVersion: "1.2.2",
+			skipPublish: false,
+		},
+		{
+			name:        "library has changes but skipPublish is true",
+			libName:     "google-cloud-storage",
+			dir:         "src/storage",
+			wantVersion: "1.2.2",
+			skipPublish: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -313,9 +324,10 @@ func TestReleaseAll(t *testing.T) {
 				Language: languageFake,
 				Libraries: []*config.Library{
 					{
-						Name:    test.libName,
-						Version: "1.2.2",
-						Output:  test.dir,
+						Name:        test.libName,
+						Version:     "1.2.2",
+						Output:      test.dir,
+						SkipPublish: test.skipPublish,
 					},
 				},
 				Release: &config.Release{

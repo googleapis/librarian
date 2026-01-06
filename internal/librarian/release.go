@@ -119,6 +119,9 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		return err
 	}
 	for _, library := range cfg.Libraries {
+		if library.SkipPublish {
+			continue
+		}
 		srcPath, err := getSrcPathForLanguage(cfg, library)
 		if err != nil {
 			return err
