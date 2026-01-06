@@ -138,6 +138,7 @@ func TestFilesBadRef(t *testing.T) {
 }
 
 func TestFilterNoFilter(t *testing.T) {
+	t.Parallel()
 	input := []string{
 		"src/storage/src/lib.rs",
 		"src/storage/Cargo.toml",
@@ -156,6 +157,7 @@ func TestFilterNoFilter(t *testing.T) {
 }
 
 func TestFilterBasic(t *testing.T) {
+	t.Parallel()
 	input := []string{
 		"src/storage/src/lib.rs",
 		"src/storage/Cargo.toml",
@@ -184,6 +186,7 @@ func TestFilterBasic(t *testing.T) {
 }
 
 func TestFilterSomeGlobs(t *testing.T) {
+	t.Parallel()
 	input := []string{
 		"doc/howto-1.md",
 		"doc/howto-2.md",
@@ -349,5 +352,41 @@ func TestShowFile_Error(t *testing.T) {
 	}
 	if !errors.Is(err, errGitShow) {
 		t.Errorf("expected errGitShow but got %v", err)
+	}
+}
+
+func TestCheckVersion(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "git")
+
+	if err := CheckVersion(t.Context(), "git"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCheckVersion_Error(t *testing.T) {
+	t.Parallel()
+	if err := CheckVersion(t.Context(), "command_that_does_not_exist"); err == nil {
+		t.Errorf("expected an error checking git version execution, but did not get one")
+	}
+}
+
+func TestCheckRemoteURL(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	remoteDir := testhelper.SetupRepo(t)
+	testhelper.CloneRepository(t, remoteDir)
+
+	if err := CheckRemoteURL(t.Context(), "git", testhelper.TestRemote); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCheckRemoteURL_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	remoteDir := testhelper.SetupRepo(t)
+	testhelper.CloneRepository(t, remoteDir)
+
+	if err := CheckRemoteURL(t.Context(), "git", "remote_that_does_not_exist"); err == nil {
+		t.Errorf("expected an error checking for a remote URL, but did not get one")
 	}
 }
