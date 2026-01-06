@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -29,9 +30,10 @@ import (
 )
 
 var (
-	errUnsupportedLanguage = errors.New("library creation is not supported for the specified language")
-	errMissingLibraryName  = errors.New("must provide library name as argument to create a new library")
-	errNoYaml              = errors.New("unable to read librarian.yaml")
+	errLibraryAlreadyExists = errors.New("library requested for creation already exists")
+	errUnsupportedLanguage  = errors.New("library creation is not supported for the specified language")
+	errMissingLibraryName   = errors.New("must provide library name as argument to create a new library")
+	errNoYaml               = errors.New("unable to read librarian.yaml")
 )
 
 func createCommand() *cli.Command {
@@ -66,11 +68,16 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 		return fmt.Errorf("%w: %v", errNoYaml, err)
 	}
 	// check for existing libraries, if it exists just run generate
-	for _, lib := range cfg.Libraries {
+	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		if lib.Name == name {
-			return runGenerate(ctx, false, name)
+			return true
 		}
+		return false
+	})
+	if exists {
+		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
+
 	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
 		return err
 	}

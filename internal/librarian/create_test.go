@@ -32,6 +32,7 @@ func TestCreateLibrary(t *testing.T) {
 		output          string
 		existingLibrary *config.Library
 		wantOutput      string
+		wantError       error
 	}{
 		{
 			name:       "create new library",
@@ -40,13 +41,12 @@ func TestCreateLibrary(t *testing.T) {
 			wantOutput: "newlib-output",
 		},
 		{
-			name:    "regenerate existing library",
+			name:    "fail create existing library",
 			libName: "existinglib",
 			existingLibrary: &config.Library{
-				Name:   "existinglib",
-				Output: "existing-output",
+				Name: "existinglib",
 			},
-			wantOutput: "existing-output",
+			wantError: errLibraryAlreadyExists,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -81,8 +81,13 @@ func TestCreateLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := runCreate(t.Context(), test.libName, test.output); err != nil {
+			if err := runCreate(t.Context(), test.libName, test.output); test.wantError == nil && err != nil {
 				t.Fatal(err)
+			} else if test.wantError != nil {
+				if !errors.Is(err, test.wantError) {
+					t.Errorf("expected %v, got %v", test.wantError, err)
+				}
+				return
 			}
 
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
