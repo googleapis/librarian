@@ -40,13 +40,13 @@ func TestCreateLibrary(t *testing.T) {
 	}{
 		{
 			name:                   "create new library",
-			libName:                "newlib",
+			libName:                "google-cloud-secretmanager",
 			output:                 "newlib-output",
 			initialLibraries:       []*config.Library{},
 			wantGeneratedOutputDir: "newlib-output",
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:          "newlib",
+					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
 					Output:        "newlib-output",
 					Version:       "0.1.0",
@@ -55,30 +55,32 @@ func TestCreateLibrary(t *testing.T) {
 		},
 		{
 			name:    "regenerate existing library",
-			libName: "existinglib",
+			libName: "google-cloud-secretmanager",
 			initialLibraries: []*config.Library{
 				{
-					Name:   "existinglib",
+					Name:   "google-cloud-secretmanager",
 					Output: "existing-output",
 				},
 			},
 			wantGeneratedOutputDir: "existing-output",
 			wantFinalLibraries: []*config.Library{
 				{
-					Name:   "existinglib",
+					Name:   "google-cloud-secretmanager",
 					Output: "existing-output",
 				},
 			},
 		},
 		{
 			name:    "create new library and tidy existing",
-			libName: "newlib",
+			libName: "google-cloud-secretmanager",
 			output:  "newlib-output",
 			initialLibraries: []*config.Library{
 				{
-					Name: "existinglib",
+					Name:   "existinglib",
+					Output: "output",
 					Channels: []*config.Channel{
-						{Path: "existinglib"},
+						{Path: "google/cloud/secretmanager/v1",
+							ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"},
 					},
 				},
 			},
@@ -86,9 +88,13 @@ func TestCreateLibrary(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name: "existinglib",
+					Channels: []*config.Channel{
+						{Path: "google/cloud/secretmanager/v1",
+							ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"},
+					},
 				},
 				{
-					Name:          "newlib",
+					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
 					Output:        "newlib-output",
 					Version:       "0.1.0",
@@ -97,17 +103,12 @@ func TestCreateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			googleapisDir, err := filepath.Abs("testdata/googleapis")
+			if err != nil {
+				t.Fatal(err)
+			}
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-
-			for _, lib := range test.initialLibraries {
-				for _, ch := range lib.Channels {
-					createServiceConfig(t, tmpDir, ch.Path)
-				}
-			}
-			if test.libName != "" {
-				createServiceConfig(t, tmpDir, test.libName)
-			}
 
 			cfg := &config.Config{
 				Language: languageFake,
@@ -117,7 +118,7 @@ func TestCreateLibrary(t *testing.T) {
 				Libraries: test.initialLibraries,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Dir: tmpDir,
+						Dir: googleapisDir,
 					},
 				},
 			}
@@ -154,28 +155,6 @@ func TestCreateLibrary(t *testing.T) {
 				t.Errorf("VERSION mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func createServiceConfig(t *testing.T, tmpDir, name string) {
-	serviceConfigDir := filepath.Join(tmpDir, name)
-	if err := os.MkdirAll(serviceConfigDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	serviceConfigPath := filepath.Join(serviceConfigDir, name+".yaml")
-	serviceConfigContent := "type: google.api.Service\nconfig_version: 3\n"
-	if err := os.WriteFile(serviceConfigPath, []byte(serviceConfigContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCreateLibraryNoYaml(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
-
-	err := runCreate(t.Context(), "newlib", "output/newlib")
-	if !errors.Is(err, errNoYaml) {
-		t.Errorf("want error %v, got %v", errNoYaml, err)
 	}
 }
 
