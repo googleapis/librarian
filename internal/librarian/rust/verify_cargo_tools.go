@@ -27,10 +27,10 @@ import (
 // PreFlight performs all the necessary checks before a release.
 func PreFlight(ctx context.Context, preinstalled map[string]string, remote string, cargoTools []config.Tool) error {
 	gitExe := command.GetExecutablePath(preinstalled, "git")
-	if err := git.GitVersion(ctx, gitExe); err != nil {
+	if err := git.Version(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := git.GitRemoteURL(ctx, gitExe, remote); err != nil {
+	if err := git.GetRemoteURL(ctx, gitExe, remote); err != nil {
 		return err
 	}
 	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)
