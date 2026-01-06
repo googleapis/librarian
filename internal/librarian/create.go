@@ -69,10 +69,7 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	}
 	// check for existing libraries, if it exists return an error
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
-		if lib.Name == name {
-			return true
-		}
-		return false
+		return lib.Name == name
 	})
 	if exists {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
