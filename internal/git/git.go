@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	// errGitShow is included in any error returned by [GitShowFile].
+	// errGitShow is included in any error returned by [ShowFile].
 	errGitShow = errors.New("failed to show file")
 )
 
@@ -106,9 +106,9 @@ func GitRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
 }
 
-// GitShowFile shows the contents of the file found at the given path on the
+// ShowFile shows the contents of the file found at the given path on the
 // given remote/branch.
-func GitShowFile(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
+func ShowFile(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
 	remoteBranchPath := fmt.Sprintf("%s/%s:%s", remote, branch, path)
 	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
 	output, err := cmd.CombinedOutput()

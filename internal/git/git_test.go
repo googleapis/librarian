@@ -330,7 +330,7 @@ func TestGitShowFile(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := GitShowFile(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
+	got, err := ShowFile(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +343,7 @@ func TestGitShowFile_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	_, err := GitShowFile(t.Context(), "git", "origin", "main", "does_not_exist")
+	_, err := ShowFile(t.Context(), "git", "origin", "main", "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
