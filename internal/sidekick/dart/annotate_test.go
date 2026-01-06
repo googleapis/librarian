@@ -519,8 +519,8 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 	}
 }
 
-// Tests that messages that are whitelisted as not being generated are, in fact, not generated.
-func TestAnnotateMessage_OmitGeneration_Whitelisted(t *testing.T) {
+// Tests that messages that are allowlisted as not being generated are, in fact, not generated.
+func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	status := &api.Message{
 		Name:    "Status",
 		ID:      ".google.rpc.Status",
