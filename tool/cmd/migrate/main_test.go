@@ -497,6 +497,7 @@ func TestBuildVeneer(t *testing.T) {
 					Output:        "lib-2",
 					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 				},
 			},
 		},
@@ -556,6 +557,7 @@ func TestBuildVeneer(t *testing.T) {
 					Output:        "lib-2",
 					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 				},
 			},
 		},
@@ -573,6 +575,7 @@ func TestBuildVeneer(t *testing.T) {
 					Output:        "tests/common",
 					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{

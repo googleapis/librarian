@@ -19,6 +19,7 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/git"
@@ -43,6 +44,9 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	}
 	var crates []string
 	for _, manifest := range rust.FindCargoManifests(files) {
+		if strings.Contains(manifest, "firestore") || strings.Contains(manifest, "gax-internal") {
+			slog.Info("skipping known problematic crate", "manifest", manifest)
+		}
 		names, err := rust.UpdateManifest(gitPath, lastTag, manifest)
 		if err != nil {
 			return err

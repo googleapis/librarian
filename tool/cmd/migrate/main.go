@@ -544,6 +544,9 @@ func buildVeneer(files []string, repoPath string) (map[string]*config.Library, e
 				Modules: rustModules,
 			}
 		}
+		if !cargo.Package.Publish {
+			veneers[name].SkipPublish = true
+		}
 	}
 	return veneers, nil
 }
