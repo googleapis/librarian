@@ -81,13 +81,15 @@ func TestCreateLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := runCreate(t.Context(), test.libName, test.output); test.wantError == nil && err != nil {
-				t.Fatal(err)
-			} else if test.wantError != nil {
+			err := runCreate(t.Context(), test.libName, test.output)
+			if test.wantError != nil {
 				if !errors.Is(err, test.wantError) {
-					t.Errorf("expected %v, got %v", test.wantError, err)
+					t.Errorf("expected error %v, got %v", test.wantError, err)
 				}
 				return
+			}
+			if err != nil {
+				t.Fatalf("runCreate() failed with unexpected error: %v", err)
 			}
 
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
