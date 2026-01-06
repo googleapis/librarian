@@ -67,7 +67,7 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
 	}
-	// check for existing libraries, if it exists just run generate
+	// check for existing libraries, if it exists return an error
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		if lib.Name == name {
 			return true
