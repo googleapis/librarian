@@ -123,7 +123,7 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		if err != nil {
 			return err
 		}
-		if shouldRelease(library, cfg, filesChanged, srcPath) {
+		if shouldRelease(library, filesChanged, srcPath) {
 			if err := releaseLibrary(ctx, cfg, library, srcPath, lastTag, gitExe); err != nil {
 				return err
 			}
@@ -132,11 +132,10 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 	return nil
 }
 
-func shouldRelease(library *config.Library, cfg *config.Config, filesChanged []string, srcPath string) bool {
+func shouldRelease(library *config.Library, filesChanged []string, srcPath string) bool {
 	if library.SkipPublish {
 		return false
 	}
-
 	pathWithTrailingSlash := srcPath
 	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
 		pathWithTrailingSlash = pathWithTrailingSlash + "/"
