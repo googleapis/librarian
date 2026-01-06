@@ -81,6 +81,10 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if err != nil {
 		return err
 	}
+	return routeGenerate(ctx, all, cfg, googleapisDir, libraryName)
+}
+
+func routeGenerate(ctx context.Context, all bool, cfg *config.Config, googleapisDir, libraryName string) error {
 	if all {
 		return generateAll(ctx, cfg, googleapisDir)
 	}

@@ -96,14 +96,14 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 }
 
 func runGenerateAndTidy(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
-	if err := runGenerate(ctx, all, libraryName); err != nil {
-		return err
-	}
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
 	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
+		return err
+	}
+	if err := routeGenerate(ctx, all, cfg, googleapisDir, libraryName); err != nil {
 		return err
 	}
 	for _, lib := range cfg.Libraries {
