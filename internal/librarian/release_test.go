@@ -278,3 +278,61 @@ func TestRelease(t *testing.T) {
 
 	}
 }
+
+func TestReleaseAll(t *testing.T) {
+
+	for _, test := range []struct {
+		name        string
+		libName     string
+		dir         string
+		wantVersion string
+	}{
+		{
+			name:        "library has changes",
+			libName:     "google-cloud-storage",
+			dir:         "src/storage",
+			wantVersion: "1.2.3",
+		},
+		{
+			name:        "library does not have any changes",
+			libName:     "gax-internal",
+			dir:         "src/gax-internal",
+			wantVersion: "1.2.2",
+		},
+		{
+			name:        "library does not have any changes with trailing slash",
+			libName:     "gax-internal",
+			dir:         "src/stor",
+			wantVersion: "1.2.2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testhelper.RequireCommand(t, "git")
+			tag := "v1.2.3"
+			config := &config.Config{
+				Language: languageFake,
+				Libraries: []*config.Library{
+					{
+						Name:    test.libName,
+						Version: "1.2.2",
+						Output:  test.dir,
+					},
+				},
+				Release: &config.Release{
+					Remote:         "origin",
+					Branch:         "main",
+					IgnoredChanges: []string{},
+				},
+			}
+			remoteDir := testhelper.SetupRepoWithChange(t, tag)
+			testhelper.CloneRepository(t, remoteDir)
+			err := releaseAll(t.Context(), config, tag, "git")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if config.Libraries[0].Version != test.wantVersion {
+				t.Errorf("got version %s, want %s", config.Libraries[0].Version, test.wantVersion)
+			}
+		})
+	}
+}

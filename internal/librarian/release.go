@@ -123,10 +123,13 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		if err != nil {
 			return err
 		}
-
+		pathWithTrailingSlash := srcPath
+		if !strings.HasSuffix(pathWithTrailingSlash, "/") {
+			pathWithTrailingSlash = pathWithTrailingSlash + "/"
+		}
 		found := false
 		for _, path := range filesChanged {
-			if strings.Contains(path, srcPath) {
+			if strings.Contains(path, pathWithTrailingSlash) {
 				found = true
 				break
 			}
@@ -159,15 +162,18 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	case languageFake:
 		return fakeReleaseLibrary(libConfig)
 	case languageRust:
-		if release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, srcPath+"/Cargo.toml"); err != nil {
+		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, srcPath+"/Cargo.toml")
+		if err != nil {
 			return err
-		} else if release {
-			if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
-				return err
-			}
-			if err := runGenerate(ctx, false, libConfig.Name); err != nil {
-				return err
-			}
+		}
+		if !release {
+			return nil
+		}
+		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
+			return err
+		}
+		if err := runGenerate(ctx, false, libConfig.Name); err != nil {
+			return err
 		}
 		return nil
 	default:
