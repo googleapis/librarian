@@ -586,6 +586,9 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
 	if _, omit := omitGeneration[m.ID]; omit {
+		// If the message is whitelisted as omitted, skip it completely.
+		// If the message is a map, then it still needs to be processed because
+		// the values types may generate imports.
 		m.Codec = &messageAnnotation{
 			OmitGeneration: true,
 		}
