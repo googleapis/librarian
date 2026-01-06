@@ -22,7 +22,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestToSidekickReleaseConfig(t *testing.T) {
+func TestToConfigRelease(t *testing.T) {
 	tests := []struct {
 		name  string
 		input *sidekickconfig.Release

@@ -33,7 +33,6 @@ func ToConfigRelease(cfg *sidekickconfig.Release) *config.Release {
 				Version: t.Version,
 			}
 		}
-
 		tools[k] = configTools
 	}
 	return &config.Release{
