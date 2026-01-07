@@ -237,6 +237,14 @@ func TestTransform(t *testing.T) {
 }
 ```
 
+### Run tests in parallel
+
+If possible, configure tests to run in parallel mode using
+[`t.Parallel()`](https://pkg.go.dev/testing#T.Parallel).
+
+Tests that mutate the state of the process as a whole e.g. by invoking
+`t.Chdir()` or that manipulate global variables cannot be run in parallel.
+
 ## Need Help? Just Ask!
 
 This guide will continue to evolve. If something feels unclear or is missing,
