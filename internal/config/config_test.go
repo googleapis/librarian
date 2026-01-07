@@ -140,7 +140,7 @@ func TestWrite(t *testing.T) {
 }
 
 func TestConfigReadAndWrite(t *testing.T) {
-	want, err := yaml.Read[Config]("testdata/rust/librarian.yaml")
+	want, err := yaml.Read[Config]("testdata/librarian.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
