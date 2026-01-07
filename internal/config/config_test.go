@@ -15,7 +15,7 @@
 package config
 
 import (
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -144,16 +144,18 @@ func TestConfigReadAndWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newFile := "testdata/new_librarian.yaml"
-	yaml.Write(newFile, want)
+
+	newFile := filepath.Join(t.TempDir(), "new_librarian.yaml")
+	if err := yaml.Write(newFile, want); err != nil {
+		t.Fatalf("yaml.Write() failed: %v", err)
+	}
 
 	got, err := yaml.Read[Config](newFile)
+	if err != nil {
+		t.Fatalf("yaml.Read() failed: %v", err)
+	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	err = os.Remove(newFile)
-	if err != nil {
-		t.Fatal(err)
 	}
 }
