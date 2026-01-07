@@ -176,15 +176,15 @@ func TestReleaseCommand(t *testing.T) {
 				gotVersions := make(map[string]string)
 				for _, lib := range updatedConfig.Libraries {
 					gotVersions[lib.Name] = lib.Version
-					for _, originalLib := range cfg.Libraries {
-						if lib.Name == originalLib.Name {
-							// update original config version for comparison to ensure nothing else changed
-							originalLib.Version = lib.Version
-						}
-					}
 				}
 				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
 					t.Errorf("mismatch in versions (-want +got):\n%s", diff)
+				}
+				// Update original config versions to expected versions to compare entire config.
+				for _, lib := range cfg.Libraries {
+					if wantVersion, ok := test.wantVersions[lib.Name]; ok {
+						lib.Version = wantVersion
+					}
 				}
 				if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
 					t.Errorf("mismatch in config (-want +got):\n%s", diff)

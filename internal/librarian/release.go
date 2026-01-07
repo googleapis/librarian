@@ -91,7 +91,9 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if all {
-		err = releaseAll(ctx, cfg, lastTag, gitExe)
+		if err = releaseAll(ctx, cfg, lastTag, gitExe); err != nil {
+			return err
+		}
 	} else {
 		libConfg, err := libraryByName(cfg, libraryName)
 		if err != nil {
@@ -101,8 +103,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe)
-		if err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe); err != nil {
 			return err
 		}
 	}

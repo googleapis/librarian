@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
@@ -64,22 +63,4 @@ edition                = "2021"
 
 	library.Version = newVersion
 	return nil
-}
-
-// DeriveSrcPath determines what src path library code lives in.
-func DeriveSrcPath(libCfg *config.Library, cfg *config.Config) string {
-	if libCfg.Output != "" {
-		return libCfg.Output
-	}
-	libSrcDir := ""
-	if len(libCfg.Channels) > 0 && libCfg.Channels[0].Path != "" {
-		libSrcDir = libCfg.Channels[0].Path
-	} else {
-		libSrcDir = strings.ReplaceAll(libCfg.Name, "-", "/")
-		if cfg.Default == nil {
-			return ""
-		}
-	}
-	return DefaultOutput(libSrcDir, cfg.Default.Output)
-
 }

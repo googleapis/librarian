@@ -113,62 +113,6 @@ func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion stri
 	}
 }
 
-func TestDeriveSrcPath(t *testing.T) {
-	for _, test := range []struct {
-		name   string
-		config *config.Config
-		want   string
-	}{
-		{
-			name: "use library output",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "ignored",
-				},
-				Libraries: []*config.Library{
-					{Output: "src/lib/dir"},
-				},
-			},
-			want: "src/lib/dir",
-		},
-		{
-			name: "use channel path",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "src/",
-				},
-				Libraries: []*config.Library{{
-					Channels: []*config.Channel{
-						{Path: "channel/dir"},
-					},
-				},
-				},
-			},
-			want: "src/channel/dir",
-		},
-		{
-			name: "use library name",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "src/",
-				},
-				Libraries: []*config.Library{{
-					Name: "lib-name",
-				},
-				},
-			},
-			want: "src/lib/name",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := DeriveSrcPath(test.config.Libraries[0], test.config)
-			if got != test.want {
-				t.Errorf("got derived source path  %s, wanted %s", got, test.want)
-			}
-		})
-	}
-}
-
 func TestNoCargoFile(t *testing.T) {
 	got := ReleaseLibrary(&config.Library{Version: "1.0.0"}, "nonexistent/path")
 	if got == nil {
