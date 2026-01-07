@@ -29,9 +29,8 @@ import (
 )
 
 var (
-	errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
-	errLibraryNotFound       = errors.New("library not found")
-	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
+	errLibraryNotFound    = errors.New("library not found")
+	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
 )
 
 func releaseCommand() *cli.Command {
@@ -107,7 +106,9 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-	yaml.Write(librarianConfigPath, cfg)
+	if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+		return err
+	}
 	return RunTidy(ctx)
 }
 

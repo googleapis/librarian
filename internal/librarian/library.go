@@ -78,7 +78,7 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
-// / prepareLibrary applies language-specific derivations and fills defaults.
+// prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path.
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default, googleapisDir string, fillInDefaults bool) (*config.Library, error) {

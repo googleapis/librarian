@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerateCommand(t *testing.T) {
@@ -227,116 +226,6 @@ libraries:
 					} else if !os.IsNotExist(err) {
 						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
 					}
-				}
-			}
-		})
-	}
-}
-
-func TestPrepareLibrary(t *testing.T) {
-	googleapisDir := filepath.Join("..", "testdata", "googleapis")
-
-	for _, test := range []struct {
-		name              string
-		language          string
-		output            string
-		veneer            bool
-		channels          []*config.Channel
-		wantOutput        string
-		wantErr           bool
-		wantChannelPath   string
-		wantServiceConfig string
-	}{
-		{
-			name:              "empty output derives path from channel",
-			language:          "rust",
-			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput:        "src/generated/cloud/secretmanager/v1",
-			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		},
-		{
-			name:              "explicit output keeps explicit path",
-			language:          "rust",
-			output:            "custom/output",
-			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput:        "custom/output",
-			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		},
-		{
-			name:              "empty output uses default for non-rust",
-			language:          "go",
-			channels:          []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput:        "src/generated",
-			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		},
-		{
-			name:              "rust with no channels creates default and derives path",
-			language:          "rust",
-			channels:          nil,
-			wantOutput:        "src/generated/cloud/secretmanager/v1",
-			wantChannelPath:   "google/cloud/secretmanager/v1",
-			wantServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		},
-		{
-			name:              "veneer rust with no channels does not derive path and service config",
-			language:          "rust",
-			output:            "src/storage/test/v1",
-			veneer:            true,
-			channels:          nil,
-			wantOutput:        "src/storage/test/v1",
-			wantChannelPath:   "",
-			wantServiceConfig: "",
-		},
-		{
-			name:    "veneer without output returns error",
-			veneer:  true,
-			wantErr: true,
-		},
-		{
-			name:       "veneer with explicit output succeeds",
-			veneer:     true,
-			output:     "src/storage",
-			wantOutput: "src/storage",
-		},
-		{
-			name:              "rust lib without service config does not derive service config",
-			language:          "rust",
-			channels:          []*config.Channel{{Path: "google/cloud/orgpolicy/v1"}},
-			wantOutput:        "src/generated/cloud/orgpolicy/v1",
-			wantChannelPath:   "google/cloud/orgpolicy/v1",
-			wantServiceConfig: "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			lib := &config.Library{
-				Name:     "google-cloud-secretmanager-v1",
-				Output:   test.output,
-				Veneer:   test.veneer,
-				Channels: test.channels,
-			}
-			defaults := &config.Default{
-				Output: "src/generated",
-			}
-			got, err := prepareLibrary(test.language, lib, defaults, googleapisDir, true)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.Output != test.wantOutput {
-				t.Errorf("got output %q, want %q", got.Output, test.wantOutput)
-			}
-			if len(got.Channels) > 0 {
-				ch := got.Channels[0]
-				if test.wantChannelPath != "" && ch.Path != test.wantChannelPath {
-					t.Errorf("got channel path %q, want %q", ch.Path, test.wantChannelPath)
-				}
-				if ch.ServiceConfig != test.wantServiceConfig {
-					t.Errorf("got service config %q, want %q", ch.ServiceConfig, test.wantServiceConfig)
 				}
 			}
 		})

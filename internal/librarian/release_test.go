@@ -85,11 +85,6 @@ func TestReleaseCommand(t *testing.T) {
 			},
 		},
 		{
-			name:    "no src path provided",
-			args:    []string{"librarian", "release", "--all"},
-			wantErr: errCouldNotDeriveSrcPath,
-		},
-		{
 			name:             "missing librarian yaml file",
 			args:             []string{"librarian", "release", "--all"},
 			skipYamlCreation: true,
@@ -121,12 +116,16 @@ func TestReleaseCommand(t *testing.T) {
 			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
 				Language: languageFake,
+				Default:  &config.Default{},
 				Release: &config.Release{
 					Remote: "origin",
 					Branch: "main",
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{},
+					Googleapis: &config.Source{
+						Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+						SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+					},
 				},
 				Libraries: []*config.Library{
 					{
@@ -170,16 +169,25 @@ func TestReleaseCommand(t *testing.T) {
 			}
 
 			if test.wantVersions != nil {
-				cfg, err := yaml.Read[config.Config](configPath)
+				updatedConfig, err := yaml.Read[config.Config](configPath)
 				if err != nil {
 					t.Fatal(err)
 				}
 				gotVersions := make(map[string]string)
-				for _, lib := range cfg.Libraries {
+				for _, lib := range updatedConfig.Libraries {
 					gotVersions[lib.Name] = lib.Version
+					for _, originalLib := range cfg.Libraries {
+						if lib.Name == originalLib.Name {
+							// update original config version for comparison to ensure nothing else changed
+							originalLib.Version = lib.Version
+						}
+					}
 				}
 				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch in versions (-want +got):\n%s", diff)
+				}
+				if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
+					t.Errorf("mismatch in config (-want +got):\n%s", diff)
 				}
 			}
 		})
