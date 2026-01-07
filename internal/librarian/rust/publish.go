@@ -30,8 +30,29 @@ import (
 	"github.com/googleapis/librarian/internal/git"
 )
 
-// PublishCrates publishes the crates that have changed.
-func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
+// Publish finds all the crates that should be published, (optionally) runs
+// `cargo semver-checks` and (optionally) publishes them.
+func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
+	if err := PreFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
+		return err
+	}
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
+	if err != nil {
+		return err
+	}
+	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
+		return err
+	}
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
+	if err != nil {
+		return err
+	}
+	return publishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
+}
+
+// publishCrates publishes the crates that have changed.
+func publishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
 	for _, manifest := range FindCargoManifests(files) {
 		names, err := PublishedCrate(manifest)
@@ -90,25 +111,4 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	}
 	cmd.Dir = "."
 	return cmd.Run()
-}
-
-// Publish finds all the crates that should be published, (optionally) runs
-// `cargo semver-checks` and (optionally) publishes them.
-func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := PreFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
-		return err
-	}
-	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
-	if err != nil {
-		return err
-	}
-	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
-		return err
-	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
-	if err != nil {
-		return err
-	}
-	return PublishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
 }

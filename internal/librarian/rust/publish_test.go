@@ -50,7 +50,7 @@ func TestPublishCratesSuccess(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -85,7 +85,7 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 		path.Join("src", "pubsub", "src", "lib.rs"),
 	}
 	lastTag := "release-with-new-crate"
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -119,7 +119,7 @@ func TestPublishCratesWithRootsPem(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-with-roots-pem"
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -158,7 +158,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
 }
@@ -180,7 +180,7 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
 }
@@ -209,7 +209,7 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
 }
@@ -254,11 +254,11 @@ fi
 	lastTag := "release-2001-02-03"
 
 	// This should fail because semver-checks fails.
-	if err := PublishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// Skipping the checks should succeed.
-	if err := PublishCrates(t.Context(), cfg, true, true, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, true, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }

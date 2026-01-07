@@ -18,9 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -54,42 +52,12 @@ func publishCommand() *cli.Command {
 }
 
 func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChecks bool) error {
-	if err := verifyRequiredTools(ctx, cfg.Language, cfg.Release); err != nil {
-		return err
-	}
-	gitExe := "git"
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
-	if err != nil {
-		return err
-	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
-	if err != nil {
-		return err
-	}
 	switch cfg.Language {
 	case languageFake:
 		return fakePublish()
 	case languageRust:
-		return rust.PublishCrates(ctx, cfg.Release, dryRun, skipSemverChecks, lastTag, files)
+		return rust.Publish(ctx, cfg.Release, dryRun, skipSemverChecks)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
-	}
-}
-
-// verifyRequiredTools verifies all the necessary tools are installed.
-func verifyRequiredTools(ctx context.Context, language string, cfg *config.Release) error {
-	switch language {
-	case languageFake:
-		return nil
-	case languageRust:
-		return rust.PreFlight(ctx, cfg.Preinstalled, cfg.Remote, cfg.Tools["cargo"])
-	default:
-		return fmt.Errorf("unknown language: %s", language)
 	}
 }
