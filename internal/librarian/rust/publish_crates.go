@@ -91,3 +91,24 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	cmd.Dir = "."
 	return cmd.Run()
 }
+
+// Publish finds all the crates that should be published, (optionally) runs
+// `cargo semver-checks` and (optionally) publishes them.
+func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
+	if err := PreFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
+		return err
+	}
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
+	if err != nil {
+		return err
+	}
+	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
+		return err
+	}
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
+	if err != nil {
+		return err
+	}
+	return PublishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
+}

@@ -262,3 +262,88 @@ fi
 		t.Fatal(err)
 	}
 }
+
+func TestPublishSuccess(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
+			},
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	testhelper.CloneRepository(t, remoteDir)
+
+	if err := Publish(t.Context(), cfg, true, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPublishWithLocalChangesError(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": "/bin/echo",
+		},
+		Tools: map[string][]config.Tool{
+			"cargo": {
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
+			},
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-with-local-changes-error")
+	testhelper.CloneRepository(t, remoteDir)
+	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
+	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := Publish(t.Context(), config, true, false); err == nil {
+		t.Errorf("expected an error publishing a dirty local repository")
+	}
+}
+
+func TestPublishPreflightError(t *testing.T) {
+	config := &config.Release{
+		Preinstalled: map[string]string{
+			"git": "git-not-found",
+		},
+	}
+	if err := Publish(t.Context(), config, true, false); err == nil {
+		t.Errorf("expected an error in BumpVersions() with a bad git command")
+	}
+}
+
+func TestPublishLastTagError(t *testing.T) {
+	const echo = "/bin/echo"
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, echo)
+	config := config.Release{
+		Remote: "origin",
+		Branch: "invalid-branch",
+		Preinstalled: map[string]string{
+			"cargo": echo,
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	testhelper.CloneRepository(t, remoteDir)
+	if err := Publish(t.Context(), &config, true, false); err == nil {
+		t.Fatalf("expected an error during GetLastTag")
+	}
+}
