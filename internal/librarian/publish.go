@@ -61,14 +61,7 @@ func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChe
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
 	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
-	if err != nil {
-		return err
-	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	lastTag, files, err := git.GetValidatedChanges(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}

@@ -30,14 +30,7 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
-	if err != nil {
-		return err
-	}
-	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
-		return err
-	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
+	lastTag, files, err := git.GetValidatedChanges(ctx, gitPath, config.Remote, config.Branch, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}

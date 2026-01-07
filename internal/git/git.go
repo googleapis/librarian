@@ -131,3 +131,20 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	}
 	return nil
 }
+
+// GetValidatedChanges returns the last git tag and files changed since that tag,
+// after validating the branch is up to date.
+func GetValidatedChanges(ctx context.Context, gitExe, remote, branch string, ignoredChanges []string) (string, []string, error) {
+	lastTag, err := GetLastTag(ctx, gitExe, remote, branch)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := MatchesBranchPoint(ctx, gitExe, remote, branch); err != nil {
+		return "", nil, err
+	}
+	files, err := FilesChangedSince(ctx, lastTag, gitExe, ignoredChanges)
+	if err != nil {
+		return "", nil, err
+	}
+	return lastTag, files, nil
+}
