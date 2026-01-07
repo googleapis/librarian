@@ -251,11 +251,11 @@ Example:
 
 ```go
 func TestSendMessage_Error(t *testing.T) {
-  for _, test := range []struct{
-    name string
+  for _, test := range []struct {
+    name      string
     recipient string
-    message string
-    wantErr error
+    message   string
+    wantErr   error
   }{
     {
       name: "recipient does not exist",
