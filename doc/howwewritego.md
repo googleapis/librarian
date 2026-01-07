@@ -237,6 +237,49 @@ func TestTransform(t *testing.T) {
 }
 ```
 
+### Separate error tests
+
+Splitting success and failure cases into separate test functions can simplify
+your test code. See
+[details](https://google.github.io/styleguide/go/decisions.html#table-driven-tests).
+
+When writing error tests, use a test function name like `TestXxx_Error`, and
+when possible use [`errors.Is`](https://pkg.go.dev/errors#Is) for comparison
+(see [details](https://google.github.io/styleguide/go/decisions.html#test-error-semantics)).
+
+Example:
+
+```go
+func TestSendMessage_Error(t *testing.T) {
+  for _, test := range []struct {
+    name      string
+    recipient string
+    message   string
+    wantErr   error
+  }{
+    {
+      name: "recipient does not exist",
+      recipient: "Does Not Exist",
+      message: "Hello, Mr. Not Exist",
+      wantErr: errRecipientDoesNotExist,
+    },
+    {
+      name: "empty message",
+      recipient: "Jane Doe",
+      message: "",
+      wantErr: errEmptyMessage,
+    },
+  }{
+    t.Run(test.name, func(t *testing.T) {
+      _, gotErr := SendMessage(test.recipient, test.message)
+      if !errors.Is(gotErr, test.wantErr) {
+        t.Errorf("SendMessage(%q, %q) error = %v, wantErr %v", test.recipient, test.message, gotErr, test.wantErr)
+      }
+    })
+  }
+}
+```
+
 ### Run tests in parallel
 
 If possible, configure tests to run in parallel mode using

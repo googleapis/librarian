@@ -83,6 +83,49 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 }
 
+func TestSkipGenerateVeneer(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	outDir := t.TempDir()
+	module1Dir := filepath.Join(outDir, "src", "generated", "v1")
+	module2Dir := filepath.Join(outDir, "src", "generated", "v1beta")
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:          "test-veneer",
+		Veneer:        true,
+		Output:        outDir,
+		CopyrightYear: "2025",
+		Rust: &config.RustCrate{
+			RustDefault: config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+				},
+			},
+		},
+	}
+	sources := &Sources{
+		Googleapis: googleapisDir,
+	}
+	if err := Generate(t.Context(), library, sources); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, dir := range []string{module1Dir, module2Dir} {
+		generatedFile := filepath.Join(dir, "model.rs")
+		_, err := os.ReadFile(generatedFile)
+		if err == nil {
+			t.Errorf("want file %s to not exist, but it does", generatedFile)
+		} else if !os.IsNotExist(err) {
+			t.Errorf("unexpected error for file %s: %v", generatedFile, err)
+		}
+	}
+}
+
 func TestKeepNonVeneer(t *testing.T) {
 	library := &config.Library{
 		Keep: []string{"src/custom.rs"},

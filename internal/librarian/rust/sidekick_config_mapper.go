@@ -19,24 +19,23 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// ToSidekickReleaseConfig translates a librarian Release config to a sidekick
-// Release config.
-func ToSidekickReleaseConfig(cfg *config.Release) *sidekickconfig.Release {
+// ToConfigRelease translates a sidekick Release config to a librarian Release config.
+func ToConfigRelease(cfg *sidekickconfig.Release) *config.Release {
 	if cfg == nil {
 		return nil
 	}
-	tools := make(map[string][]sidekickconfig.Tool, len(cfg.Tools))
+	tools := make(map[string][]config.Tool, len(cfg.Tools))
 	for k, v := range cfg.Tools {
-		sidekickTools := make([]sidekickconfig.Tool, len(v))
+		configTools := make([]config.Tool, len(v))
 		for i, t := range v {
-			sidekickTools[i] = sidekickconfig.Tool{
+			configTools[i] = config.Tool{
 				Name:    t.Name,
 				Version: t.Version,
 			}
 		}
-		tools[k] = sidekickTools
+		tools[k] = configTools
 	}
-	return &sidekickconfig.Release{
+	return &config.Release{
 		Remote:         cfg.Remote,
 		Branch:         cfg.Branch,
 		Tools:          tools,
