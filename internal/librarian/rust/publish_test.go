@@ -315,7 +315,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := Publish(t.Context(), config, true, false); err == nil {
-		t.Errorf("expected an error publishing a dirty local repository")
+		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
 
@@ -326,7 +326,7 @@ func TestPublishPreflightError(t *testing.T) {
 		},
 	}
 	if err := Publish(t.Context(), config, true, false); err == nil {
-		t.Errorf("expected an error in BumpVersions() with a bad git command")
+		t.Errorf("expected a preflight error with a bad git command")
 	}
 }
 
