@@ -114,7 +114,6 @@ func TestReleaseCommand(t *testing.T) {
 			wantErr: errReleaseConfigEmpty,
 		},
 	} {
-
 		t.Run(test.name, func(t *testing.T) {
 			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 			testhelper.CloneRepository(t, remoteDir)
