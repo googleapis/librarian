@@ -29,6 +29,7 @@ import (
 func TestReleaseCommand(t *testing.T) {
 	const testlib = "test-lib"
 	const testlib2 = "test-lib2"
+	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
 		name             string
@@ -113,8 +114,8 @@ func TestReleaseCommand(t *testing.T) {
 			wantErr: errReleaseConfigEmpty,
 		},
 	} {
+
 		t.Run(test.name, func(t *testing.T) {
-			testhelper.RequireCommand(t, "git")
 			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 			testhelper.CloneRepository(t, remoteDir)
 
@@ -280,6 +281,7 @@ func TestRelease(t *testing.T) {
 }
 
 func TestReleaseAll(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
 		name        string
@@ -318,7 +320,6 @@ func TestReleaseAll(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			testhelper.RequireCommand(t, "git")
 			tag := "v1.2.3"
 			config := &config.Config{
 				Language: languageFake,
