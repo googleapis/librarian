@@ -840,8 +840,8 @@ func TestRunMigrateCommand(t *testing.T) {
 		{
 			name:                         "success",
 			path:                         "testdata/run/success",
-			checkDocumentOverrideMatch:   []string{"example match", "Ancestry subtrees must be in one of the following formats:\n"},
-			checkDocumentOverrideReplace: []string{"example replace", "\nAncestry subtrees must be in one of the following formats:\n"},
+			checkDocumentOverrideMatch:   []string{"example match", "Ancestry subtrees must be in one of the following formats:"},
+			checkDocumentOverrideReplace: []string{"example replace", " \nAncestry subtrees must be in one of the following formats:"},
 		},
 		{
 			name:    "tidy_command_fails",

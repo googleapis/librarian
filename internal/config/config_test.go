@@ -15,6 +15,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -135,5 +136,24 @@ func TestWrite(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestConfigReadAndWrite(t *testing.T) {
+	want, err := yaml.Read[Config]("testdata/rust/librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	newFile := "testdata/new_librarian.yaml"
+	yaml.Write(newFile, want)
+
+	got, err := yaml.Read[Config](newFile)
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	err = os.Remove(newFile)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

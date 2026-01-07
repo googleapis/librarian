@@ -135,7 +135,7 @@ func runSidekickMigration(ctx context.Context, repoPath, outputPath string) erro
 	if err := librarian.RunTidy(ctx); err != nil {
 		return errTidyFailed
 	}
-	return fixDocumentOverrideNewLines(outputPath, cfg)
+	return nil
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
@@ -402,6 +402,10 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		// Parse documentation overrides
 		var documentationOverrides []config.RustDocumentationOverride
 		for _, do := range sidekick.CommentOverrides {
+			if strings.HasPrefix(do.Replace, "\n") {
+				// this ensures that newline is preserved in yaml format
+				do.Replace = " " + do.Replace
+			}
 			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
 				ID:      do.ID,
 				Match:   do.Match,
@@ -763,85 +767,6 @@ func readTOML[T any](file string) (*T, error) {
 	}
 
 	return &tomlData, nil
-}
-
-// fixDocumentOverrideNewLines takes any toml content in rust.DocumentationOverrides that contains
-// newlines and appropriately adjusts them in the yaml file.
-func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
-	input, err := os.ReadFile(yamlFile)
-	if err != nil {
-		return err
-	}
-
-	content := string(input)
-	lookup := make(map[string]sidekickconfig.DocumentationOverride)
-	for _, lib := range config.Libraries {
-		if lib.Rust == nil {
-			continue
-		}
-		for _, o := range lib.Rust.DocumentationOverrides {
-			key := o.ID + "|" + strings.Trim(o.Match, " \n\r")
-			lookup[key] = sidekickconfig.DocumentationOverride{
-				ID:      o.ID,
-				Match:   o.Match,
-				Replace: o.Replace,
-			}
-		}
-	}
-	lines := strings.Split(content, "\n")
-	var newLines []string
-	var currentID string
-
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "- id: ") {
-			currentID = strings.TrimPrefix(trimmed, "- id: ")
-			newLines = append(newLines, line)
-			continue
-		}
-		if strings.Contains(line, "match: ") {
-			parts := strings.SplitN(line, "match: ", 2)
-			indent := parts[0]
-			currentVal := strings.Trim(parts[1], " '\"")
-
-			lookupKey := currentID + "|" + currentVal
-
-			if data, ok := lookup[lookupKey]; ok {
-				// brittle: if replace has new lines, match has new line at start
-				if strings.Contains(data.Replace, "\n") {
-					newLines = append(newLines, fmt.Sprintf("%smatch: |", indent))
-					newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Match))
-				} else {
-					newLines = append(newLines, line) // Keep original if no newline
-				}
-
-				// --- HANDLE REPLACE FIELD ---
-				// We assume the next line in the file is the 'replace' line
-				// We skip the original replace line by incrementing the loop counter 'i'
-				if i+1 < len(lines) && strings.Contains(lines[i+1], "replace: ") {
-					i++ // Skip the original line
-					if strings.Contains(data.Replace, "\n") {
-						newLines = append(newLines, fmt.Sprintf("%sreplace: |", indent))
-						newLines = append(newLines, "") // Leading newline
-						newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Replace))
-					} else {
-						newLines = append(newLines, lines[i])
-					}
-				}
-				continue
-			}
-		}
-
-		newLines = append(newLines, line)
-	}
-
-	content = strings.Join(newLines, "\n")
-	err = os.WriteFile(yamlFile, []byte(content), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func readCargoConfig(dir string) (*rust.Cargo, error) {
