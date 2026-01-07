@@ -241,7 +241,7 @@ func TestTransform(t *testing.T) {
 
 Splitting success and failure cases into separate test functions can simplify
 your test code. See
-[details](https://google.github.io/styleguide/go/decisions.html#table-driven-tests). 
+[details](https://google.github.io/styleguide/go/decisions.html#table-driven-tests).
 
 When writing error tests, use a test function name like `TestXxx_Error`, and
 when possible use [`errors.Is`](https://pkg.go.dev/errors#Is) for comparison
