@@ -273,7 +273,7 @@ func TestSendMessage_Error(t *testing.T) {
     t.Run(test.name, func(t *testing.T) {
       _, gotErr := SendMessage(test.recipient, test.message)
       if !errors.Is(gotErr, test.wantErr) {
-        t.Errorf("want error %v, got %v", test.wantErr, gotErr)
+        t.Errorf("SendMessage(%q, %q) error = %v, wantErr %v", test.recipient, test.message, gotErr, test.wantErr)
       }
     })
   }
