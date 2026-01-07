@@ -74,7 +74,7 @@ func Format(ctx context.Context, library *config.Library) error {
 
 func generateVeneer(ctx context.Context, library *config.Library, googleapisDir, protobufSrcDir string) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
-		return fmt.Errorf("veneer %q has no modules defined", library.Name)
+		return nil
 	}
 	for _, module := range library.Rust.Modules {
 		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufSrcDir)
