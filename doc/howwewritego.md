@@ -289,7 +289,7 @@ parallelize lightweight, millisecond-level tests.
 
 **Important:** A test cannot be parallelized if it depends on shared resources,
 mutates the process as a whole e.g. by invoking `t.Chdir()`, or is dependent on
-execution order in order.
+execution order.
 
 When using `t.Parallel()` in table-driven tests, you must capture the range
 variable to avoid race conditions. This ensures each subtest gets the correct
