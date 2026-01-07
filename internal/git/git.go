@@ -117,8 +117,8 @@ func ShowFile(ctx context.Context, gitExe, remote, branch, path string) (string,
 	return strings.TrimSuffix(string(output), "\n"), nil
 }
 
-// MatchesBranchPoint returns an error if the local repository has unpushed changes.
-func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) error {
+// matchesBranchPoint returns an error if the local repository has unpushed changes.
+func matchesBranchPoint(ctx context.Context, gitExe, remote, branch string) error {
 	remoteBranch := fmt.Sprintf("%s/%s", remote, branch)
 	delta := fmt.Sprintf("%s...HEAD", remoteBranch)
 	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
@@ -139,7 +139,7 @@ func GetValidatedChanges(ctx context.Context, gitExe, remote, branch string, ign
 	if err != nil {
 		return "", nil, err
 	}
-	if err := MatchesBranchPoint(ctx, gitExe, remote, branch); err != nil {
+	if err := matchesBranchPoint(ctx, gitExe, remote, branch); err != nil {
 		return "", nil, err
 	}
 	files, err := FilesChangedSince(ctx, lastTag, gitExe, ignoredChanges)

@@ -1828,7 +1828,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			libraryID: "some-library",
 			librarianConfig: &legacyconfig.LibrarianConfig{
 				Libraries: []*legacyconfig.LibraryConfig{
-					&legacyconfig.LibraryConfig{
+					{
 						LibraryID:   "some-library",
 						NextVersion: "2.3.4",
 					},
@@ -1849,7 +1849,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			libraryID: "some-library",
 			librarianConfig: &legacyconfig.LibrarianConfig{
 				Libraries: []*legacyconfig.LibraryConfig{
-					&legacyconfig.LibraryConfig{
+					{
 						LibraryID:   "some-library",
 						NextVersion: "2.3.4",
 					},

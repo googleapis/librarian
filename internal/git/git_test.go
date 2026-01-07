@@ -257,7 +257,7 @@ func TestMatchesBranchPointSuccess(t *testing.T) {
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
+	if err := matchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -270,7 +270,7 @@ func TestMatchesBranchDiffError(t *testing.T) {
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := matchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
@@ -291,7 +291,7 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := matchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with a dirty clone")
 	}
 }
@@ -355,5 +355,62 @@ func TestCheckRemoteURL_Error(t *testing.T) {
 
 	if err := CheckRemoteURL(t.Context(), "git", "remote_that_does_not_exist"); err == nil {
 		t.Errorf("expected an error checking for a remote URL, but did not get one")
+	}
+}
+
+func TestGetValidatedChanges_Success(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	const wantTag = "v1.2.3"
+	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
+	testhelper.CloneRepository(t, remoteDir)
+
+	gotTag, gotFiles, err := GetValidatedChanges(t.Context(), "git", "origin", "main", nil)
+	if err != nil {
+		t.Fatalf("GetValidatedChanges() unexpected error: %v", err)
+	}
+	if gotTag != wantTag {
+		t.Errorf("GetValidatedChanges() got tag %q, want %q", gotTag, wantTag)
+	}
+	wantFiles := []string{path.Join("src", "storage", "src", "lib.rs")}
+	if diff := cmp.Diff(wantFiles, gotFiles); diff != "" {
+		t.Errorf("GetValidatedChanges() files mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestGetValidatedChanges_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, tt := range []struct {
+		name    string
+		setup   func(t *testing.T)
+		wantErr bool
+	}{
+		{
+			name: "GetLastTag fails when not a git repo",
+			setup: func(t *testing.T) {
+				t.Chdir(t.TempDir())
+			},
+			wantErr: true,
+		},
+		{
+			name: "MatchesBranchPoint fails on dirty repo",
+			setup: func(t *testing.T) {
+				remoteDir := testhelper.SetupRepo(t)
+				testhelper.CloneRepository(t, remoteDir)
+				if err := os.WriteFile("dirty.txt", []byte("uncommitted"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			tt.setup(t)
+			_, _, err := GetValidatedChanges(t.Context(), "git", "origin", "main", nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetValidatedChanges() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }
