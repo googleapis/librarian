@@ -118,8 +118,10 @@ func TestSkipGenerateVeneer(t *testing.T) {
 	for _, dir := range []string{module1Dir, module2Dir} {
 		generatedFile := filepath.Join(dir, "model.rs")
 		_, err := os.ReadFile(generatedFile)
-		if !strings.Contains(string(err.Error()), "no such file or directory") {
+		if err == nil {
 			t.Errorf("want file %s to not exist, but it does", generatedFile)
+		} else if !os.IsNotExist(err) {
+			t.Errorf("unexpected error for file %s: %v", generatedFile, err)
 		}
 	}
 }
