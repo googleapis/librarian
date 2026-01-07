@@ -49,6 +49,7 @@ type RustDefault struct {
 // and where to output the generated code.
 type RustModule struct {
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
+	// Empty slice is used to signal difference from default and produce no warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
