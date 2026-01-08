@@ -862,7 +862,7 @@ func TestRunMigrateCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := runSidekickMigration(t.Context(), abs, outputPath); err != nil {
+			if err := runSidekickMigration(t.Context(), abs); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}

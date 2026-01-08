@@ -58,7 +58,7 @@ type MigrationInput struct {
 	lang            string
 }
 
-func runLibrarianMigration(ctx context.Context, language, repoPath, outputPath string) error {
+func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err

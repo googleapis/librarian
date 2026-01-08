@@ -75,7 +75,6 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
-	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -91,16 +90,16 @@ func run(ctx context.Context, args []string) error {
 	base := filepath.Base(abs)
 	switch base {
 	case "google-cloud-rust", "google-cloud-dart":
-		return runSidekickMigration(ctx, abs, *outputPath)
+		return runSidekickMigration(ctx, abs)
 	case "google-cloud-python", "google-cloud-go":
 		parts := strings.SplitN(base, "-", 3)
-		return runLibrarianMigration(ctx, parts[2], abs, *outputPath)
+		return runLibrarianMigration(ctx, parts[2], abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
 }
 
-func runSidekickMigration(ctx context.Context, repoPath, outputPath string) error {
+func runSidekickMigration(ctx context.Context, repoPath string) error {
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml from %q: %w", repoPath, err)
