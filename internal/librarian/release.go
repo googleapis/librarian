@@ -107,10 +107,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-	if err := yaml.Write(librarianConfigPath, cfg); err != nil {
-		return err
-	}
-	return RunTidy(ctx)
+	return RunTidyOnConfig(ctx, cfg)
 }
 
 func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {

@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -59,7 +58,7 @@ type MigrationInput struct {
 	lang            string
 }
 
-func runLibrarianMigration(ctx context.Context, language, repoPath, outputPath string) error {
+func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err
@@ -84,10 +83,7 @@ func runLibrarianMigration(ctx context.Context, language, repoPath, outputPath s
 	if err != nil {
 		return err
 	}
-	if err := yaml.Write(outputPath, cfg); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-	if err := librarian.RunTidy(ctx); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
 	}
 	return nil
