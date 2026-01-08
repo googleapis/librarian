@@ -32,7 +32,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -129,10 +128,7 @@ func runSidekickMigration(ctx context.Context, repoPath, outputPath string) erro
 
 	cfg := buildConfig(allLibraries, defaults)
 
-	if err := yaml.Write(outputPath, cfg); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-	if err := librarian.RunTidy(ctx); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
 	}
 	return nil

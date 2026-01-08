@@ -50,10 +50,11 @@ func RunTidy(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return runTidy(ctx, cfg)
+	return RunTidyOnConfig(ctx, cfg)
 }
 
-func runTidy(ctx context.Context, cfg *config.Config) error {
+// RunTidyOnConfig formats and validates the provided librarian configuration.
+func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
