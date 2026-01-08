@@ -54,13 +54,13 @@ func TestNewParam(t *testing.T) {
 			},
 		},
 		{
-			name:     "Int Field",
+			name:     "Long Field",
 			field:    makeField("capacity_gib", api.INT64_TYPE),
 			apiField: "capacityGib",
 			want: Param{
 				ArgName:  "capacity-gib",
 				APIField: "capacityGib",
-				Type:     "int",
+				Type:     "long",
 				HelpText: "Value for the `capacity-gib` field.",
 				Required: false,
 				Repeated: false,

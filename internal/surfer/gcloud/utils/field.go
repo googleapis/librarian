@@ -26,9 +26,9 @@ func GetGcloudType(t api.Typez) string {
 	switch t {
 	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
 		return "float"
-	case api.INT64_TYPE, api.UINT64_TYPE, api.INT32_TYPE, api.UINT32_TYPE,
-		api.FIXED64_TYPE, api.FIXED32_TYPE, api.SFIXED32_TYPE, api.SFIXED64_TYPE,
-		api.SINT32_TYPE, api.SINT64_TYPE:
+	case api.INT64_TYPE, api.UINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE, api.SINT64_TYPE:
+		return "long"
+	case api.INT32_TYPE, api.UINT32_TYPE, api.FIXED32_TYPE, api.SFIXED32_TYPE, api.SINT32_TYPE:
 		return "int"
 	case api.BOOL_TYPE:
 		return "bool"
