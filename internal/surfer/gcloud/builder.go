@@ -260,7 +260,6 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	}
 
 	if utils.IsCreate(method.Name) {
-		// TODO(b/274890004): remove request_id_field from resource_spec
 		param.RequestIDField = strcase.ToLowerCamel(field.Name)
 	}
 

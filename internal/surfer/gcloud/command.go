@@ -108,7 +108,6 @@ type Param struct {
 	// RequestIDField is the name of the field in the request message that should
 	// hold the ID of the resource being created. This is used for `Create` methods.
 	// Origin: Derived from the name of the primary resource's ID field (e.g., "instance_id").
-	// TODO(b/274890004): remove request_id_field from resource_spec
 	RequestIDField string `yaml:"request_id_field,omitempty"`
 	// ResourceSpec defines the structure of a resource argument, including its
 	// name, collection, and attributes.
