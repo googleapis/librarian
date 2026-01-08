@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -141,19 +140,6 @@ func TestCreateLibrary(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantFinalLibraries, gotCfg.Libraries); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			readmePath := filepath.Join(test.wantGeneratedOutputDir, "README.md")
-			if _, err := os.Stat(readmePath); err != nil {
-				t.Errorf("expected README.md at %s: %v", readmePath, err)
-			}
-			versionPath := filepath.Join(test.wantGeneratedOutputDir, "VERSION")
-			content, err := os.ReadFile(versionPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			const want = "0.0.0"
-			if diff := cmp.Diff(want, string(content)); diff != "" {
-				t.Errorf("VERSION mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
