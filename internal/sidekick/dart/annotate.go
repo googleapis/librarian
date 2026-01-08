@@ -1043,6 +1043,31 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 //   - primitives, lists of primitives and enums are supported
 //   - repeated fields are passed as lists
 //   - messages need to be unrolled and fields passed individually
+//
+// Parameters:
+//   - result: The accumulated list of Dart code strings for query parameters.
+//   - refPrefix: The Dart code prefix to access the field (e.g. "request.message?.").
+//   - couldRefPrefixBeNull: Whether the expression referred to by refPrefix can be null.
+//   - paramPrefix: The prefix for the HTTP query parameter name (e.g. "message.").
+//   - field: The field to generate query parameters for.
+//   - state: The API state for looking up types.
+//
+// Examples:
+//
+//	// String field "name" in "request" object.
+//	buildQueryLines(result, "request.", false, "", nameField, state)
+//	// Generates:
+//	// if (request.name case final $1 when $1.isNotDefault) 'name=$1'
+//
+//	// Optional string field "name" in "request" object.
+//	buildQueryLines(result, "request.", false, "", nameField, state)
+//	// Generates:
+//	// if (request.name case final $1?) 'name=$1'
+//
+//	// Nested field "sub.id" where "sub" is a message and "id" is an integer.
+//	buildQueryLines(result, "request.sub?.", true, "sub.", idField, state)
+//	// Generates:
+//	// if (request.sub?.id case final $1? when $1.isNotDefault) 'sub.id=$1'
 func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
 	paramPrefix string, field *api.Field, state *api.APIState,
