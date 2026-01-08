@@ -611,7 +611,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	}
 }
 
-func TestBuildQueryLines(t *testing.T) {
+func TestBuildQueryLines_Primitives(t *testing.T) {
 	for _, test := range []struct {
 		field *api.Field
 		want  []string
@@ -734,7 +734,7 @@ func TestBuildQueryLines(t *testing.T) {
 	}
 }
 
-func TestBuildQueryLinesEnums(t *testing.T) {
+func TestBuildQueryLines_Enums(t *testing.T) {
 	r := sample.Replication()
 	a := sample.Automatic()
 	enum := sample.EnumState()
@@ -799,7 +799,7 @@ func TestBuildQueryLinesEnums(t *testing.T) {
 	}
 }
 
-func TestBuildQueryLinesMessages(t *testing.T) {
+func TestBuildQueryLines_Messages(t *testing.T) {
 	r := sample.Replication()
 	a := sample.Automatic()
 	secretVersion := sample.SecretVersion()
