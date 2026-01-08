@@ -486,8 +486,6 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 }
 
 func TestTidyMissingGoogleApisSource(t *testing.T) {
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
 	cfg := &config.Config{
 		Language: "rust",
 		Libraries: []*config.Library{
