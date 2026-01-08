@@ -75,11 +75,15 @@ func Read(serviceConfigPath string) (*Service, error) {
 // files containing "type: google.api.Service", skipping any files ending in
 // _gapic.yaml.
 //
-// The apiPath should be relative to googleapisDir (e.g.,
+// The channel should be relative to googleapisDir (e.g.,
 // "google/cloud/secretmanager/v1"). Returns the service config path relative
 // to googleapisDir, or empty string if not found.
-func Find(googleapisDir, apiPath string) (string, error) {
-	dir := filepath.Join(googleapisDir, apiPath)
+func Find(googleapisDir, channel string) (string, error) {
+	if config, ok := channelToServiceConfigOverrides[channel]; ok {
+		return config, nil
+	}
+
+	dir := filepath.Join(googleapisDir, channel)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return "", err
@@ -102,7 +106,7 @@ func Find(googleapisDir, apiPath string) (string, error) {
 			return "", err
 		}
 		if isServiceConfig {
-			return filepath.Join(apiPath, name), nil
+			return filepath.Join(channel, name), nil
 		}
 	}
 	return "", nil

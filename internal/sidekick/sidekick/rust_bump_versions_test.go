@@ -19,11 +19,11 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestRustBumpVersions(t *testing.T) {
-	testhelpers.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "taplo")
 	config := &config.Config{
 		Release: &config.Release{
 			Preinstalled: map[string]string{

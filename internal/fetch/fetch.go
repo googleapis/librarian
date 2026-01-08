@@ -30,7 +30,8 @@ import (
 	"time"
 )
 
-const branch = "master"
+// DefaultBranchMaster represents the default git branch "master".
+const DefaultBranchMaster = "master"
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
@@ -51,6 +52,9 @@ type Endpoints struct {
 
 // Repo represents a GitHub repository name.
 type Repo struct {
+	// Branch is the name of the repository branch, such as `master` or `preview`.
+	Branch string
+
 	// Org defines the GitHub organization (or user), that owns the repository.
 	Org string
 
@@ -61,6 +65,8 @@ type Repo struct {
 // RepoFromTarballLink extracts the gitHub account and repository (such as
 // `googleapis/googleapis`, or `googleapis/google-cloud-rust`) from the tarball
 // link.
+// Note: This does **not** set [Repo.Branch] as it is not derivable from a
+// commit-based archive URL.
 func RepoFromTarballLink(githubDownload, tarballLink string) (*Repo, error) {
 	urlPath := strings.TrimPrefix(tarballLink, githubDownload)
 	urlPath = strings.TrimPrefix(urlPath, "/")
@@ -122,7 +128,7 @@ func latestSha(query string) (string, error) {
 // LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
 // commit from the GitHub API for the given repository.
 func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, branch)
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, repo.Branch)
 	commit, err = latestSha(apiURL)
 	if err != nil {
 		return "", "", err
@@ -138,6 +144,8 @@ func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 s
 
 // TarballLink constructs a GitHub tarball download URL for the given
 // repository and commit SHA.
+// Note: This does **not** incorporate the [Repo.Branch] as this produces a
+// commit-based archive URL.
 func TarballLink(githubDownload string, repo *Repo, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Repo, sha)
 }

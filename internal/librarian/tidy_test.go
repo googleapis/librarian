@@ -68,24 +68,93 @@ func TestValidateLibraries(t *testing.T) {
 
 func TestFormatConfig(t *testing.T) {
 	cfg := formatConfig(&config.Config{
+		Default: &config.Default{
+			Rust: &config.RustDefault{
+				PackageDependencies: []*config.RustPackageDependency{
+					{Name: "z"},
+					{Name: "a"},
+				},
+			},
+		},
 		Libraries: []*config.Library{
-			{Name: "google-cloud-storage-v1", Version: "1.0.0"},
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "1.0.0",
+				Channels: []*config.Channel{
+					{Path: "c"},
+					{Path: "a"},
+				},
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "y"},
+							{Name: "b"},
+						},
+					},
+				},
+			},
 			{Name: "google-cloud-bigquery-v1", Version: "2.0.0"},
 			{Name: "google-cloud-secretmanager-v1", Version: "3.0.0"},
 		},
 	})
-	want := []string{
-		"google-cloud-bigquery-v1",
-		"google-cloud-secretmanager-v1",
-		"google-cloud-storage-v1",
-	}
-	var got []string
+	t.Run("sorts libraries by name", func(t *testing.T) {
+		want := []string{
+			"google-cloud-bigquery-v1",
+			"google-cloud-secretmanager-v1",
+			"google-cloud-storage-v1",
+		}
+		var got []string
+		for _, lib := range cfg.Libraries {
+			got = append(got, lib.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	var storageLib *config.Library
 	for _, lib := range cfg.Libraries {
-		got = append(got, lib.Name)
+		if lib.Name == "google-cloud-storage-v1" {
+			storageLib = lib
+			break
+		}
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if storageLib == nil {
+		t.Fatal("library google-cloud-storage-v1 not found after sorting")
 	}
+
+	t.Run("sorts channels by path", func(t *testing.T) {
+		want := []string{"a", "c"}
+		var got []string
+		for _, ch := range storageLib.Channels {
+			got = append(got, ch.Path)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts default rust dependencies by name", func(t *testing.T) {
+		want := []string{"a", "z"}
+		var got []string
+		for _, dep := range cfg.Default.Rust.PackageDependencies {
+			got = append(got, dep.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts library rust dependencies by name", func(t *testing.T) {
+		want := []string{"b", "y"}
+		var got []string
+		for _, dep := range storageLib.Rust.PackageDependencies {
+			got = append(got, dep.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
 
 func TestTidyCommand(t *testing.T) {
@@ -95,7 +164,8 @@ func TestTidyCommand(t *testing.T) {
 	configContent := `language: rust
 sources:
   googleapis:
-    commit: abc123
+    commit: 94ccedca05acb0bb60780789e93371c9e4100ddc
+    sha256: fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba
 libraries:
   - name: google-cloud-storage-v1
     version: "1.0.0"
@@ -128,23 +198,36 @@ libraries:
 }
 
 func TestTidy_DerivableFields(t *testing.T) {
+	googleapisSource := &config.Sources{
+		Googleapis: &config.Source{
+			Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+			SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+		},
+	}
 	for _, test := range []struct {
-		name          string
-		configContent string
-		wantPath      string
-		wantSvcCfg    string
-		wantNumLibs   int
-		wantNumChnls  int
+		name         string
+		config       *config.Config
+		wantPath     string
+		wantSvcCfg   string
+		wantNumLibs  int
+		wantNumChnls int
 	}{
 		{
 			name: "derivable fields removed",
-			configContent: `
-libraries:
-  - name: google-cloud-accessapproval-v1
-    channels:
-      - path: google/cloud/accessapproval/v1
-        service_config: google/cloud/accessapproval/v1/accessapproval_v1.yaml
-`,
+			config: &config.Config{
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-accessapproval-v1",
+						Channels: []*config.Channel{
+							{
+								Path:          "google/cloud/accessapproval/v1",
+								ServiceConfig: "google/cloud/accessapproval/v1/accessapproval_v1.yaml",
+							},
+						},
+					},
+				},
+			},
 			wantPath:     "",
 			wantSvcCfg:   "",
 			wantNumLibs:  1,
@@ -152,40 +235,40 @@ libraries:
 		},
 		{
 			name: "non-derivable path not removed",
-			configContent: `
-libraries:
-  - name: google-cloud-api-servicecontrol-v1
-    channels:
-      - path: google/api/servicecontrol/v1
-        service_config: google/api/servicecontrol/v1/servicecontrol.yaml
-`,
-			wantPath:     "google/api/servicecontrol/v1",
-			wantSvcCfg:   "google/api/servicecontrol/v1/servicecontrol.yaml",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
-		},
-		{
-			name: "only derivable service config removed",
-			configContent: `
-libraries:
-  - name: google-cloud-vision-v1
-    channels:
-      - path: google/some/other/domain/vision/v1
-        service_config: google/some/other/domain/vision/v1/vision_v1.yaml
-`,
-			wantPath:     "google/some/other/domain/vision/v1",
-			wantSvcCfg:   "",
+			config: &config.Config{
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-aiplatform-v1-schema-predict-instance",
+						Channels: []*config.Channel{
+							{
+								Path:          "src/generated/cloud/aiplatform/schema/predict/instance",
+								ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+							},
+						},
+					},
+				},
+			},
+			wantPath:     "src/generated/cloud/aiplatform/schema/predict/instance",
+			wantSvcCfg:   "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
 		{
 			name: "path needs to be resolved",
-			configContent: `
-libraries:
-  - name: google-cloud-vision-v1
-    channels:
-      - service_config: google/some/other/domain/vision/v1/vision_v1.yaml
-`,
+			config: &config.Config{
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-vision-v1",
+						Channels: []*config.Channel{
+							{
+								ServiceConfig: "google/some/other/domain/vision/v1/vision_v1.yaml",
+							},
+						},
+					},
+				},
+			},
 			wantPath:     "",
 			wantSvcCfg:   "google/some/other/domain/vision/v1/vision_v1.yaml",
 			wantNumLibs:  1,
@@ -193,32 +276,53 @@ libraries:
 		},
 		{
 			name: "service config not derivable (no version at end of path)",
-			configContent: `
-libraries:
-  - name: google-cloud-speech
-    channels:
-      - path: google/cloud/speech
-        service_config: google/cloud/speech/1/speech_1.yaml
-`,
+			config: &config.Config{
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-speech",
+						Channels: []*config.Channel{
+							{
+								Path:          "google/cloud/speech",
+								ServiceConfig: "google/cloud/speech/1/speech_1.yaml",
+							},
+						},
+					},
+				},
+			},
 			wantPath:     "",
 			wantSvcCfg:   "google/cloud/speech/1/speech_1.yaml",
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
+		{
+			name: "channel removed if service config does not exist",
+			config: &config.Config{
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-cloud-orgpolicy-v1",
+						Channels: []*config.Channel{
+							{
+								Path: "google/cloud/orgpolicy/v1",
+							},
+						},
+					},
+				},
+			},
+			wantPath:     "",
+			wantSvcCfg:   "",
+			wantNumLibs:  1,
+			wantNumChnls: 0,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configPath := filepath.Join(tempDir, librarianConfigPath)
 
-			if err := os.WriteFile(configPath, []byte(test.configContent), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := Run(t.Context(), "librarian", "tidy"); err != nil {
-				t.Fatal(err)
-			}
+			RunTidyOnConfig(t.Context(), test.config)
 
-			cfg, err := yaml.Read[config.Config](configPath)
+			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -243,22 +347,28 @@ libraries:
 	}
 }
 
-func TestTidyCommandDuplicateError(t *testing.T) {
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
-	configContent := `language: rust
-sources:
-  googleapis:
-    commit: abc123
-libraries:
-  - name: google-cloud-storage-v1
-  - name: google-cloud-storage-v1
-`
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
+func TestTidyDuplicateError(t *testing.T) {
+	cfg := &config.Config{
+		Language: "rust",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "1.0.0",
+			},
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "2.0.0",
+			},
+		},
 	}
-	err := Run(t.Context(), "librarian", "tidy")
+
+	err := RunTidyOnConfig(t.Context(), cfg)
 	if err == nil {
 		t.Fatal("expected error for duplicate library")
 	}
@@ -270,59 +380,85 @@ libraries:
 func TestTidy_DerivableOutput(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
-	configContent := `
-language: rust
-default:
-  output: generated/
-libraries:
-  - name: google-cloud-secretmanager-v1
-    output: generated/cloud/secretmanager/v1
-    channels:
-      - path: google/cloud/secretmanager/v1
-`
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	cfg := &config.Config{
+		Language: "rust",
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:   "google-cloud-secretmanager-v1",
+				Output: "generated/cloud/secretmanager/v1",
+				Channels: []*config.Channel{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := RunTidy(); err != nil {
-		t.Fatal(err)
-	}
-	cfg, err := yaml.Read[config.Config](configPath)
+	got, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Libraries) != 1 {
-		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
+	if len(got.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
-	if cfg.Libraries[0].Output != "" {
-		t.Errorf("expected output to be empty, got %q", cfg.Libraries[0].Output)
+	if got.Libraries[0].Output != "" {
+		t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
 	}
 }
 
 func TestTidyLanguageConfig_Rust(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		configContent string
-		wantNumLibs   int
-		wantNumMods   int
+		name        string
+		cfg         *config.Config
+		wantNumLibs int
+		wantNumMods int
 	}{
 		{
 			name: "empty_module_removed",
-			configContent: `
-language: rust
-default:
-  output: generated/
-libraries:
-  - name: google-cloud-storage
-    output: src/storage
-    rust:
-      modules:
-      - output: src/storage/src/generated/protos/storage
-        source: google/storage/v2
-        template: prost
-      - output: src/storage/control
-        source: none
-        template: ""`,
+			cfg: &config.Config{
+				Language: "rust",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Default: &config.Default{
+					Output: "generated/",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "google-cloud-storage",
+						Output: "src/storage",
+						Rust: &config.RustCrate{
+							Modules: []*config.RustModule{
+								{
+									Output:   "src/storage/src/generated/protos/storage",
+									Source:   "google/storage/v2",
+									Template: "prost",
+								},
+								{
+									Output:   "src/storage/control",
+									Source:   "none",
+									Template: "",
+								},
+							},
+						},
+					},
+				},
+			},
 			wantNumLibs: 1,
 			wantNumMods: 1, // Modules should be removed
 		},
@@ -330,16 +466,10 @@ libraries:
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configPath := filepath.Join(tempDir, librarianConfigPath)
 
-			if err := os.WriteFile(configPath, []byte(test.configContent), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := Run(t.Context(), "librarian", "tidy"); err != nil {
-				t.Fatal(err)
-			}
+			RunTidyOnConfig(t.Context(), test.cfg)
 
-			cfg, err := yaml.Read[config.Config](configPath)
+			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -352,5 +482,63 @@ libraries:
 				t.Fatalf("wrong number of modules")
 			}
 		})
+	}
+}
+
+func TestTidyMissingGoogleApisSource(t *testing.T) {
+	cfg := &config.Config{
+		Language: "rust",
+		Libraries: []*config.Library{
+			{
+				Name:    "google-cloud-storage-v1",
+				Version: "1.0.0",
+			},
+			{
+				Name:    "google-cloud-bigquery-v1",
+				Version: "2.0.0",
+			},
+		},
+	}
+	err := RunTidyOnConfig(t.Context(), cfg)
+	if err == nil {
+		t.Fatalf("expected error, got %v", nil)
+	}
+	if !errors.Is(err, errNoGoogleapiSourceInfo) {
+		t.Errorf("mismatch error want %v got %v", errNoGoogleapiSourceInfo, err)
+	}
+}
+
+func TestTidy_VeneerSkipGenerate(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	cfg := &config.Config{
+		Language: "rust",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:         "google-cloud-storage",
+				Veneer:       true,
+				SkipGenerate: true,
+				Output:       "src/storage",
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(cfg.Libraries))
+	}
+	if cfg.Libraries[0].SkipGenerate {
+		t.Errorf("expected skip_generate to be false for veneer library, got true")
 	}
 }

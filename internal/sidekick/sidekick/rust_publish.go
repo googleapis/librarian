@@ -17,8 +17,8 @@ package sidekick
 import (
 	"context"
 
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 )
 
 var (
@@ -44,5 +44,5 @@ the dependency order.
 // rustPublish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func rustPublish(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.Publish(ctx, rootConfig.Release, cmdLine.DryRun, skipSemverChecks)
+	return rust.Publish(ctx, rust.ToConfigRelease(rootConfig.Release), cmdLine.DryRun, skipSemverChecks)
 }

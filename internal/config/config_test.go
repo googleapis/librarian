@@ -15,6 +15,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -138,53 +139,23 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-func TestReleaseGetExecutablePath(t *testing.T) {
-	tests := []struct {
-		name           string
-		releaseConfig  *Release
-		executableName string
-		want           string
-	}{
-		{
-			name: "Preinstalled tool found",
-			releaseConfig: &Release{
-				Preinstalled: map[string]string{
-					"cargo": "/usr/bin/cargo",
-					"git":   "/usr/bin/git",
-				},
-			},
-			executableName: "cargo",
-			want:           "/usr/bin/cargo",
-		},
-		{
-			name: "Preinstalled tool not found",
-			releaseConfig: &Release{
-				Preinstalled: map[string]string{
-					"git": "/usr/bin/git",
-				},
-			},
-			executableName: "cargo",
-			want:           "cargo",
-		},
-		{
-			name:           "No preinstalled section",
-			releaseConfig:  &Release{},
-			executableName: "cargo",
-			want:           "cargo",
-		},
-		{
-			name:           "Nil release config",
-			releaseConfig:  nil,
-			executableName: "cargo",
-			want:           "cargo",
-		},
+func TestConfigReadAndWrite(t *testing.T) {
+	want, err := yaml.Read[Config]("testdata/librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.releaseConfig.GetExecutablePath(test.executableName)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetExecutablePath() mismatch (-want +got):\n%s", diff)
-			}
-		})
+
+	newFile := filepath.Join(t.TempDir(), "new_librarian.yaml")
+	if err := yaml.Write(newFile, want); err != nil {
+		t.Fatalf("yaml.Write() failed: %v", err)
+	}
+
+	got, err := yaml.Read[Config](newFile)
+	if err != nil {
+		t.Fatalf("yaml.Read() failed: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

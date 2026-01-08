@@ -16,12 +16,21 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/internal/rust"
+	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+)
+
+var (
+	errLibraryNotFound    = errors.New("library not found")
+	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
 )
 
 func releaseCommand() *cli.Command {
@@ -61,40 +70,114 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if all && libraryName != "" {
 		return errBothLibraryAndAllFlag
 	}
-
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return err
 	}
-	if all {
-		cfg, err = releaseAll(cfg)
-	} else {
-		cfg, err = releaseLibrary(cfg, libraryName)
+	gitExe := "git"
+	if cfg.Release != nil {
+		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
 	}
+	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+		return err
+	}
+
+	if cfg.Release == nil {
+		return errReleaseConfigEmpty
+	}
+	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
 	if err != nil {
 		return err
 	}
-	return yaml.Write(librarianConfigPath, cfg)
+
+	if all {
+		if err = releaseAll(ctx, cfg, lastTag, gitExe); err != nil {
+			return err
+		}
+	} else {
+		libConfg, err := libraryByName(cfg, libraryName)
+		if err != nil {
+			return err
+		}
+		_, err = prepareLibrary(cfg.Language, libConfg, cfg.Default, "", false)
+		if err != nil {
+			return err
+		}
+		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe); err != nil {
+			return err
+		}
+	}
+	return RunTidyOnConfig(ctx, cfg)
 }
 
-func releaseAll(cfg *config.Config) (*config.Config, error) {
+func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
+	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	if err != nil {
+		return err
+	}
+	for _, library := range cfg.Libraries {
+		_, err := prepareLibrary(cfg.Language, library, cfg.Default, "", false)
+		if err != nil {
+			return err
+		}
+		if shouldRelease(library, filesChanged, library.Output) {
+			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func shouldRelease(library *config.Library, filesChanged []string, srcPath string) bool {
+	if library.SkipPublish {
+		return false
+	}
+	pathWithTrailingSlash := srcPath
+	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
+		pathWithTrailingSlash = pathWithTrailingSlash + "/"
+	}
+	for _, path := range filesChanged {
+		if strings.Contains(path, pathWithTrailingSlash) {
+			return true
+		}
+	}
+	return false
+}
+
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe string) error {
 	switch cfg.Language {
-	case "testhelper":
-		return testReleaseAll(cfg)
-	case "rust":
-		return rust.ReleaseAll(cfg)
+	case languageFake:
+		return fakeReleaseLibrary(libConfig)
+	case languageRust:
+		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, srcPath+"/Cargo.toml")
+		if err != nil {
+			return err
+		}
+		if !release {
+			return nil
+		}
+		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
+			return err
+		}
+		if err := runGenerate(ctx, false, libConfig.Name); err != nil {
+			return err
+		}
+		return nil
 	default:
-		return nil, fmt.Errorf("language not supported for release --all: %q", cfg.Language)
+		return fmt.Errorf("language not supported for release: %q", cfg.Language)
 	}
 }
 
-func releaseLibrary(cfg *config.Config, name string) (*config.Config, error) {
-	switch cfg.Language {
-	case "testhelper":
-		return testReleaseLibrary(cfg, name)
-	case "rust":
-		return rust.ReleaseLibrary(cfg, name)
-	default:
-		return nil, fmt.Errorf("language not supported for release --all: %q", cfg.Language)
+// libraryByName returns a library with the given name from the config.
+func libraryByName(c *config.Config, name string) (*config.Library, error) {
+	if c.Libraries == nil {
+		return nil, errLibraryNotFound
 	}
+	for _, library := range c.Libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+	return nil, errLibraryNotFound
 }

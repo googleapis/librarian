@@ -60,7 +60,12 @@ mod info {
 {{/Codec.PerServiceFeatures}}
 #[derive(Clone)]
 pub struct {{Codec.Name}} {
+    {{^Codec.ExtendGrpcTransport}}
     inner: gaxi::grpc::Client,
+    {{/Codec.ExtendGrpcTransport}}
+    {{#Codec.ExtendGrpcTransport}}
+    pub(crate) inner: gaxi::grpc::Client,
+    {{/Codec.ExtendGrpcTransport}}
 }
 
 {{#Codec.PerServiceFeatures}}

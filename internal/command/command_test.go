@@ -18,6 +18,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestRun(t *testing.T) {
@@ -58,5 +61,50 @@ func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
 	if err == nil {
 		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
+	}
+}
+
+func TestGetExecutablePath(t *testing.T) {
+	tests := []struct {
+		name           string
+		releaseConfig  *config.Release
+		executableName string
+		want           string
+	}{
+		{
+			name: "Preinstalled tool found",
+			releaseConfig: &config.Release{
+				Preinstalled: map[string]string{
+					"cargo": "/usr/bin/cargo",
+					"git":   "/usr/bin/git",
+				},
+			},
+			executableName: "cargo",
+			want:           "/usr/bin/cargo",
+		},
+		{
+			name: "Preinstalled tool not found",
+			releaseConfig: &config.Release{
+				Preinstalled: map[string]string{
+					"git": "/usr/bin/git",
+				},
+			},
+			executableName: "cargo",
+			want:           "cargo",
+		},
+		{
+			name:           "No preinstalled section",
+			releaseConfig:  &config.Release{},
+			executableName: "cargo",
+			want:           "cargo",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := GetExecutablePath(test.releaseConfig.Preinstalled, test.executableName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

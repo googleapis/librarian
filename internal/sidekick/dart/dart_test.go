@@ -103,44 +103,6 @@ func TestEnumNames(t *testing.T) {
 	}
 }
 
-func TestEnumValues(t *testing.T) {
-	enumValueSimple := &api.EnumValue{
-		Name: "NAME",
-		ID:   ".test.v1.SomeMessage.SomeEnum.NAME",
-	}
-	enumReservedName := &api.EnumValue{
-		Name: "in",
-		ID:   ".test.v1.SomeMessage.SomeEnum.in",
-	}
-	enumValueCompound := &api.EnumValue{
-		Name: "ENUM_VALUE",
-		ID:   ".test.v1.SomeMessage.SomeEnum.ENUM_VALUE",
-	}
-	someEnum := &api.Enum{
-		Name:    "SomeEnum",
-		ID:      ".test.v1.SomeMessage.SomeEnum",
-		Values:  []*api.EnumValue{enumValueSimple, enumReservedName, enumValueCompound},
-		Package: "test.v1",
-	}
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{someEnum}, []*api.Service{})
-	model.PackageName = "test"
-	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{})
-
-	for _, test := range []struct {
-		value    *api.EnumValue
-		wantName string
-	}{
-		{enumValueSimple, "name"},
-		{enumReservedName, "in$"},
-		{enumValueCompound, "enumValue"},
-	} {
-		if got := enumValueName(test.value); got != test.wantName {
-			t.Errorf("c.enumName(%q) = %q; want = %s", test.value.Name, got, test.wantName)
-		}
-	}
-}
-
 func TestResolveMessageName(t *testing.T) {
 	message := sample.CreateRequest()
 	model := api.NewTestAPI([]*api.Message{

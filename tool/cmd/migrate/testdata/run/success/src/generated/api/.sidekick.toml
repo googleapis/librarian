@@ -1,0 +1,27 @@
+[general]
+specification-source = 'google/cloud/sql/v1'
+service-config       = 'google/cloud/sql/v1/sqladmin_v1.yaml'
+
+[[pagination-overrides]]
+id         = '.google.cloud.sql.v1.SqlInstancesService.List'
+item-field = 'items'
+
+[codec]
+version        = '1.2.0'
+copyright-year = '2025'
+'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
+'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'
+
+
+[[documentation-overrides]]
+id = '.google.api.ProjectProperties'
+match = 'example match'
+replace = 'example replace'
+
+[[documentation-overrides]]
+id      = '.google.cloud.orgpolicy.v1.Policy.ListPolicy'
+match   = """
+Ancestry subtrees must be in one of the following formats:"""
+replace = """
+
+Ancestry subtrees must be in one of the following formats:"""

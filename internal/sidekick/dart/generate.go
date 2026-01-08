@@ -59,7 +59,7 @@ func templatesProvider() language.TemplateProvider {
 
 func generatedFiles(model *api.API) []language.GeneratedFile {
 	codec := model.Codec.(*modelAnnotations)
-	mainFileName := codec.MainFileName
+	mainFileNameWithExtension := codec.MainFileNameWithExtension
 
 	files := language.WalkTemplatesDir(dartTemplates, "templates")
 
@@ -67,7 +67,7 @@ func generatedFiles(model *api.API) []language.GeneratedFile {
 		// Replace 'main.dart' with '{servicename}.dart'
 		if filepath.Base(fileInfo.TemplatePath) == "main.dart.mustache" {
 			outDir := filepath.Dir(fileInfo.OutputPath)
-			fileInfo.OutputPath = filepath.Join(outDir, mainFileName+".dart")
+			fileInfo.OutputPath = filepath.Join(outDir, mainFileNameWithExtension)
 
 			files[index] = fileInfo
 		}

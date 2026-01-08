@@ -1,9 +1,0 @@
-type: google.api.Service
-config_version: 3
-name: test.googleapis.com
-title: Test API
-documentation:
-  summary: Just a test API
-publishing:
-  documentation_uri: https://cloud.google.com/test/docs/overview
-  api_short_name: test

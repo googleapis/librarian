@@ -24,8 +24,10 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
+const googleapisDir = "../testdata/googleapis"
+
 func TestRead(t *testing.T) {
-	got, err := Read("testdata/secretmanager_v1.yaml")
+	got, err := Read(filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +81,6 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	const googleapisDir = "testdata/googleapis"
 	for _, test := range []struct {
 		name    string
 		channel string
@@ -88,8 +89,8 @@ func TestFind(t *testing.T) {
 	}{
 		{
 			name:    "found",
-			channel: "google/cloud/speech/v1",
-			want:    "google/cloud/speech/v1/speech_v1.yaml",
+			channel: "google/cloud/secretmanager/v1",
+			want:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		},
 		{
 			name:    "not found",
@@ -100,6 +101,11 @@ func TestFind(t *testing.T) {
 			name:    "directory does not exist",
 			channel: "google/cloud/nonexistent/v1",
 			wantErr: true,
+		},
+		{
+			name:    "override",
+			channel: "google/cloud/aiplatform/schema/predict/instance",
+			want:    "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

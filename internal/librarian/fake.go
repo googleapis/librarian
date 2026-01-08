@@ -1,0 +1,62 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package librarian
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/googleapis/librarian/internal/config"
+)
+
+// fakeReleaseVersion is the version that libraries are always released at when
+// using the fake language implementation.
+const fakeReleaseVersion = "1.2.3"
+
+func fakeReleaseLibrary(lib *config.Library) error {
+	lib.Version = fakeReleaseVersion
+	return nil
+}
+
+func fakeGenerate(library *config.Library) error {
+	if err := os.MkdirAll(library.Output, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf("# %s\n\nGenerated library\n", library.Name)
+	readmePath := filepath.Join(library.Output, "README.md")
+	if err := os.WriteFile(readmePath, []byte(content), 0644); err != nil {
+		return err
+	}
+	versionPath := filepath.Join(library.Output, "VERSION")
+	if _, err := os.Stat(versionPath); os.IsNotExist(err) {
+		return os.WriteFile(versionPath, []byte("0.0.0"), 0644)
+	}
+	return nil
+}
+
+func fakeFormat(library *config.Library) error {
+	readmePath := filepath.Join(library.Output, "README.md")
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		return err
+	}
+	formatted := string(content) + "\n---\nFormatted\n"
+	return os.WriteFile(readmePath, []byte(formatted), 0644)
+}
+
+func fakePublish() error {
+	return os.WriteFile("PUBLISHED", []byte("published\n"), 0644)
+}

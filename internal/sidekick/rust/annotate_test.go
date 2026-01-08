@@ -231,6 +231,26 @@ func TestServiceAnnotations(t *testing.T) {
 	}
 }
 
+func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
+	model := serviceAnnotationsModel()
+	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
+	if !ok {
+		t.Fatal("cannot find .test.v1.ResourceService")
+	}
+	codec, err := newCodec("protobuf", map[string]string{
+		"extend-grpc-transport": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	annotateModel(model, codec)
+	serviceAnn := service.Codec.(*serviceAnnotations)
+
+	if !serviceAnn.ExtendGrpcTransport {
+		t.Errorf("expected `extend-grpc-transport` to be set on the service.")
+	}
+}
+
 func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
 	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]

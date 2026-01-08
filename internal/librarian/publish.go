@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -51,7 +52,12 @@ func publishCommand() *cli.Command {
 }
 
 func publish(ctx context.Context, cfg *config.Config, dryRun bool, skipSemverChecks bool) error {
-	// TODO: Not yet implemented.
-	fmt.Printf("publish not implemented. ctx: %v, cfg: %v, dryRun: %v, skipSemverChecks: %v\n", ctx, cfg, dryRun, skipSemverChecks)
-	panic("not implemented")
+	switch cfg.Language {
+	case languageFake:
+		return fakePublish()
+	case languageRust:
+		return rust.Publish(ctx, cfg.Release, dryRun, skipSemverChecks)
+	default:
+		return fmt.Errorf("publish not implemented for %q", cfg.Language)
+	}
 }

@@ -77,14 +77,14 @@ func TestCodecError(t *testing.T) {
 	goodConfig := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
 	errorConfig := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
@@ -114,7 +114,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
@@ -149,7 +149,7 @@ func TestRustFromProtobuf(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
 	model, err := parser.CreateModel(cfg)
@@ -184,7 +184,7 @@ func TestRustClient(t *testing.T) {
 				SpecificationSource: "google/cloud/secretmanager/v1",
 			},
 			Source: map[string]string{
-				"googleapis-root": path.Join(testdataDir, "googleapis"),
+				"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 			},
 			Codec: map[string]string{
 				"copyright-year":    "2025",
@@ -229,7 +229,7 @@ func TestRustNosvc(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",
@@ -267,7 +267,7 @@ func TestRustModuleRpc(t *testing.T) {
 			SpecificationSource: "google/rpc",
 		},
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",

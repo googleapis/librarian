@@ -36,6 +36,7 @@ import (
 const (
 	testGitHubDn       = "https://localhost:12345"
 	tarballPathTrailer = "/archive/5d5b1bf126485b0e2c972bac41b376438601e266.tar.gz"
+	closedServerURL    = "https://127.0.0.1:54321"
 )
 
 func TestRepoFromTarballLink(t *testing.T) {
@@ -117,7 +118,7 @@ func TestSha256Error(t *testing.T) {
 		},
 		{
 			name: "invalid url",
-			url:  "http://invalid-url-that-does-not-exist-12345.local",
+			url:  closedServerURL,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -175,7 +176,7 @@ func TestLatestShaError(t *testing.T) {
 		},
 		{
 			name: "invalid url",
-			url:  "http://invalid-url-that-does-not-exist-12345.local",
+			url:  closedServerURL,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -540,31 +541,47 @@ func TestDownloadTarballEmptySha(t *testing.T) {
 
 func TestLatestCommitAndChecksum(t *testing.T) {
 	const (
-		expectedCommit          = "testcommit123"
-		expectedTarballContents = "mock tarball content for checksum"
-		testOrg                 = "testorg"
-		testRepo                = "testrepo"
+		expectedMasterCommit          = "testcommit123"
+		expectedMasterTarballContents = "mock tarball content for master commit checksum"
+		expectedBranchCommit          = "testothercommit123"
+		expectedBranchTarballContents = "mock tarball content for other branch commit checksum"
+		testOrg                       = "testorg"
+		testRepo                      = "testrepo"
+		testBranch                    = "testbranch"
 	)
 	// Calculate the expected SHA256 for the tarball contents.
 	hasher := sha256.New()
-	hasher.Write([]byte(expectedTarballContents))
+	hasher.Write([]byte(expectedMasterTarballContents))
 	expectedTarballSHA256 := fmt.Sprintf("%x", hasher.Sum(nil))
 
+	hasher.Reset()
+	hasher.Write([]byte(expectedBranchTarballContents))
+	expectedBranchTarballSHA256 := fmt.Sprintf("%x", hasher.Sum(nil))
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var responseBody string
 		switch r.URL.Path {
-		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, branch):
+		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, DefaultBranchMaster):
 			// Mock response for LatestSha call
 			w.Header().Set("Accept", "application/vnd.github.VERSION.sha")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedCommit))
-		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedCommit):
+			responseBody = expectedMasterCommit
+		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedMasterCommit):
 			// Mock response for Sha256 call (tarball download)
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedTarballContents))
+			responseBody = expectedMasterTarballContents
+		case fmt.Sprintf("/repos/%s/%s/commits/%s", testOrg, testRepo, testBranch):
+			// Mock response for LatestSha call
+			w.Header().Set("Accept", "application/vnd.github.VERSION.sha")
+			responseBody = expectedBranchCommit
+		case fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, expectedBranchCommit):
+			// Mock response for Sha256 call (tarball download)
+			responseBody = expectedBranchTarballContents
 		default:
 			t.Errorf("unexpected request path: %s", r.URL.Path)
 			http.NotFound(w, r)
+			return
 		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(responseBody))
 	}))
 	defer server.Close()
 
@@ -572,21 +589,46 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 		API:      server.URL,
 		Download: server.URL,
 	}
-	repo := &Repo{
-		Org:  testOrg,
-		Repo: testRepo,
-	}
 
-	gotCommit, gotSha256, err := LatestCommitAndChecksum(endpoints, repo)
-	if err != nil {
-		t.Fatalf("LatestCommitAndChecksum() error = %v, wantErr %v", err, nil)
-	}
-
-	if gotCommit != expectedCommit {
-		t.Errorf("LatestCommitAndChecksum() gotCommit = %q, want %q", gotCommit, expectedCommit)
-	}
-	if gotSha256 != expectedTarballSHA256 {
-		t.Errorf("LatestCommitAndChecksum() gotSha256 = %q, want %q", gotSha256, expectedTarballSHA256)
+	for _, test := range []struct {
+		name              string
+		repo              *Repo
+		wantCommit        string
+		wantTarballSHA256 string
+	}{
+		{
+			name: "default branch master",
+			repo: &Repo{
+				Org:    testOrg,
+				Repo:   testRepo,
+				Branch: DefaultBranchMaster,
+			},
+			wantCommit:        expectedMasterCommit,
+			wantTarballSHA256: expectedTarballSHA256,
+		},
+		{
+			name: "specific repo branch",
+			repo: &Repo{
+				Org:    testOrg,
+				Repo:   testRepo,
+				Branch: testBranch,
+			},
+			wantCommit:        expectedBranchCommit,
+			wantTarballSHA256: expectedBranchTarballSHA256,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotCommit, gotSha256, err := LatestCommitAndChecksum(endpoints, test.repo)
+			if err != nil {
+				t.Fatalf("LatestCommitAndChecksum() error = %v, wantErr %v", err, nil)
+			}
+			if gotCommit != test.wantCommit {
+				t.Errorf("LatestCommitAndChecksum() gotCommit = %q, want %q", gotCommit, test.wantCommit)
+			}
+			if gotSha256 != test.wantTarballSHA256 {
+				t.Errorf("LatestCommitAndChecksum() gotSha256 = %q, want %q", gotSha256, test.wantTarballSHA256)
+			}
+		})
 	}
 }
 

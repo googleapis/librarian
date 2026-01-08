@@ -187,10 +187,11 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		enabledMixinMethods mixinMethods = make(map[string]bool)
 	)
 	state := &api.APIState{
-		ServiceByID: make(map[string]*api.Service),
-		MethodByID:  make(map[string]*api.Method),
-		MessageByID: make(map[string]*api.Message),
-		EnumByID:    make(map[string]*api.Enum),
+		ServiceByID:    make(map[string]*api.Service),
+		MethodByID:     make(map[string]*api.Method),
+		MessageByID:    make(map[string]*api.Message),
+		EnumByID:       make(map[string]*api.Enum),
+		ResourceByType: make(map[string]*api.Resource),
 	}
 	result := &api.API{
 		State: state,
@@ -488,7 +489,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		if opts.GetMapEntry() {
 			message.IsMap = true
 		}
-		if err := processResourceAnnotation(opts, message); err != nil {
+		if err := processResourceAnnotation(opts, message, state); err != nil {
 			return nil, err
 		}
 	}
@@ -553,7 +554,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	return message, nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message) error {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, state *api.APIState) error {
 	if !proto.HasExtension(opts, annotations.E_Resource) {
 		return nil
 	}
@@ -568,13 +569,15 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		return fmt.Errorf("in message %q: %w", message.ID, err)
 	}
 
-	message.Resource = &api.Resource{
+	resource := &api.Resource{
 		Type:     res.GetType(),
 		Patterns: patterns,
 		Plural:   res.GetPlural(),
 		Singular: res.GetSingular(),
 		Self:     message,
 	}
+	message.Resource = resource
+	state.ResourceByType[resource.Type] = resource
 	return nil
 }
 

@@ -188,6 +188,8 @@ type APIState struct {
 	MessageByID map[string]*Message
 	// EnumByID returns a message that is associated with the API.
 	EnumByID map[string]*Enum
+	// ResourceByType returns a resource that is associated with the API.
+	ResourceByType map[string]*Resource
 }
 
 // Service represents a service in an API.
@@ -360,6 +362,114 @@ func (m *Method) HasRouting() bool {
 // HasAutoPopulatedFields returns true if the method has auto-populated fields.
 func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
+}
+
+// IsSimple returns true if the method is not a streaming, pagination or LRO method.
+// IsSimple simplifies writing mustache templates, mostly for samples.
+func (m *Method) IsSimple() bool {
+	return m.Pagination == nil &&
+		!m.ClientSideStreaming && !m.ServerSideStreaming &&
+		m.OperationInfo == nil && m.DiscoveryLro == nil
+}
+
+// IsAIPStandard returns true if the method is one of the AIP standard methods.
+// IsAIPStandard simplifies writing mustache templates, mostly for samples.
+func (m *Method) IsAIPStandard() bool {
+	return m.AIPStandardGetInfo() != nil ||
+		m.AIPStandardDeleteInfo() != nil
+}
+
+// AIPStandardGetInfo contains information relevant to get operations as defined by AIP-131.
+type AIPStandardGetInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the get operation should fetch.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardGetInfo returns information relevant to a get operation as defined by AIP-131
+// if the method is such and operation.
+func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
+	// A get operation is always a simple operation that returns a resource.
+	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty || m.OutputType.Resource == nil {
+		return nil
+	}
+
+	// Standard get methods for resource "Foo" should be named "GetFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "get")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "GetFooRequest".
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", maybeSingular) {
+		return nil
+	}
+
+	// If the resource has a singular name, it must match.
+	if m.OutputType.Resource.Singular != "" &&
+		strings.ToLower(m.OutputType.Resource.Singular) != maybeSingular {
+		return nil
+	}
+
+	// The request needs to have a field for the resource name of the resource to obtain.
+	nameFieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
+		return f.IsResourceReference() &&
+			f.ResourceReference.Type == m.OutputType.Resource.Type
+	})
+
+	if nameFieldIndex == -1 {
+		return nil
+	}
+
+	return &AIPStandardGetInfo{
+		ResourceNameRequestField: m.InputType.Fields[nameFieldIndex],
+	}
+}
+
+// AIPStandardDeleteInfo contains information relevant to delete operations as defined by AIP-135.
+type AIPStandardDeleteInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the delete operation should delete.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardDeleteInfo returns information relevant to a delete operation as defined by AIP-135
+// if the method is such an operation.
+func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
+	// A delete operation is either simple or LRO.
+	if !m.IsSimple() && m.OperationInfo == nil {
+		return nil
+	}
+
+	// Standard delete methods for resource "Foo" should be named "DeleteFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "delete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "DeleteFooRequest".
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("delete%srequest", maybeSingular) {
+		return nil
+	}
+
+	// Find the field in the request that is a resource reference of a resource
+	// whose singular name is maybeSingular.
+	fieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
+		if f.ResourceReference == nil {
+			return false
+		}
+		resource, ok := m.Model.State.ResourceByType[f.ResourceReference.Type]
+		if !ok {
+			return false
+		}
+		return strings.ToLower(resource.Singular) == maybeSingular
+	})
+	if fieldIndex == -1 {
+		return nil
+	}
+
+	return &AIPStandardDeleteInfo{
+		ResourceNameRequestField: m.InputType.Fields[fieldIndex],
+	}
 }
 
 // PathInfo contains normalized request path information.

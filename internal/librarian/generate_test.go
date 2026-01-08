@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestGenerateCommand(t *testing.T) {
@@ -32,37 +31,20 @@ func TestGenerateCommand(t *testing.T) {
 		lib1Output = "output1"
 		lib2       = "library-two"
 		lib2Output = "output2"
+		lib3       = "library-three"
+		lib3Output = "output3"
 	)
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+	baseTempDir := t.TempDir()
+	googleapisDir := createGoogleapisServiceConfigs(t, baseTempDir, map[string]string{
 		"google/cloud/speech/v1":       "speech_v1.yaml",
 		"grafeas/v1":                   "grafeas_v1.yaml",
 		"google/cloud/texttospeech/v1": "texttospeech_v1.yaml",
 	})
-	configPath := filepath.Join(tempDir, librarianConfigPath)
-	configContent := fmt.Sprintf(`language: testhelper
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: %s
-    output: %s
-    channels:
-      - path: google/cloud/speech/v1
-      - path: grafeas/v1
-  - name: %s
-    output: %s
-    channels:
-      - path: google/cloud/texttospeech/v1
-`, googleapisDir, lib1, lib1Output, lib2, lib2Output)
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
 
 	allLibraries := map[string]string{
 		lib1: lib1Output,
 		lib2: lib2Output,
+		lib3: lib3Output,
 	}
 
 	for _, test := range []struct {
@@ -91,8 +73,39 @@ libraries:
 			args: []string{"librarian", "generate", "--all"},
 			want: []string{lib1, lib2},
 		},
+		{
+			name: "skip generate",
+			args: []string{"librarian", "generate", lib3},
+			want: []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+			configContent := fmt.Sprintf(`language: fake
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: %s
+    output: %s
+    channels:
+      - path: google/cloud/speech/v1
+      - path: grafeas/v1
+  - name: %s
+    output: %s
+    channels:
+      - path: google/cloud/texttospeech/v1
+  - name: %s
+    output: %s
+    skip_generate: true
+    channels:
+      - path: google/cloud/speech/v1
+`, googleapisDir, lib1, lib1Output, lib2, lib2Output, lib3, lib3Output)
+			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+
 			err := Run(t.Context(), test.args...)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -129,7 +142,7 @@ libraries:
 				if err != nil {
 					t.Fatalf("could not read generated file for %q: %v", libName, err)
 				}
-				want := fmt.Sprintf("# %s\n\nGenerated library\n", libName)
+				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", libName)
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
@@ -175,7 +188,7 @@ func TestGenerateSkip(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configContent := fmt.Sprintf(`language: testhelper
+			configContent := fmt.Sprintf(`language: fake
 sources:
   googleapis:
     dir: %s
@@ -213,106 +226,6 @@ libraries:
 					} else if !os.IsNotExist(err) {
 						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
 					}
-				}
-			}
-		})
-	}
-}
-
-func TestPrepareLibrary(t *testing.T) {
-	for _, test := range []struct {
-		name              string
-		language          string
-		output            string
-		veneer            bool
-		channels          []*config.Channel
-		wantOutput        string
-		wantErr           bool
-		wantChannelPath   string
-		wantServiceConfig string
-	}{
-		{
-			name:       "empty output derives path from channel",
-			language:   "rust",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated/cloud/secretmanager/v1",
-		},
-		{
-			name:       "explicit output keeps explicit path",
-			language:   "rust",
-			output:     "custom/output",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "custom/output",
-		},
-		{
-			name:       "empty output uses default for non-rust",
-			language:   "go",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated",
-		},
-		{
-			name:              "rust with no channels creates default and derives path",
-			language:          "rust",
-			channels:          nil,
-			wantOutput:        "src/generated/cloud/test/v1",
-			wantChannelPath:   "google/cloud/test/v1",
-			wantServiceConfig: "google/cloud/test/v1/test_v1.yaml",
-		},
-		{
-			name:              "veneer rust with no channels does not derive path and service config",
-			language:          "rust",
-			output:            "src/storage/test/v1",
-			veneer:            true,
-			channels:          nil,
-			wantOutput:        "src/storage/test/v1",
-			wantChannelPath:   "",
-			wantServiceConfig: "",
-		},
-		{
-			name:    "veneer without output returns error",
-			veneer:  true,
-			wantErr: true,
-		},
-		{
-			name:       "veneer with explicit output succeeds",
-			veneer:     true,
-			output:     "src/storage",
-			wantOutput: "src/storage",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			lib := &config.Library{
-				Name:     "google-cloud-test-v1",
-				Output:   test.output,
-				Veneer:   test.veneer,
-				Channels: test.channels,
-			}
-			defaults := &config.Default{
-				Output: "src/generated",
-			}
-			got, err := prepareLibrary(test.language, lib, defaults)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got.Output != test.wantOutput {
-				t.Errorf("got output %q, want %q", got.Output, test.wantOutput)
-			}
-			if test.wantChannelPath != "" || test.wantServiceConfig != "" {
-				if len(got.Channels) == 0 {
-					t.Fatalf("expected a channel, got none")
-				}
-				ch := got.Channels[0]
-				if test.wantChannelPath != "" && ch.Path != test.wantChannelPath {
-					t.Errorf("got channel path %q, want %q", ch.Path, test.wantChannelPath)
-				}
-				if test.wantServiceConfig != "" && ch.ServiceConfig != test.wantServiceConfig {
-					t.Errorf("got service config %q, want %q", ch.ServiceConfig, test.wantServiceConfig)
 				}
 			}
 		})
@@ -433,69 +346,5 @@ func TestCleanOutput(t *testing.T) {
 				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
-	}
-}
-
-func TestDeriveDefaultLibrariesSkipsConfigured(t *testing.T) {
-	cfg := &config.Config{
-		Language: "rust",
-		Default:  &config.Default{Output: t.TempDir()},
-		Libraries: []*config.Library{{
-			Name:     "secretmanager",
-			Channels: []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
-		}},
-	}
-	derived, err := deriveDefaultLibraries(cfg, t.TempDir())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(derived) != 0 {
-		t.Errorf("got %d derived libraries, want 0", len(derived))
-	}
-}
-
-func TestDeriveDefaultLibrariesWithOutputDir(t *testing.T) {
-	outputDir := t.TempDir()
-	googleapisDir := t.TempDir()
-
-	writeServiceConfig(t, googleapisDir, "google/cloud/speech/v2", "speech_v2.yaml")
-	if err := os.MkdirAll(filepath.Join(outputDir, "cloud/speech/v2"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &config.Config{
-		Language: "rust",
-		Default:  &config.Default{Output: outputDir},
-	}
-	derived, err := deriveDefaultLibraries(cfg, googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(derived) != 1 {
-		t.Fatalf("got %d derived libraries, want 1", len(derived))
-	}
-
-	want := &config.Library{
-		Name:   "google-cloud-speech-v2",
-		Output: filepath.Join(outputDir, "cloud/speech/v2"),
-		Channels: []*config.Channel{{
-			Path:          "google/cloud/speech/v2",
-			ServiceConfig: "google/cloud/speech/v2/speech_v2.yaml",
-		}},
-	}
-	if diff := cmp.Diff(want, derived[0]); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func writeServiceConfig(t *testing.T, googleapisDir, channel, filename string) {
-	t.Helper()
-	dir := filepath.Join(googleapisDir, channel)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	content := "type: google.api.Service\nname: test.googleapis.com\n"
-	if err := os.WriteFile(filepath.Join(dir, filename), []byte(content), 0644); err != nil {
-		t.Fatal(err)
 	}
 }

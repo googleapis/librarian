@@ -36,6 +36,7 @@ const (
 
 type retryableTransport struct {
 	transport http.RoundTripper
+	delay     time.Duration
 }
 
 // RoundTrip implements the http.RoundTripper interface and adds retry logic
@@ -54,7 +55,11 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 			slog.Warn("retrying due to status code", "status_code", resp.StatusCode)
 		}
 
-		time.Sleep(retryDelay)
+		delay := t.delay
+		if delay == 0 {
+			delay = retryDelay
+		}
+		time.Sleep(delay)
 	}
 	return resp, err
 }

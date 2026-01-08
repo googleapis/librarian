@@ -52,8 +52,8 @@ func TestAnnotateModel(t *testing.T) {
 	if diff := cmp.Diff("google_cloud_test", codec.PackageName); diff != "" {
 		t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
 	}
-	if diff := cmp.Diff("test", codec.MainFileName); diff != "" {
-		t.Errorf("mismatch in Codec.MainFileName (-want, +got)\n:%s", diff)
+	if diff := cmp.Diff("test.dart", codec.MainFileNameWithExtension); diff != "" {
+		t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
 	}
 }
 
@@ -64,6 +64,15 @@ func TestAnnotateModel_Options(t *testing.T) {
 		options map[string]string
 		verify  func(*testing.T, *annotateModel)
 	}{
+		{
+			map[string]string{"library-path-override": "src/buffers.dart"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if diff := cmp.Diff("src/buffers.dart", codec.MainFileNameWithExtension); diff != "" {
+					t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
+				}
+			},
+		},
 		{
 			map[string]string{"package-name-override": "google-cloud-type"},
 			func(t *testing.T, am *annotateModel) {
@@ -105,6 +114,18 @@ func TestAnnotateModel_Options(t *testing.T) {
 					"export 'package:google_cloud_gax/gax.dart' show Any",
 					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
 					t.Errorf("mismatch in Codec.Exports (-want, +got)\n:%s", diff)
+				}
+			},
+		},
+		{
+			map[string]string{"extra-imports": "dart:math; package:my_package/my_file.dart", "package:my_package": "^1.0.0"},
+			func(t *testing.T, am *annotateModel) {
+				codec := model.Codec.(*modelAnnotations)
+				if !slices.Contains(codec.Imports, "import 'dart:math';") {
+					t.Errorf("missing 'dart:math' in Codec.Imports, got %v", codec.Imports)
+				}
+				if !slices.Contains(codec.Imports, "import 'package:my_package/my_file.dart';") {
+					t.Errorf("missing 'package:my_package/my_file.dart' in Codec.Imports, got %v", codec.Imports)
 				}
 			},
 		},
@@ -477,7 +498,7 @@ func TestCalculateImports(t *testing.T) {
 	}
 }
 
-func TestAnnotateMessageToString(t *testing.T) {
+func TestAnnotateMessage_ToString(t *testing.T) {
 	model := api.NewTestAPI(
 		[]*api.Message{sample.Secret(), sample.SecretVersion(), sample.Replication(),
 			sample.Automatic(), sample.CustomerManagedEncryption()},
@@ -507,6 +528,86 @@ func TestAnnotateMessageToString(t *testing.T) {
 				t.Errorf("Expected list of length %d, got %d", test.expected, len(actual))
 			}
 		})
+	}
+}
+
+// Tests that messages that are allowlisted as not being generated are, in fact, not generated.
+func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
+	status := &api.Message{
+		Name:    "Status",
+		ID:      ".google.rpc.Status",
+		Package: "google.rpc",
+	}
+	message := &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+		Fields: []*api.Field{
+			{
+				Name:     "error",
+				JSONName: "error",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  status.ID,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{message, status}, []*api.Enum{}, []*api.Service{})
+	annotate := newAnnotateModel(model)
+	annotate.annotateMessage(message)
+
+	codec := message.Codec.(*messageAnnotation)
+	if !codec.OmitGeneration {
+		t.Errorf("Expected OmitGeneration to be true for .google.longrunning.Operation")
+	}
+
+	if len(annotate.imports) != 0 {
+		// The `error` field is of type `google.rpc.Status`, which would normally require that the
+		// `google.rpc` package be imported. However, since the message is not generated, the import
+		// should not be added.
+		t.Errorf("Expected no imports for .google.longrunning.Operation")
+	}
+}
+
+// Tests that map messages are not generated but that there key value types generate imports.
+func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
+	status := &api.Message{
+		Name:    "Status",
+		ID:      ".google.rpc.Status",
+		Package: "google.rpc",
+	}
+	message := &api.Message{
+		Name:    "Entry",
+		ID:      ".some.package.Entry",
+		Package: "some.package",
+		IsMap:   true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.STRING_TYPE,
+			},
+			{
+				Name:    "value",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: status.ID,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	model.State.MessageByID[status.ID] = status
+	annotate := newAnnotateModel(model)
+
+	annotate.annotateModel(map[string]string{
+		"proto:google.rpc": "package:google_cloud_rpc/google_cloud_rpc.dart",
+	})
+	annotate.annotateMessage(message)
+
+	codec := message.Codec.(*messageAnnotation)
+	if !codec.OmitGeneration {
+		t.Errorf("Expected OmitGeneration to be true for map entry")
+	}
+
+	if !annotate.imports["package:google_cloud_rpc/google_cloud_rpc.dart"] {
+		t.Errorf("Expected import for google.rpc")
 	}
 }
 
@@ -844,6 +945,21 @@ func TestCreateFromJsonLine(t *testing.T) {
 			},
 		},
 	}
+	mapInt32ToBytes := &api.Message{
+		Name:  "$Int32ToBytes",
+		ID:    "..$Int32ToBytes",
+		IsMap: true,
+		Fields: []*api.Field{
+			{
+				Name:  "key",
+				Typez: api.INT32_TYPE,
+			},
+			{
+				Name:  "value",
+				Typez: api.BYTES_TYPE,
+			},
+		},
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -993,10 +1109,17 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
 			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
+
+		// maps
 		{
-			// Map of bytes.
+			// string -> bytes
 			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
 			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
+		},
+		{
+			// int32 -> bytes
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt32ToBytes.ID},
+			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeIntKey(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -1006,7 +1129,10 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage, mapStringToBytes}, []*api.Enum{enumState, foreignEnumState}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message,
+				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes},
+				[]*api.Enum{enumState, foreignEnumState},
+				[]*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{
 				"prefix:google.cloud.foo": "foo",
@@ -1044,6 +1170,124 @@ func TestCreateToJsonLine(t *testing.T) {
 		},
 	}
 
+	mapStringToString := &api.Message{
+		Name:  "$StringToString",
+		ID:    "..$StringToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.STRING_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapInt32ToString := &api.Message{
+		Name:  "$Int32ToString",
+		ID:    "..$Int32ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.INT32_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapBoolToString := &api.Message{
+		Name:  "$BoolToString",
+		ID:    "..$BoolToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.BOOL_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapStringToInt64 := &api.Message{
+		Name:  "$StringToInt64",
+		ID:    "..$StringToInt64",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.STRING_TYPE},
+			{Name: "value", Typez: api.INT64_TYPE},
+		},
+	}
+	mapInt64ToString := &api.Message{
+		Name:  "$Int64ToString",
+		ID:    "..$Int64ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.INT64_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapUint32ToString := &api.Message{
+		Name:  "$Uint32ToString",
+		ID:    "..$Uint32ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.UINT32_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapUint64ToString := &api.Message{
+		Name:  "$Uint64ToString",
+		ID:    "..$Uint64ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.UINT64_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapSint32ToString := &api.Message{
+		Name:  "$Sint32ToString",
+		ID:    "..$Sint32ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.SINT32_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapSint64ToString := &api.Message{
+		Name:  "$Sint64ToString",
+		ID:    "..$Sint64ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.SINT64_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapFixed32ToString := &api.Message{
+		Name:  "$Fixed32ToString",
+		ID:    "..$Fixed32ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.FIXED32_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapFixed64ToString := &api.Message{
+		Name:  "$Fixed64ToString",
+		ID:    "..$Fixed64ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.FIXED64_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapSfixed32ToString := &api.Message{
+		Name:  "$Sfixed32ToString",
+		ID:    "..$Sfixed32ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.SFIXED32_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapSfixed64ToString := &api.Message{
+		Name:  "$Sfixed64ToString",
+		ID:    "..$Sfixed64ToString",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.SFIXED64_TYPE},
+			{Name: "value", Typez: api.STRING_TYPE},
+		},
+	}
+
 	for _, test := range []struct {
 		field *api.Field
 		want  string
@@ -1053,26 +1297,59 @@ func TestCreateToJsonLine(t *testing.T) {
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
 			"bool$",
 		}, {
-			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
-			"int32",
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			"encodeBytes(bytes)",
+		}, {
+			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
+			"encodeDouble(double$)",
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
 			"fixed32",
 		}, {
+			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
+			"fixed64.toString()",
+		}, {
+			&api.Field{Name: "float", JSONName: "float", Typez: api.FLOAT_TYPE},
+			"encodeDouble(float)",
+		}, {
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			"int32",
+		}, {
+			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
+			"int64.toString()",
+		}, {
+			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
+			"sfixed32",
+		}, {
+			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
+			"sfixed64.toString()",
+		}, {
+			&api.Field{Name: "sint32", JSONName: "sint32", Typez: api.SINT32_TYPE},
+			"sint32",
+		}, {
+			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.SINT64_TYPE},
+			"sint64.toString()",
+		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
 			"string",
+		}, {
+			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.UINT32_TYPE},
+			"uint32",
+		}, {
+			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.UINT64_TYPE},
+			"uint64.toString()",
 		},
 
-		// optional primitives
+		// enums
 		{
-			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
-			"boolOpt",
-		}, {
-			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
-			"int32Opt",
-		}, {
-			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
-			"stringOpt",
+			&api.Field{Name: "enum1", JSONName: "enum1", Typez: api.ENUM_TYPE, TypezID: enum.ID},
+			"enum1.toJson()",
+		},
+
+		// messages
+		{
+			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			"message.toJson()",
 		},
 
 		// repeated primitives
@@ -1080,52 +1357,113 @@ func TestCreateToJsonLine(t *testing.T) {
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
 			"boolList",
 		}, {
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			"[for (final i in bytesList) encodeBytes(i)]",
+		}, {
+			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
+			"[for (final i in doubleList) encodeDouble(i)]",
+		}, {
+			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.FIXED32_TYPE, Repeated: true},
+			"fixed32List",
+		}, {
+			&api.Field{Name: "fixed64List", JSONName: "fixed64List", Typez: api.FIXED64_TYPE, Repeated: true},
+			"[for (final i in fixed64List) i.toString()]",
+		}, {
+			&api.Field{Name: "floatList", JSONName: "floatList", Typez: api.FLOAT_TYPE, Repeated: true},
+			"[for (final i in floatList) encodeDouble(i)]",
+		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
 			"int32List",
 		}, {
+			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.INT64_TYPE, Repeated: true},
+			"[for (final i in int64List) i.toString()]",
+		}, {
+			&api.Field{Name: "sfixed32List", JSONName: "sfixed32List", Typez: api.SFIXED32_TYPE, Repeated: true},
+			"sfixed32List",
+		}, {
+			&api.Field{Name: "sfixed64List", JSONName: "sfixed64List", Typez: api.SFIXED64_TYPE, Repeated: true},
+			"[for (final i in sfixed64List) i.toString()]",
+		}, {
+			&api.Field{Name: "sint32List", JSONName: "sint32List", Typez: api.SINT32_TYPE, Repeated: true},
+			"sint32List",
+		}, {
+			&api.Field{Name: "sint64List", JSONName: "sint64List", Typez: api.SINT64_TYPE, Repeated: true},
+			"[for (final i in sint64List) i.toString()]",
+		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
 			"stringList",
+		}, {
+			&api.Field{Name: "uint32List", JSONName: "uint32List", Typez: api.UINT32_TYPE, Repeated: true},
+			"uint32List",
+		}, {
+			&api.Field{Name: "uint64List", JSONName: "uint64List", Typez: api.UINT64_TYPE, Repeated: true},
+			"[for (final i in uint64List) i.toString()]",
 		},
 
 		// repeated enums
 		{
 			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.ENUM_TYPE, TypezID: enum.ID, Repeated: true},
-			"encodeList(enumList)",
+			"[for (final i in enumList) i.toJson()]",
 		},
 
-		// repeated primitives w/ optional
+		// repeated messages
 		{
-			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
-			"int32ListOpt",
+			&api.Field{Name: "messageList", JSONName: "messageList", Typez: api.MESSAGE_TYPE, TypezID: secret.ID, Repeated: true},
+			"[for (final i in messageList) i.toJson()]",
 		},
 
-		// bytes, repeated bytes
+		// maps
 		{
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
-			"encodeBytes(bytes)",
-		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
-			"encodeListBytes(bytesList)",
-		},
-
-		// enums
-		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enum.ID},
-			"message.toJson()",
+			&api.Field{Name: "map_string_to_string", JSONName: "mapStringToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToString.ID},
+			"mapStringToString",
 		},
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
-			"message.toJson()",
-		},
-
-		// messages
-		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
-			"message!.toJson()",
+			&api.Field{Name: "map_int32_to_string", JSONName: "mapInt32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt32ToString.ID},
+			"{for (final e in mapInt32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
-			"message!.toJson()",
+			&api.Field{Name: "map_bool_to_string", JSONName: "mapBoolToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapBoolToString.ID},
+			"{for (final e in mapBoolToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_string_to_int64", JSONName: "mapStringToInt64", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToInt64.ID},
+			"{for (final e in mapStringToInt64.entries) e.key: e.value.toString()}",
+		},
+		{
+			&api.Field{Name: "map_int64_to_string", JSONName: "mapInt64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt64ToString.ID},
+			"{for (final e in mapInt64ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_uint32_to_string", JSONName: "mapUint32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapUint32ToString.ID},
+			"{for (final e in mapUint32ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_uint64_to_string", JSONName: "mapUint64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapUint64ToString.ID},
+			"{for (final e in mapUint64ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_sint32_to_string", JSONName: "mapSint32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSint32ToString.ID},
+			"{for (final e in mapSint32ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_sint64_to_string", JSONName: "mapSint64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSint64ToString.ID},
+			"{for (final e in mapSint64ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_fixed32_to_string", JSONName: "mapFixed32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapFixed32ToString.ID},
+			"{for (final e in mapFixed32ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_fixed64_to_string", JSONName: "mapFixed64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapFixed64ToString.ID},
+			"{for (final e in mapFixed64ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_sfixed32_to_string", JSONName: "mapSfixed32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSfixed32ToString.ID},
+			"{for (final e in mapSfixed32ToString.entries) e.key.toString(): e.value}",
+		},
+		{
+			&api.Field{Name: "map_sfixed64_to_string", JSONName: "mapSfixed64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSfixed64ToString.ID},
+			"{for (final e in mapSfixed64ToString.entries) e.key.toString(): e.value}",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -1135,17 +1473,114 @@ func TestCreateToJsonLine(t *testing.T) {
 				Package: sample.Package,
 				Fields:  []*api.Field{test.field},
 			}
-			model := api.NewTestAPI([]*api.Message{message, secret, foreignMessage}, []*api.Enum{enum, foreignEnumState}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{
+				message, secret, foreignMessage,
+				mapStringToString, mapInt32ToString, mapBoolToString, mapStringToInt64,
+				mapInt64ToString, mapUint32ToString, mapUint64ToString,
+				mapSint32ToString, mapSint64ToString,
+				mapFixed32ToString, mapFixed64ToString,
+				mapSfixed32ToString, mapSfixed64ToString,
+			}, []*api.Enum{enum, foreignEnumState}, []*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{
 				"prefix:google.cloud.foo": "foo",
 			})
-			codec := test.field.Codec.(*fieldAnnotation)
 
-			got := createToJsonLine(test.field, model.State, codec.Required)
+			got := createToJsonLine(test.field, model.State)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
 		})
+	}
+}
+
+func TestAnnotateEnum(t *testing.T) {
+	type wantedValueAnnotation struct {
+		wantValueName string
+	}
+
+	enumValueSimple := &api.EnumValue{
+		Name: "NAME",
+		ID:   ".test.v1.SomeMessage.SomeEnum.NAME",
+	}
+	enumValueReservedName := &api.EnumValue{
+		Name: "in",
+		ID:   ".test.v1.SomeMessage.SomeEnum.in",
+	}
+	enumValueCompound := &api.EnumValue{
+		Name: "ENUM_VALUE",
+		ID:   ".test.v1.SomeMessage.SomeEnum.ENUM_VALUE",
+	}
+	enumValueNameDifferentCaseOnly := &api.EnumValue{
+		Name: "name",
+		ID:   ".test.v1.SomeMessage.SomeEnum.name",
+	}
+	someEnum := &api.Enum{
+		Name:    "SomeEnum",
+		ID:      ".test.v1.SomeMessage.SomeEnum",
+		Values:  []*api.EnumValue{enumValueSimple, enumValueReservedName, enumValueCompound},
+		Package: "test.v1",
+	}
+	noValuesEnum := &api.Enum{
+		Name:    "NoValuesEnum",
+		ID:      ".test.v1.NoValuesEnum",
+		Values:  []*api.EnumValue{},
+		Package: "test.v1",
+	}
+	someEnumNameDifferentCaseOnly := &api.Enum{
+		Name:    "DifferentCaseOnlyEnum",
+		ID:      ".test.v1.SomeMessage.SomeDifferentCaseOnlyEnum",
+		Values:  []*api.EnumValue{enumValueSimple, enumValueNameDifferentCaseOnly},
+		Package: "test.v1",
+	}
+
+	model := api.NewTestAPI(
+		[]*api.Message{},
+		[]*api.Enum{someEnum, noValuesEnum, someEnumNameDifferentCaseOnly},
+		[]*api.Service{})
+	model.PackageName = "test"
+	annotate := newAnnotateModel(model)
+
+	for _, test := range []struct {
+		enum                 *api.Enum
+		wantEnumName         string
+		wantEnumDefaultValue string
+		wantValueAnnotations []wantedValueAnnotation
+	}{
+		{enum: someEnum,
+			wantEnumName:         "SomeEnum",
+			wantEnumDefaultValue: "name",
+			wantValueAnnotations: []wantedValueAnnotation{{"name"}, {"in$"}, {"enumValue"}},
+		},
+		{enum: noValuesEnum,
+			wantEnumName:         "NoValuesEnum",
+			wantEnumDefaultValue: "",
+			wantValueAnnotations: []wantedValueAnnotation{},
+		},
+		{enum: someEnumNameDifferentCaseOnly,
+			wantEnumName:         "DifferentCaseOnlyEnum",
+			wantEnumDefaultValue: "NAME",
+			wantValueAnnotations: []wantedValueAnnotation{{"NAME"}, {"name"}},
+		},
+	} {
+		annotate.annotateEnum(test.enum)
+		codec := test.enum.Codec.(*enumAnnotation)
+		gotEnumName := codec.Name
+		gotEnumDefaultValue := codec.DefaultValue
+
+		if diff := cmp.Diff(test.wantEnumName, gotEnumName); diff != "" {
+			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
+		}
+		if diff := cmp.Diff(test.wantEnumDefaultValue, gotEnumDefaultValue); diff != "" {
+			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
+		}
+
+		for i, value := range test.enum.Values {
+			wantValueAnnotation := test.wantValueAnnotations[i]
+			gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+			if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
+				t.Errorf("mismatch in TestAnnotateEnum(%q) [value annotation %d] (-want, +got)\n:%s", test.enum.Name, i, diff)
+			}
+		}
 	}
 }

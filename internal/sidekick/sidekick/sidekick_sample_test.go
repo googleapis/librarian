@@ -20,15 +20,14 @@ import (
 	"path"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/testhelpers"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestSampleFromProtobuf(t *testing.T) {
-	testhelpers.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
-	svcConfig := path.Join(testdataDir, "googleapis/google/type/type.yaml")
-	specificationSource := path.Join(testdataDir, "googleapis/google/type")
-	googleapisRoot := path.Join(testdataDir, "googleapis")
+	svcConfig := path.Join(googleapisRoot, "google/type/type.yaml")
+	specificationSource := path.Join(googleapisRoot, "google/type")
 
 	cmdLine := &CommandLine{
 		Command:             []string{},

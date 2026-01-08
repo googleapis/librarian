@@ -21,27 +21,29 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian/githelpers"
+	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // BumpVersions finds all the crates that need a version bump and performs the
 // bump, changing both the Cargo.toml and sidekick.toml files.
 func BumpVersions(ctx context.Context, config *config.Release) error {
-	if err := PreFlight(ctx, config); err != nil {
+	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
 		return err
 	}
-	lastTag, err := githelpers.GetLastTag(ctx, gitExe(config), config.Remote, config.Branch)
+	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	files, err := githelpers.FilesChangedSince(ctx, lastTag, gitExe(config), config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
 	var crates []string
-	for _, manifest := range findCargoManifests(files) {
-		names, err := updateManifest(config, lastTag, manifest)
+	for _, manifest := range rust.FindCargoManifests(files) {
+		names, err := rust.UpdateManifest(gitPath, lastTag, manifest)
 		if err != nil {
 			return err
 		}
@@ -54,9 +56,10 @@ func BumpVersions(ctx context.Context, config *config.Release) error {
 	} else {
 		return nil
 	}
+	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
 	for _, name := range crates {
-		slog.Info("runnning cargo semver-checks", "crate", name)
-		if err := command.Run(ctx, cargoExe(config), "semver-checks", "--all-features", "-p", name); err != nil {
+		slog.Info("running cargo semver-checks", "crate", name)
+		if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
 			return err
 		}
 	}

@@ -1,0 +1,84 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+language: rust
+sources:
+  discovery:
+    commit: b27c80574e918a7e2a36eb21864d1d2e45b8c032
+    sha256: 67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212
+  googleapis:
+    commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
+    sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
+  showcase:
+    commit: 3f4e3f4f5e2f4c6e8b6f4e2f4c6e8b6f4e2f4c6e
+    sha256: d41d8cd98f00b204e9800998ecf8427e
+  protobuf:
+    commit: 4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    subpath: src
+  conformance:
+    commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+    sha256: f572d396fae9206628714fb2ce00f72e94f2258f
+default:
+  output: src/generated/
+  release_level: stable
+  tag_format: '{name}/v{version}'
+  rust:
+    disabled_rustdoc_warnings:
+      - redundant_explicit_links
+      - broken_intra_doc_links
+    package_dependencies:
+      - name: bytes
+        package: bytes
+        force_used: true
+      - name: serde
+        package: serde
+        force_used: true
+libraries:
+  - name: google-cloud-secretmanager-v1
+    channels:
+      - path: google/cloud/secretmanager/v1
+    version: 1.2.3
+  - name: google-cloud-storage-v2
+    roots:
+      - googleapis
+    channels:
+      - path: google/cloud/storage/v2
+    version: 2.3.4
+    rust:
+      disabled_rustdoc_warnings:
+        - rustdoc::bare_urls
+      documentation_overrides:
+        - id: .google.cloud.orgpolicy.v1.Policy.ListPolicy
+          match: 'Ancestry subtrees must be in one of the following formats:'
+          replace: " \nAncestry subtrees must be in one of the following formats:"
+        - id: .google.cloud.orgpolicy.v1.Policy.ListPolicy
+          match: The `supports_under` field of the associated `Constraint`  defines whether
+          replace: " \nThe `supports_under` field of the associated `Constraint`  defines whether"
+  - name: google-cloud-storage
+    version: 1.4.0
+    veneer: true
+    rust:
+      modules:
+        - source: google/storage/v2
+          service_config: google/storage/v2/storage_v2.yaml
+          output: src/storage/src/generated/gapic
+          template: grpc-client
+          has_veneer: true
+          routing_required: true
+          included_ids:
+            - .google.storage.v2.Storage.GetBucket
+            - .google.storage.v2.Storage.ListBuckets
+        - source: google/storage/v2
+          output: src/storage/src/generated/protos/storage
+          template: prost

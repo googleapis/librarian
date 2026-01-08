@@ -1,0 +1,3 @@
+[source]
+googleapis-root             = 'https://github.com/googleapis/googleapis/archive/fe58211356a91f4140ed51893703910db05ade91.tar.gz'
+googleapis-sha256           = 'c809264b7973949c157aaaacfbab015263fd8cea3a262a9297a676f4b92dd0bd'

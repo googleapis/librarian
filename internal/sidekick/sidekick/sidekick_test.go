@@ -25,7 +25,7 @@ const (
 
 var (
 	testdataDir, _      = filepath.Abs("../testdata")
-	googleapisRoot      = fmt.Sprintf("%s/googleapis", testdataDir)
+	googleapisRoot, _   = filepath.Abs("../../testdata/googleapis")
 	outputDir           = fmt.Sprintf("%s/test-only", testdataDir)
 	specificationSource = fmt.Sprintf("%s/openapi/secretmanager_openapi_v1.json", testdataDir)
 )
