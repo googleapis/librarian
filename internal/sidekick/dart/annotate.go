@@ -1047,7 +1047,11 @@ func (annotate *annotateModel) buildQueryLines(
 	if codec.Nullable {
 		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
-		preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
+		if strings.Contains(refPrefix, "?") {
+			preable = fmt.Sprintf("if (%s case final $1? when $1.isNotDefault) '%s'", ref, param)
+		} else {
+			preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
+		}
 	}
 
 	switch {
@@ -1078,7 +1082,7 @@ func (annotate *annotateModel) buildQueryLines(
 	case field.Typez == api.MESSAGE_TYPE:
 		deref := "."
 		if codec.Nullable {
-			deref = "!."
+			deref = "?."
 		}
 
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]

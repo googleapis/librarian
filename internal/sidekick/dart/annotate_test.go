@@ -764,8 +764,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// messages
 	got := annotate.buildQueryLines([]string{}, "result.", "", messageField1, model.State)
 	want := []string{
-		"if (result.message1!.name case final $1 when $1.isNotDefault) 'message1.name': $1",
-		"if (result.message1!.state case final $1 when $1.isNotDefault) 'message1.state': $1.value",
+		"if (result.message1?.name case final $1? when $1.isNotDefault) 'message1.name': $1",
+		"if (result.message1?.state case final $1? when $1.isNotDefault) 'message1.state': $1.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -773,8 +773,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField2, model.State)
 	want = []string{
-		"if (result.message2!.data case final $1?) 'message2.data': encodeBytes($1)!",
-		"if (result.message2!.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
+		"if (result.message2?.data case final $1?) 'message2.data': encodeBytes($1)!",
+		"if (result.message2?.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
@@ -783,8 +783,8 @@ func TestBuildQueryLinesMessages(t *testing.T) {
 	// nested messages
 	got = annotate.buildQueryLines([]string{}, "result.", "", messageField3, model.State)
 	want = []string{
-		"if (result.message3!.secret!.name case final $1 when $1.isNotDefault) 'message3.secret.name': $1",
-		"if (result.message3!.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
+		"if (result.message3?.secret?.name case final $1? when $1.isNotDefault) 'message3.secret.name': $1",
+		"if (result.message3?.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
