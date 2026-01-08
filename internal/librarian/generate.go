@@ -162,7 +162,7 @@ func generateNewLibrarySkeleton(ctx context.Context, cfg *config.Config, lib *co
 		}
 	case languageRust:
 		if err := rust.Create(ctx, lib.Output, func(ctx context.Context) error {
-			return runTidy(ctx, cfg)
+			return RunTidyOnConfig(ctx, cfg)
 		}); err != nil {
 			return err
 		}

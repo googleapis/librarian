@@ -77,26 +77,8 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
 		return err
 	}
-	if err := runTidy(ctx, cfg); err != nil {
+	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
-	}
-	return yaml.Write(librarianConfigPath, formatConfig(cfg))
-}
-
-// TODO: refactor this after https://github.com/googleapis/librarian/pull/3497
-func runTidy(ctx context.Context, cfg *config.Config) error {
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return errNoGoogleapiSourceInfo
-	}
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
-	}
-	for _, lib := range cfg.Libraries {
-		err = tidyLibrary(cfg, lib, googleapisDir)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
