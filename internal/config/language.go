@@ -48,8 +48,7 @@ type RustDefault struct {
 // Each module specifies what proto source to use, which template to apply,
 // and where to output the generated code.
 type RustModule struct {
-	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
-	// Empty slice is used to signal difference from default and produce no warnings.
+	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
