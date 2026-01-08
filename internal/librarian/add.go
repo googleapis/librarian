@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -78,19 +77,8 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
 		return err
 	}
-	switch cfg.Language {
-	case languageFake:
-		if err := runTidy(ctx, cfg); err != nil {
-			return err
-		}
-	case languageRust:
-		if err := rust.Create(ctx, output, func(ctx context.Context) error {
-			return runTidy(ctx, cfg)
-		}); err != nil {
-			return err
-		}
-	default:
-		return errUnsupportedLanguage
+	if err := runTidy(ctx, cfg); err != nil {
+		return err
 	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
 }

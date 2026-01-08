@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestCreateLibrary(t *testing.T) {
+func TestAddLibrary(t *testing.T) {
 	copyrightYear := strconv.Itoa(time.Now().Year())
 	for _, test := range []struct {
 		name                   string
@@ -145,7 +145,7 @@ func TestCreateLibrary(t *testing.T) {
 	}
 }
 
-func TestCreateCommand(t *testing.T) {
+func TestAddCommand(t *testing.T) {
 	googleapisDir, err := filepath.Abs("testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
