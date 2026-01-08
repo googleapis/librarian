@@ -143,10 +143,33 @@ func generateLibrary(ctx context.Context, cfg *config.Config, googleapisDir, lib
 			if err != nil {
 				return nil, err
 			}
+			if _, err := os.Stat(lib.Output); os.IsNotExist(err) {
+				if err := generateNewLibrarySkeleton(ctx, cfg, lib); err != nil {
+					return nil, err
+				}
+			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
 	return nil, fmt.Errorf("library %q not found", libraryName)
+}
+
+func generateNewLibrarySkeleton(ctx context.Context, cfg *config.Config, lib *config.Library) error {
+	switch cfg.Language {
+	case languageFake:
+		if err := fakeCreateSkeleton(lib); err != nil {
+			return err
+		}
+	case languageRust:
+		if err := rust.Create(ctx, lib.Output, func(ctx context.Context) error {
+			return runTidy(ctx, cfg)
+		}); err != nil {
+			return err
+		}
+	default:
+		return errUnsupportedLanguage
+	}
+	return nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {

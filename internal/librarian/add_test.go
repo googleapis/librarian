@@ -161,14 +161,14 @@ func TestCreateCommand(t *testing.T) {
 	}{
 		{
 			name:    "no args",
-			args:    []string{"librarian", "create"},
+			args:    []string{"librarian", "add"},
 			wantErr: errMissingLibraryName,
 		},
 		{
 			name: "library name only",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				"google-cloud-secretmanager-v1",
 			},
 		},
@@ -176,7 +176,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with single API",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 			},
@@ -190,7 +190,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with multiple APIs",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
@@ -212,7 +212,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with multiple APIs and output flag",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",

@@ -95,7 +95,7 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
 }
 
-// TODO: refactor this in tidy
+// TODO: refactor this after https://github.com/googleapis/librarian/pull/3497
 func runTidy(ctx context.Context, cfg *config.Config) error {
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
