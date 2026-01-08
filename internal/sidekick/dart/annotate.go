@@ -707,7 +707,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
 	queryLines := []string{}
 	for _, field := range queryParams {
-		queryLines = annotate.buildQueryLines(queryLines, "request.", "", field, state)
+		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field, state)
 	}
 
 	annotation := &methodAnnotation{
@@ -1044,8 +1044,8 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 //   - repeated fields are passed as lists
 //   - messages need to be unrolled and fields passed individually
 func (annotate *annotateModel) buildQueryLines(
-	result []string, refPrefix string, paramPrefix string,
-	field *api.Field, state *api.APIState,
+	result []string, refPrefix string, couldRefPrefixBeNull bool,
+	paramPrefix string, field *api.Field, state *api.APIState,
 ) []string {
 	message := state.MessageByID[field.TypezID]
 	isMap := message != nil && message.IsMap
@@ -1062,7 +1062,7 @@ func (annotate *annotateModel) buildQueryLines(
 	if codec.Nullable {
 		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
-		if strings.Contains(refPrefix, "?") {
+		if couldRefPrefixBeNull {
 			preable = fmt.Sprintf("if (%s case final $1? when $1.isNotDefault) '%s'", ref, param)
 		} else {
 			preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
@@ -1108,7 +1108,8 @@ func (annotate *annotateModel) buildQueryLines(
 
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
-			result = annotate.buildQueryLines(result, ref+deref, param+".", field, state)
+			result = annotate.buildQueryLines(
+				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field, state)
 		}
 		return result
 
