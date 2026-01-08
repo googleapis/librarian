@@ -29,6 +29,7 @@ import (
 func TestReleaseCommand(t *testing.T) {
 	const testlib = "test-lib"
 	const testlib2 = "test-lib2"
+	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
 		name             string
@@ -85,11 +86,6 @@ func TestReleaseCommand(t *testing.T) {
 			},
 		},
 		{
-			name:    "no src path provided",
-			args:    []string{"librarian", "release", "--all"},
-			wantErr: errCouldNotDeriveSrcPath,
-		},
-		{
 			name:             "missing librarian yaml file",
 			args:             []string{"librarian", "release", "--all"},
 			skipYamlCreation: true,
@@ -99,18 +95,37 @@ func TestReleaseCommand(t *testing.T) {
 			args:           []string{"librarian", "release", "--all"},
 			dirtyGitStatus: true,
 		},
+		{
+			name: "release config empty",
+			args: []string{"librarian", "release", "--all"},
+			srcPaths: map[string]string{
+				testlib:  "src/storage",
+				testlib2: "src/storage",
+			},
+			wantVersions: map[string]string{
+				testlib:  fakeReleaseVersion,
+				testlib2: fakeReleaseVersion,
+			},
+			wantErr: errReleaseConfigEmpty,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			testhelper.RequireCommand(t, "git")
 			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 			testhelper.CloneRepository(t, remoteDir)
 
 			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
 				Language: languageFake,
+				Default:  &config.Default{},
 				Release: &config.Release{
 					Remote: "origin",
 					Branch: "main",
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+						SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+					},
 				},
 				Libraries: []*config.Library{
 					{
@@ -124,6 +139,9 @@ func TestReleaseCommand(t *testing.T) {
 						Output:  test.srcPaths[testlib2],
 					},
 				},
+			}
+			if test.wantErr == errReleaseConfigEmpty {
+				cfg.Release = nil
 			}
 			if !test.skipYamlCreation {
 				if err := yaml.Write(configPath, cfg); err != nil {
@@ -151,16 +169,25 @@ func TestReleaseCommand(t *testing.T) {
 			}
 
 			if test.wantVersions != nil {
-				cfg, err := yaml.Read[config.Config](configPath)
+				updatedConfig, err := yaml.Read[config.Config](configPath)
 				if err != nil {
 					t.Fatal(err)
 				}
 				gotVersions := make(map[string]string)
-				for _, lib := range cfg.Libraries {
+				for _, lib := range updatedConfig.Libraries {
 					gotVersions[lib.Name] = lib.Version
 				}
 				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch in versions (-want +got):\n%s", diff)
+				}
+				// Update original config versions to expected versions to compare entire config.
+				for _, lib := range cfg.Libraries {
+					if wantVersion, ok := test.wantVersions[lib.Name]; ok {
+						lib.Version = wantVersion
+					}
+				}
+				if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
+					t.Errorf("mismatch in config (-want +got):\n%s", diff)
 				}
 			}
 		})
@@ -229,6 +256,7 @@ func TestRelease(t *testing.T) {
 		name    string
 		srcPath string
 		version string
+		lastTag string
 	}{
 		{
 			name:    "library released",
@@ -250,7 +278,7 @@ func TestRelease(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			libConfg := &config.Library{}
-			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath)
+			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath, test.lastTag, "git")
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -262,11 +290,72 @@ func TestRelease(t *testing.T) {
 	}
 }
 
-func TestMissingReleaseConfig(t *testing.T) {
-	cfg := &config.Config{}
-	_, err := shouldReleaseLibrary(t.Context(), cfg, "")
-	if !errors.Is(err, errReleaseConfigEmpty) {
-		t.Fatalf("Run() error = %v, wantErr %v", err, errReleaseConfigEmpty)
-	}
+func TestReleaseAll(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
 
+	for _, test := range []struct {
+		name        string
+		libName     string
+		dir         string
+		skipPublish bool
+		wantVersion string
+	}{
+		{
+			name:        "library has changes",
+			libName:     "google-cloud-storage",
+			dir:         "src/storage",
+			wantVersion: "1.2.3",
+			skipPublish: false,
+		},
+		{
+			name:        "library does not have any changes",
+			libName:     "gax-internal",
+			dir:         "src/gax-internal",
+			wantVersion: "1.2.2",
+			skipPublish: false,
+		},
+		{
+			name:        "library does not have any changes on shared directory prefix",
+			libName:     "gax-internal",
+			dir:         "src/stor",
+			wantVersion: "1.2.2",
+			skipPublish: false,
+		},
+		{
+			name:        "library has changes but skipPublish is true",
+			libName:     "google-cloud-storage",
+			dir:         "src/storage",
+			wantVersion: "1.2.2",
+			skipPublish: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tag := "v1.2.3"
+			config := &config.Config{
+				Language: languageFake,
+				Libraries: []*config.Library{
+					{
+						Name:        test.libName,
+						Version:     "1.2.2",
+						Output:      test.dir,
+						SkipPublish: test.skipPublish,
+					},
+				},
+				Release: &config.Release{
+					Remote:         "origin",
+					Branch:         "main",
+					IgnoredChanges: []string{},
+				},
+			}
+			remoteDir := testhelper.SetupRepoWithChange(t, tag)
+			testhelper.CloneRepository(t, remoteDir)
+			err := releaseAll(t.Context(), config, tag, "git")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if config.Libraries[0].Version != test.wantVersion {
+				t.Errorf("got version %s, want %s", config.Libraries[0].Version, test.wantVersion)
+			}
+		})
+	}
 }

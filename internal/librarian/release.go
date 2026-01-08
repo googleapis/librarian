@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -28,9 +29,8 @@ import (
 )
 
 var (
-	errCouldNotDeriveSrcPath = errors.New("could not derive source path for library")
-	errLibraryNotFound       = errors.New("library not found")
-	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
+	errLibraryNotFound    = errors.New("library not found")
+	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
 )
 
 func releaseCommand() *cli.Command {
@@ -82,40 +82,46 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	if cfg.Release == nil {
+		return errReleaseConfigEmpty
+	}
+	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	if err != nil {
+		return err
+	}
+
 	if all {
-		err = releaseAll(ctx, cfg)
+		if err = releaseAll(ctx, cfg, lastTag, gitExe); err != nil {
+			return err
+		}
 	} else {
 		libConfg, err := libraryByName(cfg, libraryName)
 		if err != nil {
 			return err
 		}
-		srcPath, err := getSrcPathForLanguage(cfg, libConfg)
+		_, err = prepareLibrary(cfg.Language, libConfg, cfg.Default, "", false)
 		if err != nil {
 			return err
 		}
-		err = releaseLibrary(ctx, cfg, libConfg, srcPath)
-		if err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe); err != nil {
 			return err
 		}
 	}
+	return RunTidyOnConfig(ctx, cfg)
+}
+
+func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
+	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
-	return yaml.Write(librarianConfigPath, cfg)
-}
-
-func releaseAll(ctx context.Context, cfg *config.Config) error {
 	for _, library := range cfg.Libraries {
-		srcPath, err := getSrcPathForLanguage(cfg, library)
+		_, err := prepareLibrary(cfg.Language, library, cfg.Default, "", false)
 		if err != nil {
 			return err
 		}
-		release, err := shouldReleaseLibrary(ctx, cfg, srcPath)
-		if err != nil {
-			return err
-		}
-		if release {
-			if err := releaseLibrary(ctx, cfg, library, srcPath); err != nil {
+		if shouldRelease(library, filesChanged, library.Output) {
+			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe); err != nil {
 				return err
 			}
 		}
@@ -123,25 +129,34 @@ func releaseAll(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-func getSrcPathForLanguage(cfg *config.Config, libConfig *config.Library) (string, error) {
-	srcPath := ""
-	switch cfg.Language {
-	case languageFake:
-		srcPath = fakeDeriveSrcPath(libConfig)
-	case languageRust:
-		srcPath = rust.DeriveSrcPath(libConfig, cfg)
+func shouldRelease(library *config.Library, filesChanged []string, srcPath string) bool {
+	if library.SkipPublish {
+		return false
 	}
-	if srcPath == "" {
-		return "", errCouldNotDeriveSrcPath
+	pathWithTrailingSlash := srcPath
+	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
+		pathWithTrailingSlash = pathWithTrailingSlash + "/"
 	}
-	return srcPath, nil
+	for _, path := range filesChanged {
+		if strings.Contains(path, pathWithTrailingSlash) {
+			return true
+		}
+	}
+	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath string) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe string) error {
 	switch cfg.Language {
 	case languageFake:
 		return fakeReleaseLibrary(libConfig)
 	case languageRust:
+		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, srcPath+"/Cargo.toml")
+		if err != nil {
+			return err
+		}
+		if !release {
+			return nil
+		}
 		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
@@ -165,23 +180,4 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
-}
-
-// shouldReleaseLibrary looks up last release tag and returns true if any commits have been made
-// in the provided path since then.
-func shouldReleaseLibrary(ctx context.Context, cfg *config.Config, path string) (bool, error) {
-	if cfg.Release == nil {
-		return false, errReleaseConfigEmpty
-	}
-	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
-	if err != nil {
-		return false, err
-	}
-	numberOfChanges, err := git.ChangesInDirectorySinceTag(ctx, gitExe, lastTag, path)
-	if err != nil {
-		return false, err
-	}
-
-	return numberOfChanges > 0, nil
 }

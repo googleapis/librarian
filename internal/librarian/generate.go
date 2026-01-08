@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -77,10 +76,18 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}
-	if all {
-		return generateAll(ctx, cfg)
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
 	}
-	lib, err := generateLibrary(ctx, cfg, libraryName)
+	return routeGenerate(ctx, all, cfg, googleapisDir, libraryName)
+}
+
+func routeGenerate(ctx context.Context, all bool, cfg *config.Config, googleapisDir, libraryName string) error {
+	if all {
+		return generateAll(ctx, cfg, googleapisDir)
+	}
+	lib, err := generateLibrary(ctx, cfg, googleapisDir, libraryName)
 	if err != nil {
 		return err
 	}
@@ -91,9 +98,9 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	return formatLibrary(ctx, cfg.Language, lib)
 }
 
-func generateAll(ctx context.Context, cfg *config.Config) error {
+func generateAll(ctx context.Context, cfg *config.Config, googleapisDir string) error {
 	for _, lib := range cfg.Libraries {
-		lib, err := generateLibrary(ctx, cfg, lib.Name)
+		lib, err := generateLibrary(ctx, cfg, googleapisDir, lib.Name)
 		if err != nil {
 			return err
 		}
@@ -126,17 +133,13 @@ func deriveChannelPath(language, name string) string {
 	}
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return nil, err
-	}
+func generateLibrary(ctx context.Context, cfg *config.Config, googleapisDir, libraryName string) (*config.Library, error) {
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
 			if lib.SkipGenerate {
 				return nil, nil
 			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir)
+			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir, true)
 			if err != nil {
 				return nil, err
 			}
@@ -144,41 +147,6 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 		}
 	}
 	return nil, fmt.Errorf("library %q not found", libraryName)
-}
-
-// prepareLibrary applies language-specific derivations and fills defaults.
-// For Rust libraries without an explicit output path, it derives the output
-// from the first channel path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default, googleapisDir string) (*config.Library, error) {
-	if len(lib.Channels) == 0 {
-		// If no channels are specified, create an empty channel first
-		lib.Channels = append(lib.Channels, &config.Channel{})
-	}
-
-	// The googleapis path of a veneer library lives in language-specific configurations,
-	// so we only need to derive the path and service config for non-veneer libraries.
-	if !lib.Veneer {
-		for _, ch := range lib.Channels {
-			if ch.Path == "" {
-				ch.Path = deriveChannelPath(language, lib.Name)
-			}
-			if ch.ServiceConfig == "" {
-				sc, err := serviceconfig.Find(googleapisDir, ch.Path)
-				if err != nil {
-					return nil, err
-				}
-				ch.ServiceConfig = sc
-			}
-		}
-	}
-
-	if lib.Output == "" {
-		if lib.Veneer {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
-		}
-		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
-	}
-	return fillDefaults(lib, defaults), nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {

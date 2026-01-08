@@ -16,67 +16,51 @@
 package rust
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
-	"github.com/pelletier/go-toml/v2"
 )
 
-type cargoPackage struct {
-	Name    string `toml:"name"`
-	Version string `toml:"version"`
-}
-
-type cargoManifest struct {
-	Package *cargoPackage `toml:"package"`
-}
+const defaultVersion = "0.1.0"
 
 // ReleaseLibrary bumps version for Cargo.toml files and updates librarian config version.
 func ReleaseLibrary(library *config.Library, srcPath string) error {
-	cargoFile := filepath.Join(srcPath, "Cargo.toml")
-	cargoContents, err := os.ReadFile(cargoFile)
-	if err != nil {
-		return err
+	newVersion := defaultVersion
+	if library.Version != "" {
+		v, err := semver.DeriveNext(semver.Minor, library.Version,
+			semver.DeriveNextOptions{
+				BumpVersionCore:       true,
+				DowngradePreGAChanges: true,
+			})
+		if err != nil {
+			return err
+		}
+		newVersion = v
 	}
-	var manifest cargoManifest
-	if err := toml.Unmarshal(cargoContents, &manifest); err != nil {
-		return err
-	}
-	if manifest.Package == nil {
-		return err
-	}
-	newVersion, err := semver.DeriveNext(semver.Minor, manifest.Package.Version,
-		semver.DeriveNextOptions{
-			BumpVersionCore:       true,
-			DowngradePreGAChanges: true,
-		})
-	if err != nil {
-		return err
-	}
-	if err := UpdateCargoVersion(cargoFile, newVersion); err != nil {
-		return err
-	}
-	library.Version = newVersion
-	return nil
-}
 
-// DeriveSrcPath determines what src path library code lives in.
-func DeriveSrcPath(libCfg *config.Library, cfg *config.Config) string {
-	if libCfg.Output != "" {
-		return libCfg.Output
-	}
-	libSrcDir := ""
-	if len(libCfg.Channels) > 0 && libCfg.Channels[0].Path != "" {
-		libSrcDir = libCfg.Channels[0].Path
-	} else {
-		libSrcDir = strings.ReplaceAll(libCfg.Name, "-", "/")
-		if cfg.Default == nil {
-			return ""
+	cargoFile := filepath.Join(srcPath, "Cargo.toml")
+	_, err := os.Stat(cargoFile)
+	switch {
+	case err != nil && !os.IsNotExist(err):
+		return err
+	case os.IsNotExist(err):
+		cargo := fmt.Sprintf(`[package]
+name                   = "%s"
+version                = "%s"
+edition                = "2021"
+`, library.Name, newVersion)
+		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
+			return err
+		}
+	default:
+		if err := UpdateCargoVersion(cargoFile, newVersion); err != nil {
+			return err
 		}
 	}
-	return DefaultOutput(libSrcDir, cfg.Default.Output)
 
+	library.Version = newVersion
+	return nil
 }

@@ -113,65 +113,59 @@ func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion stri
 	}
 }
 
-func TestDeriveSrcPath(t *testing.T) {
-	for _, test := range []struct {
-		name   string
-		config *config.Config
-		want   string
-	}{
-		{
-			name: "use library output",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "ignored",
-				},
-				Libraries: []*config.Library{
-					{Output: "src/lib/dir"},
-				},
-			},
-			want: "src/lib/dir",
-		},
-		{
-			name: "use channel path",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "src/",
-				},
-				Libraries: []*config.Library{{
-					Channels: []*config.Channel{
-						{Path: "channel/dir"},
-					},
-				},
-				},
-			},
-			want: "src/channel/dir",
-		},
-		{
-			name: "use library name",
-			config: &config.Config{
-				Default: &config.Default{
-					Output: "src/",
-				},
-				Libraries: []*config.Library{{
-					Name: "lib-name",
-				},
-				},
-			},
-			want: "src/lib/name",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := DeriveSrcPath(test.config.Libraries[0], test.config)
-			if got != test.want {
-				t.Errorf("got derived source path  %s, wanted %s", got, test.want)
-			}
-		})
+func TestNoCargoFile(t *testing.T) {
+	got := ReleaseLibrary(&config.Library{Version: "1.0.0"}, "nonexistent/path")
+	if got == nil {
+		t.Errorf("expected error when Cargo.toml doesn't exist with library.Version set, but got %v", got)
 	}
 }
 
-func TestNoCargoFile(t *testing.T) {
-	got := ReleaseLibrary(&config.Library{}, "")
-	if got == nil {
-		t.Errorf("Expected error reading cargo file but got %v", got)
+func TestReleaseLibraryNoVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "taplo")
+
+	const (
+		libDir  = "src/test-lib"
+		libName = "test-library"
+	)
+	for _, test := range []struct {
+		name        string
+		createCargo bool
+		cargoVer    string
+		wantVersion string
+	}{
+		{
+			name:        "library.Version empty, Cargo.toml exists with 0.5.0, uses default 0.1.0 without bumping",
+			createCargo: true,
+			cargoVer:    "0.5.0",
+			wantVersion: "0.1.0",
+		},
+		{
+			name:        "library.Version empty, no Cargo.toml, uses default 0.1.0 without bumping",
+			createCargo: false,
+			wantVersion: "0.1.0",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+
+			if err := os.MkdirAll(libDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if test.createCargo {
+				createCrate(t, libDir, libName, test.cargoVer)
+			}
+
+			lib := &config.Library{
+				Name:   libName,
+				Output: libDir,
+			}
+			if err := ReleaseLibrary(lib, libDir); err != nil {
+				t.Fatal(err)
+			}
+			checkLibraryVersion(t, lib, test.wantVersion)
+			checkCargoVersion(t, filepath.Join(libDir, "Cargo.toml"), test.wantVersion)
+		})
 	}
 }

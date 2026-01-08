@@ -22,11 +22,11 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestToSidekickReleaseConfig(t *testing.T) {
+func TestToConfigRelease(t *testing.T) {
 	tests := []struct {
 		name  string
-		input *config.Release
-		want  *sidekickconfig.Release
+		input *sidekickconfig.Release
+		want  *config.Release
 	}{
 		{
 			name:  "nil input",
@@ -35,19 +35,7 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 		},
 		{
 			name: "basic config",
-			input: &config.Release{
-				Remote: "test-remote",
-				Branch: "test-branch",
-				Tools: map[string][]config.Tool{
-					"go": {
-						{
-							Name:    "goreleaser",
-							Version: "1.0.0",
-						},
-					},
-				},
-			},
-			want: &sidekickconfig.Release{
+			input: &sidekickconfig.Release{
 				Remote: "test-remote",
 				Branch: "test-branch",
 				Tools: map[string][]sidekickconfig.Tool{
@@ -59,13 +47,25 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 					},
 				},
 			},
+			want: &config.Release{
+				Remote: "test-remote",
+				Branch: "test-branch",
+				Tools: map[string][]config.Tool{
+					"go": {
+						{
+							Name:    "goreleaser",
+							Version: "1.0.0",
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "full config",
-			input: &config.Release{
+			input: &sidekickconfig.Release{
 				Remote: "full-remote",
 				Branch: "full-branch",
-				Tools: map[string][]config.Tool{
+				Tools: map[string][]sidekickconfig.Tool{
 					"go": {
 						{
 							Name:    "goreleaser",
@@ -90,10 +90,10 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 				IgnoredChanges: []string{"file1.go", "file2.java"},
 				RootsPem:       "-----BEGIN CERTIFICATE----...",
 			},
-			want: &sidekickconfig.Release{
+			want: &config.Release{
 				Remote: "full-remote",
 				Branch: "full-branch",
-				Tools: map[string][]sidekickconfig.Tool{
+				Tools: map[string][]config.Tool{
 					"go": {
 						{
 							Name:    "goreleaser",
@@ -122,11 +122,10 @@ func TestToSidekickReleaseConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test // Capture range variable
 		t.Run(test.name, func(t *testing.T) {
-			got := ToSidekickReleaseConfig(test.input)
+			got := ToConfigRelease(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("toSidekickReleaseConfig() mismatch (-want +got):%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -164,7 +163,7 @@ func TestToConfigTools(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := ToConfigTools(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ToConfigTools() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

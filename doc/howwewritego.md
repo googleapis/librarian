@@ -61,11 +61,19 @@ https://go.dev/wiki/Spelling. See
 - **Good**: `unmarshaling`, `marshaling`, `canceled`
 - **Bad**: `unmarshalling`, `marshalling`, `cancelled`
 
-### Avoid Redundancy with Package Names
+### Package Names
 
-Go uses package names to provide context. Avoid repeating the package name within a type or function name.
-- **Good**: `git.ShowFile`, `client.New`
-- **Bad**: `git.GitShowFile`, `client.NewClient`
+When naming packages, follow these two principles:
+
+1.  **Avoid redundancy.** Go uses package names to provide context, so avoid repeating the package name within a type or function name.
+    - **Good**: `git.ShowFile`, `client.New`
+    - **Bad**: `git.GitShowFile`, `client.NewClient`
+
+2.  **Describe the purpose.** Good package names are short and descriptive. Avoid generic names.
+    - **Good:** `command`, `fetch`
+    - **Bad:** `common`, `helper`, `util`
+
+See [details](https://go.dev/doc/effective_go#package-names).
 
 ## Go Doc Comments
 
@@ -220,6 +228,86 @@ func TestTransform(t *testing.T) {
 		{"empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			got := Transform(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+```
+
+### Separate error tests
+
+Splitting success and failure cases into separate test functions can simplify
+your test code. See
+[details](https://google.github.io/styleguide/go/decisions.html#table-driven-tests).
+
+When writing error tests, use a test function name like `TestXxx_Error`, and
+when possible use [`errors.Is`](https://pkg.go.dev/errors#Is) for comparison
+(see [details](https://google.github.io/styleguide/go/decisions.html#test-error-semantics)).
+
+Example:
+
+```go
+func TestSendMessage_Error(t *testing.T) {
+  for _, test := range []struct {
+    name      string
+    recipient string
+    message   string
+    wantErr   error
+  }{
+    {
+      name: "recipient does not exist",
+      recipient: "Does Not Exist",
+      message: "Hello, Mr. Not Exist",
+      wantErr: errRecipientDoesNotExist,
+    },
+    {
+      name: "empty message",
+      recipient: "Jane Doe",
+      message: "",
+      wantErr: errEmptyMessage,
+    },
+  }{
+    t.Run(test.name, func(t *testing.T) {
+      _, gotErr := SendMessage(test.recipient, test.message)
+      if !errors.Is(gotErr, test.wantErr) {
+        t.Errorf("SendMessage(%q, %q) error = %v, wantErr %v", test.recipient, test.message, gotErr, test.wantErr)
+      }
+    })
+  }
+}
+```
+
+### Running tests in parallel
+
+Large table-driven tests and/or those that are I/O bound e.g. by making
+filesystem reads or network requests are good candidates for parallelization via
+[`t.Parallel()`](https://pkg.go.dev/testing#T.Parallel). Do not
+parallelize lightweight, millisecond-level tests.
+
+**Important:** A test cannot be parallelized if it depends on shared resources,
+mutates the process as a whole e.g. by invoking `t.Chdir()`, or is dependent on
+execution order.
+
+When using `t.Parallel()` in table-driven tests, you must capture the range
+variable to avoid race conditions. This ensures each subtest gets the correct
+data from its corresponding test case.
+
+```go
+func TestTransform(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"uppercase", "hello", "HELLO"},
+		{"empty", "", ""},
+	} {
+		test := test // capture range variable
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel() // Mark subtest for parallel execution.
 			got := Transform(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

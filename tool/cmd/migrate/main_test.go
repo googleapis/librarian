@@ -86,6 +86,11 @@ func TestReadRootSidekick(t *testing.T) {
 						GenerateSetterSamples: "true",
 					},
 				},
+				Release: &config.Release{
+					Remote:         "upstream",
+					Branch:         "main",
+					IgnoredChanges: []string{".repo-metadata.json", ".sidekick.toml"},
+				},
 			},
 		},
 		{
@@ -490,8 +495,8 @@ func TestBuildVeneer(t *testing.T) {
 					Name:          "google-cloud-spanner",
 					Veneer:        true,
 					Output:        "lib-2",
-					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 				},
 			},
 		},
@@ -549,8 +554,8 @@ func TestBuildVeneer(t *testing.T) {
 					Name:          "google-cloud-spanner",
 					Veneer:        true,
 					Output:        "lib-2",
-					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 				},
 			},
 		},
@@ -566,8 +571,8 @@ func TestBuildVeneer(t *testing.T) {
 					Name:          "common",
 					Veneer:        true,
 					Output:        "tests/common",
-					Version:       "0.0.0",
 					CopyrightYear: "2025",
+					SkipPublish:   true,
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
@@ -835,8 +840,8 @@ func TestRunMigrateCommand(t *testing.T) {
 		{
 			name:                         "success",
 			path:                         "testdata/run/success",
-			checkDocumentOverrideMatch:   []string{"example match", "Ancestry subtrees must be in one of the following formats:\n"},
-			checkDocumentOverrideReplace: []string{"example replace", "\nAncestry subtrees must be in one of the following formats:\n"},
+			checkDocumentOverrideMatch:   []string{"example match", "Ancestry subtrees must be in one of the following formats:"},
+			checkDocumentOverrideReplace: []string{"example replace", " \nAncestry subtrees must be in one of the following formats:"},
 		},
 		{
 			name:    "tidy_command_fails",
@@ -853,13 +858,11 @@ func TestRunMigrateCommand(t *testing.T) {
 					t.Logf("cleanup: remove %s: %v", outputPath, err)
 				}
 			})
-			wantReleaseBranch := "main"
-			wantReleaseRemote := "upstream"
 			abs, err := filepath.Abs(test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := runSidekickMigration(t.Context(), abs, outputPath); err != nil {
+			if err := runSidekickMigration(t.Context(), abs); err != nil {
 				if test.wantErr == nil {
 					t.Fatal(err)
 				}
@@ -893,15 +896,6 @@ func TestRunMigrateCommand(t *testing.T) {
 						}
 
 					}
-				}
-				if librarianConfig.Release == nil {
-					t.Fatalf("expected Release config to be set")
-				}
-				if librarianConfig.Release.Branch != wantReleaseBranch {
-					t.Fatalf("want Release.Branch to be %s got %s", wantReleaseBranch, librarianConfig.Release.Branch)
-				}
-				if librarianConfig.Release.Remote != wantReleaseRemote {
-					t.Fatalf("want Release.Remote to be %s got %s", wantReleaseRemote, librarianConfig.Release.Remote)
 				}
 			}
 

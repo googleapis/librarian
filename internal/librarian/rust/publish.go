@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rustrelease
+package rust
 
 import (
 	"context"
@@ -26,15 +26,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
-	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := rust.PreFlight(ctx, config.Preinstalled, config.Remote, rust.ToConfigTools(config.Tools["cargo"])); err != nil {
+	if err := PreFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
@@ -49,14 +48,14 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err != nil {
 		return err
 	}
-	return PublishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
+	return publishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
 }
 
-// PublishCrates publishes the crates that have changed.
-func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
+// publishCrates publishes the crates that have changed.
+func publishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
-	for _, manifest := range rust.FindCargoManifests(files) {
-		names, err := rust.PublishedCrate(manifest)
+	for _, manifest := range FindCargoManifests(files) {
+		names, err := PublishedCrate(manifest)
 		if err != nil {
 			return err
 		}
@@ -90,8 +89,8 @@ func PublishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
 
 	if !skipSemverChecks {
+		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 		for name, manifest := range manifests {
-			gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
 				continue
 			}

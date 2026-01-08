@@ -58,6 +58,12 @@ version = "1.0.0"
 	// ReadmeContents is the contents of the [ReadmeFile] initialized in the
 	// test repo.
 	ReadmeContents = "# Empty Repo"
+
+	// TestRemote is the name of a remote source for the test repository.
+	TestRemote = "test"
+
+	// testRemoteURL is the URL set for the [TestRemote] in the test repository.
+	testRemoteURL = "https://example.com/git.git"
 )
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
@@ -93,6 +99,9 @@ func configNewGitRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := command.Run(t.Context(), "git", "config", "user.name", "Test Account"); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "remote", "add", TestRemote, testRemoteURL); err != nil {
 		t.Fatal(err)
 	}
 }

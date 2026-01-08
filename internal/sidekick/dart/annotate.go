@@ -300,6 +300,13 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			for i := range exports {
 				exports[i] = strings.TrimSpace(exports[i])
 			}
+		case key == "extra-imports":
+			// extra-imports = "dart:math;package:my_package/my_file.dart"
+			// Dart imports that should be included in the generated file.
+			extraImports := strings.FieldsFunc(definition, func(c rune) bool { return c == ';' })
+			for _, imp := range extraImports {
+				annotate.imports[strings.TrimSpace(imp)] = true
+			}
 		case key == "dependencies":
 			// dependencies = "http, googleapis_auth"
 			// A list of dependencies to add to pubspec.yaml. This can be used to add dependencies for hand-written code.
@@ -585,6 +592,16 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 }
 
 func (annotate *annotateModel) annotateMessage(m *api.Message) {
+	if _, omit := omitGeneration[m.ID]; omit && !m.IsMap {
+		// If the message is allowlisted as omitted, and it's not a map,
+		// skip it completely. Map messages still need to be processed for their
+		// value types to generate imports.
+		m.Codec = &messageAnnotation{
+			OmitGeneration: true,
+		}
+		return
+	}
+
 	for _, f := range m.Fields {
 		annotate.annotateField(f)
 	}
@@ -608,14 +625,12 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 
 	toStringLines := createToStringLines(m)
 
-	_, omit := omitGeneration[m.ID]
-
 	m.Codec = &messageAnnotation{
 		Parent:          m,
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
 		DocLines:        formatDocComments(m.Documentation, annotate.state),
-		OmitGeneration:  omit || m.IsMap,
+		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
 		Model:           annotate.model,

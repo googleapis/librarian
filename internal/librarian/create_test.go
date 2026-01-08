@@ -50,7 +50,6 @@ func TestCreateLibrary(t *testing.T) {
 					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
 					Output:        "newlib-output",
-					Version:       "0.1.0",
 				},
 			},
 		},
@@ -93,7 +92,6 @@ func TestCreateLibrary(t *testing.T) {
 					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
 					Output:        "newlib-output",
-					Version:       "0.1.0",
 				},
 			},
 		},
@@ -378,8 +376,8 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if found.Output != test.output {
 				t.Errorf("output = %q, want %q", found.Output, test.output)
 			}
-			if found.Version != "0.1.0" {
-				t.Errorf("version = %q, want %q", found.Version, "0.1.0")
+			if found.Version != "" {
+				t.Errorf("version = %q, want %q", found.Version, "")
 			}
 			if diff := cmp.Diff(test.want, found.Channels); diff != "" {
 				t.Errorf("channels mismatch (-want +got):\n%s", diff)

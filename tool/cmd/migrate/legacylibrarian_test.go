@@ -63,7 +63,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 
 			err := errRepoNotFound
 			if test.repoPath != "" {
-				err = runLibrarianMigration(t.Context(), "python", test.repoPath, outputPath)
+				err = runLibrarianMigration(t.Context(), "python", test.repoPath)
 			}
 			if err != nil {
 				if test.wantErr == nil {

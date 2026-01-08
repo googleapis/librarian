@@ -32,7 +32,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -76,7 +75,6 @@ func main() {
 
 func run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
-	outputPath := flagSet.String("output", "./librarian.yaml", "Output file path (default: ./librarian.yaml)")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -92,16 +90,16 @@ func run(ctx context.Context, args []string) error {
 	base := filepath.Base(abs)
 	switch base {
 	case "google-cloud-rust", "google-cloud-dart":
-		return runSidekickMigration(ctx, abs, *outputPath)
+		return runSidekickMigration(ctx, abs)
 	case "google-cloud-python", "google-cloud-go":
 		parts := strings.SplitN(base, "-", 3)
-		return runLibrarianMigration(ctx, parts[2], abs, *outputPath)
+		return runLibrarianMigration(ctx, parts[2], abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
 }
 
-func runSidekickMigration(ctx context.Context, repoPath, outputPath string) error {
+func runSidekickMigration(ctx context.Context, repoPath string) error {
 	defaults, err := readRootSidekick(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root .sidekick.toml from %q: %w", repoPath, err)
@@ -128,17 +126,11 @@ func runSidekickMigration(ctx context.Context, repoPath, outputPath string) erro
 	maps.Copy(allLibraries, veneers)
 
 	cfg := buildConfig(allLibraries, defaults)
-	cfg.Release = &config.Release{
-		Branch: "main",
-		Remote: "upstream",
-	}
-	if err := yaml.Write(outputPath, cfg); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-	if err := librarian.RunTidy(ctx); err != nil {
+
+	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
 	}
-	return fixDocumentOverrideNewLines(outputPath, cfg)
+	return nil
 }
 
 // readRootSidekick reads the root .sidekick.toml file and extracts defaults.
@@ -214,7 +206,13 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			},
 		},
 	}
-
+	if sidekick.Release != nil {
+		cfg.Release = &config.Release{
+			Branch:         sidekick.Release.Branch,
+			Remote:         sidekick.Release.Remote,
+			IgnoredChanges: sidekick.Release.IgnoredChanges,
+		}
+	}
 	return cfg, nil
 }
 
@@ -337,9 +335,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		})
 
 		// Set version from Cargo.toml (more authoritative than sidekick)
-		if cargo.Package.Version != "" {
+		if cargo.Package.Version != "" && cargo.Package.Version != "0.0.0" {
 			lib.Version = cargo.Package.Version
-		} else if version, ok := sidekick.Codec["version"]; ok && lib.Version == "" {
+		} else if version, ok := sidekick.Codec["version"]; ok && lib.Version == "" && version != "0.0.0" {
 			lib.Version = version
 		}
 
@@ -399,6 +397,10 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		// Parse documentation overrides
 		var documentationOverrides []config.RustDocumentationOverride
 		for _, do := range sidekick.CommentOverrides {
+			if strings.HasPrefix(do.Replace, "\n") {
+				// this ensures that newline is preserved in yaml format
+				do.Replace = " " + do.Replace
+			}
 			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
 				ID:      do.ID,
 				Match:   do.Match,
@@ -529,17 +531,23 @@ func buildVeneer(files []string, repoPath string) (map[string]*config.Library, e
 			return nil, fmt.Errorf("failed to calculate relative path: %w", err)
 		}
 		name := cargo.Package.Name
-		veneers[name] = &config.Library{
+		veneer := &config.Library{
 			Name:          name,
 			Veneer:        true,
 			Output:        relativePath,
-			Version:       cargo.Package.Version,
 			CopyrightYear: "2025",
 		}
+		if cargo.Package.Version != "" && cargo.Package.Version != "0.0.0" {
+			veneer.Version = cargo.Package.Version
+		}
+		veneers[name] = veneer
 		if len(rustModules) > 0 {
 			veneers[name].Rust = &config.RustCrate{
 				Modules: rustModules,
 			}
+		}
+		if !cargo.Package.Publish {
+			veneers[name].SkipPublish = true
 		}
 	}
 	return veneers, nil
@@ -754,85 +762,6 @@ func readTOML[T any](file string) (*T, error) {
 	}
 
 	return &tomlData, nil
-}
-
-// fixDocumentOverrideNewLines takes any toml content in rust.DocumentationOverrides that contains
-// newlines and appropriately adjusts them in the yaml file.
-func fixDocumentOverrideNewLines(yamlFile string, config *config.Config) error {
-	input, err := os.ReadFile(yamlFile)
-	if err != nil {
-		return err
-	}
-
-	content := string(input)
-	lookup := make(map[string]sidekickconfig.DocumentationOverride)
-	for _, lib := range config.Libraries {
-		if lib.Rust == nil {
-			continue
-		}
-		for _, o := range lib.Rust.DocumentationOverrides {
-			key := o.ID + "|" + strings.Trim(o.Match, " \n\r")
-			lookup[key] = sidekickconfig.DocumentationOverride{
-				ID:      o.ID,
-				Match:   o.Match,
-				Replace: o.Replace,
-			}
-		}
-	}
-	lines := strings.Split(content, "\n")
-	var newLines []string
-	var currentID string
-
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "- id: ") {
-			currentID = strings.TrimPrefix(trimmed, "- id: ")
-			newLines = append(newLines, line)
-			continue
-		}
-		if strings.Contains(line, "match: ") {
-			parts := strings.SplitN(line, "match: ", 2)
-			indent := parts[0]
-			currentVal := strings.Trim(parts[1], " '\"")
-
-			lookupKey := currentID + "|" + currentVal
-
-			if data, ok := lookup[lookupKey]; ok {
-				// brittle: if replace has new lines, match has new line at start
-				if strings.Contains(data.Replace, "\n") {
-					newLines = append(newLines, fmt.Sprintf("%smatch: |", indent))
-					newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Match))
-				} else {
-					newLines = append(newLines, line) // Keep original if no newline
-				}
-
-				// --- HANDLE REPLACE FIELD ---
-				// We assume the next line in the file is the 'replace' line
-				// We skip the original replace line by incrementing the loop counter 'i'
-				if i+1 < len(lines) && strings.Contains(lines[i+1], "replace: ") {
-					i++ // Skip the original line
-					if strings.Contains(data.Replace, "\n") {
-						newLines = append(newLines, fmt.Sprintf("%sreplace: |", indent))
-						newLines = append(newLines, "") // Leading newline
-						newLines = append(newLines, indent+"  "+strings.TrimSpace(data.Replace))
-					} else {
-						newLines = append(newLines, lines[i])
-					}
-				}
-				continue
-			}
-		}
-
-		newLines = append(newLines, line)
-	}
-
-	content = strings.Join(newLines, "\n")
-	err = os.WriteFile(yamlFile, []byte(content), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func readCargoConfig(dir string) (*rust.Cargo, error) {
