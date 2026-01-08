@@ -107,7 +107,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-	return runTidy(ctx, cfg)
+	return RunTidyOnConfig(ctx, cfg)
 }
 
 func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
