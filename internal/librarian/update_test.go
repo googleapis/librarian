@@ -38,10 +38,12 @@ const (
 	discoveryTestCommit    = "abcdef"
 	conformanceTestCommit  = "conformance1234"
 	protobufTestCommit     = "protobuf1234"
+	showcaseTestCommit     = "showcase1234"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
 	conformanceTestTarball = "conformance-tarball-content"
 	protobufTestTarball    = "protobuf-tarball-content"
+	showcaseTestTarball    = "showcase-tarball-content"
 	testBranch             = "other"
 )
 
@@ -50,6 +52,7 @@ var (
 	discoveryTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
 	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
 	protobufTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(protobufTestTarball)))
+	showcaseTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(showcaseTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
@@ -73,6 +76,10 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	if conf.Sources.ProtobufSrc.Branch != "" {
 		protobufBranch = conf.Sources.ProtobufSrc.Branch
 	}
+	showcaseBranch := sourceRepos["showcase"].Branch
+	if conf.Sources.Showcase.Branch != "" {
+		showcaseBranch = conf.Sources.Showcase.Branch
+	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -84,6 +91,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(conformanceTestCommit))
 		case "/repos/protocolbuffers/protobuf/commits/" + protobufBranch:
 			w.Write([]byte(protobufTestCommit))
+		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
+			w.Write([]byte(showcaseBranch))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
@@ -92,6 +101,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(conformanceTestTarball))
 		case "/protocolbuffers/protobuf/archive/" + protobufTestCommit + ".tar.gz":
 			w.Write([]byte(protobufTestTarball))
+		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
+			w.Write([]byte(showcaseTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -150,6 +161,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -168,6 +183,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: "this-should-not-change",
 					},
 					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -196,6 +215,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -214,6 +237,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: "this-should-not-change",
 					},
 					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -242,6 +269,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -260,6 +291,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: conformanceTestSHA,
 					},
 					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -291,6 +326,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-change",
 						SHA256: "this-should-change",
 					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -312,6 +351,10 @@ func TestUpdateCommand(t *testing.T) {
 						Branch: testBranch,
 						Commit: protobufTestCommit,
 						SHA256: protobufTestSHA,
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
 					},
 				},
 			},
