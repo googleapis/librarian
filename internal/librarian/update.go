@@ -32,9 +32,10 @@ var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
 	sourceRepos    = map[string]fetch.Repo{
-		"googleapis":  {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
-		"discovery":   {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 		"conformance": {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
+		"discovery":   {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
+		"googleapis":  {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
+		"protobuf":    {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
 	}
 
 	errBothSourceAndAllFlag   = errors.New("cannot specify a source when --all is set")
