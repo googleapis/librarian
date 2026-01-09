@@ -486,6 +486,18 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -497,6 +509,18 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
