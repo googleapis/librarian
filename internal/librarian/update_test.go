@@ -334,6 +334,11 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					ProtobufSrc: &config.Source{
+						Branch: "testBranch",
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -350,6 +355,11 @@ func TestUpdateCommand(t *testing.T) {
 					Conformance: &config.Source{
 						Commit: conformanceTestCommit,
 						SHA256: conformanceTestSHA,
+					},
+					ProtobufSrc: &config.Source{
+						Branch: "testBranch",
+						Commit: protobufTestCommit,
+						SHA256: protobufTestSHA,
 					},
 				},
 			},
