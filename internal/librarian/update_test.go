@@ -434,7 +434,11 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: "this-should-be-changed",
 					},
 					ProtobufSrc: &config.Source{
-						Branch: "testBranch",
+						Branch: testBranch,
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
@@ -459,6 +463,10 @@ func TestUpdateCommand(t *testing.T) {
 						Branch: testBranch,
 						Commit: protobufTestCommit,
 						SHA256: protobufTestSHA,
+					},
+					Showcase: &config.Source{
+						Commit: showcaseTestCommit,
+						SHA256: showcaseTestSHA,
 					},
 				},
 			},
