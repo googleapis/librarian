@@ -37,9 +37,11 @@ const (
 	googleapisTestCommit   = "123456"
 	discoveryTestCommit    = "abcdef"
 	conformanceTestCommit  = "conformance1234"
+	protobufTestCommit     = "protobuf1234"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
 	conformanceTestTarball = "conformance-tarball-content"
+	protobufTestTarball    = "protobuf-tarball-content"
 	testBranch             = "other"
 )
 
@@ -47,6 +49,7 @@ var (
 	googleapisTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
 	discoveryTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
 	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
+	protobufTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(protobufTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
@@ -66,6 +69,10 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	if conf.Sources.Conformance.Branch != "" {
 		conformanceBranch = conf.Sources.Conformance.Branch
 	}
+	protobufBranch := sourceRepos["protobuf"].Branch
+	if conf.Sources.ProtobufSrc.Branch != "" {
+		protobufBranch = conf.Sources.ProtobufSrc.Branch
+	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -75,12 +82,16 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(discoveryTestCommit))
 		case "/repos/protocolbuffers/protobuf/commits/" + conformanceBranch:
 			w.Write([]byte(conformanceTestCommit))
+		case "/repos/protocolbuffers/protobuf/commits/" + protobufBranch:
+			w.Write([]byte(protobufTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
 			w.Write([]byte(discoveryTestTarball))
 		case "/protocolbuffers/protobuf/archive/" + conformanceTestCommit + ".tar.gz":
 			w.Write([]byte(conformanceTestTarball))
+		case "/protocolbuffers/protobuf/archive/" + protobufTestCommit + ".tar.gz":
+			w.Write([]byte(protobufTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -135,6 +146,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -149,6 +164,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: "this-should-not-change",
 					},
 					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -173,6 +192,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -187,6 +210,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: discoveryTestSHA,
 					},
 					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -211,6 +238,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -227,6 +258,60 @@ func TestUpdateCommand(t *testing.T) {
 					Conformance: &config.Source{
 						Commit: conformanceTestCommit,
 						SHA256: conformanceTestSHA,
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+		},
+		{
+			name: "protobuf",
+			args: []string{"librarian", "update", "protobuf"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						// Use a non default branch to avoid collision with
+						// conformance branch.
+						Branch: "testBranch",
+						Commit: "this-should-change",
+						SHA256: "this-should-change",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Branch: "testBranch",
+						Commit: protobufTestCommit,
+						SHA256: protobufTestSHA,
 					},
 				},
 			},
