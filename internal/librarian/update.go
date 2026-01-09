@@ -36,6 +36,7 @@ var (
 		"discovery":   {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 		"googleapis":  {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
 		"protobuf":    {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
+		"showcase":    {Org: "googleapis", Repo: "gapic-showcase", Branch: fetch.DefaultBranchMain},
 	}
 
 	errBothSourceAndAllFlag   = errors.New("cannot specify a source when --all is set")
