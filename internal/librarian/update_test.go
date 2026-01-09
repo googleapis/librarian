@@ -34,21 +34,24 @@ type updateTestSetup struct {
 }
 
 const (
-	googleapisTestCommit  = "123456"
-	discoveryTestCommit   = "abcdef"
-	googleapisTestTarball = "googleapis-tarball-content"
-	discoveryTestTarball  = "discovery-tarball-content"
-	testBranch            = "other"
+	googleapisTestCommit   = "123456"
+	discoveryTestCommit    = "abcdef"
+	conformanceTestCommit  = "conformance1234"
+	googleapisTestTarball  = "googleapis-tarball-content"
+	discoveryTestTarball   = "discovery-tarball-content"
+	conformanceTestTarball = "conformance-tarball-content"
+	testBranch             = "other"
 )
 
 var (
-	googleapisTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
-	discoveryTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
+	googleapisTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
+	discoveryTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
+	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	// Source.Branch can be empty in the config file. Update should default to
-	// using the branch configured in [sourceRepos], so we only setup the
+	// using the branch configured in [sourceRepos], so we only set up the
 	// test server handlers with Source.Branch when it is explicitly set as it
 	// would be in the file on disk.
 	googleapisBranch := sourceRepos["googleapis"].Branch
@@ -59,6 +62,10 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	if conf.Sources.Discovery.Branch != "" {
 		discoveryBranch = conf.Sources.Discovery.Branch
 	}
+	conformanceBranch := sourceRepos["conformance"].Branch
+	if conf.Sources.Conformance.Branch != "" {
+		conformanceBranch = conf.Sources.Conformance.Branch
+	}
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -66,10 +73,14 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(googleapisTestCommit))
 		case "/repos/googleapis/discovery-artifact-manager/commits/" + discoveryBranch:
 			w.Write([]byte(discoveryTestCommit))
+		case "/repos/protocolbuffers/protobuf/commits/" + conformanceBranch:
+			w.Write([]byte(conformanceTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
 			w.Write([]byte(discoveryTestTarball))
+		case "/protocolbuffers/protobuf/archive/" + conformanceTestCommit + ".tar.gz":
+			w.Write([]byte(conformanceTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -120,6 +131,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -130,6 +145,10 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -150,6 +169,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -162,6 +185,40 @@ func TestUpdateCommand(t *testing.T) {
 					Discovery: &config.Source{
 						Commit: discoveryTestCommit,
 						SHA256: discoveryTestSHA,
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+		},
+		{
+			name: "conformance",
+			args: []string{"librarian", "update", "conformance"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: conformanceTestCommit,
+						SHA256: conformanceTestSHA,
 					},
 				},
 			},
