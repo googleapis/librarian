@@ -245,6 +245,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -257,6 +261,10 @@ func TestUpdateCommand(t *testing.T) {
 					Discovery: &config.Source{
 						Commit: discoveryTestCommit,
 						SHA256: discoveryTestSHA,
+					},
+					Conformance: &config.Source{
+						Commit: conformanceTestCommit,
+						SHA256: conformanceTestSHA,
 					},
 				},
 			},
