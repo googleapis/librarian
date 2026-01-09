@@ -287,7 +287,7 @@ func TestUpdateCommand(t *testing.T) {
 					ProtobufSrc: &config.Source{
 						// Use a non default branch to avoid collision with
 						// conformance branch.
-						Branch: "testBranch",
+						Branch: testBranch,
 						Commit: "this-should-change",
 						SHA256: "this-should-change",
 					},
@@ -309,7 +309,7 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: "this-should-not-change",
 					},
 					ProtobufSrc: &config.Source{
-						Branch: "testBranch",
+						Branch: testBranch,
 						Commit: protobufTestCommit,
 						SHA256: protobufTestSHA,
 					},
@@ -357,7 +357,7 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: conformanceTestSHA,
 					},
 					ProtobufSrc: &config.Source{
-						Branch: "testBranch",
+						Branch: testBranch,
 						Commit: protobufTestCommit,
 						SHA256: protobufTestSHA,
 					},
