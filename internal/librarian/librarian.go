@@ -38,7 +38,7 @@ func Run(ctx context.Context, args ...string) error {
 		UsageText: "librarian [command]",
 		Version:   Version(),
 		Commands: []*cli.Command{
-			createCommand(),
+			addCommand(),
 			generateCommand(),
 			releaseCommand(),
 			tidyCommand(),

@@ -146,6 +146,20 @@ libraries:
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
+
+				starterPath := filepath.Join(tempDir, outputDir, "STARTER.md")
+				_, err = os.Stat(starterPath)
+				if err != nil {
+					t.Fatalf("expected STARTER.md to be generated for %q, but got error: %v", libName, err)
+				}
+				gotStarter, err := os.ReadFile(starterPath)
+				if err != nil {
+					t.Fatalf("could not read generated STARTER.md for %q: %v", libName, err)
+				}
+				wantStarter := fmt.Sprintf("# %s\n\nThis is a starter file.\n", libName)
+				if diff := cmp.Diff(wantStarter, string(gotStarter)); diff != "" {
+					t.Errorf("mismatch for STARTER.md for %q (-want +got):\n%s", libName, diff)
+				}
 			}
 		})
 	}

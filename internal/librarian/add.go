@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -36,10 +35,10 @@ var (
 	errNoYaml               = errors.New("unable to read librarian.yaml")
 )
 
-func createCommand() *cli.Command {
+func addCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "create",
-		Usage:     "create a new client library",
+		Name:      "add",
+		Usage:     "add a new client library to librarian.yaml",
 		UsageText: "librarian create <library> [apis...] [flags]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -78,39 +77,8 @@ func runCreate(ctx context.Context, name, output string, channel ...string) erro
 	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
 		return err
 	}
-	switch cfg.Language {
-	case languageFake:
-		if err := runGenerateAndTidy(ctx, cfg, false, name); err != nil {
-			return err
-		}
-	case languageRust:
-		if err := rust.Create(ctx, output, func(ctx context.Context) error {
-			return runGenerateAndTidy(ctx, cfg, false, name)
-		}); err != nil {
-			return err
-		}
-	default:
-		return errUnsupportedLanguage
-	}
-	return yaml.Write(librarianConfigPath, formatConfig(cfg))
-}
-
-func runGenerateAndTidy(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return errNoGoogleapiSourceInfo
-	}
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
+	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
-	}
-	if err := routeGenerate(ctx, all, cfg, googleapisDir, libraryName); err != nil {
-		return err
-	}
-	for _, lib := range cfg.Libraries {
-		err = tidyLibrary(cfg, lib, googleapisDir)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }

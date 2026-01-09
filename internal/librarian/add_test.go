@@ -16,7 +16,6 @@ package librarian
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -28,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestCreateLibrary(t *testing.T) {
+func TestAddLibrary(t *testing.T) {
 	copyrightYear := strconv.Itoa(time.Now().Year())
 	for _, test := range []struct {
 		name                   string
@@ -142,24 +141,11 @@ func TestCreateLibrary(t *testing.T) {
 			if diff := cmp.Diff(test.wantFinalLibraries, gotCfg.Libraries); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			readmePath := filepath.Join(test.wantGeneratedOutputDir, "README.md")
-			if _, err := os.Stat(readmePath); err != nil {
-				t.Errorf("expected README.md at %s: %v", readmePath, err)
-			}
-			versionPath := filepath.Join(test.wantGeneratedOutputDir, "VERSION")
-			content, err := os.ReadFile(versionPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			const want = "0.0.0"
-			if diff := cmp.Diff(want, string(content)); diff != "" {
-				t.Errorf("VERSION mismatch (-want +got):\n%s", diff)
-			}
 		})
 	}
 }
 
-func TestCreateCommand(t *testing.T) {
+func TestAddCommand(t *testing.T) {
 	googleapisDir, err := filepath.Abs("testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -175,14 +161,14 @@ func TestCreateCommand(t *testing.T) {
 	}{
 		{
 			name:    "no args",
-			args:    []string{"librarian", "create"},
+			args:    []string{"librarian", "add"},
 			wantErr: errMissingLibraryName,
 		},
 		{
 			name: "library name only",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				"google-cloud-secretmanager-v1",
 			},
 		},
@@ -190,7 +176,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with single API",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 			},
@@ -204,7 +190,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with multiple APIs",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
@@ -226,7 +212,7 @@ func TestCreateCommand(t *testing.T) {
 			name: "library with multiple APIs and output flag",
 			args: []string{
 				"librarian",
-				"create",
+				"add",
 				testName,
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
