@@ -32,7 +32,7 @@ var (
 	// errGitShow is included in any error returned by [ShowFile].
 	errGitShow = errors.New("failed to show file")
 
-	// ErrGitStatusUnclean reported when the git status reports uncommited
+	// ErrGitStatusUnclean reported when the git status reports uncommitted
 	// changes.
 	ErrGitStatusUnclean = errors.New("git working directory is not clean")
 )
