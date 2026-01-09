@@ -31,6 +31,10 @@ import (
 var (
 	// errGitShow is included in any error returned by [ShowFile].
 	errGitShow = errors.New("failed to show file")
+
+	// ErrGitStatusUnclean reported when the git status reports uncommited
+	// changes.
+	ErrGitStatusUnclean = errors.New("git working directory is not clean")
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
@@ -41,7 +45,7 @@ func AssertGitStatusClean(ctx context.Context, git string) error {
 		return fmt.Errorf("failed to check git status: %w", err)
 	}
 	if len(output) > 0 {
-		return fmt.Errorf("git working directory is not clean")
+		return ErrGitStatusUnclean
 	}
 	return nil
 }

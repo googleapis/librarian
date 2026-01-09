@@ -16,12 +16,12 @@ package librarian
 
 import (
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -32,24 +32,11 @@ func TestReleaseCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
-		name             string
-		args             []string
-		srcPaths         map[string]string
-		skipYamlCreation bool
-		dirtyGitStatus   bool
-		wantErr          error
-		wantVersions     map[string]string
+		name         string
+		args         []string
+		srcPaths     map[string]string
+		wantVersions map[string]string
 	}{
-		{
-			name:    "no args",
-			args:    []string{"librarian", "release"},
-			wantErr: errMissingLibraryOrAllFlag,
-		},
-		{
-			name:    "library name and all flag",
-			args:    []string{"librarian", "release", testlib, "--all"},
-			wantErr: errBothLibraryAndAllFlag,
-		},
 		{
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
@@ -85,35 +72,10 @@ func TestReleaseCommand(t *testing.T) {
 				testlib2: "0.1.0",
 			},
 		},
-		{
-			name:             "missing librarian yaml file",
-			args:             []string{"librarian", "release", "--all"},
-			skipYamlCreation: true,
-		},
-		{
-			name:           "local repo is dirty",
-			args:           []string{"librarian", "release", "--all"},
-			dirtyGitStatus: true,
-		},
-		{
-			name: "release config empty",
-			args: []string{"librarian", "release", "--all"},
-			srcPaths: map[string]string{
-				testlib:  "src/storage",
-				testlib2: "src/storage",
-			},
-			wantVersions: map[string]string{
-				testlib:  fakeReleaseVersion,
-				testlib2: fakeReleaseVersion,
-			},
-			wantErr: errReleaseConfigEmpty,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
-			testhelper.CloneRepository(t, remoteDir)
 
-			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
 				Language: languageFake,
 				Default:  &config.Default{},
@@ -140,55 +102,85 @@ func TestReleaseCommand(t *testing.T) {
 					},
 				},
 			}
-			if test.wantErr == errReleaseConfigEmpty {
-				cfg.Release = nil
-			}
-			if !test.skipYamlCreation {
-				if err := yaml.Write(configPath, cfg); err != nil {
-					t.Fatal(err)
-				}
-				if !test.dirtyGitStatus {
-					if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-						t.Fatal(err)
-					}
+			testhelper.AddLibrarianConfig(t, cfg)
+			testhelper.CloneRepository(t, remoteDir)
 
-					if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
-						t.Fatal(err)
-					}
+			err := Run(t.Context(), test.args...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			updatedConfig, err := yaml.Read[config.Config](librarianConfigPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Update original config versions to expected versions to compare entire config.
+			for _, lib := range cfg.Libraries {
+				if wantVersion, ok := test.wantVersions[lib.Name]; ok {
+					lib.Version = wantVersion
 				}
 			}
-			err := Run(t.Context(), test.args...)
-			if (test.skipYamlCreation || test.dirtyGitStatus) && err != nil {
-				return
+			if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
+				t.Errorf("mismatch in config (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+func TestReleaseCommand_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	for _, test := range []struct {
+		name    string
+		args    []string
+		cfg     *config.Config
+		dirty   bool
+		wantErr error
+	}{
+		{
+			name:    "no args",
+			args:    []string{"librarian", "release"},
+			wantErr: errMissingLibraryOrAllFlag,
+		},
+		{
+			name:    "library name and all flag",
+			args:    []string{"librarian", "release", "foo", "--all"},
+			wantErr: errBothLibraryAndAllFlag,
+		},
+		{
+			name:    "missing librarian yaml file",
+			args:    []string{"librarian", "release", "--all"},
+			wantErr: errNoYaml,
+		},
+		{
+			name: "local repo is dirty",
+			args: []string{"librarian", "release", "--all"},
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+			wantErr: git.ErrGitStatusUnclean,
+			dirty:   true,
+		},
+		{
+			name: "release config empty",
+			args: []string{"librarian", "release", "--all"},
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+			wantErr: errReleaseConfigEmpty,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			remoteDir := testhelper.SetupRepoWithConfig(t, test.cfg)
+			testhelper.CloneRepository(t, remoteDir)
+
+			if test.dirty {
+				command.Run(t.Context(), "git", "reset", "HEAD~1")
+			}
+
+			err := Run(t.Context(), test.args...)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if test.wantErr != nil {
-				return
-			}
-
-			if test.wantVersions != nil {
-				updatedConfig, err := yaml.Read[config.Config](configPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				gotVersions := make(map[string]string)
-				for _, lib := range updatedConfig.Libraries {
-					gotVersions[lib.Name] = lib.Version
-				}
-				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
-					t.Errorf("mismatch in versions (-want +got):\n%s", diff)
-				}
-				// Update original config versions to expected versions to compare entire config.
-				for _, lib := range cfg.Libraries {
-					if wantVersion, ok := test.wantVersions[lib.Name]; ok {
-						lib.Version = wantVersion
-					}
-				}
-				if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
-					t.Errorf("mismatch in config (-want +got):\n%s", diff)
-				}
 			}
 		})
 	}
