@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -90,8 +91,16 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return errNoGoogleapiSourceInfo
+	}
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
+	}
+
 	if all {
-		if err = releaseAll(ctx, cfg, lastTag, gitExe); err != nil {
+		if err = releaseAll(ctx, cfg, lastTag, gitExe, googleapisDir); err != nil {
 			return err
 		}
 	} else {
@@ -103,14 +112,14 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe); err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe, googleapisDir); err != nil {
 			return err
 		}
 	}
 	return RunTidyOnConfig(ctx, cfg)
 }
 
-func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
+func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe, googleapisDir string) error {
 	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
@@ -121,7 +130,7 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 			return err
 		}
 		if shouldRelease(library, filesChanged, library.Output) {
-			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe); err != nil {
+			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe, googleapisDir); err != nil {
 				return err
 			}
 		}
@@ -145,7 +154,7 @@ func shouldRelease(library *config.Library, filesChanged []string, srcPath strin
 	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe string) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe, googleapisDir string) error {
 	switch cfg.Language {
 	case languageFake:
 		return fakeReleaseLibrary(libConfig)
@@ -160,7 +169,10 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
-		if err := runGenerate(ctx, false, libConfig.Name); err != nil {
+		if _, err := generateLibrary(ctx, cloneConfig(cfg), googleapisDir, libConfig.Name); err != nil {
+			return err
+		}
+		if err := formatLibrary(ctx, cfg.Language, libConfig); err != nil {
 			return err
 		}
 		return nil
@@ -180,4 +192,15 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+func cloneConfig(orig *config.Config) *config.Config {
+	// Marshal the original to bytes
+	data, _ := json.Marshal(orig)
+
+	// Unmarshal into a new object
+	var copy config.Config
+	json.Unmarshal(data, &copy)
+
+	return &copy
 }
