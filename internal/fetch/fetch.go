@@ -30,8 +30,12 @@ import (
 	"time"
 )
 
-// DefaultBranchMaster represents the default git branch "master".
-const DefaultBranchMaster = "master"
+const (
+	// DefaultBranchMaster represents the default git branch "master".
+	DefaultBranchMaster = "master"
+	// DefaultBranchMain represents the default git branch "main".
+	DefaultBranchMain = "main"
+)
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
