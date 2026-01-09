@@ -15,7 +15,6 @@
 package yaml
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -77,9 +76,9 @@ func TestReadWrite(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	want := fmt.Sprintf(`%sname: test
+	want := copyright + `name: test
 version: v1.0.0
-`, copyright)
+`
 	path := filepath.Join(t.TempDir(), "test.yaml")
 	if err := Write(path, &testConfig{Name: "test", Version: "v1.0.0"}); err != nil {
 		t.Fatal(err)
