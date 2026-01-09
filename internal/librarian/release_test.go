@@ -175,7 +175,9 @@ func TestReleaseCommand_Error(t *testing.T) {
 			testhelper.CloneRepository(t, remoteDir)
 
 			if test.dirty {
-				command.Run(t.Context(), "git", "reset", "HEAD~1")
+				if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			err := Run(t.Context(), test.args...)
