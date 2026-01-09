@@ -203,6 +203,10 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 					Conformance: &config.Source{
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
@@ -213,6 +217,10 @@ func TestUpdateCommand(t *testing.T) {
 				Language: "go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
