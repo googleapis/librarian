@@ -169,7 +169,11 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
 			return err
 		}
-		if _, err := generateLibrary(ctx, cloneConfig(cfg), googleapisDir, libConfig.Name); err != nil {
+		copyConfig, err := cloneConfig(cfg)
+		if err != nil {
+			return err
+		}
+		if _, err := generateLibrary(ctx, copyConfig, googleapisDir, libConfig.Name); err != nil {
 			return err
 		}
 		if err := formatLibrary(ctx, cfg.Language, libConfig); err != nil {
@@ -194,13 +198,14 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 	return nil, errLibraryNotFound
 }
 
-func cloneConfig(orig *config.Config) *config.Config {
-	// Marshal the original to bytes
-	data, _ := json.Marshal(orig)
-
-	// Unmarshal into a new object
+func cloneConfig(orig *config.Config) (*config.Config, error) {
+	data, err := json.Marshal(orig)
+	if err != nil {
+		return nil, err
+	}
 	var copy config.Config
-	json.Unmarshal(data, &copy)
-
-	return &copy
+	if err := json.Unmarshal(data, &copy); err != nil {
+		return nil, err
+	}
+	return &copy, nil
 }
