@@ -60,26 +60,11 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	// using the branch configured in [sourceRepos], so we only set up the
 	// test server handlers with Source.Branch when it is explicitly set as it
 	// would be in the file on disk.
-	googleapisBranch := sourceRepos["googleapis"].Branch
-	if conf.Sources.Googleapis.Branch != "" {
-		googleapisBranch = conf.Sources.Googleapis.Branch
-	}
-	discoveryBranch := sourceRepos["discovery"].Branch
-	if conf.Sources.Discovery.Branch != "" {
-		discoveryBranch = conf.Sources.Discovery.Branch
-	}
-	conformanceBranch := sourceRepos["conformance"].Branch
-	if conf.Sources.Conformance.Branch != "" {
-		conformanceBranch = conf.Sources.Conformance.Branch
-	}
-	protobufBranch := sourceRepos["protobuf"].Branch
-	if conf.Sources.ProtobufSrc.Branch != "" {
-		protobufBranch = conf.Sources.ProtobufSrc.Branch
-	}
-	showcaseBranch := sourceRepos["showcase"].Branch
-	if conf.Sources.Showcase.Branch != "" {
-		showcaseBranch = conf.Sources.Showcase.Branch
-	}
+	googleapisBranch := determineBranch("googleapis", conf.Sources.Googleapis)
+	discoveryBranch := determineBranch("discovery", conf.Sources.Discovery)
+	conformanceBranch := determineBranch("conformance", conf.Sources.Conformance)
+	protobufBranch := determineBranch("protobuf", conf.Sources.ProtobufSrc)
+	showcaseBranch := determineBranch("showcase", conf.Sources.Showcase)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -117,6 +102,13 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 		server:     ts,
 		configPath: cp,
 	}
+}
+
+func determineBranch(repoName string, source *config.Source) string {
+	if source != nil && source.Branch != "" {
+		return source.Branch
+	}
+	return sourceRepos[repoName].Branch
 }
 
 func setupTestConfig(t *testing.T, conf *config.Config) string {
