@@ -158,8 +158,8 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.GenerateSetterSamples != "" {
 		codec["generate-setter-samples"] = rust.GenerateSetterSamples
 	}
-	if rust.GenerateRpcSamples {
-		codec["generate-rpc-samples"] = "true"
+	if rust.GenerateRpcSamples != "" {
+		codec["generate-rpc-samples"] = rust.GenerateRpcSamples
 	}
 	if rust.NameOverrides != "" {
 		codec["name-overrides"] = rust.NameOverrides
@@ -277,8 +277,11 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 
 func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {
 	codec := newLibraryCodec(library)
-	if module.GenerateSetterSamples {
-		codec["generate-setter-samples"] = "true"
+	if module.GenerateSetterSamples != "" {
+		codec["generate-setter-samples"] = module.GenerateSetterSamples
+	}
+	if module.GenerateRpcSamples != "" {
+		codec["generate-rpc-samples"] = module.GenerateRpcSamples
 	}
 	if module.HasVeneer {
 		codec["has-veneer"] = "true"

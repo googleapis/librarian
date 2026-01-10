@@ -56,6 +56,17 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Rust.GenerateSetterSamples == "" {
 		lib.Rust.GenerateSetterSamples = d.Rust.GenerateSetterSamples
 	}
+	if lib.Rust.GenerateRpcSamples == "" {
+		lib.Rust.GenerateRpcSamples = d.Rust.GenerateRpcSamples
+	}
+	for _, mod := range lib.Rust.Modules {
+		if mod.GenerateSetterSamples == "" {
+			mod.GenerateSetterSamples = lib.Rust.GenerateSetterSamples
+		}
+		if mod.GenerateRpcSamples == "" {
+			mod.GenerateRpcSamples = lib.Rust.GenerateRpcSamples
+		}
+	}
 	return lib
 }
 
