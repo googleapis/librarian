@@ -73,7 +73,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	}
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return err
+		return errors.Join(errNoYaml, err)
 	}
 	gitExe := "git"
 	if cfg.Release != nil {

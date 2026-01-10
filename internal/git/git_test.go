@@ -215,7 +215,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		setup   func(t *testing.T)
-		wantErr bool
+		wantErr error
 	}{
 		{
 			name: "clean",
@@ -223,7 +223,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 				remoteDir := testhelper.SetupRepoWithChange(t, "release-1.2.3")
 				testhelper.CloneRepository(t, remoteDir)
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
 			name: "dirty",
@@ -234,7 +234,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: true,
+			wantErr: ErrGitStatusUnclean,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -242,7 +242,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			t.Chdir(tmpDir)
 			test.setup(t)
 			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"))
-			if (err != nil) != test.wantErr {
+			if !errors.Is(err, test.wantErr) {
 				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
