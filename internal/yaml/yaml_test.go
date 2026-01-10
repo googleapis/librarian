@@ -15,6 +15,7 @@
 package yaml
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -70,6 +71,23 @@ func TestReadWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWrite(t *testing.T) {
+	want := copyright + `name: test
+version: v1.0.0
+`
+	path := filepath.Join(t.TempDir(), "test.yaml")
+	if err := Write(path, &testConfig{Name: "test", Version: "v1.0.0"}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

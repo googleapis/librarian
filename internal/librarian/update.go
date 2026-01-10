@@ -32,8 +32,11 @@ var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
 	sourceRepos    = map[string]fetch.Repo{
-		"googleapis": {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
-		"discovery":  {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
+		"conformance": {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
+		"discovery":   {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
+		"googleapis":  {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
+		"protobuf":    {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
+		"showcase":    {Org: "googleapis", Repo: "gapic-showcase", Branch: fetch.DefaultBranchMain},
 	}
 
 	errBothSourceAndAllFlag   = errors.New("cannot specify a source when --all is set")
@@ -92,8 +95,11 @@ func runUpdate(all bool, sourceName string) error {
 	}
 
 	sourcesMap := map[string]*config.Source{
-		"googleapis": cfg.Sources.Googleapis,
-		"discovery":  cfg.Sources.Discovery,
+		"conformance": cfg.Sources.Conformance,
+		"discovery":   cfg.Sources.Discovery,
+		"googleapis":  cfg.Sources.Googleapis,
+		"protobuf":    cfg.Sources.ProtobufSrc,
+		"showcase":    cfg.Sources.Showcase,
 	}
 
 	var sourceNamesToProcess []string

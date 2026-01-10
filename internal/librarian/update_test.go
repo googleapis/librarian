@@ -34,31 +34,37 @@ type updateTestSetup struct {
 }
 
 const (
-	googleapisTestCommit  = "123456"
-	discoveryTestCommit   = "abcdef"
-	googleapisTestTarball = "googleapis-tarball-content"
-	discoveryTestTarball  = "discovery-tarball-content"
-	testBranch            = "other"
+	googleapisTestCommit   = "123456"
+	discoveryTestCommit    = "abcdef"
+	conformanceTestCommit  = "conformance1234"
+	protobufTestCommit     = "protobuf1234"
+	showcaseTestCommit     = "showcase1234"
+	googleapisTestTarball  = "googleapis-tarball-content"
+	discoveryTestTarball   = "discovery-tarball-content"
+	conformanceTestTarball = "conformance-tarball-content"
+	protobufTestTarball    = "protobuf-tarball-content"
+	showcaseTestTarball    = "showcase-tarball-content"
+	testBranch             = "other"
 )
 
 var (
-	googleapisTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
-	discoveryTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
+	googleapisTestSHA  = fmt.Sprintf("%x", sha256.Sum256([]byte(googleapisTestTarball)))
+	discoveryTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(discoveryTestTarball)))
+	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
+	protobufTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(protobufTestTarball)))
+	showcaseTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(showcaseTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	// Source.Branch can be empty in the config file. Update should default to
-	// using the branch configured in [sourceRepos], so we only setup the
+	// using the branch configured in [sourceRepos], so we only set up the
 	// test server handlers with Source.Branch when it is explicitly set as it
 	// would be in the file on disk.
-	googleapisBranch := sourceRepos["googleapis"].Branch
-	if conf.Sources.Googleapis.Branch != "" {
-		googleapisBranch = conf.Sources.Googleapis.Branch
-	}
-	discoveryBranch := sourceRepos["discovery"].Branch
-	if conf.Sources.Discovery.Branch != "" {
-		discoveryBranch = conf.Sources.Discovery.Branch
-	}
+	googleapisBranch := determineBranch("googleapis", conf.Sources.Googleapis)
+	discoveryBranch := determineBranch("discovery", conf.Sources.Discovery)
+	conformanceBranch := determineBranch("conformance", conf.Sources.Conformance)
+	protobufBranch := determineBranch("protobuf", conf.Sources.ProtobufSrc)
+	showcaseBranch := determineBranch("showcase", conf.Sources.Showcase)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -66,10 +72,22 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(googleapisTestCommit))
 		case "/repos/googleapis/discovery-artifact-manager/commits/" + discoveryBranch:
 			w.Write([]byte(discoveryTestCommit))
+		case "/repos/protocolbuffers/protobuf/commits/" + conformanceBranch:
+			w.Write([]byte(conformanceTestCommit))
+		case "/repos/protocolbuffers/protobuf/commits/" + protobufBranch:
+			w.Write([]byte(protobufTestCommit))
+		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
+			w.Write([]byte(showcaseTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
 			w.Write([]byte(discoveryTestTarball))
+		case "/protocolbuffers/protobuf/archive/" + conformanceTestCommit + ".tar.gz":
+			w.Write([]byte(conformanceTestTarball))
+		case "/protocolbuffers/protobuf/archive/" + protobufTestCommit + ".tar.gz":
+			w.Write([]byte(protobufTestTarball))
+		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
+			w.Write([]byte(showcaseTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -84,6 +102,13 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 		server:     ts,
 		configPath: cp,
 	}
+}
+
+func determineBranch(repoName string, source *config.Source) string {
+	if source != nil && source.Branch != "" {
+		return source.Branch
+	}
+	return sourceRepos[repoName].Branch
 }
 
 func setupTestConfig(t *testing.T, conf *config.Config) string {
@@ -120,6 +145,18 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -130,6 +167,18 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
@@ -150,6 +199,18 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -162,6 +223,186 @@ func TestUpdateCommand(t *testing.T) {
 					Discovery: &config.Source{
 						Commit: discoveryTestCommit,
 						SHA256: discoveryTestSHA,
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+		},
+		{
+			name: "conformance",
+			args: []string{"librarian", "update", "conformance"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: conformanceTestCommit,
+						SHA256: conformanceTestSHA,
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+		},
+		{
+			name: "protobuf",
+			args: []string{"librarian", "update", "protobuf"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						// Use a non default branch to avoid collision with
+						// conformance branch.
+						Branch: testBranch,
+						Commit: "this-should-change",
+						SHA256: "this-should-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Branch: testBranch,
+						Commit: protobufTestCommit,
+						SHA256: protobufTestSHA,
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+				},
+			},
+		},
+		{
+			name: "showcase",
+			args: []string{"librarian", "update", "showcase"},
+			initialConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Branch: testBranch,
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-change",
+						SHA256: "this-should-change",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Language: "go",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Branch: testBranch,
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: showcaseTestCommit,
+						SHA256: showcaseTestSHA,
 					},
 				},
 			},
@@ -180,6 +421,19 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-be-changed",
 						SHA256: "this-should-be-changed",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					ProtobufSrc: &config.Source{
+						Branch: testBranch,
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-be-changed",
+						SHA256: "this-should-be-changed",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -192,6 +446,19 @@ func TestUpdateCommand(t *testing.T) {
 					Discovery: &config.Source{
 						Commit: discoveryTestCommit,
 						SHA256: discoveryTestSHA,
+					},
+					Conformance: &config.Source{
+						Commit: conformanceTestCommit,
+						SHA256: conformanceTestSHA,
+					},
+					ProtobufSrc: &config.Source{
+						Branch: testBranch,
+						Commit: protobufTestCommit,
+						SHA256: protobufTestSHA,
+					},
+					Showcase: &config.Source{
+						Commit: showcaseTestCommit,
+						SHA256: showcaseTestSHA,
 					},
 				},
 			},
@@ -211,6 +478,18 @@ func TestUpdateCommand(t *testing.T) {
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
 				},
 			},
 			wantConfig: &config.Config{
@@ -222,6 +501,18 @@ func TestUpdateCommand(t *testing.T) {
 						SHA256: googleapisTestSHA,
 					},
 					Discovery: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Conformance: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					ProtobufSrc: &config.Source{
+						Commit: "this-should-not-change",
+						SHA256: "this-should-not-change",
+					},
+					Showcase: &config.Source{
 						Commit: "this-should-not-change",
 						SHA256: "this-should-not-change",
 					},

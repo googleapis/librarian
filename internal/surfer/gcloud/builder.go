@@ -265,12 +265,11 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	}
 
 	// We assemble the final `Param` struct with all the necessary information for a primary resource.
-	return Param{
+	param := Param{
 		HelpText:          helpText,
 		IsPositional:      true,
 		IsPrimaryResource: true,
 		Required:          true,
-		RequestIDField:    strcase.ToLowerCamel(field.Name),
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
 			PluralName:            utils.GetPluralResourceNameForMethod(method, model),
@@ -279,6 +278,12 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 			Attributes:            newAttributesFromSegments(segments),
 		},
 	}
+
+	if utils.IsCreate(method.Name) {
+		param.RequestIDField = strcase.ToLowerCamel(field.Name)
+	}
+
+	return param
 }
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references

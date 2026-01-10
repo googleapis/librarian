@@ -707,7 +707,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
 	queryLines := []string{}
 	for _, field := range queryParams {
-		queryLines = annotate.buildQueryLines(queryLines, "request.", "", field, state)
+		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field, state)
 	}
 
 	annotation := &methodAnnotation{
@@ -1043,9 +1043,34 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 //   - primitives, lists of primitives and enums are supported
 //   - repeated fields are passed as lists
 //   - messages need to be unrolled and fields passed individually
+//
+// Parameters:
+//   - result: The accumulated list of Dart code strings for query parameters.
+//   - refPrefix: The Dart code prefix to access the field (e.g. "request.message?.").
+//   - couldRefPrefixBeNull: Whether the expression referred to by refPrefix can be null.
+//   - paramPrefix: The prefix for the HTTP query parameter name (e.g. "message.").
+//   - field: The field to generate query parameters for.
+//   - state: The API state for looking up types.
+//
+// Examples:
+//
+//	// String field "name" in "request" object.
+//	buildQueryLines(result, "request.", false, "", nameField, state)
+//	// Generates:
+//	// if (request.name case final $1 when $1.isNotDefault) 'name=$1'
+//
+//	// Optional string field "name" in "request" object.
+//	buildQueryLines(result, "request.", false, "", nameField, state)
+//	// Generates:
+//	// if (request.name case final $1?) 'name=$1'
+//
+//	// Nested field "sub.id" where "sub" is a message and "id" is an integer.
+//	buildQueryLines(result, "request.sub?.", true, "sub.", idField, state)
+//	// Generates:
+//	// if (request.sub?.id case final $1? when $1.isNotDefault) 'sub.id=$1'
 func (annotate *annotateModel) buildQueryLines(
-	result []string, refPrefix string, paramPrefix string,
-	field *api.Field, state *api.APIState,
+	result []string, refPrefix string, couldRefPrefixBeNull bool,
+	paramPrefix string, field *api.Field, state *api.APIState,
 ) []string {
 	message := state.MessageByID[field.TypezID]
 	isMap := message != nil && message.IsMap
@@ -1062,7 +1087,11 @@ func (annotate *annotateModel) buildQueryLines(
 	if codec.Nullable {
 		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
-		preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
+		if couldRefPrefixBeNull {
+			preable = fmt.Sprintf("if (%s case final $1? when $1.isNotDefault) '%s'", ref, param)
+		} else {
+			preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
+		}
 	}
 
 	switch {
@@ -1093,7 +1122,7 @@ func (annotate *annotateModel) buildQueryLines(
 	case field.Typez == api.MESSAGE_TYPE:
 		deref := "."
 		if codec.Nullable {
-			deref = "!."
+			deref = "?."
 		}
 
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
@@ -1104,7 +1133,8 @@ func (annotate *annotateModel) buildQueryLines(
 
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
-			result = annotate.buildQueryLines(result, ref+deref, param+".", field, state)
+			result = annotate.buildQueryLines(
+				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field, state)
 		}
 		return result
 

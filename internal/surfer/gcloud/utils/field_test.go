@@ -28,9 +28,9 @@ func TestGetGcloudType(t *testing.T) {
 	}{
 		{"String", api.STRING_TYPE, "str"},
 		{"Int32", api.INT32_TYPE, "int"},
-		{"Int64", api.INT64_TYPE, "int"},
+		{"Int64", api.INT64_TYPE, "long"},
 		{"UInt32", api.UINT32_TYPE, "int"},
-		{"UInt64", api.UINT64_TYPE, "int"},
+		{"UInt64", api.UINT64_TYPE, "long"},
 		{"Bool", api.BOOL_TYPE, "bool"},
 		{"Float", api.FLOAT_TYPE, "float"},
 		{"Double", api.DOUBLE_TYPE, "float"},

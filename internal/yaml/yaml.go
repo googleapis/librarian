@@ -72,13 +72,14 @@ func Read[T any](path string) (*T, error) {
 	return Unmarshal[T](data)
 }
 
-// Write marshals a value to YAML, formats it with yamlfmt, and writes it to a
-// file.
+// Write marshals a value to YAML, formats it with yamlfmt, adds a copyright header
+// and writes it to a file.
 func Write(path string, v any) error {
 	data, err := Marshal(v)
 	if err != nil {
 		return err
 	}
+	data = append([]byte(copyright), data...)
 	return os.WriteFile(path, data, 0644)
 }
 
