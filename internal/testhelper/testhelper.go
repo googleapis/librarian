@@ -161,6 +161,7 @@ func SetupRepo(t *testing.T) string {
 
 // SetupRepoWithConfig invokes [SetupRepo] then [AddLibrarianConfig].
 func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
+	t.Helper()
 	remoteDir := SetupRepo(t)
 	AddLibrarianConfig(t, cfg)
 	return remoteDir
@@ -169,6 +170,7 @@ func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
 // AddLibrarianConfig writes the provided librarian.yaml config to disk and
 // commits it. Must be called after a Setup or a Clone.
 func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
+	t.Helper()
 	if cfg == nil {
 		return
 	}
