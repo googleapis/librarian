@@ -119,6 +119,9 @@ type Param struct {
 	// Repeated indicates that this argument can be specified multiple times.
 	// Origin: Inferred from the `repeated` keyword on the proto field.
 	Repeated bool `yaml:"repeated,omitempty"`
+	// Clearable indicates whether to add update flags for update commands.
+	// Origin: Used for map and repeated fields in Update commands to allow clearing values.
+	Clearable bool `yaml:"clearable,omitempty"`
 	// Type specifies the data type of the argument's value (e.g., "long", "float").
 	// Origin: Mapped from the proto field's data type (e.g., `int64` becomes `long`).
 	Type string `yaml:"type,omitempty"`
