@@ -379,15 +379,16 @@ func (m *Method) IsAIPStandard() bool {
 		m.AIPStandardDeleteInfo() != nil
 }
 
-// AIPStandardGetInfo contains information relevant to get operations as defined by AIP-131.
+// AIPStandardGetInfo contains information relevant to get operations
+// that are like those defined by AIP-131.
 type AIPStandardGetInfo struct {
 	// ResourceNameRequestField is the field in the method input that contains the resource name
 	// of the resource that the get operation should fetch.
 	ResourceNameRequestField *Field
 }
 
-// AIPStandardGetInfo returns information relevant to a get operation as defined by AIP-131
-// if the method is such and operation.
+// AIPStandardGetInfo returns information relevant to a get operation that is like
+// a get operation as defined by AIP-131, if the method is such and operation.
 func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	// A get operation is always a simple operation that returns a resource.
 	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty || m.OutputType.Resource == nil {
@@ -425,15 +426,16 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	}
 }
 
-// AIPStandardDeleteInfo contains information relevant to delete operations as defined by AIP-135.
+// AIPStandardDeleteInfo contains information relevant to delete operations
+// that are like those defined by AIP-135.
 type AIPStandardDeleteInfo struct {
 	// ResourceNameRequestField is the field in the method input that contains the resource name
 	// of the resource that the delete operation should delete.
 	ResourceNameRequestField *Field
 }
 
-// AIPStandardDeleteInfo returns information relevant to a delete operation as defined by AIP-135
-// if the method is such an operation.
+// AIPStandardDeleteInfo returns information relevant to a delete operation that is like
+// a delete operation as defined by AIP-135, if the method is such an operation.
 func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 	// A delete operation is either simple or LRO.
 	if !m.IsSimple() && m.OperationInfo == nil {
@@ -451,24 +453,44 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 		return nil
 	}
 
-	// Find the field in the request that is a resource reference of a resource
-	// whose singular name is maybeSingular.
-	fieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
+	// Find the field in the request that is a resource reference of a resource,
+	// chosen as follows:
+	//
+	// We prioritize the matches as follows:
+	// 1. The field name is "name" and the resource singular name matches maybeSingular.
+	// 2. The field name is "name" and the resource singular name is empty.
+	// 3. The resource singular name matches maybeSingular.
+	var bestField *Field
+	for _, f := range m.InputType.Fields {
 		if f.ResourceReference == nil {
-			return false
+			continue
 		}
 		resource, ok := m.Model.State.ResourceByType[f.ResourceReference.Type]
 		if !ok {
-			return false
+			continue
 		}
-		return strings.ToLower(resource.Singular) == maybeSingular
-	})
-	if fieldIndex == -1 {
+
+		fieldSingular := strings.ToLower(resource.Singular)
+
+		if f.Name == "name" &&
+			(fieldSingular == "" || fieldSingular == maybeSingular) {
+			bestField = f
+			// If we already found a field named "name" and it matches 1. or 2.
+			// we won't find a better field.
+			break
+		}
+
+		if fieldSingular == maybeSingular {
+			bestField = f
+		}
+	}
+
+	if bestField == nil {
 		return nil
 	}
 
 	return &AIPStandardDeleteInfo{
-		ResourceNameRequestField: m.InputType.Fields[fieldIndex],
+		ResourceNameRequestField: bestField,
 	}
 }
 
