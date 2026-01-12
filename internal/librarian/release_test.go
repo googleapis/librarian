@@ -104,6 +104,10 @@ func TestReleaseCommand(t *testing.T) {
 					},
 				},
 			}
+			// TODO(https://github.com/googleapis/librarian/issues/3522):
+			// Must add librarian config to repo before clone so that it is
+			// captured in the origin/main commit tree. Should be integrated
+			// into Setup call.
 			testhelper.AddLibrarianConfig(t, cfg)
 			testhelper.CloneRepository(t, remoteDir)
 
