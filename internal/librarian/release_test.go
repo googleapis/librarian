@@ -359,3 +359,34 @@ func TestReleaseAll(t *testing.T) {
 		})
 	}
 }
+
+func TestPostRelease(t *testing.T) {
+	testhelper.RequireCommand(t, "cargo")
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "rust language runs cargo update",
+			cfg: &config.Config{
+				Language: languageRust,
+			},
+		},
+		{
+			name: "non-rust language does nothing",
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := postRelease(t.Context(), test.cfg)
+			if (err != nil) != test.wantErr {
+				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
