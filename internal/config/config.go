@@ -46,7 +46,7 @@ type Release struct {
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
 
-	// Preinstalled tools defines the list of tools that must be pre-installed.
+	// Preinstalled tools defines the list of tools that must be preinstalled.
 	//
 	// This is indexed by the well-known name of the tool vs. its path, e.g.
 	// [preinstalled]
