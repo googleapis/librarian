@@ -190,9 +190,11 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	}
 }
 
+// postRelease performs post-release cleanup and maintenance tasks after libraries have been processed.
 func postRelease(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case languageRust:
+		// For Rust projects, updates cargo.lock file.
 		cargoExe := "cargo"
 		if cfg.Release != nil {
 			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
