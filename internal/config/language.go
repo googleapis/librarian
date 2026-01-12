@@ -42,6 +42,9 @@ type RustDefault struct {
 
 	// GenerateSetterSamples indicates whether to generate setter samples.
 	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
+
+	// GenerateRpcSamples indicates whether to generate RPC samples.
+	GenerateRpcSamples string `yaml:"generate_rpc_samples,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -59,7 +62,10 @@ type RustModule struct {
 	ExtendGrpcTransport bool `yaml:"extend_grpc_transport,omitempty"`
 
 	// GenerateSetterSamples indicates whether to generate setter samples.
-	GenerateSetterSamples bool `yaml:"generate_setter_samples,omitempty"`
+	GenerateSetterSamples string `yaml:"generate_setter_samples,omitempty"`
+
+	// GenerateRpcSamples indicates whether to generate RPC samples.
+	GenerateRpcSamples string `yaml:"generate_rpc_samples,omitempty"`
 
 	// HasVeneer indicates whether this module has a handwritten wrapper.
 	HasVeneer bool `yaml:"has_veneer,omitempty"`
@@ -159,9 +165,6 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
-
-	// GenerateRpcSamples indicates whether to generate RPC samples.
-	GenerateRpcSamples bool `yaml:"generate_rpc_samples,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`

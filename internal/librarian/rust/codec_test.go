@@ -129,6 +129,7 @@ func TestToSidekickConfig(t *testing.T) {
 					RustDefault: config.RustDefault{
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
+						GenerateRpcSamples:      "true",
 					},
 					ModulePath:                "gcs",
 					PerServiceFeatures:        true,
@@ -136,7 +137,6 @@ func TestToSidekickConfig(t *testing.T) {
 					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
-					GenerateRpcSamples:        true,
 					DisabledClippyWarnings:    []string{"too_many_arguments"},
 					DefaultFeatures:           []string{"default-feature"},
 					TemplateOverride:          "custom-template",

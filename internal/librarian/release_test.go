@@ -16,6 +16,8 @@ package librarian
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -349,6 +351,69 @@ func TestReleaseAll(t *testing.T) {
 			}
 			if config.Libraries[0].Version != test.wantVersion {
 				t.Errorf("got version %s, want %s", config.Libraries[0].Version, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestPostRelease(t *testing.T) {
+	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
+	for _, test := range []struct {
+		name    string
+		setup   func()
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "rust language runs cargo update",
+			setup: func() {
+				script := "#!/bin/sh\nexit 0"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			cfg: &config.Config{
+				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
+			},
+		},
+		{
+			name: "rust language runs cargo update fails",
+			setup: func() {
+				script := "#!/bin/sh\nexit 1"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			cfg: &config.Config{
+				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-rust language does nothing",
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup()
+			}
+
+			err := postRelease(t.Context(), test.cfg)
+			if (err != nil) != test.wantErr {
+				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

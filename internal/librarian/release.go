@@ -116,6 +116,10 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
+
+	if err := postRelease(ctx, cfg); err != nil {
+		return err
+	}
 	return RunTidyOnConfig(ctx, cfg)
 }
 
@@ -183,6 +187,21 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 	default:
 		return fmt.Errorf("language not supported for release: %q", cfg.Language)
 	}
+}
+
+// postRelease performs post-release cleanup and maintenance tasks after libraries have been processed.
+func postRelease(ctx context.Context, cfg *config.Config) error {
+	switch cfg.Language {
+	case languageRust:
+		cargoExe := "cargo"
+		if cfg.Release != nil {
+			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
+		}
+		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // libraryByName returns a library with the given name from the config.

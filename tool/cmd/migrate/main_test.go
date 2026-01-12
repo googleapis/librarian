@@ -197,6 +197,7 @@ func TestBuildGAPIC(t *testing.T) {
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 							GenerateSetterSamples:   "true",
+							GenerateRpcSamples:      "true",
 						},
 						PerServiceFeatures:        true,
 						ModulePath:                "crate",
@@ -212,7 +213,6 @@ func TestBuildGAPIC(t *testing.T) {
 						HasVeneer:                 true,
 						RoutingRequired:           true,
 						IncludeGrpcOnlyMethods:    true,
-						GenerateRpcSamples:        true,
 						PostProcessProtos:         "example post processing",
 						DetailedTracingAttributes: true,
 						NameOverrides:             ".google.cloud.security/publicca.v1.Storage=StorageControl",
@@ -458,7 +458,6 @@ func TestBuildVeneer(t *testing.T) {
 						Modules: []*config.RustModule{
 							{
 								DisabledRustdocWarnings: []string{},
-								GenerateSetterSamples:   true,
 								ModuleRoots:             nil,
 								HasVeneer:               true,
 								IncludedIds: []string{
@@ -478,7 +477,7 @@ func TestBuildVeneer(t *testing.T) {
 								TitleOverride:          "Cloud Firestore API",
 							},
 							{
-								GenerateSetterSamples: false,
+								GenerateSetterSamples: "false",
 								ModulePath:            "crate::generated::gapic_control::model",
 								ModuleRoots: map[string]string{
 									"project-root": ".",
@@ -523,7 +522,6 @@ func TestBuildVeneer(t *testing.T) {
 										Replace: "The service helps to manage cloud storage resources.",
 									},
 								},
-								GenerateSetterSamples:  true,
 								HasVeneer:              true,
 								IncludeGrpcOnlyMethods: true,
 								NameOverrides:          ".google.storage.v2.Storage=StorageControl",
@@ -581,9 +579,10 @@ func TestBuildVeneer(t *testing.T) {
 								ModuleRoots: map[string]string{
 									"project-root": ".",
 								},
-								Output:   "tests/common/src/generated",
-								Source:   "src/wkt/tests/protos",
-								Template: "mod",
+								Output:                "tests/common/src/generated",
+								Source:                "src/wkt/tests/protos",
+								Template:              "mod",
+								GenerateSetterSamples: "false",
 							},
 						},
 					},
@@ -597,12 +596,11 @@ func TestBuildVeneer(t *testing.T) {
 					Rust: &config.RustCrate{
 						Modules: []*config.RustModule{
 							{
-								GenerateSetterSamples: true,
-								IncludeList:           "api.proto,source_context.proto,type.proto,descriptor.proto",
-								ModulePath:            "crate",
-								Output:                "src/generated",
-								Source:                "google/protobuf",
-								Template:              "mod",
+								IncludeList: "api.proto,source_context.proto,type.proto,descriptor.proto",
+								ModulePath:  "crate",
+								Output:      "src/generated",
+								Source:      "google/protobuf",
+								Template:    "mod",
 							},
 						},
 					},
@@ -627,7 +625,6 @@ func TestBuildVeneer(t *testing.T) {
 						Modules: []*config.RustModule{
 							{
 								DisabledRustdocWarnings: []string{},
-								GenerateSetterSamples:   true,
 								ModuleRoots:             nil,
 								HasVeneer:               true,
 								IncludedIds: []string{
@@ -647,7 +644,7 @@ func TestBuildVeneer(t *testing.T) {
 								TitleOverride:          "Cloud Firestore API",
 							},
 							{
-								GenerateSetterSamples: false,
+								GenerateSetterSamples: "false",
 								ModulePath:            "crate::generated::gapic_control::model",
 								ModuleRoots: map[string]string{
 									"project-root": ".",
@@ -727,9 +724,9 @@ func TestBuildConfig(t *testing.T) {
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 							GenerateSetterSamples:   "true",
+							GenerateRpcSamples:      "true",
 						},
 						PerServiceFeatures: true,
-						GenerateRpcSamples: true,
 						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 					},
 				},
@@ -761,9 +758,9 @@ func TestBuildConfig(t *testing.T) {
 							RustDefault: config.RustDefault{
 								DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 								GenerateSetterSamples:   "true",
+								GenerateRpcSamples:      "true",
 							},
 							PerServiceFeatures: true,
-							GenerateRpcSamples: true,
 							NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 						},
 					},
@@ -787,9 +784,9 @@ func TestBuildConfig(t *testing.T) {
 						RustDefault: config.RustDefault{
 							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 							GenerateSetterSamples:   "true",
+							GenerateRpcSamples:      "true",
 						},
 						PerServiceFeatures: true,
-						GenerateRpcSamples: true,
 						NameOverrides:      ".google.cloud.orgpolicy.v1.OrgPolicy=OrgPolicyControl",
 					},
 				},
@@ -810,9 +807,9 @@ func TestBuildConfig(t *testing.T) {
 							RustDefault: config.RustDefault{
 								DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
 								GenerateSetterSamples:   "true",
+								GenerateRpcSamples:      "true",
 							},
 							PerServiceFeatures: true,
-							GenerateRpcSamples: true,
 							NameOverrides:      ".google.cloud.orgpolicy.v1.OrgPolicy=OrgPolicyControl",
 						},
 					},
