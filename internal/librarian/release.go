@@ -120,7 +120,11 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	// Post release steps that need to run at the repository level.
 	switch cfg.Language {
 	case languageRust:
-		if err := command.Run(ctx, "cargo", "update", "--workspace"); err != nil {
+		cargoExe := "cargo"
+		if cfg.Release != nil {
+			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
+		}
+		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
 			return err
 		}
 	}
