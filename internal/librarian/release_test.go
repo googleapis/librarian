@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -361,18 +362,48 @@ func TestReleaseAll(t *testing.T) {
 }
 
 func TestPostRelease(t *testing.T) {
-	testhelper.RequireCommand(t, "cargo")
 	t.Parallel()
+	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
 	for _, test := range []struct {
 		name    string
+		setup   func()
 		cfg     *config.Config
 		wantErr bool
 	}{
 		{
 			name: "rust language runs cargo update",
+			setup: func() {
+				script := "#!/bin/sh\nexit 0"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
 			cfg: &config.Config{
 				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
 			},
+		},
+		{
+			name: "rust language runs cargo update fails",
+			setup: func() {
+				script := "#!/bin/sh\nexit 1"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			cfg: &config.Config{
+				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name: "non-rust language does nothing",
@@ -383,6 +414,10 @@ func TestPostRelease(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			if test.setup != nil {
+				test.setup()
+			}
+
 			err := postRelease(t.Context(), test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
