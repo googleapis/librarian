@@ -362,7 +362,6 @@ func TestReleaseAll(t *testing.T) {
 }
 
 func TestPostRelease(t *testing.T) {
-	t.Parallel()
 	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
 	for _, test := range []struct {
 		name    string
@@ -413,7 +412,6 @@ func TestPostRelease(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			if test.setup != nil {
 				test.setup()
 			}
