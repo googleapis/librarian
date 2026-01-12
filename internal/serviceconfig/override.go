@@ -14,15 +14,66 @@
 
 package serviceconfig
 
-// channelToServiceConfigOverrides defines API channels whose service configuration does not live
-// alongside the API definition directory.
-//
-// For these entries, the service config must be resolved explicitly rather
-// than discovered via directory traversal. All paths are relative to the
-// googleapis root.
-var channelToServiceConfigOverrides = map[string]string{
-	"google/cloud/aiplatform/schema/predict/instance":       "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
-	"google/cloud/aiplatform/schema/predict/params":         "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
-	"google/cloud/aiplatform/schema/predict/prediction":     "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
-	"google/cloud/aiplatform/schema/trainingjob/definition": "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+const (
+	titleAppsScriptTypes          = "Google Apps Script Types"
+	titleGKEHubTypes              = "GKE Hub Types"
+	serviceConfigAIPlatformSchema = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+)
+
+// Override represents a single API entry with its overrides.
+type Override struct {
+	ServiceConfig string
+	Title         string
+}
+
+// Overrides defines the set of API definitions and their overrides.
+var Overrides = map[string]Override{
+	"google/apps/script/type": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/calendar": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/docs": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/drive": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/gmail": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/sheets": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/apps/script/type/slides": {
+		Title: titleAppsScriptTypes,
+	},
+	"google/cloud/aiplatform/v1/schema/predict/instance": {
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	"google/cloud/aiplatform/v1/schema/predict/params": {
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	"google/cloud/aiplatform/v1/schema/predict/prediction": {
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	"google/cloud/aiplatform/v1/schema/trainingjob/definition": {
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	"google/cloud/gkehub/v1/configmanagement": {
+		Title: titleGKEHubTypes,
+	},
+	"google/cloud/gkehub/v1/multiclusteringress": {
+		Title: titleGKEHubTypes,
+	},
+	"google/cloud/orgpolicy/v1": {
+		Title: "Organization Policy Types",
+	},
+	"google/cloud/oslogin/common": {
+		Title: "Cloud OS Login Common Types",
+	},
+	"google/identity/accesscontextmanager/type": {
+		Title: "Access Context Manager Types",
+	},
 }

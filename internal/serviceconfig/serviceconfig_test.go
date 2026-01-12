@@ -104,7 +104,7 @@ func TestFind(t *testing.T) {
 		},
 		{
 			name:    "override",
-			channel: "google/cloud/aiplatform/schema/predict/instance",
+			channel: "google/cloud/aiplatform/v1/schema/predict/instance",
 			want:    "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 		},
 	} {
