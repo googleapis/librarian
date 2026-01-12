@@ -129,6 +129,25 @@ func TestNewParam(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Clearable Repeated Field (Update)",
+			field: &api.Field{
+				Name:     "access_points",
+				JSONName: "accessPoints",
+				Typez:    api.STRING_TYPE,
+				Repeated: true,
+			},
+			apiField: "accessPoints",
+			method:   &api.Method{Name: "UpdateInstance"},
+			want: Param{
+				ArgName:   "access-points",
+				APIField:  "accessPoints",
+				Type:      "str",
+				HelpText:  "Value for the `access-points` field.",
+				Repeated:  true,
+				Clearable: true,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := newParam(test.field, test.apiField, &Config{}, &api.API{}, &api.Service{}, test.method)

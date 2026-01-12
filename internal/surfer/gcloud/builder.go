@@ -116,6 +116,12 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 		return true
 	}
 
+	// The "update_mask" field is handled automatically by the gcloud framework
+	// based on the flags provided by the user. It should not be exposed as a flag.
+	if field.Name == "update_mask" {
+		return true
+	}
+
 	// Output-only fields are read-only and should not be settable via CLI flags.
 	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
 		return true
@@ -201,10 +207,6 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 			{APIField: "key"},
 			{APIField: "value"},
 		}
-		// For Update commands, maps (and repeated fields) are often clearable.
-		if utils.IsUpdate(method.Name) {
-			param.Clearable = true
-		}
 	} else if field.EnumType != nil {
 		// If the field is an enum, we generate a list of choices for the flag.
 		for _, v := range field.EnumType.Values {
@@ -221,6 +223,11 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 		// If it's a scalar type (string, int, bool, etc.), we map its proto type
 		// to the corresponding gcloud type.
 		param.Type = utils.GetGcloudType(field.Typez)
+	}
+
+	// For Update commands, maps and repeated fields are often clearable.
+	if utils.IsUpdate(method.Name) && param.Repeated {
+		param.Clearable = true
 	}
 
 	// We try to find help text for this field in the `gcloud.yaml` config.
