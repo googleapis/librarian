@@ -120,7 +120,6 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if err := postRelease(ctx, cfg); err != nil {
 		return err
 	}
-
 	return RunTidyOnConfig(ctx, cfg)
 }
 
@@ -194,7 +193,6 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 func postRelease(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case languageRust:
-		// For Rust projects, updates cargo.lock file.
 		cargoExe := "cargo"
 		if cfg.Release != nil {
 			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
@@ -203,7 +201,6 @@ func postRelease(ctx context.Context, cfg *config.Config) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
