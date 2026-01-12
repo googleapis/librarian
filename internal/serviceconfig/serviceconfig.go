@@ -79,8 +79,10 @@ func Read(serviceConfigPath string) (*Service, error) {
 // "google/cloud/secretmanager/v1"). Returns the service config path relative
 // to googleapisDir, or empty string if not found.
 func Find(googleapisDir, channel string) (string, error) {
-	if override, ok := Overrides[channel]; ok && override.ServiceConfig != "" {
-		return override.ServiceConfig, nil
+	for _, api := range APIs {
+		if api.Path == channel && api.ServiceConfig != "" {
+			return api.ServiceConfig, nil
+		}
 	}
 
 	dir := filepath.Join(googleapisDir, channel)

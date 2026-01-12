@@ -15,21 +15,25 @@
 package serviceconfig
 
 import (
-	"sort"
-	"strings"
 	"testing"
 )
 
-func TestAllowlistNoOverlap(t *testing.T) {
-	var overlaps []string
-	for apiPath := range Allowlist {
-		if _, ok := LegacyAllowlist[apiPath]; ok {
-			overlaps = append(overlaps, apiPath)
+func TestAPIsNoDuplicates(t *testing.T) {
+	seen := make(map[string]bool)
+	for _, api := range APIs {
+		if seen[api.Path] {
+			t.Errorf("duplicate API path: %s", api.Path)
 		}
+		seen[api.Path] = true
 	}
-	if len(overlaps) > 0 {
-		sort.Strings(overlaps)
-		t.Errorf("found %d API(s) that exist in both Allowlist and LegacyAllowlist:\n- %s",
-			len(overlaps), strings.Join(overlaps, "\n- "))
+}
+
+func TestAPIsAlphabeticalOrder(t *testing.T) {
+	for i := 1; i < len(APIs); i++ {
+		prev := APIs[i-1].Path
+		curr := APIs[i].Path
+		if prev > curr {
+			t.Errorf("APIs not in alphabetical order: %q comes after %q", prev, curr)
+		}
 	}
 }

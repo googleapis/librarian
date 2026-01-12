@@ -1,0 +1,1421 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package serviceconfig
+
+const (
+	langPython = "python"
+	langRust   = "rust"
+
+	titleAppsScriptTypes = "Google Apps Script Types"
+	titleGKEHubTypes     = "GKE Hub Types"
+
+	serviceConfigAIPlatformSchema = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+)
+
+// API describes an API path and its availability across languages.
+type API struct {
+	// Path is the proto directory path in github.com/googleapis/googleapis.
+	// If ServiceConfig is empty, the service config is assumed to live at this path.
+	Path string
+
+	// Languages restricts which languages can generate client libraries for this API.
+	// Empty means all languages can use this API.
+	//
+	// Restrictions exist for several reasons:
+	//   - Newer languages (Rust, Dart) skip older beta versions when stable versions exist
+	//   - Python has historical legacy APIs not available to other languages
+	//   - Some APIs (like DIREGAPIC protos) are only used by specific languages
+	Languages []string
+
+	// Discovery is the file path to a discovery document in
+	// github.com/googleapis/discovery-artifact-manager.
+	// Used by sidekick languages (Rust, Dart) as an alternative to proto files.
+	Discovery string
+
+	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
+	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
+	OpenAPI string
+
+	// ServiceConfig is the service config file path override.
+	// If empty, the service config is discovered in the directory specified by Path.
+	ServiceConfig string
+
+	// Title overrides the API title from the service config.
+	Title string
+}
+
+// APIs defines all API paths and their language availability.
+var APIs = []API{
+	{
+		Path:      "google/ads/admanager/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ads/datamanager/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ai/generativelanguage/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ai/generativelanguage/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ai/generativelanguage/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ai/generativelanguage/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/ai/generativelanguage/v1beta3",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/analytics/admin/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/analytics/admin/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/analytics/data/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/analytics/data/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/api",
+	},
+	{
+		Path: "google/api/apikeys/v2",
+	},
+	{
+		Path: "google/api/cloudquotas/v1",
+	},
+	{
+		Path:      "google/api/cloudquotas/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/api/servicecontrol/v1",
+	},
+	{
+		Path: "google/api/servicecontrol/v2",
+	},
+	{
+		Path: "google/api/servicemanagement/v1",
+	},
+	{
+		Path: "google/api/serviceusage/v1",
+	},
+	{
+		Path:      "google/appengine/logging/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/appengine/v1",
+	},
+	{
+		Path:      "google/apps/card/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/apps/events/subscriptions/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/apps/events/subscriptions/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/apps/meet/v2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/apps/meet/v2beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:  "google/apps/script/type",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/calendar",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/docs",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/drive",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/gmail",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/sheets",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:  "google/apps/script/type/slides",
+		Title: titleAppsScriptTypes,
+	},
+	{
+		Path:      "google/area120/tables/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/bigtable/admin/v2",
+	},
+	{
+		Path:      "google/chat/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/accessapproval/v1",
+	},
+	{
+		Path: "google/cloud/advisorynotifications/v1",
+	},
+	{
+		Path: "google/cloud/aiplatform/v1",
+	},
+	{
+		Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	{
+		Path:          "google/cloud/aiplatform/v1/schema/predict/params",
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	{
+		Path:          "google/cloud/aiplatform/v1/schema/predict/prediction",
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	{
+		Path:          "google/cloud/aiplatform/v1/schema/trainingjob/definition",
+		ServiceConfig: serviceConfigAIPlatformSchema,
+	},
+	{
+		Path: "google/cloud/alloydb/connectors/v1",
+	},
+	{
+		Path:      "google/cloud/alloydb/connectors/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/alloydb/connectors/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/alloydb/v1",
+	},
+	{
+		Path:      "google/cloud/alloydb/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/alloydb/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/apigateway/v1",
+	},
+	{
+		Path: "google/cloud/apigeeconnect/v1",
+	},
+	{
+		Path:      "google/cloud/apigeeregistry/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/apihub/v1",
+	},
+	{
+		Path: "google/cloud/apphub/v1",
+	},
+	{
+		Path: "google/cloud/asset/v1",
+	},
+	{
+		Path:      "google/cloud/asset/v1p1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/asset/v1p2beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/asset/v1p5beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/assuredworkloads/v1",
+	},
+	{
+		Path:      "google/cloud/assuredworkloads/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/audit",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/automl/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/automl/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/backupdr/v1",
+	},
+	{
+		Path: "google/cloud/baremetalsolution/v2",
+	},
+	{
+		Path:      "google/cloud/batch/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/batch/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/beyondcorp/appconnections/v1",
+	},
+	{
+		Path: "google/cloud/beyondcorp/appconnectors/v1",
+	},
+	{
+		Path: "google/cloud/beyondcorp/appgateways/v1",
+	},
+	{
+		Path: "google/cloud/beyondcorp/clientconnectorservices/v1",
+	},
+	{
+		Path: "google/cloud/beyondcorp/clientgateways/v1",
+	},
+	{
+		Path: "google/cloud/biglake/v1",
+	},
+	{
+		Path: "google/cloud/bigquery/analyticshub/v1",
+	},
+	{
+		Path:      "google/cloud/bigquery/biglake/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/bigquery/biglake/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/connection/v1",
+	},
+	{
+		Path:      "google/cloud/bigquery/dataexchange/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/datapolicies/v1",
+	},
+	{
+		Path:      "google/cloud/bigquery/datapolicies/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/datapolicies/v2",
+	},
+	{
+		Path:      "google/cloud/bigquery/datapolicies/v2beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/datatransfer/v1",
+	},
+	{
+		Path:      "google/cloud/bigquery/logging/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/migration/v2",
+	},
+	{
+		Path:      "google/cloud/bigquery/migration/v2alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/reservation/v1",
+	},
+	{
+		Path:      "google/cloud/bigquery/storage/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/bigquery/storage/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/bigquery/storage/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/bigquery/storage/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/bigquery/v2",
+	},
+	{
+		Path:      "google/cloud/billing/budgets/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/billing/budgets/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/billing/v1",
+	},
+	{
+		Path: "google/cloud/binaryauthorization/v1",
+	},
+	{
+		Path:      "google/cloud/binaryauthorization/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/capacityplanner/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/certificatemanager/v1",
+	},
+	{
+		Path:      "google/cloud/channel/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/chronicle/v1",
+	},
+	{
+		Path: "google/cloud/cloudcontrolspartner/v1",
+	},
+	{
+		Path:      "google/cloud/cloudcontrolspartner/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/clouddms/v1",
+	},
+	{
+		Path: "google/cloud/cloudsecuritycompliance/v1",
+	},
+	{
+		Path: "google/cloud/commerce/consumer/procurement/v1",
+	},
+	{
+		Path:      "google/cloud/commerce/consumer/procurement/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/common",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/compute/v1",
+		Discovery: "discoveries/compute.v1.json",
+	},
+	{
+		Path:      "google/cloud/compute/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/confidentialcomputing/v1",
+	},
+	{
+		Path: "google/cloud/config/v1",
+	},
+	{
+		Path: "google/cloud/configdelivery/v1",
+	},
+	{
+		Path:      "google/cloud/configdelivery/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/configdelivery/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/connectors/v1",
+	},
+	{
+		Path: "google/cloud/contactcenterinsights/v1",
+	},
+	{
+		Path:      "google/cloud/contentwarehouse/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/databasecenter/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/datacatalog/lineage/v1",
+	},
+	{
+		Path: "google/cloud/datacatalog/v1",
+	},
+	{
+		Path:      "google/cloud/datacatalog/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/dataform/v1",
+	},
+	{
+		Path:      "google/cloud/dataform/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/datafusion/v1",
+	},
+	{
+		Path:      "google/cloud/datalabeling/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/dataplex/v1",
+	},
+	{
+		Path: "google/cloud/dataproc/v1",
+	},
+	{
+		Path:      "google/cloud/dataqna/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/datastream/v1",
+	},
+	{
+		Path:      "google/cloud/datastream/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/deploy/v1",
+	},
+	{
+		Path: "google/cloud/developerconnect/v1",
+	},
+	{
+		Path: "google/cloud/devicestreaming/v1",
+	},
+	{
+		Path: "google/cloud/dialogflow/cx/v3",
+	},
+	{
+		Path:      "google/cloud/dialogflow/cx/v3beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/dialogflow/v2",
+	},
+	{
+		Path:      "google/cloud/dialogflow/v2beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/discoveryengine/v1",
+	},
+	{
+		Path:      "google/cloud/discoveryengine/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/discoveryengine/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/documentai/v1",
+	},
+	{
+		Path:      "google/cloud/documentai/v1beta3",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/domains/v1",
+	},
+	{
+		Path:      "google/cloud/domains/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/edgecontainer/v1",
+	},
+	{
+		Path: "google/cloud/edgenetwork/v1",
+	},
+	{
+		Path:      "google/cloud/enterpriseknowledgegraph/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/essentialcontacts/v1",
+	},
+	{
+		Path: "google/cloud/eventarc/publishing/v1",
+	},
+	{
+		Path: "google/cloud/eventarc/v1",
+	},
+	{
+		Path: "google/cloud/filestore/v1",
+	},
+	{
+		Path: "google/cloud/financialservices/v1",
+	},
+	{
+		Path:      "google/cloud/functions/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/functions/v2",
+	},
+	{
+		Path:      "google/cloud/gdchardwaremanagement/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/geminidataanalytics/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/geminidataanalytics/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/gkebackup/v1",
+	},
+	{
+		Path: "google/cloud/gkeconnect/gateway/v1",
+	},
+	{
+		Path:      "google/cloud/gkeconnect/gateway/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/gkehub/v1",
+	},
+	{
+		Path:  "google/cloud/gkehub/v1/configmanagement",
+		Title: titleGKEHubTypes,
+	},
+	{
+		Path:  "google/cloud/gkehub/v1/multiclusteringress",
+		Title: titleGKEHubTypes,
+	},
+	{
+		Path:      "google/cloud/gkehub/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/gkemulticloud/v1",
+	},
+	{
+		Path: "google/cloud/gkerecommender/v1",
+	},
+	{
+		Path: "google/cloud/gsuiteaddons/v1",
+	},
+	{
+		Path:      "google/cloud/hypercomputecluster/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/iap/v1",
+	},
+	{
+		Path: "google/cloud/ids/v1",
+	},
+	{
+		Path: "google/cloud/kms/inventory/v1",
+	},
+	{
+		Path: "google/cloud/kms/v1",
+	},
+	{
+		Path:      "google/cloud/language/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/language/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/language/v2",
+	},
+	{
+		Path: "google/cloud/licensemanager/v1",
+	},
+	{
+		Path:      "google/cloud/lifesciences/v2beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/location",
+	},
+	{
+		Path: "google/cloud/locationfinder/v1",
+	},
+	{
+		Path: "google/cloud/lustre/v1",
+	},
+	{
+		Path: "google/cloud/maintenance/api/v1",
+	},
+	{
+		Path:      "google/cloud/maintenance/api/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/managedidentities/v1",
+	},
+	{
+		Path: "google/cloud/managedkafka/schemaregistry/v1",
+	},
+	{
+		Path: "google/cloud/managedkafka/v1",
+	},
+	{
+		Path:      "google/cloud/mediatranslation/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/memcache/v1",
+	},
+	{
+		Path:      "google/cloud/memcache/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/memorystore/v1",
+	},
+	{
+		Path:      "google/cloud/memorystore/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/metastore/v1",
+	},
+	{
+		Path:      "google/cloud/metastore/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/metastore/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/migrationcenter/v1",
+	},
+	{
+		Path: "google/cloud/modelarmor/v1",
+	},
+	{
+		Path:      "google/cloud/modelarmor/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/netapp/v1",
+	},
+	{
+		Path: "google/cloud/networkconnectivity/v1",
+	},
+	{
+		Path:      "google/cloud/networkconnectivity/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/networkmanagement/v1",
+	},
+	{
+		Path: "google/cloud/networksecurity/v1",
+	},
+	{
+		Path:      "google/cloud/networksecurity/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/networksecurity/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/networkservices/v1",
+	},
+	{
+		Path:      "google/cloud/notebooks/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/notebooks/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/notebooks/v2",
+	},
+	{
+		Path: "google/cloud/optimization/v1",
+	},
+	{
+		Path: "google/cloud/oracledatabase/v1",
+	},
+	{
+		Path: "google/cloud/orchestration/airflow/service/v1",
+	},
+	{
+		Path:      "google/cloud/orchestration/airflow/service/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:  "google/cloud/orgpolicy/v1",
+		Title: "Organization Policy Types",
+	},
+	{
+		Path: "google/cloud/orgpolicy/v2",
+	},
+	{
+		Path: "google/cloud/osconfig/v1",
+	},
+	{
+		Path:      "google/cloud/osconfig/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:  "google/cloud/oslogin/common",
+		Title: "Cloud OS Login Common Types",
+	},
+	{
+		Path: "google/cloud/oslogin/v1",
+	},
+	{
+		Path: "google/cloud/parallelstore/v1",
+	},
+	{
+		Path:      "google/cloud/parallelstore/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/parametermanager/v1",
+	},
+	{
+		Path:      "google/cloud/phishingprotection/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/policysimulator/v1",
+	},
+	{
+		Path: "google/cloud/policytroubleshooter/iam/v3",
+	},
+	{
+		Path: "google/cloud/policytroubleshooter/v1",
+	},
+	{
+		Path:      "google/cloud/privatecatalog/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/privilegedaccessmanager/v1",
+	},
+	{
+		Path: "google/cloud/rapidmigrationassessment/v1",
+	},
+	{
+		Path: "google/cloud/recaptchaenterprise/v1",
+	},
+	{
+		Path:      "google/cloud/recommendationengine/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/recommender/logging/v1",
+	},
+	{
+		Path: "google/cloud/recommender/v1",
+	},
+	{
+		Path:      "google/cloud/recommender/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/redis/cluster/v1",
+	},
+	{
+		Path:      "google/cloud/redis/cluster/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/redis/v1",
+	},
+	{
+		Path:      "google/cloud/redis/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/resourcemanager/v3",
+	},
+	{
+		Path: "google/cloud/retail/v2",
+	},
+	{
+		Path:      "google/cloud/retail/v2alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/retail/v2beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/run/v2",
+	},
+	{
+		Path:      "google/cloud/saasplatform/saasservicemgmt/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/scheduler/v1",
+	},
+	{
+		Path:      "google/cloud/scheduler/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:    "google/cloud/secretmanager/v1",
+		OpenAPI: "testdata/secretmanager_openapi_v1.json",
+	},
+	{
+		Path:      "google/cloud/secretmanager/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/secrets/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/securesourcemanager/v1",
+	},
+	{
+		Path: "google/cloud/security/privateca/v1",
+	},
+	{
+		Path:      "google/cloud/security/privateca/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/security/publicca/v1",
+	},
+	{
+		Path:      "google/cloud/security/publicca/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/securitycenter/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/securitycenter/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/securitycenter/v1p1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/securitycenter/v2",
+	},
+	{
+		Path:      "google/cloud/securitycentermanagement/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/securityposture/v1",
+	},
+	{
+		Path: "google/cloud/servicedirectory/v1",
+	},
+	{
+		Path:      "google/cloud/servicedirectory/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/servicehealth/v1",
+	},
+	{
+		Path: "google/cloud/shell/v1",
+	},
+	{
+		Path:      "google/cloud/speech/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/speech/v1p1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/speech/v2",
+	},
+	{
+		Path: "google/cloud/sql/v1",
+	},
+	{
+		Path: "google/cloud/storagebatchoperations/v1",
+	},
+	{
+		Path: "google/cloud/storageinsights/v1",
+	},
+	{
+		Path: "google/cloud/support/v2",
+	},
+	{
+		Path:      "google/cloud/support/v2beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/talent/v4",
+	},
+	{
+		Path:      "google/cloud/talent/v4beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/tasks/v2",
+	},
+	{
+		Path:      "google/cloud/tasks/v2beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/tasks/v2beta3",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/telcoautomation/v1",
+	},
+	{
+		Path:      "google/cloud/telcoautomation/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/texttospeech/v1",
+	},
+	{
+		Path:      "google/cloud/texttospeech/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/timeseriesinsights/v1",
+	},
+	{
+		Path:      "google/cloud/tpu/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/tpu/v2",
+	},
+	{
+		Path:      "google/cloud/tpu/v2alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/translate/v3",
+	},
+	{
+		Path:      "google/cloud/translate/v3beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/vectorsearch/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/video/livestream/v1",
+	},
+	{
+		Path: "google/cloud/video/stitcher/v1",
+	},
+	{
+		Path: "google/cloud/video/transcoder/v1",
+	},
+	{
+		Path: "google/cloud/videointelligence/v1",
+	},
+	{
+		Path:      "google/cloud/videointelligence/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/videointelligence/v1p1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/videointelligence/v1p2beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/videointelligence/v1p3beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/vision/v1",
+	},
+	{
+		Path:      "google/cloud/vision/v1p1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/vision/v1p2beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/vision/v1p3beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/vision/v1p4beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/visionai/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/visionai/v1alpha1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/vmmigration/v1",
+	},
+	{
+		Path: "google/cloud/vmwareengine/v1",
+	},
+	{
+		Path: "google/cloud/vpcaccess/v1",
+	},
+	{
+		Path: "google/cloud/webrisk/v1",
+	},
+	{
+		Path:      "google/cloud/webrisk/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/websecurityscanner/v1",
+	},
+	{
+		Path:      "google/cloud/websecurityscanner/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/cloud/websecurityscanner/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/workflows/executions/v1",
+	},
+	{
+		Path:      "google/cloud/workflows/executions/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/workflows/v1",
+	},
+	{
+		Path:      "google/cloud/workflows/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/cloud/workstations/v1",
+	},
+	{
+		Path:      "google/cloud/workstations/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/container/v1",
+	},
+	{
+		Path:      "google/container/v1beta1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/dataflow/v1beta3",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/datastore/admin/v1",
+	},
+	{
+		Path: "google/devtools/artifactregistry/v1",
+	},
+	{
+		Path:      "google/devtools/artifactregistry/v1beta2",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/devtools/cloudbuild/v1",
+	},
+	{
+		Path: "google/devtools/cloudbuild/v2",
+	},
+	{
+		Path: "google/devtools/cloudprofiler/v2",
+	},
+	{
+		Path: "google/devtools/cloudtrace/v1",
+	},
+	{
+		Path: "google/devtools/cloudtrace/v2",
+	},
+	{
+		Path: "google/devtools/containeranalysis/v1",
+	},
+	{
+		Path:      "google/devtools/source/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/firestore/admin/v1",
+	},
+	{
+		Path: "google/firestore/v1",
+	},
+	{
+		Path:      "google/geo/type",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/iam/admin/v1",
+	},
+	{
+		Path: "google/iam/credentials/v1",
+	},
+	{
+		Path: "google/iam/v1",
+	},
+	{
+		Path:      "google/iam/v1/logging",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/iam/v2",
+	},
+	{
+		Path:      "google/iam/v2beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/iam/v3",
+	},
+	{
+		Path:      "google/iam/v3beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:  "google/identity/accesscontextmanager/type",
+		Title: "Access Context Manager Types",
+	},
+	{
+		Path: "google/identity/accesscontextmanager/v1",
+	},
+	{
+		Path: "google/logging/type",
+	},
+	{
+		Path: "google/logging/v2",
+	},
+	{
+		Path: "google/longrunning",
+	},
+	{
+		Path:      "google/maps/addressvalidation/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/areainsights/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/fleetengine/delivery/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/fleetengine/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/mapsplatformdatasets/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/places/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/routeoptimization/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/routing/v2",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/maps/solar/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/marketingplatform/admin/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/monitoring/dashboard/v1",
+	},
+	{
+		Path: "google/monitoring/metricsscope/v1",
+	},
+	{
+		Path: "google/monitoring/v3",
+	},
+	{
+		Path: "google/privacy/dlp/v2",
+	},
+	{
+		Path:      "google/protobuf",
+		Languages: []string{langRust},
+	},
+	{
+		Path: "google/pubsub/v1",
+	},
+	{
+		Path: "google/rpc",
+	},
+	{
+		Path: "google/rpc/context",
+	},
+	{
+		Path:      "google/shopping/css/v1",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/accounts/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/conversions/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/datasources/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/inventories/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/issueresolution/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/lfp/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/notifications/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/ordertracking/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/products/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/productstudio/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/promotions/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/quota/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/reports/v1alpha",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/reports/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/merchant/reviews/v1beta",
+		Languages: []string{langPython},
+	},
+	{
+		Path:      "google/shopping/type",
+		Languages: []string{langPython},
+	},
+	{
+		Path: "google/spanner/admin/database/v1",
+	},
+	{
+		Path: "google/spanner/admin/instance/v1",
+	},
+	{
+		Path: "google/storage/control/v2",
+	},
+	{
+		Path: "google/storage/v2",
+	},
+	{
+		Path: "google/storagetransfer/v1",
+	},
+	{
+		Path: "google/type",
+	},
+	{
+		Path: "grafeas/v1",
+	},
+	{
+		Path: "schema/google/showcase/v1beta1",
+	},
+}
