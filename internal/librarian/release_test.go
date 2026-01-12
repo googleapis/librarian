@@ -140,7 +140,7 @@ func TestReleaseCommand(t *testing.T) {
 					},
 				},
 			}
-			if test.wantErr == errReleaseConfigEmpty {
+			if errors.Is(test.wantErr, errReleaseConfigEmpty) {
 				cfg.Release = nil
 			}
 			if !test.skipYamlCreation {
