@@ -388,7 +388,7 @@ type AIPStandardGetInfo struct {
 }
 
 // AIPStandardGetInfo returns information relevant to a get operation that is like
-// a get operation as defined by AIP-131, if the method is such and operation.
+// a get operation as defined by AIP-131, if the method is such an operation.
 func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	// A get operation is always a simple operation that returns a resource.
 	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty || m.OutputType.Resource == nil {
