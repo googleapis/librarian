@@ -228,7 +228,6 @@ var Allowlist = map[string]bool{
 	"google/cloud/workflows/executions/v1":                     true,
 	"google/cloud/workflows/v1":                                true,
 	"google/cloud/workstations/v1":                             true,
-	"testdata/secretmanager_openapi_v1.json":                   true,
 }
 
 // LegacyAllowlist defines APIs that are only allowed for a specific list of
@@ -252,7 +251,6 @@ var LegacyAllowlist = map[string][]string{
 	"google/apps/events/subscriptions/v1beta":             {"python"},
 	"google/apps/meet/v2beta":                             {"python"},
 	"google/apps/meet/v2":                                 {"python"},
-	"google/apps/script/type/gmail":                       {"python"},
 	"google/area120/tables/v1alpha1":                      {"python"},
 	"google/cloud/alloydb/v1beta":                         {"python"},
 	"google/cloud/alloydb/v1alpha":                        {"python"},
@@ -323,7 +321,6 @@ var LegacyAllowlist = map[string][]string{
 	"google/cloud/language/v1":                            {"python"},
 	"google/cloud/language/v1beta2":                       {"python"},
 	"google/cloud/lifesciences/v2beta":                    {"python"},
-	"google/cloud/lustre/v1":                              {"python"},
 	"google/cloud/maintenance/api/v1beta":                 {"python"},
 	"google/cloud/mediatranslation/v1beta1":               {"python"},
 	"google/cloud/memcache/v1beta2":                       {"python"},
