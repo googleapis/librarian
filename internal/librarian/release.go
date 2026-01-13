@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -72,7 +73,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	}
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return err
+		return errors.Join(errNoYaml, err)
 	}
 	gitExe := "git"
 	if cfg.Release != nil {
@@ -90,8 +91,16 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return errNoGoogleapiSourceInfo
+	}
+	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	if err != nil {
+		return err
+	}
+
 	if all {
-		if err = releaseAll(ctx, cfg, lastTag, gitExe); err != nil {
+		if err = releaseAll(ctx, cfg, lastTag, gitExe, googleapisDir); err != nil {
 			return err
 		}
 	} else {
@@ -103,14 +112,18 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if err = releaseLibrary(ctx, cfg, libConfg, libConfg.Output, lastTag, gitExe); err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe, googleapisDir); err != nil {
 			return err
 		}
+	}
+
+	if err := postRelease(ctx, cfg); err != nil {
+		return err
 	}
 	return RunTidyOnConfig(ctx, cfg)
 }
 
-func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
+func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe, googleapisDir string) error {
 	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
@@ -120,8 +133,8 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 		if err != nil {
 			return err
 		}
-		if shouldRelease(library, filesChanged, library.Output) {
-			if err := releaseLibrary(ctx, cfg, library, library.Output, lastTag, gitExe); err != nil {
+		if shouldRelease(library, filesChanged) {
+			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe, googleapisDir); err != nil {
 				return err
 			}
 		}
@@ -129,44 +142,66 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 	return nil
 }
 
-func shouldRelease(library *config.Library, filesChanged []string, srcPath string) bool {
+func shouldRelease(library *config.Library, filesChanged []string) bool {
 	if library.SkipPublish {
 		return false
 	}
-	pathWithTrailingSlash := srcPath
+	pathWithTrailingSlash := library.Output
 	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
 		pathWithTrailingSlash = pathWithTrailingSlash + "/"
 	}
 	for _, path := range filesChanged {
-		if strings.Contains(path, pathWithTrailingSlash) {
+		if strings.HasPrefix(path, pathWithTrailingSlash) {
 			return true
 		}
 	}
 	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, srcPath, lastTag, gitExe string) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, googleapisDir string) error {
 	switch cfg.Language {
 	case languageFake:
 		return fakeReleaseLibrary(libConfig)
 	case languageRust:
-		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, srcPath+"/Cargo.toml")
+		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, libConfig.Output+"/Cargo.toml")
 		if err != nil {
 			return err
 		}
 		if !release {
 			return nil
 		}
-		if err := rust.ReleaseLibrary(libConfig, srcPath); err != nil {
+		if err := rust.ReleaseLibrary(libConfig); err != nil {
 			return err
 		}
-		if err := runGenerate(ctx, false, libConfig.Name); err != nil {
+		copyConfig, err := cloneConfig(cfg)
+		if err != nil {
+			return err
+		}
+		if _, err := generateLibrary(ctx, copyConfig, googleapisDir, libConfig.Name); err != nil {
+			return err
+		}
+		if err := formatLibrary(ctx, cfg.Language, libConfig); err != nil {
 			return err
 		}
 		return nil
 	default:
 		return fmt.Errorf("language not supported for release: %q", cfg.Language)
 	}
+}
+
+// postRelease performs post-release cleanup and maintenance tasks after libraries have been processed.
+func postRelease(ctx context.Context, cfg *config.Config) error {
+	switch cfg.Language {
+	case languageRust:
+		cargoExe := "cargo"
+		if cfg.Release != nil {
+			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
+		}
+		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // libraryByName returns a library with the given name from the config.
@@ -180,4 +215,16 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+func cloneConfig(orig *config.Config) (*config.Config, error) {
+	data, err := json.Marshal(orig)
+	if err != nil {
+		return nil, err
+	}
+	var copy config.Config
+	if err := json.Unmarshal(data, &copy); err != nil {
+		return nil, err
+	}
+	return &copy, nil
 }

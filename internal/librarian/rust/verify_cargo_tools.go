@@ -24,8 +24,8 @@ import (
 	"github.com/googleapis/librarian/internal/git"
 )
 
-// PreFlight performs all the necessary checks before a release.
-func PreFlight(ctx context.Context, preinstalled map[string]string, remote string, cargoTools []config.Tool) error {
+// preFlight performs all the necessary checks before a release.
+func preFlight(ctx context.Context, preinstalled map[string]string, remote string, cargoTools []config.Tool) error {
 	gitExe := command.GetExecutablePath(preinstalled, "git")
 	if err := git.CheckVersion(ctx, gitExe); err != nil {
 		return err

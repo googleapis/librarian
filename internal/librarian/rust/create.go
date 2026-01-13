@@ -22,16 +22,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// CargoConfig is the configuration for a cargo package.
-type CargoConfig struct {
-	Package CargoPackage `toml:"package"`
-}
-
-// CargoPackage is a cargo package.
-type CargoPackage struct {
-	Name string `toml:"name"`
-}
-
 // Create creates a cargo workspace, runs the provided generation function, and
 // validates the library.
 //

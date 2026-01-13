@@ -93,6 +93,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 			},
 			DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 			GenerateSetterSamples:   "true",
+			GenerateRpcSamples:      "true",
 		},
 	}
 	for _, test := range []struct {
@@ -102,7 +103,11 @@ func TestFillDefaults_Rust(t *testing.T) {
 	}{
 		{
 			name: "fills rust defaults",
-			lib:  &config.Library{},
+			lib: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{{}},
+				},
+			},
 			want: &config.Library{
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
@@ -112,6 +117,13 @@ func TestFillDefaults_Rust(t *testing.T) {
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
+						GenerateRpcSamples:      "true",
+					},
+					Modules: []*config.RustModule{
+						{
+							GenerateSetterSamples: "true",
+							GenerateRpcSamples:    "true",
+						},
 					},
 				},
 			},
@@ -125,6 +137,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "custom", Package: "custom-pkg"},
 						},
 						GenerateSetterSamples: "true",
+						GenerateRpcSamples:    "true",
 					},
 				},
 			},
@@ -138,6 +151,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "true",
+						GenerateRpcSamples:      "true",
 					},
 				},
 			},
@@ -151,6 +165,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 							{Name: "wkt", Package: "custom-wkt"},
 						},
 						GenerateSetterSamples: "false",
+						GenerateRpcSamples:    "false",
 					},
 				},
 			},
@@ -163,6 +178,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 						},
 						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:   "false",
+						GenerateRpcSamples:      "false",
 					},
 				},
 			},
@@ -185,6 +201,39 @@ func TestFillDefaults_Rust(t *testing.T) {
 						},
 						DisabledRustdocWarnings: []string{"custom_warning"},
 						GenerateSetterSamples:   "true",
+						GenerateRpcSamples:      "true",
+					},
+				},
+			},
+		},
+		{
+			name: "module overrides defaults",
+			lib: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							GenerateSetterSamples: "false",
+							GenerateRpcSamples:    "false",
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						},
+						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:   "true",
+						GenerateRpcSamples:      "true",
+					},
+					Modules: []*config.RustModule{
+						{
+							GenerateSetterSamples: "false",
+							GenerateRpcSamples:    "false",
+						},
 					},
 				},
 			},

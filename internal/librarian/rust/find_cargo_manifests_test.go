@@ -34,7 +34,7 @@ func TestFindManifest(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/stub/subdir/file.rs",
 		"src/gax-internal/echo-server/src/lib.rs",
 	}
-	got := FindCargoManifests(input)
+	got := findCargoManifests(input)
 	want := []string{
 		"src/gax-internal/echo-server/Cargo.toml",
 		"src/generated/cloud/secretmanager/v1/Cargo.toml",

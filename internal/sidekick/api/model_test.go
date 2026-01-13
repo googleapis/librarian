@@ -508,22 +508,50 @@ func TestAIPStandardGetInfo(t *testing.T) {
 }
 
 func TestAIPStandardDeleteInfo(t *testing.T) {
-	resourceType := "google.cloud.secretmanager.v1/Secret"
+	resource := &Resource{
+		Type:     "google.cloud.secretmanager.v1/Secret",
+		Singular: "secret",
+	}
+	resourceWithoutSingular := &Resource{
+		Type: "google.cloud.secretmanager.v1/SecretWithoutSingular",
+	}
 	resourceNameField := &Field{
 		Name: "name",
 		ResourceReference: &ResourceReference{
-			Type: resourceType,
+			Type: resource.Type,
 		},
 	}
-	resource := &Resource{
-		Type:     resourceType,
-		Singular: "secret",
+	resourceOtherNameField := &Field{
+		Name: "other_name",
+		ResourceReference: &ResourceReference{
+			Type: resource.Type,
+		},
 	}
+	resourceNameNoSingularField := &Field{
+		Name: "name",
+		ResourceReference: &ResourceReference{
+			Type: resourceWithoutSingular.Type,
+		},
+	}
+	resourceOtherNameNoSingularField := &Field{
+		Name: "other_name",
+		ResourceReference: &ResourceReference{
+			Type: resourceWithoutSingular.Type,
+		},
+	}
+	nonExistentResourceField := &Field{
+		Name: "name",
+		ResourceReference: &ResourceReference{
+			Type: "nonexistent.googleapis.com/NonExistent",
+		},
+	}
+
 	model := &API{
-		ResourceDefinitions: []*Resource{resource},
+		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
 		State: &APIState{
 			ResourceByType: map[string]*Resource{
-				resourceType: resource,
+				resource.Type:                resource,
+				resourceWithoutSingular.Type: resourceWithoutSingular,
 			},
 		},
 	}
@@ -546,6 +574,18 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "valid simple delete with missing singular name on resource",
+			method: &Method{
+				Name:         "DeleteSecret",
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameNoSingularField}},
+				ReturnsEmpty: true,
+				Model:        model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceNameNoSingularField,
+			},
+		},
+		{
 			name: "valid lro delete",
 			method: &Method{
 				Name:          "DeleteSecret",
@@ -555,6 +595,18 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			},
 			want: &AIPStandardDeleteInfo{
 				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
+			name: "valid delete with other name matching singular",
+			method: &Method{
+				Name:         "DeleteSecret",
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceOtherNameField}},
+				ReturnsEmpty: true,
+				Model:        model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceOtherNameField,
 			},
 		},
 		{
@@ -582,15 +634,61 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				InputType: &Message{
 					Name: "DeleteSecretRequest",
 					Fields: []*Field{
-						{
-							Name:              "name",
-							ResourceReference: &ResourceReference{Type: "nonexistent.googleapis.com/NonExistent"},
-						},
+						nonExistentResourceField,
 					},
 				},
 				Model: model, // model's ResourceByType does not contain the nonexistent resource
 			},
 			want: nil,
+		},
+		{
+			name: "invalid delete with no matching field",
+			method: &Method{
+				Name: "DeleteSecret",
+				InputType: &Message{
+					Name: "DeleteSecretRequest",
+					Fields: []*Field{
+						nonExistentResourceField,
+						resourceOtherNameNoSingularField,
+					},
+				},
+				Model: model,
+			},
+			want: nil,
+		},
+		{
+			name: "priority: name field with matching singular wins over other field with matching singular",
+			method: &Method{
+				Name: "DeleteSecret",
+				InputType: &Message{
+					Name: "DeleteSecretRequest",
+					Fields: []*Field{
+						resourceOtherNameField,
+						resourceNameField,
+					},
+				},
+				Model: model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceNameField,
+			},
+		},
+		{
+			name: "priority: name field with empty singular wins over other field with matching singular",
+			method: &Method{
+				Name: "DeleteSecret",
+				InputType: &Message{
+					Name: "DeleteSecretRequest",
+					Fields: []*Field{
+						resourceOtherNameField,
+						resourceNameNoSingularField,
+					},
+				},
+				Model: model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: resourceNameNoSingularField,
+			},
 		},
 	}
 

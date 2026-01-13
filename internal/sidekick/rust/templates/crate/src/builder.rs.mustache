@@ -30,7 +30,7 @@ pub mod {{Codec.ModuleName}} {
     /// A builder for [{{Codec.Name}}][crate::client::{{Codec.Name}}].
     ///
     /// ```
-    /// # tokio_test::block_on(async {
+    /// # async fn sample() -> gax::client_builder::Result<()> {
     /// # use {{Model.Codec.PackageNamespace}}::*;
     /// # use builder::{{Codec.ModuleName}}::ClientBuilder;
     /// # use client::{{Codec.Name}};
@@ -38,7 +38,7 @@ pub mod {{Codec.ModuleName}} {
     /// let client = builder
     ///     .with_endpoint("https://{{Model.Codec.DefaultHost}}")
     ///     .build().await?;
-    /// # gax::client_builder::Result::<()>::Ok(()) });
+    /// # Ok(()) }
     /// ```
     pub type ClientBuilder =
         gax::client_builder::ClientBuilder<client::Factory, gaxi::options::Credentials>;
@@ -79,10 +79,9 @@ pub mod {{Codec.ModuleName}} {
     /// The request builder for [{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}][crate::client::{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}] calls.
     ///
     /// # Example
-    /// ```no_run
-    /// # use {{Model.Codec.PackageNamespace}}::builder;
-    /// use builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
-    /// # tokio_test::block_on(async {
+    /// ```
+    /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
+    /// # async fn sample() -> gax::Result<()> {
     {{#OperationInfo}}
     /// use lro::Poller;
     ///
@@ -105,7 +104,7 @@ pub mod {{Codec.ModuleName}} {
     /// let response = builder.send().await?;
     {{/Pagination}}
     {{/OperationInfo}}
-    /// # gax::Result::<()>::Ok(()) });
+    /// # Ok(()) }
     ///
     /// fn prepare_request_builder() -> {{Codec.BuilderName}} {
     ///   # panic!();

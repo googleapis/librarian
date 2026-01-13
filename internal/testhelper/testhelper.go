@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // RequireCommand skips the test if the specified command is not found in PATH.
@@ -155,6 +157,32 @@ func SetupRepo(t *testing.T) string {
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
 	return remoteDir
+}
+
+// SetupRepoWithConfig invokes [SetupRepo] then [AddLibrarianConfig].
+func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
+	t.Helper()
+	remoteDir := SetupRepo(t)
+	AddLibrarianConfig(t, cfg)
+	return remoteDir
+}
+
+// AddLibrarianConfig writes the provided librarian.yaml config to disk and
+// commits it. Must be called after a Setup or a Clone.
+func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
+	t.Helper()
+	if cfg == nil {
+		return
+	}
+	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add librarian yaml", "."); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // SetupRepoWithChange creates a git repository for testing publish scenarios,

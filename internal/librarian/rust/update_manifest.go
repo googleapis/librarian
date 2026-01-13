@@ -37,8 +37,8 @@ type Cargo struct {
 	Package *CrateInfo `toml:"package"`
 }
 
-// UpdateManifest bumps the version of a crate if it has changed since the last tag.
-func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
+// updateManifest bumps the version of a crate if it has changed since the last tag.
+func updateManifest(gitExe, lastTag, manifest string) ([]string, error) {
 	needsBump, err := ManifestVersionNeedsBump(gitExe, lastTag, manifest)
 	if err != nil {
 		return nil, err
@@ -69,20 +69,20 @@ func UpdateManifest(gitExe, lastTag, manifest string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := UpdateCargoVersion(manifest, newVersion); err != nil {
+	if err := updateCargoVersion(manifest, newVersion); err != nil {
 		return nil, err
 	}
-	if err := UpdateSidekickConfig(manifest, newVersion); err != nil {
+	if err := updateSidekickConfig(manifest, newVersion); err != nil {
 		return nil, err
 	}
 	return []string{info.Package.Name}, nil
 }
 
-// UpdateCargoVersion updates the version in a Cargo.toml file. It uses a
+// updateCargoVersion updates the version in a Cargo.toml file. It uses a
 // line-based approach to preserve comments and formatting, which is important
 // because some Cargo.toml files are hand-crafted and contain comments that
 // must be preserved.
-func UpdateCargoVersion(path, newVersion string) error {
+func updateCargoVersion(path, newVersion string) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err

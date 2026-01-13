@@ -20,9 +20,9 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// PublishedCrate checks a Cargo.toml manifest to determine if the crate is configured for publishing.
+// publishedCrate checks a Cargo.toml manifest to determine if the crate is configured for publishing.
 // It returns the crate's name if it is publishable, otherwise an empty slice.
-func PublishedCrate(manifest string) ([]string, error) {
+func publishedCrate(manifest string) ([]string, error) {
 	contents, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err

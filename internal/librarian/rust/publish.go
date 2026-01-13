@@ -33,7 +33,7 @@ import (
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
 func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
-	if err := PreFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
+	if err := preFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
 	}
 	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
@@ -54,8 +54,8 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 // publishCrates publishes the crates that have changed.
 func publishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
-	for _, manifest := range FindCargoManifests(files) {
-		names, err := PublishedCrate(manifest)
+	for _, manifest := range findCargoManifests(files) {
+		names, err := publishedCrate(manifest)
 		if err != nil {
 			return err
 		}

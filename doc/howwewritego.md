@@ -147,6 +147,37 @@ for _, item := range items {
 }
 ```
 
+### Make mutations explicit
+
+When a function modifies a pointer parameter, return the modified value to make
+the mutation explicit. This makes it so that functions are clear about their
+side effects.
+
+```go
+// Good: Returns the modified value to signal mutation
+func UpdateConfig(cfg *Config) (*Config, error) {
+    // ... update fields ...
+    cfg.Version = newVersion
+    return cfg, nil
+}
+
+// Usage makes mutation visible
+cfg, err := UpdateConfig(config)
+
+// Bad: Mutation is hidden
+func UpdateConfig(cfg *Config) error {
+    // ... update fields ...
+    cfg.Version = newVersion
+    return nil
+}
+
+// Usage hides that config was modified
+err := UpdateConfig(config)
+```
+
+This pattern helps readers understand at a glance which functions modify their
+inputs versus which functions only read them.
+
 ## Writing Tests
 
 When writing tests, we follow the patterns below to ensure consistency,

@@ -50,7 +50,7 @@ copyright-year = '2038'
 		if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 			t.Fatal(err)
 		}
-		if err := UpdateSidekickConfig(manifest, "2.3.4"); err != nil {
+		if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
 			t.Fatal(err)
 		}
 		got, err := os.ReadFile(sidekick)
@@ -81,7 +81,7 @@ c = 345
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err != nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(sidekick)
@@ -109,7 +109,7 @@ version        = '2.3.4'
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err != nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(sidekick)
@@ -138,7 +138,7 @@ version        = '2.3.4'
 	if err := os.WriteFile(sidekick, []byte(contents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err != nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(sidekick)
@@ -153,7 +153,7 @@ version        = '2.3.4'
 func TestUpdateSidekickConfigNoErrorOnMissingConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err != nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err != nil {
 		t.Errorf("no errors expected when sidekick config does not exist, got=%v", err)
 	}
 }
@@ -165,7 +165,7 @@ func TestUpdateSidekickConfigStatError(t *testing.T) {
 	tmpDir := path.Join(t.TempDir(), "not-readable")
 	_ = os.MkdirAll(tmpDir, 0000)
 	manifest := path.Join(tmpDir, "Cargo.toml")
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err == nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err == nil {
 		t.Errorf("expected an error with non-readable file")
 	}
 }
@@ -177,7 +177,7 @@ func TestUpdateSidekickConfigReadFileError(t *testing.T) {
 	if err := os.WriteFile(sidekick, []byte{}, 0000); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err == nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err == nil {
 		t.Errorf("expected an error with non-readable file")
 	}
 }
@@ -189,7 +189,7 @@ func TestUpdateSidekickConfigNoCodec(t *testing.T) {
 	if err := os.WriteFile(sidekick, []byte{}, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateSidekickConfig(manifest, "2.3.4"); err == nil {
+	if err := updateSidekickConfig(manifest, "2.3.4"); err == nil {
 		t.Errorf("expected an error with missing [codec] line")
 	}
 }

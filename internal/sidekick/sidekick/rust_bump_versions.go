@@ -17,8 +17,8 @@ package sidekick
 import (
 	"context"
 
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	rustrelease "github.com/googleapis/librarian/internal/sidekick/rust_release"
 )
 
 func init() {
@@ -40,5 +40,5 @@ effect.
 
 // rustBumpVersions increments the version numbers as needed.
 func rustBumpVersions(ctx context.Context, rootConfig *config.Config, cmdLine *CommandLine) error {
-	return rustrelease.BumpVersions(ctx, rootConfig.Release)
+	return rust.BumpVersions(ctx, rootConfig.Release)
 }

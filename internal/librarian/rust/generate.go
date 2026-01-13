@@ -132,9 +132,9 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// DefaultLibraryName derives a library name from a channel path.
+// defaultLibraryName derives a library name from a channel path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
-func DefaultLibraryName(channel string) string {
+func defaultLibraryName(channel string) string {
 	return strings.ReplaceAll(channel, "/", "-")
 }
 

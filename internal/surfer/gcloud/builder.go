@@ -84,12 +84,6 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 	// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern (IsIgnored, IsResourceArg, IsArg) to handle field processing.
 	// We iterate over each field in the method's request message (e.g., `CreateInstanceRequest`).
 	for _, field := range method.InputType.Fields {
-		// The "parent" field is a special case. Its information is captured by the
-		// primary resource argument, so we skip it here to avoid creating a redundant flag.
-		if field.Name == "parent" {
-			continue
-		}
-
 		// We check if the current field represents the primary resource of the command.
 		// For example, in a `CreateInstance` method, this would be the `instance_id` field.
 		if utils.IsPrimaryResource(field, method) {
@@ -103,21 +97,49 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 		// is a nested message, its fields will be "flattened" into top-level flags.
 		// For example, a field `instance.description` becomes the `--description` flag.
 		// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error handling strategy (Error vs Skip) and messaging.
-		if err := addFlattenedParams(field, field.JSONName, &args, overrides, model, service); err != nil {
+		if err := addFlattenedParams(field, field.JSONName, &args, overrides, model, service, method); err != nil {
 			return Arguments{}, err
 		}
 	}
 	return args, nil
 }
 
+// shouldSkipParam determines if a field should be excluded from the generated command arguments.
+func shouldSkipParam(field *api.Field, method *api.Method) bool {
+	// The "parent" field is implicit in the command context (usually handled by the primary resource or hierarchy).
+	if field.Name == "parent" {
+		return true
+	}
+
+	// The "name" field is usually the primary resource identifier, handled separately.
+	if field.Name == "name" {
+		return true
+	}
+
+	// The "update_mask" field is handled automatically by the gcloud framework
+	// based on the flags provided by the user. It should not be exposed as a flag.
+	if field.Name == "update_mask" {
+		return true
+	}
+
+	// Output-only fields are read-only and should not be settable via CLI flags.
+	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
+		return true
+	}
+
+	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
+	if utils.IsUpdate(method.Name) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+		return true
+	}
+
+	return false
+}
+
 // addFlattenedParams recursively processes a field and its sub-fields to generate
 // a flat list of command-line flags. This is necessary for nested messages in
 // the request proto.
-func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overrides *Config, model *api.API, service *api.Service) error {
-	// We skip fields that are marked as `OUTPUT_ONLY` in the proto, as these are
-	// not meant to be provided by the user. We also skip the "name" field, as it's
-	// handled by the primary resource argument.
-	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) || field.Name == "name" {
+func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overrides *Config, model *api.API, service *api.Service, method *api.Method) error {
+	if shouldSkipParam(field, method) {
 		return nil
 	}
 
@@ -133,7 +155,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 			// Continuing the example: when processing the `capacity_gib` field inside the
 			// `Instance` message, the prefix will become "instance.capacityGib". This
 			// results in a `--capacity-gib` flag that maps to the correct nested field.
-			if err := addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args, overrides, model, service); err != nil {
+			if err := addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args, overrides, model, service, method); err != nil {
 				return err
 			}
 		}
@@ -141,7 +163,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 	}
 
 	// If the field is a scalar, map, or enum, we generate a parameter for it.
-	param, err := newParam(field, prefix, overrides, model, service)
+	param, err := newParam(field, prefix, overrides, model, service, method)
 	if err != nil {
 		return err
 	}
@@ -150,7 +172,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 }
 
 // newParam creates a single command-line argument (a `Param` struct) from a proto field.
-func newParam(field *api.Field, apiField string, overrides *Config, model *api.API, service *api.Service) (Param, error) {
+func newParam(field *api.Field, apiField string, overrides *Config, model *api.API, service *api.Service, method *api.Method) (Param, error) {
 	// We initialize the Param with the basic information derived from the field.
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	param := Param{
@@ -203,6 +225,11 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 		param.Type = utils.GetGcloudType(field.Typez)
 	}
 
+	// For Update commands, maps and repeated fields are often clearable.
+	if utils.IsUpdate(method.Name) && param.Repeated {
+		param.Clearable = true
+	}
+
 	// We try to find help text for this field in the `gcloud.yaml` config.
 	// If none is found, we generate a default help text.
 	if rule := findFieldHelpTextRule(field, overrides); rule != nil {
@@ -245,12 +272,11 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	}
 
 	// We assemble the final `Param` struct with all the necessary information for a primary resource.
-	return Param{
+	param := Param{
 		HelpText:          helpText,
 		IsPositional:      true,
 		IsPrimaryResource: true,
 		Required:          true,
-		RequestIDField:    strcase.ToLowerCamel(field.Name),
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
 			PluralName:            utils.GetPluralResourceNameForMethod(method, model),
@@ -259,6 +285,12 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 			Attributes:            newAttributesFromSegments(segments),
 		},
 	}
+
+	if utils.IsCreate(method.Name) {
+		param.RequestIDField = strcase.ToLowerCamel(field.Name)
+	}
+
+	return param
 }
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references

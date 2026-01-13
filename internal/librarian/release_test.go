@@ -16,12 +16,14 @@ package librarian
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -32,24 +34,11 @@ func TestReleaseCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
-		name             string
-		args             []string
-		srcPaths         map[string]string
-		skipYamlCreation bool
-		dirtyGitStatus   bool
-		wantErr          error
-		wantVersions     map[string]string
+		name         string
+		args         []string
+		srcPaths     map[string]string
+		wantVersions map[string]string
 	}{
-		{
-			name:    "no args",
-			args:    []string{"librarian", "release"},
-			wantErr: errMissingLibraryOrAllFlag,
-		},
-		{
-			name:    "library name and all flag",
-			args:    []string{"librarian", "release", testlib, "--all"},
-			wantErr: errBothLibraryAndAllFlag,
-		},
 		{
 			name: "library name",
 			args: []string{"librarian", "release", testlib},
@@ -85,35 +74,10 @@ func TestReleaseCommand(t *testing.T) {
 				testlib2: "0.1.0",
 			},
 		},
-		{
-			name:             "missing librarian yaml file",
-			args:             []string{"librarian", "release", "--all"},
-			skipYamlCreation: true,
-		},
-		{
-			name:           "local repo is dirty",
-			args:           []string{"librarian", "release", "--all"},
-			dirtyGitStatus: true,
-		},
-		{
-			name: "release config empty",
-			args: []string{"librarian", "release", "--all"},
-			srcPaths: map[string]string{
-				testlib:  "src/storage",
-				testlib2: "src/storage",
-			},
-			wantVersions: map[string]string{
-				testlib:  fakeReleaseVersion,
-				testlib2: fakeReleaseVersion,
-			},
-			wantErr: errReleaseConfigEmpty,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
-			testhelper.CloneRepository(t, remoteDir)
 
-			configPath := filepath.Join("./", librarianConfigPath)
 			cfg := &config.Config{
 				Language: languageFake,
 				Default:  &config.Default{},
@@ -140,55 +104,91 @@ func TestReleaseCommand(t *testing.T) {
 					},
 				},
 			}
-			if test.wantErr == errReleaseConfigEmpty {
-				cfg.Release = nil
+			// TODO(https://github.com/googleapis/librarian/issues/3522):
+			// Must add librarian config to repo before clone so that it is
+			// captured in the origin/main commit tree. Should be integrated
+			// into Setup call.
+			testhelper.AddLibrarianConfig(t, cfg)
+			testhelper.CloneRepository(t, remoteDir)
+
+			err := Run(t.Context(), test.args...)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !test.skipYamlCreation {
-				if err := yaml.Write(configPath, cfg); err != nil {
+
+			updatedConfig, err := yaml.Read[config.Config](librarianConfigPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Update original config versions to expected versions to compare entire config.
+			for _, lib := range cfg.Libraries {
+				if wantVersion, ok := test.wantVersions[lib.Name]; ok {
+					lib.Version = wantVersion
+				}
+			}
+			if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
+				t.Errorf("mismatch in config (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestReleaseCommand_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	for _, test := range []struct {
+		name    string
+		args    []string
+		cfg     *config.Config
+		dirty   bool
+		wantErr error
+	}{
+		{
+			name:    "no args",
+			args:    []string{"librarian", "release"},
+			wantErr: errMissingLibraryOrAllFlag,
+		},
+		{
+			name:    "library name and all flag",
+			args:    []string{"librarian", "release", "foo", "--all"},
+			wantErr: errBothLibraryAndAllFlag,
+		},
+		{
+			name:    "missing librarian yaml file",
+			args:    []string{"librarian", "release", "--all"},
+			wantErr: errNoYaml,
+		},
+		{
+			name: "local repo is dirty",
+			args: []string{"librarian", "release", "--all"},
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+			wantErr: git.ErrGitStatusUnclean,
+			dirty:   true,
+		},
+		{
+			name: "release config empty",
+			args: []string{"librarian", "release", "--all"},
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+			wantErr: errReleaseConfigEmpty,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			remoteDir := testhelper.SetupRepoWithConfig(t, test.cfg)
+			testhelper.CloneRepository(t, remoteDir)
+
+			if test.dirty {
+				if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
 					t.Fatal(err)
 				}
-				if !test.dirtyGitStatus {
-					if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-						t.Fatal(err)
-					}
+			}
 
-					if err := command.Run(t.Context(), "git", "commit", "-m", "chore: update lib yaml", "."); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
 			err := Run(t.Context(), test.args...)
-			if (test.skipYamlCreation || test.dirtyGitStatus) && err != nil {
-				return
-			}
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("Run() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if test.wantErr != nil {
-				return
-			}
-
-			if test.wantVersions != nil {
-				updatedConfig, err := yaml.Read[config.Config](configPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				gotVersions := make(map[string]string)
-				for _, lib := range updatedConfig.Libraries {
-					gotVersions[lib.Name] = lib.Version
-				}
-				if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
-					t.Errorf("mismatch in versions (-want +got):\n%s", diff)
-				}
-				// Update original config versions to expected versions to compare entire config.
-				for _, lib := range cfg.Libraries {
-					if wantVersion, ok := test.wantVersions[lib.Name]; ok {
-						lib.Version = wantVersion
-					}
-				}
-				if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
-					t.Errorf("mismatch in config (-want +got):\n%s", diff)
-				}
 			}
 		})
 	}
@@ -277,8 +277,10 @@ func TestRelease(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			libConfg := &config.Library{}
-			err := releaseLibrary(t.Context(), cfg, libConfg, test.srcPath, test.lastTag, "git")
+			libConfg := &config.Library{
+				Output: test.srcPath,
+			}
+			err := releaseLibrary(t.Context(), cfg, libConfg, test.lastTag, "git", "")
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -349,12 +351,75 @@ func TestReleaseAll(t *testing.T) {
 			}
 			remoteDir := testhelper.SetupRepoWithChange(t, tag)
 			testhelper.CloneRepository(t, remoteDir)
-			err := releaseAll(t.Context(), config, tag, "git")
+			err := releaseAll(t.Context(), config, tag, "git", "")
 			if err != nil {
 				t.Fatal(err)
 			}
 			if config.Libraries[0].Version != test.wantVersion {
 				t.Errorf("got version %s, want %s", config.Libraries[0].Version, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestPostRelease(t *testing.T) {
+	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
+	for _, test := range []struct {
+		name    string
+		setup   func()
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "rust language runs cargo update",
+			setup: func() {
+				script := "#!/bin/sh\nexit 0"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			cfg: &config.Config{
+				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
+			},
+		},
+		{
+			name: "rust language runs cargo update fails",
+			setup: func() {
+				script := "#!/bin/sh\nexit 1"
+				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			cfg: &config.Config{
+				Language: languageRust,
+				Release: &config.Release{
+					Preinstalled: map[string]string{
+						"cargo": fakeCargo,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-rust language does nothing",
+			cfg: &config.Config{
+				Language: languageFake,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup()
+			}
+
+			err := postRelease(t.Context(), test.cfg)
+			if (err != nil) != test.wantErr {
+				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

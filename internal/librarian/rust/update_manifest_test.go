@@ -33,7 +33,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
 
-	got, err := UpdateManifest("git", tag, name)
+	got, err := updateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestUpdateManifestSuccess(t *testing.T) {
 	}
 
 	// Calling this a second time has no effect.
-	got, err = UpdateManifest("git", tag, name)
+	got, err = updateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestUpdateManifestBadDelta(t *testing.T) {
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
 
-	if got, err := UpdateManifest("git", "invalid-tag", name); err == nil {
+	if got, err := updateManifest("git", "invalid-tag", name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -92,7 +92,7 @@ func TestUpdateManifestBadManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, err := UpdateManifest("git", tag, name); err == nil {
+	if got, err := updateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -106,7 +106,7 @@ func TestUpdateManifestBadContents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, err := UpdateManifest("git", tag, name); err == nil {
+	if got, err := updateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using an invalid tag, got=%v", got)
 	}
 }
@@ -125,7 +125,7 @@ func TestUpdateManifestSkipUnpublished(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := UpdateManifest("git", tag, name)
+	got, err := updateManifest("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ version = "a.b.c"
 		t.Fatal(err)
 	}
 
-	if got, err := UpdateManifest("git", "bad-version-tag", name); err == nil {
+	if got, err := updateManifest("git", "bad-version-tag", name); err == nil {
 		t.Errorf("expected an error when using a bad version, got=%v", got)
 	}
 }
@@ -173,7 +173,7 @@ name = "google-cloud-storage"
 		t.Fatal(err)
 	}
 
-	if got, err := UpdateManifest("git", tag, name); err == nil {
+	if got, err := updateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using a bad version, got=%v", got)
 	}
 }
@@ -187,7 +187,7 @@ func TestUpdateManifestBadSidekickConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, err := UpdateManifest("git", tag, name); err == nil {
+	if got, err := updateManifest("git", tag, name); err == nil {
 		t.Errorf("expected an error when using a bad sidekick file, got=%v", got)
 	}
 }
