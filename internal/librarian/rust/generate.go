@@ -23,8 +23,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -89,16 +87,21 @@ func generateVeneer(ctx context.Context, library *config.Library, googleapisDir,
 			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
 		case "rust_storage":
 			// The StorageControl client depends on multiple specification sources.
-			// We load them both here manually, and pass them along to
-			// `rust.GenerateStorage` which will merge them appropriately.
-			storageModel, storageConfig, err := toModelAndConfig(library, "src/storage/src/generated/gapic", googleapisDir, protobufSrcDir)
+			// We load them both here manually, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
+			storageModule := findModuleByOutput(library, "src/storage/src/generated/gapic")
+			storageConfig := moduleToSidekickConfig(library, storageModule, googleapisDir, protobufSrcDir)
+			storageModel, err := parser.CreateModel(storageConfig)
 			if err != nil {
-				return err
+				return fmt.Errorf("module %s: %w", module.Output, err)
 			}
-			controlModel, controlConfig, err := toModelAndConfig(library, "src/storage/src/generated/gapic_control", googleapisDir, protobufSrcDir)
+
+			controlModule := findModuleByOutput(library, "src/storage/src/generated/gapic_control")
+			controlConfig := moduleToSidekickConfig(library, controlModule, googleapisDir, protobufSrcDir)
+			controlModel, err := parser.CreateModel(controlConfig)
 			if err != nil {
-				return err
+				return fmt.Errorf("module %s: %w", module.Output, err)
 			}
+
 			return sidekickrust.GenerateStorage(ctx, module.Output, storageModel, storageConfig, controlModel, controlConfig)
 		case "rust+prost":
 			err = rust_prost.Generate(ctx, model, module.Output, sidekickConfig)
@@ -166,17 +169,12 @@ func DefaultOutput(channel, defaultOutput string) string {
 	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
 }
 
-func toModelAndConfig(library *config.Library, key, googleapisDir, protobufSrcDir string) (*api.API, *sidekickconfig.Config, error) {
+func findModuleByOutput(library *config.Library, output string) *config.RustModule {
 	for _, module := range library.Rust.Modules {
-		if module.Output == key {
-			moduleConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufSrcDir)
-			model, err := parser.CreateModel(moduleConfig)
-			if err != nil {
-				return nil, nil, err
-			}
-			return model, moduleConfig, nil
+		if module.Output == output {
+			return module
 		}
 	}
 
-	return nil, nil, nil
+	return nil
 }
