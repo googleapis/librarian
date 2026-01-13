@@ -96,7 +96,7 @@ func generateVeneer(ctx context.Context, library *config.Library, googleapisDir,
 			storageConfig := moduleToSidekickConfig(library, storageModule, googleapisDir, protobufSrcDir)
 			storageModel, err := parser.CreateModel(storageConfig)
 			if err != nil {
-				return fmt.Errorf("module %s: %w", module.Output, err)
+				return fmt.Errorf("module %s: failed to create storage model: %w", module.Output, err)
 			}
 
 			output = "src/storage/src/generated/gapic_control"
@@ -107,7 +107,7 @@ func generateVeneer(ctx context.Context, library *config.Library, googleapisDir,
 			controlConfig := moduleToSidekickConfig(library, controlModule, googleapisDir, protobufSrcDir)
 			controlModel, err := parser.CreateModel(controlConfig)
 			if err != nil {
-				return fmt.Errorf("module %s: %w", module.Output, err)
+				return fmt.Errorf("module %s: failed to create control model: %w", module.Output, err)
 			}
 
 			return sidekickrust.GenerateStorage(ctx, module.Output, storageModel, storageConfig, controlModel, controlConfig)
