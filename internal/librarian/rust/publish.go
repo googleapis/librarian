@@ -32,7 +32,7 @@ import (
 
 // Publish finds all the crates that should be published, (optionally) runs
 // `cargo semver-checks` and (optionally) publishes them.
-func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool) error {
+func Publish(ctx context.Context, config *config.Release, dryRun, keepGoing, skipSemverChecks bool) error {
 	if err := preFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
 	}
@@ -48,11 +48,11 @@ func Publish(ctx context.Context, config *config.Release, dryRun bool, skipSemve
 	if err != nil {
 		return err
 	}
-	return publishCrates(ctx, config, dryRun, skipSemverChecks, lastTag, files)
+	return publishCrates(ctx, config, dryRun, keepGoing, skipSemverChecks, lastTag, files)
 }
 
 // publishCrates publishes the crates that have changed.
-func publishCrates(ctx context.Context, config *config.Release, dryRun bool, skipSemverChecks bool, lastTag string, files []string) error {
+func publishCrates(ctx context.Context, config *config.Release, dryRun, keepGoing, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
 	for _, manifest := range findCargoManifests(files) {
 		names, err := publishedCrate(manifest)
@@ -96,6 +96,10 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 			}
 			slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
 			if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
+				if keepGoing {
+					slog.Error("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
+					continue
+				}
 				return err
 			}
 		}
@@ -104,6 +108,9 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun bool, ski
 	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
 	if dryRun {
 		args = append(args, "--dry-run")
+	}
+	if keepGoing {
+		args = append(args, "--keep-going")
 	}
 	cmd = exec.CommandContext(ctx, cargoPath, args...)
 	if config.RootsPem != "" {
