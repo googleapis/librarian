@@ -302,3 +302,59 @@ func TestDeriveChannelPath(t *testing.T) {
 		})
 	}
 }
+
+func TestFindModuleByOutput(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		lib    *config.Library
+		output string
+		want   *config.RustModule
+	}{
+		{
+			name: "find the module",
+			lib: &config.Library{
+				Name: "test",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Language: "target-language",
+							Output:   "target-output",
+						},
+						{
+							Language: "other-language",
+							Output:   "other-output",
+						},
+					},
+				},
+			},
+			output: "target-output",
+			want: &config.RustModule{
+				Language: "target-language",
+				Output:   "target-output",
+			},
+		},
+		{
+			name: "does not find the module",
+			lib: &config.Library{
+				Name: "test",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Language: "other-language",
+							Output:   "other-output",
+						},
+					},
+				},
+			},
+			output: "target-output",
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findModuleByOutput(test.lib, test.output)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
