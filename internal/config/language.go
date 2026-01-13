@@ -79,6 +79,8 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	Language string `yaml:"language,omitempty"`
+
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
@@ -103,6 +105,8 @@ type RustModule struct {
 
 	// SkippedIds is a list of proto IDs to skip in generation.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
+
+	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
 	// Source is the proto path to generate from (e.g., "google/storage/v2").
 	Source string `yaml:"source"`
