@@ -69,6 +69,14 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 	// `{outdir}/{shortServiceName}/`
 	surfaceDir := filepath.Join(output, shortServiceName)
 
+	if err := os.MkdirAll(surfaceDir, 0755); err != nil {
+		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
+	}
+
+	if err := writeInitPy(surfaceDir); err != nil {
+		return fmt.Errorf("failed to write __init__.py for service %q: %w", shortServiceName, err)
+	}
+
 	// gcloud commands are resource-centric commands (e.g., `gcloud parallelstore instances create`),
 	// so we first need to group all the API methods by the resource they operate on.
 	// We'll create a map where the key is the resource's collection ID (e.g., "instances")
@@ -109,6 +117,14 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	// The main directory for the resource is named after its collection ID.
 	// Example: `{baseDir}/instances`
 	resourceDir := filepath.Join(baseDir, collectionID)
+
+	if err := os.MkdirAll(resourceDir, 0755); err != nil {
+		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
+	}
+
+	if err := writeInitPy(resourceDir); err != nil {
+		return fmt.Errorf("failed to write __init__.py for resource %q: %w", collectionID, err)
+	}
 
 	// Gcloud commands are defined in a `_partials` directory. This allows
 	// for sharing command definitions across different release tracks (GA, Beta, Alpha).
@@ -164,4 +180,10 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		}
 	}
 	return nil
+}
+
+func writeInitPy(dir string) error {
+	path := filepath.Join(dir, "__init__.py")
+	// An empty file is sufficient for Python to treat the directory as a package.
+	return os.WriteFile(path, []byte(""), 0644)
 }
