@@ -399,8 +399,8 @@ fi
 	if !strings.Contains(string(output), "--keep-going") {
 		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
 	}
-	if !strings.Contains(string(output), "--dry-run") {
-		t.Errorf("expected cargo command to contain '--dry-run', got: %s", string(output))
+	if count := strings.Count(string(output), "--dry-run"); count != 1 {
+		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
 	}
 }
 

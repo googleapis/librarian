@@ -106,12 +106,10 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")
 	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
-	if dryRun {
-		args = append(args, "--dry-run")
-	}
 	if dryRunKeepGoing {
+		args = append(args, "--dry-run", "--keep-going")
+	} else if dryRun {
 		args = append(args, "--dry-run")
-		args = append(args, "--keep-going")
 	}
 	cmd = exec.CommandContext(ctx, cargoPath, args...)
 	if config.RootsPem != "" {
