@@ -668,6 +668,9 @@ type PathSegment struct {
 type PathVariable struct {
 	FieldPath []string
 	Segments  []string
+	// Allow characters defined as `reserved` by RFC-6570 1.5 to pass through without
+	// percent encoding. See RFC-6570 1.2 for examples.
+	AllowReserved bool
 }
 
 // PathMatch is a single wildcard match in a path.
@@ -726,6 +729,12 @@ func (v *PathVariable) WithMatchRecursive() *PathVariable {
 // WithMatch adds a match to the path variable.
 func (v *PathVariable) WithMatch() *PathVariable {
 	v.Segments = append(v.Segments, SingleSegmentWildcard)
+	return v
+}
+
+// WithAllowReserved marks the variable as allowing reserved characters to remain unescaped.
+func (v *PathVariable) WithAllowReserved() *PathVariable {
+	v.AllowReserved = true
 	return v
 }
 

@@ -73,8 +73,19 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 		return nil, 0, fmt.Errorf("missing `{` character in expression %q", input)
 	}
 	tail := input[1:]
-	if strings.IndexAny(tail, "+#") == 0 {
-		return nil, 0, fmt.Errorf("level 2 expressions unsupported input=%q", input)
+	end := strings.IndexRune(tail, endExpression)
+	if end == -1 {
+		return nil, 0, fmt.Errorf("missing `}` character at the end of the expression %q", input)
+	}
+	tail = tail[:end]
+	allowReserved := false
+	if tail[0] == '+' {
+		allowReserved = true
+		tail = tail[1:]
+	}
+
+	if tail[0] == '#' {
+		return nil, 0, fmt.Errorf("level 2 fragment expressions unsupported input=%q", input)
 	}
 	if strings.IndexAny(tail, "./?&") == 0 {
 		return nil, 0, fmt.Errorf("level 3 expressions unsupported input=%q", input)
@@ -88,10 +99,14 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	}
 	id := tail[0:match[1]]
 	tail = tail[match[1]:]
-	if tail == "" || tail[0] != endExpression {
-		return nil, 0, fmt.Errorf("missing `}` character at the end of the expression %q", input)
+	if tail != "" {
+		return nil, 0, fmt.Errorf("unexpected trailing characters on expression %q", input)
 	}
-	return &api.PathSegment{Variable: api.NewPathVariable(id).WithMatch()}, match[1] + 2, nil
+	variable := api.NewPathVariable(id).WithMatch()
+	if allowReserved {
+		variable.WithAllowReserved()
+	}
+	return &api.PathSegment{Variable: variable}, end + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
