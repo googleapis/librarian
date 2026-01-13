@@ -57,7 +57,6 @@ func TestReleaseCommand(t *testing.T) {
 				c := testhelper.FakeConfig()
 
 				c.Libraries[0].Version = testhelper.TestNextVersion
-				c.Libraries[1].Version = testhelper.TestInitialVersion
 				return c
 			}(),
 		},
@@ -86,7 +85,6 @@ func TestReleaseCommand(t *testing.T) {
 				c := testhelper.FakeConfig()
 
 				c.Libraries[0].Version = testhelper.TestNextVersion
-				c.Libraries[1].Version = testhelper.TestInitialVersion
 				return c
 			}(),
 		},
