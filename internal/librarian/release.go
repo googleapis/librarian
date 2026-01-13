@@ -40,18 +40,13 @@ func releaseCommand() *cli.Command {
 		Usage:     "update versions and prepare release artifacts",
 		UsageText: "librarian release [library] [--all] [--execute]",
 		Description: `Release updates version numbers and prepares the files needed for a new release.
-Without --execute, the command prints the planned changes but does not modify the repository.
-
-With --execute, the command writes updated files, creates tags, and pushes them.
 
 If a library name is given, only that library is updated. The --all flag updates every
 library in the workspace.
 
 Examples:
   librarian release <library>           # show planned changes for one library
-  librarian release --all               # show planned changes for all libraries
-  librarian release <library> --execute # apply changes and tag the release
-  librarian release --all --execute`,
+  librarian release --all               # show planned changes for all libraries`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
