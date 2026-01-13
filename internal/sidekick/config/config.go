@@ -23,7 +23,7 @@ import (
 	"path"
 
 	"github.com/googleapis/librarian/internal/sidekick/license"
-	toml "github.com/pelletier/go-toml/v2"
+	"github.com/pelletier/go-toml/v2"
 )
 
 const (
