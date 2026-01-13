@@ -23,8 +23,10 @@ import (
 )
 
 // fakeReleaseVersion is the version that libraries are always released at when
-// using the fake language implementation.
-const fakeReleaseVersion = "1.2.3"
+// using the fake language implementation. For now, this needs to match
+// [testhelper.TestNextVersion], until librarian dictates the next version to
+// each language.
+const fakeReleaseVersion = "1.1.0"
 
 func fakeReleaseLibrary(lib *config.Library) error {
 	lib.Version = fakeReleaseVersion

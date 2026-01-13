@@ -66,7 +66,58 @@ version = "1.0.0"
 
 	// testRemoteURL is the URL set for the [TestRemote] in the test repository.
 	testRemoteURL = "https://example.com/git.git"
+
+	// TestLib1 is the name of the first library added to the [FakeConfig].
+	TestLib1 = "google-cloud-storage"
+	// TestLib1SrcPath is the [config.Library] Output path of [TestLib1] added
+	// to the [FakeConfig].
+	TestLib1SrcPath = "src/storage"
+	// TestLib2 is the name of the second library added to the [FakeConfig].
+	TestLib2 = "gax-internal"
+	// TestLib2SrcPath is the [config.Library] Output path of [TestLib2] added
+	// to the [FakeConfig].
+	TestLib2SrcPath = "src/gax-internal"
+	// TestInitialTag is the tag form of [TestInitialVersion] for use in tests.
+	TestInitialTag = "v1.0.0"
+	// TestInitialVersion is the initial version assigned to libraries in
+	// [FakeConfig].
+	TestInitialVersion = "1.0.0"
+	// TestNextVersion is the next version typically assigned to libraries
+	// starting from [TestInitialVersion].
+	TestNextVersion = "1.1.0"
 )
+
+// FakeConfig produces a [config.Config] instance populated with most of the
+// properties necessary for testing. It produces a unique instance each time so
+// that individual test cases may modify their own instance as needed.
+func FakeConfig() *config.Config {
+	return &config.Config{
+		Language: "fake",
+		Default:  &config.Default{},
+		Release: &config.Release{
+			Remote: "origin",
+			Branch: "main",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:    TestLib1,
+				Version: TestInitialVersion,
+				Output:  TestLib1SrcPath,
+			},
+			{
+				Name:    TestLib2,
+				Version: TestInitialVersion,
+				Output:  TestLib2SrcPath,
+			},
+		},
+	}
+}
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
 func SetupForVersionBump(t *testing.T, wantTag string) {
@@ -159,17 +210,74 @@ func SetupRepo(t *testing.T) string {
 	return remoteDir
 }
 
-// SetupRepoWithConfig invokes [SetupRepo] then [AddLibrarianConfig].
+// SetupRepoWithConfig invokes [SetupRepo] then [addLibrarianConfig].
 func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
 	t.Helper()
 	remoteDir := SetupRepo(t)
-	AddLibrarianConfig(t, cfg)
+	addLibrarianConfig(t, cfg)
 	return remoteDir
 }
 
-// AddLibrarianConfig writes the provided librarian.yaml config to disk and
+// SetupOptions include the various options for configuring test setup.
+type SetupOptions struct {
+	// Config is the [config.Config] to write to librarian.yaml in the root
+	// of the repo created.
+	Config *config.Config
+	// Tag is the tag that will be applied once all initial file set up is
+	// complete.
+	Tag string
+	// WithChanges is a list of file paths that should show as changed and be
+	// committed after Tag has been applied.
+	WithChanges []string
+}
+
+// Setup is a configurable test setup function that starts by creating a
+// fresh test repository via [SetupRepo], to which it then applies the
+// configured [SetupOptions].
+func Setup(t *testing.T, opts SetupOptions) string {
+	t.Helper()
+	dir := SetupRepo(t)
+
+	setup(t, opts)
+
+	return dir
+}
+
+func setup(t *testing.T, opts SetupOptions) {
+	if opts.Config != nil {
+		addLibrarianConfig(t, opts.Config)
+	}
+
+	if opts.Tag != "" {
+		if err := command.Run(t.Context(), "git", "tag", opts.Tag); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Must be handled after tagging for tests that need to detect untagged
+	// changes needing release.
+	if len(opts.WithChanges) > 0 {
+		for _, srcPath := range opts.WithChanges {
+			f, err := os.OpenFile(srcPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer f.Close()
+
+			// Append a new line to the end of each file to show as "changed".
+			if _, err := fmt.Fprintln(f, ""); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed file(s)", "."); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// addLibrarianConfig writes the provided librarian.yaml config to disk and
 // commits it. Must be called after a Setup or a Clone.
-func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
+func addLibrarianConfig(t *testing.T, cfg *config.Config) {
 	t.Helper()
 	if cfg == nil {
 		return
@@ -180,7 +288,7 @@ func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add librarian yaml", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add/update librarian yaml", "."); err != nil {
 		t.Fatal(err)
 	}
 }
