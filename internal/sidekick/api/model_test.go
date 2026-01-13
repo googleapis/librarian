@@ -201,6 +201,7 @@ func TestPathTemplateBuilder(t *testing.T) {
 		WithVariable(NewPathVariable("parent", "child").
 			WithLiteral("projects").
 			WithMatch().
+			WithAllowReserved().
 			WithLiteral("locations").
 			WithMatchRecursive()).
 		WithVariableNamed("v2", "field").
@@ -214,8 +215,9 @@ func TestPathTemplateBuilder(t *testing.T) {
 			},
 			{
 				Variable: &PathVariable{
-					FieldPath: []string{"parent", "child"},
-					Segments:  []string{"projects", "*", "locations", "**"},
+					FieldPath:     []string{"parent", "child"},
+					Segments:      []string{"projects", "*", "locations", "**"},
+					AllowReserved: true,
 				},
 			},
 			{
