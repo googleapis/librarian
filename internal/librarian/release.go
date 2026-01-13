@@ -38,7 +38,7 @@ func releaseCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
 		Usage:     "update versions and prepare release artifacts",
-		UsageText: "librarian release [library] [--all] [--execute]",
+		UsageText: "librarian release [library] [--all]",
 		Description: `Release updates version numbers and prepares the files needed for a new release.
 
 If a library name is given, only that library is updated. The --all flag updates every
