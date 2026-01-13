@@ -35,7 +35,7 @@ func publishCommand() *cli.Command {
 				Usage: "print commands without executing",
 			},
 			&cli.BoolFlag{
-				Name:  "dry-run-non-stop",
+				Name:  "dry-run-keep-going",
 				Usage: "print commands without executing, don't stop on error",
 			},
 			&cli.BoolFlag{
@@ -50,22 +50,18 @@ func publishCommand() *cli.Command {
 			}
 			dryRun := cmd.Bool("dry-run")
 			skipSemverChecks := cmd.Bool("skip-semver-checks")
-			keepGoing := false
-			if cmd.Bool("dry-run-non-stop") {
-				dryRun = true
-				keepGoing = true
-			}
-			return publish(ctx, cfg, dryRun, keepGoing, skipSemverChecks)
+			dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
+			return publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks)
 		},
 	}
 }
 
-func publish(ctx context.Context, cfg *config.Config, dryRun, keepGoing, skipSemverChecks bool) error {
+func publish(ctx context.Context, cfg *config.Config, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
 	switch cfg.Language {
 	case languageFake:
 		return fakePublish()
 	case languageRust:
-		return rust.Publish(ctx, cfg.Release, dryRun, keepGoing, skipSemverChecks)
+		return rust.Publish(ctx, cfg.Release, dryRun, dryRunKeepGoing, skipSemverChecks)
 	default:
 		return fmt.Errorf("publish not implemented for %q", cfg.Language)
 	}
