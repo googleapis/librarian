@@ -251,10 +251,10 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	language := "rust"
 	if module.Language != "" {
 		language = module.Language
-	}
-	if module.Template == "prost" {
+	} else if module.Template == "prost" {
 		language = "rust+prost"
 	}
+
 	specificationFormat := "protobuf"
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
