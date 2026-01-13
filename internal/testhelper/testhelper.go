@@ -236,6 +236,7 @@ func Setup(t *testing.T, opts SetupOptions) string {
 }
 
 func setup(t *testing.T, opts SetupOptions) {
+	t.Helper()
 	if opts.Config != nil {
 		addLibrarianConfig(t, opts.Config)
 	}
@@ -251,25 +252,25 @@ func setup(t *testing.T, opts SetupOptions) {
 	if len(opts.WithChanges) > 0 {
 		for _, srcPath := range opts.WithChanges {
 			// Touch each target file.
-			if err := func() error {
-				f, err := os.OpenFile(srcPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-
-				// Append a new line to the end of each file to show as "changed".
-				if _, err := fmt.Fprintln(f, ""); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				t.Fatal(err)
-			}
+			touchFile(t, srcPath)
 		}
 		if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed file(s)", "."); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func touchFile(t *testing.T, path string) {
+	t.Helper()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	// Append a new line to the end of each file to show as "changed".
+	if _, err := fmt.Fprintln(f, ""); err != nil {
+		t.Fatal(err)
 	}
 }
 
