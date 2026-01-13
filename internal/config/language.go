@@ -79,6 +79,8 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// Language can be used to select a variation of the Rust generator.
+	// For example, `rust_storage` enables special handling for the storage client.
 	Language string `yaml:"language,omitempty"`
 
 	// ModulePath is the Rust module path for converters
@@ -106,6 +108,7 @@ type RustModule struct {
 	// SkippedIds is a list of proto IDs to skip in generation.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
+	// SpecificationFormat overrides the library-level specification format.
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
 	// Source is the proto path to generate from (e.g., "google/storage/v2").
