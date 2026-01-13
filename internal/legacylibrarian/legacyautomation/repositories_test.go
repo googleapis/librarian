@@ -346,3 +346,16 @@ func TestRepositoryGitUrl(t *testing.T) {
 		})
 	}
 }
+
+func TestProdRepositoriesAreSorted(t *testing.T) {
+	config, err := loadRepositoriesConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i < len(config.Repositories); i++ {
+		if config.Repositories[i-1].Name > config.Repositories[i].Name {
+			t.Errorf("repositories are not sorted: %s should be before %s",
+				config.Repositories[i].Name, config.Repositories[i-1].Name)
+		}
+	}
+}

@@ -43,6 +43,10 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 			WithVariableNamed("zone").
 			WithVariableNamed("parentName").
 			WithLiteral("reservationSubBlocks")},
+		{"v1/{+parent}/externalAccountKeys", api.NewPathTemplate().
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatch()).
+			WithLiteral("externalAccountKeys")},
 	} {
 		got, err := ParseUriTemplate(test.input)
 		if err != nil {
@@ -59,7 +63,6 @@ func TestParseUriTemplateError(t *testing.T) {
 	for _, test := range []struct {
 		input string
 	}{
-		{"v1/{+parent}/externalAccountKeys"},
 		{"a/b/c/"},
 		{"a/b/c|"},
 		{"a/b/{c}|"},
@@ -101,11 +104,16 @@ func TestParseExpression(t *testing.T) {
 
 func TestParseExpressionError(t *testing.T) {
 	for _, input := range []string{
-		"", "(a)",
-		"{+a}", "{#a}",
+		"",
+		"{}",
+		"{+}",
+		"{#}",
+		"(a)",
+		"{#a}",
 		"{.a}", "{/a}", "{?a}", "{&a}",
 		"{=a}", "{,a}", "{!a}", "{@a}", "{|a}",
-		"{a,b}", "{_abc}", "{0abc}", "{ab"} {
+		"{a,b}", "{_abc}", "{0abc}", "{ab", "{abc/}",
+		"{+abc", "{+abc/}"} {
 		if gotSegment, gotWidth, err := parseExpression(input); err == nil {
 			t.Errorf("expected a parsing error with input=%s, gotSegment=%v, gotWidth=%v", input, gotSegment, gotWidth)
 		}

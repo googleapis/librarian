@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	identifierRe = regexp.MustCompile("[A-Za-z][A-Za-z0-9_]*")
+	identifierRe = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_]*$")
 )
 
 // ParseUriTemplate parses a [RFC 6570] URI template as an `api.PathTemplate`.
@@ -73,25 +73,40 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 		return nil, 0, fmt.Errorf("missing `{` character in expression %q", input)
 	}
 	tail := input[1:]
-	if strings.IndexAny(tail, "+#") == 0 {
-		return nil, 0, fmt.Errorf("level 2 expressions unsupported input=%q", input)
+	end := strings.IndexRune(tail, endExpression)
+	if end == -1 {
+		return nil, 0, fmt.Errorf("missing `}` character at the end of the expression %q", input)
 	}
+	tail = tail[:end]
+	if tail == "" {
+		return nil, 0, fmt.Errorf("empty expression %q", input)
+	}
+
 	if strings.IndexAny(tail, "./?&") == 0 {
 		return nil, 0, fmt.Errorf("level 3 expressions unsupported input=%q", input)
 	}
 	if strings.IndexAny(tail, "=,!@|") == 0 {
 		return nil, 0, fmt.Errorf("reserved character on expression %q", input)
 	}
-	match := identifierRe.FindStringIndex(tail)
-	if match[0] != 0 {
-		return nil, 0, fmt.Errorf("no identifier found on expression %q", input)
+
+	allowReserved := false
+	switch tail[0] {
+	case '+':
+		allowReserved = true
+		tail = tail[1:]
+	case '#':
+		return nil, 0, fmt.Errorf("level 2 fragment expressions unsupported input=%q", input)
 	}
-	id := tail[0:match[1]]
-	tail = tail[match[1]:]
-	if tail == "" || tail[0] != endExpression {
-		return nil, 0, fmt.Errorf("missing `}` character at the end of the expression %q", input)
+
+	match := identifierRe.MatchString(tail)
+	if !match {
+		return nil, 0, fmt.Errorf("invalid varname found on expression %q", input)
 	}
-	return &api.PathSegment{Variable: api.NewPathVariable(id).WithMatch()}, match[1] + 2, nil
+	variable := api.NewPathVariable(tail).WithMatch()
+	if allowReserved {
+		variable.WithAllowReserved()
+	}
+	return &api.PathSegment{Variable: variable}, end + 2, nil
 }
 
 // parseLiteral() extracts a literal value from `input`.
