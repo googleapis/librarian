@@ -30,8 +30,8 @@ import (
 	"github.com/googleapis/librarian/internal/git"
 )
 
-// Publish finds all the crates that should be published, (optionally) runs
-// `cargo semver-checks` and (optionally) publishes them.
+// Publish finds all the crates that should be published. It can optionally
+// run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
 	if err := preFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
