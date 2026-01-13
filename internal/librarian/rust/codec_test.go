@@ -745,6 +745,24 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with prost as module template",
+			library: &config.Library{
+				Name: "google-cloud-showcase",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language: "rust+prost",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
