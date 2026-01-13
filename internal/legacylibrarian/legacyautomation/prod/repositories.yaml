@@ -139,6 +139,11 @@ repositories:
     github-token-secret-name: "python-spanner-sqlalchemy-github-token"
     supported-commands:
       - publish-release
+  - name: "python-storage"
+    full-name: https://github.com/googleapis/python-storage
+    github-token-secret-name: "python-storage-github-token"
+    supported-commands:
+      - publish-release
   - name: "python-test-utils"
     full-name: https://github.com/googleapis/python-test-utils
     github-token-secret-name: "python-test-utils-github-token"
