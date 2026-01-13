@@ -29,9 +29,9 @@ import (
 )
 
 var (
-	errLibraryAlreadyExists = errors.New("library requested for creation already exists")
-	errUnsupportedLanguage  = errors.New("library creation is not supported for the specified language")
-	errMissingLibraryName   = errors.New("must provide library name as argument to create a new library")
+	errLibraryAlreadyExists = errors.New("library requested to add already exists in config")
+	errUnsupportedLanguage  = errors.New("library addition is not supported for the specified language")
+	errMissingLibraryName   = errors.New("must provide library name as argument to add a new library")
 	errNoYaml               = errors.New("unable to read librarian.yaml")
 )
 
@@ -56,12 +56,12 @@ func addCommand() *cli.Command {
 			if len(args.Slice()) > 1 {
 				channels = args.Slice()[1:]
 			}
-			return runCreate(ctx, name, c.String("output"), channels...)
+			return runAdd(ctx, name, c.String("output"), channels...)
 		},
 	}
 }
 
-func runCreate(ctx context.Context, name, output string, channel ...string) error {
+func runAdd(ctx context.Context, name, output string, channel ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)

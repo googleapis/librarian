@@ -118,7 +118,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			err = runCreate(t.Context(), test.libName, test.output)
+			err = runAdd(t.Context(), test.libName, test.output)
 			if test.wantError != nil {
 				if !errors.Is(err, test.wantError) {
 					t.Errorf("expected error %v, got %v", test.wantError, err)
