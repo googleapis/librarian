@@ -249,13 +249,20 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	}
 
 	language := "rust"
+	if module.Language != "" {
+		language = module.Language
+	}
 	if module.Template == "prost" {
 		language = "rust+prost"
+	}
+	specificationFormat := "protobuf"
+	if module.SpecificationFormat != "" {
+		specificationFormat = module.SpecificationFormat
 	}
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
 			Language:            language,
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: specificationFormat,
 			ServiceConfig:       module.ServiceConfig,
 			SpecificationSource: module.Source,
 		},
