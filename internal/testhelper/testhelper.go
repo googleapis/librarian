@@ -210,14 +210,6 @@ func SetupRepo(t *testing.T) string {
 	return remoteDir
 }
 
-// SetupRepoWithConfig invokes [SetupRepo] then [addLibrarianConfig].
-func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
-	t.Helper()
-	remoteDir := SetupRepo(t)
-	addLibrarianConfig(t, cfg)
-	return remoteDir
-}
-
 // SetupOptions include the various options for configuring test setup.
 type SetupOptions struct {
 	// Config is the [config.Config] to write to librarian.yaml in the root
@@ -258,14 +250,20 @@ func setup(t *testing.T, opts SetupOptions) {
 	// changes needing release.
 	if len(opts.WithChanges) > 0 {
 		for _, srcPath := range opts.WithChanges {
-			f, err := os.OpenFile(srcPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer f.Close()
+			// Touch each target file.
+			if err := func() error {
+				f, err := os.OpenFile(srcPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
 
-			// Append a new line to the end of each file to show as "changed".
-			if _, err := fmt.Fprintln(f, ""); err != nil {
+				// Append a new line to the end of each file to show as "changed".
+				if _, err := fmt.Fprintln(f, ""); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
 				t.Fatal(err)
 			}
 		}
