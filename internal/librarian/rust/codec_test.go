@@ -707,6 +707,44 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with custom module language",
+			library: &config.Library{
+				Name: "google-cloud-showcase",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Language: "rust_storage",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust_storage",
+					SpecificationFormat: "protobuf",
+				},
+			},
+		},
+		{
+			name: "with custom module specification format",
+			library: &config.Library{
+				Name: "google-cloud-showcase",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							SpecificationFormat: "none",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "none",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
