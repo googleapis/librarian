@@ -105,6 +105,9 @@ func TestParseExpression(t *testing.T) {
 func TestParseExpressionError(t *testing.T) {
 	for _, input := range []string{
 		"",
+		"{}",
+		"{+}",
+		"{#}",
 		"(a)",
 		"{#a}",
 		"{.a}", "{/a}", "{?a}", "{&a}",
