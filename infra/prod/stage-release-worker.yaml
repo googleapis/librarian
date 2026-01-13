@@ -15,7 +15,7 @@
 # This runs the `librarian release stage` command with a provided repository,
 # secret name, and optional library ID
 steps:
-  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher@sha256:01221b73c6230a693de5b4238fd8b703a5521d90ec01621b011a11ece23c902d
+  - name: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-dispatcher@sha256:cdf8f611d69118bc52ff1cb84d36d355e7a6e94b1d6f2ce6d499589adae0b2f2
     id: stage-release-dispatcher
     args:
       - '--project=$PROJECT_ID'
