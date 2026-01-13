@@ -39,7 +39,7 @@ func addCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
-		UsageText: "librarian create <library> [apis...] [flags]",
+		UsageText: "librarian add <library> [apis...] [flags]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "output",
