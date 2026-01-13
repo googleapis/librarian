@@ -88,14 +88,22 @@ func generateVeneer(ctx context.Context, library *config.Library, googleapisDir,
 		case "rust_storage":
 			// The StorageControl client depends on multiple specification sources.
 			// We load them both here manually, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-			storageModule := findModuleByOutput(library, "src/storage/src/generated/gapic")
+			output := "src/storage/src/generated/gapic"
+			storageModule := findModuleByOutput(library, output)
+			if storageModule == nil {
+				return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
+			}
 			storageConfig := moduleToSidekickConfig(library, storageModule, googleapisDir, protobufSrcDir)
 			storageModel, err := parser.CreateModel(storageConfig)
 			if err != nil {
 				return fmt.Errorf("module %s: %w", module.Output, err)
 			}
 
+			output = "src/storage/src/generated/gapic_control"
 			controlModule := findModuleByOutput(library, "src/storage/src/generated/gapic_control")
+			if controlModule == nil {
+				return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
+			}
 			controlConfig := moduleToSidekickConfig(library, controlModule, googleapisDir, protobufSrcDir)
 			controlModel, err := parser.CreateModel(controlConfig)
 			if err != nil {
