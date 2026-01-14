@@ -99,6 +99,8 @@ type RustModule struct {
 	// PostProcessProtos contains code to post-process generated protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
+	RootName string `yaml:"root_name,omitempty"`
+
 	// RoutingRequired indicates whether routing is required.
 	RoutingRequired bool `yaml:"routing_required,omitempty"`
 

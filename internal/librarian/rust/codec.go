@@ -320,6 +320,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.DisabledRustdocWarnings != nil {
 		codec["disabled-rustdoc-warnings"] = strings.Join(module.DisabledRustdocWarnings, ",")
 	}
+	if module.RootName != "" {
+		codec["root-name"] = module.RootName
+	}
 
 	return codec
 }
