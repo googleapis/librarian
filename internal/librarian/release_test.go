@@ -319,7 +319,7 @@ func TestReleaseLibrary(t *testing.T) {
 
 			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := releaseLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git")
+			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git")
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}

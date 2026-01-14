@@ -238,9 +238,8 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 	if libConfig.Version == "" {
 		if cfg.Release.Branch == defaultPreviewBranch {
 			return defaultPreviewVersion, nil
-		} else {
-			return defaultVersion, nil
 		}
+		return defaultVersion, nil
 	}
 
 	if cfg.Release.Branch == defaultPreviewBranch {
