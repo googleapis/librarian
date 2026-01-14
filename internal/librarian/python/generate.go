@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // Generate generates a Python client library.
@@ -71,7 +72,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// channel.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	absoluteServiceConfig := filepath.Join(googleapisDir, library.Channels[0].Path, library.Channels[0].ServiceConfig)
+	channel, err := serviceconfig.Find(googleapisDir, library.Channels[0].Path)
+	if err != nil {
+		return fmt.Errorf("failed to lookup service config: %w", err)
+	}
+	absoluteServiceConfig := filepath.Join(googleapisDir, channel.ServiceConfig)
 	if err := repometadata.GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
@@ -147,7 +152,7 @@ func generateChannel(ctx context.Context, channel *config.Channel, library *conf
 	return nil
 }
 
-func createProtocOptions(channel *config.Channel, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+func createProtocOptions(ch *config.Channel, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
 	// GAPIC library: generate full client library
 	var opts []string
 
@@ -168,7 +173,7 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 	}
 	// Then options that apply to this specific channel
 	if library.Python != nil && len(library.Python.OptArgsByChannel) > 0 {
-		apiOptArgs, ok := library.Python.OptArgsByChannel[channel.Path]
+		apiOptArgs, ok := library.Python.OptArgsByChannel[ch.Path]
 		if ok {
 			opts = append(opts, apiOptArgs...)
 		}
@@ -181,7 +186,7 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 
 	// Add gRPC service config (retry/timeout settings)
 	// Auto-discover: look for *_grpc_service_config.json in the API directory
-	apiDir := filepath.Join(googleapisDir, channel.Path)
+	apiDir := filepath.Join(googleapisDir, ch.Path)
 	grpcConfigPath := ""
 	matches, err := filepath.Glob(filepath.Join(apiDir, "*_grpc_service_config.json"))
 	if err == nil && len(matches) > 0 {
@@ -197,9 +202,12 @@ func createProtocOptions(channel *config.Channel, library *config.Library, googl
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
-	// Add service YAML (API metadata) if provided
-	if channel.ServiceConfig != "" {
-		opts = append(opts, fmt.Sprintf("service-yaml=%s", filepath.Join(channel.Path, channel.ServiceConfig)))
+	channel, err := serviceconfig.Find(googleapisDir, ch.Path)
+	if err != nil {
+		return nil, err
+	}
+	if channel != nil && channel.ServiceConfig != "" {
+		opts = append(opts, fmt.Sprintf("service-yaml=%s", channel.ServiceConfig))
 	}
 
 	return []string{

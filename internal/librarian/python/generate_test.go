@@ -70,7 +70,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -79,7 +79,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{Transport: "grpc"},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=transport=grpc,rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--python_gapic_opt=transport=grpc,rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -108,7 +108,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -117,14 +117,13 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{Version: "1.2.3"},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--python_gapic_opt=rest-numeric-enums,metadata,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
 			name: "with service config",
 			channel: &config.Channel{
-				Path:          "google/cloud/secretmanager/v1",
-				ServiceConfig: "secretmanager_v1.yaml",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			library: &config.Library{},
 			expected: []string{
@@ -363,8 +362,7 @@ func TestGenerate(t *testing.T) {
 		Output: outdir,
 		Channels: []*config.Channel{
 			{
-				Path:          "google/cloud/secretmanager/v1",
-				ServiceConfig: "secretmanager_v1.yaml",
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 	}

@@ -205,7 +205,4 @@ type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
-
-	// ServiceConfig is the path to the service config file.
-	ServiceConfig string `yaml:"service_config,omitempty"`
 }

@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -92,25 +91,18 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default, googleapisDir string, fillInDefaults bool) (*config.Library, error) {
+func prepareLibrary(language string, lib *config.Library, defaults *config.Default, fillInDefaults bool) (*config.Library, error) {
 	if len(lib.Channels) == 0 {
 		// If no channels are specified, create an empty channel first
 		lib.Channels = append(lib.Channels, &config.Channel{})
 	}
 
 	// The googleapis path of a veneer library lives in language-specific configurations,
-	// so we only need to derive the path and service config for non-veneer libraries.
+	// so we only need to derive the path for non-veneer libraries.
 	if !lib.Veneer {
 		for _, ch := range lib.Channels {
 			if ch.Path == "" {
 				ch.Path = deriveChannelPath(language, lib.Name)
-			}
-			if ch.ServiceConfig == "" && googleapisDir != "" {
-				sc, err := serviceconfig.Find(googleapisDir, ch.Path)
-				if err != nil {
-					return nil, err
-				}
-				ch.ServiceConfig = sc
 			}
 		}
 	}

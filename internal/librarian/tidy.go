@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -62,20 +61,16 @@ func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
-	}
 
 	for _, lib := range cfg.Libraries {
-		if err := tidyLibrary(cfg, lib, googleapisDir); err != nil {
+		if err := tidyLibrary(cfg, lib); err != nil {
 			return err
 		}
 	}
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
 }
 
-func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) error {
+func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 	if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
@@ -87,12 +82,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library, googleapisDir string) 
 		if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
 			ch.Path = ""
 		}
-		if isDerivableServiceConfig(cfg.Language, lib, ch, googleapisDir) {
-			ch.ServiceConfig = ""
-		}
 	}
 	lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
-		return ch.Path == "" && ch.ServiceConfig == ""
+		return ch.Path == ""
 	})
 	tidyLanguageConfig(lib, cfg.Language)
 	return nil
@@ -105,21 +97,6 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 
 func isDerivableChannelPath(language string, name, channel string) bool {
 	return channel == deriveChannelPath(language, name)
-}
-
-func isDerivableServiceConfig(language string, lib *config.Library, ch *config.Channel, googleapisDir string) bool {
-	if ch.ServiceConfig == "" {
-		return false
-	}
-	path := ch.Path
-	if path == "" {
-		path = deriveChannelPath(language, lib.Name)
-	}
-	derived, err := serviceconfig.Find(googleapisDir, path)
-	if err != nil {
-		return false
-	}
-	return ch.ServiceConfig == derived
 }
 
 func validateLibraries(cfg *config.Config) error {

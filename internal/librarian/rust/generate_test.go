@@ -51,16 +51,14 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 			Modules: []*config.RustModule{
 				{
-					Source:        "google/cloud/secretmanager/v1",
-					ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-					Output:        module1Dir,
-					Template:      "grpc-client",
+					Source:   "google/cloud/secretmanager/v1",
+					Output:   module1Dir,
+					Template: "grpc-client",
 				},
 				{
-					Source:        "google/cloud/secretmanager/v1",
-					ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-					Output:        module2Dir,
-					Template:      "grpc-client",
+					Source:   "google/cloud/secretmanager/v1",
+					Output:   module2Dir,
+					Template: "grpc-client",
 				},
 			},
 		},
@@ -202,8 +200,7 @@ func TestGenerate(t *testing.T) {
 		CopyrightYear: "2025",
 		Channels: []*config.Channel{
 			{
-				Path:          "google/cloud/secretmanager/v1",
-				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 		Rust: &config.RustCrate{
@@ -296,6 +293,62 @@ func TestDeriveChannelPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DeriveChannelPath(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindModuleByOutput(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		lib    *config.Library
+		output string
+		want   *config.RustModule
+	}{
+		{
+			name: "find the module",
+			lib: &config.Library{
+				Name: "test",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Language: "target-language",
+							Output:   "target-output",
+						},
+						{
+							Language: "other-language",
+							Output:   "other-output",
+						},
+					},
+				},
+			},
+			output: "target-output",
+			want: &config.RustModule{
+				Language: "target-language",
+				Output:   "target-output",
+			},
+		},
+		{
+			name: "does not find the module",
+			lib: &config.Library{
+				Name: "test",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Language: "other-language",
+							Output:   "other-output",
+						},
+					},
+				},
+			},
+			output: "target-output",
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findModuleByOutput(test.lib, test.output)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

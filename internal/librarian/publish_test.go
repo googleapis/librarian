@@ -35,7 +35,7 @@ func TestPublish(t *testing.T) {
 			Branch: "main",
 		},
 	}
-	if err := publish(t.Context(), cfg, false, false); err != nil {
+	if err := publish(t.Context(), cfg, false, false, false); err != nil {
 		t.Fatal(err)
 	}
 

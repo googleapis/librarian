@@ -265,7 +265,7 @@ func TestReleaseLibrary(t *testing.T) {
 
 			targetLibCfg := test.cfg.Libraries[0]
 			// Unused string params: lastTag, googleapisDir.
-			err := releaseLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git", testUnusedStringParam)
+			err := releaseLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git")
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -315,7 +315,7 @@ func TestReleaseAll(t *testing.T) {
 				WithChanges: test.withChanges,
 			})
 			testhelper.CloneRepository(t, remoteDir)
-			err := releaseAll(t.Context(), test.cfg, sample.InitialTag, "git", testUnusedStringParam)
+			err := releaseAll(t.Context(), test.cfg, sample.InitialTag, "git")
 			if err != nil {
 				t.Fatal(err)
 			}

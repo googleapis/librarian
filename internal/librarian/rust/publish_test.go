@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -50,7 +51,7 @@ func TestPublishCratesSuccess(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -85,7 +86,7 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 		path.Join("src", "pubsub", "src", "lib.rs"),
 	}
 	lastTag := "release-with-new-crate"
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -119,7 +120,7 @@ func TestPublishCratesWithRootsPem(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-with-roots-pem"
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -158,7 +159,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
 }
@@ -180,7 +181,7 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
 }
@@ -209,7 +210,7 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
 }
@@ -254,11 +255,11 @@ fi
 	lastTag := "release-2001-02-03"
 
 	// This should fail because semver-checks fails.
-	if err := publishCrates(t.Context(), cfg, true, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// Skipping the checks should succeed.
-	if err := publishCrates(t.Context(), cfg, true, true, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -283,7 +284,7 @@ func TestPublishSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := Publish(t.Context(), cfg, true, false); err != nil {
+	if err := Publish(t.Context(), cfg, true, false, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -314,7 +315,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := Publish(t.Context(), config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false, false); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
@@ -325,7 +326,7 @@ func TestPublishPreflightError(t *testing.T) {
 			"git": "git-not-found",
 		},
 	}
-	if err := Publish(t.Context(), config, true, false); err == nil {
+	if err := Publish(t.Context(), config, true, false, false); err == nil {
 		t.Errorf("expected a preflight error with a bad git command")
 	}
 }
@@ -343,7 +344,111 @@ func TestPublishLastTagError(t *testing.T) {
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := Publish(t.Context(), &config, true, false); err == nil {
+	if err := Publish(t.Context(), &config, true, false, false); err == nil {
 		t.Fatalf("expected an error during GetLastTag")
+	}
+}
+
+func TestPublishCratesDryRunKeepGoing(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
+
+	testhelper.RequireCommand(t, "git")
+	tmpDir := t.TempDir()
+	// Create a fake cargo that captures its arguments.
+	cargoScript := path.Join(tmpDir, "cargo")
+	script := `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
+	echo $@ >> "` + path.Join(tmpDir, "cargo_args.txt") + `"
+else
+	/bin/echo $@
+fi
+`
+	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": cargoScript,
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	testhelper.CloneRepository(t, remoteDir)
+	files := []string{
+		path.Join("src", "storage", "Cargo.toml"),
+		path.Join("src", "storage", "src", "lib.rs"),
+	}
+	lastTag := "release-2001-02-03"
+
+	if err := publishCrates(t.Context(), cfg, true, true, false, lastTag, files); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that arguments were passed to cargo workspaces publish.
+	output, err := os.ReadFile(path.Join(tmpDir, "cargo_args.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(output), "--keep-going") {
+		t.Errorf("expected cargo command to contain '--keep-going', got: %s", string(output))
+	}
+	if count := strings.Count(string(output), "--dry-run"); count != 1 {
+		t.Errorf("expected cargo command to contain '--dry-run' once, but found %d times: %s", count, string(output))
+	}
+}
+
+func TestPublishCratesSemverChecksKeepGoing(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
+
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	tmpDir := t.TempDir()
+	// Create a fake cargo that fails on `semver-checks`
+	cargoScript := path.Join(tmpDir, "cargo")
+	script := `#!/bin/bash
+if [ "$1" == "semver-checks" ]; then
+	exit 1
+elif [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+else
+	/bin/echo $@
+fi
+`
+	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": cargoScript,
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	testhelper.CloneRepository(t, remoteDir)
+	files := []string{
+		path.Join("src", "storage", "Cargo.toml"),
+		path.Join("src", "storage", "src", "lib.rs"),
+	}
+	lastTag := "release-2001-02-03"
+
+	// This should fail because semver-checks fails.
+	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err == nil {
+		t.Fatal("expected an error from semver-checks")
+	}
+	// With --keep-going, this should succeed.
+	if err := publishCrates(t.Context(), cfg, true, true, false, lastTag, files); err != nil {
+		t.Fatal(err)
 	}
 }

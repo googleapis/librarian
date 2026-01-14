@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -76,18 +77,14 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
-	}
-	return routeGenerate(ctx, all, cfg, googleapisDir, libraryName)
+	return routeGenerate(ctx, all, cfg, libraryName)
 }
 
-func routeGenerate(ctx context.Context, all bool, cfg *config.Config, googleapisDir, libraryName string) error {
+func routeGenerate(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
 	if all {
-		return generateAll(ctx, cfg, googleapisDir)
+		return generateAll(ctx, cfg)
 	}
-	lib, err := generateLibrary(ctx, cfg, googleapisDir, libraryName)
+	lib, err := generateLibrary(ctx, cfg, libraryName)
 	if err != nil {
 		return err
 	}
@@ -98,9 +95,9 @@ func routeGenerate(ctx context.Context, all bool, cfg *config.Config, googleapis
 	return formatLibrary(ctx, cfg.Language, lib)
 }
 
-func generateAll(ctx context.Context, cfg *config.Config, googleapisDir string) error {
+func generateAll(ctx context.Context, cfg *config.Config) error {
 	for _, lib := range cfg.Libraries {
-		lib, err := generateLibrary(ctx, cfg, googleapisDir, lib.Name)
+		lib, err := generateLibrary(ctx, cfg, lib.Name)
 		if err != nil {
 			return err
 		}
@@ -133,20 +130,43 @@ func deriveChannelPath(language, name string) string {
 	}
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, googleapisDir, libraryName string) (*config.Library, error) {
+func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string) (*config.Library, error) {
 	for _, lib := range cfg.Libraries {
 		if lib.Name == libraryName {
 			if lib.SkipGenerate {
 				return nil, nil
 			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, googleapisDir, true)
+			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, true)
 			if err != nil {
 				return nil, err
+			}
+			if _, err := os.Stat(lib.Output); os.IsNotExist(err) {
+				if err := generateNewLibrarySkeleton(ctx, cfg, lib); err != nil {
+					return nil, err
+				}
 			}
 			return generate(ctx, cfg.Language, lib, cfg.Sources)
 		}
 	}
 	return nil, fmt.Errorf("library %q not found", libraryName)
+}
+
+func generateNewLibrarySkeleton(ctx context.Context, cfg *config.Config, lib *config.Library) error {
+	switch cfg.Language {
+	case languageFake:
+		if err := fakeCreateSkeleton(lib); err != nil {
+			return err
+		}
+	case languageRust:
+		if err := rust.Create(ctx, lib.Output, func(ctx context.Context) error {
+			return RunTidyOnConfig(ctx, cfg)
+		}); err != nil {
+			return err
+		}
+	default:
+		return errUnsupportedLanguage
+	}
+	return nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, cfgSources *config.Sources) (_ *config.Library, err error) {
@@ -168,28 +188,11 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 			return nil, err
 		}
 	case languageRust:
-		sources := &rust.Sources{
-			Googleapis: googleapisDir,
-		}
-		sources.Discovery, err = fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		sources, err := fetchRustSources(ctx, cfgSources)
 		if err != nil {
 			return nil, err
 		}
-		sources.Conformance, err = fetchSource(ctx, cfgSources.Conformance, protobufRepo)
-		if err != nil {
-			return nil, err
-		}
-		sources.Showcase, err = fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
-		if err != nil {
-			return nil, err
-		}
-		if cfgSources.ProtobufSrc != nil {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
-			if err != nil {
-				return nil, err
-			}
-			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
-		}
+		sources.Googleapis = googleapisDir
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
@@ -205,6 +208,53 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 	}
 	fmt.Printf("✓ Successfully generated %s\n", library.Name)
 	return library, nil
+}
+
+// fetchRustSources fetches all source repositories needed for Rust generation
+// in parallel. It returns a rust.Sources struct with all directories populated.
+func fetchRustSources(ctx context.Context, cfgSources *config.Sources) (*rust.Sources, error) {
+	sources := &rust.Sources{}
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		dir, err := fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		if err != nil {
+			return err
+		}
+		sources.Discovery = dir
+		return nil
+	})
+	g.Go(func() error {
+		dir, err := fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		if err != nil {
+			return err
+		}
+		sources.Conformance = dir
+		return nil
+	})
+	g.Go(func() error {
+		dir, err := fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		if err != nil {
+			return err
+		}
+		sources.Showcase = dir
+		return nil
+	})
+
+	if cfgSources.ProtobufSrc != nil {
+		g.Go(func() error {
+			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+			if err != nil {
+				return err
+			}
+			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return sources, nil
 }
 
 func formatLibrary(ctx context.Context, language string, library *config.Library) error {

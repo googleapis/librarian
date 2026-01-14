@@ -79,6 +79,10 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// Language can be used to select a variation of the Rust generator.
+	// For example, `rust_storage` enables special handling for the storage client.
+	Language string `yaml:"language,omitempty"`
+
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
@@ -95,6 +99,10 @@ type RustModule struct {
 	// PostProcessProtos contains code to post-process generated protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
+	// RootName is the key for the root directory in the source map.
+	// It overrides the default root, googleapis-root, used by the rust+prost generator.
+	RootName string `yaml:"root_name,omitempty"`
+
 	// RoutingRequired indicates whether routing is required.
 	RoutingRequired bool `yaml:"routing_required,omitempty"`
 
@@ -104,15 +112,15 @@ type RustModule struct {
 	// SkippedIds is a list of proto IDs to skip in generation.
 	SkippedIds []string `yaml:"skipped_ids,omitempty"`
 
+	// SpecificationFormat overrides the library-level specification format.
+	SpecificationFormat string `yaml:"specification_format,omitempty"`
+
 	// Source is the proto path to generate from (e.g., "google/storage/v2").
 	Source string `yaml:"source"`
 
 	// Template specifies which generator template to use.
 	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
 	Template string `yaml:"template"`
-
-	// TitleOverride overrides the crate title.
-	TitleOverride string `yaml:"title_override,omitempty"`
 }
 
 // RustCrate contains Rust-specific library configuration.
@@ -132,9 +140,6 @@ type RustCrate struct {
 
 	// TemplateOverride overrides the default template.
 	TemplateOverride string `yaml:"template_override,omitempty"`
-
-	// TitleOverride overrides the crate title.
-	TitleOverride string `yaml:"title_override,omitempty"`
 
 	// PackageNameOverride overrides the package name.
 	PackageNameOverride string `yaml:"package_name_override,omitempty"`

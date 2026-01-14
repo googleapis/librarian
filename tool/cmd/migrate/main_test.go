@@ -179,8 +179,7 @@ func TestBuildGAPIC(t *testing.T) {
 					Name: "google-cloud-security-publicca-v1",
 					Channels: []*config.Channel{
 						{
-							Path:          "google/cloud/security/publicca/v1",
-							ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+							Path: "google/cloud/security/publicca/v1",
 						},
 					},
 					Version:       "1.1.0",
@@ -202,7 +201,6 @@ func TestBuildGAPIC(t *testing.T) {
 						PerServiceFeatures:        true,
 						ModulePath:                "crate",
 						TemplateOverride:          "templates/mod",
-						TitleOverride:             "Google Apps Script Types",
 						PackageNameOverride:       "google-cloud-security-publicca-v1",
 						RootName:                  "conformance-root",
 						DefaultFeatures:           []string{"instances", "projects"},
@@ -222,8 +220,7 @@ func TestBuildGAPIC(t *testing.T) {
 					Name: "google-cloud-sql-v1",
 					Channels: []*config.Channel{
 						{
-							Path:          "google/cloud/sql/v1",
-							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
+							Path: "google/cloud/sql/v1",
 						},
 					},
 					SkipPublish:         true,
@@ -474,7 +471,6 @@ func TestBuildVeneer(t *testing.T) {
 								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
 								Source:                 "google/storage/v2",
 								Template:               "grpc-client",
-								TitleOverride:          "Cloud Firestore API",
 							},
 							{
 								GenerateSetterSamples: "false",
@@ -530,7 +526,6 @@ func TestBuildVeneer(t *testing.T) {
 								ServiceConfig:          "google/storage/v2/storage_v2.yaml",
 								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
 								Source:                 "google/storage/v2",
-								TitleOverride:          "Cloud Firestore API",
 								ModuleRoots: map[string]string{
 									"discovery-root":  "",
 									"googleapis-root": "",
@@ -641,7 +636,6 @@ func TestBuildVeneer(t *testing.T) {
 								SkippedIds:             []string{".google.iam.v1.ResourcePolicyMember"},
 								Source:                 "google/storage/v2",
 								Template:               "grpc-client",
-								TitleOverride:          "Cloud Firestore API",
 							},
 							{
 								GenerateSetterSamples: "false",
@@ -714,8 +708,7 @@ func TestBuildConfig(t *testing.T) {
 					Name: "google-cloud-security-publicca-v1",
 					Channels: []*config.Channel{
 						{
-							Path:          "google/cloud/security/publicca/v1",
-							ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+							Path: "google/cloud/security/publicca/v1",
 						},
 					},
 					Version:       "1.1.0",
@@ -734,8 +727,7 @@ func TestBuildConfig(t *testing.T) {
 					Name: "google-cloud-sql-v1",
 					Channels: []*config.Channel{
 						{
-							Path:          "google/cloud/sql/v1",
-							ServiceConfig: "google/cloud/sql/v1/sqladmin_v1.yaml",
+							Path: "google/cloud/sql/v1",
 						},
 					},
 					SkipPublish: true,
@@ -748,8 +740,7 @@ func TestBuildConfig(t *testing.T) {
 						Name: "google-cloud-security-publicca-v1",
 						Channels: []*config.Channel{
 							{
-								Path:          "google/cloud/security/publicca/v1",
-								ServiceConfig: "google/cloud/security/publicca/v1/publicca_v1.yaml",
+								Path: "google/cloud/security/publicca/v1",
 							},
 						},
 						Version:       "1.1.0",
@@ -797,8 +788,7 @@ func TestBuildConfig(t *testing.T) {
 						Name: "google-cloud-orgpolicy-v1",
 						Channels: []*config.Channel{
 							{
-								Path:          "google/cloud/orgpolicy/v1",
-								ServiceConfig: "",
+								Path: "google/cloud/orgpolicy/v1",
 							},
 						},
 						Version:       "1.1.0",

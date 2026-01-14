@@ -84,28 +84,39 @@ func TestFind(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		channel string
-		want    string
+		want    *API
 		wantErr bool
 	}{
 		{
 			name:    "found",
 			channel: "google/cloud/secretmanager/v1",
-			want:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			want: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
 		},
 		{
 			name:    "not found",
 			channel: "google/cloud/compute/v1",
-			want:    "",
+			want: &API{
+				Path: "google/cloud/compute/v1",
+			},
 		},
 		{
 			name:    "directory does not exist",
 			channel: "google/cloud/nonexistent/v1",
+			want: &API{
+				Path: "google/cloud/nonexistent/v1",
+			},
 			wantErr: true,
 		},
 		{
 			name:    "override",
 			channel: "google/cloud/aiplatform/v1/schema/predict/instance",
-			want:    "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+			want: &API{
+				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
+				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -116,8 +127,8 @@ func TestFind(t *testing.T) {
 				}
 				return
 			}
-			if got != test.want {
-				t.Errorf("Find() = %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

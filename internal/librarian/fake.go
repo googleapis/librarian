@@ -62,3 +62,12 @@ func fakeFormat(library *config.Library) error {
 func fakePublish() error {
 	return os.WriteFile("PUBLISHED", []byte("published\n"), 0644)
 }
+
+func fakeCreateSkeleton(library *config.Library) error {
+	if err := os.MkdirAll(library.Output, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf("# %s\n\nThis is a starter file.\n", library.Name)
+	starterPath := filepath.Join(library.Output, "STARTER.md")
+	return os.WriteFile(starterPath, []byte(content), 0644)
+}
