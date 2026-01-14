@@ -195,3 +195,19 @@ func GetPluralResourceNameForMethod(method *api.Method, model *api.API) string {
 	}
 	return ""
 }
+
+// GetSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
+// hierarchy of truth: first, the explicit `singular` field in the resource
+// definition, and second, inference from the resource pattern.
+func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string {
+	resource := GetResourceForMethod(method, model)
+	if resource != nil {
+		if resource.Singular != "" {
+			return resource.Singular
+		}
+		if len(resource.Patterns) > 0 {
+			return GetSingularFromSegments(resource.Patterns[0])
+		}
+	}
+	return ""
+}
