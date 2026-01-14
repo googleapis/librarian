@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -66,58 +67,7 @@ version = "1.0.0"
 
 	// testRemoteURL is the URL set for the [TestRemote] in the test repository.
 	testRemoteURL = "https://example.com/git.git"
-
-	// TestLib1 is the name of the first library added to the [FakeConfig].
-	TestLib1 = "google-cloud-storage"
-	// TestLib1Output is the [config.Library] Output path of [TestLib1] added
-	// to the [FakeConfig].
-	TestLib1Output = "src/storage"
-	// TestLib2 is the name of the second library added to the [FakeConfig].
-	TestLib2 = "gax-internal"
-	// TestLib2Output is the [config.Library] Output path of [TestLib2] added
-	// to the [FakeConfig].
-	TestLib2Output = "src/gax-internal"
-	// TestInitialTag is the tag form of [TestInitialVersion] for use in tests.
-	TestInitialTag = "v1.0.0"
-	// TestInitialVersion is the initial version assigned to libraries in
-	// [FakeConfig].
-	TestInitialVersion = "1.0.0"
-	// TestNextVersion is the next version typically assigned to libraries
-	// starting from [TestInitialVersion].
-	TestNextVersion = "1.1.0"
 )
-
-// FakeConfig produces a [config.Config] instance populated with most of the
-// properties necessary for testing. It produces a unique instance each time so
-// that individual test cases may modify their own instance as needed.
-func FakeConfig() *config.Config {
-	return &config.Config{
-		Language: "fake",
-		Default:  &config.Default{},
-		Release: &config.Release{
-			Remote: "origin",
-			Branch: "main",
-		},
-		Sources: &config.Sources{
-			Googleapis: &config.Source{
-				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
-				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
-			},
-		},
-		Libraries: []*config.Library{
-			{
-				Name:    TestLib1,
-				Version: TestInitialVersion,
-				Output:  TestLib1Output,
-			},
-			{
-				Name:    TestLib2,
-				Version: TestInitialVersion,
-				Output:  TestLib2Output,
-			},
-		},
-	}
-}
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
 func SetupForVersionBump(t *testing.T, wantTag string) {
@@ -165,9 +115,9 @@ func initRepositoryContents(t *testing.T) {
 	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	AddCrate(t, path.Join("src", "storage"), "google-cloud-storage")
-	AddCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
-	AddCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
+	AddCrate(t, sample.Lib1Output, sample.Lib1Name)
+	AddCrate(t, sample.Lib2Output, sample.Lib2Name)
+	AddCrate(t, path.Join(sample.Lib2Output, "echo-server"), "echo-server")
 	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
@@ -292,7 +242,7 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
-	name := path.Join("src", "storage", "src", "lib.rs")
+	name := path.Join(sample.Lib1Output, "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}

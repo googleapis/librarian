@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -48,41 +49,41 @@ func TestReleaseCommand(t *testing.T) {
 	}{
 		{
 			name:        "library name",
-			args:        []string{"librarian", "release", testhelper.TestLib1},
-			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
+			args:        []string{"librarian", "release", sample.Lib1Name},
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
-				c := testhelper.FakeConfig()
+				c := sample.Config()
 
-				c.Libraries[0].Version = testhelper.TestNextVersion
+				c.Libraries[0].Version = sample.NextVersion
 				return c
 			}(),
 		},
 		{
 			name: "all flag all have changes",
 			args: []string{"librarian", "release", "--all"},
-			cfg:  testhelper.FakeConfig(),
+			cfg:  sample.Config(),
 			withChanges: []string{
-				filepath.Join(testhelper.TestLib1Output, "src", "lib.rs"),
-				filepath.Join(testhelper.TestLib2Output, "src", "lib.rs"),
+				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
+				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
 			},
 			wantCfg: func() *config.Config {
-				c := testhelper.FakeConfig()
+				c := sample.Config()
 
-				c.Libraries[0].Version = testhelper.TestNextVersion
-				c.Libraries[1].Version = testhelper.TestNextVersion
+				c.Libraries[0].Version = sample.NextVersion
+				c.Libraries[1].Version = sample.NextVersion
 				return c
 			}(),
 		},
 		{
 			name:        "all flag 1 has changes",
 			args:        []string{"librarian", "release", "--all"},
-			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
-				c := testhelper.FakeConfig()
+				c := sample.Config()
 
-				c.Libraries[0].Version = testhelper.TestNextVersion
+				c.Libraries[0].Version = sample.NextVersion
 				return c
 			}(),
 		},
@@ -90,7 +91,7 @@ func TestReleaseCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{
 				Config:      test.cfg,
-				Tag:         testhelper.TestInitialTag,
+				Tag:         sample.InitialTag,
 				WithChanges: test.withChanges,
 			})
 			testhelper.CloneRepository(t, remoteDir)
@@ -150,7 +151,7 @@ func TestReleaseCommand_Error(t *testing.T) {
 		{
 			name:    "local repo is dirty",
 			args:    []string{"librarian", "release", "--all"},
-			cfg:     testhelper.FakeConfig(),
+			cfg:     sample.Config(),
 			dirty:   true,
 			wantErr: git.ErrGitStatusUnclean,
 		},
@@ -158,7 +159,7 @@ func TestReleaseCommand_Error(t *testing.T) {
 			name: "release config empty",
 			args: []string{"librarian", "release", "--all"},
 			cfg: func() *config.Config {
-				c := testhelper.FakeConfig()
+				c := sample.Config()
 
 				c.Release = nil
 				return c
@@ -250,8 +251,8 @@ func TestReleaseLibrary(t *testing.T) {
 	}{
 		{
 			name:        "library released",
-			cfg:         testhelper.FakeConfig(),
-			wantVersion: testhelper.TestNextVersion,
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
 		},
 	}
 
@@ -288,33 +289,33 @@ func TestReleaseAll(t *testing.T) {
 	}{
 		{
 			name:        "library has changes",
-			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
-			wantVersion: testhelper.TestNextVersion,
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.NextVersion,
 		},
 		{
 			name:        "library does not have any changes",
-			cfg:         testhelper.FakeConfig(),
-			wantVersion: testhelper.TestInitialVersion,
+			cfg:         sample.Config(),
+			wantVersion: sample.InitialVersion,
 		},
 		{
 			name: "library has changes but skipPublish is true",
 			cfg: func() *config.Config {
-				c := testhelper.FakeConfig()
+				c := sample.Config()
 				c.Libraries[0].SkipPublish = true
 				return c
 			}(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
-			wantVersion: testhelper.TestInitialVersion,
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.InitialVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{
-				Tag:         testhelper.TestInitialTag,
+				Tag:         sample.InitialTag,
 				WithChanges: test.withChanges,
 			})
 			testhelper.CloneRepository(t, remoteDir)
-			err := releaseAll(t.Context(), test.cfg, testhelper.TestInitialTag, "git", testUnusedStringParam)
+			err := releaseAll(t.Context(), test.cfg, sample.InitialTag, "git", testUnusedStringParam)
 			if err != nil {
 				t.Fatal(err)
 			}
