@@ -227,10 +227,13 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir, protobufSrcDir string) *sidekickconfig.Config {
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) *sidekickconfig.Config {
 	source := map[string]string{
-		"googleapis-root":   googleapisDir,
-		"protobuf-src-root": protobufSrcDir,
+		"conformance-root":  sources.Conformance,
+		"discovery-root":    sources.Discovery,
+		"googleapis-root":   sources.Googleapis,
+		"protobuf-src-root": sources.ProtobufSrc,
+		"showcase-root":     sources.Showcase,
 	}
 	for root, dir := range module.ModuleRoots {
 		source[root] = dir

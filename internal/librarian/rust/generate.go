@@ -41,7 +41,7 @@ type Sources struct {
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
 	if library.Veneer {
-		return generateVeneer(ctx, library, sources.Googleapis, sources.ProtobufSrc)
+		return generateVeneer(ctx, library, sources)
 	}
 	if len(library.Channels) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
@@ -72,12 +72,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, googleapisDir, protobufSrcDir string) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
-		sidekickConfig := moduleToSidekickConfig(library, module, googleapisDir, protobufSrcDir)
+		sidekickConfig := moduleToSidekickConfig(library, module, sources)
 		model, err := parser.CreateModel(sidekickConfig)
 		if err != nil {
 			return fmt.Errorf("module %s: %w", module.Output, err)
@@ -86,7 +86,7 @@ func generateVeneer(ctx context.Context, library *config.Library, googleapisDir,
 		case "rust":
 			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
 		case "rust_storage":
-			return generateRustStorage(ctx, library, module.Output, googleapisDir, protobufSrcDir)
+			return generateRustStorage(ctx, library, module.Output, sources)
 		case "rust+prost":
 			err = rust_prost.Generate(ctx, model, module.Output, sidekickConfig)
 		default:
@@ -157,13 +157,13 @@ func DefaultOutput(channel, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput, googleapisDir, protobufSrcDir string) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
 		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
 	}
-	storageConfig := moduleToSidekickConfig(library, storageModule, googleapisDir, protobufSrcDir)
+	storageConfig := moduleToSidekickConfig(library, storageModule, sources)
 	storageModel, err := parser.CreateModel(storageConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create storage model: %w", err)
@@ -174,7 +174,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if controlModule == nil {
 		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
 	}
-	controlConfig := moduleToSidekickConfig(library, controlModule, googleapisDir, protobufSrcDir)
+	controlConfig := moduleToSidekickConfig(library, controlModule, sources)
 	controlModel, err := parser.CreateModel(controlConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create control model: %w", err)
