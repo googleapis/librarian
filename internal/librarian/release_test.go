@@ -30,13 +30,11 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-const (
-	// testUnusedStringParam is used to fill the spot of a string parameter that
-	// won't be provided in the test, because the test does not exercise the
-	// functionality related to said parameter. It is an intentional signal
-	// rather than an ambiguous empty string.
-	testUnusedStringParam = ""
-)
+// testUnusedStringParam is used to fill the spot of a string parameter that
+// won't be provided in the test, because the test does not exercise the
+// functionality related to said parameter. It is an intentional signal
+// rather than an ambiguous empty string.
+const testUnusedStringParam = ""
 
 func TestReleaseCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
@@ -52,7 +50,7 @@ func TestReleaseCommand(t *testing.T) {
 			name:        "library name",
 			args:        []string{"librarian", "release", testhelper.TestLib1},
 			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1SrcPath, "src", "lib.rs")},
+			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
 				c := testhelper.FakeConfig()
 
@@ -65,8 +63,8 @@ func TestReleaseCommand(t *testing.T) {
 			args: []string{"librarian", "release", "--all"},
 			cfg:  testhelper.FakeConfig(),
 			withChanges: []string{
-				filepath.Join(testhelper.TestLib1SrcPath, "src", "lib.rs"),
-				filepath.Join(testhelper.TestLib2SrcPath, "src", "lib.rs"),
+				filepath.Join(testhelper.TestLib1Output, "src", "lib.rs"),
+				filepath.Join(testhelper.TestLib2Output, "src", "lib.rs"),
 			},
 			wantCfg: func() *config.Config {
 				c := testhelper.FakeConfig()
@@ -80,7 +78,7 @@ func TestReleaseCommand(t *testing.T) {
 			name:        "all flag 1 has changes",
 			args:        []string{"librarian", "release", "--all"},
 			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1SrcPath, "src", "lib.rs")},
+			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
 				c := testhelper.FakeConfig()
 
@@ -291,7 +289,7 @@ func TestReleaseAll(t *testing.T) {
 		{
 			name:        "library has changes",
 			cfg:         testhelper.FakeConfig(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1SrcPath, "src", "lib.rs")},
+			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
 			wantVersion: testhelper.TestNextVersion,
 		},
 		{
@@ -306,7 +304,7 @@ func TestReleaseAll(t *testing.T) {
 				c.Libraries[0].SkipPublish = true
 				return c
 			}(),
-			withChanges: []string{filepath.Join(testhelper.TestLib1SrcPath, "src", "lib.rs")},
+			withChanges: []string{filepath.Join(testhelper.TestLib1Output, "src", "lib.rs")},
 			wantVersion: testhelper.TestInitialVersion,
 		},
 	} {

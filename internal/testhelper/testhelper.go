@@ -69,14 +69,14 @@ version = "1.0.0"
 
 	// TestLib1 is the name of the first library added to the [FakeConfig].
 	TestLib1 = "google-cloud-storage"
-	// TestLib1SrcPath is the [config.Library] Output path of [TestLib1] added
+	// TestLib1Output is the [config.Library] Output path of [TestLib1] added
 	// to the [FakeConfig].
-	TestLib1SrcPath = "src/storage"
+	TestLib1Output = "src/storage"
 	// TestLib2 is the name of the second library added to the [FakeConfig].
 	TestLib2 = "gax-internal"
-	// TestLib2SrcPath is the [config.Library] Output path of [TestLib2] added
+	// TestLib2Output is the [config.Library] Output path of [TestLib2] added
 	// to the [FakeConfig].
-	TestLib2SrcPath = "src/gax-internal"
+	TestLib2Output = "src/gax-internal"
 	// TestInitialTag is the tag form of [TestInitialVersion] for use in tests.
 	TestInitialTag = "v1.0.0"
 	// TestInitialVersion is the initial version assigned to libraries in
@@ -108,12 +108,12 @@ func FakeConfig() *config.Config {
 			{
 				Name:    TestLib1,
 				Version: TestInitialVersion,
-				Output:  TestLib1SrcPath,
+				Output:  TestLib1Output,
 			},
 			{
 				Name:    TestLib2,
 				Version: TestInitialVersion,
-				Output:  TestLib2SrcPath,
+				Output:  TestLib2Output,
 			},
 		},
 	}
@@ -229,18 +229,9 @@ type SetupOptions struct {
 func Setup(t *testing.T, opts SetupOptions) string {
 	t.Helper()
 	dir := SetupRepo(t)
-
-	setup(t, opts)
-
-	return dir
-}
-
-func setup(t *testing.T, opts SetupOptions) {
-	t.Helper()
 	if opts.Config != nil {
 		addLibrarianConfig(t, opts.Config)
 	}
-
 	if opts.Tag != "" {
 		if err := command.Run(t.Context(), "git", "tag", opts.Tag); err != nil {
 			t.Fatal(err)
@@ -258,6 +249,7 @@ func setup(t *testing.T, opts SetupOptions) {
 			t.Fatal(err)
 		}
 	}
+	return dir
 }
 
 func touchFile(t *testing.T, path string) {
