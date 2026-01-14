@@ -99,8 +99,8 @@ type RustModule struct {
 	// PostProcessProtos contains code to post-process generated protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
-	// RootName is the key for the root directory in the source map, used by the
-	// rust+prost generator to find the source root.
+	// RootName is the key for the root directory in the source map.
+	// It overrides the default root, googleapis-root, used by the rust+prost generator.
 	RootName string `yaml:"root_name,omitempty"`
 
 	// RoutingRequired indicates whether routing is required.
