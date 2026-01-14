@@ -14,6 +14,44 @@
 
 package gcloud
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+type StringOrSlice []string
+
+func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
+	// The gcloud command schema allows certain fields, like 'collection' in the
+	// 'request' and 'async' sections, to be either a single string or a list of
+	// strings. We handle both cases here by checking the YAML node kind.
+	if value.Kind == yaml.ScalarNode {
+		var str string
+		if err := value.Decode(&str); err != nil {
+			return err
+		}
+		*s = []string{str}
+		return nil
+	}
+	if value.Kind == yaml.SequenceNode {
+		var slice []string
+		if err := value.Decode(&slice); err != nil {
+			return err
+		}
+		*s = slice
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
+}
+
+func (s StringOrSlice) MarshalYAML() (interface{}, error) {
+	if len(s) == 1 {
+		return s[0], nil
+	}
+	return []string(s), nil
+}
+
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is designed to be marshaled into a YAML file that the gcloud generator can
 // understand and use to generate a command-line interface.
@@ -234,7 +272,7 @@ type Request struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 	// Collection is the list of API collections that this command operates on.
 	// Origin: Constructed from the API service name and the resource's collection path.
-	Collection any `yaml:"collection,omitempty"`
+	Collection StringOrSlice `yaml:"collection,omitempty"`
 	// Method is the name of the API method to call.
 	Method string `yaml:"method,omitempty"`
 }
@@ -244,7 +282,7 @@ type Request struct {
 type Async struct {
 	// Collection is the API collection for the long-running operation resource.
 	// Origin: Hardcoded to the standard operations collection for the service.
-	Collection any `yaml:"collection,omitempty"`
+	Collection StringOrSlice `yaml:"collection,omitempty"`
 
 	// ExtractResourceResult indicates whether to extract the resource result from the LRO.
 	ExtractResourceResult bool `yaml:"extract_resource_result,omitempty"`
