@@ -261,11 +261,11 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 	if err != nil {
 		return "", err
 	}
-	branchLibrarianCfg, err := yaml.Unmarshal[*config.Config]([]byte(branchLibrarianCfgFile))
+	branchLibrarianCfg, err := yaml.Unmarshal[config.Config]([]byte(branchLibrarianCfgFile))
 	if err != nil {
 		return "", err
 	}
-	branchLibCfg, err := libraryByName(*branchLibrarianCfg, libName)
+	branchLibCfg, err := libraryByName(branchLibrarianCfg, libName)
 	if err != nil {
 		return "", err
 	}
