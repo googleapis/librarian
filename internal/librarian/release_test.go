@@ -298,6 +298,16 @@ func TestReleaseLibrary(t *testing.T) {
 			previewCfg:  sample.PreviewConfig(),
 			wantVersion: sample.NextPreviewPrereleaseVersion,
 		},
+		{
+			name: "preview library catches up to main",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewCoreVersion,
+		},
 	}
 
 	for _, test := range tests {

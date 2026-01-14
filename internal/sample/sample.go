@@ -44,6 +44,10 @@ const (
 	// NextPreviewPrereleaseVersion is the next prerelease version typically
 	// assigned to preview libraries starting from [InitialPreviewVersion].
 	NextPreviewPrereleaseVersion = "1.1.0-preview.2"
+	// NextPreviewCoreVersion is the next core version typically
+	// assigned to preview libraries starting from [InitialPreviewVersion] when
+	// the main version has moved on to [NextVersion].
+	NextPreviewCoreVersion = "1.2.0-preview.1"
 )
 
 var (
