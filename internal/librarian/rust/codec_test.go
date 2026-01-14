@@ -24,15 +24,11 @@ import (
 
 func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		library        *config.Library
-		channel        *config.Channel
-		googleapisDir  string
-		discoveryDir   string
-		protobufDir    string
-		conformanceDir string
-		showcaseDir    string
-		want           *sidekickconfig.Config
+		name    string
+		library *config.Library
+		channel *config.Channel
+		sources *Sources
+		want    *sidekickconfig.Config
 	}{
 		{
 			name: "minimal config",
@@ -43,7 +39,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -72,7 +70,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -102,7 +102,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -146,7 +148,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -188,7 +192,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -229,7 +235,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -265,11 +273,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -324,11 +330,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -374,11 +378,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storage/v1",
 				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -412,8 +414,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery-artifact-manager",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -442,9 +446,11 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
-			showcaseDir:   "/tmp/showcase",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery-artifact-manager",
+				Showcase:   "/tmp/showcase",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -474,7 +480,9 @@ func TestToSidekickConfig(t *testing.T) {
 			channel: &config.Channel{
 				Path: "google/apps/script/type/gmail",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -501,7 +509,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/longrunning",
 				ServiceConfig: "google/longrunning/longrunning.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -535,7 +545,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/spanner/admin/database/v1",
 				ServiceConfig: "google/spanner/admin/database/v1/spanner.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -565,7 +577,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/storageinsights/v1",
 				ServiceConfig: "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -613,8 +627,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
+			sources: &Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery-artifact-manager",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -659,9 +675,11 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/cloud/vision/v1",
 				ServiceConfig: "google/cloud/vision/v1/vision_v1.yaml",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			protobufDir:    "/tmp/protobuf/src",
-			conformanceDir: "/tmp/conformance",
+			sources: &Sources{
+				Googleapis:  "/tmp/googleapis",
+				ProtobufSrc: "/tmp/protobuf/src",
+				Conformance: "/tmp/conformance",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -690,7 +708,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Path:          "google/showcase/v1beta1",
 				ServiceConfig: "google/showcase/v1beta1/showcase_v1beta1.yaml",
 			},
-			showcaseDir: "/tmp/gapic-showcase",
+			sources: &Sources{
+				Showcase: "/tmp/gapic-showcase",
+			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -719,6 +739,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
+			sources: &Sources{},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust_storage",
@@ -738,6 +759,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
+			sources: &Sources{},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -757,6 +779,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
+			sources: &Sources{},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language: "rust+prost",
@@ -768,14 +791,14 @@ func TestToSidekickConfig(t *testing.T) {
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
 				var commentOverrides []sidekickconfig.DocumentationOverride
 				for _, module := range test.library.Rust.Modules {
-					got := moduleToSidekickConfig(test.library, module, test.googleapisDir, test.protobufDir)
+					got := moduleToSidekickConfig(test.library, module, test.sources)
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
 				if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			} else {
-				got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir, test.protobufDir, test.conformanceDir, test.showcaseDir)
+				got := toSidekickConfig(test.library, test.channel, test.sources)
 				if diff := cmp.Diff(test.want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}

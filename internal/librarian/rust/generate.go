@@ -47,8 +47,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
-	sidekickConfig := toSidekickConfig(library, library.Channels[0],
-		sources.Googleapis, sources.Discovery, sources.ProtobufSrc, sources.Conformance, sources.Showcase)
+	sidekickConfig := toSidekickConfig(library, library.Channels[0], sources)
 	model, err := parser.CreateModel(sidekickConfig)
 	if err != nil {
 		return err

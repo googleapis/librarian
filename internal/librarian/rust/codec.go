@@ -21,7 +21,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, channel *config.Channel, googleapisDir, discoveryDir, protobufRootDir, conformanceDir, showcaseDir string) *sidekickconfig.Config {
+func toSidekickConfig(library *config.Library, channel *config.Channel, sources *Sources) *sidekickconfig.Config {
 	source := map[string]string{}
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
@@ -31,9 +31,9 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 		specFormat = "disco"
 	}
 
-	if len(library.Roots) == 0 && googleapisDir != "" {
+	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
-		source["googleapis-root"] = googleapisDir
+		source["googleapis-root"] = sources.Googleapis
 		source["roots"] = "googleapis"
 	} else {
 		source["roots"] = strings.Join(library.Roots, ",")
@@ -41,11 +41,11 @@ func toSidekickConfig(library *config.Library, channel *config.Channel, googleap
 			path string
 			key  string
 		}{
-			"googleapis":   {path: googleapisDir, key: "googleapis-root"},
-			"discovery":    {path: discoveryDir, key: "discovery-root"},
-			"showcase":     {path: showcaseDir, key: "showcase-root"},
-			"protobuf-src": {path: protobufRootDir, key: "protobuf-src-root"},
-			"conformance":  {path: conformanceDir, key: "conformance-root"},
+			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
+			"discovery":    {path: sources.Discovery, key: "discovery-root"},
+			"showcase":     {path: sources.Showcase, key: "showcase-root"},
+			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
+			"conformance":  {path: sources.Conformance, key: "conformance-root"},
 		}
 		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
