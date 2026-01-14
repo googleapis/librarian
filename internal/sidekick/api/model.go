@@ -376,7 +376,8 @@ func (m *Method) IsSimple() bool {
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
 	return m.AIPStandardGetInfo() != nil ||
-		m.AIPStandardDeleteInfo() != nil
+		m.AIPStandardDeleteInfo() != nil ||
+		m.AIPStandardUndeleteInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations
@@ -412,17 +413,28 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	}
 
 	// The request needs to have a field for the resource name of the resource to obtain.
-	nameFieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
-		return f.IsResourceReference() &&
-			f.ResourceReference.Type == m.OutputType.Resource.Type
-	})
+	// We prioritize the matches as follows:
+	// 1. The field explicitly references the output resource type.
+	// 2. The field has a wildcard reference type "*" and is named "name".
+	var bestField *Field
+	for _, f := range m.InputType.Fields {
+		if f.IsResourceReference() {
+			if f.ResourceReference.Type == m.OutputType.Resource.Type {
+				bestField = f
+				break
+			}
+			if f.ResourceReference.Type == "*" && f.Name == "name" {
+				bestField = f
+			}
+		}
+	}
 
-	if nameFieldIndex == -1 {
+	if bestField == nil {
 		return nil
 	}
 
 	return &AIPStandardGetInfo{
-		ResourceNameRequestField: m.InputType.Fields[nameFieldIndex],
+		ResourceNameRequestField: bestField,
 	}
 }
 
@@ -460,12 +472,82 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 	// 1. The field name is "name" and the resource singular name matches maybeSingular.
 	// 2. The field name is "name" and the resource singular name is empty.
 	// 3. The resource singular name matches maybeSingular.
+	//
+	// Special case: If the resource reference type is "*", we treat it as a match
+	// if the field name is "name".
+	bestField := findBestResourceField(m.InputType.Fields, maybeSingular, m.Model.State.ResourceByType)
+	if bestField == nil {
+		return nil
+	}
+
+	return &AIPStandardDeleteInfo{
+		ResourceNameRequestField: bestField,
+	}
+}
+
+// AIPStandardUndeleteInfo contains information relevant to an undelete operation
+// as implied by AIP-135.
+type AIPStandardUndeleteInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the undelete operation should restore.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardUndeleteInfo returns information relevant to an undelete operation that is like
+// an undelete operation as implied by AIP-135, if the method is such an operation.
+func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
+	// An undelete operation is either simple or LRO.
+	if !m.IsSimple() && m.OperationInfo == nil {
+		return nil
+	}
+
+	// Standard undelete methods for resource "Foo" should be named "UndeleteFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "undelete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "UndeleteFooRequest".
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
+		return nil
+	}
+
+	// Find the field in the request that is a resource reference of a resource,
+	// chosen as follows:
+	//
+	// We prioritize the matches as follows:
+	// 1. The field name is "name" and the resource singular name matches maybeSingular.
+	// 2. The field name is "name" and the resource singular name is empty.
+	// 3. The resource singular name matches maybeSingular.
+	//
+	// Special case: If the resource reference type is "*", we treat it as a match
+	// if the field name is "name".
+	bestField := findBestResourceField(m.InputType.Fields, maybeSingular, m.Model.State.ResourceByType)
+	if bestField == nil {
+		return nil
+	}
+
+	return &AIPStandardUndeleteInfo{
+		ResourceNameRequestField: bestField,
+	}
+}
+
+func findBestResourceField(fields []*Field, maybeSingular string, resourceMap map[string]*Resource) *Field {
 	var bestField *Field
-	for _, f := range m.InputType.Fields {
+	for _, f := range fields {
 		if f.ResourceReference == nil {
 			continue
 		}
-		resource, ok := m.Model.State.ResourceByType[f.ResourceReference.Type]
+
+		if f.ResourceReference.Type == "*" {
+			if f.Name == "name" {
+				bestField = f
+				break
+			}
+			continue
+		}
+
+		resource, ok := resourceMap[f.ResourceReference.Type]
 		if !ok {
 			continue
 		}
@@ -484,14 +566,7 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 			bestField = f
 		}
 	}
-
-	if bestField == nil {
-		return nil
-	}
-
-	return &AIPStandardDeleteInfo{
-		ResourceNameRequestField: bestField,
-	}
+	return bestField
 }
 
 // PathInfo contains normalized request path information.
