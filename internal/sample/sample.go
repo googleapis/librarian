@@ -35,6 +35,15 @@ const (
 	// NextVersion is the next version typically assigned to libraries
 	// starting from [InitialVersion].
 	NextVersion = "1.1.0"
+	// InitialPreviewTag is the tag form of [InitialPreviewVersion] for use in
+	// tests.
+	InitialPreviewTag = "v1.1.0-preview.1"
+	// InitialPreviewVersion is an initial version that can be assigned to
+	// libraries on a preview branch.
+	InitialPreviewVersion = "1.1.0-preview.1"
+	// NextPreviewPrereleaseVersion is the next prerelease version typically
+	// assigned to preview libraries starting from [InitialPreviewVersion].
+	NextPreviewPrereleaseVersion = "1.1.0-preview.2"
 )
 
 var (
@@ -76,4 +85,18 @@ func Config() *config.Config {
 			},
 		},
 	}
+}
+
+// PreviewConfig produces a [config.Config] using the normal [Config] function,
+// but modifies the resulting [config.Config] properties to align with that of
+// a Preview generation track.
+func PreviewConfig() *config.Config {
+	c := Config()
+
+	c.Release.Branch = "preview"
+	for _, lib := range c.Libraries {
+		lib.Version = InitialPreviewVersion
+	}
+
+	return c
 }

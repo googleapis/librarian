@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -44,6 +43,7 @@ func TestReleaseCommand(t *testing.T) {
 		name        string
 		args        []string
 		cfg         *config.Config
+		previewCfg  *config.Config
 		withChanges []string
 		wantCfg     *config.Config
 	}{
@@ -87,14 +87,54 @@ func TestReleaseCommand(t *testing.T) {
 				return c
 			}(),
 		},
+		{
+			name:        "preview library released",
+			args:        []string{"librarian", "release", sample.Lib1Name},
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantCfg: func() *config.Config {
+				c := sample.PreviewConfig()
+
+				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
+				return c
+			}(),
+		},
+		{
+			name: "all preview libraries released",
+			args: []string{"librarian", "release", "--all"},
+			withChanges: []string{
+				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
+				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
+			},
+			cfg:        sample.Config(),
+			previewCfg: sample.PreviewConfig(),
+			wantCfg: func() *config.Config {
+				c := sample.PreviewConfig()
+
+				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
+				c.Libraries[1].Version = sample.NextPreviewPrereleaseVersion
+				return c
+			}(),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{
+			opts := testhelper.SetupOptions{
+				Clone:       test.cfg.Release.Branch,
 				Config:      test.cfg,
 				Tag:         sample.InitialTag,
 				WithChanges: test.withChanges,
-			})
-			testhelper.CloneRepository(t, remoteDir)
+			}
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config:      test.previewCfg,
+					WithChanges: test.withChanges,
+					Tag:         sample.InitialPreviewTag,
+				}
+			}
+			testhelper.Setup(t, opts)
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
@@ -168,14 +208,11 @@ func TestReleaseCommand_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{Config: test.cfg})
-			testhelper.CloneRepository(t, remoteDir)
-
-			if test.dirty {
-				if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
-					t.Fatal(err)
-				}
-			}
+			testhelper.Setup(t, testhelper.SetupOptions{
+				Clone:  "main",
+				Config: test.cfg,
+				Dirty:  test.dirty,
+			})
 
 			err := Run(t.Context(), test.args...)
 			if !errors.Is(err, test.wantErr) {
@@ -247,6 +284,7 @@ func TestReleaseLibrary(t *testing.T) {
 	tests := []struct {
 		name        string
 		cfg         *config.Config
+		previewCfg  *config.Config
 		wantVersion string
 	}{
 		{
@@ -254,16 +292,32 @@ func TestReleaseLibrary(t *testing.T) {
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
 		},
+		{
+			name:        "preview library released",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{
+			targetCfg := test.cfg
+			opts := testhelper.SetupOptions{
+				Clone:  test.cfg.Release.Branch,
 				Config: test.cfg,
-			})
-			testhelper.CloneRepository(t, remoteDir)
+			}
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config: test.previewCfg,
+				}
+			}
+			testhelper.Setup(t, opts)
 
-			targetLibCfg := test.cfg.Libraries[0]
+			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
 			err := releaseLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git")
 			if err != nil {
@@ -283,6 +337,7 @@ func TestReleaseAll(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		cfg         *config.Config
+		previewCfg  *config.Config
 		withChanges []string
 		skipPublish bool
 		wantVersion string
@@ -308,20 +363,49 @@ func TestReleaseAll(t *testing.T) {
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantVersion: sample.InitialVersion,
 		},
+		{
+			name:        "preview library does not have any changes",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.InitialPreviewVersion,
+		},
+		{
+			name:        "preview library has changes",
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{
+			targetCfg := test.cfg
+			sinceTag := sample.InitialTag
+			opts := testhelper.SetupOptions{
+				Clone:       test.cfg.Release.Branch,
+				Config:      test.cfg,
 				Tag:         sample.InitialTag,
 				WithChanges: test.withChanges,
-			})
-			testhelper.CloneRepository(t, remoteDir)
-			err := releaseAll(t.Context(), test.cfg, sample.InitialTag, "git")
+			}
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				sinceTag = sample.InitialPreviewTag
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config:      test.previewCfg,
+					WithChanges: test.withChanges,
+					Tag:         sample.InitialPreviewTag,
+				}
+			}
+			testhelper.Setup(t, opts)
+
+			err := releaseAll(t.Context(), targetCfg, sinceTag, "git")
 			if err != nil {
 				t.Fatal(err)
 			}
 			// releaseAll directly modifies the config provided, so we use it as
-			// out "got".
-			gotVersion := test.cfg.Libraries[0].Version
+			// our "got".
+			gotVersion := targetCfg.Libraries[0].Version
 			if gotVersion != test.wantVersion {
 				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
 			}
@@ -389,5 +473,25 @@ func TestPostRelease(t *testing.T) {
 				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestLoadBranchLibraryVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	want := sample.InitialVersion
+	testhelper.Setup(t, testhelper.SetupOptions{
+		Clone: "main",
+		Config: &config.Config{
+			Libraries: []*config.Library{{Name: sample.Lib1Name, Version: want}},
+		},
+	})
+
+	got, err := loadBranchLibraryVersion(t.Context(), "git", "origin", "main", sample.Lib1Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("got version %s, want %s", got, want)
 	}
 }

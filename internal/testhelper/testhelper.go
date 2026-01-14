@@ -162,9 +162,21 @@ func SetupRepo(t *testing.T) string {
 
 // SetupOptions include the various options for configuring test setup.
 type SetupOptions struct {
+	// Clone is the branch that [Setup] should clone into after all setup is
+	// complete. Must not be set in PreviewOptions.
+	Clone string
 	// Config is the [config.Config] to write to librarian.yaml in the root
 	// of the repo created.
 	Config *config.Config
+	// Dirty indicates if the cloned repository should be left in a dirty state,
+	// with uncommitted files. Primarily used for error testing.
+	Dirty bool
+	// PreviewOptions indicate the creation of a 'preview' branch in the repo
+	// using the provided SetupOptions.
+	PreviewOptions *SetupOptions
+	// remoteDir is the directory of the repo created by [SetupRepo] that
+	// should be cloned when [Clone] is set. Internal only.
+	remoteDir string
 	// Tag is the tag that will be applied once all initial file set up is
 	// complete.
 	Tag string
@@ -176,9 +188,14 @@ type SetupOptions struct {
 // Setup is a configurable test setup function that starts by creating a
 // fresh test repository via [SetupRepo], to which it then applies the
 // configured [SetupOptions].
-func Setup(t *testing.T, opts SetupOptions) string {
+func Setup(t *testing.T, opts SetupOptions) {
 	t.Helper()
 	dir := SetupRepo(t)
+	opts.remoteDir = dir
+	setup(t, opts)
+}
+
+func setup(t *testing.T, opts SetupOptions) {
 	if opts.Config != nil {
 		addLibrarianConfig(t, opts.Config)
 	}
@@ -187,19 +204,30 @@ func Setup(t *testing.T, opts SetupOptions) string {
 			t.Fatal(err)
 		}
 	}
-
 	// Must be handled after tagging for tests that need to detect untagged
 	// changes needing release.
 	if len(opts.WithChanges) > 0 {
 		for _, srcPath := range opts.WithChanges {
-			// Touch each target file.
 			touchFile(t, srcPath)
 		}
 		if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed file(s)", "."); err != nil {
 			t.Fatal(err)
 		}
 	}
-	return dir
+	if opts.PreviewOptions != nil {
+		if err := command.Run(t.Context(), "git", "checkout", "-b", "preview"); err != nil {
+			t.Fatal(err)
+		}
+		setup(t, *opts.PreviewOptions)
+	}
+	if opts.Clone != "" {
+		CloneRepositoryBranch(t, opts.remoteDir, opts.Clone)
+	}
+	if opts.Dirty {
+		if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func touchFile(t *testing.T, path string) {
@@ -255,9 +283,16 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 // CloneRepository clones the remote repository into a new temporary directory
 // and changes the current working directory to the cloned repository.
 func CloneRepository(t *testing.T, remoteDir string) {
+	CloneRepositoryBranch(t, remoteDir, "main")
+}
+
+// CloneRepositoryBranch clones the repository at the specified branch into
+// a temporary directory and changes the current working directory to the cloned
+// repository.
+func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := command.Run(t.Context(), "git", "clone", remoteDir, "."); err != nil {
+	if err := command.Run(t.Context(), "git", "clone", "--branch", branch, remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)

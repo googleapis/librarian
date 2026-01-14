@@ -24,13 +24,33 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+)
+
+const (
+	defaultPreviewBranch  = "preview"
+	defaultMainBranch     = "main"
+	defaultVersion        = "0.1.0"
+	defaultPreviewVersion = "0.1.0-preview.1"
+	zeroVersion           = "0.0.0"
 )
 
 var (
 	errLibraryNotFound    = errors.New("library not found")
 	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
+
+	// languageVersioningOptions contains language-specific SemVer versioning
+	// options. Over time, languages should align on versioning semantics and
+	// this should be removed. If a language does not have specific needs, a
+	// default [semver.DeriveNextOptions] is returned for default semantics.
+	languageVersioningOptions = map[string]semver.DeriveNextOptions{
+		"rust": {
+			BumpVersionCore:       true,
+			DowngradePreGAChanges: true,
+		},
+	}
 )
 
 func releaseCommand() *cli.Command {
@@ -149,9 +169,17 @@ func shouldRelease(library *config.Library, filesChanged []string) bool {
 }
 
 func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe string) error {
+	// If the language doesn't have bespoke versioning options, a default
+	// [semver.DeriveNextOptions] instance is returned.
+	opts := languageVersioningOptions[cfg.Language]
+	nextVersion, err := deriveNextVersion(ctx, gitExe, cfg, libConfig, opts)
+	if err != nil {
+		return err
+	}
+
 	switch cfg.Language {
 	case languageFake:
-		return fakeReleaseLibrary(libConfig)
+		return fakeReleaseLibrary(libConfig, nextVersion)
 	case languageRust:
 		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, libConfig.Output+"/Cargo.toml")
 		if err != nil {
@@ -160,6 +188,8 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if !release {
 			return nil
 		}
+		// TODO(https://github.com/googleapis/librarian/issues/3558): Supply
+		// nextVersion to rust releaser.
 		if err := rust.ReleaseLibrary(libConfig); err != nil {
 			return err
 		}
@@ -201,4 +231,44 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions) (string, error) {
+	// First release, use the appropriate default starting version.
+	if libConfig.Version == "" {
+		if cfg.Release.Branch == defaultPreviewBranch {
+			return defaultPreviewVersion, nil
+		} else {
+			return defaultVersion, nil
+		}
+	}
+
+	if cfg.Release.Branch == defaultPreviewBranch {
+		stableVersion, err := loadBranchLibraryVersion(ctx, gitExe, cfg.Release.Remote, defaultMainBranch, libConfig.Name)
+		if errors.Is(err, errLibraryNotFound) {
+			// If the preview setup precedes the stable setup, ensure stable is always behind.
+			stableVersion = zeroVersion
+		} else if err != nil {
+			return "", err
+		}
+		return semver.DeriveNextPreview(libConfig.Version, stableVersion, opts)
+	}
+
+	return semver.DeriveNext(semver.Minor, libConfig.Version, opts)
+}
+
+func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
+	branchLibrarianCfgFile, err := git.ShowFile(ctx, gitExe, remote, branch, librarianConfigPath)
+	if err != nil {
+		return "", err
+	}
+	branchLibrarianCfg, err := yaml.Unmarshal[*config.Config]([]byte(branchLibrarianCfgFile))
+	if err != nil {
+		return "", err
+	}
+	branchLibCfg, err := libraryByName(*branchLibrarianCfg, libName)
+	if err != nil {
+		return "", err
+	}
+	return branchLibCfg.Version, nil
 }
