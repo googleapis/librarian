@@ -20,8 +20,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// StringOrSlice is a custom type that represents a field that can be either a
+// single string or a list of strings in the gcloud YAML schema. This is
+// particularly common for 'collection' fields in the 'request' and 'async'
+// sections, where a single resource type is often represented as a string, but
+// multi-type resources are represented as a list of collections.
 type StringOrSlice []string
 
+// UnmarshalYAML implements the yaml.Unmarshaler interface for StringOrSlice.
+// It allows the field to be parsed from either a YAML scalar (string) or a
+// YAML sequence (list of strings).
 func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
 	// The gcloud command schema allows certain fields, like 'collection' in the
 	// 'request' and 'async' sections, to be either a single string or a list of
@@ -45,7 +53,11 @@ func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
 	return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
 }
 
-func (s StringOrSlice) MarshalYAML() (interface{}, error) {
+// MarshalYAML implements the yaml.Marshaler interface for StringOrSlice.
+// To ensure that the generated YAML remains concise and compatible with existing
+// gcloud surfaces, it marshals a single-element slice as a scalar string,
+// and multiple elements as a sequence.
+func (s StringOrSlice) MarshalYAML() (any, error) {
 	if len(s) == 1 {
 		return s[0], nil
 	}
