@@ -71,7 +71,7 @@ func TestCommandYAML(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(commands, roundTripped); diff != "" {
-				t.Errorf("round-trip mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
