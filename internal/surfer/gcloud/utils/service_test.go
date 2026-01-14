@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestInferTrackFromPackage(t *testing.T) {
@@ -37,6 +38,55 @@ func TestInferTrackFromPackage(t *testing.T) {
 			got := InferTrackFromPackage(test.pkg)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("InferTrackFromPackage mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetServiceTitle(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		model            *api.API
+		shortServiceName string
+		want             string
+	}{
+		{
+			name: "With API Suffix",
+			model: &api.API{
+				Title: "Parallelstore API",
+			},
+			shortServiceName: "parallelstore",
+			want:             "Parallelstore",
+		},
+		{
+			name: "Without API Suffix",
+			model: &api.API{
+				Title: "Parallelstore",
+			},
+			shortServiceName: "parallelstore",
+			want:             "Parallelstore",
+		},
+		{
+			name: "Empty Title",
+			model: &api.API{
+				Title: "",
+			},
+			shortServiceName: "parallelstore",
+			want:             "Parallelstore",
+		},
+		{
+			name: "Empty Title and different short name",
+			model: &api.API{
+				Title: "",
+			},
+			shortServiceName: "cloudbuild",
+			want:             "Cloudbuild",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := GetServiceTitle(test.model, test.shortServiceName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

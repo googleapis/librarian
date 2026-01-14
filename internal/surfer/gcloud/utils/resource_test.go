@@ -446,3 +446,77 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSingularResourceNameForMethod(t *testing.T) {
+	instanceResource := &api.Resource{
+		Type: "example.googleapis.com/Instance",
+		Patterns: []api.ResourcePattern{
+			{
+				*api.NewPathSegment().WithLiteral("instances"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
+			},
+		},
+	}
+	model := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			instanceResource,
+		},
+	}
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   string
+	}{
+		{
+			name: "Inferred from Pattern",
+			method: &api.Method{
+				Name: "ListInstances",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							Name: "parent",
+							ResourceReference: &api.ResourceReference{
+								ChildType: "example.googleapis.com/Instance",
+							},
+						},
+					},
+				},
+			},
+			want: "instance",
+		},
+		{
+			name: "Explicit Singular",
+			method: &api.Method{
+				Name: "ListBooks",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							Name: "parent",
+							ResourceReference: &api.ResourceReference{
+								ChildType: "example.googleapis.com/Book",
+							},
+						},
+					},
+				},
+			},
+			want: "book", // Assuming we mock a Book resource with Singular="book" below
+		},
+	} {
+		// Setup explicit singular for the second case
+		if test.name == "Explicit Singular" {
+			bookResource := &api.Resource{
+				Type:     "example.googleapis.com/Book",
+				Singular: "book",
+			}
+			model.ResourceDefinitions = append(model.ResourceDefinitions, bookResource)
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			got := GetSingularResourceNameForMethod(test.method, model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("GetSingularResourceNameForMethod mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
