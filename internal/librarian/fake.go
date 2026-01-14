@@ -32,8 +32,10 @@ func fakeReleaseLibrary(lib *config.Library) error {
 }
 
 func fakeGenerate(library *config.Library) error {
-	if err := os.MkdirAll(library.Output, 0755); err != nil {
-		return err
+	if _, err := os.Stat(library.Output); os.IsNotExist(err) {
+		if err := fakeCreateSkeleton(library); err != nil {
+			return err
+		}
 	}
 	content := fmt.Sprintf("# %s\n\nGenerated library\n", library.Name)
 	readmePath := filepath.Join(library.Output, "README.md")

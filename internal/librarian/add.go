@@ -30,7 +30,6 @@ import (
 
 var (
 	errLibraryAlreadyExists = errors.New("library requested to add already exists in config")
-	errUnsupportedLanguage  = errors.New("library addition is not supported for the specified language")
 	errMissingLibraryName   = errors.New("must provide library name as argument to add a new library")
 	errNoYaml               = errors.New("unable to read librarian.yaml")
 )
