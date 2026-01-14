@@ -49,8 +49,9 @@ func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
 		}
 		*s = slice
 		return nil
+	default:
+		return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
 	}
-	return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
 }
 
 // MarshalYAML implements the yaml.Marshaler interface for StringOrSlice.
