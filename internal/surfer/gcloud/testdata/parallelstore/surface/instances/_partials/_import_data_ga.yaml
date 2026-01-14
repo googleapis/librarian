@@ -112,7 +112,7 @@
               help: The serviceAccount id of the {resource} resource.
           disable_auto_completers: true
         resource_method_params:
-          importDataRequest.serviceAccount: '{__relative_name__}'
+          importDataRequest.serviceAccount: "{__relative_name__}"
         required: false
       - arg_name: metadata-options-uid
         api_field: importDataRequest.metadataOptions.uid

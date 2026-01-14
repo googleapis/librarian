@@ -100,7 +100,7 @@
               help: The network id of the {resource} resource.
           disable_auto_completers: true
         resource_method_params:
-          instance.network: '{__relative_name__}'
+          instance.network: "{__relative_name__}"
         required: false
       - arg_name: reserved-ip-range
         help_text: |-
@@ -128,7 +128,7 @@
               help: The address id of the {resource} resource.
           disable_auto_completers: true
         resource_method_params:
-          instance.reservedIpRange: '{__relative_name__}'
+          instance.reservedIpRange: "{__relative_name__}"
         required: false
       - arg_name: file-stripe-level
         api_field: instance.fileStripeLevel

@@ -111,7 +111,7 @@
               help: The serviceAccount id of the {resource} resource.
           disable_auto_completers: true
         resource_method_params:
-          exportDataRequest.serviceAccount: '{__relative_name__}'
+          exportDataRequest.serviceAccount: "{__relative_name__}"
         required: false
       - arg_name: metadata-options-uid
         api_field: exportDataRequest.metadataOptions.uid
