@@ -34,15 +34,15 @@ func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
 	// The gcloud command schema allows certain fields, like 'collection' in the
 	// 'request' and 'async' sections, to be either a single string or a list of
 	// strings. We handle both cases here by checking the YAML node kind.
-	if value.Kind == yaml.ScalarNode {
+	switch value.Kind {
+	case yaml.ScalarNode:
 		var str string
 		if err := value.Decode(&str); err != nil {
 			return err
 		}
 		*s = []string{str}
 		return nil
-	}
-	if value.Kind == yaml.SequenceNode {
+	case yaml.SequenceNode:
 		var slice []string
 		if err := value.Decode(&slice); err != nil {
 			return err
