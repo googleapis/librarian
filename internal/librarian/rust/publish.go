@@ -75,7 +75,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	plannedCrates := strings.Split(string(output), "\n")
 	plannedCrates = slices.DeleteFunc(plannedCrates, func(a string) bool { return a == "" })
-	if cargoPath != "/bin/echo" {
+	if !isMockCargo(cargoPath) {
 		for _, crate := range plannedCrates {
 			if _, ok := manifests[crate]; !ok {
 				return fmt.Errorf("unplanned crate %q found in workspace plan", crate)
@@ -117,4 +117,8 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	cmd.Dir = "."
 	return cmd.Run()
+}
+
+func isMockCargo(path string) bool {
+	return path == "/bin/echo"
 }

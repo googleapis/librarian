@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -453,7 +454,7 @@ fi
 	}
 }
 
-func TestPublishValidation(t *testing.T) {
+func TestPublishCratesValidation(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows, bash script set up does not work")
 	}
@@ -488,43 +489,41 @@ fi
 	testhelper.CloneRepository(t, remoteDir)
 	lastTag := "test-validation"
 
-	testCases := []struct {
-		name       string
-		files      []string
-		shouldFail bool
+	for _, test := range []struct {
+		name    string
+		files   []string
+		wantErr string
 	}{
 		{
-			name: "exact match (change: storage; plan: storage)",
+			name: "exact match on storage",
 			files: []string{
 				path.Join("src", "storage", "Cargo.toml"),
 				path.Join("src", "storage", "src", "lib.rs"),
 			},
-			shouldFail: false,
+			wantErr: "",
 		},
 		{
-			name: "subset (change: storage, pubsub; plan: storage)",
+			name: "subset with pubsub and storage",
 			files: []string{
 				path.Join("src", "storage", "Cargo.toml"),
 				path.Join("src", "pubsub", "Cargo.toml"),
 			},
-			shouldFail: false,
+			wantErr: "",
 		},
 		{
-			name:       "superset (change: (empty); plan: storage)",
-			files:      []string{},
-			shouldFail: true,
+			name:    "superset missing storage change",
+			files:   []string{},
+			wantErr: "unplanned crate \"google-cloud-storage\" found in workspace plan",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := publishCrates(t.Context(), cfg, true, false, true, lastTag, tc.files)
-			if tc.shouldFail {
-				if err == nil {
-					t.Error("should have failed, but passed")
-				}
-			} else if err != nil {
-				t.Errorf("failed: %v", err)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := publishCrates(t.Context(), cfg, true, false, true, lastTag, test.files)
+			var got string
+			if err != nil {
+				got = err.Error()
+			}
+			if diff := cmp.Diff(test.wantErr, got); diff != "" {
+				t.Errorf("publishCrates() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
