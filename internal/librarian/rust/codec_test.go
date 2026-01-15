@@ -920,3 +920,46 @@ func TestFormatPackageDependency(t *testing.T) {
 		})
 	}
 }
+
+func TestModuleToSidekickConfig_FoundServiceConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	googleapisDir := filepath.Join(tmpDir, "googleapis")
+	protobufDir := filepath.Join(tmpDir, "protobuf")
+
+	serviceConfigDir := filepath.Join(protobufDir, "google/example/v1")
+	err := os.MkdirAll(serviceConfigDir, 0755)
+	if err != nil {
+		t.Fatalf("failed to create dummy dir: %v", err)
+	}
+	dummyYaml := filepath.Join(serviceConfigDir, "example_v1.yaml")
+	content := []byte("type: google.api.Service")
+	if err := os.WriteFile(dummyYaml, content, 0644); err != nil {
+		t.Fatalf("failed to write dummy yaml: %v", err)
+	}
+
+	library := &config.Library{
+		CopyrightYear: "2025",
+	}
+
+	module := &config.RustModule{
+		Source: "google/example/v1",
+	}
+
+	_, err = moduleToSidekickConfig(library, module, googleapisDir, protobufDir)
+	if err != nil {
+		t.Fatalf("moduleToSidekickConfig failed: %v", err)
+	}
+}
+
+func TestModuleToSidekickConfig_ServiceConfigNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	library := &config.Library{}
+	module := &config.RustModule{
+		Source: "non/existent/path",
+	}
+
+	_, err := moduleToSidekickConfig(library, module, tmpDir, tmpDir)
+	if err == nil {
+		t.Error("expected error for non-existent source, got nil")
+	}
+}
