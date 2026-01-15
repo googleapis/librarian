@@ -78,7 +78,7 @@ func TestGenerateSingleLibrary(t *testing.T) {
 			outputDir := t.TempDir()
 			libraryID := "some-library"
 			libraryState := test.state.LibraryByID(libraryID)
-			err := generateSingleLibrary(t.Context(), test.container, test.state, libraryState, newTestGitRepo(t), test.repo, outputDir)
+			err := generateSingleLibrary(t.Context(), test.container, test.state, libraryState, newTestGitRepo(t), test.repo, "test-image", outputDir)
 			if (err != nil) != test.wantErr {
 				t.Errorf("generateSingleLibrary() error = %v, wantErr %v", err, test.wantErr)
 				return

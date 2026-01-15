@@ -209,7 +209,7 @@ func (r *updateImageRunner) regenerateSingleLibrary(ctx context.Context, library
 		return fmt.Errorf("error checking out from sourceRepo %w", err)
 	}
 
-	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
+	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, r.state.Image, outputDir); err != nil {
 		slog.Error("failed to regenerate a single library", "error", err, "ID", libraryState.ID)
 		return err
 	}
