@@ -452,3 +452,66 @@ fi
 		t.Fatal(err)
 	}
 }
+
+func TestPublishValidation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
+
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	tmpDir := t.TempDir()
+
+	// Create a fake cargo that ALWAYS plans "google-cloud-storage"
+	cargoScript := path.Join(tmpDir, "cargo")
+	script := `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+else
+	/bin/echo $@
+fi
+`
+	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": cargoScript,
+		},
+	}
+	// Setup a dummy repo
+	remoteDir := testhelper.SetupRepoWithChange(t, "test-validation")
+	testhelper.CloneRepository(t, remoteDir)
+	lastTag := "test-validation"
+
+	// This should match because there is an exact match.
+	// change: storage; plan: storage
+	filesExact := []string{
+		path.Join("src", "storage", "Cargo.toml"),
+		path.Join("src", "storage", "src", "lib.rs"),
+	}
+	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesExact); err != nil {
+		t.Errorf("exact) failed: %v", err)
+	}
+
+	// This should pass because the plan is a subset of the changed files.
+	// change: storage, pubsub; plan: storage (maybe pubsub is already published)
+	filesSubset := []string{
+		path.Join("src", "storage", "Cargo.toml"),
+		path.Join("src", "pubsub", "Cargo.toml"),
+	}
+	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesSubset); err != nil {
+		t.Errorf("(subset) failed: %v", err)
+	}
+
+	// This should fail because the plan is a superset of the changed files.
+	// change: (empty); plan: storage
+	filesSuperset := []string{}
+	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesSuperset); err == nil {
+		t.Errorf("(superset) should have failed, but passed!")
+	}
+}
