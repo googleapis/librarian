@@ -96,26 +96,34 @@ func Find(source map[string]string, path string) (*API, error) {
 		return result, nil
 	}
 
+	found := false
 	// Search filesystem for service config
 	for _, root := range source {
-		api, err := findInRoot(result, root, path)
+		api, validPath, err := findInRoot(result, root, path)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				continue
 			}
 			return nil, err
 		}
-		return api, nil
+		if validPath {
+			return api, nil
+		}
+		found = true
 	}
 
-	return nil, fmt.Errorf("could not find an API at path [%s]", path)
+	if !found {
+		return nil, fmt.Errorf("could not find API at path [%s]", path)
+	}
+
+	return result, nil
 }
 
-func findInRoot(result *API, sourceRoot, path string) (*API, error) {
+func findInRoot(result *API, sourceRoot, path string) (*API, bool, error) {
 	dir := filepath.Join(sourceRoot, path)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -132,14 +140,14 @@ func findInRoot(result *API, sourceRoot, path string) (*API, error) {
 		filePath := filepath.Join(dir, name)
 		isServiceConfig, err := isServiceConfigFile(filePath)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if isServiceConfig {
 			result.ServiceConfig = filepath.Join(path, name)
-			return result, nil
+			return result, true, nil
 		}
 	}
-	return result, nil
+	return result, false, nil
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
