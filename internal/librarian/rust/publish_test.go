@@ -488,30 +488,44 @@ fi
 	testhelper.CloneRepository(t, remoteDir)
 	lastTag := "test-validation"
 
-	// This should match because there is an exact match.
-	// change: storage; plan: storage
-	filesExact := []string{
-		path.Join("src", "storage", "Cargo.toml"),
-		path.Join("src", "storage", "src", "lib.rs"),
-	}
-	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesExact); err != nil {
-		t.Errorf("exact) failed: %v", err)
+	testCases := []struct {
+		name       string
+		files      []string
+		shouldFail bool
+	}{
+		{
+			name: "exact match (change: storage; plan: storage)",
+			files: []string{
+				path.Join("src", "storage", "Cargo.toml"),
+				path.Join("src", "storage", "src", "lib.rs"),
+			},
+			shouldFail: false,
+		},
+		{
+			name: "subset (change: storage, pubsub; plan: storage)",
+			files: []string{
+				path.Join("src", "storage", "Cargo.toml"),
+				path.Join("src", "pubsub", "Cargo.toml"),
+			},
+			shouldFail: false,
+		},
+		{
+			name:       "superset (change: (empty); plan: storage)",
+			files:      []string{},
+			shouldFail: true,
+		},
 	}
 
-	// This should pass because the plan is a subset of the changed files.
-	// change: storage, pubsub; plan: storage (maybe pubsub is already published)
-	filesSubset := []string{
-		path.Join("src", "storage", "Cargo.toml"),
-		path.Join("src", "pubsub", "Cargo.toml"),
-	}
-	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesSubset); err != nil {
-		t.Errorf("(subset) failed: %v", err)
-	}
-
-	// This should fail because the plan is a superset of the changed files.
-	// change: (empty); plan: storage
-	filesSuperset := []string{}
-	if err := publishCrates(t.Context(), cfg, true, false, true, lastTag, filesSuperset); err == nil {
-		t.Errorf("(superset) should have failed, but passed!")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := publishCrates(t.Context(), cfg, true, false, true, lastTag, tc.files)
+			if tc.shouldFail {
+				if err == nil {
+					t.Error("should have failed, but passed")
+				}
+			} else if err != nil {
+				t.Errorf("failed: %v", err)
+			}
+		})
 	}
 }
