@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# The content below is copied from
-# https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;cl=733505343
 service_name: parallelstore.googleapis.com
 apis:
   - name: Parallelstore
