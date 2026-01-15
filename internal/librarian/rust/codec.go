@@ -256,8 +256,11 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		found := false
 		for _, srcRoot := range source {
 			api, err := serviceconfig.Find(srcRoot, module.Source)
-			if errors.Is(err, os.ErrNotExist) {
-				continue
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				return nil, fmt.Errorf("serviceconfig.Find(%q, %q): %w", srcRoot, module.Source, err)
 			}
 			if api != nil && api.Title != "" {
 				source["title-override"] = api.Title
