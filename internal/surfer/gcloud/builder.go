@@ -128,7 +128,7 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 	}
 
 	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
-	if utils.IsUpdate(method.Name) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if utils.IsUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
 		return true
 	}
 
@@ -226,7 +226,7 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 	}
 
 	// For Update commands, maps and repeated fields are often clearable.
-	if utils.IsUpdate(method.Name) && param.Repeated {
+	if utils.IsUpdate(method) && param.Repeated {
 		param.Clearable = true
 	}
 
@@ -267,7 +267,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 
 	// We generate a helpful help text based on whether the command is a `Create` command or not.
 	helpText := fmt.Sprintf("The %s to create.", resourceName)
-	if !strings.HasPrefix(method.Name, "Create") {
+	if !utils.IsCreate(method) {
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
@@ -286,7 +286,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 		},
 	}
 
-	if utils.IsCreate(method.Name) {
+	if utils.IsCreate(method) {
 		param.RequestIDField = strcase.ToLowerCamel(field.Name)
 	}
 

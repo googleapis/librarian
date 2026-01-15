@@ -24,7 +24,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
@@ -76,11 +75,12 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	plannedCrates := strings.Split(string(output), "\n")
 	plannedCrates = slices.DeleteFunc(plannedCrates, func(a string) bool { return a == "" })
-	changedCrates := slices.Collect(maps.Keys(manifests))
-	slices.Sort(plannedCrates)
-	slices.Sort(changedCrates)
-	if diff := cmp.Diff(changedCrates, plannedCrates); diff != "" && cargoPath != "/bin/echo" {
-		return fmt.Errorf("mismatched workspace plan vs. changed crates, probably missing some version bumps (-plan, +changed):\n%s", diff)
+	if !isMockCargo(cargoPath) {
+		for _, crate := range plannedCrates {
+			if _, ok := manifests[crate]; !ok {
+				return fmt.Errorf("unplanned crate %q found in workspace plan", crate)
+			}
+		}
 	}
 
 	crateSummary := slices.Collect(maps.Keys(manifests))
@@ -117,4 +117,8 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	cmd.Dir = "."
 	return cmd.Run()
+}
+
+func isMockCargo(path string) bool {
+	return path == "/bin/echo"
 }

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -450,5 +451,80 @@ fi
 	// With --keep-going, this should succeed.
 	if err := publishCrates(t.Context(), cfg, true, true, false, lastTag, files); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPublishCratesValidation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows, bash script set up does not work")
+	}
+
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "/bin/echo")
+	tmpDir := t.TempDir()
+
+	// Create a fake cargo that ALWAYS plans "google-cloud-storage"
+	cargoScript := path.Join(tmpDir, "cargo")
+	script := `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+else
+	/bin/echo $@
+fi
+`
+	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
+		Preinstalled: map[string]string{
+			"git":   "git",
+			"cargo": cargoScript,
+		},
+	}
+	// Setup a dummy repo
+	remoteDir := testhelper.SetupRepoWithChange(t, "test-validation")
+	testhelper.CloneRepository(t, remoteDir)
+	lastTag := "test-validation"
+
+	for _, test := range []struct {
+		name    string
+		files   []string
+		wantErr string
+	}{
+		{
+			name: "exact match on storage",
+			files: []string{
+				path.Join("src", "storage", "Cargo.toml"),
+				path.Join("src", "storage", "src", "lib.rs"),
+			},
+			wantErr: "",
+		},
+		{
+			name: "subset with pubsub and storage",
+			files: []string{
+				path.Join("src", "storage", "Cargo.toml"),
+				path.Join("src", "pubsub", "Cargo.toml"),
+			},
+			wantErr: "",
+		},
+		{
+			name:    "superset missing storage change",
+			files:   []string{},
+			wantErr: "unplanned crate \"google-cloud-storage\" found in workspace plan",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := publishCrates(t.Context(), cfg, true, false, true, lastTag, test.files)
+			var got string
+			if err != nil {
+				got = err.Error()
+			}
+			if diff := cmp.Diff(test.wantErr, got); diff != "" {
+				t.Errorf("publishCrates() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
