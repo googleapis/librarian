@@ -16,12 +16,44 @@ package rust
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
+
+type rootMapEntry struct {
+	path string
+	key  string
+}
+
+func newRootMap(sources *Sources) map[string]rootMapEntry {
+	return map[string]rootMapEntry{
+		"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
+		"discovery":    {path: sources.Discovery, key: "discovery-root"},
+		"showcase":     {path: sources.Showcase, key: "showcase-root"},
+		"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
+		"conformance":  {path: sources.Conformance, key: "conformance-root"},
+	}
+}
+
+func determineSourceRoot(source string, sources *Sources, rootMap map[string]rootMapEntry) (string, string) {
+	if r, ok := rootMap[source]; ok {
+		return r.path, ""
+	}
+	// Check if the source directory exists in googleapisDir
+	if _, err := os.Stat(filepath.Join(sources.Googleapis, source)); err == nil {
+		return sources.Googleapis, source
+	}
+	// Check if the source directory exists locally
+	if _, err := os.Stat(source); err == nil {
+		return ".", source
+	}
+	return "", ""
+}
 
 func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sources) (*sidekickconfig.Config, error) {
 	source := map[string]string{}
@@ -39,16 +71,7 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 		source["roots"] = "googleapis"
 	} else {
 		source["roots"] = strings.Join(library.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
+		rootMap := newRootMap(sources)
 		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
 				source[r.key] = r.path
@@ -233,13 +256,18 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, googleapisDir, protobufSrcDir string) (*sidekickconfig.Config, error) {
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) (*sidekickconfig.Config, error) {
 	source := map[string]string{
-		"googleapis-root":   googleapisDir,
-		"protobuf-src-root": protobufSrcDir,
+		"googleapis-root":   sources.Googleapis,
+		"protobuf-src-root": sources.ProtobufSrc,
 	}
+	rootMap := newRootMap(sources)
 	for root, dir := range module.ModuleRoots {
-		source[root] = dir
+		if r, ok := rootMap[dir]; ok {
+			source[root] = r.path
+		} else {
+			source[root] = dir
+		}
 	}
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
@@ -251,12 +279,15 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		source["include-list"] = module.IncludeList
 	}
 	if module.Source != "" {
-		api, err := serviceconfig.Find(googleapisDir, module.Source)
-		if err != nil {
-			return nil, fmt.Errorf("serviceconfig.Find(%s, %s): %w", googleapisDir, module.Source, err)
-		}
-		if api != nil && api.Title != "" {
-			source["title-override"] = api.Title
+		root, path := determineSourceRoot(module.Source, sources, rootMap)
+		if root != "" {
+			api, err := serviceconfig.Find(root, path)
+			if err != nil {
+				return nil, fmt.Errorf("serviceconfig.Find(%s, %s): %w", root, path, err)
+			}
+			if api != nil && api.Title != "" {
+				source["title-override"] = api.Title
+			}
 		}
 	}
 
