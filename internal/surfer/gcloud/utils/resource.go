@@ -80,7 +80,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Create` methods, the primary resource is identified by a field named
 	// in the format "{resource}_id" (e.g., "instance_id").
-	if IsCreate(method.Name) {
+	if IsCreate(method) {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
@@ -93,7 +93,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
 	// by a field named "name", which holds the full resource name.
-	if (IsGet(method.Name) || IsDelete(method.Name) || IsUpdate(method.Name)) && field.Name == "name" {
+	if (IsGet(method) || IsDelete(method) || IsUpdate(method)) && field.Name == "name" {
 		return true
 	}
 	return false

@@ -162,11 +162,11 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 
 	// We iterate through each method associated with this resource.
 	for _, method := range methods {
-		// We map the API method name to a standard gcloud command verb.
+		// We map the API method to a standard gcloud command name.
 		// Example: `CreateInstance` -> "create"
-		verb, err := utils.GetVerb(method.Name)
+		verb, err := utils.GetCommandName(method)
 		if err != nil {
-			// Continue to the next method if we can't determine a verb,
+			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.
 			continue
 		}
