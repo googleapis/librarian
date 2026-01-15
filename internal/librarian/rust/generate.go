@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -36,6 +37,21 @@ type Sources struct {
 	Googleapis  string
 	ProtobufSrc string
 	Showcase    string
+}
+
+// CreateOutputDirectoryIfNotExist checks if the output directory exists
+// and creates it if it doesn't.
+func CreateOutputDirectoryIfNotExist(ctx context.Context, outputDir string) error {
+	if _, err := os.Stat(outputDir); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to stat output directory %q: %w", outputDir, err)
+		}
+		if err := Create(ctx, outputDir,
+			func(ctx context.Context) error { return nil }); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Generate generates a Rust client library.
