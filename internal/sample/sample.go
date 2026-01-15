@@ -48,6 +48,12 @@ const (
 	// assigned to preview libraries starting from [InitialPreviewVersion] when
 	// the main version has moved on to [NextVersion].
 	NextPreviewCoreVersion = "1.2.0-preview.1"
+	// RustNonGAVersion is a non-GA client library version typical of a Rust
+	// client library.
+	RustNonGAVersion = "0.1.0-beta"
+	// RustNextNonGAVersion is the next version of non-GA Rust client library
+	// starting from [RustNonGAVersion].
+	RustNextNonGAVersion = "0.1.1-beta"
 )
 
 var (

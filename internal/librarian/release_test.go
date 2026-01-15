@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -483,6 +484,50 @@ func TestPostRelease(t *testing.T) {
 				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestDeriveNextVersion(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		cfg         *config.Config
+		versionOpts semver.DeriveNextOptions
+		wantVersion string
+	}{
+		{
+			name: "rust library next non-GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = languageRust
+				c.Libraries[0].Version = sample.RustNonGAVersion
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[languageRust],
+			wantVersion: sample.RustNextNonGAVersion,
+		},
+		{
+			name: "rust library next GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = languageRust
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[languageRust],
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name:        "default semver options next GA version",
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
+		},
+	} {
+		got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != test.wantVersion {
+			t.Errorf("got version %s, want %s", got, test.wantVersion)
+		}
 	}
 }
 

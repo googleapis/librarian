@@ -188,9 +188,7 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if !release {
 			return nil
 		}
-		// TODO(https://github.com/googleapis/librarian/issues/3558): Supply
-		// nextVersion to rust releaser.
-		if err := rust.ReleaseLibrary(libConfig); err != nil {
+		if err := rust.ReleaseLibrary(libConfig, nextVersion); err != nil {
 			return err
 		}
 		if _, err := generateLibrary(ctx, cfg, libConfig.Name); err != nil {

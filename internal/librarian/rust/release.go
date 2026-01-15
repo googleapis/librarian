@@ -21,26 +21,10 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/semver"
 )
 
-const defaultVersion = "0.1.0"
-
 // ReleaseLibrary bumps version for Cargo.toml files and updates librarian config version.
-func ReleaseLibrary(library *config.Library) error {
-	newVersion := defaultVersion
-	if library.Version != "" {
-		v, err := semver.DeriveNext(semver.Minor, library.Version,
-			semver.DeriveNextOptions{
-				BumpVersionCore:       true,
-				DowngradePreGAChanges: true,
-			})
-		if err != nil {
-			return err
-		}
-		newVersion = v
-	}
-
+func ReleaseLibrary(library *config.Library, version string) error {
 	cargoFile := filepath.Join(library.Output, "Cargo.toml")
 	_, err := os.Stat(cargoFile)
 	switch {
@@ -51,16 +35,16 @@ func ReleaseLibrary(library *config.Library) error {
 name                   = "%s"
 version                = "%s"
 edition                = "2021"
-`, library.Name, newVersion)
+`, library.Name, version)
 		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
 			return err
 		}
 	default:
-		if err := updateCargoVersion(cargoFile, newVersion); err != nil {
+		if err := updateCargoVersion(cargoFile, version); err != nil {
 			return err
 		}
 	}
 
-	library.Version = newVersion
+	library.Version = version
 	return nil
 }
