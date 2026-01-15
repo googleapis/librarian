@@ -75,10 +75,10 @@ func Read(serviceConfigPath string) (*Service, error) {
 // It first checks the API allowlist for overrides, then searches for YAML files
 // containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
 //
-// The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
+// The path should be relative to sourceRoot (e.g., "google/cloud/secretmanager/v1").
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
 // ServiceConfig and Title may be empty strings if not found or not configured.
-func Find(googleapisDir, path string) (*API, error) {
+func Find(sourceRoot, path string) (*API, error) {
 	result := &API{Path: path}
 
 	// Check allowlist for overrides
@@ -96,7 +96,7 @@ func Find(googleapisDir, path string) (*API, error) {
 	}
 
 	// Search filesystem for service config
-	dir := filepath.Join(googleapisDir, path)
+	dir := filepath.Join(sourceRoot, path)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
