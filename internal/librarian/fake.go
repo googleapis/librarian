@@ -32,7 +32,10 @@ func fakeReleaseLibrary(lib *config.Library) error {
 }
 
 func fakeGenerate(library *config.Library) error {
-	if _, err := os.Stat(library.Output); os.IsNotExist(err) {
+	if _, err := os.Stat(library.Output); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to stat output directory %q: %w", library.Output, err)
+		}
 		if err := fakeCreateSkeleton(library); err != nil {
 			return err
 		}

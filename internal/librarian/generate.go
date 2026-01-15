@@ -170,7 +170,10 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 			return nil, err
 		}
 	case languageRust:
-		if _, err := os.Stat(library.Output); os.IsNotExist(err) {
+		if _, err := os.Stat(library.Output); err != nil {
+			if !os.IsNotExist(err) {
+				return nil, fmt.Errorf("failed to stat output directory %q: %w", library.Output, err)
+			}
 			if err := rust.Create(ctx, library.Output,
 				func(ctx context.Context) error { return nil }); err != nil {
 				return nil, err
