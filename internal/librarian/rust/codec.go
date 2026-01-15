@@ -15,7 +15,9 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -251,12 +253,20 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		source["include-list"] = module.IncludeList
 	}
 	if module.Source != "" {
-		api, err := serviceconfig.Find(googleapisDir, module.Source)
-		if err != nil {
-			return nil, fmt.Errorf("serviceconfig.Find(%s, %s): %w", googleapisDir, module.Source, err)
+		found := false
+		for _, srcRoot := range source {
+			api, err := serviceconfig.Find(srcRoot, module.Source)
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			if api != nil && api.Title != "" {
+				source["title-override"] = api.Title
+			}
+			found = true
+			break
 		}
-		if api != nil && api.Title != "" {
-			source["title-override"] = api.Title
+		if !found {
+			return nil, fmt.Errorf("could not find service config in %s", source)
 		}
 	}
 
