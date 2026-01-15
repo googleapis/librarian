@@ -114,7 +114,7 @@ func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion stri
 }
 
 func TestNoCargoFile(t *testing.T) {
-	err := ReleaseLibrary(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, storageInitial)
+	err := ReleaseLibrary(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, storageReleased)
 	if err == nil {
 		t.Error("expected error when Cargo.toml doesn't exist")
 	}
