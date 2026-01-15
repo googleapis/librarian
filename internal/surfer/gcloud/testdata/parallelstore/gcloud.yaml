@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# This command comes from expanding command in gcloud 548.0.0.
 service_name: parallelstore.googleapis.com
 apis:
   - name: Parallelstore
