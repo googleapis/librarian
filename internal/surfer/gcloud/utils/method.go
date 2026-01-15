@@ -58,8 +58,8 @@ func IsCreate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Create") {
 		return false
 	}
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb == "POST"
+	if verb := getHTTPVerb(m); verb != "" {
+		return verb == "POST"
 	}
 	return true
 }
@@ -74,8 +74,8 @@ func IsGet(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Get") {
 		return false
 	}
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb == "GET"
+	if verb := getHTTPVerb(m); verb != "" {
+		return verb == "GET"
 	}
 	return true
 }
@@ -85,8 +85,8 @@ func IsList(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "List") {
 		return false
 	}
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb == "GET"
+	if verb := getHTTPVerb(m); verb != "" {
+		return verb == "GET"
 	}
 	return true
 }
@@ -96,8 +96,7 @@ func IsUpdate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Update") {
 		return false
 	}
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		verb := m.PathInfo.Bindings[0].Verb
+	if verb := getHTTPVerb(m); verb != "" {
 		return verb == "PATCH" || verb == "PUT"
 	}
 	return true
@@ -113,8 +112,16 @@ func IsDelete(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Delete") {
 		return false
 	}
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb == "DELETE"
+	if verb := getHTTPVerb(m); verb != "" {
+		return verb == "DELETE"
 	}
 	return true
+}
+
+// getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
+func getHTTPVerb(m *api.Method) string {
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		return m.PathInfo.Bindings[0].Verb
+	}
+	return ""
 }

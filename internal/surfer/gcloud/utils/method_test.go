@@ -187,11 +187,15 @@ func TestGetCommandName_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			_, gotErr := GetCommandName(test.method)
-			if !errors.Is(gotErr, nil) && gotErr.Error() != test.wantErr.Error() {
-				t.Errorf("got error %v, want %v", gotErr, test.wantErr)
-			}
-			if gotErr == nil && test.wantErr != nil {
-				t.Errorf("got error nil, want %v", test.wantErr)
+			if test.wantErr != nil {
+				if gotErr == nil {
+					t.Fatalf("GetCommandName() returned nil error, want %v", test.wantErr)
+				}
+				if gotErr.Error() != test.wantErr.Error() {
+					t.Errorf("GetCommandName() error = %q, want %q", gotErr.Error(), test.wantErr.Error())
+				}
+			} else if gotErr != nil {
+				t.Errorf("GetCommandName() returned error %v, want nil", gotErr)
 			}
 		})
 	}
