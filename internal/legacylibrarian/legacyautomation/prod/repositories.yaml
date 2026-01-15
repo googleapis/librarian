@@ -49,6 +49,11 @@ repositories:
     github-token-secret-name: "google-resumable-media-python-github-token"
     supported-commands:
       - publish-release
+  - name: "proto-plus-python"
+    full-name: https://github.com/googleapis/proto-plus-python
+    github-token-secret-name: "proto-plus-python-github-token"
+    supported-commands:
+      - publish-release
   - name: "python-api-core"
     full-name: https://github.com/googleapis/python-api-core
     github-token-secret-name: "python-api-core-github-token"
@@ -79,9 +84,19 @@ repositories:
     github-token-secret-name: "python-bigquery-sqlalchemy-github-token"
     supported-commands:
       - publish-release
+  - name: "python-bigtable"
+    full-name: https://github.com/googleapis/python-bigtable
+    github-token-secret-name: "python-bigtable-github-token"
+    supported-commands:
+      - publish-release
   - name: "python-cloud-core"
     full-name: https://github.com/googleapis/python-cloud-core
     github-token-secret-name: "python-cloud-core-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-crc32c"
+    full-name: https://github.com/googleapis/python-crc32c
+    github-token-secret-name: "python-crc32c-github-token"
     supported-commands:
       - publish-release
   - name: "python-datastore"
@@ -109,6 +124,11 @@ repositories:
     github-token-secret-name: "python-firestore-github-token"
     supported-commands:
       - publish-release
+  - name: "python-logging"
+    full-name: https://github.com/googleapis/python-logging
+    github-token-secret-name: "python-logging-github-token"
+    supported-commands:
+      - publish-release
   - name: "python-ndb"
     full-name: https://github.com/googleapis/python-ndb
     github-token-secret-name: "python-ndb-github-token"
@@ -119,9 +139,19 @@ repositories:
     github-token-secret-name: "python-pubsub-github-token"
     supported-commands:
       - publish-release
+  - name: "python-pubsublite"
+    full-name: https://github.com/googleapis/python-pubsublite
+    github-token-secret-name: "python-pubsublite-github-token"
+    supported-commands:
+      - publish-release
   - name: "python-runtimeconfig"
     full-name: https://github.com/googleapis/python-runtimeconfig
     github-token-secret-name: "python-runtimeconfig-github-token"
+    supported-commands:
+      - publish-release
+  - name: "python-spanner"
+    full-name: https://github.com/googleapis/python-spanner
+    github-token-secret-name: "python-spanner-github-token"
     supported-commands:
       - publish-release
   - name: "python-spanner-django"
