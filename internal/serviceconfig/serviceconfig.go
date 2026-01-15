@@ -96,23 +96,23 @@ func Find(source map[string]string, path string) (*API, error) {
 		return result, nil
 	}
 
-	found := false
+	validPath := false
 	// Search filesystem for service config
 	for _, root := range source {
-		api, validPath, err := findInRoot(result, root, path)
+		api, found, err := findInRoot(result, root, path)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				continue
 			}
 			return nil, err
 		}
-		if validPath {
+		if found {
 			return api, nil
 		}
-		found = true
+		validPath = true
 	}
 
-	if !found {
+	if !validPath {
 		return nil, fmt.Errorf("could not find API at path [%s]", path)
 	}
 
