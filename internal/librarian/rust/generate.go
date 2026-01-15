@@ -79,7 +79,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
-		sidekickConfig, err := moduleToSidekickConfig(library, module, sources.Googleapis, sources.ProtobufSrc)
+		sidekickConfig, err := moduleToSidekickConfig(library, module, sources)
 		if err != nil {
 			return fmt.Errorf("module %s: %w", module.Output, err)
 		}
@@ -168,7 +168,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if storageModule == nil {
 		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
 	}
-	storageConfig, err := moduleToSidekickConfig(library, storageModule, sources.Googleapis, sources.ProtobufSrc)
+	storageConfig, err := moduleToSidekickConfig(library, storageModule, sources)
 	if err != nil {
 		return fmt.Errorf("failed to create storage sidekick config: %w", err)
 	}
@@ -182,7 +182,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if controlModule == nil {
 		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
 	}
-	controlConfig, err := moduleToSidekickConfig(library, controlModule, sources.Googleapis, sources.ProtobufSrc)
+	controlConfig, err := moduleToSidekickConfig(library, controlModule, sources)
 	if err != nil {
 		return fmt.Errorf("failed to create control sidekick config: %w", err)
 	}

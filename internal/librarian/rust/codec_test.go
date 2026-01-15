@@ -732,6 +732,14 @@ func TestToSidekickConfig(t *testing.T) {
 				}
 			}
 
+			sources := &Sources{
+				Conformance: conformanceDir,
+				Discovery:   discoveryDir,
+				Googleapis:  googleapisDir,
+				ProtobufSrc: protobufDir,
+				Showcase:    showcaseDir,
+			}
+
 			// Create a copy of want.Source with actual temp directories
 			wantSource := make(map[string]string)
 			for k, v := range test.want.Source {
@@ -756,7 +764,7 @@ func TestToSidekickConfig(t *testing.T) {
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
 				var commentOverrides []sidekickconfig.DocumentationOverride
 				for _, module := range test.library.Rust.Modules {
-					got, err := moduleToSidekickConfig(test.library, module, googleapisDir, protobufDir)
+					got, err := moduleToSidekickConfig(test.library, module, sources)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -925,6 +933,10 @@ func TestModuleToSidekickConfig_FoundServiceConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	googleapisDir := filepath.Join(tmpDir, "googleapis")
 	protobufDir := filepath.Join(tmpDir, "protobuf")
+	sources := &Sources{
+		Googleapis:  googleapisDir,
+		ProtobufSrc: protobufDir,
+	}
 
 	serviceConfigDir := filepath.Join(protobufDir, "google/example/v1")
 	err := os.MkdirAll(serviceConfigDir, 0755)
@@ -945,20 +957,19 @@ func TestModuleToSidekickConfig_FoundServiceConfig(t *testing.T) {
 		Source: "google/example/v1",
 	}
 
-	_, err = moduleToSidekickConfig(library, module, googleapisDir, protobufDir)
+	_, err = moduleToSidekickConfig(library, module, sources)
 	if err != nil {
 		t.Fatalf("moduleToSidekickConfig failed: %v", err)
 	}
 }
 
 func TestModuleToSidekickConfig_ServiceConfigNotFound(t *testing.T) {
-	tmpDir := t.TempDir()
 	library := &config.Library{}
 	module := &config.RustModule{
 		Source: "non/existent/path",
 	}
 
-	_, err := moduleToSidekickConfig(library, module, tmpDir, tmpDir)
+	_, err := moduleToSidekickConfig(library, module, &Sources{})
 	if err == nil {
 		t.Error("expected error for non-existent source, got nil")
 	}
