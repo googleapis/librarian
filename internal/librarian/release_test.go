@@ -521,13 +521,15 @@ func TestDeriveNextVersion(t *testing.T) {
 			wantVersion: sample.NextVersion,
 		},
 	} {
-		got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != test.wantVersion {
-			t.Errorf("got version %s, want %s", got, test.wantVersion)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.wantVersion {
+				t.Errorf("got version %s, want %s", got, test.wantVersion)
+			}
+		})
 	}
 }
 
