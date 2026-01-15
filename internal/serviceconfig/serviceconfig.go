@@ -18,6 +18,7 @@ package serviceconfig
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,10 +76,10 @@ func Read(serviceConfigPath string) (*Service, error) {
 // It first checks the API allowlist for overrides, then searches for YAML files
 // containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
 //
-// The path should be relative to sourceRoot (e.g., "google/cloud/secretmanager/v1").
+// The path should be relative to one of source.
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
 // ServiceConfig and Title may be empty strings if not found or not configured.
-func Find(sourceRoot, path string) (*API, error) {
+func Find(source map[string]string, path string) (*API, error) {
 	result := &API{Path: path}
 
 	// Check allowlist for overrides
@@ -96,6 +97,21 @@ func Find(sourceRoot, path string) (*API, error) {
 	}
 
 	// Search filesystem for service config
+	for _, root := range source {
+		api, err := findInRoot(result, root, path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+		return api, nil
+	}
+
+	return nil, fmt.Errorf("could not find an API at path [%s]", path)
+}
+
+func findInRoot(result *API, sourceRoot, path string) (*API, error) {
 	dir := filepath.Join(sourceRoot, path)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
