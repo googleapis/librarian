@@ -63,5 +63,5 @@ func Create(ctx context.Context, outputDir string, generateFn func(context.Conte
 	if err := command.Run(ctx, "git", "add", outputDir); err != nil {
 		return err
 	}
-	return command.Run(ctx, "git", "add", "Cargo.lock", "Cargo.toml")
+	return nil
 }

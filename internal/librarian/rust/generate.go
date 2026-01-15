@@ -39,9 +39,9 @@ type Sources struct {
 	Showcase    string
 }
 
-// CreateOutputDirectoryIfNotExist checks if the output directory exists
+// CreateSkeletonIfNotExist checks if the output directory exists
 // and creates it if it doesn't.
-func CreateOutputDirectoryIfNotExist(ctx context.Context, outputDir string) error {
+func CreateSkeletonIfNotExist(ctx context.Context, outputDir string) error {
 	if _, err := os.Stat(outputDir); err != nil {
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("failed to stat output directory %q: %w", outputDir, err)

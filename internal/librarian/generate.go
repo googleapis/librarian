@@ -170,7 +170,7 @@ func generate(ctx context.Context, language string, library *config.Library, cfg
 			return nil, err
 		}
 	case languageRust:
-		if err := rust.CreateOutputDirectoryIfNotExist(ctx, library.Output); err != nil {
+		if err := rust.CreateSkeletonIfNotExist(ctx, library.Output); err != nil {
 			return nil, err
 		}
 		sources, err := fetchRustSources(ctx, cfgSources)
