@@ -18,53 +18,103 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 
-// GetVerb maps an API method name to a standard gcloud command verb.
-func GetVerb(methodName string) (string, error) {
-	if methodName == "" {
-		return "", fmt.Errorf("method name cannot be empty")
+// GetCommandName maps an API method to a standard gcloud command name (in snake_case).
+// This name is typically used for the command's file name.
+func GetCommandName(method *api.Method) (string, error) {
+	if method == nil {
+		return "", fmt.Errorf("method cannot be nil")
 	}
 	switch {
-	case IsGet(methodName):
+	case IsGet(method):
 		return "describe", nil
-	case IsList(methodName):
+	case IsList(method):
 		return "list", nil
-	case IsCreate(methodName):
+	case IsCreate(method):
 		return "create", nil
-	case IsUpdate(methodName):
+	case IsUpdate(method):
 		return "update", nil
-	case IsDelete(methodName):
+	case IsDelete(method):
 		return "delete", nil
 	default:
-		// For non-standard methods, we just use the snake_case version of the method name.
-		return strcase.ToSnake(methodName), nil
+		// For custom methods (AIP-136), we try to extract the custom verb from the HTTP path.
+		// The custom verb is the part after the colon (e.g., .../instances/*:exportData).
+		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+			binding := method.PathInfo.Bindings[0]
+			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
+				return strcase.ToSnake(*binding.PathTemplate.Verb), nil
+			}
+		}
+		// Fallback: use the method name converted to snake_case.
+		return strcase.ToSnake(method.Name), nil
 	}
 }
 
-// IsCreate determines if the method is a Create method.
-// TODO(https://github.com/googleapis/librarian/issues/3362): implement a robust AIP-compliant method idetification.
-func IsCreate(methodName string) bool {
-	return strings.HasPrefix(methodName, "Create")
+// IsCreate determines if the method is a standard Create method (AIP-133).
+func IsCreate(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "Create") {
+		return false
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		return m.PathInfo.Bindings[0].Verb == "POST"
+	}
+	return true
 }
 
-// IsGet determines if the method is a Get method.
-func IsGet(methodName string) bool {
-	return strings.HasPrefix(methodName, "Get")
+// IsGet determines if the method is a standard Get method (AIP-131).
+func IsGet(m *api.Method) bool {
+	// Use sidekick's robust AIP check if available.
+	if m.AIPStandardGetInfo() != nil {
+		return true
+	}
+	// Fallback heuristic
+	if !strings.HasPrefix(m.Name, "Get") {
+		return false
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		return m.PathInfo.Bindings[0].Verb == "GET"
+	}
+	return true
 }
 
-// IsList determines if the method is a List method.
-func IsList(methodName string) bool {
-	return strings.HasPrefix(methodName, "List")
+// IsList determines if the method is a standard List method (AIP-132).
+func IsList(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "List") {
+		return false
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		return m.PathInfo.Bindings[0].Verb == "GET"
+	}
+	return true
 }
 
-// IsUpdate determines if the method is a Update method.
-func IsUpdate(methodName string) bool {
-	return strings.HasPrefix(methodName, "Update")
+// IsUpdate determines if the method is a standard Update method (AIP-134).
+func IsUpdate(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "Update") {
+		return false
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		verb := m.PathInfo.Bindings[0].Verb
+		return verb == "PATCH" || verb == "PUT"
+	}
+	return true
 }
 
-// IsDelete determines if the method is a Delete method.
-func IsDelete(methodName string) bool {
-	return strings.HasPrefix(methodName, "Delete")
+// IsDelete determines if the method is a standard Delete method (AIP-135).
+func IsDelete(m *api.Method) bool {
+	// Use sidekick's robust AIP check if available.
+	if m.AIPStandardDeleteInfo() != nil {
+		return true
+	}
+	// Fallback heuristic
+	if !strings.HasPrefix(m.Name, "Delete") {
+		return false
+	}
+	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+		return m.PathInfo.Bindings[0].Verb == "DELETE"
+	}
+	return true
 }
