@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,8 +24,16 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+var (
+	errMissingVersion = errors.New("version must not be empty")
+)
+
 // ReleaseLibrary bumps version for Cargo.toml files and updates librarian config version.
 func ReleaseLibrary(library *config.Library, version string) error {
+	if version == "" {
+		return errMissingVersion
+	}
+
 	cargoFile := filepath.Join(library.Output, "Cargo.toml")
 	_, err := os.Stat(cargoFile)
 	switch {

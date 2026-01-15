@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -113,9 +114,16 @@ func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion stri
 }
 
 func TestNoCargoFile(t *testing.T) {
-	err := ReleaseLibrary(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, "")
+	err := ReleaseLibrary(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, storageInitial)
 	if err == nil {
 		t.Error("expected error when Cargo.toml doesn't exist")
+	}
+}
+
+func TestMissingVersion(t *testing.T) {
+	err := ReleaseLibrary(&config.Library{}, "")
+	if !errors.Is(err, errMissingVersion) {
+		t.Errorf("expected error %v, got %v", errMissingVersion, err)
 	}
 }
 
