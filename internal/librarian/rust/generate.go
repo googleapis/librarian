@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -55,8 +56,28 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err != nil {
 		return err
 	}
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
-		return err
+	return createAndGenerate(ctx, library.Output, func(ctx context.Context) error {
+		return sidekickrust.Generate(ctx, model, library.Output, sidekickConfig)
+	})
+}
+
+// createAndGenerate checks if the output directory exists. If it does not exist,
+// it calls the Create function to create it and then executes the generateFn.
+// If the directory already exists, it directly executes the generateFn.
+func createAndGenerate(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
+	if _, err := os.Stat(outputDir); err != nil {
+		// Create if the output path does not already exist
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to stat output directory %q: %w", outputDir, err)
+		}
+		if err := Create(ctx, outputDir,
+			func(ctx context.Context) error {
+				return generateFn(ctx)
+			}); err != nil {
+			return err
+		}
+	} else {
+		return generateFn(ctx)
 	}
 	return nil
 }

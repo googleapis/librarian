@@ -209,9 +209,6 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return nil, err
 		}
 	case languageRust:
-		if err := rust.CreateSkeletonIfNotExist(ctx, library.Output); err != nil {
-			return nil, err
-		}
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return nil, fmt.Errorf("library %s: %w", library.Name, err)
@@ -288,13 +285,13 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if the directory
-// does not exist or any file in keep does not exist.
+// should contain paths relative to dir. It returns an error if any file
+// in keep does not exist.
 func cleanOutput(dir string, keep []string) error {
 	info, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("output directory %q does not exist; check that the output field in librarian.yaml is correct", dir)
+			return nil
 		}
 		return fmt.Errorf("failed to stat output directory %q: %w", dir, err)
 	}
