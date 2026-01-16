@@ -102,7 +102,8 @@ func TestFind(t *testing.T) {
 			name:    "not found",
 			channel: "google/cloud/compute/v1",
 			want: &API{
-				Path: "google/cloud/compute/v1",
+				Path:      "google/cloud/compute/v1",
+				Discovery: "discoveries/compute.v1.json",
 			},
 		},
 		{
