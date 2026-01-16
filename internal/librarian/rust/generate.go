@@ -62,7 +62,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 }
 
 // createAndGenerate checks if the output directory exists. If it does not exist,
-// it calls the Create function to create it and then executes the generateFn.
+// it calls the Create to create the skeleton and executes the generateFn.
 // If the directory already exists, it directly executes the generateFn.
 func createAndGenerate(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
 	if _, err := os.Stat(outputDir); err != nil {
