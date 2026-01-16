@@ -38,8 +38,9 @@ const (
 )
 
 var (
-	errLibraryNotFound    = errors.New("library not found")
-	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
+	errLibraryNotFound       = errors.New("library not found")
+	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
+	errBothVersionAndAllFlag = errors.New("cannot specify both --version and --all flag")
 
 	// languageVersioningOptions contains language-specific SemVer versioning
 	// options. Over time, languages should align on versioning semantics and
@@ -57,19 +58,24 @@ func releaseCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "release",
 		Usage:     "update versions and prepare release artifacts",
-		UsageText: "librarian release [library] [--all]",
+		UsageText: "librarian release [library] [--all] [--version=<version>]",
 		Description: `Release updates version numbers and prepares the files needed for a new release.
 
 If a library name is given, only that library is updated. The --all flag updates every
-library in the workspace.
+library in the workspace. When a library is specified explicitly, the --version flag can
+be used to override the new version.
 
 Examples:
-  librarian release <library>           # show planned changes for one library
-  librarian release --all               # show planned changes for all libraries`,
+  librarian release <library>           # update version for one library
+  librarian release --all               # update versions for all libraries`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
 				Usage: "update all libraries in the workspace",
+			},
+			&cli.StringFlag{
+				Name:  "version",
+				Usage: "specific version to update to; not valid with --all",
 			},
 		},
 		Action: runRelease,
@@ -79,11 +85,15 @@ Examples:
 func runRelease(ctx context.Context, cmd *cli.Command) error {
 	all := cmd.Bool("all")
 	libraryName := cmd.Args().First()
+	versionOverride := cmd.String("version")
 	if !all && libraryName == "" {
 		return errMissingLibraryOrAllFlag
 	}
 	if all && libraryName != "" {
 		return errBothLibraryAndAllFlag
+	}
+	if all && versionOverride != "" {
+		return errBothVersionAndAllFlag
 	}
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
@@ -122,7 +132,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe); err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -144,7 +154,7 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string)
 			return err
 		}
 		if shouldRelease(library, filesChanged) {
-			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe); err != nil {
+			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe, ""); err != nil {
 				return err
 			}
 		}
@@ -168,11 +178,11 @@ func shouldRelease(library *config.Library, filesChanged []string) bool {
 	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe string) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride string) error {
 	// If the language doesn't have bespoke versioning options, a default
 	// [semver.DeriveNextOptions] instance is returned.
 	opts := languageVersioningOptions[cfg.Language]
-	nextVersion, err := deriveNextVersion(ctx, gitExe, cfg, libConfig, opts)
+	nextVersion, err := deriveNextVersion(ctx, gitExe, cfg, libConfig, opts, versionOverride)
 	if err != nil {
 		return err
 	}
@@ -231,7 +241,16 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 	return nil, errLibraryNotFound
 }
 
-func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions) (string, error) {
+func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
+	// If a version override has been specified, use it - but
+	// check that it's not a regression or a no-op.
+	if versionOverride != "" {
+		if err := semver.CheckValidNext(libConfig.Version, versionOverride); err != nil {
+			return "", err
+		}
+		return versionOverride, nil
+	}
+
 	// First release, use the appropriate default starting version.
 	if libConfig.Version == "" {
 		if cfg.Release.Branch == defaultPreviewBranch {
