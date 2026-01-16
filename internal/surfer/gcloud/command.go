@@ -14,6 +14,57 @@
 
 package gcloud
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+// StringOrSlice is a custom type that represents a field that can be either a
+// single string or a list of strings in the gcloud YAML schema. This is
+// particularly common for 'collection' fields in the 'request' and 'async'
+// sections, where a single resource type is often represented as a string, but
+// multi-type resources are represented as a list of collections.
+type StringOrSlice []string
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface for StringOrSlice.
+// It allows the field to be parsed from either a YAML scalar (string) or a
+// YAML sequence (list of strings).
+func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
+	// The gcloud command schema allows certain fields, like 'collection' in the
+	// 'request' and 'async' sections, to be either a single string or a list of
+	// strings. We handle both cases here by checking the YAML node kind.
+	switch value.Kind {
+	case yaml.ScalarNode:
+		var str string
+		if err := value.Decode(&str); err != nil {
+			return err
+		}
+		*s = []string{str}
+		return nil
+	case yaml.SequenceNode:
+		var slice []string
+		if err := value.Decode(&slice); err != nil {
+			return err
+		}
+		*s = slice
+		return nil
+	default:
+		return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
+	}
+}
+
+// MarshalYAML implements the yaml.Marshaler interface for StringOrSlice.
+// To ensure that the generated YAML remains concise and compatible with existing
+// gcloud surfaces, it marshals a single-element slice as a scalar string,
+// and multiple elements as a sequence.
+func (s StringOrSlice) MarshalYAML() (any, error) {
+	if len(s) == 1 {
+		return s[0], nil
+	}
+	return []string(s), nil
+}
+
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is designed to be marshaled into a YAML file that the gcloud generator can
 // understand and use to generate a command-line interface.
@@ -51,6 +102,27 @@ type Command struct {
 
 	// Response specifies the details of the API response.
 	Response *Response `yaml:"response,omitempty"`
+
+	// Update specifies configuration for update commands.
+	Update *UpdateConfig `yaml:"update,omitempty"`
+
+	// Output specifies configuration for command output.
+	Output *OutputConfig `yaml:"output,omitempty"`
+}
+
+// UpdateConfig defines configuration for update commands.
+type UpdateConfig struct {
+	// ReadModifyUpdate indicates whether to use a read-modify-update cycle.
+	ReadModifyUpdate bool `yaml:"read_modify_update"`
+
+	// DisableAutoFieldMask disables the field mask auto generation.
+	DisableAutoFieldMask bool `yaml:"disable_auto_field_mask,omitempty"`
+}
+
+// OutputConfig defines configuration for command output.
+type OutputConfig struct {
+	// Format is the output format for the command (e.g., "table(name, ...)").
+	Format string `yaml:"format,omitempty"`
 }
 
 // Response defines the details of the API response.
@@ -115,10 +187,10 @@ type Param struct {
 	ResourceSpec *ResourceSpec `yaml:"resource_spec,omitempty"`
 	// Required indicates that this argument must be provided by the user.
 	// Origin: Inferred from the `(google.api.field_behavior) = REQUIRED` annotation on the proto field.
-	Required bool `yaml:"required,omitempty"`
+	Required bool `yaml:"required"`
 	// Repeated indicates that this argument can be specified multiple times.
 	// Origin: Inferred from the `repeated` keyword on the proto field.
-	Repeated bool `yaml:"repeated,omitempty"`
+	Repeated bool `yaml:"repeated"`
 	// Clearable indicates whether to add update flags for update commands.
 	// Origin: Used for map and repeated fields in Update commands to allow clearing values.
 	Clearable bool `yaml:"clearable,omitempty"`
@@ -154,6 +226,8 @@ type Choice struct {
 	// EnumValue is the corresponding string value of the enum in the API.
 	// Origin: The original name of the value in the proto enum definition.
 	EnumValue string `yaml:"enum_value,omitempty"`
+	// HelpText is the help text to show for the choice.
+	HelpText string `yaml:"help_text,omitempty"`
 }
 
 // ResourceSpec defines the structure for a gcloud resource argument. It provides
@@ -179,7 +253,7 @@ type ResourceSpec struct {
 	// DisableAutoCompleters prevents gcloud from attempting to provide tab-completion
 	// for this resource.
 	// Origin: Hardcoded to `true` for referenced resources to avoid cross-API complexities.
-	DisableAutoCompleters bool `yaml:"disable_auto_completers,omitempty"`
+	DisableAutoCompleters bool `yaml:"disable_auto_completers"`
 }
 
 // Attribute defines a single component of a resource's identifier, such as a
@@ -211,7 +285,7 @@ type Request struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 	// Collection is the list of API collections that this command operates on.
 	// Origin: Constructed from the API service name and the resource's collection path.
-	Collection []string `yaml:"collection,omitempty"`
+	Collection StringOrSlice `yaml:"collection,omitempty"`
 	// Method is the name of the API method to call.
 	Method string `yaml:"method,omitempty"`
 }
@@ -221,5 +295,8 @@ type Request struct {
 type Async struct {
 	// Collection is the API collection for the long-running operation resource.
 	// Origin: Hardcoded to the standard operations collection for the service.
-	Collection []string `yaml:"collection,omitempty"`
+	Collection StringOrSlice `yaml:"collection,omitempty"`
+
+	// ExtractResourceResult indicates whether to extract the resource result from the LRO.
+	ExtractResourceResult bool `yaml:"extract_resource_result,omitempty"`
 }

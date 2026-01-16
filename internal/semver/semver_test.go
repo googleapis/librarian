@@ -87,6 +87,78 @@ func TestParse(t *testing.T) {
 				SpecVersion: SemVerSpecV2,
 			},
 		},
+		{
+			name:    "valid version with format 1.2.3-alpha<digits>",
+			version: "1.2.3-alpha1",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "alpha",
+				PrereleaseNumber: ptr(1),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-beta<digits>",
+			version: "1.2.3-beta2",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "beta",
+				PrereleaseNumber: ptr(2),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-rc<digits>",
+			version: "1.2.3-rc3",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "rc",
+				PrereleaseNumber: ptr(3),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-preview<digits>",
+			version: "1.2.3-preview4",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "preview",
+				PrereleaseNumber: ptr(4),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-a<digits>",
+			version: "1.2.3-a5",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "a",
+				PrereleaseNumber: ptr(5),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
+		{
+			name:    "valid version with format 1.2.3-b<digits>",
+			version: "1.2.3-b6",
+			want: version{
+				Major:            1,
+				Minor:            2,
+				Patch:            3,
+				Prerelease:       "b",
+				PrereleaseNumber: ptr(6),
+				SpecVersion:      SemVerSpecV1,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			actual, err := parse(test.version)
@@ -138,6 +210,54 @@ func TestParse_Errors(t *testing.T) {
 				t.Errorf("Parse(%q) should have failed", test.version)
 			} else if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Parse(%q) returned error %v, wanted %v", test.version, gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestParse_Invalid(t *testing.T) {
+	for _, version := range []string{
+		"1.2.3-0123",
+		"1.2.3-0123.0123",
+		"1.1.2+.123",
+		"+invalid",
+		"-invalid",
+		"-invalid+invalid",
+		"-invalid.01",
+		"alpha",
+		"alpha.beta",
+		"alpha.beta.1",
+		"alpha.1",
+		"alpha+beta",
+		"alpha_beta",
+		"alpha.",
+		"alpha..",
+		"beta",
+		"1.0.0-alpha_beta",
+		"-alpha.",
+		"1.0.0-alpha..",
+		"1.0.0-alpha..1",
+		"1.0.0-alpha...1",
+		"1.0.0-alpha....1",
+		"1.0.0-alpha.....1",
+		"1.0.0-alpha......1",
+		"1.0.0-alpha.......1",
+		"01.1.1",
+		"1.01.1",
+		"1.1.01",
+		"1.2.3.DEV",
+		"1.2-SNAPSHOT",
+		"1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788",
+		"1.2-RC-SNAPSHOT",
+		"-1.0.3-gamma+b7718",
+		"+justmeta",
+		"9.8.7+meta+meta",
+		"9.8.7-whatever+meta+meta",
+		"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12",
+	} {
+		t.Run(version, func(t *testing.T) {
+			if _, err := parse(version); err == nil {
+				t.Error("Parse() should have failed")
 			}
 		})
 	}

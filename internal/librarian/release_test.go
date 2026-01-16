@@ -18,115 +18,146 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+// testUnusedStringParam is used to fill the spot of a string parameter that
+// won't be provided in the test, because the test does not exercise the
+// functionality related to said parameter. It is an intentional signal
+// rather than an ambiguous empty string.
+const testUnusedStringParam = ""
+
 func TestReleaseCommand(t *testing.T) {
-	const testlib = "test-lib"
-	const testlib2 = "test-lib2"
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
-		name         string
-		args         []string
-		srcPaths     map[string]string
-		wantVersions map[string]string
+		name        string
+		args        []string
+		cfg         *config.Config
+		previewCfg  *config.Config
+		withChanges []string
+		wantCfg     *config.Config
 	}{
 		{
-			name: "library name",
-			args: []string{"librarian", "release", testlib},
-			srcPaths: map[string]string{
-				testlib: "src/storage",
-			},
-			wantVersions: map[string]string{
-				testlib:  fakeReleaseVersion,
-				testlib2: "0.1.0",
-			},
+			name:        "library name",
+			args:        []string{"librarian", "release", sample.Lib1Name},
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantCfg: func() *config.Config {
+				c := sample.Config()
+
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
 		},
 		{
 			name: "all flag all have changes",
 			args: []string{"librarian", "release", "--all"},
-			srcPaths: map[string]string{
-				testlib:  "src/storage",
-				testlib2: "src/storage",
+			cfg:  sample.Config(),
+			withChanges: []string{
+				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
+				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
 			},
-			wantVersions: map[string]string{
-				testlib:  fakeReleaseVersion,
-				testlib2: fakeReleaseVersion,
-			},
+			wantCfg: func() *config.Config {
+				c := sample.Config()
+
+				c.Libraries[0].Version = sample.NextVersion
+				c.Libraries[1].Version = sample.NextVersion
+				return c
+			}(),
 		},
 		{
-			name: "all flag 1 has changes",
+			name:        "all flag 1 has changes",
+			args:        []string{"librarian", "release", "--all"},
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantCfg: func() *config.Config {
+				c := sample.Config()
+
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
+		},
+		{
+			name:        "preview library released",
+			args:        []string{"librarian", "release", sample.Lib1Name},
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantCfg: func() *config.Config {
+				c := sample.PreviewConfig()
+
+				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
+				return c
+			}(),
+		},
+		{
+			name: "all preview libraries released",
 			args: []string{"librarian", "release", "--all"},
-			srcPaths: map[string]string{
-				testlib:  "src/storage",
-				testlib2: "src/gax-internal",
+			withChanges: []string{
+				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
+				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
 			},
-			wantVersions: map[string]string{
-				testlib:  fakeReleaseVersion,
-				testlib2: "0.1.0",
-			},
+			cfg:        sample.Config(),
+			previewCfg: sample.PreviewConfig(),
+			wantCfg: func() *config.Config {
+				c := sample.PreviewConfig()
+
+				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
+				c.Libraries[1].Version = sample.NextPreviewPrereleaseVersion
+				return c
+			}(),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
-
-			cfg := &config.Config{
-				Language: languageFake,
-				Default:  &config.Default{},
-				Release: &config.Release{
-					Remote: "origin",
-					Branch: "main",
-				},
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
-						SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
-					},
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    testlib,
-						Version: "0.1.0",
-						Output:  test.srcPaths[testlib],
-					},
-					{
-						Name:    testlib2,
-						Version: "0.1.0",
-						Output:  test.srcPaths[testlib2],
-					},
-				},
+			opts := testhelper.SetupOptions{
+				Clone:       test.cfg.Release.Branch,
+				Config:      test.cfg,
+				Tag:         sample.InitialTag,
+				WithChanges: test.withChanges,
 			}
-			// TODO(https://github.com/googleapis/librarian/issues/3522):
-			// Must add librarian config to repo before clone so that it is
-			// captured in the origin/main commit tree. Should be integrated
-			// into Setup call.
-			testhelper.AddLibrarianConfig(t, cfg)
-			testhelper.CloneRepository(t, remoteDir)
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config:      test.previewCfg,
+					WithChanges: test.withChanges,
+					Tag:         sample.InitialPreviewTag,
+				}
+			}
+			testhelper.Setup(t, opts)
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
 				t.Fatal(err)
 			}
 
+			// The CLI command writes the updated config to disc, so we need to
+			// read it to check the result of the command.
 			updatedConfig, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// Update original config versions to expected versions to compare entire config.
-			for _, lib := range cfg.Libraries {
-				if wantVersion, ok := test.wantVersions[lib.Name]; ok {
-					lib.Version = wantVersion
-				}
+
+			// Libs need to be sorted because [yaml.Read] and [yaml.Write]
+			// do not guarantee order.
+			byLibraryName := func(a, b *config.Library) int {
+				return strings.Compare(a.Name, b.Name)
 			}
-			if diff := cmp.Diff(cfg, updatedConfig); diff != "" {
+			slices.SortFunc(test.wantCfg.Libraries, byLibraryName)
+			slices.SortFunc(updatedConfig.Libraries, byLibraryName)
+
+			if diff := cmp.Diff(test.wantCfg, updatedConfig); diff != "" {
 				t.Errorf("mismatch in config (-want +got):\n%s", diff)
 			}
 		})
@@ -159,32 +190,30 @@ func TestReleaseCommand_Error(t *testing.T) {
 			wantErr: errNoYaml,
 		},
 		{
-			name: "local repo is dirty",
-			args: []string{"librarian", "release", "--all"},
-			cfg: &config.Config{
-				Language: languageFake,
-			},
-			wantErr: git.ErrGitStatusUnclean,
+			name:    "local repo is dirty",
+			args:    []string{"librarian", "release", "--all"},
+			cfg:     sample.Config(),
 			dirty:   true,
+			wantErr: git.ErrGitStatusUnclean,
 		},
 		{
 			name: "release config empty",
 			args: []string{"librarian", "release", "--all"},
-			cfg: &config.Config{
-				Language: languageFake,
-			},
+			cfg: func() *config.Config {
+				c := sample.Config()
+
+				c.Release = nil
+				return c
+			}(),
 			wantErr: errReleaseConfigEmpty,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			remoteDir := testhelper.SetupRepoWithConfig(t, test.cfg)
-			testhelper.CloneRepository(t, remoteDir)
-
-			if test.dirty {
-				if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
-					t.Fatal(err)
-				}
-			}
+			testhelper.Setup(t, testhelper.SetupOptions{
+				Clone:  "main",
+				Config: test.cfg,
+				Dirty:  test.dirty,
+			})
 
 			err := Run(t.Context(), test.args...)
 			if !errors.Is(err, test.wantErr) {
@@ -198,14 +227,14 @@ func TestLibraryByName(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
-		config      *config.Config
+		cfg         *config.Config
 		want        *config.Library
 		wantErr     error
 	}{
 		{
 			name:        "find_a_library",
 			libraryName: "example-library",
-			config: &config.Config{
+			cfg: &config.Config{
 				Libraries: []*config.Library{
 					{Name: "example-library"},
 					{Name: "another-library"},
@@ -216,13 +245,13 @@ func TestLibraryByName(t *testing.T) {
 		{
 			name:        "no_library_in_config",
 			libraryName: "example-library",
-			config:      &config.Config{},
+			cfg:         &config.Config{},
 			wantErr:     errLibraryNotFound,
 		},
 		{
 			name:        "does_not_find_a_library",
 			libraryName: "non-existent-library",
-			config: &config.Config{
+			cfg: &config.Config{
 				Libraries: []*config.Library{
 					{Name: "example-library"},
 					{Name: "another-library"},
@@ -232,7 +261,7 @@ func TestLibraryByName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := libraryByName(test.config, test.libraryName)
+			got, err := libraryByName(test.cfg, test.libraryName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
@@ -250,42 +279,63 @@ func TestLibraryByName(t *testing.T) {
 	}
 }
 
-func TestRelease(t *testing.T) {
+func TestReleaseLibrary(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
-		name    string
-		srcPath string
-		version string
-		lastTag string
+		name        string
+		cfg         *config.Config
+		previewCfg  *config.Config
+		wantVersion string
 	}{
 		{
-			name:    "library released",
-			srcPath: "src/storage",
-			version: "1.2.3",
+			name:        "library released",
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
 		},
-	}
-	testhelper.RequireCommand(t, "git")
-	remoteDir := testhelper.SetupRepoWithChange(t, "v1.2.2")
-	testhelper.CloneRepository(t, remoteDir)
-	cfg := &config.Config{
-		Language: languageFake,
-		Release: &config.Release{
-			Remote: "origin",
-			Branch: "main",
+		{
+			name:        "preview library released",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
+		},
+		{
+			name: "preview library catches up to main",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewCoreVersion,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			libConfg := &config.Library{
-				Output: test.srcPath,
+			targetCfg := test.cfg
+			opts := testhelper.SetupOptions{
+				Clone:  test.cfg.Release.Branch,
+				Config: test.cfg,
 			}
-			err := releaseLibrary(t.Context(), cfg, libConfg, test.lastTag, "git", "")
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config: test.previewCfg,
+				}
+			}
+			testhelper.Setup(t, opts)
+
+			targetLibCfg := targetCfg.Libraries[0]
+			// Unused string param: lastTag.
+			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", "", nil)
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
-			if libConfg.Version != test.version {
-				t.Errorf("library %q version mismatch: want %q, got %q", libConfg.Name, test.version, libConfg.Version)
+			if targetLibCfg.Version != test.wantVersion {
+				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
 			}
 		})
 
@@ -297,66 +347,78 @@ func TestReleaseAll(t *testing.T) {
 
 	for _, test := range []struct {
 		name        string
-		libName     string
-		dir         string
+		cfg         *config.Config
+		previewCfg  *config.Config
+		withChanges []string
 		skipPublish bool
 		wantVersion string
 	}{
 		{
 			name:        "library has changes",
-			libName:     "google-cloud-storage",
-			dir:         "src/storage",
-			wantVersion: "1.2.3",
-			skipPublish: false,
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.NextVersion,
 		},
 		{
 			name:        "library does not have any changes",
-			libName:     "gax-internal",
-			dir:         "src/gax-internal",
-			wantVersion: "1.2.2",
-			skipPublish: false,
+			cfg:         sample.Config(),
+			wantVersion: sample.InitialVersion,
 		},
 		{
-			name:        "library does not have any changes on shared directory prefix",
-			libName:     "gax-internal",
-			dir:         "src/stor",
-			wantVersion: "1.2.2",
-			skipPublish: false,
+			name: "library has changes but skipPublish is true",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].SkipPublish = true
+				return c
+			}(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.InitialVersion,
 		},
 		{
-			name:        "library has changes but skipPublish is true",
-			libName:     "google-cloud-storage",
-			dir:         "src/storage",
-			wantVersion: "1.2.2",
-			skipPublish: true,
+			name:        "preview library does not have any changes",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.InitialPreviewVersion,
+		},
+		{
+			name:        "preview library has changes",
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tag := "v1.2.3"
-			config := &config.Config{
-				Language: languageFake,
-				Libraries: []*config.Library{
-					{
-						Name:        test.libName,
-						Version:     "1.2.2",
-						Output:      test.dir,
-						SkipPublish: test.skipPublish,
-					},
-				},
-				Release: &config.Release{
-					Remote:         "origin",
-					Branch:         "main",
-					IgnoredChanges: []string{},
-				},
+			targetCfg := test.cfg
+			sinceTag := sample.InitialTag
+			opts := testhelper.SetupOptions{
+				Clone:       test.cfg.Release.Branch,
+				Config:      test.cfg,
+				Tag:         sample.InitialTag,
+				WithChanges: test.withChanges,
 			}
-			remoteDir := testhelper.SetupRepoWithChange(t, tag)
-			testhelper.CloneRepository(t, remoteDir)
-			err := releaseAll(t.Context(), config, tag, "git", "")
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				sinceTag = sample.InitialPreviewTag
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config:      test.previewCfg,
+					WithChanges: test.withChanges,
+					Tag:         sample.InitialPreviewTag,
+				}
+			}
+			testhelper.Setup(t, opts)
+
+			err := releaseAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if config.Libraries[0].Version != test.wantVersion {
-				t.Errorf("got version %s, want %s", config.Libraries[0].Version, test.wantVersion)
+			// releaseAll directly modifies the config provided, so we use it as
+			// our "got".
+			gotVersion := targetCfg.Libraries[0].Version
+			if gotVersion != test.wantVersion {
+				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
 			}
 		})
 	}
@@ -422,5 +484,71 @@ func TestPostRelease(t *testing.T) {
 				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestDeriveNextVersion(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		cfg         *config.Config
+		versionOpts semver.DeriveNextOptions
+		wantVersion string
+	}{
+		{
+			name: "rust library next non-GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = languageRust
+				c.Libraries[0].Version = sample.RustNonGAVersion
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[languageRust],
+			wantVersion: sample.RustNextNonGAVersion,
+		},
+		{
+			name: "rust library next GA version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = languageRust
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[languageRust],
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name:        "default semver options next GA version",
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.wantVersion {
+				t.Errorf("got version %s, want %s", got, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestLoadBranchLibraryVersion(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	want := sample.InitialVersion
+	testhelper.Setup(t, testhelper.SetupOptions{
+		Clone: "main",
+		Config: &config.Config{
+			Libraries: []*config.Library{{Name: sample.Lib1Name, Version: want}},
+		},
+	})
+
+	got, err := loadBranchLibraryVersion(t.Context(), "git", "origin", "main", sample.Lib1Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("got version %s, want %s", got, want)
 	}
 }

@@ -121,14 +121,19 @@ type Default struct {
 	// ReleaseLevel is either "stable" or "preview".
 	ReleaseLevel string `yaml:"release_level,omitempty"`
 
-	// Rust contains Rust-specific default configuration.
-	Rust *RustDefault `yaml:"rust,omitempty"`
-
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
 
 	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
 	Transport string `yaml:"transport,omitempty"`
+
+	// Language-specific fields are below.
+
+	// Dart contains Dart-specific default configuration.
+	Dart *DartPackage `yaml:"dart,omitempty"`
+
+	// Rust contains Rust-specific default configuration.
+	Rust *RustDefault `yaml:"rust,omitempty"`
 }
 
 // Library represents a library configuration.
@@ -153,9 +158,6 @@ type Library struct {
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
 
-	// Go contains Go-specific library configuration.
-	Go *GoModule `yaml:"go,omitempty"`
-
 	// Keep lists files and directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
 
@@ -163,18 +165,12 @@ type Library struct {
 	// Default.Output.
 	Output string `yaml:"output,omitempty"`
 
-	// Python contains Python-specific library configuration.
-	Python *PythonPackage `yaml:"python,omitempty"`
-
 	// ReleaseLevel is the release level, such as "stable" or "preview". This
 	// overrides Default.ReleaseLevel.
 	ReleaseLevel string `yaml:"release_level,omitempty"`
 
 	// Roots specifies the source roots to use for generation. Defaults to googleapis.
 	Roots []string `yaml:"roots,omitempty"`
-
-	// Rust contains Rust-specific library configuration.
-	Rust *RustCrate `yaml:"rust,omitempty"`
 
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
@@ -198,6 +194,20 @@ type Library struct {
 	// configuration (e.g., rust.modules) instead of generating a complete crate
 	// from channels.
 	Veneer bool `yaml:"veneer,omitempty"`
+
+	// Language-specific fields are below.
+
+	// Dart contains Dart-specific library configuration.
+	Dart *DartPackage `yaml:"dart,omitempty"`
+
+	// Go contains Go-specific library configuration.
+	Go *GoModule `yaml:"go,omitempty"`
+
+	// Python contains Python-specific library configuration.
+	Python *PythonPackage `yaml:"python,omitempty"`
+
+	// Rust contains Rust-specific library configuration.
+	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
 // Channel describes a Channel to include in a library.
@@ -205,7 +215,4 @@ type Channel struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
-
-	// ServiceConfig is the path to the service config file.
-	ServiceConfig string `yaml:"service_config,omitempty"`
 }

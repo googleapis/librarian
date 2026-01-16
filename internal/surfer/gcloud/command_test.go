@@ -59,28 +59,19 @@ func TestCommandYAML(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to unmarshal YAML: %v", err)
 			}
-			got, err := yaml.Marshal(commands)
+
+			marshaled, err := yaml.Marshal(commands)
 			if err != nil {
 				t.Fatalf("failed to marshal struct to YAML: %v", err)
 			}
 
-			lines := strings.Split(string(data), "\n")
-
-			// Skip all leading comments and blank lines
-			var index int
-			for i, line := range lines {
-				trimmed := strings.TrimSpace(line)
-				if strings.HasPrefix(trimmed, "#") || trimmed == "" {
-					continue
-				}
-				index = i
-				break
+			roundTripped, err := yaml.Unmarshal[[]*Command](marshaled)
+			if err != nil {
+				t.Fatalf("failed to unmarshal round-tripped YAML: %v", err)
 			}
 
-			want := strings.Join(lines[index:], "\n")
-
-			if diff := cmp.Diff(want, string(got)); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			if diff := cmp.Diff(commands, roundTripped); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

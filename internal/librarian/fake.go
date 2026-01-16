@@ -22,12 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// fakeReleaseVersion is the version that libraries are always released at when
-// using the fake language implementation.
-const fakeReleaseVersion = "1.2.3"
-
-func fakeReleaseLibrary(lib *config.Library) error {
-	lib.Version = fakeReleaseVersion
+func fakeReleaseLibrary(lib *config.Library, nextVersion string) error {
+	lib.Version = nextVersion
 	return nil
 }
 

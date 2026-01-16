@@ -73,8 +73,7 @@ func TestAddLibrary(t *testing.T) {
 					Name:   "existinglib",
 					Output: "output",
 					Channels: []*config.Channel{
-						{Path: "google/cloud/secretmanager/v1",
-							ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"},
+						{Path: "google/cloud/secretmanager/v1"},
 					},
 				},
 			},
@@ -83,8 +82,7 @@ func TestAddLibrary(t *testing.T) {
 				{
 					Name: "existinglib",
 					Channels: []*config.Channel{
-						{Path: "google/cloud/secretmanager/v1",
-							ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"},
+						{Path: "google/cloud/secretmanager/v1"},
 					},
 				},
 				{

@@ -176,7 +176,7 @@ func (r *testGenerateRunner) testSingleLibrary(ctx context.Context, libraryID, s
 	}
 
 	// We capture the error here and pass it to the validation step.
-	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir)
+	generateErr := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, r.state.Image, outputDir)
 
 	if err := r.validateGenerateTest(generateErr, protoFileToGUIDs, libraryState); err != nil {
 		return fmt.Errorf("failed in test validation steps: %w", err)

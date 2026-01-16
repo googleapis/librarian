@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -114,9 +115,9 @@ func initRepositoryContents(t *testing.T) {
 	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	AddCrate(t, path.Join("src", "storage"), "google-cloud-storage")
-	AddCrate(t, path.Join("src", "gax-internal"), "google-cloud-gax-internal")
-	AddCrate(t, path.Join("src", "gax-internal", "echo-server"), "echo-server")
+	AddCrate(t, sample.Lib1Output, sample.Lib1Name)
+	AddCrate(t, sample.Lib2Output, sample.Lib2Name)
+	AddCrate(t, path.Join(sample.Lib2Output, "echo-server"), "echo-server")
 	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
@@ -159,17 +160,93 @@ func SetupRepo(t *testing.T) string {
 	return remoteDir
 }
 
-// SetupRepoWithConfig invokes [SetupRepo] then [AddLibrarianConfig].
-func SetupRepoWithConfig(t *testing.T, cfg *config.Config) string {
-	t.Helper()
-	remoteDir := SetupRepo(t)
-	AddLibrarianConfig(t, cfg)
-	return remoteDir
+// SetupOptions include the various options for configuring test setup.
+type SetupOptions struct {
+	// Clone is the branch that [Setup] should clone into after all setup is
+	// complete. Must not be set in PreviewOptions.
+	Clone string
+	// Config is the [config.Config] to write to librarian.yaml in the root
+	// of the repo created.
+	Config *config.Config
+	// Dirty indicates if the cloned repository should be left in a dirty state,
+	// with uncommitted files. Primarily used for error testing.
+	Dirty bool
+	// PreviewOptions indicate the creation of a 'preview' branch in the repo
+	// using the provided SetupOptions.
+	PreviewOptions *SetupOptions
+	// remoteDir is the directory of the repo created by [SetupRepo] that
+	// should be cloned when [Clone] is set. Internal only.
+	remoteDir string
+	// Tag is the tag that will be applied once all initial file set up is
+	// complete.
+	Tag string
+	// WithChanges is a list of file paths that should show as changed and be
+	// committed after Tag has been applied.
+	WithChanges []string
 }
 
-// AddLibrarianConfig writes the provided librarian.yaml config to disk and
+// Setup is a configurable test setup function that starts by creating a
+// fresh test repository via [SetupRepo], to which it then applies the
+// configured [SetupOptions].
+func Setup(t *testing.T, opts SetupOptions) {
+	t.Helper()
+	dir := SetupRepo(t)
+	opts.remoteDir = dir
+	setup(t, opts)
+}
+
+func setup(t *testing.T, opts SetupOptions) {
+	if opts.Config != nil {
+		addLibrarianConfig(t, opts.Config)
+	}
+	if opts.Tag != "" {
+		if err := command.Run(t.Context(), "git", "tag", opts.Tag); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Must be handled after tagging for tests that need to detect untagged
+	// changes needing release.
+	if len(opts.WithChanges) > 0 {
+		for _, srcPath := range opts.WithChanges {
+			touchFile(t, srcPath)
+		}
+		if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed file(s)", "."); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if opts.PreviewOptions != nil {
+		if err := command.Run(t.Context(), "git", "checkout", "-b", "preview"); err != nil {
+			t.Fatal(err)
+		}
+		setup(t, *opts.PreviewOptions)
+	}
+	if opts.Clone != "" {
+		CloneRepositoryBranch(t, opts.remoteDir, opts.Clone)
+	}
+	if opts.Dirty {
+		if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func touchFile(t *testing.T, path string) {
+	t.Helper()
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	// Append a new line to the end of each file to show as "changed".
+	if _, err := fmt.Fprintln(f, ""); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// addLibrarianConfig writes the provided librarian.yaml config to disk and
 // commits it. Must be called after a Setup or a Clone.
-func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
+func addLibrarianConfig(t *testing.T, cfg *config.Config) {
 	t.Helper()
 	if cfg == nil {
 		return
@@ -180,7 +257,7 @@ func AddLibrarianConfig(t *testing.T, cfg *config.Config) {
 	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add librarian yaml", "."); err != nil {
+	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add/update librarian yaml", "."); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -193,7 +270,7 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
 		t.Fatal(err)
 	}
-	name := path.Join("src", "storage", "src", "lib.rs")
+	name := path.Join(sample.Lib1Output, "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -206,9 +283,16 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 // CloneRepository clones the remote repository into a new temporary directory
 // and changes the current working directory to the cloned repository.
 func CloneRepository(t *testing.T, remoteDir string) {
+	CloneRepositoryBranch(t, remoteDir, "main")
+}
+
+// CloneRepositoryBranch clones the repository at the specified branch into
+// a temporary directory and changes the current working directory to the cloned
+// repository.
+func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := command.Run(t.Context(), "git", "clone", remoteDir, "."); err != nil {
+	if err := command.Run(t.Context(), "git", "clone", "--branch", branch, remoteDir, "."); err != nil {
 		t.Fatal(err)
 	}
 	configNewGitRepository(t)

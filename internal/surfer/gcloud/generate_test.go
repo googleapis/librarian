@@ -15,6 +15,7 @@
 package gcloud
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +49,7 @@ func TestGenerateService(t *testing.T) {
 				},
 			},
 			model: &api.API{
-				ResourceDefinitions: []*api.Resource{},
+				Title: "Parallelstore API",
 			},
 			wantErr: false,
 		},
@@ -57,8 +58,11 @@ func TestGenerateService(t *testing.T) {
 			service: &api.Service{
 				Name:        "parallelstore.googleapis.com",
 				DefaultHost: "",
+				Package:     "google.cloud.parallelstore.v1",
 			},
-			model:   &api.API{},
+			model: &api.API{
+				Title: "Parallelstore API",
+			},
 			wantErr: true,
 		},
 	} {
@@ -79,11 +83,13 @@ func TestGenerateResourceCommands(t *testing.T) {
 
 	err := generateResourceCommands("instances", []*api.Method{
 		{
-			Name:      "CreateInstance",
-			Service:   &api.Service{Package: "google.cloud.parallelstore.v1"},
+			Name: "CreateInstance",
+			Service: &api.Service{
+				Package: "google.cloud.parallelstore.v1",
+			},
 			InputType: &api.Message{},
 		},
-	}, tmpDir, &Config{}, &api.API{}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
+	}, tmpDir, &Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
 
 	if err != nil {
 		t.Fatalf("generateResourceCommands() error = %v", err)
@@ -100,5 +106,20 @@ func TestGenerateResourceCommands(t *testing.T) {
 	wantContent := "_PARTIALS_: true\n"
 	if diff := cmp.Diff(wantContent, string(content)); diff != "" {
 		t.Errorf("main file content mismatch (-want +got):\n%s", diff)
+	}
+
+	// Check __init__.py content
+	initFile := filepath.Join(tmpDir, "instances", "__init__.py")
+	if _, err := os.Stat(initFile); os.IsNotExist(err) {
+		t.Errorf("expected file %s to exist", initFile)
+	}
+	initContent, _ := os.ReadFile(initFile)
+	// The mock model is empty, so we expect some defaults.
+	// But let's see if it matches the general structure.
+	if !bytes.Contains(initContent, []byte(`"""Manage Parallelstore resources."""`)) {
+		t.Errorf("__init__.py content missing expected docstring:\n%s", string(initContent))
+	}
+	if !bytes.Contains(initContent, []byte("class InstancesGa(base.Group):")) {
+		t.Errorf("__init__.py content missing expected class definition:\n%s", string(initContent))
 	}
 }

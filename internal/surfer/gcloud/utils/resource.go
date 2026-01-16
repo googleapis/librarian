@@ -80,7 +80,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Create` methods, the primary resource is identified by a field named
 	// in the format "{resource}_id" (e.g., "instance_id").
-	if IsCreate(method.Name) {
+	if IsCreate(method) {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
@@ -93,7 +93,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
 	// by a field named "name", which holds the full resource name.
-	if (IsGet(method.Name) || IsDelete(method.Name) || IsUpdate(method.Name)) && field.Name == "name" {
+	if (IsGet(method) || IsDelete(method) || IsUpdate(method)) && field.Name == "name" {
 		return true
 	}
 	return false
@@ -191,6 +191,22 @@ func GetPluralResourceNameForMethod(method *api.Method, model *api.API) string {
 		// plural name from the resource's pattern string, as per AIP-122.
 		if len(resource.Patterns) > 0 {
 			return GetPluralFromSegments(resource.Patterns[0])
+		}
+	}
+	return ""
+}
+
+// GetSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
+// hierarchy of truth: first, the explicit `singular` field in the resource
+// definition, and second, inference from the resource pattern.
+func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string {
+	resource := GetResourceForMethod(method, model)
+	if resource != nil {
+		if resource.Singular != "" {
+			return resource.Singular
+		}
+		if len(resource.Patterns) > 0 {
+			return GetSingularFromSegments(resource.Patterns[0])
 		}
 	}
 	return ""

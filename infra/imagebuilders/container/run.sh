@@ -14,18 +14,18 @@
 # limitations under the License.
 
 echo "in release container"
-cat /librarian/release-init-request.json
+cat /librarian/release-stage-request.json
 
 ls -al /librarian
 ls -al /repo
 ls -al /output
 
-new_version=$(jq -r '.libraries[0].version' /librarian/release-init-request.json)
+new_version=$(jq -r '.libraries[0].version' /librarian/release-stage-request.json)
 echo "release version: ${new_version}"
-mkdir /output/internal/
+mkdir -p /output/internal/cli/
 echo "${new_version}" > /output/internal/cli/version.txt
 
 ls -al /output
 
 echo "writing empty response"
-echo "{}" > /librarian/release-init-response.json
+echo "{}" > /librarian/release-stage-response.json

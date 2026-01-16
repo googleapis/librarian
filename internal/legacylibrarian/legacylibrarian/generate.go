@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 )
 
-func generateSingleLibrary(ctx context.Context, containerClient ContainerClient, state *legacyconfig.LibrarianState, libraryState *legacyconfig.LibraryState, repo legacygitrepo.Repository, sourceRepo legacygitrepo.Repository, outputDir string) error {
+func generateSingleLibrary(ctx context.Context, containerClient ContainerClient, state *legacyconfig.LibrarianState, libraryState *legacyconfig.LibraryState, repo legacygitrepo.Repository, sourceRepo legacygitrepo.Repository, image, outputDir string) error {
 	// For each library, create a separate output directory. This avoids
 	// libraries interfering with each other, and makes it easier to see what
 	// was generated for each library when debugging.
@@ -48,7 +48,7 @@ func generateSingleLibrary(ctx context.Context, containerClient ContainerClient,
 		Output:    libraryOutputDir,
 		RepoDir:   repo.GetDir(),
 		State:     state,
-		Image:     state.Image,
+		Image:     image,
 	}
 	slog.Info("performing generation for library", "id", libraryState.ID, "outputDir", libraryOutputDir)
 	if err := containerClient.Generate(ctx, generateRequest); err != nil {

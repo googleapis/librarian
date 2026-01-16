@@ -89,8 +89,10 @@ func run(ctx context.Context, args []string) error {
 	}
 	base := filepath.Base(abs)
 	switch base {
-	case "google-cloud-rust", "google-cloud-dart":
+	case "google-cloud-dart":
 		return runSidekickMigration(ctx, abs)
+	case "google-cloud-rust":
+		return fmt.Errorf(".sidekick.toml files have been deleted in %q", base)
 	case "google-cloud-python", "google-cloud-go":
 		parts := strings.SplitN(base, "-", 3)
 		return runLibrarianMigration(ctx, parts[2], abs)
@@ -294,8 +296,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			continue
 		}
 
-		serviceConfig := sidekick.General.ServiceConfig
-
 		specificationFormat := sidekick.General.SpecificationFormat
 		if specificationFormat == "disco" {
 			specificationFormat = "discovery"
@@ -330,8 +330,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 
 		// Add channels
 		lib.Channels = append(lib.Channels, &config.Channel{
-			Path:          apiPath,
-			ServiceConfig: serviceConfig,
+			Path: apiPath,
 		})
 
 		// Set version from Cargo.toml (more authoritative than sidekick)
@@ -365,7 +364,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			lib.DescriptionOverride = descriptionOverride
 		}
 
-		titleOverride := sidekick.Source["title-override"]
 		if roots, ok := sidekick.Source["roots"]; ok {
 			lib.Roots = strToSlice(roots, false)
 		}
@@ -428,7 +426,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			PerServiceFeatures:        strToBool(perServiceFeatures),
 			ModulePath:                modulePath,
 			TemplateOverride:          templateOverride,
-			TitleOverride:             titleOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
 			DefaultFeatures:           strToSlice(defaultFeatures, false),
@@ -588,7 +585,6 @@ func buildModules(rootDir string, repoPath string) ([]*config.RustModule, error)
 		includedIds := sidekick.Source["included-ids"]
 		includeList := sidekick.Source["include-list"]
 		skippedIds := sidekick.Source["skipped-ids"]
-		titleOverride := sidekick.Source["title-override"]
 		moduleRoots := make(map[string]string)
 		roots, ok := sidekick.Source["roots"]
 		if ok {
@@ -641,7 +637,6 @@ func buildModules(rootDir string, repoPath string) ([]*config.RustModule, error)
 			SkippedIds:             strToSlice(skippedIds, false),
 			Source:                 sidekick.General.SpecificationSource,
 			Template:               strings.TrimPrefix(templateOverride, "templates/"),
-			TitleOverride:          titleOverride,
 		}
 
 		if len(moduleRoots) > 0 {

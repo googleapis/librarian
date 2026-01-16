@@ -248,7 +248,15 @@ func (r *generateRunner) generateSingleLibrary(ctx context.Context, libraryID, o
 		}, nil
 	}
 
-	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, outputDir); err != nil {
+	image := r.image
+	if image == "" {
+		image = r.state.Image
+		slog.Info("using image from state", "image", image)
+	} else {
+		slog.Info("using image from command line", "image", image)
+	}
+
+	if err := generateSingleLibrary(ctx, r.containerClient, r.state, libraryState, r.repo, r.sourceRepo, image, outputDir); err != nil {
 		return nil, err
 	}
 

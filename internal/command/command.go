@@ -39,7 +39,6 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
 	}
-	fmt.Fprintf(os.Stderr, "Running: %s\n", cmd.String())
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
 	}

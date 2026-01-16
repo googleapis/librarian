@@ -172,8 +172,8 @@ func DownloadTarball(ctx context.Context, target, url, expectedSha256 string) er
 		return err
 	}
 	tempPath := tempFile.Name()
+	_ = tempFile.Close()
 	defer func() {
-		tempFile.Close()
 		cerr := os.Remove(tempPath)
 		if err == nil && cerr != nil && !os.IsNotExist(cerr) {
 			err = cerr
@@ -233,7 +233,7 @@ func downloadAttempt(ctx context.Context, target, source string) (err error) {
 		}
 	}()
 
-	client := http.Client{Timeout: 60 * time.Second}
+	client := http.Client{Timeout: 5 * time.Minute}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source, nil)
 	if err != nil {
 		return err

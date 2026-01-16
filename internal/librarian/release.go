@@ -24,13 +24,33 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+)
+
+const (
+	defaultPreviewBranch  = "preview"
+	defaultMainBranch     = "main"
+	defaultVersion        = "0.1.0"
+	defaultPreviewVersion = "0.1.0-preview.1"
+	zeroVersion           = "0.0.0"
 )
 
 var (
 	errLibraryNotFound    = errors.New("library not found")
 	errReleaseConfigEmpty = errors.New("librarian Release.Config field empty")
+
+	// languageVersioningOptions contains language-specific SemVer versioning
+	// options. Over time, languages should align on versioning semantics and
+	// this should be removed. If a language does not have specific needs, a
+	// default [semver.DeriveNextOptions] is returned for default semantics.
+	languageVersioningOptions = map[string]semver.DeriveNextOptions{
+		"rust": {
+			BumpVersionCore:       true,
+			DowngradePreGAChanges: true,
+		},
+	}
 )
 
 func releaseCommand() *cli.Command {
@@ -88,13 +108,22 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
+
 	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
 	}
+	var rustSources *rust.Sources
+	if cfg.Language == languageRust {
+		rustSources, err = fetchRustSources(ctx, cfg.Sources)
+		if err != nil {
+			return err
+		}
+		rustSources.Googleapis = googleapisDir
+	}
 
 	if all {
-		if err = releaseAll(ctx, cfg, lastTag, gitExe, googleapisDir); err != nil {
+		if err = releaseAll(ctx, cfg, lastTag, gitExe, googleapisDir, rustSources); err != nil {
 			return err
 		}
 	} else {
@@ -102,11 +131,11 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		_, err = prepareLibrary(cfg.Language, libConfg, cfg.Default, "", false)
+		_, err = prepareLibrary(cfg.Language, libConfg, cfg.Default, false)
 		if err != nil {
 			return err
 		}
-		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe, googleapisDir); err != nil {
+		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe, googleapisDir, rustSources); err != nil {
 			return err
 		}
 	}
@@ -117,18 +146,18 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	return RunTidyOnConfig(ctx, cfg)
 }
 
-func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe, googleapisDir string) error {
+func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
 	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
 	for _, library := range cfg.Libraries {
-		_, err := prepareLibrary(cfg.Language, library, cfg.Default, "", false)
+		_, err := prepareLibrary(cfg.Language, library, cfg.Default, false)
 		if err != nil {
 			return err
 		}
 		if shouldRelease(library, filesChanged) {
-			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe, googleapisDir); err != nil {
+			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe, googleapisDir, rustSources); err != nil {
 				return err
 			}
 		}
@@ -152,10 +181,18 @@ func shouldRelease(library *config.Library, filesChanged []string) bool {
 	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, googleapisDir string) error {
+func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
+	// If the language doesn't have bespoke versioning options, a default
+	// [semver.DeriveNextOptions] instance is returned.
+	opts := languageVersioningOptions[cfg.Language]
+	nextVersion, err := deriveNextVersion(ctx, gitExe, cfg, libConfig, opts)
+	if err != nil {
+		return err
+	}
+
 	switch cfg.Language {
 	case languageFake:
-		return fakeReleaseLibrary(libConfig)
+		return fakeReleaseLibrary(libConfig, nextVersion)
 	case languageRust:
 		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, libConfig.Output+"/Cargo.toml")
 		if err != nil {
@@ -164,10 +201,10 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if !release {
 			return nil
 		}
-		if err := rust.ReleaseLibrary(libConfig); err != nil {
+		if err := rust.ReleaseLibrary(libConfig, nextVersion); err != nil {
 			return err
 		}
-		if _, err := generateLibrary(ctx, cfg, googleapisDir, libConfig.Name); err != nil {
+		if _, err := generateLibrary(ctx, cfg, libConfig.Name, googleapisDir, rustSources); err != nil {
 			return err
 		}
 		if err := formatLibrary(ctx, cfg.Language, libConfig); err != nil {
@@ -205,4 +242,43 @@ func libraryByName(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, errLibraryNotFound
+}
+
+func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions) (string, error) {
+	// First release, use the appropriate default starting version.
+	if libConfig.Version == "" {
+		if cfg.Release.Branch == defaultPreviewBranch {
+			return defaultPreviewVersion, nil
+		}
+		return defaultVersion, nil
+	}
+
+	if cfg.Release.Branch == defaultPreviewBranch {
+		stableVersion, err := loadBranchLibraryVersion(ctx, gitExe, cfg.Release.Remote, defaultMainBranch, libConfig.Name)
+		if errors.Is(err, errLibraryNotFound) {
+			// If the preview setup precedes the stable setup, ensure stable is always behind.
+			stableVersion = zeroVersion
+		} else if err != nil {
+			return "", err
+		}
+		return semver.DeriveNextPreview(libConfig.Version, stableVersion, opts)
+	}
+
+	return semver.DeriveNext(semver.Minor, libConfig.Version, opts)
+}
+
+func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
+	branchLibrarianCfgFile, err := git.ShowFile(ctx, gitExe, remote, branch, librarianConfigPath)
+	if err != nil {
+		return "", err
+	}
+	branchLibrarianCfg, err := yaml.Unmarshal[config.Config]([]byte(branchLibrarianCfgFile))
+	if err != nil {
+		return "", err
+	}
+	branchLibCfg, err := libraryByName(branchLibrarianCfg, libName)
+	if err != nil {
+		return "", err
+	}
+	return branchLibCfg.Version, nil
 }

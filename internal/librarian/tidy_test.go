@@ -208,7 +208,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 		name         string
 		config       *config.Config
 		wantPath     string
-		wantSvcCfg   string
 		wantNumLibs  int
 		wantNumChnls int
 	}{
@@ -221,17 +220,15 @@ func TestTidy_DerivableFields(t *testing.T) {
 						Name: "google-cloud-accessapproval-v1",
 						Channels: []*config.Channel{
 							{
-								Path:          "google/cloud/accessapproval/v1",
-								ServiceConfig: "google/cloud/accessapproval/v1/accessapproval_v1.yaml",
+								Path: "google/cloud/accessapproval/v1",
 							},
 						},
 					},
 				},
 			},
 			wantPath:     "",
-			wantSvcCfg:   "",
 			wantNumLibs:  1,
-			wantNumChnls: 0, // Channels should be removed
+			wantNumChnls: 0,
 		},
 		{
 			name: "non-derivable path not removed",
@@ -242,61 +239,18 @@ func TestTidy_DerivableFields(t *testing.T) {
 						Name: "google-cloud-aiplatform-v1-schema-predict-instance",
 						Channels: []*config.Channel{
 							{
-								Path:          "src/generated/cloud/aiplatform/schema/predict/instance",
-								ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+								Path: "src/generated/cloud/aiplatform/schema/predict/instance",
 							},
 						},
 					},
 				},
 			},
 			wantPath:     "src/generated/cloud/aiplatform/schema/predict/instance",
-			wantSvcCfg:   "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 			wantNumLibs:  1,
 			wantNumChnls: 1,
 		},
 		{
-			name: "path needs to be resolved",
-			config: &config.Config{
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name: "google-cloud-vision-v1",
-						Channels: []*config.Channel{
-							{
-								ServiceConfig: "google/some/other/domain/vision/v1/vision_v1.yaml",
-							},
-						},
-					},
-				},
-			},
-			wantPath:     "",
-			wantSvcCfg:   "google/some/other/domain/vision/v1/vision_v1.yaml",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
-		},
-		{
-			name: "service config not derivable (no version at end of path)",
-			config: &config.Config{
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name: "google-cloud-speech",
-						Channels: []*config.Channel{
-							{
-								Path:          "google/cloud/speech",
-								ServiceConfig: "google/cloud/speech/1/speech_1.yaml",
-							},
-						},
-					},
-				},
-			},
-			wantPath:     "",
-			wantSvcCfg:   "google/cloud/speech/1/speech_1.yaml",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
-		},
-		{
-			name: "channel removed if service config does not exist",
+			name: "channel removed if only derivable path",
 			config: &config.Config{
 				Sources: googleapisSource,
 				Libraries: []*config.Library{
@@ -311,7 +265,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 				},
 			},
 			wantPath:     "",
-			wantSvcCfg:   "",
 			wantNumLibs:  1,
 			wantNumChnls: 0,
 		},
@@ -338,9 +291,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 				ch := lib.Channels[0]
 				if ch.Path != test.wantPath {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
-				}
-				if ch.ServiceConfig != test.wantSvcCfg {
-					t.Errorf("service_config should be %s, got %q", test.wantSvcCfg, ch.ServiceConfig)
 				}
 			}
 		})

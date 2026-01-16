@@ -71,24 +71,37 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
-// Find finds the service config file for a channel path. It looks for YAML
-// files containing "type: google.api.Service", skipping any files ending in
-// _gapic.yaml.
+// Find looks up the service config path and title override for a given API path.
+// It first checks the API allowlist for overrides, then searches for YAML files
+// containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
 //
-// The channel should be relative to googleapisDir (e.g.,
-// "google/cloud/secretmanager/v1"). Returns the service config path relative
-// to googleapisDir, or empty string if not found.
-func Find(googleapisDir, channel string) (string, error) {
+// The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
+// Returns an API struct with Path, ServiceConfig, and Title fields populated.
+// ServiceConfig and Title may be empty strings if not found or not configured.
+func Find(googleapisDir, path string) (*API, error) {
+	result := &API{Path: path}
+
+	// Check allowlist for overrides
 	for _, api := range APIs {
-		if api.Path == channel && api.ServiceConfig != "" {
-			return api.ServiceConfig, nil
+		if api.Path == path {
+			result.ServiceConfig = api.ServiceConfig
+			result.Title = api.Title
+			result.Discovery = api.Discovery
+			result.OpenAPI = api.OpenAPI
+			break
 		}
 	}
 
-	dir := filepath.Join(googleapisDir, channel)
+	// If service config is overridden in allowlist, use it
+	if result.ServiceConfig != "" {
+		return result, nil
+	}
+
+	// Search filesystem for service config
+	dir := filepath.Join(googleapisDir, path)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -102,16 +115,17 @@ func Find(googleapisDir, channel string) (string, error) {
 			continue
 		}
 
-		path := filepath.Join(dir, name)
-		isServiceConfig, err := isServiceConfigFile(path)
+		filePath := filepath.Join(dir, name)
+		isServiceConfig, err := isServiceConfigFile(filePath)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if isServiceConfig {
-			return filepath.Join(channel, name), nil
+			result.ServiceConfig = filepath.Join(path, name)
+			return result, nil
 		}
 	}
-	return "", nil
+	return result, nil
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".

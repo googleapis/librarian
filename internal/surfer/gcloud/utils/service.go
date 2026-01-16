@@ -14,7 +14,12 @@
 
 package utils
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/iancoleman/strcase"
+)
 
 // InferTrackFromPackage infers the release track from the proto package name.
 // as mandated per AIP-185
@@ -35,4 +40,13 @@ func InferTrackFromPackage(pkg string) string {
 		return "beta"
 	}
 	return "ga"
+}
+
+// GetServiceTitle returns the service title for documentation.
+// It tries to use the API title, falling back to a CamelCase version of the short service name.
+func GetServiceTitle(model *api.API, shortServiceName string) string {
+	if t := strings.TrimSuffix(model.Title, " API"); t != "" {
+		return t
+	}
+	return strcase.ToCamel(shortServiceName)
 }

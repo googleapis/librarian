@@ -15,6 +15,8 @@
 package rust
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,17 +24,26 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
+// setupTestDir creates a temporary directory structure for testing.
+// It creates subdirectories based on the provided paths and returns the temp directory root.
+func setupTestDir(t *testing.T, paths ...string) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	for _, path := range paths {
+		dir := filepath.Join(tmpDir, path)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return tmpDir
+}
+
 func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		library        *config.Library
-		channel        *config.Channel
-		googleapisDir  string
-		discoveryDir   string
-		protobufDir    string
-		conformanceDir string
-		showcaseDir    string
-		want           *sidekickconfig.Config
+		name    string
+		library *config.Library
+		channel *config.Channel
+		want    *sidekickconfig.Config
 	}{
 		{
 			name: "minimal config",
@@ -40,19 +51,16 @@ func TestToSidekickConfig(t *testing.T) {
 				Name: "google-cloud-storage",
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -69,19 +77,16 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:        []string{"googleapis"},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -99,19 +104,16 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:         []string{"googleapis"},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -143,19 +145,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -185,19 +184,16 @@ func TestToSidekickConfig(t *testing.T) {
 				Rust:        &config.RustCrate{},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -226,19 +222,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -262,23 +255,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -321,23 +307,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -371,23 +350,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storage/v1",
-				ServiceConfig: "google/cloud/storage/v1/storage_v1.yaml",
+				Path: "google/cloud/storage/v1",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			discoveryDir:   "",
-			protobufDir:    "",
-			conformanceDir: "",
-			showcaseDir:    "",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storage/v1/storage_v1.yaml",
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -409,25 +381,46 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
-				Path:          "discoveries/compute.v1.json",
-				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				Path: "google/cloud/compute/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "disco",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 					SpecificationSource: "discoveries/compute.v1.json",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"discovery-root":  "/tmp/discovery-artifact-manager",
+					"googleapis-root": "",
+					"discovery-root":  "",
 					"roots":           "googleapis,discovery",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-compute-v1",
+				},
+			},
+		},
+		{
+			name: "with openapi format",
+			library: &config.Library{
+				Name:                "secretmanager-openapi-v1",
+				SpecificationFormat: "openapi",
+				Roots:               []string{"googleapis"},
+			},
+			channel: &config.Channel{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "openapi",
+					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "",
+					"roots":           "googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "secretmanager-openapi-v1",
 				},
 			},
 		},
@@ -439,23 +432,18 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery", "showcase"},
 			},
 			channel: &config.Channel{
-				Path:          "discoveries/compute.v1.json",
-				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				Path: "google/cloud/compute/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
-			showcaseDir:   "/tmp/showcase",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "disco",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 					SpecificationSource: "discoveries/compute.v1.json",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"discovery-root":  "/tmp/discovery-artifact-manager",
-					"showcase-root":   "/tmp/showcase",
+					"googleapis-root": "",
+					"discovery-root":  "",
+					"showcase-root":   "",
 					"roots":           "googleapis,discovery,showcase",
 				},
 				Codec: map[string]string{
@@ -467,14 +455,10 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "with title override",
 			library: &config.Library{
 				Name: "google-cloud-apps-script-type-gmail",
-				Rust: &config.RustCrate{
-					TitleOverride: "Google Apps Script Types",
-				},
 			},
 			channel: &config.Channel{
 				Path: "google/apps/script/type/gmail",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
@@ -482,7 +466,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/apps/script/type/gmail",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
 				},
@@ -498,19 +482,16 @@ func TestToSidekickConfig(t *testing.T) {
 				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
 			},
 			channel: &config.Channel{
-				Path:          "google/longrunning",
-				ServiceConfig: "google/longrunning/longrunning.yaml",
+				Path: "google/longrunning",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/longrunning/longrunning.yaml",
 					SpecificationSource: "google/longrunning",
 				},
 				Source: map[string]string{
-					"googleapis-root":      "/tmp/googleapis",
+					"googleapis-root":      "",
 					"description-override": "Defines types and an abstract service to handle long-running operations.",
 					"roots":                "googleapis",
 				},
@@ -532,19 +513,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/spanner/admin/database/v1",
-				ServiceConfig: "google/spanner/admin/database/v1/spanner.yaml",
+				Path: "google/spanner/admin/database/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/spanner/admin/database/v1/spanner.yaml",
 					SpecificationSource: "google/spanner/admin/database/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
 				},
@@ -562,19 +540,16 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/storageinsights/v1",
-				ServiceConfig: "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
+				Path: "google/cloud/storageinsights/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/storageinsights/v1/storageinsights_v1.yaml",
 					SpecificationSource: "google/cloud/storageinsights/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
+					"googleapis-root": "",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -610,21 +585,17 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path:          "discoveries/compute.v1.json",
-				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				Path: "google/cloud/compute/v1",
 			},
-			googleapisDir: "/tmp/googleapis",
-			discoveryDir:  "/tmp/discovery-artifact-manager",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "disco",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 					SpecificationSource: "discoveries/compute.v1.json",
 				},
 				Source: map[string]string{
-					"googleapis-root": "/tmp/googleapis",
-					"discovery-root":  "/tmp/discovery-artifact-manager",
+					"googleapis-root": "",
+					"discovery-root":  "",
 					"roots":           "googleapis,discovery",
 				},
 				Codec: map[string]string{
@@ -656,23 +627,18 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots: []string{"googleapis", "protobuf-src", "conformance"},
 			},
 			channel: &config.Channel{
-				Path:          "google/cloud/vision/v1",
-				ServiceConfig: "google/cloud/vision/v1/vision_v1.yaml",
+				Path: "google/cloud/vision/v1",
 			},
-			googleapisDir:  "/tmp/googleapis",
-			protobufDir:    "/tmp/protobuf/src",
-			conformanceDir: "/tmp/conformance",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/cloud/vision/v1/vision_v1.yaml",
 					SpecificationSource: "google/cloud/vision/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root":   "/tmp/googleapis",
-					"protobuf-src-root": "/tmp/protobuf/src",
-					"conformance-root":  "/tmp/conformance",
+					"googleapis-root":   "",
+					"protobuf-src-root": "",
+					"conformance-root":  "",
 					"roots":             "googleapis,protobuf-src,conformance",
 				},
 				Codec: map[string]string{
@@ -687,19 +653,16 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
-				Path:          "google/showcase/v1beta1",
-				ServiceConfig: "google/showcase/v1beta1/showcase_v1beta1.yaml",
+				Path: "google/showcase/v1beta1",
 			},
-			showcaseDir: "/tmp/gapic-showcase",
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					ServiceConfig:       "google/showcase/v1beta1/showcase_v1beta1.yaml",
 					SpecificationSource: "google/showcase/v1beta1",
 				},
 				Source: map[string]string{
-					"showcase-root": "/tmp/gapic-showcase",
+					"showcase-root": "",
 					"roots":         "showcase",
 				},
 				Codec: map[string]string{
@@ -765,18 +728,98 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			// Set up temporary directories with proper structure
+			var googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir string
+
+			// Always create a googleapisDir with the channel.Path structure
+			// because serviceconfig.Find always uses it, even if googleapis is not in Roots.
+			if test.channel != nil && test.channel.Path != "" {
+				googleapisDir = setupTestDir(t, test.channel.Path)
+			}
+
+			// Determine which directories need to be created based on test.library.Roots
+			if test.library.Roots != nil {
+				for _, root := range test.library.Roots {
+					switch root {
+					case "discovery":
+						if test.channel != nil && test.channel.Path != "" {
+							discoveryDir = setupTestDir(t, test.channel.Path)
+						}
+					case "protobuf-src":
+						protobufDir = t.TempDir()
+					case "conformance":
+						conformanceDir = t.TempDir()
+					case "showcase":
+						if test.channel != nil && test.channel.Path != "" {
+							showcaseDir = setupTestDir(t, test.channel.Path)
+						}
+					}
+				}
+			}
+
+			sources := &Sources{
+				Conformance: conformanceDir,
+				Discovery:   discoveryDir,
+				Googleapis:  googleapisDir,
+				ProtobufSrc: protobufDir,
+				Showcase:    showcaseDir,
+			}
+
+			// Create a copy of want.Source with actual temp directories
+			wantSource := make(map[string]string)
+			for k, v := range test.want.Source {
+				wantSource[k] = v
+			}
+			if _, ok := wantSource["googleapis-root"]; ok {
+				wantSource["googleapis-root"] = googleapisDir
+			}
+			if _, ok := wantSource["discovery-root"]; ok {
+				wantSource["discovery-root"] = discoveryDir
+			}
+			if _, ok := wantSource["protobuf-src-root"]; ok {
+				wantSource["protobuf-src-root"] = protobufDir
+			}
+			if _, ok := wantSource["conformance-root"]; ok {
+				wantSource["conformance-root"] = conformanceDir
+			}
+			if _, ok := wantSource["showcase-root"]; ok {
+				wantSource["showcase-root"] = showcaseDir
+			}
+
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
 				var commentOverrides []sidekickconfig.DocumentationOverride
 				for _, module := range test.library.Rust.Modules {
-					got := moduleToSidekickConfig(test.library, module, test.googleapisDir, test.protobufDir)
+					got, err := moduleToSidekickConfig(test.library, module, sources)
+					if err != nil {
+						t.Fatal(err)
+					}
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
 				if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			} else {
-				got := toSidekickConfig(test.library, test.channel, test.googleapisDir, test.discoveryDir, test.protobufDir, test.conformanceDir, test.showcaseDir)
-				if diff := cmp.Diff(test.want, got); diff != "" {
+				sources := &Sources{
+					Googleapis:  googleapisDir,
+					Discovery:   discoveryDir,
+					ProtobufSrc: protobufDir,
+					Conformance: conformanceDir,
+					Showcase:    showcaseDir,
+				}
+				got, err := toSidekickConfig(test.library, test.channel, sources)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Create a modified want with the actual directory paths
+				want := &sidekickconfig.Config{
+					General:             test.want.General,
+					Source:              wantSource,
+					Discovery:           test.want.Discovery,
+					Codec:               test.want.Codec,
+					CommentOverrides:    test.want.CommentOverrides,
+					PaginationOverrides: test.want.PaginationOverrides,
+				}
+				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
@@ -908,5 +951,51 @@ func TestFormatPackageDependency(t *testing.T) {
 				t.Errorf("formatPackageDependency() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestModuleToSidekickConfig_FoundServiceConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	googleapisDir := filepath.Join(tmpDir, "googleapis")
+	protobufDir := filepath.Join(tmpDir, "protobuf")
+	sources := &Sources{
+		Googleapis:  googleapisDir,
+		ProtobufSrc: protobufDir,
+	}
+
+	serviceConfigDir := filepath.Join(protobufDir, "google/example/v1")
+	err := os.MkdirAll(serviceConfigDir, 0755)
+	if err != nil {
+		t.Fatalf("failed to create dummy dir: %v", err)
+	}
+	dummyYaml := filepath.Join(serviceConfigDir, "example_v1.yaml")
+	content := []byte("type: google.api.Service")
+	if err := os.WriteFile(dummyYaml, content, 0644); err != nil {
+		t.Fatalf("failed to write dummy yaml: %v", err)
+	}
+
+	library := &config.Library{
+		CopyrightYear: "2025",
+	}
+
+	module := &config.RustModule{
+		Source: "google/example/v1",
+	}
+
+	_, err = moduleToSidekickConfig(library, module, sources)
+	if err != nil {
+		t.Fatalf("moduleToSidekickConfig failed: %v", err)
+	}
+}
+
+func TestModuleToSidekickConfig_ServiceConfigNotFound(t *testing.T) {
+	library := &config.Library{}
+	module := &config.RustModule{
+		Source: "non/existent/path",
+	}
+
+	_, err := moduleToSidekickConfig(library, module, &Sources{})
+	if err == nil {
+		t.Error("expected error for non-existent source, got nil")
 	}
 }
