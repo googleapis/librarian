@@ -125,3 +125,51 @@ func getHTTPVerb(m *api.Method) string {
 	}
 	return ""
 }
+
+// IsResourceMethod determines if the method operates on a specific resource instance.
+// This includes standard Get, Update, Delete methods, and custom methods where the
+// HTTP path ends with a variable segment (e.g. `.../instances/{instance}`).
+func IsResourceMethod(m *api.Method) bool {
+	switch {
+	case IsGet(m), IsUpdate(m), IsDelete(m):
+		return true
+	case IsCreate(m), IsList(m):
+		return false
+	default:
+		// Fallback for custom methods
+		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			return false
+		}
+		template := m.PathInfo.Bindings[0].PathTemplate
+		if template == nil || len(template.Segments) == 0 {
+			return false
+		}
+		lastSegment := template.Segments[len(template.Segments)-1]
+		// If the path ends with a variable, it's a resource method.
+		return lastSegment.Variable != nil
+	}
+}
+
+// IsCollectionMethod determines if the method operates on a collection of resources.
+// This includes standard List and Create methods, and custom methods where the
+// HTTP path ends with a literal segment (e.g. `.../instances`).
+func IsCollectionMethod(m *api.Method) bool {
+	switch {
+	case IsList(m), IsCreate(m):
+		return true
+	case IsGet(m), IsUpdate(m), IsDelete(m):
+		return false
+	default:
+		// Fallback for custom methods
+		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			return false
+		}
+		template := m.PathInfo.Bindings[0].PathTemplate
+		if template == nil || len(template.Segments) == 0 {
+			return false
+		}
+		lastSegment := template.Segments[len(template.Segments)-1]
+		// If the path ends with a literal, it's a collection method.
+		return lastSegment.Literal != nil
+	}
+}

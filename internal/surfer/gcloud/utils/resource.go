@@ -107,16 +107,21 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 			}
 		}
 	}
-	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
-	// by a field named "name", which holds the full resource name.
-	if (IsGet(method) || IsDelete(method) || IsUpdate(method)) && field.Name == "name" {
+
+	// For collection-based methods (List and custom collection methods),
+	// the primary resource scope is identified by the "parent" field.
+	// Note: Create is collection-based but uses the new resource ID (e.g. "instance_id")
+	// as the primary positional argument, so "parent" is not the primary resource arg.
+	if IsCollectionMethod(method) && !IsCreate(method) && field.Name == "parent" {
 		return true
 	}
-	// For `List` methods, the primary resource is the parent collection, identified
-	// by a field named "parent".
-	if IsList(method) && field.Name == "parent" {
+
+	// For resource-based methods (Get, Delete, Update, and custom resource methods),
+	// the primary resource is identified by the "name" field.
+	if IsResourceMethod(method) && field.Name == "name" {
 		return true
 	}
+
 	return false
 }
 
