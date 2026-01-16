@@ -742,3 +742,52 @@ func TestMaxVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckValidNext(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		currentVersion string
+		nextVersion    string
+		wantErr        bool
+	}{
+		{
+			name:        "invalid nextVersion",
+			nextVersion: "invalid",
+			wantErr:     true,
+		},
+		{
+			name:        "valid nextVersion, no currentVersion",
+			nextVersion: "1.2.3",
+		},
+		{
+			name:           "valid nextVersion, invalid currentVersion",
+			currentVersion: "invalid",
+			nextVersion:    "1.2.3",
+			wantErr:        true,
+		},
+		{
+			name:           "nextVersion is earlier than currentVersion",
+			currentVersion: "1.3.0",
+			nextVersion:    "1.2.0",
+			wantErr:        true,
+		},
+		{
+			name:           "nextVersion is equal to currentVersion",
+			currentVersion: "1.2.3",
+			nextVersion:    "1.2.3",
+			wantErr:        true,
+		},
+		{
+			name:           "nextVersion is later than currentVersion",
+			currentVersion: "1.2.3",
+			nextVersion:    "1.2.4",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := CheckValidNext(test.currentVersion, test.nextVersion)
+			if (err != nil) != test.wantErr {
+				t.Errorf("CheckValidNext() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
