@@ -653,13 +653,14 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
-				Path: "google/showcase/v1beta1",
+				Path: "schema/google/showcase/v1beta1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/showcase/v1beta1",
+					SpecificationSource: "schema/google/showcase/v1beta1",
+					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
 					"showcase-root": "",
