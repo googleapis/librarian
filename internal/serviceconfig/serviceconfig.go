@@ -87,6 +87,7 @@ func Find(googleapisDir, path string) (*API, error) {
 			result.ServiceConfig = api.ServiceConfig
 			result.Title = api.Title
 			result.Discovery = api.Discovery
+			result.OpenAPI = api.OpenAPI
 			break
 		}
 	}
