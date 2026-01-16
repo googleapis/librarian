@@ -67,6 +67,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
 	defaultVersion := filepath.Base(library.Channels[0].Path)
+
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
