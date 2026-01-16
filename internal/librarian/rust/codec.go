@@ -68,9 +68,14 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 	if channel.Title != "" {
 		source["title-override"] = channel.Title
 	}
-	specSource := ch.Path
-	if specFormat == "disco" {
+	var specSource string
+	switch specFormat {
+	case "disco":
 		specSource = channel.Discovery
+	case "openapi":
+		specSource = channel.OpenAPI
+	default:
+		specSource = ch.Path
 	}
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
