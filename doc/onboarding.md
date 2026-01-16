@@ -67,7 +67,7 @@ a bash alias for simplicity. For example, using the first option below you might
 use:
 
 ```sh
-$ alias librarian='go run github.com/googleapis/librarian/cmd/librarian@latest'
+$ alias librarian='go run github.com/googleapis/librarian/cmd/librarian@v0.7.0'
 ```
 
 In this guide, we just assume that `librarian` is either a binary in your path,
@@ -79,7 +79,7 @@ The latest released version of `librarian` can be run directly without cloning
 using:
 
 ```sh
-$ go run github.com/googleapis/librarian/cmd/librarian@latest
+$ go run github.com/googleapis/librarian/cmd/librarian@v0.7.0
 ```
 
 ### Using `go install`
@@ -88,7 +88,7 @@ To install a binary locally, and then run it (assuming the `$GOBIN` directory
 is in your path):
 
 ```sh
-$ go install github.com/googleapis/librarian/cmd/librarian@latest
+$ go install github.com/googleapis/librarian/cmd/librarian@v0.7.0
 ```
 
 Note that while this makes it easier to run `librarian`, you'll need to know
