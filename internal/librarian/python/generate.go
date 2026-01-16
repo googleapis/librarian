@@ -67,14 +67,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
 	defaultVersion := filepath.Base(library.Channels[0].Path)
-	source := map[string]string{
-		"googleapisDir": googleapisDir,
-	}
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	channel, err := serviceconfig.Find(source, library.Channels[0].Path)
+	channel, err := serviceconfig.Find(googleapisDir, library.Channels[0].Path)
 	if err != nil {
 		return fmt.Errorf("failed to lookup service config: %w", err)
 	}
@@ -204,10 +201,7 @@ func createProtocOptions(ch *config.Channel, library *config.Library, googleapis
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
-	source := map[string]string{
-		"googleapisDir": googleapisDir,
-	}
-	channel, err := serviceconfig.Find(source, ch.Path)
+	channel, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
 	}
