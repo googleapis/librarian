@@ -400,6 +400,31 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with openapi format",
+			library: &config.Library{
+				Name:                "secretmanager-openapi-v1",
+				SpecificationFormat: "openapi",
+				Roots:               []string{"googleapis"},
+			},
+			channel: &config.Channel{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "openapi",
+					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "",
+					"roots":           "googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "secretmanager-openapi-v1",
+				},
+			},
+		},
+		{
 			name: "with multiple formats",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
