@@ -445,5 +445,5 @@ var APIs = []API{
 	{Path: "google/storagetransfer/v1"},
 	{Path: "google/type"},
 	{Path: "grafeas/v1"},
-	{Path: "schema/google/showcase/v1beta1"},
+	{Path: "schema/google/showcase/v1beta1", ServiceConfig: "schema/google/showcase/v1beta1/showcase_v1beta1.yaml"},
 }
