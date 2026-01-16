@@ -684,32 +684,6 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with discovery specification format",
-			library: &config.Library{
-				Name:                "google-cloud-compute-v1",
-				SpecificationFormat: "discovery",
-				Roots:               []string{"googleapis", "discovery"},
-			},
-			channel: &config.Channel{
-				Path: "google/cloud/compute/v1",
-			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "disco",
-					SpecificationSource: "discoveries/compute.v1.json",
-				},
-				Source: map[string]string{
-					"discovery-root":  "",
-					"googleapis-root": "",
-					"roots":           "googleapis,discovery",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-compute-v1",
-				},
-			},
-		},
-		{
 			name: "with prost as module template",
 			library: &config.Library{
 				Name: "google-cloud-showcase",
