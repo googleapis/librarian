@@ -24,10 +24,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-const (
-	googleapisDir = "../testdata/googleapis"
-	protobufDir   = "../testdata/protobuf-src"
-)
+const googleapisDir = "../testdata/googleapis"
 
 func TestRead(t *testing.T) {
 	got, err := Read(filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"))
@@ -102,8 +99,7 @@ func TestFind(t *testing.T) {
 			name:    "not found",
 			channel: "google/cloud/compute/v1",
 			want: &API{
-				Path:      "google/cloud/compute/v1",
-				Discovery: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 		},
 		{
@@ -124,11 +120,7 @@ func TestFind(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			source := map[string]string{
-				"googleapisDir": googleapisDir,
-				"protobufDir":   protobufDir,
-			}
-			got, err := Find(source, test.channel)
+			got, err := Find(googleapisDir, test.channel)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)
