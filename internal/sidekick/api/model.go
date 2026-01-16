@@ -376,7 +376,8 @@ func (m *Method) IsSimple() bool {
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
 	return m.AIPStandardGetInfo() != nil ||
-		m.AIPStandardDeleteInfo() != nil
+		m.AIPStandardDeleteInfo() != nil ||
+		m.AIPStandardUndeleteInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations
@@ -457,6 +458,44 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 	}
 
 	return &AIPStandardDeleteInfo{
+		ResourceNameRequestField: resourceField,
+	}
+}
+
+// AIPStandardUndeleteInfo contains information relevant to an undelete operation
+// as implied by AIP-135.
+type AIPStandardUndeleteInfo struct {
+	// ResourceNameRequestField is the field in the method input that contains the resource name
+	// of the resource that the undelete operation should restore.
+	ResourceNameRequestField *Field
+}
+
+// AIPStandardUndeleteInfo returns information relevant to an undelete operation that is like
+// an undelete operation as implied by AIP-135, if the method is such an operation.
+func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
+	// An undelete operation is either simple or LRO.
+	if !m.IsSimple() && m.OperationInfo == nil {
+		return nil
+	}
+
+	// Standard undelete methods for resource "Foo" should be named "UndeleteFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "undelete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "UndeleteFooRequest".
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
+		return nil
+	}
+
+	// The request needs to have a field for the resource name of the resource to recover.
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model.State.ResourceByType, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+
+	return &AIPStandardUndeleteInfo{
 		ResourceNameRequestField: resourceField,
 	}
 }
