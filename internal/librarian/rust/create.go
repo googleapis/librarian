@@ -34,9 +34,6 @@ func Create(ctx context.Context, outputDir string, generateFn func(context.Conte
 	if err := command.Run(ctx, "taplo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
 	}
-	if err := command.Run(ctx, "git", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
-	}
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
@@ -57,11 +54,5 @@ func Create(ctx context.Context, outputDir string, generateFn func(context.Conte
 	if err := command.RunWithEnv(ctx, map[string]string{"RUSTDOCFLAGS": "-D warnings"}, "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings"); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, "git", "add", outputDir); err != nil {
-		return err
-	}
-	return nil
+	return command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings")
 }
