@@ -66,6 +66,21 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	}
 	cmd.Arguments = args
 	cmd.Request = newRequest(method, overrides, model)
+
+	if utils.IsList(method) {
+		// List commands should have an id_field to enable the --uri flag.
+		cmd.Response = &Response{
+			IDField: "name",
+		}
+	}
+
+	if utils.IsUpdate(method) {
+		// Standard Update methods in gcloud use the Read-Modify-Update pattern.
+		cmd.Update = &UpdateConfig{
+			ReadModifyUpdate: true,
+		}
+	}
+
 	if method.OperationInfo != nil {
 		cmd.Async = newAsync(method, overrides)
 	}
@@ -75,27 +90,16 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 
 // newArguments generates the set of arguments for a command by parsing the
 // fields of the method's request message.
+// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern (IsIgnored, IsResourceArg, IsArg) to handle field processing.
 func newArguments(method *api.Method, overrides *Config, model *api.API, service *api.Service) (Arguments, error) {
 	args := Arguments{}
 	if method.InputType == nil {
 		return args, nil
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern (IsIgnored, IsResourceArg, IsArg) to handle field processing.
-	// We iterate over each field in the method's request message (e.g., `CreateInstanceRequest`).
+	// We iterate over each field in the method's request message.
 	for _, field := range method.InputType.Fields {
-		// We check if the current field represents the primary resource of the command.
-		// For example, in a `CreateInstance` method, this would be the `instance_id` field.
-		if utils.IsPrimaryResource(field, method) {
-			// If it is the primary resource, we generate a special positional argument for it.
-			param := newPrimaryResourceParam(field, method, model, overrides, service)
-			args.Params = append(args.Params, param)
-			continue
-		}
-
-		// For all other fields, we generate a standard flag argument. If the field
-		// is a nested message, its fields will be "flattened" into top-level flags.
-		// For example, a field `instance.description` becomes the `--description` flag.
+		// We process each field and its sub-fields recursively.
 		// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error handling strategy (Error vs Skip) and messaging.
 		if err := addFlattenedParams(field, field.JSONName, &args, overrides, model, service, method); err != nil {
 			return Arguments{}, err
@@ -106,7 +110,12 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 
 // shouldSkipParam determines if a field should be excluded from the generated command arguments.
 func shouldSkipParam(field *api.Field, method *api.Method) bool {
-	// The "parent" field is implicit in the command context (usually handled by the primary resource or hierarchy).
+	// We don't skip the primary resource field, even if it's named "parent" or "name".
+	if utils.IsPrimaryResource(field, method) {
+		return false
+	}
+
+	// The "parent" field is usually implicit in the command context (handled by the primary resource or hierarchy).
 	if field.Name == "parent" {
 		return true
 	}
@@ -116,10 +125,17 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 		return true
 	}
 
-	// The "update_mask" field is handled automatically by the gcloud framework
-	// based on the flags provided by the user. It should not be exposed as a flag.
+	// The "update_mask" field is handled automatically by the gcloud framework.
 	if field.Name == "update_mask" {
 		return true
+	}
+
+	// For List methods, standard pagination/filtering arguments are handled by gcloud.
+	if utils.IsList(method) {
+		switch field.Name {
+		case "page_size", "page_token", "filter", "order_by":
+			return true
+		}
 	}
 
 	// Output-only fields are read-only and should not be settable via CLI flags.
@@ -136,25 +152,25 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 }
 
 // addFlattenedParams recursively processes a field and its sub-fields to generate
-// a flat list of command-line flags. This is necessary for nested messages in
-// the request proto.
+// command-line flags. This function identifies primary resources and handles
+// nested messages by "flattening" them into top-level flags.
 func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overrides *Config, model *api.API, service *api.Service, method *api.Method) error {
+	// We check if the field should be skipped entirely.
 	if shouldSkipParam(field, method) {
 		return nil
 	}
 
-	// If the field is a nested message (and not a map, which is handled differently),
-	// we need to recurse into its fields. This is the "flattening" process.
-	// For example, in the Parallelstore API, the `CreateInstanceRequest` message
-	// has a field named `instance` which is of type `Instance`. The `Instance`
-	// message itself has fields like `description` and `capacity_gib`.
-	// This block will recurse into the `Instance` message's fields.
+	// We check if the current field represents the primary resource of the command.
+	// This check happens at every level of nesting (e.g., `instance.name`).
+	if utils.IsPrimaryResource(field, method) {
+		param := newPrimaryResourceParam(field, method, model, overrides, service)
+		args.Params = append(args.Params, param)
+		return nil
+	}
+
+	// If the field is a nested message (and not a map), we recurse into its fields.
 	if field.MessageType != nil && !field.Map {
 		for _, f := range field.MessageType.Fields {
-			// The prefix is updated to create a dot-separated path for the `api_field`.
-			// Continuing the example: when processing the `capacity_gib` field inside the
-			// `Instance` message, the prefix will become "instance.capacityGib". This
-			// results in a `--capacity-gib` flag that maps to the correct nested field.
 			if err := addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args, overrides, model, service, method); err != nil {
 				return err
 			}
@@ -252,6 +268,13 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 		segments = resource.Patterns[0]
 	}
 
+	// For List methods, the primary resource is the parent of the method's resource.
+	// We derive this by removing the last segment (the child resource) from the pattern.
+	// Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`
+	if utils.IsList(method) {
+		segments = utils.GetParentFromSegments(segments)
+	}
+
 	// We construct the gcloud collection path from the resource's pattern string.
 	// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`
 	collectionPath := utils.GetCollectionPathFromSegments(segments)
@@ -264,22 +287,31 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	if field.Name == "name" {
 		resourceName = utils.GetSingularFromSegments(segments)
 	}
+	if utils.IsList(method) {
+		// For List, we use the singular name from the (parent) segments.
+		resourceName = utils.GetSingularFromSegments(segments)
+	}
 
-	// We generate a helpful help text based on whether the command is a `Create` command or not.
-	helpText := fmt.Sprintf("The %s to create.", resourceName)
-	if !utils.IsCreate(method) {
+	// We generate a helpful help text.
+	var helpText string
+	switch {
+	case utils.IsCreate(method):
+		helpText = fmt.Sprintf("The %s to create.", resourceName)
+	case utils.IsList(method):
+		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", utils.GetPluralFromSegments(segments))
+	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
-	// We assemble the final `Param` struct with all the necessary information for a primary resource.
+	// We assemble the final `Param` struct.
 	param := Param{
 		HelpText:          helpText,
-		IsPositional:      true,
+		IsPositional:      !utils.IsList(method), // List primary resource (parent) is non-positional.
 		IsPrimaryResource: true,
 		Required:          true,
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
-			PluralName:            utils.GetPluralResourceNameForMethod(method, model),
+			PluralName:            utils.GetPluralFromSegments(segments),
 			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
 			DisableAutoCompleters: false,
 			Attributes:            newAttributesFromSegments(segments),

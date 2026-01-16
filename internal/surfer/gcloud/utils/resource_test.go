@@ -71,6 +71,61 @@ func TestGetPluralFromSegments(t *testing.T) {
 	}
 }
 
+func TestGetParentFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     []api.PathSegment
+	}{
+		{
+			name: "Standard",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegment().WithLiteral("locations"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
+				*api.NewPathSegment().WithLiteral("instances"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
+			},
+			want: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegment().WithLiteral("locations"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
+			},
+		},
+		{
+			name: "Root",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+			},
+			want: []api.PathSegment{},
+		},
+		{
+			name: "Too Short",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+			},
+			want: nil,
+		},
+		{
+			name:     "Empty",
+			segments: nil,
+			want:     nil,
+		},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := GetParentFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetSingularFromSegments(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -269,7 +324,7 @@ func TestIsPrimaryResource(t *testing.T) {
 			want: true,
 		},
 		{
-			name:  "List Method - Not Primary Resource",
+			name:  "List Method - Primary Resource",
 			field: &api.Field{Name: "parent"},
 			method: &api.Method{
 				Name: "ListInstances",
@@ -277,7 +332,7 @@ func TestIsPrimaryResource(t *testing.T) {
 					Fields: []*api.Field{{Name: "parent"}},
 				},
 			},
-			want: false,
+			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

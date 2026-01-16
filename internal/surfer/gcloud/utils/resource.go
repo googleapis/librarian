@@ -41,6 +41,22 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 	return *secondLastSegment.Literal
 }
 
+// GetParentFromSegments extracts the pattern segments for the parent resource.
+// It assumes the standard resource pattern structure where the last two segments
+// are the literal plural noun and the variable singular noun of the child resource.
+// Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`
+func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
+	if len(segments) < 2 {
+		return nil
+	}
+	// We verify that the last segment is a variable and the second to last is a literal,
+	// consistent with standard AIP-122 patterns.
+	if segments[len(segments)-1].Variable != nil && segments[len(segments)-2].Literal != nil {
+		return segments[:len(segments)-2]
+	}
+	return nil
+}
+
 // GetSingularFromSegments infers the singular name of a resource from its structured path segments.
 // According to AIP-123, the last segment of a resource pattern MUST be a variable representing
 // the resource ID, and its name MUST be the singular form of the resource noun.
@@ -94,6 +110,11 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	// For `Get`, `Delete`, and `Update` methods, the primary resource is identified
 	// by a field named "name", which holds the full resource name.
 	if (IsGet(method) || IsDelete(method) || IsUpdate(method)) && field.Name == "name" {
+		return true
+	}
+	// For `List` methods, the primary resource is the parent collection, identified
+	// by a field named "parent".
+	if IsList(method) && field.Name == "parent" {
 		return true
 	}
 	return false

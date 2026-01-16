@@ -172,11 +172,11 @@ type Param struct {
 	// IsPositional indicates that this argument is a positional argument rather
 	// than a flag.
 	// Origin: Set to `true` for the primary resource argument of a command.
-	IsPositional bool `yaml:"is_positional,omitempty"`
+	IsPositional bool `yaml:"is_positional"`
 	// IsPrimaryResource indicates that this argument represents the primary
 	// resource being acted upon by the command.
 	// Origin: Set to `true` for the primary resource argument, identified by its field name (e.g., "name").
-	IsPrimaryResource bool `yaml:"is_primary_resource,omitempty"`
+	IsPrimaryResource bool `yaml:"is_primary_resource"`
 	// RequestIDField is the name of the field in the request message that should
 	// hold the ID of the resource being created. This is used for `Create` methods.
 	// Origin: Derived from the name of the primary resource's ID field (e.g., "instance_id").
