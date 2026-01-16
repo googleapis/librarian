@@ -381,7 +381,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -407,7 +407,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery", "showcase"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -560,7 +560,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
