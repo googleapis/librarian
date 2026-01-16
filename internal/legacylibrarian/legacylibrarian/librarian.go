@@ -49,7 +49,7 @@ func newLibrarianCommand() *legacycli.Command {
 
 	return legacycli.NewCommandSet(
 		commands,
-		"librarian manages client libraries for Google APIs",
+		"legacylibrarian manages client libraries for Google APIs",
 		"legacylibrarian <command> [arguments]",
 		librarianLongHelp)
 }
