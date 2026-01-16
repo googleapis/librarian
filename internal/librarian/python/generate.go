@@ -29,7 +29,7 @@ import (
 )
 
 // Generate generates a Python client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, library *config.Library, googleapisDir, language, repo, defaultVersion string) error {
 	if len(library.Channels) == 0 {
 		return fmt.Errorf("no channels specified for library %s", library.Name)
 	}
@@ -62,22 +62,14 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// Copy files from .librarian/generator-input/client-post-processing
 	// for post processing, or reimplement.
 
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudget here, as GenerateRepoMetadata should
-	// compute it. For now, use the last component of the first channel path as
-	// the default version.
-	defaultVersion := filepath.Base(library.Channels[0].Path)
-
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
-	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
-	// hardcoding the language and repo name, instead getting it passed in.
-	channel, err := serviceconfig.Find(googleapisDir, library.Channels[0].Path)
+	sc, err := serviceconfig.Find(googleapisDir, library.Channels[0].Path)
 	if err != nil {
 		return fmt.Errorf("failed to lookup service config: %w", err)
 	}
-	absoluteServiceConfig := filepath.Join(googleapisDir, channel.ServiceConfig)
-	if err := repometadata.GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
+	absoluteServiceConfig := filepath.Join(googleapisDir, sc.ServiceConfig)
+	if err := repometadata.GenerateRepoMetadata(library, language, repo, absoluteServiceConfig, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 

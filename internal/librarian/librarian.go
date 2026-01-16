@@ -26,8 +26,9 @@ import (
 const (
 	librarianConfigPath = "librarian.yaml"
 	languageFake        = "fake"
-	languageRust        = "rust"
+	languageGo          = "go"
 	languagePython      = "python"
+	languageRust        = "rust"
 )
 
 // Run executes the librarian command with the given arguments.

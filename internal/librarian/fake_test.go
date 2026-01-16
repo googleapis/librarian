@@ -35,7 +35,7 @@ func TestGenerate(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if _, err := generate(t.Context(), "fake", library, &config.Sources{}); err != nil {
+	if _, err := generate(t.Context(), "fake", "googleapis/test-repo", library, &config.Sources{}); err != nil {
 		t.Fatal(err)
 	}
 
