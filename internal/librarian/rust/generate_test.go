@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sort"
@@ -187,6 +188,10 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	outDir := filepath.Join(workspaceDir, "google-cloud-secretmanager-v1")
+
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() { os.RemoveAll(outDir) })
 
 	// Change to testdata directory so cargo fmt can find Cargo.toml
@@ -219,9 +224,6 @@ func TestGenerate(t *testing.T) {
 	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
 
 	for _, test := range []struct {
 		path string
@@ -243,6 +245,56 @@ func TestGenerate(t *testing.T) {
 			}
 			if !strings.Contains(string(got), test.want) {
 				t.Errorf("%q missing expected string: %q", test.path, test.want)
+			}
+		})
+	}
+}
+
+func TestCreateSkeletonIfNotExist(t *testing.T) {
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "taplo")
+	for _, test := range []struct {
+		name          string
+		setup         func(t *testing.T, dir string)
+		wantCreateRun bool
+	}{
+		{
+			name: "directory does not exist",
+			setup: func(t *testing.T, dir string) {
+			},
+			wantCreateRun: true,
+		},
+		{
+			name: "directory already exists",
+			setup: func(t *testing.T, dir string) {
+				if err := os.Mkdir(dir, 0755); err != nil {
+					t.Fatalf("failed to create directory: %v", err)
+				}
+			},
+			wantCreateRun: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			dir := filepath.Join(tmp, "output")
+			test.setup(t, dir)
+
+			testhelper.ContinueInNewGitRepository(t, tmp)
+			if err := createAndGenerate(t.Context(), dir, func(ctx context.Context) error { return nil }); err != nil {
+				t.Fatalf("CreateSkeletonIfNotExist() failed: %v", err)
+			}
+
+			_, err := os.Stat(dir)
+			if err != nil {
+				t.Errorf("directory %q should exist, but it doesn't: %v", dir, err)
+			}
+
+			cargoTomlPath := filepath.Join(dir, "Cargo.toml")
+			_, err = os.Stat(cargoTomlPath)
+			cargoTomlExists := !os.IsNotExist(err)
+			if cargoTomlExists != test.wantCreateRun {
+				t.Errorf("Cargo.toml existence mismatch: got %v, want %v", cargoTomlExists, test.wantCreateRun)
 			}
 		})
 	}
