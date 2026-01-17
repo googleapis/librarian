@@ -124,22 +124,14 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		rustSources.Googleapis = googleapisDir
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
 	libraries := make([]*config.Library, len(cfg.Libraries))
 	for i, lib := range cfg.Libraries {
-		i := i
 		name := lib.Name
-		g.Go(func() error {
-			lib, err := generateLibrary(ctx, cfg, name, googleapisDir, rustSources)
-			if err != nil {
-				return err
-			}
-			libraries[i] = lib
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
+		lib, err := generateLibrary(ctx, cfg, name, googleapisDir, rustSources)
+		if err != nil {
+			return err
+		}
+		libraries[i] = lib
 	}
 
 	for _, lib := range libraries {
