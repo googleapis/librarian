@@ -282,3 +282,15 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 	}
 	return branchLibCfg.Version, nil
 }
+
+// findLibraryByName finds a library with the given name in cfg and returns
+// it (as a pointer), or returns nil if cfg does not contain a library with the
+// given name.
+func findLibraryByName(cfg *config.Config, name string) *config.Library {
+	for i := range cfg.Libraries {
+		if cfg.Libraries[i].Name == name {
+			return cfg.Libraries[i]
+		}
+	}
+	return nil
+}

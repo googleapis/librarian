@@ -552,3 +552,48 @@ func TestLoadBranchLibraryVersion(t *testing.T) {
 		t.Errorf("got version %s, want %s", got, want)
 	}
 }
+
+func TestFindLibraryByName(t *testing.T) {
+	for _, test := range []struct {
+		testName  string
+		cfg       *config.Config
+		inputName string
+		wantFound bool
+	}{
+		{
+			testName: "library found",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name},
+					{Name: sample.Lib2Name},
+				},
+			},
+			inputName: sample.Lib2Name,
+			wantFound: true,
+		},
+		{
+			testName: "library not found",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name},
+				},
+			},
+			inputName: sample.Lib2Name,
+		},
+	} {
+		t.Run(test.testName, func(t *testing.T) {
+			got := findLibraryByName(test.cfg, test.inputName)
+			if test.wantFound {
+				if got == nil {
+					t.Errorf("findLibraryName(%q) want library; got nil", test.inputName)
+				} else if test.inputName != got.Name {
+					t.Errorf("findLibraryName() want library %q; got library %q", test.inputName, got.Name)
+				}
+			} else {
+				if got != nil {
+					t.Errorf("findLibraryName(%q) want nil; got library", got.Name)
+				}
+			}
+		})
+	}
+}

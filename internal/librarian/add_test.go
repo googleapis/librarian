@@ -265,7 +265,7 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := findLibrary(gotCfg, testName)
+			got := findLibraryByName(gotCfg, testName)
 			if test.wantOutput != "" && got.Output != test.wantOutput {
 				t.Errorf("output = %q, want %q", got.Output, test.wantOutput)
 			}
@@ -353,7 +353,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
 
-			found := findLibrary(cfg, test.libraryName)
+			found := findLibraryByName(cfg, test.libraryName)
 			if found == nil {
 				t.Fatalf("library %q not found in config", test.libraryName)
 			}
@@ -368,13 +368,4 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			}
 		})
 	}
-}
-
-func findLibrary(cfg *config.Config, name string) *config.Library {
-	for i := range cfg.Libraries {
-		if cfg.Libraries[i].Name == name {
-			return cfg.Libraries[i]
-		}
-	}
-	return nil
 }
