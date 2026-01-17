@@ -743,7 +743,7 @@ func TestMaxVersion(t *testing.T) {
 	}
 }
 
-func TestCheckValidNext(t *testing.T) {
+func TestValidateNext(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		currentVersion string
@@ -784,9 +784,9 @@ func TestCheckValidNext(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := CheckValidNext(test.currentVersion, test.nextVersion)
+			err := ValidateNext(test.currentVersion, test.nextVersion)
 			if (err != nil) != test.wantErr {
-				t.Errorf("CheckValidNext() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("CheckValidNext(%q, %q) error = %v, wantErr %v", test.currentVersion, test.nextVersion, err, test.wantErr)
 			}
 		})
 	}

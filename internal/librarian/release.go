@@ -245,7 +245,7 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 	// If a version override has been specified, use it - but
 	// check that it's not a regression or a no-op.
 	if versionOverride != "" {
-		if err := semver.CheckValidNext(libConfig.Version, versionOverride); err != nil {
+		if err := semver.ValidateNext(libConfig.Version, versionOverride); err != nil {
 			return "", err
 		}
 		return versionOverride, nil

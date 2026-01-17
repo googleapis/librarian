@@ -521,7 +521,6 @@ func TestDeriveNextVersion(t *testing.T) {
 		cfg             *config.Config
 		versionOpts     semver.DeriveNextOptions
 		versionOverride string
-		wantErr         bool
 		wantVersion     string
 	}{
 		{

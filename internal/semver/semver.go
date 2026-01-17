@@ -389,13 +389,13 @@ func DeriveNextPreview(previewVersion, stableVersion string, opts DeriveNextOpti
 	return deriveNext(Minor, pv, nextVerOpts), nil
 }
 
-// CheckValidNext checks that nextVersion is a valid version to
+// ValidateNext checks that nextVersion is a valid version to
 // follow after currentVersion. The nextVersion must always be valid,
 // and if currentVersion is not empty, then nextVersion must be a
-// later version than currentVersion. CheckValidNext returns nil if
+// later version than currentVersion. ValidateNext returns nil if
 // nextVersion is a valid version to follow after currentVersion, or a
 // descriptive error otherwise.
-func CheckValidNext(currentVersion, nextVersion string) error {
+func ValidateNext(currentVersion, nextVersion string) error {
 	vPrefixedNextVersion := "v" + nextVersion
 	if !semver.IsValid(vPrefixedNextVersion) {
 		return fmt.Errorf("%w: %s", errInvalidVersion, nextVersion)
