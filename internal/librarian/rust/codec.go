@@ -32,7 +32,7 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 		specFormat = "disco"
 	}
 
-	source := initSource(library, sources)
+	source := addLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
@@ -220,7 +220,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 }
 
 func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) (*sidekickconfig.Config, error) {
-	source := initSource(library, sources)
+	source := addLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}
@@ -315,7 +315,7 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	return codec
 }
 
-func initSource(library *config.Library, sources *Sources) map[string]string {
+func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
 	source := make(map[string]string)
 	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
