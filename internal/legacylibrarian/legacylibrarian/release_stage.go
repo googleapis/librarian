@@ -284,7 +284,7 @@ func (r *stageRunner) updateLibrary(library *legacyconfig.LibraryState, commits 
 }
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
-// the next_version override value in the legacyconfig.yaml file.
+// the next_version override value in the config.yaml file.
 func (r *stageRunner) determineNextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
 	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
 	if err != nil {
@@ -296,7 +296,7 @@ func (r *stageRunner) determineNextVersion(commits []*legacygitrepo.Conventional
 		return nextVersionFromCommits, nil
 	}
 
-	// Look for next_version override from legacyconfig.yaml
+	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
 	slog.Debug("looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {

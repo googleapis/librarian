@@ -234,7 +234,7 @@ func newTestGitRepo(t *testing.T) legacygitrepo.Repository {
 				APIs: []*legacyconfig.API{
 					{
 						Path:          "some/api",
-						ServiceConfig: "api_legacyconfig.yaml",
+						ServiceConfig: "api_config.yaml",
 						Status:        legacyconfig.StatusExisting,
 					},
 				},
@@ -257,7 +257,7 @@ func newTestGitRepoWithState(t *testing.T, state *legacyconfig.LibrarianState) l
 		t.Fatalf("os.WriteFile: %v", err)
 	}
 	// If state is nil, skip creating the .librarian directory
-	// and the state.yaml/legacyconfig.yaml files and return with a initial commit
+	// and the state.yaml/config.yaml files and return with a initial commit
 	if state == nil {
 		runGit(t, dir, "add", ".")
 		runGit(t, dir, "commit", "-m", "initial commit")
@@ -268,7 +268,7 @@ func newTestGitRepoWithState(t *testing.T, state *legacyconfig.LibrarianState) l
 		}
 		return repo
 	}
-	// Create a state.yaml and legacyconfig.yaml file in .librarian dir.
+	// Create a state.yaml and config.yaml file in .librarian dir.
 	librarianDir := filepath.Join(dir, legacyconfig.LibrarianDir)
 	if err := os.MkdirAll(librarianDir, 0755); err != nil {
 		t.Fatalf("os.MkdirAll: %v", err)
@@ -296,7 +296,7 @@ func newTestGitRepoWithState(t *testing.T, state *legacyconfig.LibrarianState) l
 	if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}
-	configFile := filepath.Join(librarianDir, "legacyconfig.yaml")
+	configFile := filepath.Join(librarianDir, "config.yaml")
 	if err := os.WriteFile(configFile, []byte{}, 0644); err != nil {
 		t.Fatalf("os.WriteFile: %v", err)
 	}

@@ -567,7 +567,7 @@ func TestStageRun(t *testing.T) {
 			wantErrMsg: "unable to find library for release",
 		},
 		{
-			name:             "run release stage command without librarian config (no legacyconfig.yaml file)",
+			name:             "run release stage command without librarian config (no config.yaml file)",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
@@ -1818,7 +1818,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "with legacyconfig.yaml override version",
+			name: "with config.yaml override version",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
@@ -1839,7 +1839,7 @@ func TestDetermineNextVersion(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name: "with outdated legacyconfig.yaml override version",
+			name: "with outdated config.yaml override version",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
