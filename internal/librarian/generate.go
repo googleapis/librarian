@@ -124,13 +124,13 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 		rustSources.Googleapis = googleapisDir
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 	libraries := make([]*config.Library, len(cfg.Libraries))
 	for i, lib := range cfg.Libraries {
 		i := i
 		name := lib.Name
 		g.Go(func() error {
-			lib, err := generateLibrary(ctx, cfg, name, googleapisDir, rustSources)
+			lib, err := generateLibrary(gctx, cfg, name, googleapisDir, rustSources)
 			if err != nil {
 				return err
 			}
@@ -301,6 +301,8 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return fakeFormat(library)
 	case languageDart:
 		return dart.Format(ctx, library)
+	case languagePython:
+		return nil
 	case languageRust:
 		return rust.Format(ctx, library)
 	}

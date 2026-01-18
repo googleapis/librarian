@@ -50,3 +50,5 @@ jobs:
         run: go test -race ./internal/sidekick/...
       - name: Run internal/librarian/rust tests
         run: go test -race ./internal/librarian/rust
+      - name: Run Rust e2e workflow tests
+        run: go test -race -run TestRustWorkflow ./internal/librarian

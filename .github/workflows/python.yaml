@@ -52,3 +52,5 @@ jobs:
         run: git --version
       - name: Run internal/librarian/python tests
         run: go test -race ./internal/librarian/python
+      - name: Run Python e2e workflow tests
+        run: go test -race -run TestPythonWorkflow ./internal/librarian
