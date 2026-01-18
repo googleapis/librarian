@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -381,7 +382,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -407,7 +408,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis"},
 			},
 			channel: &config.Channel{
-				Path: "google/cloud/secretmanager/v1",
+				Path: "testdata/secretmanager_openapi_v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -432,7 +433,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery", "showcase"},
 			},
 			channel: &config.Channel{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -585,7 +586,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -732,10 +733,25 @@ func TestToSidekickConfig(t *testing.T) {
 			// Set up temporary directories with proper structure
 			var googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir string
 
-			// Always create a googleapisDir with the channel.Path structure
+			// Always create a googleapisDir with the service config path structure
 			// because serviceconfig.Find always uses it, even if googleapis is not in Roots.
 			if test.channel != nil && test.channel.Path != "" {
-				googleapisDir = setupTestDir(t, test.channel.Path)
+				// For OpenAPI/Discovery formats, derive the service config path
+				dirPath := test.channel.Path
+				if test.library.SpecificationFormat == "openapi" {
+					// Derive from filename
+					if path, err := deriveServiceConfigPathFromOpenAPI(test.channel.Path); err == nil {
+						dirPath = path
+					}
+				} else if test.library.SpecificationFormat == "discovery" {
+					for _, api := range serviceconfig.APIs {
+						if api.Discovery == test.channel.Path {
+							dirPath = api.Path
+							break
+						}
+					}
+				}
+				googleapisDir = setupTestDir(t, dirPath)
 			}
 
 			// Determine which directories need to be created based on test.library.Roots

@@ -71,6 +71,18 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
+// FindByDiscovery finds an API entry by its discovery file path.
+// Returns nil if not found.
+func FindByDiscovery(discoveryPath string) *API {
+for i := range APIs {
+		if APIs[i].Discovery == discoveryPath {
+			return &APIs[i]
+		}
+	}
+	}
+	return nil
+}
+
 // Find looks up the service config path and title override for a given API path.
 // It first checks the API allowlist for overrides, then searches for YAML files
 // containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
@@ -87,7 +99,6 @@ func Find(googleapisDir, path string) (*API, error) {
 			result.ServiceConfig = api.ServiceConfig
 			result.Title = api.Title
 			result.Discovery = api.Discovery
-			result.OpenAPI = api.OpenAPI
 			break
 		}
 	}

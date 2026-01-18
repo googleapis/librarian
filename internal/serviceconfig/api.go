@@ -44,10 +44,6 @@ type API struct {
 	// Used by sidekick languages (Rust, Dart) as an alternative to proto files.
 	Discovery string
 
-	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
-	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
-	OpenAPI string
-
 	// ServiceConfig is the service config file path override.
 	// If empty, the service config is discovered in the directory specified by Path.
 	ServiceConfig string
@@ -303,7 +299,7 @@ var APIs = []API{
 	{Path: "google/cloud/saasplatform/saasservicemgmt/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/scheduler/v1"},
 	{Path: "google/cloud/scheduler/v1beta1", Languages: []string{langPython}},
-	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/secretmanager_openapi_v1.json"},
+	{Path: "google/cloud/secretmanager/v1"},
 	{Path: "google/cloud/secretmanager/v1beta2", Languages: []string{langPython}},
 	{Path: "google/cloud/secrets/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/securesourcemanager/v1"},

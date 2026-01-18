@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -25,7 +26,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sources) (*sidekickconfig.Config, error) {
+func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sources) (_ *sidekickconfig.Config, err error) {
 	source := map[string]string{}
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
@@ -35,6 +36,11 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 		specFormat = "disco"
 	}
 
+	// The roots field in librarian.yaml specifies which source repositories
+	// should be available to sidekick. For example, compute v1 needs both
+	// discovery and googleapis roots. Most libraries default to googleapis only.
+	// source["roots"] = comma-separated list (e.g., "discovery,googleapis")
+	// source["<name>-root"] = actual filesystem path for each root
 	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
 		source["googleapis-root"] = sources.Googleapis
@@ -57,25 +63,38 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 			}
 		}
 	}
-
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
-	channel, err := serviceconfig.Find(sources.Googleapis, ch.Path)
-	if err != nil {
-		return nil, err
+
+	// For discovery and openapi formats, ch.Path is the file path, not the API
+	// path. Look up the API path by finding the entry where Discovery/OpenAPI
+	// matches ch.Path.
+	var channel *serviceconfig.API
+	switch specFormat {
+	case "openapi":
+		serviceConfigPath, err := deriveServiceConfigPathFromOpenAPI(ch.Path)
+		if err != nil {
+			return nil, err
+		}
+		channel, err = serviceconfig.Find(sources.Googleapis, serviceConfigPath)
+		if err != nil {
+			return nil, err
+		}
+	case "disco":
+		channel = serviceconfig.FindByDiscovery(ch.Path)
+		if channel == nil {
+			return nil, fmt.Errorf("discovery file %q not found in allowlist", ch.Path)
+		}
+	default:
+		channel, err = serviceconfig.Find(sources.Googleapis, ch.Path)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	if channel.Title != "" {
 		source["title-override"] = channel.Title
-	}
-	var specSource string
-	switch specFormat {
-	case "disco":
-		specSource = channel.Discovery
-	case "openapi":
-		specSource = channel.OpenAPI
-	default:
-		specSource = ch.Path
 	}
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
@@ -87,7 +106,7 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 			Language:            "rust",
 			SpecificationFormat: specFormat,
 			ServiceConfig:       channel.ServiceConfig,
-			SpecificationSource: specSource,
+			SpecificationSource: ch.Path,
 		},
 		Source: source,
 		Codec:  buildCodec(library),
@@ -355,4 +374,19 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 		codec["root-name"] = module.RootName
 	}
 	return codec
+}
+
+// deriveServiceConfigPathFromOpenAPI derives the service config path from an OpenAPI filename.
+// Pattern: testdata/{service}_openapi_{version}.json → google/cloud/{service}/{version}
+// Example: testdata/secretmanager_openapi_v1.json → google/cloud/secretmanager/v1
+func deriveServiceConfigPathFromOpenAPI(openapiPath string) (string, error) {
+	filename := filepath.Base(openapiPath)
+	filename = strings.TrimSuffix(filename, ".json")
+	parts := strings.Split(filename, "_")
+	if len(parts) < 3 || parts[len(parts)-2] != "openapi" {
+		return "", fmt.Errorf("invalid openapi filename format (expected {service}_openapi_{version}.json): %s", openapiPath)
+	}
+	service := strings.Join(parts[:len(parts)-2], "_")
+	version := parts[len(parts)-1]
+	return fmt.Sprintf("google/cloud/%s/%s", service, version), nil
 }
