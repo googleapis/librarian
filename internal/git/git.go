@@ -143,5 +143,5 @@ func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to get change commits from path %s: %w\noutput: %s", path, err, string(output))
 	}
-	return strings.Split(string(output), "\n"), nil
+	return strings.Fields(string(output)), nil
 }

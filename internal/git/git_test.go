@@ -364,18 +364,37 @@ func TestFindCommitsForPath(t *testing.T) {
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
 	testhelper.Setup(t, opts)
-	got, err := FindCommitsForPath(t.Context(), "git", testhelper.ReadmeFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) < 2 {
-		t.Errorf("expected at least two commits, got %d", len(got))
-	}
-	sampleHash := "bbeebf51301cfb45612db9869ec6dd8fa067d3fc"
-	for _, hash := range got {
-		if len(hash) != len(sampleHash) {
-			t.Errorf("expected each commit hash to have length %d; got hash %s", len(sampleHash), hash)
-		}
+	for _, test := range []struct {
+		name       string
+		path       string
+		wantLength int
+	}{
+		{
+			name:       "README file with changes",
+			path:       testhelper.ReadmeFile,
+			wantLength: 2,
+		},
+		{
+			name:       "non-existent path",
+			path:       "this/path/does/not/exist",
+			wantLength: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindCommitsForPath(t.Context(), "git", test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.wantLength != len(got) {
+				t.Errorf("want %d changes, got %d", test.wantLength, len(got))
+			}
+			sampleHash := "bbeebf51301cfb45612db9869ec6dd8fa067d3fc"
+			for _, hash := range got {
+				if len(hash) != len(sampleHash) {
+					t.Errorf("expected each commit hash to have length %d; got hash %s", len(sampleHash), hash)
+				}
+			}
+		})
 	}
 }
 
