@@ -357,3 +357,52 @@ func TestCheckRemoteURL_Error(t *testing.T) {
 		t.Errorf("expected an error checking for a remote URL, but did not get one")
 	}
 }
+
+func TestFindCommitsForPath(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+	for _, test := range []struct {
+		name       string
+		path       string
+		wantLength int
+	}{
+		{
+			name:       "README file with changes",
+			path:       testhelper.ReadmeFile,
+			wantLength: 2,
+		},
+		{
+			name:       "non-existent path",
+			path:       "this/path/does/not/exist",
+			wantLength: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindCommitsForPath(t.Context(), "git", test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.wantLength != len(got) {
+				t.Errorf("want %d changes, got %d", test.wantLength, len(got))
+			}
+			sampleHash := "bbeebf51301cfb45612db9869ec6dd8fa067d3fc"
+			for _, hash := range got {
+				if len(hash) != len(sampleHash) {
+					t.Errorf("expected each commit hash to have length %d; got hash %s", len(sampleHash), hash)
+				}
+			}
+		})
+	}
+}
+
+func TestFindCommitsForPath_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupRepo(t)
+	// It's invalid to try to get the log for a path outside the repo
+	if _, err := FindCommitsForPath(t.Context(), "git", ".."); err == nil {
+		t.Errorf("expected an error finding commits for path outside the repo, but did not get one")
+	}
+}

@@ -135,3 +135,13 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 	}
 	return nil
 }
+
+// FindCommitsForPath returns the full hashes of all commits affecting the given path.
+func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, gitExe, "log", "--pretty=format:%H", "--", path)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get change commits from path %s: %w\noutput: %s", path, err, string(output))
+	}
+	return strings.Fields(string(output)), nil
+}

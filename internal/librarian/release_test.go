@@ -61,6 +61,18 @@ func TestReleaseCommand(t *testing.T) {
 			}(),
 		},
 		{
+			name:        "library name and explicit version",
+			args:        []string{"librarian", "release", sample.Lib1Name, "--version=1.2.3"},
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantCfg: func() *config.Config {
+				c := sample.Config()
+
+				c.Libraries[0].Version = "1.2.3"
+				return c
+			}(),
+		},
+		{
 			name: "all flag all have changes",
 			args: []string{"librarian", "release", "--all"},
 			cfg:  sample.Config(),
@@ -185,6 +197,11 @@ func TestReleaseCommand_Error(t *testing.T) {
 			wantErr: errBothLibraryAndAllFlag,
 		},
 		{
+			name:    "version flag and all flag",
+			args:    []string{"librarian", "release", "--version=1.2.3", "--all"},
+			wantErr: errBothVersionAndAllFlag,
+		},
+		{
 			name:    "missing librarian yaml file",
 			args:    []string{"librarian", "release", "--all"},
 			wantErr: errNoYaml,
@@ -283,10 +300,11 @@ func TestReleaseLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
-		name        string
-		cfg         *config.Config
-		previewCfg  *config.Config
-		wantVersion string
+		name            string
+		cfg             *config.Config
+		previewCfg      *config.Config
+		versionOverride string
+		wantVersion     string
 	}{
 		{
 			name:        "library released",
@@ -309,6 +327,16 @@ func TestReleaseLibrary(t *testing.T) {
 			previewCfg:  sample.PreviewConfig(),
 			wantVersion: sample.NextPreviewCoreVersion,
 		},
+		{
+			name: "version override",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.3.0"
+				return c
+			}(),
+			versionOverride: "2.0.0",
+			wantVersion:     "2.0.0",
+		},
 	}
 
 	for _, test := range tests {
@@ -330,7 +358,7 @@ func TestReleaseLibrary(t *testing.T) {
 
 			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", "", nil)
+			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -489,10 +517,11 @@ func TestPostRelease(t *testing.T) {
 
 func TestDeriveNextVersion(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		cfg         *config.Config
-		versionOpts semver.DeriveNextOptions
-		wantVersion string
+		name            string
+		cfg             *config.Config
+		versionOpts     semver.DeriveNextOptions
+		versionOverride string
+		wantVersion     string
 	}{
 		{
 			name: "rust library next non-GA version",
@@ -520,14 +549,69 @@ func TestDeriveNextVersion(t *testing.T) {
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
 		},
+		{
+			name: "version override, unreleased library",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = ""
+				return c
+			}(),
+			versionOverride: "1.0.0-override.1",
+			wantVersion:     "1.0.0-override.1",
+		},
+		{
+			name: "version override, already released library, later version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.2.2"
+				return c
+			}(),
+			versionOverride: "1.2.3",
+			wantVersion:     "1.2.3",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts)
+			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != test.wantVersion {
 				t.Errorf("got version %s, want %s", got, test.wantVersion)
+			}
+		})
+	}
+}
+
+func TestDeriveNextVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		cfg             *config.Config
+		versionOpts     semver.DeriveNextOptions
+		versionOverride string
+	}{
+		{
+			name: "version override, already released library, existing version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.2.2"
+				return c
+			}(),
+			versionOverride: "1.2.2",
+		},
+		{
+			name: "version override, already released library, earlier version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.2.2"
+				return c
+			}(),
+			versionOverride: "1.2.1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			if err == nil {
+				t.Errorf("DeriveNextVersion() expected error; returned no error and version %s", got)
 			}
 		})
 	}

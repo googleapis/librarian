@@ -18,6 +18,7 @@ package serviceconfig
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -99,6 +100,13 @@ func Find(googleapisDir, path string) (*API, error) {
 
 	// Search filesystem for service config
 	dir := filepath.Join(googleapisDir, path)
+	_, err := os.Stat(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return result, nil
+		}
+		return nil, err
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err

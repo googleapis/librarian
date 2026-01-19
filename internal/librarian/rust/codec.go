@@ -15,9 +15,7 @@
 package rust
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -26,7 +24,6 @@ import (
 )
 
 func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sources) (*sidekickconfig.Config, error) {
-	source := map[string]string{}
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -35,29 +32,7 @@ func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sour
 		specFormat = "disco"
 	}
 
-	if len(library.Roots) == 0 && sources.Googleapis != "" {
-		// Default to googleapis if no roots are specified.
-		source["googleapis-root"] = sources.Googleapis
-		source["roots"] = "googleapis"
-	} else {
-		source["roots"] = strings.Join(library.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
-		for _, root := range library.Roots {
-			if r, ok := rootMap[root]; ok && r.path != "" {
-				source[r.key] = r.path
-			}
-		}
-	}
-
+	source := addLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
@@ -245,13 +220,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 }
 
 func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) (*sidekickconfig.Config, error) {
-	source := map[string]string{
-		"googleapis-root":   sources.Googleapis,
-		"protobuf-src-root": sources.ProtobufSrc,
-	}
-	for root, dir := range module.ModuleRoots {
-		source[root] = dir
-	}
+	source := addLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}
@@ -262,23 +231,12 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		source["include-list"] = module.IncludeList
 	}
 	if module.Source != "" {
-		found := false
-		for _, srcRoot := range source {
-			api, err := serviceconfig.Find(srcRoot, module.Source)
-			if err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					continue
-				}
-				return nil, fmt.Errorf("serviceconfig.Find(%q, %q): %w", srcRoot, module.Source, err)
-			}
-			if api != nil && api.Title != "" {
-				source["title-override"] = api.Title
-			}
-			found = true
-			break
+		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
+		if err != nil {
+			return nil, fmt.Errorf("serviceconfig.Find(%s, %s): %w", sources.Googleapis, module.Source, err)
 		}
-		if !found {
-			return nil, fmt.Errorf("could not find service config in %s", source)
+		if api != nil && api.Title != "" {
+			source["title-override"] = api.Title
 		}
 	}
 
@@ -355,4 +313,32 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 		codec["root-name"] = module.RootName
 	}
 	return codec
+}
+
+func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
+	source := make(map[string]string)
+	if len(library.Roots) == 0 && sources.Googleapis != "" {
+		// Default to googleapis if no roots are specified.
+		source["googleapis-root"] = sources.Googleapis
+		source["roots"] = "googleapis"
+	} else {
+		source["roots"] = strings.Join(library.Roots, ",")
+		rootMap := map[string]struct {
+			path string
+			key  string
+		}{
+			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
+			"discovery":    {path: sources.Discovery, key: "discovery-root"},
+			"showcase":     {path: sources.Showcase, key: "showcase-root"},
+			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
+			"conformance":  {path: sources.Conformance, key: "conformance-root"},
+		}
+		for _, root := range library.Roots {
+			if r, ok := rootMap[root]; ok && r.path != "" {
+				source[r.key] = r.path
+			}
+		}
+	}
+
+	return source
 }
