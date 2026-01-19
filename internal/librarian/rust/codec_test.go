@@ -762,6 +762,8 @@ func TestToSidekickConfig(t *testing.T) {
 						{
 							Template:    "prost",
 							IncludedIds: []string{"id1", "id2"},
+							SkippedIds:  []string{"id3", "id4"},
+							IncludeList: "example-list",
 						},
 					},
 				},
@@ -773,7 +775,9 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"included-ids": "id1,id2",
+					"include-list": "example-list",
 					"roots":        "",
+					"skipped-ids":  "id3,id4",
 				},
 			},
 		},
