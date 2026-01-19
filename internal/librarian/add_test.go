@@ -167,7 +167,7 @@ func TestAddCommand(t *testing.T) {
 			args: []string{
 				"librarian",
 				"add",
-				"google-cloud-secretmanager-v1",
+				testName,
 			},
 		},
 		{
@@ -265,7 +265,10 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := findLibrary(gotCfg, testName)
+			got, err := libraryByName(gotCfg, testName)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if test.wantOutput != "" && got.Output != test.wantOutput {
 				t.Errorf("output = %q, want %q", got.Output, test.wantOutput)
 			}
@@ -353,9 +356,9 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
 
-			found := findLibrary(cfg, test.libraryName)
-			if found == nil {
-				t.Fatalf("library %q not found in config", test.libraryName)
+			found, err := libraryByName(cfg, test.libraryName)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if found.Output != test.output {
 				t.Errorf("output = %q, want %q", found.Output, test.output)
@@ -368,13 +371,4 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			}
 		})
 	}
-}
-
-func findLibrary(cfg *config.Config, name string) *config.Library {
-	for i := range cfg.Libraries {
-		if cfg.Libraries[i].Name == name {
-			return cfg.Libraries[i]
-		}
-	}
-	return nil
 }
