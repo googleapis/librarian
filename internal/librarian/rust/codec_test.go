@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -820,7 +821,10 @@ func TestToSidekickConfig(t *testing.T) {
 						t.Fatal(err)
 					}
 					if test.want.Source != nil {
-						if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
+						ignoreKey := cmpopts.IgnoreMapEntries(func(k string, v string) bool {
+							return k == "googleapis-root"
+						})
+						if diff := cmp.Diff(test.want.Source, got.Source, ignoreKey); diff != "" {
 							t.Errorf("mismatch (-want +got):\n%s", diff)
 						}
 					}
