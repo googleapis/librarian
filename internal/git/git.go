@@ -109,14 +109,21 @@ func CheckRemoteURL(ctx context.Context, gitExe, remote string) error {
 	return command.Run(ctx, gitExe, "remote", "get-url", remote)
 }
 
-// ShowFile shows the contents of the file found at the given path on the
+// ShowFileAtRemoteBranch shows the contents of the file found at the given path on the
 // given remote/branch.
-func ShowFile(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
-	remoteBranchPath := fmt.Sprintf("%s/%s:%s", remote, branch, path)
-	cmd := exec.CommandContext(ctx, gitExe, "show", remoteBranchPath)
+func ShowFileAtRemoteBranch(ctx context.Context, gitExe, remote, branch, path string) (string, error) {
+	remoteBranchRevision := fmt.Sprintf("%s/%s", remote, branch)
+	return ShowFileAtRevision(ctx, gitExe, remoteBranchRevision, path)
+}
+
+// ShowFileAtRevision shows the contents of the file found at the given path at the
+// given revision (which can be a tag, a commit, a remote/branch etc).
+func ShowFileAtRevision(ctx context.Context, gitExe, revision, path string) (string, error) {
+	revisionAndPath := fmt.Sprintf("%s:%s", revision, path)
+	cmd := exec.CommandContext(ctx, gitExe, "show", revisionAndPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("%w %s", errGitShow, remoteBranchPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
+		return "", errors.Join(fmt.Errorf("%w %s", errGitShow, revisionAndPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
 	}
 	return strings.TrimSuffix(string(output), "\n"), nil
 }

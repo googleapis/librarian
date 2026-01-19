@@ -287,7 +287,7 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 }
 
 func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
-	branchLibrarianCfgFile, err := git.ShowFile(ctx, gitExe, remote, branch, librarianConfigPath)
+	branchLibrarianCfgFile, err := git.ShowFileAtRemoteBranch(ctx, gitExe, remote, branch, librarianConfigPath)
 	if err != nil {
 		return "", err
 	}
