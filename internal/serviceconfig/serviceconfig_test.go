@@ -93,13 +93,15 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
 			},
 		},
 		{
 			name:    "not found",
 			channel: "google/cloud/compute/v1",
 			want: &API{
-				Path: "google/cloud/compute/v1",
+				Path:      "google/cloud/compute/v1",
+				Discovery: "discoveries/compute.v1.json",
 			},
 		},
 		{

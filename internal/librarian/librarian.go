@@ -25,6 +25,7 @@ import (
 
 const (
 	librarianConfigPath = "librarian.yaml"
+	languageDart        = "dart"
 	languageFake        = "fake"
 	languageRust        = "rust"
 	languagePython      = "python"

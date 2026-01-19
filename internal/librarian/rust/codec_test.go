@@ -381,7 +381,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -400,6 +400,31 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with openapi format",
+			library: &config.Library{
+				Name:                "secretmanager-openapi-v1",
+				SpecificationFormat: "openapi",
+				Roots:               []string{"googleapis"},
+			},
+			channel: &config.Channel{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "openapi",
+					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "",
+					"roots":           "googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "secretmanager-openapi-v1",
+				},
+			},
+		},
+		{
 			name: "with multiple formats",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
@@ -407,7 +432,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery", "showcase"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -560,7 +585,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -628,13 +653,14 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
-				Path: "google/showcase/v1beta1",
+				Path: "schema/google/showcase/v1beta1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/showcase/v1beta1",
+					SpecificationSource: "schema/google/showcase/v1beta1",
+					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
 					"showcase-root": "",

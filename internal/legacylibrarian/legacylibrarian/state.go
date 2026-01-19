@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	librarianConfigFile = "legacyconfig.yaml"
+	librarianConfigFile = "config.yaml"
 	librarianStateFile  = "state.yaml"
 	serviceConfigType   = "type"
 	serviceConfigValue  = "google.api.Service"
@@ -109,7 +109,7 @@ func parseLibrarianConfig(path string) (*legacyconfig.LibrarianConfig, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			slog.Info("legacyconfig.yaml not found, proceeding")
+			slog.Info("config.yaml not found, proceeding")
 			return nil, nil
 		}
 		return nil, err
