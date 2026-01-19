@@ -123,7 +123,7 @@ func ShowFileAtRevision(ctx context.Context, gitExe, revision, path string) (str
 	cmd := exec.CommandContext(ctx, gitExe, "show", revisionAndPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("%w %s", errGitShow, revisionAndPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
+		return "", errors.Join(fmt.Errorf("%w: %s", errGitShow, revisionAndPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
 	}
 	return strings.TrimSuffix(string(output), "\n"), nil
 }

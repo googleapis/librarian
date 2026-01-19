@@ -328,26 +328,38 @@ func TestShowFileAtRevision(t *testing.T) {
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
 	testhelper.Setup(t, opts)
-	// The commit before HEAD should have the known sample content.
-	gotOriginal, err := ShowFileAtRevision(t.Context(), "git", "HEAD~", testhelper.ReadmeFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(testhelper.ReadmeContents, gotOriginal); diff != "" {
-		t.Errorf("mismatch for original file content (-want, +got):\n%s", diff)
-	}
-	// The current commit should be what we currently have on disk.
-	gotModified, err := ShowFileAtRevision(t.Context(), "git", "HEAD", testhelper.ReadmeFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	contentOnDisk, err := os.ReadFile(testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantModified := strings.TrimSuffix(string(contentOnDisk), "\n")
-	if diff := cmp.Diff(wantModified, gotModified); diff != "" {
-		t.Errorf("mismatch for modified file content (-want, +got):\n%s", diff)
+	modifiedContent := strings.TrimSuffix(string(contentOnDisk), "\n")
+
+	for _, test := range []struct {
+		name     string
+		revision string
+		want     string
+	}{
+		{
+			name:     "original README content at HEAD~",
+			revision: "HEAD~",
+			want:     testhelper.ReadmeContents,
+		},
+		{
+			name:     "modified README content at HEAD",
+			revision: "HEAD",
+			want:     modifiedContent,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ShowFileAtRevision(t.Context(), "git", test.revision, testhelper.ReadmeFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
 	}
 }
 
