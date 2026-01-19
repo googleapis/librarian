@@ -727,6 +727,31 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with api source and title",
+			library: &config.Library{
+				Name: "google-cloud-logging",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+							Source:   "google/logging/type",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust+prost",
+					SpecificationFormat: "protobuf",
+					SpecificationSource: "google/logging/type",
+				},
+				Source: map[string]string{
+					"roots":          "",
+					"title-override": "Logging types",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Set up temporary directories with proper structure
@@ -793,6 +818,11 @@ func TestToSidekickConfig(t *testing.T) {
 					got, err := moduleToSidekickConfig(test.library, module, sources)
 					if err != nil {
 						t.Fatal(err)
+					}
+					if test.want.Source != nil {
+						if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
+							t.Errorf("mismatch (-want +got):\n%s", diff)
+						}
 					}
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
