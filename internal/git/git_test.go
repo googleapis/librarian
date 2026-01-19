@@ -403,6 +403,6 @@ func TestFindCommitsForPath_Error(t *testing.T) {
 	testhelper.SetupRepo(t)
 	// It's invalid to try to get the log for a path outside the repo
 	if _, err := FindCommitsForPath(t.Context(), "git", ".."); err == nil {
-		t.Errorf("expected an error finding commits for path otuside repo, but did not get one")
+		t.Errorf("expected an error finding commits for path outside the repo, but did not get one")
 	}
 }
