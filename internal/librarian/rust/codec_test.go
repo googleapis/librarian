@@ -753,6 +753,30 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with included ids in rust module",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Template:    "prost",
+							IncludedIds: []string{"id1", "id2"},
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust+prost",
+					SpecificationFormat: "protobuf",
+				},
+				Source: map[string]string{
+					"included-ids": "id1,id2",
+					"roots":        "",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Set up temporary directories with proper structure
