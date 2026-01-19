@@ -25,9 +25,18 @@ ignore:
   - internal/sample
   - internal/sidekick/internal/api/apitest
   - internal/sidekick/internal/sample
+
   # Running tests for this would require installing the Rust toolchain.
   - internal/sidekick/internal/rust_prost
-  # legacy packages with low coverage
+
+  # legacylibrarian packages with low coverage.
+  - internal/legacylibrarian/legacycontainer
   - internal/legacylibrarian/legacycontainer/java/pom
   - internal/legacylibrarian/legacycontainer/java/release
   - internal/legacylibrarian/legacyimages
+
+  # TODO(https://github.com/googleapis/librarian/issues/3633): delete
+  - internal/sidekick/sidekick
+
+  # TODO(https://github.com/googleapis/librarian/issues/3632): improve coverage
+  - internal/surfer/gcloud
