@@ -65,6 +65,22 @@ The main types to work with this crate are the clients:
 - [{{Codec.Name}}]{{#Codec.PerServiceFeatures}}: enabled by the `{{Codec.FeatureName}}` feature.{{/Codec.PerServiceFeatures}}
 {{/Codec.Services}}
 {{/Codec.HasServices}}
+{{#Codec.HasFeatures}}
+
+## Features
+
+{{#Codec.UsesGaxInternal}}
+- `default-rustls-provider`: enabled by default. Use the default rustls crypto
+  provider ([ring]) for TLS and authentication. Applications with specific
+  requirements for cryptography (such as exclusively using the [aws-lc-rs], or
+  [ring] crates) should disable this default and install the default crypto
+  provider in `rustls` to fit their requirements.
+{{/Codec.UsesGaxInternal}}
+{{#Codec.PerServiceFeatures}}
+- Each client can be enabled using its own feature. Use the client's name
+  in `kebab-case` to enable the client.
+{{/Codec.PerServiceFeatures}}
+{{/Codec.HasFeatures}}
 
 ## More Information
 
@@ -75,3 +91,8 @@ The main types to work with this crate are the clients:
 {{#Codec.Services}}
 [{{Codec.Name}}]: https://docs.rs/{{Model.Codec.PackageName}}/{{Model.Codec.PackageVersion}}/{{Model.Codec.PackageNamespace}}/client/struct.{{Codec.Name}}.html
 {{/Codec.Services}}
+{{#Codec.UsesGaxInternal}}
+
+[aws-lc-rs]: https://crates.io/crates/aws-lc-rs
+[ring]: https://crates.io/crates/ring
+{{/Codec.UsesGaxInternal}}

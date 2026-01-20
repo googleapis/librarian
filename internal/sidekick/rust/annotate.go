@@ -102,6 +102,22 @@ func (m *modelAnnotations) ReleaseLevelIsGA() bool {
 	return m.ReleaseLevel == "GA" || m.ReleaseLevel == "stable"
 }
 
+// UsesGaxInternal returns true if the crate uses `google-cloud-gax-internal`.
+//
+// We use this in the mustache templates to fine tune the features, specifically
+// to turn on the `_default-rustls-provider` feature in the `gaxi` dependency.
+func (m *modelAnnotations) UsesGaxInternal() bool {
+	return -1 != slices.IndexFunc(m.RequiredPackages, func(line string) bool {
+		return strings.HasPrefix(line, "gaxi")
+	})
+}
+
+// HasFeatures returns true if the crate needs a `[features]` section in its
+// Cargo.toml file.
+func (m *modelAnnotations) HasFeatures() bool {
+	return m.PerServiceFeatures || m.UsesGaxInternal()
+}
+
 type serviceAnnotations struct {
 	// The name of the service. The Rust naming conventions requires this to be
 	// in `PascalCase`. Notably, names like `IAM` *must* become `Iam`, but
