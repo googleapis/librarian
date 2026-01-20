@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -41,6 +42,7 @@ var (
 	errLibraryNotFound       = errors.New("library not found")
 	errReleaseConfigEmpty    = errors.New("librarian Release.Config field empty")
 	errBothVersionAndAllFlag = errors.New("cannot specify both --version and --all flag")
+	errReleaseCommitNotFound = errors.New("release commit not found")
 
 	// languageVersioningOptions contains language-specific SemVer versioning
 	// options. Over time, languages should align on versioning semantics and
@@ -300,4 +302,85 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 		return "", err
 	}
 	return branchLibCfg.Version, nil
+}
+
+// findReleasedLibraries determines which libraries are released by the
+// change in config from cfgBefore to cfgAfter. This includes libraries
+// which exist (with a version) in cfgAfter but either didn't exist or
+// didn't have a version in cfgBefore. An error is returned if any version
+// transition is a regression (e.g. 1.2.0 to 1.1.0, or 1.2.0 to "").
+func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error) {
+	results := []string{}
+	for _, candidate := range cfgAfter.Libraries {
+		candidateBefore, err := libraryByName(cfgBefore, candidate.Name)
+		if err != nil {
+			// Any error other than "not found" is effectively fatal.
+			if !errors.Is(err, errLibraryNotFound) {
+				return nil, err
+			}
+			if candidate.Version != "" {
+				if err := semver.ValidateNext("", candidate.Version); err != nil {
+					return nil, err
+				}
+				results = append(results, candidate.Name)
+			}
+			continue
+		}
+		if candidate.Version == "" {
+			if candidateBefore.Version != "" {
+				return nil, fmt.Errorf("library %s has no version; was at version %s", candidate.Name, candidateBefore.Version)
+			}
+			continue
+		}
+		if candidate.Version == candidateBefore.Version {
+			continue
+		}
+		if err := semver.ValidateNext(candidateBefore.Version, candidate.Version); err != nil {
+			return nil, err
+		}
+		results = append(results, candidate.Name)
+	}
+	return results, nil
+}
+
+// findLatestReleaseCommitHash finds the latest (most recent) commit hash
+// which released the library named by libraryName, or which released any libraries
+// if libraryName is empty. (See findReleasedLibraries for the definition of what it
+// means for a commit to release a library.)
+func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string) (string, error) {
+	commits, err := git.FindCommitsForPath(ctx, gitExe, librarianConfigPath)
+	if err != nil {
+		return "", err
+	}
+	// We're working backwards from HEAD, so we need to keep track of the commit
+	// *before* (in iteration order; after in chronological order) the one where
+	// we actually spot it's done a release.
+	var candidateConfig *config.Config
+	candidateCommit := ""
+	for _, commit := range commits {
+		commitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, commit, librarianConfigPath)
+		if err != nil {
+			return "", err
+		}
+		commitCfg, err := yaml.Unmarshal[config.Config]([]byte(commitCfgContent))
+		if err != nil {
+			return "", err
+		}
+		// On the first iteration, we just use the loaded configuration
+		// as the candidate to check against in later iterations. For everything
+		// else, we see whether the candidate performed a release - and if so,
+		// we return that commit.
+		if candidateConfig != nil {
+			released, err := findReleasedLibraries(commitCfg, candidateConfig)
+			if err != nil {
+				return "", err
+			}
+			if len(released) > 0 && (libraryName == "" || slices.Contains(released, libraryName)) {
+				return candidateCommit, nil
+			}
+		}
+		candidateConfig = commitCfg
+		candidateCommit = commit
+	}
+	return "", errReleaseCommitNotFound
 }
