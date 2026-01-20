@@ -216,12 +216,6 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Libr
 		if _, err := rust.Bump(libConfig, nextVersion); err != nil {
 			return err
 		}
-		if _, err := generateLibrary(ctx, cfg, libConfig.Name, googleapisDir, rustSources); err != nil {
-			return err
-		}
-		if err := formatLibrary(ctx, cfg.Language, libConfig); err != nil {
-			return err
-		}
 		return nil
 	default:
 		return fmt.Errorf("language not supported for bump: %q", cfg.Language)
