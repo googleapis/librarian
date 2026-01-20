@@ -157,7 +157,7 @@ func newCommandRunner(cfg *legacyconfig.Config) (*commandRunner, error) {
 
 	// If APISource is set, checkout the protos repository.
 	if cfg.APISource != "" {
-		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, defaultAPISourceBranch, cfg.CI, cfg.GitHubToken)
+		sourceRepo, err = cloneOrOpenRepo(cfg.WorkRoot, cfg.APISource, cfg.APISourceDepth, cfg.APISourceBranch, cfg.CI, cfg.GitHubToken)
 		if err != nil {
 			return nil, err
 		}

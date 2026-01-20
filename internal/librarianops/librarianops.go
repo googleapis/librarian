@@ -121,10 +121,7 @@ func runGenerate(ctx context.Context, all bool, repoName, repoDir string) error 
 	if !supportedRepositories[repoName] {
 		return fmt.Errorf("repository %q not found in supported repositories list", repoName)
 	}
-	if err := processRepo(ctx, repoName, repoDir); err != nil {
-		return err
-	}
-	return nil
+	return processRepo(ctx, repoName, repoDir)
 }
 
 func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
@@ -171,11 +168,13 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 			return err
 		}
 	}
-
 	if err := commitChanges(ctx); err != nil {
 		return err
 	}
 	if repoName != repoFake {
+		if err := pushBranch(ctx); err != nil {
+			return err
+		}
 		if err := createPR(ctx, repoName); err != nil {
 			return err
 		}
@@ -197,6 +196,10 @@ func commitChanges(ctx context.Context) error {
 		return err
 	}
 	return command.Run(ctx, "git", "commit", "-m", commitTitle)
+}
+
+func pushBranch(ctx context.Context) error {
+	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
 }
 
 func createPR(ctx context.Context, repoName string) error {

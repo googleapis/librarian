@@ -15,36 +15,194 @@
 package librarian
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPublish(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
-	testhelper.SetupForVersionBump(t, "v1.0.0")
+	// Each test starts (before setup) with Lib1Name with a version of 1.0.0 and
+	// Lib2Name with a version of 1.2.0.
+	for _, test := range []struct {
+		name    string
+		setup   func(cfg *config.Config)
+		library string
+		execute bool
+		want    string
+	}{
+		{
+			name: "publish Lib1Name and Lib2Name",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			want: fmt.Sprintf("libraries=%s,%s; execute=false", sample.Lib1Name, sample.Lib2Name),
+		},
+		{
+			name: "publish Lib1Name and Lib2Name, with execute",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			execute: true,
+			want:    fmt.Sprintf("libraries=%s,%s; execute=true", sample.Lib1Name, sample.Lib2Name),
+		},
+		{
+			name: "publish Lib1Name (Lib2Name not released)",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			want: fmt.Sprintf("libraries=%s; execute=false", sample.Lib1Name),
+		},
+		{
+			name: "publish Lib1Name, specified in flags, with a later release of Lib2Name ignored",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			library: sample.Lib1Name,
+			want:    fmt.Sprintf("libraries=%s; execute=false", sample.Lib1Name),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: languageFake,
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			}
+			opts := testhelper.SetupOptions{
+				Config: cfg,
+			}
+			testhelper.Setup(t, opts)
+			test.setup(cfg)
+			if err := publish(t.Context(), cfg, test.library, test.execute); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(fakePublishedFile)
+			if err != nil {
+				t.Fatalf("error reading file %s, error = %v", fakePublishedFile, err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch in output (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
+func TestPublish_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		setup   func(cfg *config.Config)
+		library string
+	}{
+		{
+			name: "custom tool specified for git and doesn't exist",
+			setup: func(cfg *config.Config) {
+				// Add a release commit to distinguish this case from "no releases"
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Release = &config.Release{
+					Preinstalled: map[string]string{
+						"git": "/usr/bin/does-not-exist",
+					},
+				}
+				writeConfigAndCommit(t, cfg)
+			},
+		},
+		{
+			name: "repo is dirty",
+			setup: func(cfg *config.Config) {
+				// Add a release commit to distinguish this case from "no releases"
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+				if err := os.WriteFile(testhelper.ReadmeFile, []byte("uncommitted change"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "language isn't supported",
+			setup: func(cfg *config.Config) {
+				// Add a release commit to distinguish this case from "no releases"
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Language = "unsupported-for-publish"
+				writeConfigAndCommit(t, cfg)
+			},
+		},
+		{
+			name: "no release commit",
+			setup: func(cfg *config.Config) {
+			},
+		},
+		{
+			name: "no release commit for specified library",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			library: sample.Lib1Name,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: languageFake,
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			}
+			opts := testhelper.SetupOptions{
+				Config: cfg,
+			}
+			testhelper.Setup(t, opts)
+			test.setup(cfg)
+			err := publish(t.Context(), cfg, test.library, false)
+			if err == nil {
+				t.Errorf("publish(): expected error, got none")
+			}
+		})
+	}
+}
+
+// TestPublishCommand is just a single "does it look like it passes things
+// through to the publish function" test. TestPublish tests the bulk of the logic.
+func TestPublishCommand(t *testing.T) {
 	cfg := &config.Config{
 		Language: languageFake,
-		Release: &config.Release{
-			Remote: "origin",
-			Branch: "main",
+		Libraries: []*config.Library{
+			{Name: sample.Lib1Name, Version: "1.0.0"},
+			{Name: sample.Lib2Name, Version: "1.2.0"},
 		},
 	}
-	if err := publish(t.Context(), cfg, false, false, false); err != nil {
-		t.Fatal(err)
+	opts := testhelper.SetupOptions{
+		Config: cfg,
 	}
+	testhelper.Setup(t, opts)
+	cfg.Libraries[0].Version = "1.1.0"
+	writeConfigAndCommit(t, cfg)
+	cfg.Libraries[1].Version = "1.3.0"
+	writeConfigAndCommit(t, cfg)
 
-	content, err := os.ReadFile("PUBLISHED")
-	if err != nil {
+	if err := Run(t.Context(), "librarian", "publish", "--library", sample.Lib1Name, "--execute"); err != nil {
 		t.Fatal(err)
 	}
-	want := "published\n"
-	if diff := cmp.Diff(want, string(content)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	want := fmt.Sprintf("libraries=%s; execute=true", sample.Lib1Name)
+	got, err := os.ReadFile(fakePublishedFile)
+	if err != nil {
+		t.Fatalf("error reading file %s, error = %v", fakePublishedFile, err)
+	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch in output (-want +got):\n%s", diff)
 	}
 }

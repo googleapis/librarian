@@ -41,7 +41,9 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/automation
+# Renaming the binary to automation to match the old binary name and avoid
+# breaking existing Cloud Build steps that reference the binary by name.
+RUN CGO_ENABLED=0 GOOS=linux go build -o automation ./cmd/legacyautomation
 
 FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf
 WORKDIR /app

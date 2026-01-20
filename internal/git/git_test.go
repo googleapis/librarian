@@ -459,3 +459,30 @@ func TestFindCommitsForPath_Error(t *testing.T) {
 		t.Errorf("expected an error finding commits for path outside the repo, but did not get one")
 	}
 }
+
+func TestCheckout(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+	if err := Checkout(t.Context(), "git", "HEAD~"); err != nil {
+		t.Fatal(err)
+	}
+	readmeContent, err := os.ReadFile(testhelper.ReadmeFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(testhelper.ReadmeContents, string(readmeContent)); diff != "" {
+		t.Errorf("mismatch of readme content after checkout (-want, +got):\n%s", diff)
+	}
+}
+
+func TestCheckout_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupRepo(t)
+	err := Checkout(t.Context(), "git", "invalid-revision")
+	if err == nil {
+		t.Errorf("expected error when checking out a non-existent revision, but did not get one")
+	}
+}

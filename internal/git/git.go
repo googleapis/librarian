@@ -153,3 +153,16 @@ func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, err
 	}
 	return strings.Fields(string(output)), nil
 }
+
+// Checkout checks out the given revision. If revision is a commit rather than a
+// branch, this will leave the repository with a detached head. If revision is the
+// name of a valid path, that file is checked out instead. (Git does not provide a
+// way of differentiation between these.)
+func Checkout(ctx context.Context, git, revision string) error {
+	cmd := exec.CommandContext(ctx, git, "checkout", revision)
+	contents, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to checkout revision %s: %w\noutput: %s", revision, err, string(contents))
+	}
+	return nil
+}
