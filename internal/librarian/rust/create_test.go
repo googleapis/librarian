@@ -43,7 +43,7 @@ members = []
 	}
 
 	const libName = "secretmanager"
-	if err := Create(t.Context(), libName); err != nil {
+	if err := create(t.Context(), libName); err != nil {
 		t.Fatal(err)
 	}
 

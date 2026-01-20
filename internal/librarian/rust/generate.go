@@ -64,7 +64,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		exists = false
 	}
 	if !exists {
-		if err := Create(ctx, library.Output); err != nil {
+		if err := create(ctx, library.Output); err != nil {
 			return err
 		}
 	}

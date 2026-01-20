@@ -22,8 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Create creates a cargo workspace skeleton.
-func Create(ctx context.Context, outputDir string) error {
+// create creates a cargo workspace skeleton.
+func create(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
