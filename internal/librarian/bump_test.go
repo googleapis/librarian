@@ -359,7 +359,7 @@ func TestBumpLibrary(t *testing.T) {
 
 			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
+			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride)
 			if err != nil {
 				t.Fatalf("bumpLibrary() error = %v", err)
 			}
@@ -439,7 +439,7 @@ func TestBumpAll(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			err := bumpAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
+			err := bumpAll(t.Context(), targetCfg, sinceTag, "git")
 			if err != nil {
 				t.Fatal(err)
 			}

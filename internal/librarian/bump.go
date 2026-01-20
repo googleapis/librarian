@@ -135,7 +135,7 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if all {
-		if err = bumpAll(ctx, cfg, lastTag, gitExe, googleapisDir, rustSources); err != nil {
+		if err = bumpAll(ctx, cfg, lastTag, gitExe); err != nil {
 			return err
 		}
 	} else {
@@ -147,7 +147,7 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if err = bumpLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride, googleapisDir, rustSources); err != nil {
+		if err = bumpLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -158,7 +158,7 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	return RunTidyOnConfig(ctx, cfg)
 }
 
-func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
+func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
 	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, go
 			return err
 		}
 		if shouldRelease(library, filesChanged) {
-			if err := bumpLibrary(ctx, cfg, library, lastTag, gitExe, "", googleapisDir, rustSources); err != nil {
+			if err := bumpLibrary(ctx, cfg, library, lastTag, gitExe, ""); err != nil {
 				return err
 			}
 		}
@@ -193,7 +193,7 @@ func shouldRelease(library *config.Library, filesChanged []string) bool {
 	return false
 }
 
-func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride, googleapisDir string, rustSources *rust.Sources) error {
+func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride string) error {
 	// If the language doesn't have bespoke versioning options, a default
 	// [semver.DeriveNextOptions] instance is returned.
 	opts := languageVersioningOptions[cfg.Language]
