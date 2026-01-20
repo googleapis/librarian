@@ -108,6 +108,19 @@ func TestPublish_Error(t *testing.T) {
 		library string
 	}{
 		{
+			name: "custom tool specified for git and doesn't exist",
+			setup: func(cfg *config.Config) {
+				// Add a release commit to distinguish this case from "no releases"
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Release = &config.Release{
+					Preinstalled: map[string]string{
+						"git": "/usr/bin/does-not-exist",
+					},
+				}
+				writeConfigAndCommit(t, cfg)
+			},
+		},
+		{
 			name: "repo is dirty",
 			setup: func(cfg *config.Config) {
 				// Add a release commit to distinguish this case from "no releases"
@@ -116,6 +129,15 @@ func TestPublish_Error(t *testing.T) {
 				if err := os.WriteFile(testhelper.ReadmeFile, []byte("uncommitted change"), 0644); err != nil {
 					t.Fatal(err)
 				}
+			},
+		},
+		{
+			name: "language isn't supported",
+			setup: func(cfg *config.Config) {
+				// Add a release commit to distinguish this case from "no releases"
+				cfg.Libraries[0].Version = "1.1.0"
+				cfg.Language = "unsupported-for-publish"
+				writeConfigAndCommit(t, cfg)
 			},
 		},
 		{
