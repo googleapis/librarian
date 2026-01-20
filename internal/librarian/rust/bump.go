@@ -28,17 +28,18 @@ var (
 	errMissingVersion = errors.New("version must not be empty")
 )
 
-// Bump bumps version for Cargo.toml files and updates librarian config version.
-func Bump(library *config.Library, version string) error {
+// Bump bumps version for Cargo.toml files and updates librarian config version
+// for a library.
+func Bump(library *config.Library, version string) (*config.Library, error) {
 	if version == "" {
-		return errMissingVersion
+		return nil, errMissingVersion
 	}
 
 	cargoFile := filepath.Join(library.Output, "Cargo.toml")
 	_, err := os.Stat(cargoFile)
 	switch {
 	case err != nil && !os.IsNotExist(err):
-		return err
+		return nil, err
 	case os.IsNotExist(err):
 		cargo := fmt.Sprintf(`[package]
 name                   = "%s"
@@ -46,14 +47,14 @@ version                = "%s"
 edition                = "2021"
 `, library.Name, version)
 		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
-			return err
+			return nil, err
 		}
 	default:
 		if err := updateCargoVersion(cargoFile, version); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	library.Version = version
-	return nil
+	return library, nil
 }
