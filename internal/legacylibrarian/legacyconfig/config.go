@@ -97,7 +97,7 @@ type Config struct {
 	APISource string
 
 	// APISourceBranch is the branch of the API source repository to checkout
-	// after cloning. When this is not specified, the default googleapis branch
+	// after cloning. When this is not specified, the default branch 'master'
 	// 'master' is used. This is ignored when -api-source is a local repository.
 	//
 	// APISourceBranch is specified with the -api-source-branch flag.
