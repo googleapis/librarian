@@ -41,7 +41,7 @@ func Run(ctx context.Context, args ...string) error {
 		Commands: []*cli.Command{
 			addCommand(),
 			generateCommand(),
-			releaseCommand(),
+			bumpCommand(),
 			tidyCommand(),
 			updateCommand(),
 			versionCommand(),

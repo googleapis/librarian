@@ -54,7 +54,7 @@ var (
 	}
 )
 
-func releaseCommand() *cli.Command {
+func bumpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "bump",
 		Usage:     "update versions and prepare release artifacts",
