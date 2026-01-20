@@ -79,6 +79,7 @@ func newCmdGenerate() *legacycli.Command {
 	cmdGenerate.Init()
 	addFlagAPI(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagAPISource(cmdGenerate.Flags, cmdGenerate.Config)
+	addFlagAPISourceBranch(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagBuild(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagGenerateUnchanged(cmdGenerate.Flags, cmdGenerate.Config)
 	addFlagHostMount(cmdGenerate.Flags, cmdGenerate.Config)
