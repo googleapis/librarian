@@ -37,7 +37,7 @@ import (
 // rather than an ambiguous empty string.
 const testUnusedStringParam = ""
 
-func TestReleaseCommand(t *testing.T) {
+func TestBumpCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -176,7 +176,7 @@ func TestReleaseCommand(t *testing.T) {
 	}
 }
 
-func TestReleaseCommand_Error(t *testing.T) {
+func TestBumpCommand_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -296,7 +296,7 @@ func TestLibraryByName(t *testing.T) {
 	}
 }
 
-func TestReleaseLibrary(t *testing.T) {
+func TestBumpLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
@@ -360,7 +360,7 @@ func TestReleaseLibrary(t *testing.T) {
 			// Unused string param: lastTag.
 			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
 			if err != nil {
-				t.Fatalf("releaseLibrary() error = %v", err)
+				t.Fatalf("bumpLibrary() error = %v", err)
 			}
 			if targetLibCfg.Version != test.wantVersion {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
@@ -370,7 +370,7 @@ func TestReleaseLibrary(t *testing.T) {
 	}
 }
 
-func TestReleaseAll(t *testing.T) {
+func TestBumpAll(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -452,7 +452,7 @@ func TestReleaseAll(t *testing.T) {
 	}
 }
 
-func TestPostRelease(t *testing.T) {
+func TestPostBump(t *testing.T) {
 	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
 	for _, test := range []struct {
 		name    string
@@ -509,7 +509,7 @@ func TestPostRelease(t *testing.T) {
 
 			err := postBump(t.Context(), test.cfg)
 			if (err != nil) != test.wantErr {
-				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("postBump() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

@@ -39,7 +39,7 @@ const (
 	secretmanagerInitial = "1.5.3"
 )
 
-func TestReleaseOne(t *testing.T) {
+func TestBumpOne(t *testing.T) {
 	cfg := setupRelease(t)
 	if err := BumpLibrary(cfg.Libraries[0], storageReleased); err != nil {
 		t.Fatal(err)
@@ -127,7 +127,7 @@ func TestMissingVersion(t *testing.T) {
 	}
 }
 
-func TestReleaseLibraryNoVersion(t *testing.T) {
+func TestBumpLibraryNoVersion(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
 	testhelper.RequireCommand(t, "taplo")
 
