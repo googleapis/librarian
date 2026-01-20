@@ -213,7 +213,7 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Libr
 		if !release {
 			return nil
 		}
-		if err := rust.BumpLibrary(libConfig, nextVersion); err != nil {
+		if err := rust.Bump(libConfig, nextVersion); err != nil {
 			return err
 		}
 		if _, err := generateLibrary(ctx, cfg, libConfig.Name, googleapisDir, rustSources); err != nil {

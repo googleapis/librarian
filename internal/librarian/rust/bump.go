@@ -28,8 +28,8 @@ var (
 	errMissingVersion = errors.New("version must not be empty")
 )
 
-// BumpLibrary bumps version for Cargo.toml files and updates librarian config version.
-func BumpLibrary(library *config.Library, version string) error {
+// Bump bumps version for Cargo.toml files and updates librarian config version.
+func Bump(library *config.Library, version string) error {
 	if version == "" {
 		return errMissingVersion
 	}

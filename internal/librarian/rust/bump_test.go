@@ -41,7 +41,7 @@ const (
 
 func TestBumpOne(t *testing.T) {
 	cfg := setupRelease(t)
-	if err := BumpLibrary(cfg.Libraries[0], storageReleased); err != nil {
+	if err := Bump(cfg.Libraries[0], storageReleased); err != nil {
 		t.Fatal(err)
 	}
 
@@ -114,14 +114,14 @@ func checkLibraryVersion(t *testing.T, library *config.Library, wantVersion stri
 }
 
 func TestNoCargoFile(t *testing.T) {
-	err := BumpLibrary(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, storageReleased)
+	err := Bump(&config.Library{Version: "1.0.0", Output: "nonexistent/path"}, storageReleased)
 	if err == nil {
 		t.Error("expected error when Cargo.toml doesn't exist")
 	}
 }
 
 func TestMissingVersion(t *testing.T) {
-	err := BumpLibrary(&config.Library{}, "")
+	err := Bump(&config.Library{}, "")
 	if !errors.Is(err, errMissingVersion) {
 		t.Errorf("expected error %v, got %v", errMissingVersion, err)
 	}
@@ -168,7 +168,7 @@ func TestBumpLibraryNoVersion(t *testing.T) {
 				Name:   libName,
 				Output: libDir,
 			}
-			if err := BumpLibrary(lib, test.wantVersion); err != nil {
+			if err := Bump(lib, test.wantVersion); err != nil {
 				t.Fatal(err)
 			}
 			checkLibraryVersion(t, lib, test.wantVersion)
