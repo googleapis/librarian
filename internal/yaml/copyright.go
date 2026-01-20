@@ -14,7 +14,9 @@
 
 package yaml
 
-const copyright = `# Copyright 2026 Google LLC
+import "fmt"
+
+const copyright = `# Copyright %d Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,3 +31,8 @@ const copyright = `# Copyright 2026 Google LLC
 # limitations under the License.
 
 `
+
+// Header returns the copyright header with the given year.
+func Header(year int) string {
+	return fmt.Sprintf(copyright, year)
+}

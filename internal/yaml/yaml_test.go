@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -76,7 +77,8 @@ func TestReadWrite(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	want := copyright + `name: test
+	year := time.Now().Year()
+	want := Header(year) + `name: test
 version: v1.0.0
 `
 	path := filepath.Join(t.TempDir(), "test.yaml")
@@ -87,6 +89,33 @@ version: v1.0.0
 	if err != nil {
 		t.Fatal(err)
 	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWrite_PreservesYear(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.yaml")
+	oldYear := 2020
+	oldContent := Header(oldYear) + "name: old\n"
+
+	if err := os.WriteFile(path, []byte(oldContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	newConfig := &testConfig{Name: "new", Version: "v2.0.0"}
+	if err := Write(path, newConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := Header(oldYear) + `name: new
+version: v2.0.0
+`
 	if diff := cmp.Diff(want, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

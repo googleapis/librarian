@@ -18,10 +18,15 @@ package yaml
 import (
 	"bytes"
 	"os"
+	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/google/yamlfmt/formatters/basic"
 	"gopkg.in/yaml.v3"
 )
+
+var yearRegex = regexp.MustCompile(`(?m)^# Copyright (\d{4}) Google LLC`)
 
 // StringSlice is a custom slice of strings that allows for fine-grained control
 // over YAML marshaling when used with the 'omitempty' tag.
@@ -73,13 +78,22 @@ func Read[T any](path string) (*T, error) {
 }
 
 // Write marshals a value to YAML, formats it with yamlfmt, adds a copyright header
-// and writes it to a file.
+// and writes it to a file. It keeps the original year, defaults to current if cannot find one.
 func Write(path string, v any) error {
+	year := time.Now().Year()
+	if existing, err := os.ReadFile(path); err == nil {
+		if match := yearRegex.FindSubmatch(existing); len(match) > 1 {
+			if y, err := strconv.Atoi(string(match[1])); err == nil {
+				year = y
+			}
+		}
+	}
+
 	data, err := Marshal(v)
 	if err != nil {
 		return err
 	}
-	data = append([]byte(copyright), data...)
+	data = append([]byte(Header(year)), data...)
 	return os.WriteFile(path, data, 0644)
 }
 
