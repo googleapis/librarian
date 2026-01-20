@@ -196,6 +196,7 @@ func newCmdUpdateImage() *legacycli.Command {
 	}
 	cmdUpdateImage.Init()
 	addFlagAPISource(cmdUpdateImage.Flags, cmdUpdateImage.Config)
+	addFlagAPISourceBranch(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagBuild(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagCommit(cmdUpdateImage.Flags, cmdUpdateImage.Config)
 	addFlagHostMount(cmdUpdateImage.Flags, cmdUpdateImage.Config)
