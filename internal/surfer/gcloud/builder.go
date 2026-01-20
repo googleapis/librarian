@@ -271,26 +271,13 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	}
 
 	// For List methods, the primary resource is the parent of the method's resource.
-	// We derive this by removing the last segment (the child resource) from the pattern.
-	// Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`
 	if utils.IsList(method) {
 		segments = utils.GetParentFromSegments(segments)
 	}
 
-	// We construct the gcloud collection path from the resource's pattern string.
-	// Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`
-	collectionPath := utils.GetCollectionPathFromSegments(segments)
-	hostParts := strings.Split(service.DefaultHost, ".")
-	shortServiceName := hostParts[0]
-
 	// We determine the singular name of the resource.
-	// For `Create` methods, this comes from the `_id` field. For others, it's the `name` field.
 	resourceName := strcase.ToSnake(strings.TrimSuffix(field.Name, "_id"))
-	if field.Name == "name" {
-		resourceName = utils.GetSingularFromSegments(segments)
-	}
-	if utils.IsList(method) {
-		// For List, we use the singular name from the (parent) segments.
+	if field.Name == "name" || utils.IsList(method) {
 		resourceName = utils.GetSingularFromSegments(segments)
 	}
 
@@ -305,10 +292,15 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
+	// We construct the gcloud collection path from the resource's pattern string.
+	collectionPath := utils.GetCollectionPathFromSegments(segments)
+	hostParts := strings.Split(service.DefaultHost, ".")
+	shortServiceName := hostParts[0]
+
 	// We assemble the final `Param` struct.
 	param := Param{
 		HelpText:          helpText,
-		IsPositional:      !utils.IsList(method), // List primary resource (parent) is non-positional.
+		IsPositional:      !utils.IsList(method),
 		IsPrimaryResource: true,
 		Required:          true,
 		ResourceSpec: &ResourceSpec{
