@@ -412,17 +412,14 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	}
 
 	// The request needs to have a field for the resource name of the resource to obtain.
-	nameFieldIndex := slices.IndexFunc(m.InputType.Fields, func(f *Field) bool {
-		return f.IsResourceReference() &&
-			f.ResourceReference.Type == m.OutputType.Resource.Type
-	})
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model.State.ResourceByType, m.OutputType.Resource.Type)
 
-	if nameFieldIndex == -1 {
+	if resourceField == nil {
 		return nil
 	}
 
 	return &AIPStandardGetInfo{
-		ResourceNameRequestField: m.InputType.Fields[nameFieldIndex],
+		ResourceNameRequestField: resourceField,
 	}
 }
 
@@ -453,45 +450,85 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 		return nil
 	}
 
-	// Find the field in the request that is a resource reference of a resource,
-	// chosen as follows:
-	//
-	// We prioritize the matches as follows:
-	// 1. The field name is "name" and the resource singular name matches maybeSingular.
-	// 2. The field name is "name" and the resource singular name is empty.
-	// 3. The resource singular name matches maybeSingular.
-	var bestField *Field
-	for _, f := range m.InputType.Fields {
-		if f.ResourceReference == nil {
-			continue
-		}
-		resource, ok := m.Model.State.ResourceByType[f.ResourceReference.Type]
-		if !ok {
-			continue
-		}
-
-		fieldSingular := strings.ToLower(resource.Singular)
-
-		if f.Name == "name" &&
-			(fieldSingular == "" || fieldSingular == maybeSingular) {
-			bestField = f
-			// If we already found a field named "name" and it matches 1. or 2.
-			// we won't find a better field.
-			break
-		}
-
-		if fieldSingular == maybeSingular {
-			bestField = f
-		}
-	}
-
-	if bestField == nil {
+	// The request needs to have a field for the resource name of the resource to delete.
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model.State.ResourceByType, maybeSingular)
+	if resourceField == nil {
 		return nil
 	}
 
 	return &AIPStandardDeleteInfo{
-		ResourceNameRequestField: bestField,
+		ResourceNameRequestField: resourceField,
 	}
+}
+
+// findBestResourceFieldByType finds the best field in the message that references
+// a resource of the given type.
+//
+// We prioritize the matches as follows:
+// 1. The field name is "name" and explicitly references the output resource type.
+// 2. The field name is "name" and has a wildcard reference type "*".
+// 3. The field explicitly references the output resource type.
+func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
+	var bestField *Field
+	for _, f := range message.Fields {
+		if f.ResourceReference == nil {
+			continue
+		}
+
+		if f.ResourceReference.Type == "*" && f.Name == "name" {
+			return f
+		}
+
+		resource, ok := resourcesByType[f.ResourceReference.Type]
+		if !ok {
+			continue
+		}
+
+		if resource.Type == targetType {
+			if f.Name == "name" {
+				return f
+			}
+			bestField = f
+		}
+	}
+	return bestField
+}
+
+// findBestResourceFieldBySingular finds the best field in the message that references
+// a resource with the given singular name.
+//
+// We prioritize the matches as follows:
+// 1. The field name is "name" and the resource singular name matches maybeSingular.
+// 2. The field name is "name" and the resource singular name is empty.
+// 3. The field name is "name" and has a wildcard reference type "*".
+// 4. The resource singular name matches maybeSingular.
+func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
+	var bestField *Field
+	for _, f := range message.Fields {
+		if f.ResourceReference == nil {
+			continue
+		}
+
+		if f.ResourceReference.Type == "*" && f.Name == "name" {
+			return f
+		}
+
+		resource, ok := resourcesByType[f.ResourceReference.Type]
+		if !ok {
+			continue
+		}
+
+		actualSingular := strings.ToLower(resource.Singular)
+		matchesTarget := actualSingular == targetSingular
+		if f.Name == "name" && (matchesTarget || actualSingular == "") {
+			return f
+		}
+		if matchesTarget {
+			bestField = f
+		}
+	}
+
+	return bestField
 }
 
 // PathInfo contains normalized request path information.
