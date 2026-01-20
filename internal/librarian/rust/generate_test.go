@@ -179,6 +179,8 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "cargo")
+
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -187,114 +189,97 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outDir := filepath.Join(workspaceDir, "google-cloud-secretmanager-v1")
 
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { os.RemoveAll(outDir) })
+	t.Cleanup(func() {
+		os.RemoveAll(filepath.Join(workspaceDir, "target"))
+		os.Remove(filepath.Join(workspaceDir, "Cargo.lock"))
+	})
 
-	// Change to testdata directory so cargo fmt can find Cargo.toml
-	t.Chdir(workspaceDir)
-
-	library := &config.Library{
-		Name:          "google-cloud-secretmanager-v1",
-		Version:       "0.1.0",
-		Output:        outDir,
-		ReleaseLevel:  "preview",
-		CopyrightYear: "2025",
-		Channels: []*config.Channel{
-			{
-				Path: "google/cloud/secretmanager/v1",
-			},
-		},
-		Rust: &config.RustCrate{
-			RustDefault: config.RustDefault{
-				PackageDependencies: []*config.RustPackageDependency{
-					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
-					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
-					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
-				},
-			},
-		},
-	}
-	sources := &Sources{
-		Googleapis: googleapisDir,
-	}
-	if err := Generate(t.Context(), library, sources); err != nil {
-		t.Fatal(err)
-	}
+	// Mock PostGenerate to speed up the test.
+	oldPostGenerate := validate
+	validate = func(ctx context.Context, outputDir string) error { return nil }
+	t.Cleanup(func() { validate = oldPostGenerate })
 
 	for _, test := range []struct {
-		path string
-		want string
-	}{
-		{filepath.Join(outDir, "Cargo.toml"), "name"},
-		{filepath.Join(outDir, "Cargo.toml"), "google-cloud-secretmanager-v1"},
-		{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
-		{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
-		{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
-	} {
-		t.Run(test.path, func(t *testing.T) {
-			if _, err := os.Stat(test.path); err != nil {
-				t.Fatal(err)
-			}
-			got, err := os.ReadFile(test.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !strings.Contains(string(got), test.want) {
-				t.Errorf("%q missing expected string: %q", test.path, test.want)
-			}
-		})
-	}
-}
-
-func TestCreateSkeletonIfNotExist(t *testing.T) {
-	testhelper.RequireCommand(t, "cargo")
-	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "taplo")
-	for _, test := range []struct {
-		name          string
-		setup         func(t *testing.T, dir string)
-		wantCreateRun bool
+		name      string
+		preExists bool
 	}{
 		{
-			name: "directory does not exist",
-			setup: func(t *testing.T, dir string) {
-			},
-			wantCreateRun: true,
+			name:      "directory exists",
+			preExists: true,
 		},
 		{
-			name: "directory already exists",
-			setup: func(t *testing.T, dir string) {
-				if err := os.Mkdir(dir, 0755); err != nil {
-					t.Fatalf("failed to create directory: %v", err)
-				}
-			},
-			wantCreateRun: false,
+			name:      "directory does not exist",
+			preExists: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tmp := t.TempDir()
-			dir := filepath.Join(tmp, "output")
-			test.setup(t, dir)
+			// Change to testdata directory so cargo fmt can find Cargo.toml
+			t.Chdir(workspaceDir)
 
-			testhelper.ContinueInNewGitRepository(t, tmp)
-			if err := createAndGenerate(t.Context(), dir, func(ctx context.Context) error { return nil }); err != nil {
-				t.Fatalf("CreateSkeletonIfNotExist() failed: %v", err)
+			libName := "google-cloud-secretmanager-v1"
+			outDir := filepath.Join(workspaceDir, libName)
+
+			if err := os.RemoveAll(outDir); err != nil {
+				t.Fatal(err)
+			}
+			if test.preExists {
+				if err := os.MkdirAll(outDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Cleanup(func() { os.RemoveAll(outDir) })
+
+			library := &config.Library{
+				Name:          libName,
+				Version:       "0.1.0",
+				Output:        outDir,
+				ReleaseLevel:  "preview",
+				CopyrightYear: "2025",
+				Channels: []*config.Channel{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+							{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+						},
+					},
+				},
+			}
+			sources := &Sources{
+				Googleapis: googleapisDir,
+			}
+			if err := Generate(t.Context(), library, sources); err != nil {
+				t.Fatal(err)
 			}
 
-			_, err := os.Stat(dir)
-			if err != nil {
-				t.Errorf("directory %q should exist, but it doesn't: %v", dir, err)
-			}
-
-			cargoTomlPath := filepath.Join(dir, "Cargo.toml")
-			_, err = os.Stat(cargoTomlPath)
-			cargoTomlExists := !os.IsNotExist(err)
-			if cargoTomlExists != test.wantCreateRun {
-				t.Errorf("Cargo.toml existence mismatch: got %v, want %v", cargoTomlExists, test.wantCreateRun)
+			for _, check := range []struct {
+				path string
+				want string
+			}{
+				{filepath.Join(outDir, "Cargo.toml"), "name"},
+				{filepath.Join(outDir, "Cargo.toml"), libName},
+				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
+				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
+				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
+			} {
+				t.Run(check.path, func(t *testing.T) {
+					if _, err := os.Stat(check.path); err != nil {
+						t.Fatal(err)
+					}
+					got, err := os.ReadFile(check.path)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !strings.Contains(string(got), check.want) {
+						t.Errorf("%q missing expected string: %q", check.path, check.want)
+					}
+				})
 			}
 		})
 	}

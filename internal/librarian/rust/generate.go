@@ -56,33 +56,23 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err != nil {
 		return err
 	}
-	return createAndGenerate(ctx, library.Output, func(ctx context.Context) error {
-		return sidekickrust.Generate(ctx, model, library.Output, sidekickConfig)
-	})
-}
-
-// createAndGenerate checks if the output directory exists. If it does not exist,
-// it calls the Create to create the skeleton and executes the generateFn.
-// If the directory already exists, it directly executes the generateFn.
-func createAndGenerate(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
 	exists := true
-	if _, err := os.Stat(outputDir); err != nil {
-		// Create if the output path does not already exist
+	if _, err := os.Stat(library.Output); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to stat output directory %q: %w", outputDir, err)
+			return fmt.Errorf("failed to stat output directory %q: %w", library.Output, err)
 		}
 		exists = false
 	}
 	if !exists {
-		if err := Create(ctx, outputDir); err != nil {
+		if err := Create(ctx, library.Output); err != nil {
 			return err
 		}
 	}
-	if err := generateFn(ctx); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
 	if !exists {
-		PostGenerate(ctx, outputDir)
+		validate(ctx, library.Output)
 	}
 	return nil
 }

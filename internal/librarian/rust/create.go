@@ -36,8 +36,8 @@ func Create(ctx context.Context, outputDir string) error {
 	return command.Run(ctx, "taplo", "fmt", "Cargo.toml")
 }
 
-// PostGenerate does formatting and other post generation tasks to validate the library.
-func PostGenerate(ctx context.Context, outputDir string) error {
+// validate does formatting and other post generation tasks to validate the library.
+var validate = func(ctx context.Context, outputDir string) error {
 	manifestPath := path.Join(outputDir, "Cargo.toml")
 	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {
 		return err
