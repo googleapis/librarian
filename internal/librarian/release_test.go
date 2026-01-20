@@ -358,7 +358,7 @@ func TestReleaseLibrary(t *testing.T) {
 
 			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
+			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
 			if err != nil {
 				t.Fatalf("releaseLibrary() error = %v", err)
 			}
@@ -438,7 +438,7 @@ func TestReleaseAll(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			err := releaseAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
+			err := bumpAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -507,7 +507,7 @@ func TestPostRelease(t *testing.T) {
 				test.setup()
 			}
 
-			err := postRelease(t.Context(), test.cfg)
+			err := postBump(t.Context(), test.cfg)
 			if (err != nil) != test.wantErr {
 				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
 			}
