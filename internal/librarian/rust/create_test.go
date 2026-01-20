@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,8 +43,7 @@ members = []
 	}
 
 	const libName = "secretmanager"
-	testGenerate := func(ctx context.Context) error { return nil }
-	if err := Create(t.Context(), libName, testGenerate); err != nil {
+	if err := Create(t.Context(), libName); err != nil {
 		t.Fatal(err)
 	}
 

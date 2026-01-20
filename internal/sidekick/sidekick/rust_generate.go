@@ -53,7 +53,5 @@ func rustGenerate(ctx context.Context, rootConfig *config.Config, cmdLine *Comma
 	}
 
 	slog.Info("generating new library code and adding it to git")
-	return rust.Create(ctx, cmdLine.Output, func(ctx context.Context) error {
-		return generate(ctx, rootConfig, cmdLine)
-	})
+	return rust.Create(ctx, cmdLine.Output)
 }

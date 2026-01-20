@@ -65,19 +65,24 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 // it calls the Create to create the skeleton and executes the generateFn.
 // If the directory already exists, it directly executes the generateFn.
 func createAndGenerate(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
+	exists := true
 	if _, err := os.Stat(outputDir); err != nil {
 		// Create if the output path does not already exist
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("failed to stat output directory %q: %w", outputDir, err)
 		}
-		if err := Create(ctx, outputDir,
-			func(ctx context.Context) error {
-				return generateFn(ctx)
-			}); err != nil {
+		exists = false
+	}
+	if !exists {
+		if err := Create(ctx, outputDir); err != nil {
 			return err
 		}
-	} else {
-		return generateFn(ctx)
+	}
+	if err := generateFn(ctx); err != nil {
+		return err
+	}
+	if !exists {
+		PostGenerate(ctx, outputDir)
 	}
 	return nil
 }
