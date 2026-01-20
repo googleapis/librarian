@@ -18,9 +18,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
+
+const fakePublishedFile = "PUBLISHED"
 
 func fakeReleaseLibrary(lib *config.Library, nextVersion string) error {
 	lib.Version = nextVersion
@@ -53,8 +56,10 @@ func fakeFormat(library *config.Library) error {
 	return os.WriteFile(readmePath, []byte(formatted), 0644)
 }
 
-func fakePublish() error {
-	return os.WriteFile("PUBLISHED", []byte("published\n"), 0644)
+func fakePublish(libraries []string, execute bool) error {
+	content := fmt.Sprintf("libraries=%s; execute=%v",
+		strings.Join(libraries, ","), execute)
+	return os.WriteFile(fakePublishedFile, []byte(content), 0644)
 }
 
 func fakeCreateSkeleton(library *config.Library) error {
