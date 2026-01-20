@@ -195,10 +195,10 @@ func TestGenerate(t *testing.T) {
 		os.Remove(filepath.Join(workspaceDir, "Cargo.lock"))
 	})
 
-	// Mock PostGenerate to speed up the test.
-	oldPostGenerate := validate
+	// Mock validate to speed up the test.
+	oldValidate := validate
 	validate = func(ctx context.Context, outputDir string) error { return nil }
-	t.Cleanup(func() { validate = oldPostGenerate })
+	t.Cleanup(func() { validate = oldValidate })
 
 	for _, test := range []struct {
 		name      string
