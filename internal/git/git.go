@@ -144,6 +144,7 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 }
 
 // FindCommitsForPath returns the full hashes of all commits affecting the given path.
+// The commits are returned in normal log order, i.e. latest commit first.
 func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, error) {
 	cmd := exec.CommandContext(ctx, gitExe, "log", "--pretty=format:%H", "--", path)
 	output, err := cmd.CombinedOutput()

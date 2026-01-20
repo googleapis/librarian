@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -634,5 +635,314 @@ func TestLoadBranchLibraryVersion(t *testing.T) {
 	}
 	if got != want {
 		t.Errorf("got version %s, want %s", got, want)
+	}
+}
+
+func TestFindReleasedLibraries(t *testing.T) {
+	cfgBefore := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "Unchanged", Version: "1.2.3"},
+			{Name: "PatchBump", Version: "1.2.3"},
+			{Name: "MinorBump", Version: "1.2.3"},
+			{Name: "MajorBump", Version: "1.2.3"},
+			{Name: "PreviewBump", Version: "1.0.0-beta.1"},
+			{Name: "StaysUnversioned"},
+			{Name: "Deleted", Version: "1.2.3"},
+		},
+	}
+	cfgAfter := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "Unchanged", Version: "1.2.3"},
+			{Name: "PatchBump", Version: "1.2.4"},
+			{Name: "MinorBump", Version: "1.3.0"},
+			{Name: "MajorBump", Version: "2.0"},
+			{Name: "PreviewBump", Version: "1.0.0-beta.2"},
+			{Name: "StaysUnversioned"},
+			{Name: "AddedUnversioned", Version: ""},
+			{Name: "AddedWithVersion", Version: "1.0.0"},
+		},
+	}
+	got, err := findReleasedLibraries(cfgBefore, cfgAfter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"PatchBump", "MinorBump", "MajorBump", "PreviewBump", "AddedWithVersion"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFindReleasedLibraries_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		cfgBefore *config.Config
+		cfgAfter  *config.Config
+	}{
+		{
+			name: "regression (version decreases)",
+			cfgBefore: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.3.0"},
+					{Name: "Regression", Version: "1.3.0"},
+				},
+			},
+			cfgAfter: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.4.0"},
+					{Name: "Regression", Version: "1.2.0"},
+				},
+			},
+		},
+		{
+			name: "regression (version removed)",
+			cfgBefore: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.3.0"},
+					{Name: "Regression", Version: "1.3.0"},
+				},
+			},
+			cfgAfter: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.4.0"},
+					{Name: "Regression", Version: ""},
+				},
+			},
+		},
+		{
+			name: "new library with invalid version",
+			cfgBefore: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.3.0"},
+				},
+			},
+			cfgAfter: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "MinorBump", Version: "1.4.0"},
+					{Name: "NewLibraryInvalidVersion", Version: "invalid"},
+				},
+			},
+		},
+		{
+			name: "existing library with invalid version",
+			cfgBefore: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "BecomesInvalid", Version: "1.3.0"},
+				},
+			},
+			cfgAfter: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "BecomesInvalid", Version: "invalid"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := findReleasedLibraries(test.cfgBefore, test.cfgAfter)
+			if err == nil {
+				t.Errorf("findReleasedLibraries() expected error; returned no error")
+			}
+		})
+	}
+}
+
+func TestFindLatestReleaseCommitHash(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, test := range []struct {
+		name            string
+		setup           func(cfg *config.Config)
+		libraryName     string
+		wantCommitCount int
+		wantCommitIndex int // Commit index in the log: HEAD=0, HEAD~=1 etc
+	}{
+		{
+			name: "HEAD commit releases, match any release",
+			setup: func(cfg *config.Config) {
+				// 2 commits in addition to the two in Setup:
+				// - Chore commit with a modified readme
+				// - Release commit with the first library version bumped
+				writeReadmeAndCommit(t, "modified readme")
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			wantCommitCount: 4,
+			wantCommitIndex: 0,
+		},
+		{
+			name: "HEAD~ commit, match any release",
+			setup: func(cfg *config.Config) {
+				// 3 commits in addition to the two in Setup:
+				// - Chore commit with a modified readme
+				// - Release commit with the first library version bumped
+				// - Chore commit with another modified readme
+				writeReadmeAndCommit(t, "modified readme")
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+				writeReadmeAndCommit(t, "modified readme again")
+			},
+			wantCommitCount: 5,
+			wantCommitIndex: 1,
+		},
+		{
+			name: "match specific library",
+			setup: func(cfg *config.Config) {
+				// 4 commits in addition to the two in Setup:
+				// - Chore commit with a modified readme
+				// - Release commit with the first library version bumped
+				// - Chore commit with another modified readme
+				// - Release commit with the second library version bumped
+				// (We're looking for the first library, so effectively HEAD~2)
+				writeReadmeAndCommit(t, "modified readme")
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+				writeReadmeAndCommit(t, "modified readme again")
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			libraryName:     sample.Lib1Name,
+			wantCommitCount: 6,
+			wantCommitIndex: 2,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			}
+			opts := testhelper.SetupOptions{
+				Config: cfg,
+			}
+			testhelper.Setup(t, opts)
+			test.setup(cfg)
+			commits, err := git.FindCommitsForPath(t.Context(), "git", ".")
+			if err != nil {
+				t.Fatal(err)
+			}
+			// This is effectively validating that the setup has worked as expected.
+			if test.wantCommitCount != len(commits) {
+				t.Fatalf("expected setup to create %d commits; got %d", test.wantCommitCount, len(commits))
+			}
+			got, err := findLatestReleaseCommitHash(t.Context(), "git", test.libraryName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if commits[test.wantCommitIndex] != got {
+				// Deliberately not using diff as the hashes are basically opaque
+				t.Errorf("findLatestReleaseCommitHash: got = %s; want = %s; all commits = %s", got, commits[test.wantCommitIndex], strings.Join(commits, ", "))
+			}
+		})
+	}
+}
+
+func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, test := range []struct {
+		name                      string
+		setup                     func(cfg *config.Config)
+		libraryName               string
+		wantReleaseCommitNotFound bool
+	}{
+		{
+			name: "no releases",
+			setup: func(cfg *config.Config) {
+				// We're modifying the description, but that isn't a release.
+				cfg.Libraries[0].DescriptionOverride = "modified description"
+				writeConfigAndCommit(t, cfg)
+			},
+			wantReleaseCommitNotFound: true,
+		},
+		{
+			name: "no library with given name",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			libraryName:               "nonexistent",
+			wantReleaseCommitNotFound: true,
+		},
+		{
+			name: "release, but not for the specified library",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			libraryName:               sample.Lib2Name,
+			wantReleaseCommitNotFound: true,
+		},
+		{
+			name: "invalid release",
+			setup: func(cfg *config.Config) {
+				cfg.Libraries[0].Version = "invalid"
+				writeConfigAndCommit(t, cfg)
+			},
+		},
+		{
+			name: "invalid config file",
+			setup: func(cfg *config.Config) {
+				writeFileAndCommit(t, librarianConfigPath, []byte("not a config file"), "broke config file")
+			},
+		},
+		{
+			name: "deleted config file",
+			setup: func(cfg *config.Config) {
+				if err := os.Remove(librarianConfigPath); err != nil {
+					t.Fatal(err)
+				}
+				if err := command.Run(t.Context(), "git", "commit", "-m", "deleted config file", "."); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "provoke git failure looking for commits",
+			setup: func(cfg *config.Config) {
+				if err := os.Rename(".git", "notgit"); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			}
+			opts := testhelper.SetupOptions{
+				Config: cfg,
+			}
+			testhelper.Setup(t, opts)
+			test.setup(cfg)
+			got, err := findLatestReleaseCommitHash(t.Context(), "git", test.libraryName)
+			if err == nil {
+				t.Errorf("expected error; succeeded with hash %s", got)
+			}
+			if errors.Is(err, errReleaseCommitNotFound) != test.wantReleaseCommitNotFound {
+				t.Errorf("findLatestReleaseCommitHash() error = %v, wantReleaseCommitNotFound = %v", err, test.wantReleaseCommitNotFound)
+			}
+		})
+	}
+}
+
+func writeReadmeAndCommit(t *testing.T, newContent string) {
+	writeFileAndCommit(t, testhelper.ReadmeFile, []byte(newContent), "Modified readme")
+}
+
+func writeConfigAndCommit(t *testing.T, cfg *config.Config) {
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFileAndCommit(t, librarianConfigPath, data, "Modified config")
+}
+
+func writeFileAndCommit(t *testing.T, path string, content []byte, message string) {
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", message, "."); err != nil {
+		t.Fatal(err)
 	}
 }
