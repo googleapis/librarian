@@ -44,7 +44,7 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 // GetParentFromSegments extracts the pattern segments for the parent resource.
 // It assumes the standard resource pattern structure where the last two segments
 // are the literal plural noun and the variable singular noun of the child resource.
-// Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`
+// Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`.
 func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
 	if len(segments) < 2 {
 		return nil

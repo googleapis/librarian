@@ -90,7 +90,9 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 
 // newArguments generates the set of arguments for a command by parsing the
 // fields of the method's request message.
-// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern (IsIgnored, IsResourceArg, IsArg) to handle field processing.
+//
+// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern
+// (IsIgnored, IsResourceArg, IsArg) to handle field processing.
 func newArguments(method *api.Method, overrides *Config, model *api.API, service *api.Service) (Arguments, error) {
 	args := Arguments{}
 	if method.InputType == nil {
