@@ -42,7 +42,7 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
+RUN CGO_ENABLED=0 GOOS=linux go build -o librarian ./cmd/legacylibrarian
 
 # Using docker:dind so we can run docker from the CLI,
 # while in Docker. Note that for this to work, *this*
