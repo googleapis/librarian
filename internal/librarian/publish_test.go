@@ -174,3 +174,35 @@ func TestPublish_Error(t *testing.T) {
 		})
 	}
 }
+
+// TestPublishCommand is just a single "does it look like it passes things
+// through to the publish function" test. TestPublish tests the bulk of the logic.
+func TestPublishCommand(t *testing.T) {
+	cfg := &config.Config{
+		Language: languageFake,
+		Libraries: []*config.Library{
+			{Name: sample.Lib1Name, Version: "1.0.0"},
+			{Name: sample.Lib2Name, Version: "1.2.0"},
+		},
+	}
+	opts := testhelper.SetupOptions{
+		Config: cfg,
+	}
+	testhelper.Setup(t, opts)
+	cfg.Libraries[0].Version = "1.1.0"
+	writeConfigAndCommit(t, cfg)
+	cfg.Libraries[1].Version = "1.3.0"
+	writeConfigAndCommit(t, cfg)
+
+	if err := Run(t.Context(), "librarian", "publish", "--library", sample.Lib1Name, "--execute"); err != nil {
+		t.Fatal(err)
+	}
+	want := fmt.Sprintf("libraries=%s; execute=true", sample.Lib1Name)
+	got, err := os.ReadFile(fakePublishedFile)
+	if err != nil {
+		t.Fatalf("error reading file %s, error = %v", fakePublishedFile, err)
+	}
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch in output (-want +got):\n%s", diff)
+	}
+}
