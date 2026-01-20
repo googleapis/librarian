@@ -271,3 +271,52 @@ type PythonPackage struct {
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
 }
+
+// DartPackage contains Dart-specific library configuration.
+type DartPackage struct {
+	// APIKeysEnvironmentVariables is a comma-separated list of environment variable names
+	// that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY").
+	APIKeysEnvironmentVariables string `yaml:"api_keys_environment_variables,omitempty"`
+
+	// Dependencies is a comma-separated list of dependencies.
+	Dependencies string `yaml:"dependencies,omitempty"`
+
+	// DevDependencies is a comma-separated list of development dependencies.
+	DevDependencies string `yaml:"dev_dependencies,omitempty"`
+
+	// ExtraImports is additional imports to include in the generated library.
+	ExtraImports string `yaml:"extra_imports,omitempty"`
+
+	// IssueTrackerURL is the URL for the issue tracker.
+	IssueTrackerURL string `yaml:"issue_tracker_url,omitempty"`
+
+	// LibraryPathOverride overrides the library path.
+	LibraryPathOverride string `yaml:"library_path_override,omitempty"`
+
+	// NotForPublication indicates whether this package should not be published.
+	NotForPublication string `yaml:"not_for_publication,omitempty"`
+
+	// Packages maps Dart package names to version constraints.
+	// Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0".
+	Packages map[string]string `yaml:"packages,omitempty"`
+
+	// PartFile is the path to a part file to include in the generated library.
+	PartFile string `yaml:"part_file,omitempty"`
+
+	// Prefixes maps protobuf package names to Dart import prefixes.
+	// Keys are in the format "prefix:google.protobuf" and values are the prefix names.
+	Prefixes map[string]string `yaml:"prefixes,omitempty"`
+
+	// Protos maps protobuf package names to Dart import paths.
+	// Keys are in the format "proto:google.api" and values are import paths like "package:google_cloud_api/api.dart".
+	Protos map[string]string `yaml:"protos,omitempty"`
+
+	// ReadmeAfterTitleText is text to insert in the README after the title.
+	ReadmeAfterTitleText string `yaml:"readme_after_title_text,omitempty"`
+
+	// ReadmeQuickstartText is text to use for the quickstart section in the README.
+	ReadmeQuickstartText string `yaml:"readme_quickstart_text,omitempty"`
+
+	// RepositoryURL is the URL to the repository for this package.
+	RepositoryURL string `yaml:"repository_url,omitempty"`
+}

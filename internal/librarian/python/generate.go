@@ -63,7 +63,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// for post processing, or reimplement.
 
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudget here, as GenerateRepoMetadata should
+	// Remove the default version fudget here, as Generate should
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
 	defaultVersion := filepath.Base(library.Channels[0].Path)
@@ -77,7 +77,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		return fmt.Errorf("failed to lookup service config: %w", err)
 	}
 	absoluteServiceConfig := filepath.Join(googleapisDir, channel.ServiceConfig)
-	if err := repometadata.GenerateRepoMetadata(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
+	if err := repometadata.Generate(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 

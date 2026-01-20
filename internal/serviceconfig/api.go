@@ -18,8 +18,12 @@ const (
 	langPython = "python"
 	langRust   = "rust"
 
-	titleAppsScriptTypes = "Google Apps Script Types"
-	titleGKEHubTypes     = "GKE Hub Types"
+	titleAppsScriptTypes           = "Google Apps Script Types"
+	titleAccessContextManagerTypes = "Access Context Manager Types"
+	titleCloudTraceAPI             = "Cloud Trace API"
+	titleFirestoreAPI              = "Cloud Firestore API"
+	titleGKEHubTypes               = "GKE Hub Types"
+	titleLoggingTypes              = "Logging types"
 
 	serviceConfigAIPlatformSchema = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
 )
@@ -383,12 +387,12 @@ var APIs = []API{
 	{Path: "google/devtools/cloudbuild/v1"},
 	{Path: "google/devtools/cloudbuild/v2"},
 	{Path: "google/devtools/cloudprofiler/v2"},
-	{Path: "google/devtools/cloudtrace/v1"},
-	{Path: "google/devtools/cloudtrace/v2"},
+	{Path: "google/devtools/cloudtrace/v1", Title: titleCloudTraceAPI},
+	{Path: "google/devtools/cloudtrace/v2", Title: titleCloudTraceAPI},
 	{Path: "google/devtools/containeranalysis/v1"},
 	{Path: "google/devtools/source/v1", Languages: []string{langPython}},
 	{Path: "google/firestore/admin/v1"},
-	{Path: "google/firestore/v1"},
+	{Path: "google/firestore/v1", Title: titleFirestoreAPI},
 	{Path: "google/geo/type", Languages: []string{langPython}},
 	{Path: "google/iam/admin/v1"},
 	{Path: "google/iam/credentials/v1"},
@@ -398,9 +402,9 @@ var APIs = []API{
 	{Path: "google/iam/v2beta", Languages: []string{langPython}},
 	{Path: "google/iam/v3"},
 	{Path: "google/iam/v3beta", Languages: []string{langPython}},
-	{Path: "google/identity/accesscontextmanager/type", Title: "Access Context Manager Types"},
+	{Path: "google/identity/accesscontextmanager/type", Title: titleAccessContextManagerTypes},
 	{Path: "google/identity/accesscontextmanager/v1"},
-	{Path: "google/logging/type"},
+	{Path: "google/logging/type", Title: titleLoggingTypes},
 	{Path: "google/logging/v2"},
 	{Path: "google/longrunning"},
 	{Path: "google/maps/addressvalidation/v1", Languages: []string{langPython}},
@@ -420,7 +424,7 @@ var APIs = []API{
 	{Path: "google/protobuf", Languages: []string{langRust}},
 	{Path: "google/pubsub/v1"},
 	{Path: "google/rpc"},
-	{Path: "google/rpc/context"},
+	{Path: "google/rpc/context", Title: "RPC Audit and Logging Attributes"},
 	{Path: "google/shopping/css/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/accounts/v1beta", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/conversions/v1beta", Languages: []string{langPython}},
@@ -445,5 +449,5 @@ var APIs = []API{
 	{Path: "google/storagetransfer/v1"},
 	{Path: "google/type"},
 	{Path: "grafeas/v1"},
-	{Path: "schema/google/showcase/v1beta1"},
+	{Path: "schema/google/showcase/v1beta1", ServiceConfig: "schema/google/showcase/v1beta1/showcase_v1beta1.yaml"},
 }

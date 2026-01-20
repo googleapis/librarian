@@ -72,9 +72,9 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 }
 
-// GenerateRepoMetadata generates the .repo-metadata.json file by parsing the
+// Generate generates the .repo-metadata.json file by parsing the
 // service YAML.
-func GenerateRepoMetadata(library *config.Library, language, repo, serviceConfigPath, defaultVersion, outdir string) error {
+func Generate(library *config.Library, language, repo, serviceConfigPath, defaultVersion, outdir string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.

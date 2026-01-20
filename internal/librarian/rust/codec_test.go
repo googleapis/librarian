@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -381,7 +382,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -400,6 +401,31 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with openapi format",
+			library: &config.Library{
+				Name:                "secretmanager-openapi-v1",
+				SpecificationFormat: "openapi",
+				Roots:               []string{"googleapis"},
+			},
+			channel: &config.Channel{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "openapi",
+					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+				},
+				Source: map[string]string{
+					"googleapis-root": "",
+					"roots":           "googleapis",
+				},
+				Codec: map[string]string{
+					"package-name-override": "secretmanager-openapi-v1",
+				},
+			},
+		},
+		{
 			name: "with multiple formats",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
@@ -407,7 +433,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots:               []string{"googleapis", "discovery", "showcase"},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -560,7 +586,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.Channel{
-				Path: "discoveries/compute.v1.json",
+				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -628,13 +654,14 @@ func TestToSidekickConfig(t *testing.T) {
 				Roots: []string{"showcase"},
 			},
 			channel: &config.Channel{
-				Path: "google/showcase/v1beta1",
+				Path: "schema/google/showcase/v1beta1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/showcase/v1beta1",
+					SpecificationSource: "schema/google/showcase/v1beta1",
+					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
 					"showcase-root": "",
@@ -698,6 +725,59 @@ func TestToSidekickConfig(t *testing.T) {
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language: "rust+prost",
+				},
+			},
+		},
+		{
+			name: "with api source and title",
+			library: &config.Library{
+				Name: "google-cloud-logging",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+							Source:   "google/logging/type",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust+prost",
+					SpecificationFormat: "protobuf",
+					SpecificationSource: "google/logging/type",
+				},
+				Source: map[string]string{
+					"roots":          "",
+					"title-override": "Logging types",
+				},
+			},
+		},
+		{
+			name: "with included ids in rust module",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Template:    "prost",
+							IncludedIds: []string{"id1", "id2"},
+							SkippedIds:  []string{"id3", "id4"},
+							IncludeList: "example-list",
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust+prost",
+					SpecificationFormat: "protobuf",
+				},
+				Source: map[string]string{
+					"included-ids": "id1,id2",
+					"include-list": "example-list",
+					"roots":        "",
+					"skipped-ids":  "id3,id4",
 				},
 			},
 		},
@@ -767,6 +847,14 @@ func TestToSidekickConfig(t *testing.T) {
 					got, err := moduleToSidekickConfig(test.library, module, sources)
 					if err != nil {
 						t.Fatal(err)
+					}
+					if test.want.Source != nil {
+						ignoreKey := cmpopts.IgnoreMapEntries(func(k string, v string) bool {
+							return k == "googleapis-root"
+						})
+						if diff := cmp.Diff(test.want.Source, got.Source, ignoreKey); diff != "" {
+							t.Errorf("mismatch (-want +got):\n%s", diff)
+						}
 					}
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
@@ -926,51 +1014,5 @@ func TestFormatPackageDependency(t *testing.T) {
 				t.Errorf("formatPackageDependency() = %q, want %q", got, test.want)
 			}
 		})
-	}
-}
-
-func TestModuleToSidekickConfig_FoundServiceConfig(t *testing.T) {
-	tmpDir := t.TempDir()
-	googleapisDir := filepath.Join(tmpDir, "googleapis")
-	protobufDir := filepath.Join(tmpDir, "protobuf")
-	sources := &Sources{
-		Googleapis:  googleapisDir,
-		ProtobufSrc: protobufDir,
-	}
-
-	serviceConfigDir := filepath.Join(protobufDir, "google/example/v1")
-	err := os.MkdirAll(serviceConfigDir, 0755)
-	if err != nil {
-		t.Fatalf("failed to create dummy dir: %v", err)
-	}
-	dummyYaml := filepath.Join(serviceConfigDir, "example_v1.yaml")
-	content := []byte("type: google.api.Service")
-	if err := os.WriteFile(dummyYaml, content, 0644); err != nil {
-		t.Fatalf("failed to write dummy yaml: %v", err)
-	}
-
-	library := &config.Library{
-		CopyrightYear: "2025",
-	}
-
-	module := &config.RustModule{
-		Source: "google/example/v1",
-	}
-
-	_, err = moduleToSidekickConfig(library, module, sources)
-	if err != nil {
-		t.Fatalf("moduleToSidekickConfig failed: %v", err)
-	}
-}
-
-func TestModuleToSidekickConfig_ServiceConfigNotFound(t *testing.T) {
-	library := &config.Library{}
-	module := &config.RustModule{
-		Source: "non/existent/path",
-	}
-
-	_, err := moduleToSidekickConfig(library, module, &Sources{})
-	if err == nil {
-		t.Error("expected error for non-existent source, got nil")
 	}
 }

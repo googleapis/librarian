@@ -42,7 +42,9 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build ./cmd/librarian
+# Renaming the binary to librarian to match the old binary name and avoid
+# breaking existing Cloud Build steps that reference the binary by name.
+RUN CGO_ENABLED=0 GOOS=linux go build -o librarian ./cmd/legacylibrarian
 
 # Using docker:dind so we can run docker from the CLI,
 # while in Docker. Note that for this to work, *this*

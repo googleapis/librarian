@@ -49,8 +49,8 @@ func newLibrarianCommand() *legacycli.Command {
 
 	return legacycli.NewCommandSet(
 		commands,
-		"librarian manages client libraries for Google APIs",
-		"librarian <command> [arguments]",
+		"legacylibrarian manages client libraries for Google APIs",
+		"legacylibrarian <command> [arguments]",
 		librarianLongHelp)
 }
 
@@ -58,7 +58,7 @@ func newCmdGenerate() *legacycli.Command {
 	var verbose bool
 	cmdGenerate := &legacycli.Command{
 		Short:     "generate onboards and generates client library code",
-		UsageLine: "librarian generate [flags]",
+		UsageLine: "legacylibrarian generate [flags]",
 		Long:      generateLongHelp,
 		Action: func(ctx context.Context, cmd *legacycli.Command) error {
 			setupLogger(verbose)
@@ -95,7 +95,7 @@ func newCmdGenerate() *legacycli.Command {
 func newCmdRelease() *legacycli.Command {
 	cmdRelease := &legacycli.Command{
 		Short:     "release manages releases of libraries.",
-		UsageLine: "librarian release <command> [arguments]",
+		UsageLine: "legacylibrarian release <command> [arguments]",
 		Long:      releaseLongHelp,
 		Commands: []*legacycli.Command{
 			newCmdStage(),
@@ -110,7 +110,7 @@ func newCmdTag() *legacycli.Command {
 	var verbose bool
 	cmdTag := &legacycli.Command{
 		Short:     "tag tags and creates a GitHub release for a merged pull request.",
-		UsageLine: "librarian release tag [arguments]",
+		UsageLine: "legacylibrarian release tag [arguments]",
 		Long:      tagLongHelp,
 		Action: func(ctx context.Context, cmd *legacycli.Command) error {
 			setupLogger(verbose)
@@ -140,7 +140,7 @@ func newCmdStage() *legacycli.Command {
 	var verbose bool
 	cmdStage := &legacycli.Command{
 		Short:     "stage stages a release by creating a release pull request.",
-		UsageLine: "librarian release stage [flags]",
+		UsageLine: "legacylibrarian release stage [flags]",
 		Long:      releaseStageLongHelp,
 		Action: func(ctx context.Context, cmd *legacycli.Command) error {
 			setupLogger(verbose)
@@ -175,7 +175,7 @@ func newCmdUpdateImage() *legacycli.Command {
 	var verbose bool
 	cmdUpdateImage := &legacycli.Command{
 		Short:     "update-image updates configured language image container",
-		UsageLine: "librarian update-image [flags]",
+		UsageLine: "legacylibrarian update-image [flags]",
 		Long:      updateImageLongHelp,
 		Action: func(ctx context.Context, cmd *legacycli.Command) error {
 			setupLogger(verbose)

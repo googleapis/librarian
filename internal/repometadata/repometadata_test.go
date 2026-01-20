@@ -24,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerateRepoMetadata(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		defaultVersion string
@@ -88,7 +88,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := GenerateRepoMetadata(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, test.defaultVersion, outDir); err != nil {
+			if err := Generate(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, test.defaultVersion, outDir); err != nil {
 				t.Fatal(err)
 			}
 

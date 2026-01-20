@@ -296,11 +296,11 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 	}
 }
 
-func TestShowFile(t *testing.T) {
+func TestShowFileAtRemoteBranch(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := ShowFile(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
+	got, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,11 +309,64 @@ func TestShowFile(t *testing.T) {
 	}
 }
 
-func TestShowFile_Error(t *testing.T) {
+func TestShowFileAtRemoteBranch_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	_, err := ShowFile(t.Context(), "git", "origin", "main", "does_not_exist")
+	_, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", "does_not_exist")
+	if err == nil {
+		t.Fatal("expected an error showing file that should not exist")
+	}
+	if !errors.Is(err, errGitShow) {
+		t.Errorf("expected errGitShow but got %v", err)
+	}
+}
+
+func TestShowFileAtRevision(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+
+	contentOnDisk, err := os.ReadFile(testhelper.ReadmeFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	modifiedContent := strings.TrimSuffix(string(contentOnDisk), "\n")
+
+	for _, test := range []struct {
+		name     string
+		revision string
+		want     string
+	}{
+		{
+			name:     "original README content at HEAD~",
+			revision: "HEAD~",
+			want:     testhelper.ReadmeContents,
+		},
+		{
+			name:     "modified README content at HEAD",
+			revision: "HEAD",
+			want:     modifiedContent,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ShowFileAtRevision(t.Context(), "git", test.revision, testhelper.ReadmeFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestShowFileAtRevision_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupRepo(t)
+	_, err := ShowFileAtRevision(t.Context(), "git", "HEAD", "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
@@ -355,5 +408,54 @@ func TestCheckRemoteURL_Error(t *testing.T) {
 
 	if err := CheckRemoteURL(t.Context(), "git", "remote_that_does_not_exist"); err == nil {
 		t.Errorf("expected an error checking for a remote URL, but did not get one")
+	}
+}
+
+func TestFindCommitsForPath(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+	for _, test := range []struct {
+		name       string
+		path       string
+		wantLength int
+	}{
+		{
+			name:       "README file with changes",
+			path:       testhelper.ReadmeFile,
+			wantLength: 2,
+		},
+		{
+			name:       "non-existent path",
+			path:       "this/path/does/not/exist",
+			wantLength: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindCommitsForPath(t.Context(), "git", test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.wantLength != len(got) {
+				t.Errorf("want %d changes, got %d", test.wantLength, len(got))
+			}
+			sampleHash := "bbeebf51301cfb45612db9869ec6dd8fa067d3fc"
+			for _, hash := range got {
+				if len(hash) != len(sampleHash) {
+					t.Errorf("expected each commit hash to have length %d; got hash %s", len(sampleHash), hash)
+				}
+			}
+		})
+	}
+}
+
+func TestFindCommitsForPath_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.SetupRepo(t)
+	// It's invalid to try to get the log for a path outside the repo
+	if _, err := FindCommitsForPath(t.Context(), "git", ".."); err == nil {
+		t.Errorf("expected an error finding commits for path outside the repo, but did not get one")
 	}
 }
