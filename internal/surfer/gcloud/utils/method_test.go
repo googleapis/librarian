@@ -200,3 +200,65 @@ func TestGetCommandName_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestIsResourceMethod(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   bool
+	}{
+		{"Standard Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
+		{"Standard List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Custom Resource", &api.Method{
+			Name: "CustomInstance",
+			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
+				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+			}}},
+		}, true},
+		{"Custom Collection", &api.Method{
+			Name: "CustomCollection",
+			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
+				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+			}}},
+		}, false},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsResourceMethod(test.method); got != test.want {
+				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
+			}
+		})
+	}
+}
+
+func TestIsCollectionMethod(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   bool
+	}{
+		{"Standard Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Standard List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
+		{"Custom Resource", &api.Method{
+			Name: "CustomInstance",
+			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
+				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+			}}},
+		}, false},
+		{"Custom Collection", &api.Method{
+			Name: "CustomCollection",
+			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
+				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+			}}},
+		}, true},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsCollectionMethod(test.method); got != test.want {
+				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
+			}
+		})
+	}
+}
