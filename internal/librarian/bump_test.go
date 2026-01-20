@@ -50,7 +50,7 @@ func TestBumpCommand(t *testing.T) {
 	}{
 		{
 			name:        "library name",
-			args:        []string{"librarian", "release", sample.Lib1Name},
+			args:        []string{"librarian", "bump", sample.Lib1Name},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -62,7 +62,7 @@ func TestBumpCommand(t *testing.T) {
 		},
 		{
 			name:        "library name and explicit version",
-			args:        []string{"librarian", "release", sample.Lib1Name, "--version=1.2.3"},
+			args:        []string{"librarian", "bump", sample.Lib1Name, "--version=1.2.3"},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -74,7 +74,7 @@ func TestBumpCommand(t *testing.T) {
 		},
 		{
 			name: "all flag all have changes",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			cfg:  sample.Config(),
 			withChanges: []string{
 				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
@@ -90,7 +90,7 @@ func TestBumpCommand(t *testing.T) {
 		},
 		{
 			name:        "all flag 1 has changes",
-			args:        []string{"librarian", "release", "--all"},
+			args:        []string{"librarian", "bump", "--all"},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -102,7 +102,7 @@ func TestBumpCommand(t *testing.T) {
 		},
 		{
 			name:        "preview library released",
-			args:        []string{"librarian", "release", sample.Lib1Name},
+			args:        []string{"librarian", "bump", sample.Lib1Name},
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			cfg:         sample.Config(),
 			previewCfg:  sample.PreviewConfig(),
@@ -115,7 +115,7 @@ func TestBumpCommand(t *testing.T) {
 		},
 		{
 			name: "all preview libraries released",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			withChanges: []string{
 				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
 				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
@@ -188,34 +188,34 @@ func TestBumpCommand_Error(t *testing.T) {
 	}{
 		{
 			name:    "no args",
-			args:    []string{"librarian", "release"},
+			args:    []string{"librarian", "bump"},
 			wantErr: errMissingLibraryOrAllFlag,
 		},
 		{
 			name:    "library name and all flag",
-			args:    []string{"librarian", "release", "foo", "--all"},
+			args:    []string{"librarian", "bump", "foo", "--all"},
 			wantErr: errBothLibraryAndAllFlag,
 		},
 		{
 			name:    "version flag and all flag",
-			args:    []string{"librarian", "release", "--version=1.2.3", "--all"},
+			args:    []string{"librarian", "bump", "--version=1.2.3", "--all"},
 			wantErr: errBothVersionAndAllFlag,
 		},
 		{
 			name:    "missing librarian yaml file",
-			args:    []string{"librarian", "release", "--all"},
+			args:    []string{"librarian", "bump", "--all"},
 			wantErr: errNoYaml,
 		},
 		{
 			name:    "local repo is dirty",
-			args:    []string{"librarian", "release", "--all"},
+			args:    []string{"librarian", "bump", "--all"},
 			cfg:     sample.Config(),
 			dirty:   true,
 			wantErr: git.ErrGitStatusUnclean,
 		},
 		{
 			name: "release config empty",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			cfg: func() *config.Config {
 				c := sample.Config()
 
