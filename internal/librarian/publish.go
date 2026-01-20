@@ -82,7 +82,7 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 // release commit to publish. The configuration at the release commit is used
 // for all further operations (and the repo will be checked out at that commit).
 // The library flag allows a user to identify a specific release to publish, in
-// case of overlapping releases being perfored. The execute flag says whether to
+// case of overlapping releases being performed. The execute flag says whether to
 // actually publish (true) or just perform a dry run (false).
 func publish(ctx context.Context, cfg *config.Config, library string, execute bool) error {
 	gitExe := "git"
