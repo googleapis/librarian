@@ -468,7 +468,6 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "with title override",
 			library: &config.Library{
 				Name: "google-cloud-apps-script-type-gmail",
-				Rust: &config.RustCrate{},
 			},
 			channel: &config.Channel{
 				Path: "google/apps/script/type/gmail",
@@ -494,7 +493,6 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-longrunning",
 				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
-				Rust:                &config.RustCrate{},
 			},
 			channel: &config.Channel{
 				Path: "google/longrunning",
@@ -811,7 +809,7 @@ func TestToSidekickConfig(t *testing.T) {
 			}
 
 			// Determine which directories need to be created based on test.library.Roots
-			if test.library.Rust.Roots != nil {
+			if test.library.Rust != nil && test.library.Rust.Roots != nil {
 				for _, root := range test.library.Rust.Roots {
 					switch root {
 					case "discovery":
