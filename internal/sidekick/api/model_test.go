@@ -723,33 +723,33 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 	f := newAIPTestFixture()
 	targetType := f.resource.Type
 
-	tests := []struct {
+	for _, tc := []struct {
 		name   string
 		fields []*Field
 		want   *Field
 	}{
 		{
-			name:   "P1: name field with exact match",
-			fields: []*Field{f.resourceNameField},
-			want:   f.resourceNameField,
-		},
-		{
-			name:   "P2: name field with wildcard",
+			name:   "name field with wildcard",
 			fields: []*Field{f.wildcardResourceField},
 			want:   f.wildcardResourceField,
 		},
 		{
-			name:   "P3: other field with exact match",
+			name:   "name field with exact match",
+			fields: []*Field{f.resourceNameField},
+			want:   f.resourceNameField,
+		},		
+		{
+			name:   "other field with exact match",
 			fields: []*Field{f.resourceOtherNameField},
 			want:   f.resourceOtherNameField,
 		},
 		{
-			name:   "P1 wins over P3",
+			name:   "name field with exact match wins over other field with exact match",
 			fields: []*Field{f.resourceNameField, f.resourceOtherNameField},
 			want:   f.resourceNameField,
 		},
 		{
-			name:   "P2 wins over P3",
+			name:   "name field with wildcard wins over other field with exact match",
 			fields: []*Field{f.wildcardResourceField, f.resourceOtherNameField},
 			want:   f.wildcardResourceField,
 		},
@@ -758,9 +758,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 			fields: []*Field{f.nonExistentResourceField},
 			want:   nil,
 		},
-	}
-
-	for _, tc := range tests {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
 			got := findBestResourceFieldByType(msg, f.model.State.ResourceByType, targetType)
@@ -775,38 +773,38 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 	f := newAIPTestFixture()
 	targetSingular := f.resource.Singular
 
-	tests := []struct {
+	for _, tc := []struct {
 		name   string
 		fields []*Field
 		want   *Field
 	}{
 		{
-			name:   "P1: name field with exact match",
-			fields: []*Field{f.resourceNameField},
-			want:   f.resourceNameField,
-		},
-		{
-			name:   "P1: name field with empty singular match",
-			fields: []*Field{f.resourceNameNoSingularField},
-			want:   f.resourceNameNoSingularField,
-		},
-		{
-			name:   "P2: name field with wildcard",
+			name:   "name field with wildcard",
 			fields: []*Field{f.wildcardResourceField},
 			want:   f.wildcardResourceField,
 		},
 		{
-			name:   "P3: other field with exact match",
+			name:   "name field with exact match",
+			fields: []*Field{f.resourceNameField},
+			want:   f.resourceNameField,
+		},
+		{
+			name:   "name field with empty singular match",
+			fields: []*Field{f.resourceNameNoSingularField},
+			want:   f.resourceNameNoSingularField,
+		},		
+		{
+			name:   "other field with exact match",
 			fields: []*Field{f.resourceOtherNameField},
 			want:   f.resourceOtherNameField,
 		},
 		{
-			name:   "P1 wins over P3",
+			name:   "name field with exact match wins over other field with exact match",
 			fields: []*Field{f.resourceNameField, f.resourceOtherNameField},
 			want:   f.resourceNameField,
 		},
 		{
-			name:   "P2 wins over P3",
+			name:   "name field with wildcard wins over other field with exact match",
 			fields: []*Field{f.wildcardResourceField, f.resourceOtherNameField},
 			want:   f.wildcardResourceField,
 		},
@@ -815,9 +813,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 			fields: []*Field{f.nonExistentResourceField},
 			want:   nil,
 		},
-	}
-
-	for _, tc := range tests {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
 			got := findBestResourceFieldBySingular(msg, f.model.State.ResourceByType, targetSingular)
