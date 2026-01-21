@@ -80,17 +80,25 @@ func Read(serviceConfigPath string) (*Service, error) {
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
 // ServiceConfig and Title may be empty strings if not found or not configured.
 func Find(googleapisDir, path string) (*API, error) {
-	result := &API{Path: path}
-
-	// Check allowlist for overrides
+	var result *API
 	for _, api := range APIs {
-		if api.Path == path {
-			result.ServiceConfig = api.ServiceConfig
-			result.Title = api.Title
-			result.Discovery = api.Discovery
-			result.OpenAPI = api.OpenAPI
+		// The path for OpenAPI and discovery documents are in
+		// googleapis/google-cloud-rust and
+		// googleapis/discovery-artifact-manager, respectively.
+		// The api.Path field is that API path in googleapis/googleapis.
+		if api.Path == path || api.OpenAPI == path || api.Discovery == path {
+			// Create a copy of the API struct to allow modifications to
+			// result.ServiceConfig without affecting the APIs slice.
+			r := api
+			result = &r
 			break
 		}
+	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/3627): all APIs
+	// should be listed in the allowlist
+	if result == nil {
+		return &API{Path: path}, nil
 	}
 
 	// If service config is overridden in allowlist, use it
@@ -99,7 +107,7 @@ func Find(googleapisDir, path string) (*API, error) {
 	}
 
 	// Search filesystem for service config
-	dir := filepath.Join(googleapisDir, path)
+	dir := filepath.Join(googleapisDir, result.Path)
 	_, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -129,7 +137,7 @@ func Find(googleapisDir, path string) (*API, error) {
 			return nil, err
 		}
 		if isServiceConfig {
-			result.ServiceConfig = filepath.Join(path, name)
+			result.ServiceConfig = filepath.Join(result.Path, name)
 			return result, nil
 		}
 	}
