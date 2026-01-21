@@ -1,9 +1,9 @@
-# Onboarding to Librarian
+# Onboarding to Legacy Librarian
 
 Welcome! This guide is intended to help you get started with the Librarian
 project and begin contributing effectively.
 
-## Step 1: Setup Environment to Run Librarian
+## Step 1: Setup Environment to Run Legacy Librarian
 
 `librarian` requires:
 
