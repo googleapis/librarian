@@ -22,31 +22,22 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Create creates a cargo workspace, runs the provided generation function, and
-// validates the library.
-//
-// TODO(https://github.com/googleapis/librarian/issues/3219): generateFn can be
-// removed once sidekick.rustGenerate is deprecated.
-func Create(ctx context.Context, outputDir string, generateFn func(context.Context) error) error {
+// create creates a cargo workspace skeleton.
+func create(ctx context.Context, outputDir string) error {
 	if err := command.Run(ctx, "cargo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
 	if err := command.Run(ctx, "taplo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
 	}
-	if err := command.Run(ctx, "git", "--version"); err != nil {
-		return fmt.Errorf("got an error trying to run `git --version`, the instructions on https://github.com/git-guides/install-git may solve this problem: %w", err)
-	}
 	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "taplo", "fmt", "Cargo.toml"); err != nil {
-		return err
-	}
-	if err := generateFn(ctx); err != nil {
-		return err
-	}
+	return command.Run(ctx, "taplo", "fmt", "Cargo.toml")
+}
 
+// validate does formatting and other post generation tasks to validate the library.
+var validate = func(ctx context.Context, outputDir string) error {
 	manifestPath := path.Join(outputDir, "Cargo.toml")
 	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {
 		return err
@@ -57,11 +48,5 @@ func Create(ctx context.Context, outputDir string, generateFn func(context.Conte
 	if err := command.RunWithEnv(ctx, map[string]string{"RUSTDOCFLAGS": "-D warnings"}, "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings"); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, "git", "add", outputDir); err != nil {
-		return err
-	}
-	return command.Run(ctx, "git", "add", "Cargo.lock", "Cargo.toml")
+	return command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings")
 }

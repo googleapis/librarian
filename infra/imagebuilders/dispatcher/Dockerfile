@@ -46,6 +46,9 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o automation ./cmd/legacyautomation
 
 FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY --from=builder /src/automation .
