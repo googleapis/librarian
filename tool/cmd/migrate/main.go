@@ -364,12 +364,10 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			lib.DescriptionOverride = descriptionOverride
 		}
 
-		if roots, ok := sidekick.Source["roots"]; ok {
-			lib.Rust.Roots = strToSlice(roots, false)
-		}
 		includeList := sidekick.Source["include-list"]
 		includeIds := sidekick.Source["include-ids"]
 		skippedIds := sidekick.Source["skipped-ids"]
+		roots := sidekick.Source["roots"]
 
 		// Parse Rust-specific configuration from sidekick.toml codec section
 		disabledRustdocWarnings := sidekick.Codec["disabled-rustdoc-warnings"]
@@ -428,6 +426,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			TemplateOverride:          templateOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
+			Roots:                     strToSlice(roots, false),
 			DefaultFeatures:           strToSlice(defaultFeatures, false),
 			IncludeList:               strToSlice(includeList, false),
 			IncludedIds:               strToSlice(includeIds, false),
