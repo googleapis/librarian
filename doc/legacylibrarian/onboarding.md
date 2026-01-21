@@ -59,15 +59,15 @@ Read our guide on
 [How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md), for
 [project-specific guidance on writing idiomatic, consistent Go code.
 
-## Step 6: Running Librarian
+## Step 6: Running Legacy Librarian
 
-Currently running librarian from main is unstable, please use the v0.7.0 tag when running 
+Currently running legacy librarian from main is unstable, please use the v0.8.0 tag when running 
 locally.
 
 ### Using `go run`
 
 ```sh
-$ go run github.com/googleapis/librarian/cmd/librarian@v0.7.0
+$ go run github.com/googleapis/librarian/cmd/legacylibrarian@v0.8.0
 ```
 
 ### Using `go install`
@@ -76,7 +76,7 @@ To install a binary locally, and then run it (assuming the `$GOBIN` directory
 is in your path):
 
 ```sh
-$ go install github.com/googleapis/librarian/cmd/librarian@v0.7.0
+$ go install github.com/googleapis/librarian/cmd/legacylibrarian@v0.8.0
 ```
 
 
@@ -93,7 +93,7 @@ when running `librarian` you can use `gh auth token` to obtain an access
 token and set it in the environment variable just for that invocation:
 
 ```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) librarian ...
+$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrarian ...
 ```
 
 The examples below assume include this for convenience; if you have
@@ -102,17 +102,17 @@ set the environment variable in a different way, just remove the
 
 ### Repository and library options
 
-`librarian` can either operate on a local clone of the library repo,
+`legacylibrarian` can either operate on a local clone of the library repo,
 or it can clone the repo itself. Unless you have a particular need to use a
 local clone (e.g. to the impact of a local change) we recommend you let
-`librarian` clone the library repo itself, using the `-repo` flag - just specify
+`legacylibrarian` clone the library repo itself, using the `-repo` flag - just specify
 the GitHub repository, e.g.
 `-repo=https://github.com/googleapis/google-cloud-go`. This avoids any
 risk of unwanted local changes accidentally becoming part of a generation/release
 pull request.
 
 If you wish to use a local clone, you can specify the directory in the `-repo`
-flag, or just run `librarian` from the root directory of the clone and omit the
+flag, or just run `legacylibrarian` from the root directory of the clone and omit the
 `-repo` flag entirely.
 
 The commands in this guide are specifically for generating/releasing a single
