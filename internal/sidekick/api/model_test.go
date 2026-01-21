@@ -723,7 +723,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 	f := newAIPTestFixture()
 	targetType := f.resource.Type
 
-	for _, tc := []struct {
+	for _, tc := range []struct {
 		name   string
 		fields []*Field
 		want   *Field
@@ -737,7 +737,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 			name:   "name field with exact match",
 			fields: []*Field{f.resourceNameField},
 			want:   f.resourceNameField,
-		},		
+		},
 		{
 			name:   "other field with exact match",
 			fields: []*Field{f.resourceOtherNameField},
@@ -773,7 +773,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 	f := newAIPTestFixture()
 	targetSingular := f.resource.Singular
 
-	for _, tc := []struct {
+	for _, tc := range []struct {
 		name   string
 		fields []*Field
 		want   *Field
@@ -792,7 +792,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 			name:   "name field with empty singular match",
 			fields: []*Field{f.resourceNameNoSingularField},
 			want:   f.resourceNameNoSingularField,
-		},		
+		},
 		{
 			name:   "other field with exact match",
 			fields: []*Field{f.resourceOtherNameField},

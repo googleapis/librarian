@@ -476,16 +476,13 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 		if f.ResourceReference == nil {
 			continue
 		}
-
 		if f.ResourceReference.Type == "*" && f.Name == "name" {
 			return f
 		}
-
 		resource, ok := resourcesByType[f.ResourceReference.Type]
 		if !ok {
 			continue
 		}
-
 		if resource.Type == targetType {
 			if f.Name == "name" {
 				return f
@@ -512,16 +509,13 @@ func findBestResourceFieldBySingular(message *Message, resourcesByType map[strin
 		if f.ResourceReference == nil {
 			continue
 		}
-
 		if f.ResourceReference.Type == "*" && f.Name == "name" {
 			return f
 		}
-
 		resource, ok := resourcesByType[f.ResourceReference.Type]
 		if !ok {
 			continue
 		}
-
 		actualSingular := strings.ToLower(resource.Singular)
 		matchesTarget := actualSingular == targetSingular
 		if f.Name == "name" && (matchesTarget || actualSingular == "") {
@@ -531,7 +525,6 @@ func findBestResourceFieldBySingular(message *Message, resourcesByType map[strin
 			bestField = f
 		}
 	}
-
 	return bestField
 }
 
