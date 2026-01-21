@@ -38,7 +38,7 @@ steps:
         echo "xtrace is ON. Exiting to avoid credentials showing up in logs."
         exit 1
       fi
-      sed -n 's/.* - name: \"\(.*\)".*/\1/p' internal/automation/prod/repositories.yaml | while read -r repo_name; do
+      sed -n 's/.* - name: \"\(.*\)".*/\1/p' internal/legacylibrarian/legacyautomation/prod/repositories.yaml | while read -r repo_name; do
         echo "Validating credentials for repository: ${repo_name}"
         GITHUB_TOKEN=$(gcloud secrets versions access latest --secret="${repo_name}-github-token")
         if [[ -z "${GITHUB_TOKEN}" ]]; then

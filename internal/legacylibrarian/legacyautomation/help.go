@@ -16,7 +16,7 @@ package legacyautomation
 
 const (
 	automationLongHelp = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
-any repository listed in internal/automation/prod/repositories.yaml.`
+any repository listed in internal/legacylibrarian/legacyautomation/prod/repositories.yaml.`
 	generateLongHelp = `The generate command triggers a Cloud Build job that runs librarian generate command for every
 repository onboarded to Librarian generate automation.`
 	publishLongHelp = `The publish-release command triggers a Cloud Build job that runs librarian release tag command

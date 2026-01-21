@@ -19,7 +19,7 @@ steps:
       - |
         wget https://github.com/mikefarah/yq/releases/download/v4.48.2/yq_linux_amd64 -O /usr/local/bin/yq
         chmod +x /usr/local/bin/yq
-        yq -r '.librarian-image-sha' internal/automation/prod/repositories.yaml > /workspace/librarian_image_sha.txt
+        yq -r '.librarian-image-sha' internal/legacylibrarian/legacyautomation/prod/repositories.yaml > /workspace/librarian_image_sha.txt
         cat /workspace/librarian_image_sha.txt
   - id: test-generate
     name: gcr.io/cloud-builders/docker
