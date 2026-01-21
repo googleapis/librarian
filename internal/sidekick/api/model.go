@@ -465,9 +465,11 @@ func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
 // a resource of the given type.
 //
 // We prioritize the matches as follows:
-// 1. The field name is "name" and explicitly references the output resource type.
-// 2. The field name is "name" and has a wildcard reference type "*".
-// 3. The field explicitly references the output resource type.
+// 1. The field name is "name" and
+//   - has a wildcard reference type "*" or
+//   - explicitly references the output resource type.
+//
+// 2. The field explicitly references the output resource type.
 func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
 	var bestField *Field
 	for _, f := range message.Fields {
@@ -498,10 +500,12 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 // a resource with the given singular name.
 //
 // We prioritize the matches as follows:
-// 1. The field name is "name" and the resource singular name matches maybeSingular.
-// 2. The field name is "name" and the resource singular name is empty.
-// 3. The field name is "name" and has a wildcard reference type "*".
-// 4. The resource singular name matches maybeSingular.
+// 1. The field name is "name" and
+//   - has a wildcard reference type "*" or
+//   - the resource singular name matches maybeSingular or
+//   - the resource singular name is empty.
+//
+// 2. The resource singular name matches maybeSingular.
 func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
 	var bestField *Field
 	for _, f := range message.Fields {
