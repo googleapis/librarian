@@ -22,6 +22,12 @@ import (
 	"os/exec"
 )
 
+// Verbose controls whether commands are printed to stderr before execution.
+//
+// TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
+// config.
+var Verbose bool
+
 // Run executes a program (with arguments) and captures any error output. It is a
 // convenience wrapper around RunWithEnv.
 func Run(ctx context.Context, command string, arg ...string) error {
@@ -38,6 +44,9 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 		for k, v := range env {
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
+	}
+	if Verbose {
+		fmt.Fprintf(os.Stdout, "%s\n", cmd.String())
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%v: %v\n%s", cmd, err, output)

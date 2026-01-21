@@ -15,7 +15,9 @@
 package command
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -107,4 +109,59 @@ func TestGetExecutablePath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVerbose(t *testing.T) {
+	t.Cleanup(func() {
+		Verbose = false
+	})
+
+	for _, test := range []struct {
+		name    string
+		verbose bool
+	}{
+		{"verbose enabled", true},
+		{"verbose disabled", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			Verbose = test.verbose
+
+			got := captureStdout(t, func() {
+				if err := Run(t.Context(), "go", "version"); err != nil {
+					t.Fatal(err)
+				}
+			})
+
+			if test.verbose {
+				if !strings.Contains(got, "go version") {
+					t.Errorf("expected stdout to contain command, got: %q", got)
+				}
+			} else {
+				if got != "" {
+					t.Errorf("expected empty stdout, got: %q", got)
+				}
+			}
+		})
+	}
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	stdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = stdout
+	})
+
+	fn()
+	w.Close()
+
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatal(err)
+	}
+	return buf.String()
 }
