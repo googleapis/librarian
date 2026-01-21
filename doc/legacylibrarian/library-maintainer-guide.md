@@ -109,7 +109,7 @@ In the common case where you just need to expedite generation, `librarian` can
 create the generation PR for you:
 
 ```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrariangenerate -push \
+$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrarian generate -push \
   -repo=https://github.com/googleapis/google-cloud-go -library=bigtable
 ```
 
