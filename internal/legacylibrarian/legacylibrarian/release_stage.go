@@ -289,7 +289,8 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 	var derivedNextVersion string
 	var err error
 	if r.branch == "preview" {
-		stableVersion, err := r.loadStableLibraryVersion(ctx, libraryID)
+		var stableVersion string
+		stableVersion, err = r.loadStableLibraryVersion(ctx, libraryID)
 		if err != nil {
 			return "", err
 		}
