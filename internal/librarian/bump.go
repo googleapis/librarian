@@ -412,12 +412,14 @@ func copyLibraryVersions(dirtyCfg, pristineCfg *config.Config) (*config.Config, 
 	if len(dirtyCfg.Libraries) != len(pristineCfg.Libraries) {
 		return nil, fmt.Errorf("mismatched library count after bump: %d != %d", len(dirtyCfg.Libraries), len(pristineCfg.Libraries))
 	}
-	// We don't care about whether or not the libraries are in the same order,
-	// so we just find them by name.
+	pristineLibraries := make(map[string]*config.Library, len(pristineCfg.Libraries))
+	for _, library := range pristineCfg.Libraries {
+		pristineLibraries[library.Name] = library
+	}
 	for _, dirtyLibrary := range dirtyCfg.Libraries {
-		pristineLibrary, err := libraryByName(pristineCfg, dirtyLibrary.Name)
-		if err != nil {
-			return nil, err
+		pristineLibrary, ok := pristineLibraries[dirtyLibrary.Name]
+		if !ok {
+			return nil, fmt.Errorf("library %q not found in pristine config", dirtyLibrary.Name)
 		}
 		pristineLibrary.Version = dirtyLibrary.Version
 	}
