@@ -132,7 +132,7 @@ $ git checkout -b test-api-changes
 $ git commit -a -m "Test API changes"
 $ cd ../google-cloud-go
 $ git checkout -b test-generated-api-changes
-$ legacylibrariangenerate -api-source=../googleapis -library=bigtable
+$ legacylibrarian generate -api-source=../googleapis -library=bigtable
 ```
 
 ## Using automated releases
