@@ -365,7 +365,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if roots, ok := sidekick.Source["roots"]; ok {
-			lib.Roots = strToSlice(roots, false)
+			lib.Rust.Roots = strToSlice(roots, false)
 		}
 		includeList := sidekick.Source["include-list"]
 		includeIds := sidekick.Source["include-ids"]

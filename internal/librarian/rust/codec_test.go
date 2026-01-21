@@ -50,6 +50,7 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "minimal config",
 			library: &config.Library{
 				Name: "google-cloud-storage",
+				Rust: &config.RustCrate{},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/storage/v1",
