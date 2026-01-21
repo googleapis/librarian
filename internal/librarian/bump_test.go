@@ -926,6 +926,119 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 	}
 }
 
+func TestCloneConfig(t *testing.T) {
+	// Deliberately using libraries for testing as that involves a pointer;
+	// a shallow clone would make the test fail.
+	original := &config.Config{
+		Libraries: []*config.Library{
+			{Name: sample.Lib1Name, Version: "1.0.0"},
+			{Name: sample.Lib2Name, Version: "1.2.0"},
+		},
+	}
+	clone, err := cloneConfig(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(original, clone); diff != "" {
+		t.Errorf("mismatch in clone (-want +got):\n%s", diff)
+	}
+	original.Libraries[0].Version = "1.1.0"
+	if diff := cmp.Diff("1.0.0", clone.Libraries[0].Version); diff != "" {
+		t.Errorf("mismatch in clone.Libraries[0] after modifying original (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopyLibraryVersions(t *testing.T) {
+	dirty := &config.Config{
+		Language: languageFake,
+		Libraries: []*config.Library{
+			{Name: sample.Lib1Name, Version: "1.1.0", CopyrightYear: "dirty"},
+			{Name: sample.Lib2Name, Version: "1.2.0"},
+		},
+	}
+	pristine := &config.Config{
+		Language: languageRust,
+		Libraries: []*config.Library{
+			{Name: sample.Lib1Name, Version: "1.0.0", CopyrightYear: "clean"},
+			{Name: sample.Lib2Name, Version: "1.2.0"},
+		},
+	}
+	pristine, err := copyLibraryVersions(dirty, pristine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(languageRust, pristine.Language); diff != "" {
+		t.Errorf("mismatch in pristine.Language (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("clean", pristine.Libraries[0].CopyrightYear); diff != "" {
+		t.Errorf("mismatch in pristine.Libraries[0].CopyrightYear (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff("1.1.0", pristine.Libraries[0].Version); diff != "" {
+		t.Errorf("mismatch in pristine.Libraries[0].Version after modifying original (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopyLibraryVersions_Error(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		dirtyCfg    *config.Config
+		pristineCfg *config.Config
+	}{
+		{
+			name: "library deleted in dirty",
+			dirtyCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+				},
+			},
+			pristineCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			},
+		},
+		{
+			name: "library added in dirty",
+			dirtyCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+					{Name: "AddedLibrary"},
+				},
+			},
+			pristineCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			},
+		},
+		{
+			name: "library renamed in dirty",
+			dirtyCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "RenamedLibrary", Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			},
+			pristineCfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: sample.Lib1Name, Version: "1.0.0"},
+					{Name: sample.Lib2Name, Version: "1.2.0"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := copyLibraryVersions(test.dirtyCfg, test.pristineCfg)
+			if err == nil {
+				t.Errorf("copyLibraryVersions(): expected error; got none")
+			}
+		})
+	}
+}
+
 func writeReadmeAndCommit(t *testing.T, newContent string) {
 	writeFileAndCommit(t, testhelper.ReadmeFile, []byte(newContent), "Modified readme")
 }

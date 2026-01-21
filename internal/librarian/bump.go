@@ -101,6 +101,10 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return errors.Join(errNoYaml, err)
 	}
+	pristineCfg, err := cloneConfig(cfg)
+	if err != nil {
+		return err
+	}
 	gitExe := "git"
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
@@ -155,7 +159,11 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	if err := postBump(ctx, cfg); err != nil {
 		return err
 	}
-	return RunTidyOnConfig(ctx, cfg)
+	pristineCfg, err = copyLibraryVersions(cfg, pristineCfg)
+	if err != nil {
+		return err
+	}
+	return RunTidyOnConfig(ctx, pristineCfg)
 }
 
 func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
@@ -383,4 +391,35 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string
 		candidateCommit = commit
 	}
 	return "", errReleaseCommitNotFound
+}
+
+// cloneConfig creates a deep clone of the specified configuration, such
+// that the returned configuration is entirely independent of the original
+// one. (Changes to either will not be reflected in the other.)
+func cloneConfig(cfg *config.Config) (*config.Config, error) {
+	bytes, err := yaml.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return yaml.Unmarshal[config.Config](bytes)
+}
+
+// copyLibraryVersions copies the version (and only the version) of
+// every library from dirtyCfg to pristineCfg, so that we can save just
+// the version number changes. The function returns an error if the two
+// configurations do not have the same set of libraries (by name).
+func copyLibraryVersions(dirtyCfg, pristineCfg *config.Config) (*config.Config, error) {
+	if len(dirtyCfg.Libraries) != len(pristineCfg.Libraries) {
+		return nil, fmt.Errorf("mismatched library count after bump: %d != %d", len(dirtyCfg.Libraries), len(pristineCfg.Libraries))
+	}
+	// We don't care about whether or not the libraries are in the same order,
+	// so we just find them by name.
+	for _, dirtyLibrary := range dirtyCfg.Libraries {
+		pristineLibrary, err := libraryByName(pristineCfg, dirtyLibrary.Name)
+		if err != nil {
+			return nil, err
+		}
+		pristineLibrary.Version = dirtyLibrary.Version
+	}
+	return pristineCfg, nil
 }
