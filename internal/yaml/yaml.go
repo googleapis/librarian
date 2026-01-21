@@ -80,21 +80,33 @@ func Read[T any](path string) (*T, error) {
 // Write marshals a value to YAML, formats it with yamlfmt, adds a copyright header
 // and writes it to a file. It keeps the original year, defaults to current if cannot find one.
 func Write(path string, v any) error {
-	year := time.Now().Year()
-	if existing, err := os.ReadFile(path); err == nil {
-		if match := yearRegex.FindSubmatch(existing); len(match) > 1 {
-			if y, err := strconv.Atoi(string(match[1])); err == nil {
-				year = y
-			}
-		}
-	}
-
+	year := extractYear(path, time.Now().Year())
 	data, err := Marshal(v)
 	if err != nil {
 		return err
 	}
 	data = append([]byte(Header(year)), data...)
 	return os.WriteFile(path, data, 0644)
+}
+
+// extractYear attempts to find a copyright year in the existing file.
+// It returns the defaultYear if anything fails (file missing, no match, etc.)
+func extractYear(path string, defaultYear int) int {
+	existing, err := os.ReadFile(path)
+	if err != nil {
+		return defaultYear
+	}
+
+	match := yearRegex.FindSubmatch(existing)
+	if len(match) < 2 {
+		return defaultYear
+	}
+
+	if y, err := strconv.Atoi(string(match[1])); err == nil {
+		return y
+	}
+
+	return defaultYear
 }
 
 // format runs yamlfmt on the given YAML content and returns the formatted output.
