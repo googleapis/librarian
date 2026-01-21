@@ -2,13 +2,13 @@
 
 This guide is task-oriented, specifically for core/handwritten/hybrid library
 maintainers. See the
-[generated CLI documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
+[generated CLI documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/legacylibrarian)
 for a more comprehensive list of commands and flags.
 
 For libraries onboarded to automation, please see [automation section below](#using-automated-releases).
 
 This guide uses the term Librarian (capital L, regular font) for the overall
-Librarian system, and `librarian` (lower case L, code font) for the CLI.
+Librarian system, and `legacylibrarian` (lower case L, code font) for the CLI.
 
 ## Internal support (Googlers)
 
@@ -19,7 +19,7 @@ for appropriate ways of obtaining more support.
 
 See [Setup Environment to Run Librarian](onboarding.md#step-1-setup-environment-to-run-librarian).
 
-## Running `librarian`
+## Running `legacylibrarian`
 
 See [Running Librarian](onboarding.md#step-6-running-librarian).
 
@@ -28,7 +28,7 @@ See [Running Librarian](onboarding.md#step-6-running-librarian).
 The release process consists of four steps (at a high level; there are more
 details which aren't relevant to this guide):
 
-1. Creating a release PR using `librarian`
+1. Creating a release PR using `legacylibrarian`
 2. Reviewing/merging the release PR
 3. Creating a tag for the commit created by the merged release PR
 4. Running a release job (to build, test, publish) on the tagged commit
@@ -44,11 +44,11 @@ remainder of this section are about step 1.
 ### Hands-off release PR creation
 
 If you are reasonably confident that the release notes won't need editing, the
-simplest way to initiate a release is to ask `librarian` to create the release
+simplest way to initiate a release is to ask `legacylibrarian` to create the release
 PR for you:
 
 ```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) librarian release stage -push \
+$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrarian release stage -push \
   -repo=https://github.com/googleapis/google-cloud-go -library=bigtable
 ```
 
@@ -60,7 +60,7 @@ commits (e.g. for a prerelease or a patch), you can use the `-library-version`
 flag:
 
 ```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) librarian release stage -push \
+$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrarian release stage -push \
   -repo=https://github.com/googleapis/google-cloud-go -library=bigtable \
   -library-version=1.2.3
 ```
@@ -78,7 +78,7 @@ then create the pull request yourself:
 2. Create a new branch for the release (e.g. `git checkout -b release-bigtable-1.2.3`)
 3. Run `librarian`, specifying `-library-version` if you want/need to, as above:
   ```sh
-  $ librarian release stage -library=bigtable -library-version=1.2.3
+  $ legacylibrarianrelease stage -library=bigtable -library-version=1.2.3
   ```
 4. Note the line of the `librarian` output near the end, which tells you where
   it has written a `pr-body.txt` file (split by key below, but all on one line
@@ -109,7 +109,7 @@ In the common case where you just need to expedite generation, `librarian` can
 create the generation PR for you:
 
 ```sh
-$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) librarian generate -push \
+$ LIBRARIAN_GITHUB_TOKEN=$(gh auth token) legacylibrariangenerate -push \
   -repo=https://github.com/googleapis/google-cloud-go -library=bigtable
 ```
 
@@ -132,7 +132,7 @@ $ git checkout -b test-api-changes
 $ git commit -a -m "Test API changes"
 $ cd ../google-cloud-go
 $ git checkout -b test-generated-api-changes
-$ librarian generate -api-source=../googleapis -library=bigtable
+$ legacylibrariangenerate -api-source=../googleapis -library=bigtable
 ```
 
 ## Using automated releases
