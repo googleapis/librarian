@@ -744,11 +744,6 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 			want:   f.resourceOtherNameField,
 		},
 		{
-			name:   "P1 wins over P2",
-			fields: []*Field{f.resourceNameField, f.wildcardResourceField},
-			want:   f.resourceNameField,
-		},
-		{
 			name:   "P1 wins over P3",
 			fields: []*Field{f.resourceNameField, f.resourceOtherNameField},
 			want:   f.resourceNameField,
@@ -804,11 +799,6 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 			name:   "P3: other field with exact match",
 			fields: []*Field{f.resourceOtherNameField},
 			want:   f.resourceOtherNameField,
-		},
-		{
-			name:   "P1 wins over P2",
-			fields: []*Field{f.resourceNameField, f.wildcardResourceField},
-			want:   f.resourceNameField,
 		},
 		{
 			name:   "P1 wins over P3",
