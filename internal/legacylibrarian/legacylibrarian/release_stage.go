@@ -289,8 +289,7 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 	var derivedNextVersion string
 	var err error
 	if r.branch == "preview" {
-		var stableVersion string
-		stableVersion, err = r.loadStableLibraryVersion(ctx, libraryID)
+		stableVersion, err := r.loadStableLibraryVersion(ctx, libraryID)
 		if err != nil {
 			return "", err
 		}
@@ -326,7 +325,9 @@ func (r *stageRunner) loadStableLibraryVersion(ctx context.Context, libraryID st
 	mainLibState := mainState.LibraryByID(libraryID)
 	if mainLibState == nil {
 		// Library not configured for generation on main branch.
-		// Note this should not happen for the life of this code.
+		// This can happen if the library is new and only exists on the preview
+		// branch.
+		// Fallback to "0.0.0" as the stable version.
 		return "0.0.0", nil
 	}
 	return mainLibState.Version, nil
