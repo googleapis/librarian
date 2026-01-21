@@ -50,6 +50,7 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "minimal config",
 			library: &config.Library{
 				Name: "google-cloud-storage",
+				Rust: &config.RustCrate{},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/storage/v1",
@@ -75,7 +76,9 @@ func TestToSidekickConfig(t *testing.T) {
 				Name:         "google-cloud-storage",
 				Version:      "0.1.0",
 				ReleaseLevel: "preview",
-				Roots:        []string{"googleapis"},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/storage/v1",
@@ -102,7 +105,9 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:          "google-cloud-storage",
 				CopyrightYear: "2024",
-				Roots:         []string{"googleapis"},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/storage/v1",
@@ -181,8 +186,9 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:        "google-cloud-storage",
 				SkipPublish: true,
-				Roots:       []string{"googleapis"},
-				Rust:        &config.RustCrate{},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/storage/v1",
@@ -379,7 +385,9 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
-				Roots:               []string{"googleapis", "discovery"},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis", "discovery"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/compute/v1",
@@ -405,7 +413,9 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "secretmanager-openapi-v1",
 				SpecificationFormat: "openapi",
-				Roots:               []string{"googleapis"},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/secretmanager/v1",
@@ -430,7 +440,9 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
-				Roots:               []string{"googleapis", "discovery", "showcase"},
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis", "discovery", "showcase"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/compute/v1",
@@ -564,7 +576,6 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
-				Roots:               []string{"googleapis", "discovery"},
 				Rust: &config.RustCrate{
 					Discovery: &config.RustDiscovery{
 						OperationID: ".google.cloud.compute.v1.Operation",
@@ -583,6 +594,7 @@ func TestToSidekickConfig(t *testing.T) {
 							},
 						},
 					},
+					Roots: []string{"googleapis", "discovery"},
 				},
 			},
 			channel: &config.Channel{
@@ -624,8 +636,10 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with protobuf and conformance",
 			library: &config.Library{
-				Name:  "google-cloud-vision-v1",
-				Roots: []string{"googleapis", "protobuf-src", "conformance"},
+				Name: "google-cloud-vision-v1",
+				Rust: &config.RustCrate{
+					Roots: []string{"googleapis", "protobuf-src", "conformance"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "google/cloud/vision/v1",
@@ -650,8 +664,10 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with showcase as source",
 			library: &config.Library{
-				Name:  "google-cloud-showcase",
-				Roots: []string{"showcase"},
+				Name: "google-cloud-showcase",
+				Rust: &config.RustCrate{
+					Roots: []string{"showcase"},
+				},
 			},
 			channel: &config.Channel{
 				Path: "schema/google/showcase/v1beta1",
@@ -793,8 +809,8 @@ func TestToSidekickConfig(t *testing.T) {
 			}
 
 			// Determine which directories need to be created based on test.library.Roots
-			if test.library.Roots != nil {
-				for _, root := range test.library.Roots {
+			if test.library.Rust != nil && test.library.Rust.Roots != nil {
+				for _, root := range test.library.Rust.Roots {
 					switch root {
 					case "discovery":
 						if test.channel != nil && test.channel.Path != "" {

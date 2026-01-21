@@ -317,12 +317,16 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 
 func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
 	source := make(map[string]string)
-	if len(library.Roots) == 0 && sources.Googleapis != "" {
+	if library.Rust == nil {
+		library.Rust = &config.RustCrate{}
+	}
+
+	if len(library.Rust.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
 		source["googleapis-root"] = sources.Googleapis
 		source["roots"] = "googleapis"
 	} else {
-		source["roots"] = strings.Join(library.Roots, ",")
+		source["roots"] = strings.Join(library.Rust.Roots, ",")
 		rootMap := map[string]struct {
 			path string
 			key  string
@@ -333,7 +337,7 @@ func addLibraryRoots(library *config.Library, sources *Sources) map[string]strin
 			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
 			"conformance":  {path: sources.Conformance, key: "conformance-root"},
 		}
-		for _, root := range library.Roots {
+		for _, root := range library.Rust.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
 				source[r.key] = r.path
 			}

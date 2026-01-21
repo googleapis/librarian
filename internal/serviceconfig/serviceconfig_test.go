@@ -97,11 +97,11 @@ func TestFind(t *testing.T) {
 			},
 		},
 		{
-			name:    "not found",
-			channel: "google/cloud/compute/v1",
+			name:    "not service config has title override",
+			channel: "google/cloud/orgpolicy/v1",
 			want: &API{
-				Path:      "google/cloud/compute/v1",
-				Discovery: "discoveries/compute.v1.json",
+				Path:  "google/cloud/orgpolicy/v1",
+				Title: "Organization Policy Types",
 			},
 		},
 		{
@@ -113,11 +113,29 @@ func TestFind(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "override",
+			name:    "service config override",
 			channel: "google/cloud/aiplatform/v1/schema/predict/instance",
 			want: &API{
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+			},
+		},
+		{
+			name:    "openapi",
+			channel: "testdata/secretmanager_openapi_v1.json",
+			want: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
+				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		{
+			name:    "discovery",
+			channel: "discoveries/compute.v1.json",
+			want: &API{
+				Path:          "google/cloud/compute/v1",
+				Discovery:     "discoveries/compute.v1.json",
+				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 			},
 		},
 	} {

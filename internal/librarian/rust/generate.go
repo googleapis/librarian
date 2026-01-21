@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -55,8 +56,23 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err != nil {
 		return err
 	}
+	exists := true
+	if _, err := os.Stat(library.Output); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to stat output directory %q: %w", library.Output, err)
+		}
+		exists = false
+	}
+	if !exists {
+		if err := create(ctx, library.Output); err != nil {
+			return err
+		}
+	}
 	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
+	}
+	if !exists {
+		validate(ctx, library.Output)
 	}
 	return nil
 }
