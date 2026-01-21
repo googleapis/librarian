@@ -78,7 +78,7 @@ then create the pull request yourself:
 2. Create a new branch for the release (e.g. `git checkout -b release-bigtable-1.2.3`)
 3. Run `librarian`, specifying `-library-version` if you want/need to, as above:
   ```sh
-  $ legacylibrarianrelease stage -library=bigtable -library-version=1.2.3
+  $ legacylibrarian release stage -library=bigtable -library-version=1.2.3
   ```
 4. Note the line of the `librarian` output near the end, which tells you where
   it has written a `pr-body.txt` file (split by key below, but all on one line
