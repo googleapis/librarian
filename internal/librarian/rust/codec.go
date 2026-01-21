@@ -317,6 +317,10 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 
 func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
 	source := make(map[string]string)
+	if library.Rust == nil {
+		library.Rust = &config.RustCrate{}
+	}
+
 	if len(library.Rust.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
 		source["googleapis-root"] = sources.Googleapis

@@ -468,6 +468,7 @@ func TestToSidekickConfig(t *testing.T) {
 			name: "with title override",
 			library: &config.Library{
 				Name: "google-cloud-apps-script-type-gmail",
+				Rust: &config.RustCrate{},
 			},
 			channel: &config.Channel{
 				Path: "google/apps/script/type/gmail",
