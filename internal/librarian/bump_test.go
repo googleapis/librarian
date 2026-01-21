@@ -38,7 +38,7 @@ import (
 // rather than an ambiguous empty string.
 const testUnusedStringParam = ""
 
-func TestReleaseCommand(t *testing.T) {
+func TestBumpCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -51,7 +51,7 @@ func TestReleaseCommand(t *testing.T) {
 	}{
 		{
 			name:        "library name",
-			args:        []string{"librarian", "release", sample.Lib1Name},
+			args:        []string{"librarian", "bump", sample.Lib1Name},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -63,7 +63,7 @@ func TestReleaseCommand(t *testing.T) {
 		},
 		{
 			name:        "library name and explicit version",
-			args:        []string{"librarian", "release", sample.Lib1Name, "--version=1.2.3"},
+			args:        []string{"librarian", "bump", sample.Lib1Name, "--version=1.2.3"},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -75,7 +75,7 @@ func TestReleaseCommand(t *testing.T) {
 		},
 		{
 			name: "all flag all have changes",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			cfg:  sample.Config(),
 			withChanges: []string{
 				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
@@ -91,7 +91,7 @@ func TestReleaseCommand(t *testing.T) {
 		},
 		{
 			name:        "all flag 1 has changes",
-			args:        []string{"librarian", "release", "--all"},
+			args:        []string{"librarian", "bump", "--all"},
 			cfg:         sample.Config(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			wantCfg: func() *config.Config {
@@ -103,7 +103,7 @@ func TestReleaseCommand(t *testing.T) {
 		},
 		{
 			name:        "preview library released",
-			args:        []string{"librarian", "release", sample.Lib1Name},
+			args:        []string{"librarian", "bump", sample.Lib1Name},
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 			cfg:         sample.Config(),
 			previewCfg:  sample.PreviewConfig(),
@@ -116,7 +116,7 @@ func TestReleaseCommand(t *testing.T) {
 		},
 		{
 			name: "all preview libraries released",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			withChanges: []string{
 				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
 				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
@@ -177,7 +177,7 @@ func TestReleaseCommand(t *testing.T) {
 	}
 }
 
-func TestReleaseCommand_Error(t *testing.T) {
+func TestBumpCommand_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -189,34 +189,34 @@ func TestReleaseCommand_Error(t *testing.T) {
 	}{
 		{
 			name:    "no args",
-			args:    []string{"librarian", "release"},
+			args:    []string{"librarian", "bump"},
 			wantErr: errMissingLibraryOrAllFlag,
 		},
 		{
 			name:    "library name and all flag",
-			args:    []string{"librarian", "release", "foo", "--all"},
+			args:    []string{"librarian", "bump", "foo", "--all"},
 			wantErr: errBothLibraryAndAllFlag,
 		},
 		{
 			name:    "version flag and all flag",
-			args:    []string{"librarian", "release", "--version=1.2.3", "--all"},
+			args:    []string{"librarian", "bump", "--version=1.2.3", "--all"},
 			wantErr: errBothVersionAndAllFlag,
 		},
 		{
 			name:    "missing librarian yaml file",
-			args:    []string{"librarian", "release", "--all"},
+			args:    []string{"librarian", "bump", "--all"},
 			wantErr: errNoYaml,
 		},
 		{
 			name:    "local repo is dirty",
-			args:    []string{"librarian", "release", "--all"},
+			args:    []string{"librarian", "bump", "--all"},
 			cfg:     sample.Config(),
 			dirty:   true,
 			wantErr: git.ErrGitStatusUnclean,
 		},
 		{
 			name: "release config empty",
-			args: []string{"librarian", "release", "--all"},
+			args: []string{"librarian", "bump", "--all"},
 			cfg: func() *config.Config {
 				c := sample.Config()
 
@@ -297,7 +297,7 @@ func TestLibraryByName(t *testing.T) {
 	}
 }
 
-func TestReleaseLibrary(t *testing.T) {
+func TestBumpLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
@@ -359,9 +359,9 @@ func TestReleaseLibrary(t *testing.T) {
 
 			targetLibCfg := targetCfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := releaseLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
+			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride, "", nil)
 			if err != nil {
-				t.Fatalf("releaseLibrary() error = %v", err)
+				t.Fatalf("bumpLibrary() error = %v", err)
 			}
 			if targetLibCfg.Version != test.wantVersion {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
@@ -371,7 +371,7 @@ func TestReleaseLibrary(t *testing.T) {
 	}
 }
 
-func TestReleaseAll(t *testing.T) {
+func TestBumpAll(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
@@ -439,7 +439,7 @@ func TestReleaseAll(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			err := releaseAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
+			err := bumpAll(t.Context(), targetCfg, sinceTag, "git", "", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -453,7 +453,7 @@ func TestReleaseAll(t *testing.T) {
 	}
 }
 
-func TestPostRelease(t *testing.T) {
+func TestPostBump(t *testing.T) {
 	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
 	for _, test := range []struct {
 		name    string
@@ -508,9 +508,9 @@ func TestPostRelease(t *testing.T) {
 				test.setup()
 			}
 
-			err := postRelease(t.Context(), test.cfg)
+			err := postBump(t.Context(), test.cfg)
 			if (err != nil) != test.wantErr {
-				t.Errorf("postRelease() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("postBump() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

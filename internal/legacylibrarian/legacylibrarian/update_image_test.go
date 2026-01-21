@@ -90,14 +90,15 @@ func TestNewUpdateImageRunner(t *testing.T) {
 		{
 			name: "empty API source",
 			cfg: &legacyconfig.Config{
-				API:            "some/api",
-				APISource:      "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
-				APISourceDepth: 1,
-				Branch:         "test-branch",
-				Repo:           newTestGitRepo(t).GetDir(),
-				WorkRoot:       t.TempDir(),
-				Image:          "gcr.io/test/test-image",
-				CommandName:    updateImageCmdName,
+				API:             "some/api",
+				APISource:       "https://github.com/googleapis/googleapis", // This will trigger the clone of googleapis
+				APISourceBranch: "master",
+				APISourceDepth:  1,
+				Branch:          "test-branch",
+				Repo:            newTestGitRepo(t).GetDir(),
+				WorkRoot:        t.TempDir(),
+				Image:           "gcr.io/test/test-image",
+				CommandName:     updateImageCmdName,
 			},
 		},
 		{

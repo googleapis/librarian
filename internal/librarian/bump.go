@@ -56,20 +56,20 @@ var (
 	}
 )
 
-func releaseCommand() *cli.Command {
+func bumpCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "release",
+		Name:      "bump",
 		Usage:     "update versions and prepare release artifacts",
-		UsageText: "librarian release [library] [--all] [--version=<version>]",
-		Description: `Release updates version numbers and prepares the files needed for a new release.
+		UsageText: "librarian bump [library] [--all] [--version=<version>]",
+		Description: `bump updates version numbers and prepares the files needed for a new release.
 
 If a library name is given, only that library is updated. The --all flag updates every
 library in the workspace. When a library is specified explicitly, the --version flag can
 be used to override the new version.
 
 Examples:
-  librarian release <library>           # update version for one library
-  librarian release --all               # update versions for all libraries`,
+  librarian bump <library>           # update version for one library
+  librarian bump --all               # update versions for all libraries`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
@@ -80,11 +80,11 @@ Examples:
 				Usage: "specific version to update to; not valid with --all",
 			},
 		},
-		Action: runRelease,
+		Action: runBump,
 	}
 }
 
-func runRelease(ctx context.Context, cmd *cli.Command) error {
+func runBump(ctx context.Context, cmd *cli.Command) error {
 	all := cmd.Bool("all")
 	libraryName := cmd.Args().First()
 	versionOverride := cmd.String("version")
@@ -135,7 +135,7 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if all {
-		if err = releaseAll(ctx, cfg, lastTag, gitExe, googleapisDir, rustSources); err != nil {
+		if err = bumpAll(ctx, cfg, lastTag, gitExe, googleapisDir, rustSources); err != nil {
 			return err
 		}
 	} else {
@@ -147,18 +147,18 @@ func runRelease(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if err = releaseLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride, googleapisDir, rustSources); err != nil {
+		if err = bumpLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride, googleapisDir, rustSources); err != nil {
 			return err
 		}
 	}
 
-	if err := postRelease(ctx, cfg); err != nil {
+	if err := postBump(ctx, cfg); err != nil {
 		return err
 	}
 	return RunTidyOnConfig(ctx, cfg)
 }
 
-func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
+func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string, googleapisDir string, rustSources *rust.Sources) error {
 	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func releaseAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string,
 			return err
 		}
 		if shouldRelease(library, filesChanged) {
-			if err := releaseLibrary(ctx, cfg, library, lastTag, gitExe, "", googleapisDir, rustSources); err != nil {
+			if err := bumpLibrary(ctx, cfg, library, lastTag, gitExe, "", googleapisDir, rustSources); err != nil {
 				return err
 			}
 		}
@@ -193,7 +193,7 @@ func shouldRelease(library *config.Library, filesChanged []string) bool {
 	return false
 }
 
-func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride, googleapisDir string, rustSources *rust.Sources) error {
+func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride, googleapisDir string, rustSources *rust.Sources) error {
 	// If the language doesn't have bespoke versioning options, a default
 	// [semver.DeriveNextOptions] instance is returned.
 	opts := languageVersioningOptions[cfg.Language]
@@ -204,7 +204,7 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 
 	switch cfg.Language {
 	case languageFake:
-		return fakeReleaseLibrary(libConfig, nextVersion)
+		return fakeBumpLibrary(libConfig, nextVersion)
 	case languageRust:
 		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, libConfig.Output+"/Cargo.toml")
 		if err != nil {
@@ -213,7 +213,7 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		if !release {
 			return nil
 		}
-		if err := rust.ReleaseLibrary(libConfig, nextVersion); err != nil {
+		if _, err := rust.Bump(libConfig, nextVersion); err != nil {
 			return err
 		}
 		if _, err := generateLibrary(ctx, cfg, libConfig.Name, googleapisDir, rustSources); err != nil {
@@ -224,12 +224,12 @@ func releaseLibrary(ctx context.Context, cfg *config.Config, libConfig *config.L
 		}
 		return nil
 	default:
-		return fmt.Errorf("language not supported for release: %q", cfg.Language)
+		return fmt.Errorf("language not supported for bump: %q", cfg.Language)
 	}
 }
 
-// postRelease performs post-release cleanup and maintenance tasks after libraries have been processed.
-func postRelease(ctx context.Context, cfg *config.Config) error {
+// postBump performs post version bump cleanup and maintenance tasks after libraries have been processed.
+func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case languageRust:
 		cargoExe := "cargo"

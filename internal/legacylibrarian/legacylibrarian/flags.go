@@ -33,6 +33,12 @@ func addFlagAPISource(fs *flag.FlagSet, cfg *legacyconfig.Config) {
 Can be a remote URL or a local file path.`)
 }
 
+func addFlagAPISourceBranch(fs *flag.FlagSet, cfg *legacyconfig.Config) {
+	fs.StringVar(&cfg.APISourceBranch, "api-source-branch", "master",
+		`The target branch of the API specification repository to checkout.
+Can only be used with a remote -api-source.`)
+}
+
 func addFlagBuild(fs *flag.FlagSet, cfg *legacyconfig.Config) {
 	fs.BoolVar(&cfg.Build, "build", false,
 		`If true, Librarian will build each generated library by invoking the
