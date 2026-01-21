@@ -20,9 +20,6 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
-
-	"github.com/googleapis/librarian/internal/semver"
-	"github.com/pelletier/go-toml/v2"
 )
 
 // CrateInfo contains the package information.
@@ -35,47 +32,6 @@ type CrateInfo struct {
 // Cargo is a wrapper for CrateInfo for parsing Cargo.toml files.
 type Cargo struct {
 	Package *CrateInfo `toml:"package"`
-}
-
-// updateManifest bumps the version of a crate if it has changed since the last tag.
-func updateManifest(gitExe, lastTag, manifest string) ([]string, error) {
-	needsBump, err := ManifestVersionNeedsBump(gitExe, lastTag, manifest)
-	if err != nil {
-		return nil, err
-	}
-	if !needsBump {
-		return nil, nil
-	}
-	contents, err := os.ReadFile(manifest)
-	if err != nil {
-		return nil, err
-	}
-	info := Cargo{
-		Package: &CrateInfo{
-			Publish: true,
-		},
-	}
-	if err := toml.Unmarshal(contents, &info); err != nil {
-		return nil, err
-	}
-	if !info.Package.Publish {
-		return nil, nil
-	}
-	newVersion, err := semver.DeriveNext(semver.Minor, info.Package.Version,
-		semver.DeriveNextOptions{
-			BumpVersionCore:       true,
-			DowngradePreGAChanges: true,
-		})
-	if err != nil {
-		return nil, err
-	}
-	if err := updateCargoVersion(manifest, newVersion); err != nil {
-		return nil, err
-	}
-	if err := updateSidekickConfig(manifest, newVersion); err != nil {
-		return nil, err
-	}
-	return []string{info.Package.Name}, nil
 }
 
 // updateCargoVersion updates the version in a Cargo.toml file. It uses a
