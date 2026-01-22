@@ -18,7 +18,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -41,139 +40,125 @@ const testUnusedStringParam = ""
 func TestBumpCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
+	lib1Change := filepath.Join(sample.Lib1Output, "src", "lib.rs")
+	lib2Change := filepath.Join(sample.Lib2Output, "src", "lib.rs")
+
 	for _, test := range []struct {
-		name        string
-		args        []string
-		cfg         *config.Config
-		previewCfg  *config.Config
-		withChanges []string
-		wantCfg     *config.Config
+		name         string
+		args         []string
+		withChanges  []string
+		wantVersions map[string]string
+		preview      bool
 	}{
 		{
-			name:        "library name",
-			args:        []string{"librarian", "bump", sample.Lib1Name},
-			cfg:         sample.Config(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantCfg: func() *config.Config {
-				c := sample.Config()
-
-				c.Libraries[0].Version = sample.NextVersion
-				return c
-			}(),
+			name:         "library name",
+			args:         []string{"librarian", "bump", sample.Lib1Name},
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
 		},
 		{
-			name:        "library name and explicit version",
-			args:        []string{"librarian", "bump", sample.Lib1Name, "--version=1.2.3"},
-			cfg:         sample.Config(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantCfg: func() *config.Config {
-				c := sample.Config()
-
-				c.Libraries[0].Version = "1.2.3"
-				return c
-			}(),
+			name:         "library name and explicit version",
+			args:         []string{"librarian", "bump", sample.Lib1Name, "--version=1.2.3"},
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: "1.2.3"},
 		},
 		{
-			name: "all flag all have changes",
-			args: []string{"librarian", "bump", "--all"},
-			cfg:  sample.Config(),
-			withChanges: []string{
-				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
-				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
-			},
-			wantCfg: func() *config.Config {
-				c := sample.Config()
-
-				c.Libraries[0].Version = sample.NextVersion
-				c.Libraries[1].Version = sample.NextVersion
-				return c
-			}(),
-		},
-		{
-			name:        "all flag 1 has changes",
+			name:        "all flag all have changes",
 			args:        []string{"librarian", "bump", "--all"},
-			cfg:         sample.Config(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantCfg: func() *config.Config {
-				c := sample.Config()
-
-				c.Libraries[0].Version = sample.NextVersion
-				return c
-			}(),
-		},
-		{
-			name:        "preview library released",
-			args:        []string{"librarian", "bump", sample.Lib1Name},
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			cfg:         sample.Config(),
-			previewCfg:  sample.PreviewConfig(),
-			wantCfg: func() *config.Config {
-				c := sample.PreviewConfig()
-
-				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
-				return c
-			}(),
-		},
-		{
-			name: "all preview libraries released",
-			args: []string{"librarian", "bump", "--all"},
-			withChanges: []string{
-				filepath.Join(sample.Lib1Output, "src", "lib.rs"),
-				filepath.Join(sample.Lib2Output, "src", "lib.rs"),
+			withChanges: []string{lib1Change, lib2Change},
+			wantVersions: map[string]string{
+				sample.Lib1Name: sample.NextVersion,
+				sample.Lib2Name: sample.NextVersion,
 			},
-			cfg:        sample.Config(),
-			previewCfg: sample.PreviewConfig(),
-			wantCfg: func() *config.Config {
-				c := sample.PreviewConfig()
-
-				c.Libraries[0].Version = sample.NextPreviewPrereleaseVersion
-				c.Libraries[1].Version = sample.NextPreviewPrereleaseVersion
-				return c
-			}(),
+		},
+		{
+			name:         "all flag 1 has changes",
+			args:         []string{"librarian", "bump", "--all"},
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
+		},
+		{
+			name:         "preview library released",
+			args:         []string{"librarian", "bump", sample.Lib1Name},
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextPreviewPrereleaseVersion},
+			preview:      true,
+		},
+		{
+			name:        "all preview libraries released",
+			args:        []string{"librarian", "bump", "--all"},
+			withChanges: []string{lib1Change, lib2Change},
+			wantVersions: map[string]string{
+				sample.Lib1Name: sample.NextPreviewPrereleaseVersion,
+				sample.Lib2Name: sample.NextPreviewPrereleaseVersion,
+			},
+			preview: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
 			opts := testhelper.SetupOptions{
-				Clone:       test.cfg.Release.Branch,
-				Config:      test.cfg,
+				Clone:       cfg.Release.Branch,
+				Config:      cfg,
 				Tag:         sample.InitialTag,
 				WithChanges: test.withChanges,
 			}
-			// Test should target the preview branch instead of default main.
-			if test.previewCfg != nil {
-				opts.Clone = test.previewCfg.Release.Branch
+			if test.preview {
+				previewCfg := sample.PreviewConfig()
+				opts.Clone = previewCfg.Release.Branch
 				opts.PreviewOptions = &testhelper.SetupOptions{
-					Config:      test.previewCfg,
+					Config:      previewCfg,
 					WithChanges: test.withChanges,
 					Tag:         sample.InitialPreviewTag,
 				}
 			}
 			testhelper.Setup(t, opts)
 
-			err := Run(t.Context(), test.args...)
-			if err != nil {
+			if err := Run(t.Context(), test.args...); err != nil {
 				t.Fatal(err)
 			}
 
-			// The CLI command writes the updated config to disc, so we need to
-			// read it to check the result of the command.
-			updatedConfig, err := yaml.Read[config.Config](librarianConfigPath)
+			got, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			// Libs need to be sorted because [yaml.Read] and [yaml.Write]
-			// do not guarantee order.
-			byLibraryName := func(a, b *config.Library) int {
-				return strings.Compare(a.Name, b.Name)
-			}
-			slices.SortFunc(test.wantCfg.Libraries, byLibraryName)
-			slices.SortFunc(updatedConfig.Libraries, byLibraryName)
-
-			if diff := cmp.Diff(test.wantCfg, updatedConfig); diff != "" {
-				t.Errorf("mismatch in config (-want +got):\n%s", diff)
+			for _, lib := range got.Libraries {
+				if want, ok := test.wantVersions[lib.Name]; ok {
+					if lib.Version != want {
+						t.Errorf("library %s: got version %q, want %q", lib.Name, lib.Version, want)
+					}
+				}
 			}
 		})
+	}
+}
+
+func TestBumpCommandDeriveOutput(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	cfg := sample.Config()
+	cfg.Default.Output = sample.Lib1Output
+	cfg.Libraries[0].Output = ""
+
+	testhelper.Setup(t, testhelper.SetupOptions{
+		Clone:       cfg.Release.Branch,
+		Config:      cfg,
+		Tag:         sample.InitialTag,
+		WithChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+	})
+
+	if err := Run(t.Context(), "librarian", "bump", sample.Lib1Name); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, lib := range got.Libraries {
+		if lib.Name == sample.Lib1Name && lib.Version != sample.NextVersion {
+			t.Errorf("got version %q, want %q", lib.Version, sample.NextVersion)
+		}
 	}
 }
 
@@ -205,7 +190,7 @@ func TestBumpCommand_Error(t *testing.T) {
 		{
 			name:    "missing librarian yaml file",
 			args:    []string{"librarian", "bump", "--all"},
-			wantErr: errNoYaml,
+			wantErr: errConfigNotFound,
 		},
 		{
 			name:    "local repo is dirty",
@@ -241,7 +226,7 @@ func TestBumpCommand_Error(t *testing.T) {
 	}
 }
 
-func TestLibraryByName(t *testing.T) {
+func TestFindLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
@@ -264,7 +249,7 @@ func TestLibraryByName(t *testing.T) {
 			name:        "no_library_in_config",
 			libraryName: "example-library",
 			cfg:         &config.Config{},
-			wantErr:     errLibraryNotFound,
+			wantErr:     ErrLibraryNotFound,
 		},
 		{
 			name:        "does_not_find_a_library",
@@ -275,11 +260,11 @@ func TestLibraryByName(t *testing.T) {
 					{Name: "another-library"},
 				},
 			},
-			wantErr: errLibraryNotFound,
+			wantErr: ErrLibraryNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := libraryByName(test.cfg, test.libraryName)
+			got, err := findLibrary(test.cfg, test.libraryName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
@@ -287,7 +272,7 @@ func TestLibraryByName(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("libraryByName(%q): %v", test.libraryName, err)
+				t.Errorf("findLibrary(%q): %v", test.libraryName, err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {

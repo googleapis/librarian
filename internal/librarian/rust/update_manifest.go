@@ -47,7 +47,7 @@ func updateCargoVersion(path, newVersion string) error {
 	lines := strings.Split(string(contents), "\n")
 	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
 	if idx == -1 {
-		return fmt.Errorf("expected a line starting with `version ` in %v", lines)
+		return fmt.Errorf("no version field found in %q", path)
 	}
 	// The number of spaces may seem weird. They match the number of spaces in
 	// the mustache template.
@@ -55,9 +55,9 @@ func updateCargoVersion(path, newVersion string) error {
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 
-// ManifestVersionNeedsBump checks if the manifest version needs to be bumped.
+// shouldBumpManifestVersion checks if the manifest version needs to be bumped.
 // It returns false if the version has already been updated since the last tag.
-func ManifestVersionNeedsBump(gitExe, lastTag, manifest string) (bool, error) {
+func shouldBumpManifestVersion(gitExe, lastTag, manifest string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
 	cmd := exec.Command(gitExe, "diff", delta, "--", manifest)
 	cmd.Dir = "."

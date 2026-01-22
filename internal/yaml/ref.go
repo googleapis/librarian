@@ -39,5 +39,5 @@ func (r *RefString) UnmarshalYAML(node *yaml.Node) error {
 		*r = RefString(node.Value)
 		return nil
 	}
-	return fmt.Errorf("unexpected tag for RefString: %s", node.Tag)
+	return fmt.Errorf("unexpected tag for RefString: %q", node.Tag)
 }

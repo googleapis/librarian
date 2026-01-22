@@ -44,11 +44,11 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
-	if len(library.Channels) != 1 {
+	if len(library.APIs) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
-	sidekickConfig, err := toSidekickConfig(library, library.Channels[0], sources)
+	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	exists := true
 	if _, err := os.Stat(library.Output); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to stat output directory %q: %w", library.Output, err)
+			return fmt.Errorf("cannot access output directory %q: %w", library.Output, err)
 		}
 		exists = false
 	}
@@ -97,11 +97,11 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 	for _, module := range library.Rust.Modules {
 		sidekickConfig, err := moduleToSidekickConfig(library, module, sources)
 		if err != nil {
-			return fmt.Errorf("module %s: %w", module.Output, err)
+			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
 		model, err := parser.CreateModel(sidekickConfig)
 		if err != nil {
-			return fmt.Errorf("module %s: %w", module.Output, err)
+			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
@@ -111,10 +111,10 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 		case "rust+prost":
 			err = rust_prost.Generate(ctx, model, module.Output, sidekickConfig)
 		default:
-			err = fmt.Errorf("unknown language: %s", sidekickConfig.General.Language)
+			err = fmt.Errorf("language %q not supported", sidekickConfig.General.Language)
 		}
 		if err != nil {
-			return fmt.Errorf("module %s: %w", module.Output, err)
+			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
 	}
 	return nil
@@ -161,9 +161,9 @@ func defaultLibraryName(channel string) string {
 	return strings.ReplaceAll(channel, "/", "-")
 }
 
-// DeriveChannelPath derives a channel path from a library name.
+// DeriveAPIPath derives a channel path from a library name.
 // For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
-func DeriveChannelPath(name string) string {
+func DeriveAPIPath(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
 
@@ -182,7 +182,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
-		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
+		return fmt.Errorf("module %q not found in library %q", output, library.Name)
 	}
 	storageConfig, err := moduleToSidekickConfig(library, storageModule, sources)
 	if err != nil {
@@ -196,7 +196,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	output = "src/storage/src/generated/gapic_control"
 	controlModule := findModuleByOutput(library, "src/storage/src/generated/gapic_control")
 	if controlModule == nil {
-		return fmt.Errorf("could not find module with output %s in library %s", output, library.Name)
+		return fmt.Errorf("module %q not found in library %q", output, library.Name)
 	}
 	controlConfig, err := moduleToSidekickConfig(library, controlModule, sources)
 	if err != nil {

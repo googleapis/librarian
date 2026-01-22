@@ -284,232 +284,19 @@ func TestIsSimpleMethod(t *testing.T) {
 	}
 }
 
-func TestIsAIPStandard(t *testing.T) {
-	// Setup for a valid Get operation
-	resourceType := "google.cloud.secretmanager.v1/Secret"
-	resourceNameField := &Field{
-		ResourceReference: &ResourceReference{
-			Type: resourceType,
-		},
-	}
-	resource := &Resource{
-		Type:     resourceType,
-		Singular: "secret",
-	}
-	output := &Message{
-		Resource: resource,
-	}
-	validGetMethod := &Method{
-		Name:       "GetSecret",
-		InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-		OutputType: output,
-	}
-
-	validDeleteMethod := &Method{
-		Name:         "DeleteSecret",
-		InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{{Name: "name", ResourceReference: &ResourceReference{Type: resourceType}}}},
-		ReturnsEmpty: true,
-		Model: &API{
-			ResourceDefinitions: []*Resource{resource},
-			State: &APIState{
-				ResourceByType: map[string]*Resource{
-					resourceType: resource,
-				},
-			},
-		},
-	}
-
-	// Setup for an invalid Get operation (e.g., wrong name)
-	invalidGetMethod := &Method{
-		Name:       "ListSecrets", // Not a Get method
-		InputType:  &Message{Name: "ListSecretsRequest"},
-		OutputType: output,
-	}
-
-	testCases := []struct {
-		name   string
-		method *Method
-		want   bool
-	}{
-		{
-			name:   "standard get method returns true",
-			method: validGetMethod,
-			want:   true,
-		},
-		{
-			name:   "standard delete method returns true",
-			method: validDeleteMethod,
-			want:   true,
-		},
-		{
-			name:   "non-standard method returns false",
-			method: invalidGetMethod,
-			want:   false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.method.IsAIPStandard(); got != tc.want {
-				t.Errorf("IsAIPStandard() = %v, want %v", got, tc.want)
-			}
-		})
-	}
+type aipTestFixture struct {
+	resource                         *Resource
+	resourceWithoutSingular          *Resource
+	resourceNameField                *Field
+	resourceOtherNameField           *Field
+	resourceNameNoSingularField      *Field
+	resourceOtherNameNoSingularField *Field
+	nonExistentResourceField         *Field
+	wildcardResourceField            *Field
+	model                            *API
 }
 
-func TestAIPStandardGetInfo(t *testing.T) {
-	resourceType := "google.cloud.secretmanager.v1/Secret"
-	resourceNameField := &Field{
-		ResourceReference: &ResourceReference{
-			Type: resourceType,
-		},
-	}
-	resource := &Resource{
-		Type:     resourceType,
-		Singular: "secret",
-	}
-	output := &Message{
-		Resource: resource,
-	}
-	testCases := []struct {
-		name   string
-		method *Method
-		want   *AIPStandardGetInfo
-	}{
-		{
-			name: "valid get operation",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType: output,
-			},
-			want: &AIPStandardGetInfo{
-				ResourceNameRequestField: resourceNameField,
-			},
-		},
-		{
-			name: "valid get operation with missing singular name on resource",
-			method: &Method{
-				Name:      "GetSecret",
-				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType: &Message{
-					Resource: &Resource{Type: resourceType, Singular: ""},
-				},
-			},
-			want: &AIPStandardGetInfo{
-				ResourceNameRequestField: resourceNameField,
-			},
-		},
-		{
-			name: "method name is incorrect",
-			method: &Method{
-				Name:       "Get",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType: output,
-			},
-			want: nil,
-		},
-		{
-			name: "request type name is incorrect",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetRequest", Fields: []*Field{resourceNameField}},
-				OutputType: output,
-			},
-			want: nil,
-		},
-		{
-			name: "returns empty",
-			method: &Method{
-				Name:         "GetSecret",
-				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType:   output,
-				ReturnsEmpty: true,
-			},
-			want: nil,
-		},
-		{
-			name: "output is not a resource",
-			method: &Method{
-				Name:      "GetSecret",
-				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType: &Message{
-					Resource: nil,
-				},
-			},
-			want: nil,
-		},
-		{
-			name: "request does not contain resource name field",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest"},
-				OutputType: output,
-			},
-			want: nil,
-		},
-		{
-			name: "pagination method is not a standard get operation",
-			method: &Method{
-				Name:       "GetSecret",
-				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType: output,
-				Pagination: &Field{},
-			},
-			want: nil,
-		},
-		{
-			name: "client streaming method is not a standard get operation",
-			method: &Method{
-				Name:                "GetSecret",
-				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType:          output,
-				ClientSideStreaming: true,
-			},
-			want: nil,
-		},
-		{
-			name: "server streaming method is not a standard get operation",
-			method: &Method{
-				Name:                "GetSecret",
-				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType:          output,
-				ServerSideStreaming: true,
-			},
-			want: nil,
-		},
-		{
-			name: "LRO method is not a standard get operation",
-			method: &Method{
-				Name:          "GetSecret",
-				InputType:     &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType:    output,
-				OperationInfo: &OperationInfo{},
-			},
-			want: nil,
-		},
-		{
-			name: "Discovery LRO method is not a standard get operation",
-			method: &Method{
-				Name:         "GetSecret",
-				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{resourceNameField}},
-				OutputType:   output,
-				DiscoveryLro: &DiscoveryLro{},
-			},
-			want: nil,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.method.AIPStandardGetInfo()
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardGetInfo() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestAIPStandardDeleteInfo(t *testing.T) {
+func newAIPTestFixture() *aipTestFixture {
 	resource := &Resource{
 		Type:     "google.cloud.secretmanager.v1/Secret",
 		Singular: "secret",
@@ -548,6 +335,13 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 	}
 
+	wildcardResourceField := &Field{
+		Name: "name",
+		ResourceReference: &ResourceReference{
+			Type: "*",
+		},
+	}
+
 	model := &API{
 		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
 		State: &APIState{
@@ -558,65 +352,320 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 		},
 	}
 
+	return &aipTestFixture{
+		resource:                         resource,
+		resourceWithoutSingular:          resourceWithoutSingular,
+		resourceNameField:                resourceNameField,
+		resourceOtherNameField:           resourceOtherNameField,
+		resourceNameNoSingularField:      resourceNameNoSingularField,
+		resourceOtherNameNoSingularField: resourceOtherNameNoSingularField,
+		nonExistentResourceField:         nonExistentResourceField,
+		wildcardResourceField:            wildcardResourceField,
+		model:                            model,
+	}
+}
+
+func TestIsAIPStandard(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Setup for a valid Get operation
+	validGetMethod := &Method{
+		Name:       "GetSecret",
+		InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+		OutputType: &Message{Resource: f.resource},
+		Model:      f.model,
+	}
+
+	validDeleteMethod := &Method{
+		Name:         "DeleteSecret",
+		InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+		ReturnsEmpty: true,
+		Model:        f.model,
+	}
+
+	// Setup for an invalid Get operation (e.g., wrong name)
+	invalidGetMethod := &Method{
+		Name:       "ListSecrets", // Not a Get method
+		InputType:  &Message{Name: "ListSecretsRequest"},
+		OutputType: &Message{Resource: f.resource},
+		Model:      f.model,
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "standard get method returns true",
+			method: validGetMethod,
+			want:   true,
+		},
+		{
+			name:   "standard delete method returns true",
+			method: validDeleteMethod,
+			want:   true,
+		},
+		{
+			name:   "non-standard method returns false",
+			method: invalidGetMethod,
+			want:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsAIPStandard(); got != tc.want {
+				t.Errorf("IsAIPStandard() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAIPStandardGetInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Helper to create an output message since Get needs it
+	output := &Message{
+		Resource: f.resource,
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardGetInfo
+	}{
+		{
+			name: "valid get operation with wildcard resource reference",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.wildcardResourceField}},
+				OutputType: output,
+				Model:      f.model,
+			},
+			want: &AIPStandardGetInfo{
+				ResourceNameRequestField: f.wildcardResourceField,
+			},
+		},
+		{
+			name: "valid get operation",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: output,
+				Model:      f.model,
+			},
+			want: &AIPStandardGetInfo{
+				ResourceNameRequestField: f.resourceNameField,
+			},
+		},
+		{
+			name: "valid get operation with missing singular name on resource",
+			method: &Method{
+				Name:      "GetSecret",
+				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
+				OutputType: &Message{
+					Resource: f.resourceWithoutSingular,
+				},
+				Model: f.model,
+			},
+			want: &AIPStandardGetInfo{
+				ResourceNameRequestField: f.resourceNameNoSingularField,
+			},
+		},
+		{
+			name: "method name is incorrect",
+			method: &Method{
+				Name:       "Get",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: output,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "request type name is incorrect",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: output,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "returns empty",
+			method: &Method{
+				Name:         "GetSecret",
+				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType:   output,
+				ReturnsEmpty: true,
+				Model:        f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "output is not a resource",
+			method: &Method{
+				Name:      "GetSecret",
+				InputType: &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: &Message{
+					Resource: nil,
+				},
+				Model: f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "request does not contain resource name field",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest"},
+				OutputType: output,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "pagination method is not a standard get operation",
+			method: &Method{
+				Name:       "GetSecret",
+				InputType:  &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: output,
+				Pagination: &Field{},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "client streaming method is not a standard get operation",
+			method: &Method{
+				Name:                "GetSecret",
+				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType:          output,
+				ClientSideStreaming: true,
+				Model:               f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "server streaming method is not a standard get operation",
+			method: &Method{
+				Name:                "GetSecret",
+				InputType:           &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType:          output,
+				ServerSideStreaming: true,
+				Model:               f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "LRO method is not a standard get operation",
+			method: &Method{
+				Name:          "GetSecret",
+				InputType:     &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType:    output,
+				OperationInfo: &OperationInfo{},
+				Model:         f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "Discovery LRO method is not a standard get operation",
+			method: &Method{
+				Name:         "GetSecret",
+				InputType:    &Message{Name: "GetSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType:   output,
+				DiscoveryLro: &DiscoveryLro{},
+				Model:        f.model,
+			},
+			want: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardGetInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardGetInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAIPStandardDeleteInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
 	testCases := []struct {
 		name   string
 		method *Method
 		want   *AIPStandardDeleteInfo
 	}{
 		{
+			name: "valid simple delete with wildcard resource reference",
+			method: &Method{
+				Name:         "DeleteSecret",
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.wildcardResourceField}},
+				ReturnsEmpty: true,
+				Model:        f.model,
+			},
+			want: &AIPStandardDeleteInfo{
+				ResourceNameRequestField: f.wildcardResourceField,
+			},
+		},
+		{
 			name: "valid simple delete",
 			method: &Method{
 				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
 				ReturnsEmpty: true,
-				Model:        model,
+				Model:        f.model,
 			},
 			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceNameField,
+				ResourceNameRequestField: f.resourceNameField,
 			},
 		},
 		{
 			name: "valid simple delete with missing singular name on resource",
 			method: &Method{
 				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameNoSingularField}},
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
 				ReturnsEmpty: true,
-				Model:        model,
+				Model:        f.model,
 			},
 			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceNameNoSingularField,
+				ResourceNameRequestField: f.resourceNameNoSingularField,
 			},
 		},
 		{
 			name: "valid lro delete",
 			method: &Method{
 				Name:          "DeleteSecret",
-				InputType:     &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
+				InputType:     &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
 				OperationInfo: &OperationInfo{},
-				Model:         model,
+				Model:         f.model,
 			},
 			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceNameField,
+				ResourceNameRequestField: f.resourceNameField,
 			},
 		},
 		{
 			name: "valid delete with other name matching singular",
 			method: &Method{
 				Name:         "DeleteSecret",
-				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceOtherNameField}},
+				InputType:    &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceOtherNameField}},
 				ReturnsEmpty: true,
-				Model:        model,
+				Model:        f.model,
 			},
 			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceOtherNameField,
+				ResourceNameRequestField: f.resourceOtherNameField,
 			},
 		},
 		{
 			name: "incorrect method name",
 			method: &Method{
 				Name:      "RemoveSecret",
-				InputType: &Message{Name: "DeleteSecretRequest", Fields: []*Field{resourceNameField}},
-				Model:     model,
+				InputType: &Message{Name: "DeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+				Model:     f.model,
 			},
 			want: nil,
 		},
@@ -624,8 +673,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			name: "incorrect request name",
 			method: &Method{
 				Name:      "DeleteSecret",
-				InputType: &Message{Name: "RemoveSecretRequest", Fields: []*Field{resourceNameField}},
-				Model:     model,
+				InputType: &Message{Name: "RemoveSecretRequest", Fields: []*Field{f.resourceNameField}},
+				Model:     f.model,
 			},
 			want: nil,
 		},
@@ -636,10 +685,10 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				InputType: &Message{
 					Name: "DeleteSecretRequest",
 					Fields: []*Field{
-						nonExistentResourceField,
+						f.nonExistentResourceField,
 					},
 				},
-				Model: model, // model's ResourceByType does not contain the nonexistent resource
+				Model: f.model, // model's ResourceByType does not contain the nonexistent resource
 			},
 			want: nil,
 		},
@@ -650,47 +699,13 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				InputType: &Message{
 					Name: "DeleteSecretRequest",
 					Fields: []*Field{
-						nonExistentResourceField,
-						resourceOtherNameNoSingularField,
+						f.nonExistentResourceField,
+						f.resourceOtherNameNoSingularField,
 					},
 				},
-				Model: model,
+				Model: f.model,
 			},
 			want: nil,
-		},
-		{
-			name: "priority: name field with matching singular wins over other field with matching singular",
-			method: &Method{
-				Name: "DeleteSecret",
-				InputType: &Message{
-					Name: "DeleteSecretRequest",
-					Fields: []*Field{
-						resourceOtherNameField,
-						resourceNameField,
-					},
-				},
-				Model: model,
-			},
-			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceNameField,
-			},
-		},
-		{
-			name: "priority: name field with empty singular wins over other field with matching singular",
-			method: &Method{
-				Name: "DeleteSecret",
-				InputType: &Message{
-					Name: "DeleteSecretRequest",
-					Fields: []*Field{
-						resourceOtherNameField,
-						resourceNameNoSingularField,
-					},
-				},
-				Model: model,
-			},
-			want: &AIPStandardDeleteInfo{
-				ResourceNameRequestField: resourceNameNoSingularField,
-			},
 		},
 	}
 
@@ -699,6 +714,111 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			got := tc.method.AIPStandardDeleteInfo()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("AIPStandardDeleteInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindBestResourceFieldByType(t *testing.T) {
+	f := newAIPTestFixture()
+	targetType := f.resource.Type
+
+	for _, tc := range []struct {
+		name   string
+		fields []*Field
+		want   *Field
+	}{
+		{
+			name:   "name field with wildcard",
+			fields: []*Field{f.wildcardResourceField},
+			want:   f.wildcardResourceField,
+		},
+		{
+			name:   "name field with exact match",
+			fields: []*Field{f.resourceNameField},
+			want:   f.resourceNameField,
+		},
+		{
+			name:   "other field with exact match",
+			fields: []*Field{f.resourceOtherNameField},
+			want:   f.resourceOtherNameField,
+		},
+		{
+			name:   "name field with exact match wins over other field with exact match",
+			fields: []*Field{f.resourceNameField, f.resourceOtherNameField},
+			want:   f.resourceNameField,
+		},
+		{
+			name:   "name field with wildcard wins over other field with exact match",
+			fields: []*Field{f.wildcardResourceField, f.resourceOtherNameField},
+			want:   f.wildcardResourceField,
+		},
+		{
+			name:   "no match",
+			fields: []*Field{f.nonExistentResourceField},
+			want:   nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := &Message{Fields: tc.fields}
+			got := findBestResourceFieldByType(msg, f.model.State.ResourceByType, targetType)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findBestResourceFieldByType() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindBestResourceFieldBySingular(t *testing.T) {
+	f := newAIPTestFixture()
+	targetSingular := f.resource.Singular
+
+	for _, tc := range []struct {
+		name   string
+		fields []*Field
+		want   *Field
+	}{
+		{
+			name:   "name field with wildcard",
+			fields: []*Field{f.wildcardResourceField},
+			want:   f.wildcardResourceField,
+		},
+		{
+			name:   "name field with exact match",
+			fields: []*Field{f.resourceNameField},
+			want:   f.resourceNameField,
+		},
+		{
+			name:   "name field with empty singular match",
+			fields: []*Field{f.resourceNameNoSingularField},
+			want:   f.resourceNameNoSingularField,
+		},
+		{
+			name:   "other field with exact match",
+			fields: []*Field{f.resourceOtherNameField},
+			want:   f.resourceOtherNameField,
+		},
+		{
+			name:   "name field with exact match wins over other field with exact match",
+			fields: []*Field{f.resourceNameField, f.resourceOtherNameField},
+			want:   f.resourceNameField,
+		},
+		{
+			name:   "name field with wildcard wins over other field with exact match",
+			fields: []*Field{f.wildcardResourceField, f.resourceOtherNameField},
+			want:   f.wildcardResourceField,
+		},
+		{
+			name:   "no match",
+			fields: []*Field{f.nonExistentResourceField},
+			want:   nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := &Message{Fields: tc.fields}
+			got := findBestResourceFieldBySingular(msg, f.model.State.ResourceByType, targetSingular)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findBestResourceFieldBySingular() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -329,7 +329,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		lib.Output = relativePath
 
 		// Add channels
-		lib.Channels = append(lib.Channels, &config.Channel{
+		lib.APIs = append(lib.APIs, &config.API{
 			Path: apiPath,
 		})
 
@@ -664,8 +664,8 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	for _, lib := range libraries {
 		// Get the API path for this library
 		apiPath := ""
-		if len(lib.Channels) > 0 {
-			apiPath = lib.Channels[0].Path
+		if len(lib.APIs) > 0 {
+			apiPath = lib.APIs[0].Path
 		}
 
 		// Derive expected library name from API path
@@ -678,7 +678,7 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
 				lib.Rust.NameOverrides != ""))
 		// Only include in libraries section if specific data needs to be retained
-		if !nameMatchesConvention || hasExtraConfig || len(lib.Channels) > 1 {
+		if !nameMatchesConvention || hasExtraConfig || len(lib.APIs) > 1 {
 			libCopy := *lib
 			libList = append(libList, &libCopy)
 		}

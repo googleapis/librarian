@@ -29,9 +29,9 @@ import (
 )
 
 var (
-	errLibraryAlreadyExists = errors.New("library requested to add already exists in config")
-	errMissingLibraryName   = errors.New("must provide library name as argument to add a new library")
-	errNoYaml               = errors.New("unable to read librarian.yaml")
+	errLibraryAlreadyExists = errors.New("library already exists in config")
+	errMissingLibraryName   = errors.New("must provide library name")
+	errConfigNotFound       = errors.New("librarian.yaml not found")
 )
 
 func addCommand() *cli.Command {
@@ -57,7 +57,7 @@ func addCommand() *cli.Command {
 func runAdd(ctx context.Context, name string, channel ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
-		return fmt.Errorf("%w: %v", errNoYaml, err)
+		return fmt.Errorf("%w: %w", errConfigNotFound, err)
 	}
 	// check for existing libraries, if it exists return an error
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
@@ -81,7 +81,7 @@ func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...str
 	}
 
 	for _, c := range channel {
-		lib.Channels = append(lib.Channels, &config.Channel{
+		lib.APIs = append(lib.APIs, &config.API{
 			Path: c,
 		})
 	}

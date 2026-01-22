@@ -47,27 +47,27 @@ type (
 func Read(serviceConfigPath string) (*Service, error) {
 	y, err := os.ReadFile(serviceConfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading service config [%s]: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("failed to read service config %q: %w", serviceConfigPath, err)
 	}
 
 	yamlData, err := yaml.Unmarshal[any](y)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing YAML [%s]: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("failed to parse YAML in %q: %w", serviceConfigPath, err)
 	}
 	j, err := json.Marshal(yamlData)
 	if err != nil {
-		return nil, fmt.Errorf("error converting YAML to JSON [%s]: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("failed to convert YAML to JSON in %q: %w", serviceConfigPath, err)
 	}
 
 	cfg := &Service{}
 	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(j, cfg); err != nil {
-		return nil, fmt.Errorf("error unmarshalling service config [%s]: %w", serviceConfigPath, err)
+		return nil, fmt.Errorf("failed to unmarshal service config %q: %w", serviceConfigPath, err)
 	}
 
 	// An API Service Config will always have a `name` so if it is not populated,
 	// it's an invalid config.
 	if cfg.GetName() == "" {
-		return nil, fmt.Errorf("missing name in service config file [%s]", serviceConfigPath)
+		return nil, fmt.Errorf("missing name in service config %q", serviceConfigPath)
 	}
 	return cfg, nil
 }

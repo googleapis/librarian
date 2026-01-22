@@ -23,7 +23,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, ch *config.Channel, sources *Sources) (*sidekickconfig.Config, error) {
+func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -233,7 +233,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	if module.Source != "" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
 		if err != nil {
-			return nil, fmt.Errorf("serviceconfig.Find(%s, %s): %w", sources.Googleapis, module.Source, err)
+			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
 		if api != nil && api.Title != "" {
 			source["title-override"] = api.Title

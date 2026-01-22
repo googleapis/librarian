@@ -126,6 +126,6 @@ func publish(ctx context.Context, cfg *config.Config, library string, execute bo
 	case languageFake:
 		return fakePublish(librariesToPublish, execute)
 	default:
-		return fmt.Errorf("publish not implemented for %q", cfg.Language)
+		return fmt.Errorf("%q does not support publish", cfg.Language)
 	}
 }

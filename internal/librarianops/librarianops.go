@@ -145,7 +145,7 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 	if err := os.Chdir(repoDir); err != nil {
-		return fmt.Errorf("failed to change directory to %s: %w", repoDir, err)
+		return fmt.Errorf("failed to change directory to %q: %w", repoDir, err)
 	}
 	defer os.Chdir(originalWD)
 

@@ -42,7 +42,7 @@ const (
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
-	errEmptySources            = errors.New("sources field is required in librarian.yaml: specify googleapis and/or discovery source commits")
+	errEmptySources            = errors.New("sources required in librarian.yaml")
 )
 
 func generateCommand() *cli.Command {
@@ -163,10 +163,10 @@ func defaultOutput(language, channel, defaultOut string) string {
 	}
 }
 
-func deriveChannelPath(language, name string) string {
+func deriveAPIPath(language, name string) string {
 	switch language {
 	case languageRust:
-		return rust.DeriveChannelPath(name)
+		return rust.DeriveAPIPath(name)
 	default:
 		return strings.ReplaceAll(name, "-", "/")
 	}
@@ -185,7 +185,7 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			return generate(ctx, cfg.Language, lib, googleapisDir, rustSources)
 		}
 	}
-	return nil, fmt.Errorf("library %q not found", libraryName)
+	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 }
 
 func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, rustSources *rust.Sources) (_ *config.Library, err error) {
@@ -211,16 +211,16 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
-			return nil, fmt.Errorf("library %s: %w", library.Name, err)
+			return nil, fmt.Errorf("library %q: %w", library.Name, err)
 		}
 		if err := cleanOutput(library.Output, keep); err != nil {
-			return nil, fmt.Errorf("library %s: %w", library.Name, err)
+			return nil, fmt.Errorf("library %q: %w", library.Name, err)
 		}
 		if err := rust.Generate(ctx, library, rustSources); err != nil {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("generate not implemented for %q", language)
+		return nil, fmt.Errorf("language %q does not support generation", language)
 	}
 	return library, nil
 }
@@ -281,7 +281,7 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 	case languageRust:
 		return rust.Format(ctx, library)
 	}
-	return fmt.Errorf("format not implemented for %q", language)
+	return fmt.Errorf("language %q does not support formatting", language)
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list
@@ -293,17 +293,17 @@ func cleanOutput(dir string, keep []string) error {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
-		return fmt.Errorf("failed to stat output directory %q: %w", dir, err)
+		return fmt.Errorf("cannot access output directory %q: %w", dir, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("output path %q is not a directory", dir)
+		return fmt.Errorf("%q is not a directory", dir)
 	}
 
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
 		path := filepath.Join(dir, k)
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("%s: file %q in keep list does not exist", dir, k)
+			return fmt.Errorf("keep file %q does not exist", k)
 		}
 		// Effectively get a canonical relative path. While in most cases
 		// this will be equal to k, it might not be - in particular,

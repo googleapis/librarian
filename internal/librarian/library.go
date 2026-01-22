@@ -88,21 +88,43 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
+// libraryOutput returns the output path for a library. If the library has an
+// explicit output path, it returns that. Otherwise, it computes the default
+// output path based on the channel path and default configuration.
+func libraryOutput(language string, lib *config.Library, defaults *config.Default) string {
+	if lib.Output != "" {
+		return lib.Output
+	}
+	if lib.Veneer {
+		// Veneers require explicit output, so return empty if not set.
+		return ""
+	}
+	channelPath := deriveAPIPath(language, lib.Name)
+	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
+		channelPath = lib.APIs[0].Path
+	}
+	defaultOut := ""
+	if defaults != nil {
+		defaultOut = defaults.Output
+	}
+	return defaultOutput(language, channelPath, defaultOut)
+}
+
 // prepareLibrary applies language-specific derivations and fills defaults.
 // For Rust libraries without an explicit output path, it derives the output
 // from the first channel path.
 func prepareLibrary(language string, lib *config.Library, defaults *config.Default, fillInDefaults bool) (*config.Library, error) {
-	if len(lib.Channels) == 0 {
+	if len(lib.APIs) == 0 {
 		// If no channels are specified, create an empty channel first
-		lib.Channels = append(lib.Channels, &config.Channel{})
+		lib.APIs = append(lib.APIs, &config.API{})
 	}
 
 	// The googleapis path of a veneer library lives in language-specific configurations,
 	// so we only need to derive the path for non-veneer libraries.
 	if !lib.Veneer {
-		for _, ch := range lib.Channels {
+		for _, ch := range lib.APIs {
 			if ch.Path == "" {
-				ch.Path = deriveChannelPath(language, lib.Name)
+				ch.Path = deriveAPIPath(language, lib.Name)
 			}
 		}
 	}
@@ -110,7 +132,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 		if lib.Veneer {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
-		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
+		lib.Output = defaultOutput(language, lib.APIs[0].Path, defaults.Output)
 	}
 	if fillInDefaults {
 		return fillDefaults(lib, defaults), nil

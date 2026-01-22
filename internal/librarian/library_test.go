@@ -249,49 +249,49 @@ func TestFillDefaults_Rust(t *testing.T) {
 
 func TestPrepareLibrary(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		language        string
-		output          string
-		veneer          bool
-		channels        []*config.Channel
-		wantOutput      string
-		wantErr         bool
-		wantChannelPath string
+		name        string
+		language    string
+		output      string
+		veneer      bool
+		channels    []*config.API
+		wantOutput  string
+		wantErr     bool
+		wantAPIPath string
 	}{
 		{
 			name:       "empty output derives path from channel",
 			language:   "rust",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated/cloud/secretmanager/v1",
 		},
 		{
 			name:       "explicit output keeps explicit path",
 			language:   "rust",
 			output:     "custom/output",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "custom/output",
 		},
 		{
 			name:       "empty output uses default for non-rust",
 			language:   "go",
-			channels:   []*config.Channel{{Path: "google/cloud/secretmanager/v1"}},
+			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated",
 		},
 		{
-			name:            "rust with no channels creates default and derives path",
-			language:        "rust",
-			channels:        nil,
-			wantOutput:      "src/generated/cloud/secretmanager/v1",
-			wantChannelPath: "google/cloud/secretmanager/v1",
+			name:        "rust with no channels creates default and derives path",
+			language:    "rust",
+			channels:    nil,
+			wantOutput:  "src/generated/cloud/secretmanager/v1",
+			wantAPIPath: "google/cloud/secretmanager/v1",
 		},
 		{
-			name:            "veneer rust with no channels does not derive path",
-			language:        "rust",
-			output:          "src/storage/test/v1",
-			veneer:          true,
-			channels:        nil,
-			wantOutput:      "src/storage/test/v1",
-			wantChannelPath: "",
+			name:        "veneer rust with no channels does not derive path",
+			language:    "rust",
+			output:      "src/storage/test/v1",
+			veneer:      true,
+			channels:    nil,
+			wantOutput:  "src/storage/test/v1",
+			wantAPIPath: "",
 		},
 		{
 			name:    "veneer without output returns error",
@@ -305,19 +305,19 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput: "src/storage",
 		},
 		{
-			name:            "rust lib without service config",
-			language:        "rust",
-			channels:        []*config.Channel{{Path: "google/cloud/orgpolicy/v1"}},
-			wantOutput:      "src/generated/cloud/orgpolicy/v1",
-			wantChannelPath: "google/cloud/orgpolicy/v1",
+			name:        "rust lib without service config",
+			language:    "rust",
+			channels:    []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
+			wantOutput:  "src/generated/cloud/orgpolicy/v1",
+			wantAPIPath: "google/cloud/orgpolicy/v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
-				Name:     "google-cloud-secretmanager-v1",
-				Output:   test.output,
-				Veneer:   test.veneer,
-				Channels: test.channels,
+				Name:   "google-cloud-secretmanager-v1",
+				Output: test.output,
+				Veneer: test.veneer,
+				APIs:   test.channels,
 			}
 			defaults := &config.Default{
 				Output: "src/generated",
@@ -335,10 +335,10 @@ func TestPrepareLibrary(t *testing.T) {
 			if got.Output != test.wantOutput {
 				t.Errorf("got output %q, want %q", got.Output, test.wantOutput)
 			}
-			if len(got.Channels) > 0 {
-				ch := got.Channels[0]
-				if test.wantChannelPath != "" && ch.Path != test.wantChannelPath {
-					t.Errorf("got channel path %q, want %q", ch.Path, test.wantChannelPath)
+			if len(got.APIs) > 0 {
+				ch := got.APIs[0]
+				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
+					t.Errorf("got channel path %q, want %q", ch.Path, test.wantAPIPath)
 				}
 			}
 		})

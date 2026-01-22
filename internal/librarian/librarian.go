@@ -18,10 +18,15 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/urfave/cli/v3"
 )
+
+// ErrLibraryNotFound is returned when the specified library is not found in config.
+var ErrLibraryNotFound = errors.New("library not found")
 
 const (
 	librarianConfigPath = "librarian.yaml"
@@ -37,7 +42,17 @@ func Run(ctx context.Context, args ...string) error {
 		Name:      "librarian",
 		Usage:     "manage Google Cloud client libraries",
 		UsageText: "librarian [command]",
-		Version:   Version(),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "enable verbose logging",
+			},
+		},
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			command.Verbose = cmd.Bool("verbose")
+			return ctx, nil
+		},
 		Commands: []*cli.Command{
 			addCommand(),
 			generateCommand(),

@@ -39,7 +39,7 @@ const (
 
 var (
 	errChecksumMismatch = errors.New("checksum mismatch")
-	errMissingSHA256    = errors.New("expectedSha256 is required")
+	errMissingSHA256    = errors.New("must provide expected SHA256")
 	defaultBackoff      = 10 * time.Second
 )
 
@@ -76,7 +76,7 @@ func RepoFromTarballLink(githubDownload, tarballLink string) (*Repo, error) {
 	urlPath = strings.TrimPrefix(urlPath, "/")
 	components := strings.Split(urlPath, "/")
 	if len(components) < 2 {
-		return nil, fmt.Errorf("url path for tarball link is missing components")
+		return nil, fmt.Errorf("invalid tarball URL %q", tarballLink)
 	}
 	repo := &Repo{
 		Org:  components[0],

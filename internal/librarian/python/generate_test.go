@@ -59,14 +59,14 @@ func TestCreateProtocOptions(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name     string
-		channel  *config.Channel
+		api      *config.API
 		library  *config.Library
 		expected []string
 		wantErr  bool
 	}{
 		{
 			name:    "basic case",
-			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
@@ -75,7 +75,7 @@ func TestCreateProtocOptions(t *testing.T) {
 		},
 		{
 			name:    "with transport",
-			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{Transport: "grpc"},
 			expected: []string{
 				"--python_gapic_out=staging",
@@ -83,8 +83,8 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name:    "with python opts",
-			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
+			name: "with python opts",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Python: &config.PythonPackage{
 					OptArgs: []string{"opt1", "opt2"},
@@ -96,11 +96,11 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name:    "with python opts by channel",
-			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
+			name: "with python opts by api",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Python: &config.PythonPackage{
-					OptArgsByChannel: map[string][]string{
+					OptArgsByAPI: map[string][]string{
 						"google/cloud/secretmanager/v1": {"opt1", "opt2"},
 						"google/cloud/secretmanager/v2": {"opt3", "opt4"},
 					},
@@ -113,7 +113,7 @@ func TestCreateProtocOptions(t *testing.T) {
 		},
 		{
 			name:    "with version",
-			channel: &config.Channel{Path: "google/cloud/secretmanager/v1"},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{Version: "1.2.3"},
 			expected: []string{
 				"--python_gapic_out=staging",
@@ -122,7 +122,7 @@ func TestCreateProtocOptions(t *testing.T) {
 		},
 		{
 			name: "with service config",
-			channel: &config.Channel{
+			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
 			library: &config.Library{},
@@ -133,7 +133,7 @@ func TestCreateProtocOptions(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := createProtocOptions(test.channel, test.library, googleapisDir, "staging")
+			got, err := createProtocOptions(test.api, test.library, googleapisDir, "staging")
 			if (err != nil) != test.wantErr {
 				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -319,7 +319,7 @@ func TestRunPostProcessor(t *testing.T) {
 	}
 }
 
-func TestGenerateChannel(t *testing.T) {
+func TestGenerateAPI(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("slow test: Python GAPIC code generation")
@@ -328,9 +328,9 @@ func TestGenerateChannel(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	repoRoot := t.TempDir()
-	err := generateChannel(
+	err := generateAPI(
 		t.Context(),
-		&config.Channel{Path: "google/cloud/secretmanager/v1"},
+		&config.API{Path: "google/cloud/secretmanager/v1"},
 		&config.Library{Name: "secretmanager", Output: repoRoot},
 		googleapisDir,
 		repoRoot,
@@ -360,7 +360,7 @@ func TestGenerate(t *testing.T) {
 	library := &config.Library{
 		Name:   "secretmanager",
 		Output: outdir,
-		Channels: []*config.Channel{
+		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
 			},

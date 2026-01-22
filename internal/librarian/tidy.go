@@ -28,8 +28,8 @@ import (
 
 var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
-	errDuplicateChannelPath  = errors.New("duplicate channel path")
-	errNoGoogleapiSourceInfo = errors.New("googleapis source information is not provided in Librarian.yaml file")
+	errDuplicateAPIPath      = errors.New("duplicate channel path")
+	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
 )
 
 func tidyCommand() *cli.Command {
@@ -71,19 +71,19 @@ func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 }
 
 func tidyLibrary(cfg *config.Config, lib *config.Library) error {
-	if lib.Output != "" && len(lib.Channels) == 1 && isDerivableOutput(cfg, lib) {
+	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
 	if lib.Veneer {
 		// Veneers are never generated, so ensure skip_generate is false.
 		lib.SkipGenerate = false
 	}
-	for _, ch := range lib.Channels {
-		if isDerivableChannelPath(cfg.Language, lib.Name, ch.Path) {
+	for _, ch := range lib.APIs {
+		if isDerivableAPIPath(cfg.Language, lib.Name, ch.Path) {
 			ch.Path = ""
 		}
 	}
-	lib.Channels = slices.DeleteFunc(lib.Channels, func(ch *config.Channel) bool {
+	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
 	tidyLanguageConfig(lib, cfg.Language)
@@ -91,12 +91,12 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
-	derivedOutput := defaultOutput(cfg.Language, lib.Channels[0].Path, cfg.Default.Output)
+	derivedOutput := defaultOutput(cfg.Language, lib.APIs[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
 }
 
-func isDerivableChannelPath(language string, name, channel string) bool {
-	return channel == deriveChannelPath(language, name)
+func isDerivableAPIPath(language string, name, channel string) bool {
+	return channel == deriveAPIPath(language, name)
 }
 
 func validateLibraries(cfg *config.Config) error {
@@ -109,7 +109,7 @@ func validateLibraries(cfg *config.Config) error {
 		if lib.Name != "" {
 			nameCount[lib.Name]++
 		}
-		for _, ch := range lib.Channels {
+		for _, ch := range lib.APIs {
 			if ch.Path != "" {
 				pathCount[ch.Path]++
 			}
@@ -122,7 +122,7 @@ func validateLibraries(cfg *config.Config) error {
 	}
 	for path, count := range pathCount {
 		if count > 1 {
-			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateChannelPath, path, count))
+			errs = append(errs, fmt.Errorf("%w: %s (appears %d times)", errDuplicateAPIPath, path, count))
 		}
 	}
 	if len(errs) > 0 {
@@ -157,7 +157,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 		return strings.Compare(a.Name, b.Name)
 	})
 	for _, lib := range cfg.Libraries {
-		slices.SortFunc(lib.Channels, func(a, b *config.Channel) int {
+		slices.SortFunc(lib.APIs, func(a, b *config.API) int {
 			return strings.Compare(a.Path, b.Path)
 		})
 		if lib.Rust != nil {
