@@ -151,7 +151,18 @@ func generateAll(ctx context.Context, cfg *config.Config) error {
 			return err
 		}
 	}
-	return nil
+	return postGenerate(ctx, cfg.Language)
+}
+
+func postGenerate(ctx context.Context, language string) error {
+	switch language {
+	case languageRust:
+		return rust.PostGenerate(ctx)
+	case languageFake:
+		return fakePostGenerate()
+	default:
+		return nil
+	}
 }
 
 func defaultOutput(language, channel, defaultOut string) string {
