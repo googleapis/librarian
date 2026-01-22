@@ -163,10 +163,10 @@ func defaultOutput(language, channel, defaultOut string) string {
 	}
 }
 
-func deriveChannelPath(language, name string) string {
+func deriveAPIPath(language, name string) string {
 	switch language {
 	case languageRust:
-		return rust.DeriveChannelPath(name)
+		return rust.DeriveAPIPath(name)
 	default:
 		return strings.ReplaceAll(name, "-", "/")
 	}

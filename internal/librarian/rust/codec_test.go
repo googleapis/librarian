@@ -43,7 +43,7 @@ func TestToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		channel *config.Channel
+		channel *config.API
 		want    *sidekickconfig.Config
 	}{
 		{
@@ -52,7 +52,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Name: "google-cloud-storage",
 				Rust: &config.RustCrate{},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -80,7 +80,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -109,7 +109,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -150,7 +150,7 @@ func TestToSidekickConfig(t *testing.T) {
 					TemplateOverride:          "custom-template",
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -190,7 +190,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -228,7 +228,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -261,7 +261,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -313,7 +313,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -356,7 +356,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storage/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -389,7 +389,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis", "discovery"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -417,7 +417,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -444,7 +444,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis", "discovery", "showcase"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -469,7 +469,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-apps-script-type-gmail",
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/apps/script/type/gmail",
 			},
 			want: &sidekickconfig.Config{
@@ -494,7 +494,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Name:                "google-cloud-longrunning",
 				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/longrunning",
 			},
 			want: &sidekickconfig.Config{
@@ -525,7 +525,7 @@ func TestToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/spanner/admin/database/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -552,7 +552,7 @@ func TestToSidekickConfig(t *testing.T) {
 					NameOverrides: ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/storageinsights/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -597,7 +597,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis", "discovery"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/compute/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -641,7 +641,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"googleapis", "protobuf-src", "conformance"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "google/cloud/vision/v1",
 			},
 			want: &sidekickconfig.Config{
@@ -669,7 +669,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Roots: []string{"showcase"},
 				},
 			},
-			channel: &config.Channel{
+			channel: &config.API{
 				Path: "schema/google/showcase/v1beta1",
 			},
 			want: &sidekickconfig.Config{

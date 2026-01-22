@@ -71,14 +71,14 @@ func TestRead(t *testing.T) {
 			{
 				Name:    "google-cloud-secretmanager-v1",
 				Version: "1.2.3",
-				Channels: []*Channel{
+				APIs: []*API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
 			},
 			{
 				Name:    "google-cloud-storage-v2",
 				Version: "2.3.4",
-				Channels: []*Channel{
+				APIs: []*API{
 					{Path: "google/cloud/storage/v2"},
 				},
 				Rust: &RustCrate{

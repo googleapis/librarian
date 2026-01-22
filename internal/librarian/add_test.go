@@ -72,7 +72,7 @@ func TestAddLibrary(t *testing.T) {
 				{
 					Name:   "existinglib",
 					Output: "output",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
 					},
 				},
@@ -81,7 +81,7 @@ func TestAddLibrary(t *testing.T) {
 			wantFinalLibraries: []*config.Library{
 				{
 					Name: "existinglib",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
 					},
 				},
@@ -151,11 +151,11 @@ func TestAddCommand(t *testing.T) {
 
 	testName := "google-cloud-secret-manager"
 	for _, test := range []struct {
-		name         string
-		args         []string
-		wantErr      error
-		wantChannels []*config.Channel
-		wantOutput   string
+		name       string
+		args       []string
+		wantErr    error
+		wantAPIs   []*config.API
+		wantOutput string
 	}{
 		{
 			name:    "no args",
@@ -178,7 +178,7 @@ func TestAddCommand(t *testing.T) {
 				testName,
 				"google/cloud/secretmanager/v1",
 			},
-			wantChannels: []*config.Channel{
+			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
 				},
@@ -194,7 +194,7 @@ func TestAddCommand(t *testing.T) {
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
 			},
-			wantChannels: []*config.Channel{
+			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
 				},
@@ -219,7 +219,7 @@ func TestAddCommand(t *testing.T) {
 				"packages/google-cloud-secret-manager",
 			},
 			wantOutput: "packages/google-cloud-secret-manager",
-			wantChannels: []*config.Channel{
+			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
 				},
@@ -272,8 +272,8 @@ func TestAddCommand(t *testing.T) {
 			if test.wantOutput != "" && got.Output != test.wantOutput {
 				t.Errorf("output = %q, want %q", got.Output, test.wantOutput)
 			}
-			if test.wantChannels != nil {
-				if diff := cmp.Diff(test.wantChannels, got.Channels); diff != "" {
+			if test.wantAPIs != nil {
+				if diff := cmp.Diff(test.wantAPIs, got.APIs); diff != "" {
 					t.Errorf("channels mismatch (-want +got):\n%s", diff)
 				}
 			}
@@ -287,7 +287,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 		libraryName string
 		output      string
 		channels    []string
-		want        []*config.Channel
+		want        []*config.API
 	}{
 		{
 			name:        "library with no specification-source",
@@ -299,7 +299,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			libraryName: "newlib",
 			output:      "output/newlib",
 			channels:    []string{"google/cloud/storage/v1"},
-			want: []*config.Channel{
+			want: []*config.API{
 				{
 					Path: "google/cloud/storage/v1",
 				},
@@ -314,7 +314,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
 			},
-			want: []*config.Channel{
+			want: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
 				},
@@ -366,7 +366,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if found.Version != "" {
 				t.Errorf("version = %q, want %q", found.Version, "")
 			}
-			if diff := cmp.Diff(test.want, found.Channels); diff != "" {
+			if diff := cmp.Diff(test.want, found.APIs); diff != "" {
 				t.Errorf("channels mismatch (-want +got):\n%s", diff)
 			}
 		})

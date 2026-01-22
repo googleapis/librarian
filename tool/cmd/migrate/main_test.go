@@ -177,7 +177,7 @@ func TestBuildGAPIC(t *testing.T) {
 			want: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/security/publicca/v1",
 						},
@@ -218,7 +218,7 @@ func TestBuildGAPIC(t *testing.T) {
 				},
 				"google-cloud-sql-v1": {
 					Name: "google-cloud-sql-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/sql/v1",
 						},
@@ -294,7 +294,7 @@ func TestBuildGAPIC(t *testing.T) {
 			want: map[string]*config.Library{
 				"google-cloud-compute-v1": {
 					Name: "google-cloud-compute-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/compute/v1",
 						},
@@ -706,7 +706,7 @@ func TestBuildConfig(t *testing.T) {
 			libraries: map[string]*config.Library{
 				"google-cloud-security-publicca-v1": {
 					Name: "google-cloud-security-publicca-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/security/publicca/v1",
 						},
@@ -725,7 +725,7 @@ func TestBuildConfig(t *testing.T) {
 				},
 				"skipped": {
 					Name: "google-cloud-sql-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/sql/v1",
 						},
@@ -738,7 +738,7 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-security-publicca-v1",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "google/cloud/security/publicca/v1",
 							},
@@ -764,7 +764,7 @@ func TestBuildConfig(t *testing.T) {
 			libraries: map[string]*config.Library{
 				"google-cloud-orgpolicy-v1": {
 					Name: "google-cloud-orgpolicy-v1",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/cloud/orgpolicy/v1",
 						},
@@ -786,7 +786,7 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-orgpolicy-v1",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "google/cloud/orgpolicy/v1",
 							},

@@ -40,7 +40,7 @@ func TestGenerate(t *testing.T) {
 		Version:       "0.1.0",
 		Output:        outDir,
 		CopyrightYear: "2025",
-		Channels: []*config.Channel{
+		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
 			},

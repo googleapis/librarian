@@ -148,9 +148,9 @@ type Library struct {
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
 
-	// Channel specifies which googleapis Channel to generate from (for generated
+	// API specifies which googleapis API to generate from (for generated
 	// libraries).
-	Channels []*Channel `yaml:"channels,omitempty"`
+	APIs []*API `yaml:"channels,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
@@ -207,8 +207,8 @@ type Library struct {
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// Channel describes a Channel to include in a library.
-type Channel struct {
+// API describes a API to include in a library.
+type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`

@@ -267,12 +267,12 @@ type PythonPackage struct {
 	// Example: ["warehouse-package-name=google-cloud-batch"]
 	OptArgs []string `yaml:"opt_args,omitempty"`
 
-	// OptArgsByChannel contains additional options passed to the generator,
+	// OptArgsByAPI contains additional options passed to the generator,
 	// where the options vary by channel. In each entry, the key is the channel
 	// (API path) and the value is the list of options to pass when generating
 	// that API channel.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
-	OptArgsByChannel map[string][]string `yaml:"opt_args_by_channel,omitempty"`
+	OptArgsByAPI map[string][]string `yaml:"opt_args_by_api,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.

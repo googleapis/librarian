@@ -175,7 +175,7 @@ func buildLibraries(input *MigrationInput) []*config.Library {
 		library.Name = id
 		library.Version = libState.Version
 		if libState.APIs != nil {
-			library.Channels = toChannels(libState.APIs)
+			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
 
@@ -229,10 +229,10 @@ func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
 	return res
 }
 
-func toChannels(apis []*legacyconfig.API) []*config.Channel {
-	channels := make([]*config.Channel, 0, len(apis))
+func toAPIs(apis []*legacyconfig.API) []*config.API {
+	channels := make([]*config.API, 0, len(apis))
 	for _, api := range apis {
-		channels = append(channels, &config.Channel{
+		channels = append(channels, &config.API{
 			Path: api.Path,
 		})
 	}

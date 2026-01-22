@@ -80,7 +80,7 @@ func TestFormatConfig(t *testing.T) {
 			{
 				Name:    "google-cloud-storage-v1",
 				Version: "1.0.0",
-				Channels: []*config.Channel{
+				APIs: []*config.API{
 					{Path: "c"},
 					{Path: "a"},
 				},
@@ -126,7 +126,7 @@ func TestFormatConfig(t *testing.T) {
 	t.Run("sorts channels by path", func(t *testing.T) {
 		want := []string{"a", "c"}
 		var got []string
-		for _, ch := range storageLib.Channels {
+		for _, ch := range storageLib.APIs {
 			got = append(got, ch.Path)
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
@@ -218,7 +218,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-accessapproval-v1",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "google/cloud/accessapproval/v1",
 							},
@@ -237,7 +237,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-aiplatform-v1-schema-predict-instance",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "src/generated/cloud/aiplatform/schema/predict/instance",
 							},
@@ -256,7 +256,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name: "google-cloud-orgpolicy-v1",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "google/cloud/orgpolicy/v1",
 							},
@@ -284,11 +284,11 @@ func TestTidy_DerivableFields(t *testing.T) {
 				t.Fatalf("wrong number of libraries")
 			}
 			lib := cfg.Libraries[0]
-			if len(lib.Channels) != test.wantNumChnls {
+			if len(lib.APIs) != test.wantNumChnls {
 				t.Fatalf("wrong number of channels")
 			}
 			if test.wantNumChnls > 0 {
-				ch := lib.Channels[0]
+				ch := lib.APIs[0]
 				if ch.Path != test.wantPath {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
 				}
@@ -345,7 +345,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: "generated/cloud/secretmanager/v1",
-				Channels: []*config.Channel{
+				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
 					},

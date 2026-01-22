@@ -185,7 +185,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					{
 						Name:    "example-library",
 						Version: "1.0.0",
-						Channels: []*config.Channel{
+						APIs: []*config.API{
 							{
 								Path: "google/example/api/v1",
 							},
@@ -320,7 +320,7 @@ func TestBuildLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "another-library",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/another/api/v1",
 						},
@@ -328,7 +328,7 @@ func TestBuildLibraries(t *testing.T) {
 				},
 				{
 					Name: "example-library",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/example/api/v1",
 						},
@@ -386,7 +386,7 @@ func TestBuildLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "another-library",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/another/api/v1",
 						},
@@ -394,7 +394,7 @@ func TestBuildLibraries(t *testing.T) {
 				},
 				{
 					Name: "example-library",
-					Channels: []*config.Channel{
+					APIs: []*config.API{
 						{
 							Path: "google/example/api/v1",
 						},

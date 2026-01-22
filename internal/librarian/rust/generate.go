@@ -44,11 +44,11 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
-	if len(library.Channels) != 1 {
+	if len(library.APIs) != 1 {
 		return fmt.Errorf("the Rust generator only supports a single channel per library")
 	}
 
-	sidekickConfig, err := toSidekickConfig(library, library.Channels[0], sources)
+	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
@@ -161,9 +161,9 @@ func defaultLibraryName(channel string) string {
 	return strings.ReplaceAll(channel, "/", "-")
 }
 
-// DeriveChannelPath derives a channel path from a library name.
+// DeriveAPIPath derives a channel path from a library name.
 // For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
-func DeriveChannelPath(name string) string {
+func DeriveAPIPath(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
 

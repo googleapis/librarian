@@ -90,7 +90,7 @@ func addLibraryToLibrarianConfig(cfg *config.Config, name, output string, channe
 	}
 
 	for _, c := range channel {
-		lib.Channels = append(lib.Channels, &config.Channel{
+		lib.APIs = append(lib.APIs, &config.API{
 			Path: c,
 		})
 	}

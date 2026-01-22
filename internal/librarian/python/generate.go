@@ -30,7 +30,7 @@ import (
 
 // Generate generates a Python client library.
 func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	if len(library.Channels) == 0 {
+	if len(library.APIs) == 0 {
 		return fmt.Errorf("no channels configured for library %q", library.Name)
 	}
 
@@ -52,8 +52,8 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 
 	// Generate each channel separately.
-	for _, channel := range library.Channels {
-		if err := generateChannel(ctx, channel, library, googleapisDir, repoRoot); err != nil {
+	for _, channel := range library.APIs {
+		if err := generateAPI(ctx, channel, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate channel %q: %w", channel.Path, err)
 		}
 	}
@@ -66,13 +66,13 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// Remove the default version fudget here, as Generate should
 	// compute it. For now, use the last component of the first channel path as
 	// the default version.
-	defaultVersion := filepath.Base(library.Channels[0].Path)
+	defaultVersion := filepath.Base(library.APIs[0].Path)
 
 	// Generate .repo-metadata.json from the service config in the first
 	// channel.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	channel, err := serviceconfig.Find(googleapisDir, library.Channels[0].Path)
+	channel, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
 	if err != nil {
 		return fmt.Errorf("failed to find service config: %w", err)
 	}
@@ -100,8 +100,8 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	return nil
 }
 
-// generateChannel generates part of a library for a single channel.
-func generateChannel(ctx context.Context, channel *config.Channel, library *config.Library, googleapisDir, repoRoot string) error {
+// generateAPI generates part of a library for a single channel.
+func generateAPI(ctx context.Context, channel *config.API, library *config.Library, googleapisDir, repoRoot string) error {
 	// Note: the Python Librarian container generates to a temporary directory,
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
@@ -152,7 +152,7 @@ func generateChannel(ctx context.Context, channel *config.Channel, library *conf
 	return nil
 }
 
-func createProtocOptions(ch *config.Channel, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+func createProtocOptions(ch *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
 	// GAPIC library: generate full client library
 	var opts []string
 
@@ -172,8 +172,8 @@ func createProtocOptions(ch *config.Channel, library *config.Library, googleapis
 		opts = append(opts, library.Python.OptArgs...)
 	}
 	// Then options that apply to this specific channel
-	if library.Python != nil && len(library.Python.OptArgsByChannel) > 0 {
-		apiOptArgs, ok := library.Python.OptArgsByChannel[ch.Path]
+	if library.Python != nil && len(library.Python.OptArgsByAPI) > 0 {
+		apiOptArgs, ok := library.Python.OptArgsByAPI[ch.Path]
 		if ok {
 			opts = append(opts, apiOptArgs...)
 		}
