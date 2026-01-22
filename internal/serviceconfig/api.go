@@ -203,6 +203,7 @@ var APIs = []API{
 	{Path: "google/cloud/discoveryengine/v1"},
 	{Path: "google/cloud/discoveryengine/v1alpha", Languages: []string{langPython}},
 	{Path: "google/cloud/discoveryengine/v1beta", Languages: []string{langPython}},
+	{Path: "google/cloud/dns/v1", Discovery: "discoveries/dns.v1.json"},
 	{Path: "google/cloud/documentai/v1"},
 	{Path: "google/cloud/documentai/v1beta3", Languages: []string{langPython}},
 	{Path: "google/cloud/domains/v1"},
