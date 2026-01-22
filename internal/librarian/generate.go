@@ -178,10 +178,23 @@ func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string
 			if lib.SkipGenerate {
 				return nil, nil
 			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, true)
-			if err != nil {
-				return nil, err
+			if len(lib.Channels) == 0 {
+				lib.Channels = append(lib.Channels, &config.Channel{})
 			}
+			if !lib.Veneer {
+				for _, ch := range lib.Channels {
+					if ch.Path == "" {
+						ch.Path = deriveChannelPath(cfg.Language, lib.Name)
+					}
+				}
+			}
+			if lib.Output == "" {
+				if lib.Veneer {
+					return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+				}
+				lib.Output = defaultOutput(cfg.Language, lib.Channels[0].Path, cfg.Default.Output)
+			}
+			lib = fillDefaults(lib, cfg.Default)
 			return generate(ctx, cfg.Language, lib, googleapisDir, rustSources)
 		}
 	}

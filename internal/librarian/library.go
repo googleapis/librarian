@@ -15,8 +15,6 @@
 package librarian
 
 import (
-	"fmt"
-
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -88,33 +86,3 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
-// prepareLibrary applies language-specific derivations and fills defaults.
-// For Rust libraries without an explicit output path, it derives the output
-// from the first channel path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default, fillInDefaults bool) (*config.Library, error) {
-	if len(lib.Channels) == 0 {
-		// If no channels are specified, create an empty channel first
-		lib.Channels = append(lib.Channels, &config.Channel{})
-	}
-
-	// The googleapis path of a veneer library lives in language-specific configurations,
-	// so we only need to derive the path for non-veneer libraries.
-	if !lib.Veneer {
-		for _, ch := range lib.Channels {
-			if ch.Path == "" {
-				ch.Path = deriveChannelPath(language, lib.Name)
-			}
-		}
-	}
-	if lib.Output == "" {
-		if lib.Veneer {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
-		}
-		lib.Output = defaultOutput(language, lib.Channels[0].Path, defaults.Output)
-	}
-	if fillInDefaults {
-		return fillDefaults(lib, defaults), nil
-	}
-
-	return lib, nil
-}
