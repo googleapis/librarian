@@ -71,7 +71,7 @@ func runAdd(ctx context.Context, name string, channel ...string) error {
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
-	return yaml.Write(librarianConfigPath, cfg)
+	return nil
 }
 
 func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) *config.Config {
