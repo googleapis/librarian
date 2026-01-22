@@ -1,4 +1,4 @@
-module github.com/googleapis/librarian
+module cloud.google.com/go/sdk
 
 go 1.25.5
 
@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/google/yamlfmt v0.20.0
 	github.com/googleapis/gax-go/v2 v2.15.0
+	github.com/googleapis/librarian v0.8.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pb33f/libopenapi v0.25.9
 	github.com/pelletier/go-toml/v2 v2.2.4
