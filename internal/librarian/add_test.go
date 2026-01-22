@@ -303,15 +303,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := addLibraryToLibrarianConfig(cfg, test.libraryName, test.channels...); err != nil {
-				t.Fatal(err)
-			}
-
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-
+			cfg = addLibraryToLibrarianConfig(cfg, test.libraryName, test.channels...)
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}

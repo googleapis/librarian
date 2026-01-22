@@ -67,16 +67,14 @@ func runAdd(ctx context.Context, name string, channel ...string) error {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	if err := addLibraryToLibrarianConfig(cfg, name, channel...); err != nil {
-		return err
-	}
+	cfg = addLibraryToLibrarianConfig(cfg, name, channel...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
-	return nil
+	return yaml.Write(librarianConfigPath, cfg)
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) error {
+func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) *config.Config {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
@@ -91,5 +89,5 @@ func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...str
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
-	return yaml.Write(librarianConfigPath, cfg)
+	return cfg
 }
