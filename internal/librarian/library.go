@@ -99,9 +99,9 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 		// Veneers require explicit output, so return empty if not set.
 		return ""
 	}
-	channelPath := deriveChannelPath(language, lib.Name)
-	if len(lib.Channels) > 0 && lib.Channels[0].Path != "" {
-		channelPath = lib.Channels[0].Path
+	channelPath := deriveAPIPath(language, lib.Name)
+	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
+		channelPath = lib.APIs[0].Path
 	}
 	defaultOut := ""
 	if defaults != nil {
