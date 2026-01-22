@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
+func TestShouldBumpManifestVersionSuccess(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
@@ -48,7 +48,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	needsBump, err := ManifestVersionNeedsBump("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestManifestVersionNeedsBumpSuccess(t *testing.T) {
 	}
 }
 
-func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
+func TestShouldBumpManifestVersionNewCrate(t *testing.T) {
 	const tag = "manifest-version-update-new-crate"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
@@ -71,7 +71,7 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 	}
 	name := path.Join("src", "new", "Cargo.toml")
 
-	needsBump, err := ManifestVersionNeedsBump("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,12 +80,12 @@ func TestManifestVersionNeedsBumpNewCrate(t *testing.T) {
 	}
 }
 
-func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
+func TestShouldBumpManifestVersionNoChange(t *testing.T) {
 	const tag = "manifest-version-update-no-change"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
-	needsBump, err := ManifestVersionNeedsBump("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion("git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,12 +94,12 @@ func TestManifestVersionNeedsBumpNoChange(t *testing.T) {
 	}
 }
 
-func TestManifestVersionNeedsBumpBadDiff(t *testing.T) {
+func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
 	const tag = "manifest-version-update-success"
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
-	if updated, err := ManifestVersionNeedsBump("git", "not-a-valid-tag", name); err == nil {
+	if updated, err := shouldBumpManifestVersion("git", "not-a-valid-tag", name); err == nil {
 		t.Errorf("expected an error with an valid tag, got=%v", updated)
 	}
 }

@@ -28,18 +28,29 @@ var (
 	errMissingVersion = errors.New("must provide version")
 )
 
-// Bump bumps version for Cargo.toml files and updates librarian config version
-// for a library.
-func Bump(library *config.Library, version string) (*config.Library, error) {
+// Bump checks if a version bump is required and performs it.
+// It returns without error if no bump is needed (version already updated since lastTag).
+func Bump(library *config.Library, output, version, gitExe, lastTag string) error {
 	if version == "" {
-		return nil, errMissingVersion
+		return errMissingVersion
 	}
+	cargoFile := filepath.Join(output, "Cargo.toml")
+	needed, err := shouldBumpManifestVersion(gitExe, lastTag, cargoFile)
+	if err != nil {
+		return err
+	}
+	if !needed {
+		return nil
+	}
+	return writeVersion(library, output, version)
+}
 
-	cargoFile := filepath.Join(library.Output, "Cargo.toml")
+func writeVersion(library *config.Library, output, version string) error {
+	cargoFile := filepath.Join(output, "Cargo.toml")
 	_, err := os.Stat(cargoFile)
 	switch {
 	case err != nil && !os.IsNotExist(err):
-		return nil, err
+		return err
 	case os.IsNotExist(err):
 		cargo := fmt.Sprintf(`[package]
 name                   = "%s"
@@ -47,14 +58,13 @@ version                = "%s"
 edition                = "2021"
 `, library.Name, version)
 		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
-			return nil, err
+			return err
 		}
 	default:
 		if err := updateCargoVersion(cargoFile, version); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
 	library.Version = version
-	return library, nil
+	return nil
 }

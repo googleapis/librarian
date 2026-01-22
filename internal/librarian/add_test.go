@@ -265,7 +265,7 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := libraryByName(gotCfg, testName)
+			got, err := findLibrary(gotCfg, testName)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -356,7 +356,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
 
-			found, err := libraryByName(cfg, test.libraryName)
+			found, err := findLibrary(cfg, test.libraryName)
 			if err != nil {
 				t.Fatal(err)
 			}

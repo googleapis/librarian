@@ -79,11 +79,11 @@ Examples:
 				Usage: "specific version to update to; not valid with --all",
 			},
 		},
-		Action: runBump,
+		Action: bumpAction,
 	}
 }
 
-func runBump(ctx context.Context, cmd *cli.Command) error {
+func bumpAction(ctx context.Context, cmd *cli.Command) error {
 	all := cmd.Bool("all")
 	libraryName := cmd.Args().First()
 	versionOverride := cmd.String("version")
@@ -100,6 +100,10 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return errors.Join(errConfigNotFound, err)
 	}
+	return runBump(ctx, cfg, all, libraryName, versionOverride)
+}
+
+func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
 	gitExe := "git"
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
@@ -107,7 +111,6 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-
 	if cfg.Release == nil {
 		return errReleaseConfigEmpty
 	}
@@ -116,33 +119,16 @@ func runBump(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return errNoGoogleapiSourceInfo
-	}
-
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
-	}
-	var rustSources *rust.Sources
-	if cfg.Language == languageRust {
-		rustSources, err = fetchRustSources(ctx, cfg.Sources)
-		if err != nil {
-			return err
-		}
-		rustSources.Googleapis = googleapisDir
-	}
-
 	if all {
-		if err = bumpAll(ctx, cfg, lastTag, gitExe); err != nil {
+		if err := bumpAll(ctx, cfg, lastTag, gitExe); err != nil {
 			return err
 		}
 	} else {
-		libConfg, err := libraryByName(cfg, libraryName)
+		lib, err := findLibrary(cfg, libraryName)
 		if err != nil {
 			return err
 		}
-		if err = bumpLibrary(ctx, cfg, libConfg, lastTag, gitExe, versionOverride); err != nil {
+		if err := bumpLibrary(ctx, cfg, lib, lastTag, gitExe, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -158,56 +144,46 @@ func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) er
 	if err != nil {
 		return err
 	}
-	for _, library := range cfg.Libraries {
-		if shouldRelease(library, filesChanged) {
-			if err := bumpLibrary(ctx, cfg, library, lastTag, gitExe, ""); err != nil {
-				return err
-			}
+	for _, lib := range cfg.Libraries {
+		if lib.SkipPublish {
+			continue
+		}
+		output := libraryOutput(cfg.Language, lib, cfg.Default)
+		if !hasChangesIn(output, filesChanged) {
+			continue
+		}
+		if err := bumpLibrary(ctx, cfg, lib, lastTag, gitExe, ""); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func shouldRelease(library *config.Library, filesChanged []string) bool {
-	if library.SkipPublish {
-		return false
+func hasChangesIn(dir string, filesChanged []string) bool {
+	if !strings.HasSuffix(dir, "/") {
+		dir += "/"
 	}
-	pathWithTrailingSlash := library.Output
-	if !strings.HasSuffix(pathWithTrailingSlash, "/") {
-		pathWithTrailingSlash = pathWithTrailingSlash + "/"
-	}
-	for _, path := range filesChanged {
-		if strings.HasPrefix(path, pathWithTrailingSlash) {
+	for _, f := range filesChanged {
+		if strings.HasPrefix(f, dir) {
 			return true
 		}
 	}
 	return false
 }
 
-func bumpLibrary(ctx context.Context, cfg *config.Config, libConfig *config.Library, lastTag, gitExe, versionOverride string) error {
-	// If the language doesn't have bespoke versioning options, a default
-	// [semver.DeriveNextOptions] instance is returned.
+func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, gitExe, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	nextVersion, err := deriveNextVersion(ctx, gitExe, cfg, libConfig, opts, versionOverride)
+	version, err := deriveNextVersion(ctx, gitExe, cfg, lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}
+	output := libraryOutput(cfg.Language, lib, cfg.Default)
 
 	switch cfg.Language {
 	case languageFake:
-		return fakeBumpLibrary(libConfig, nextVersion)
+		return fakeBumpLibrary(lib, version)
 	case languageRust:
-		release, err := rust.ManifestVersionNeedsBump(gitExe, lastTag, libConfig.Output+"/Cargo.toml")
-		if err != nil {
-			return err
-		}
-		if !release {
-			return nil
-		}
-		if _, err := rust.Bump(libConfig, nextVersion); err != nil {
-			return err
-		}
-		return nil
+		return rust.Bump(lib, output, version, gitExe, lastTag)
 	default:
 		return fmt.Errorf("%q does not support bump", cfg.Language)
 	}
@@ -228,8 +204,8 @@ func postBump(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-// libraryByName returns a library with the given name from the config.
-func libraryByName(c *config.Config, name string) (*config.Library, error) {
+// findLibrary returns a library with the given name from the config.
+func findLibrary(c *config.Config, name string) (*config.Library, error) {
 	if c.Libraries == nil {
 		return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
 	}
@@ -282,7 +258,7 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 	if err != nil {
 		return "", err
 	}
-	branchLibCfg, err := libraryByName(branchLibrarianCfg, libName)
+	branchLibCfg, err := findLibrary(branchLibrarianCfg, libName)
 	if err != nil {
 		return "", err
 	}
@@ -297,7 +273,7 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error) {
 	results := []string{}
 	for _, candidate := range cfgAfter.Libraries {
-		candidateBefore, err := libraryByName(cfgBefore, candidate.Name)
+		candidateBefore, err := findLibrary(cfgBefore, candidate.Name)
 		if err != nil {
 			// Any error other than "not found" is effectively fatal.
 			if !errors.Is(err, ErrLibraryNotFound) {

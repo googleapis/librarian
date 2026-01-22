@@ -55,9 +55,9 @@ func updateCargoVersion(path, newVersion string) error {
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 
-// ManifestVersionNeedsBump checks if the manifest version needs to be bumped.
+// shouldBumpManifestVersion checks if the manifest version needs to be bumped.
 // It returns false if the version has already been updated since the last tag.
-func ManifestVersionNeedsBump(gitExe, lastTag, manifest string) (bool, error) {
+func shouldBumpManifestVersion(gitExe, lastTag, manifest string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
 	cmd := exec.Command(gitExe, "diff", delta, "--", manifest)
 	cmd.Dir = "."
