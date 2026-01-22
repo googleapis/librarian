@@ -28,10 +28,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian"
-	"github.com/googleapis/librarian/internal/librarian/rust"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/config"
+	"cloud.google.com/go/sdk/internal/librarian"
+	"cloud.google.com/go/sdk/internal/librarian/rust"
+	sidekickconfig "cloud.google.com/go/sdk/internal/sidekick/config"
 	"github.com/pelletier/go-toml/v2"
 )
 

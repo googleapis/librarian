@@ -17,9 +17,9 @@ package httprule
 import (
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestParseSegments(t *testing.T) {

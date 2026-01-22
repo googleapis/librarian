@@ -32,7 +32,7 @@ ignore:
   - internal/legacylibrarian/legacycontainer/java/pom
   - internal/legacylibrarian/legacycontainer/java/release
   - internal/legacylibrarian/legacyimages
-  # TODO(https://github.com/googleapis/librarian/issues/3633): delete
+  # TODO(https://cloud.google.com/go/sdk/issues/3633): delete
   - internal/sidekick/sidekick
-  # TODO(https://github.com/googleapis/librarian/issues/3632): improve coverage
+  # TODO(https://cloud.google.com/go/sdk/issues/3632): improve coverage
   - internal/surfer/gcloud

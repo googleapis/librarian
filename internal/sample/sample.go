@@ -19,7 +19,7 @@ package sample
 import (
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/config"
+	"cloud.google.com/go/sdk/internal/config"
 )
 
 const (

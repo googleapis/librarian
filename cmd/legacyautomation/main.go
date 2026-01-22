@@ -19,7 +19,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyautomation"
+	"cloud.google.com/go/sdk/internal/legacylibrarian/legacyautomation"
 )
 
 func main() {

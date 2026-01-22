@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 	"github.com/walle/targz"
 )
 

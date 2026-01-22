@@ -17,7 +17,7 @@ package discovery
 import (
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 )
 
 func makeMessageEnum(model *api.API, message *api.Message, name string, schema *schema) error {

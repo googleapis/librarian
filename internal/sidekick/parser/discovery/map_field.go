@@ -17,7 +17,7 @@ package discovery
 import (
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 )
 
 func maybeMapField(model *api.API, message *api.Message, input *property) (*api.Field, error) {

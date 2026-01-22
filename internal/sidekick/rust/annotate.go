@@ -21,9 +21,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/license"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/language"
+	"cloud.google.com/go/sdk/internal/sidekick/license"
 	"github.com/iancoleman/strcase"
 )
 

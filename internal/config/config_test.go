@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestRead(t *testing.T) {

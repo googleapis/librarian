@@ -20,7 +20,7 @@ import (
 	"maps"
 	"time"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 )
 
 func init() {

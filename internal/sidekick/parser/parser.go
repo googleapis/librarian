@@ -17,8 +17,8 @@ package parser
 import (
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 )
 
 // CreateModel parses the service specification referenced in `config`,

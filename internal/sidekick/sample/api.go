@@ -18,7 +18,7 @@ package sample
 import (
 	"net/http"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 )
 
 const (

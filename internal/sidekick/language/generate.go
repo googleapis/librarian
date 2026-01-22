@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 	"github.com/cbroglie/mustache"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 type mustacheProvider struct {

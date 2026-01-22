@@ -1,6 +1,6 @@
 # Librarian CLI
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/googleapis/librarian/cmd/librarian.svg)](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
+[![Go Reference](https://pkg.go.dev/badge/cloud.google.com/go/sdk/cmd/librarian.svg)](https://pkg.go.dev/cloud.google.com/go/sdk/cmd/librarian)
 [![codecov](https://codecov.io/github/googleapis/librarian/graph/badge.svg?token=33d3L7Y0gN)](https://codecov.io/github/googleapis/librarian)
 
 This repository contains code for a unified command line tool for
@@ -27,7 +27,7 @@ export PATH="$(go env GOPATH)/bin:$PATH"
 Next install the CLI
 
 ```sh
-go install github.com/googleapis/librarian/cmd/librarian@latest
+go install cloud.google.com/go/sdk/cmd/librarian@latest
 ```
 
 ## Running Librarian
@@ -49,12 +49,12 @@ Alternatively, if you prefer not to have librarian installed you can use the Go
 command to run the latest released version:
 
 ```sh
-go run github.com/googleapis/librarian/cmd/librarian@latest -help
+go run cloud.google.com/go/sdk/cmd/librarian@latest -help
 ```
 
 ## Documentation
 
-- [CLI Documentation](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian)
+- [CLI Documentation](https://pkg.go.dev/cloud.google.com/go/sdk/cmd/librarian)
 - [How We Write Go](doc/howwewritego.md)
 
 ## License

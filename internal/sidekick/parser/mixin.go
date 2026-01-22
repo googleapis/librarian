@@ -21,8 +21,8 @@ import (
 
 	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/serviceconfig"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 	locationpb "google.golang.org/genproto/googleapis/cloud/location"
 	statuspb "google.golang.org/genproto/googleapis/rpc/status"
 	exprpb "google.golang.org/genproto/googleapis/type/expr"

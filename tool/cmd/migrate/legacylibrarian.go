@@ -21,11 +21,11 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
-	"github.com/googleapis/librarian/internal/librarian"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/sdk/internal/config"
+	"cloud.google.com/go/sdk/internal/fetch"
+	"cloud.google.com/go/sdk/internal/legacylibrarian/legacyconfig"
+	"cloud.google.com/go/sdk/internal/librarian"
+	"cloud.google.com/go/sdk/internal/yaml"
 )
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.

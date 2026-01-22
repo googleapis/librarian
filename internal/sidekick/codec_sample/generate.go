@@ -19,9 +19,9 @@ import (
 	"context"
 	"embed"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/language"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/language"
 )
 
 //go:embed all:templates
