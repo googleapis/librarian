@@ -39,12 +39,6 @@ func addCommand() *cli.Command {
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
 		UsageText: "librarian add <library> [apis...] [flags]",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "output",
-				Usage: "output directory (optional, will be derived if not provided)",
-			},
-		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			args := c.Args()
 			name := args.First()
@@ -55,12 +49,12 @@ func addCommand() *cli.Command {
 			if len(args.Slice()) > 1 {
 				channels = args.Slice()[1:]
 			}
-			return runAdd(ctx, name, c.String("output"), channels...)
+			return runAdd(ctx, name, channels...)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, name, output string, channel ...string) error {
+func runAdd(ctx context.Context, name string, channel ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errNoYaml, err)
@@ -73,7 +67,7 @@ func runAdd(ctx context.Context, name, output string, channel ...string) error {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
+	if err := addLibraryToLibrarianConfig(cfg, name, channel...); err != nil {
 		return err
 	}
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
@@ -82,11 +76,10 @@ func runAdd(ctx context.Context, name, output string, channel ...string) error {
 	return nil
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name, output string, channel ...string) error {
+func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) error {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-		Output:        output,
 	}
 
 	for _, c := range channel {
