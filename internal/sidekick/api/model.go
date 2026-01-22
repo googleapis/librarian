@@ -500,33 +500,43 @@ func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
 	}
 }
 
+const (
+	// StandardFieldNameForResourceRef is the standard name for resource references
+	// to the resource being operated on by standard methods as defined by AIPs.
+	StandardFieldNameForResourceRef = "name"
+
+	// GenericResourceType is a special resource type that may be used by resource references
+	// in contexts where the referenced resource may be of any type, as defined by AIPs.
+	GenericResourceType = "*"
+)
+
 // findBestResourceFieldByType finds the best field in the message that references
 // a resource of the given type.
 //
 // We prioritize the matches as follows:
-// 1. The field name is "name" and
-//   - has a wildcard reference type "*" or
-//   - explicitly references the output resource type.
+// 1. The field name is the standard field name for resource references and
+//   - references the generic resource type or
+//   - references the output resource type.
 //
-// 2. The field explicitly references the output resource type.
+// 2. The field references the output resource type.
 func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
 	var bestField *Field
-	for _, f := range message.Fields {
-		if f.ResourceReference == nil {
+	for _, field := range message.Fields {
+		if field.ResourceReference == nil {
 			continue
 		}
-		if f.ResourceReference.Type == "*" && f.Name == "name" {
-			return f
+		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+			return field
 		}
-		resource, ok := resourcesByType[f.ResourceReference.Type]
+		resource, ok := resourcesByType[field.ResourceReference.Type]
 		if !ok {
 			continue
 		}
 		if resource.Type == targetType {
-			if f.Name == "name" {
-				return f
+			if field.Name == StandardFieldNameForResourceRef {
+				return field
 			}
-			bestField = f
+			bestField = field
 		}
 	}
 	return bestField
@@ -536,32 +546,32 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 // a resource with the given singular name.
 //
 // We prioritize the matches as follows:
-// 1. The field name is "name" and
-//   - has a wildcard reference type "*" or
+// 1. The field name is the standard field name for resource references and
+//   - references the generic resource type or
 //   - the resource singular name matches maybeSingular or
 //   - the resource singular name is empty.
 //
 // 2. The resource singular name matches maybeSingular.
 func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
 	var bestField *Field
-	for _, f := range message.Fields {
-		if f.ResourceReference == nil {
+	for _, field := range message.Fields {
+		if field.ResourceReference == nil {
 			continue
 		}
-		if f.ResourceReference.Type == "*" && f.Name == "name" {
-			return f
+		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+			return field
 		}
-		resource, ok := resourcesByType[f.ResourceReference.Type]
+		resource, ok := resourcesByType[field.ResourceReference.Type]
 		if !ok {
 			continue
 		}
 		actualSingular := strings.ToLower(resource.Singular)
 		matchesTarget := actualSingular == targetSingular
-		if f.Name == "name" && (matchesTarget || actualSingular == "") {
-			return f
+		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
+			return field
 		}
 		if matchesTarget {
-			bestField = f
+			bestField = field
 		}
 	}
 	return bestField
