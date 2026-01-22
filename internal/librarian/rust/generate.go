@@ -77,8 +77,8 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	return nil
 }
 
-// PostGenerate performs post-generation steps for Rust.
-func PostGenerate(ctx context.Context) error {
+// UpdateWorkspace updates dependencies for the entire Rust workspace.
+func UpdateWorkspace(ctx context.Context) error {
 	return command.Run(ctx, "cargo", "update", "--workspace")
 }
 
