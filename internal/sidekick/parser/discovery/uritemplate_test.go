@@ -45,8 +45,13 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 			WithLiteral("reservationSubBlocks")},
 		{"v1/{+parent}/externalAccountKeys", api.NewPathTemplate().
 			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatch()).
+			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatchRecursive()).
 			WithLiteral("externalAccountKeys")},
+		{"dns/v1/{+resource}:getIamPolicy", api.NewPathTemplate().
+			WithLiteral("dns").
+			WithLiteral("v1").
+			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).
+			WithVerb("getIamPolicy")},
 	} {
 		got, err := ParseUriTemplate(test.input)
 		if err != nil {
@@ -70,6 +75,8 @@ func TestParseUriTemplateError(t *testing.T) {
 		{"a/b/{c}}"},
 		{"a/b/{c}/"},
 		{"{foo}}bar"},
+		{"dns/v1/{+resource}:verb/should/not/have/slashes"},
+		{"dns/v1/{+emptyVerb}:"},
 	} {
 		if got, err := ParseUriTemplate(test.input); err == nil {
 			t.Errorf("expected a parsing error with input=%s, got=%v", test.input, got)
