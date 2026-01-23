@@ -31,8 +31,9 @@ import (
 )
 
 var (
-	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
-	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
+	inputDir     = flag.String("input", "internal/config", "Input directory containing config structs")
+	outputFile   = flag.String("output", "doc/config-schema.md", "Output file for documentation")
+	reWhitespace = regexp.MustCompile(`\s+`)
 )
 
 func main() {
@@ -138,7 +139,7 @@ func writeStruct(out *os.File, name string, st *ast.StructType, allStructs map[s
 			description = cleanDoc(field.Doc.Text())
 		}
 
-		fmt.Fprintf(out, "| `%s` | %s | %s |\n", yamlName, formatType(typeName), description)
+		fmt.Fprintf(out, "| `%s` | %s | %s |\n", yamlName, formatType(typeName, allStructs), description)
 	}
 }
 
@@ -171,7 +172,7 @@ func getTypeName(expr ast.Expr) string {
 	}
 }
 
-func formatType(typeName string) string {
+func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 	isSlice := strings.HasPrefix(typeName, "[]")
 	cleanType := strings.TrimPrefix(typeName, "[]")
 	isPointer := strings.HasPrefix(cleanType, "*")
@@ -179,7 +180,7 @@ func formatType(typeName string) string {
 
 	res := cleanType
 	// If it's one of our structs, link it
-	if isInternalStruct(cleanType) {
+	if _, ok := allStructs[cleanType]; ok {
 		res = fmt.Sprintf("[%s](#%s-object)", cleanType, strings.ToLower(cleanType))
 	}
 
@@ -193,23 +194,8 @@ func formatType(typeName string) string {
 	return res
 }
 
-func isInternalStruct(typeName string) bool {
-	if len(typeName) == 0 {
-		return false
-	}
-	first := typeName[0]
-	if first < 'A' || first > 'Z' {
-		return false
-	}
-	basicTypes := map[string]bool{
-		"String": true, "Int": true, "Bool": true,
-	}
-	return !basicTypes[typeName]
-}
-
 func cleanDoc(doc string) string {
 	doc = strings.TrimSpace(doc)
 	doc = strings.ReplaceAll(doc, "\n", " ")
-	re := regexp.MustCompile(`\s+`)
-	return re.ReplaceAllString(doc, " ")
+	return reWhitespace.ReplaceAllString(doc, " ")
 }
