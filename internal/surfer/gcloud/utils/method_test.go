@@ -133,6 +133,29 @@ func TestIsDelete(t *testing.T) {
 	}
 }
 
+func TestIsCustomMethod(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   bool
+	}{
+		{"Standard Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Standard List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Standard Create", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
+		{"Standard Update", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PATCH"}}}}, false},
+		{"Standard Delete", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "DELETE"}}}}, false},
+		{"Custom Method", &api.Method{Name: "ExportData", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, true},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsCustomMethod(test.method); got != test.want {
+				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
+			}
+		})
+	}
+}
+
 func TestGetCommandName(t *testing.T) {
 	v := "exportData"
 	for _, test := range []struct {
