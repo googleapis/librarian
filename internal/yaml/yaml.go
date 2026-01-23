@@ -18,7 +18,9 @@ package yaml
 import (
 	"bytes"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/yamlfmt/formatters/basic"
 	"github.com/googleapis/librarian/internal/license"
@@ -82,16 +84,16 @@ func Write(path string, v any) error {
 		return err
 	}
 
-	var header string
 	// Add # comment prefix to each line of the license header.
 	var b strings.Builder
-	for _, line := range license.LicenseHeader("2026") {
+	year := time.Now().Year()
+	for _, line := range license.LicenseHeader(strconv.Itoa(year)) {
 		b.WriteString("#")
 		b.WriteString(line)
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	header = b.String()
+	header := b.String()
 
 	data = append([]byte(header), data...)
 	return os.WriteFile(path, data, 0644)
