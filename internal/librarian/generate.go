@@ -43,6 +43,7 @@ var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errEmptySources            = errors.New("sources required in librarian.yaml")
+	errSkipGenerate            = errors.New("library has skip_generate set")
 )
 
 func generateCommand() *cli.Command {
@@ -78,14 +79,11 @@ func runGenerate(ctx context.Context, all bool, libraryName string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}
-	return routeGenerate(ctx, all, cfg, libraryName)
+	return generateLibraries(ctx, all, cfg, libraryName)
 }
 
-func routeGenerate(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
-	if all {
-		return generateAll(ctx, cfg)
-	}
-
+func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
+	// Fetch sources.
 	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
 	if err != nil {
 		return err
@@ -99,54 +97,45 @@ func routeGenerate(ctx context.Context, all bool, cfg *config.Config, libraryNam
 		rustSources.Googleapis = googleapisDir
 	}
 
-	lib, err := generateLibrary(ctx, cfg, libraryName, googleapisDir, rustSources)
-	if err != nil {
-		return err
-	}
-	if lib == nil {
-		// Skip formatting if generation skipped.
-		return nil
-	}
-	return formatLibrary(ctx, cfg.Language, lib)
-}
-
-func generateAll(ctx context.Context, cfg *config.Config) error {
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
-	if err != nil {
-		return err
-	}
-	var rustSources *rust.Sources
-	if cfg.Language == languageRust {
-		rustSources, err = fetchRustSources(ctx, cfg.Sources)
+	// Prepare and clean libraries sequentially.
+	// This avoids race conditions when output directories are nested.
+	var libraries []*config.Library
+	for _, lib := range cfg.Libraries {
+		if !shouldGenerate(lib, all, libraryName) {
+			continue
+		}
+		prepared, err := prepareLibrary(cfg.Language, lib, cfg.Default)
 		if err != nil {
 			return err
 		}
-		rustSources.Googleapis = googleapisDir
+		libraries = append(libraries, prepared)
 	}
-
-	g, gCtx := errgroup.WithContext(ctx)
-	libraries := make([]*config.Library, len(cfg.Libraries))
-	for i, lib := range cfg.Libraries {
-		i := i
-		name := lib.Name
-		g.Go(func() error {
-			lib, err := generateLibrary(gCtx, cfg, name, googleapisDir, rustSources)
-			if err != nil {
-				return err
+	if len(libraries) == 0 {
+		if all {
+			return errors.New("no libraries to generate: all libraries have skip_generate set")
+		}
+		for _, lib := range cfg.Libraries {
+			if lib.Name == libraryName {
+				return fmt.Errorf("%w: %q", errSkipGenerate, libraryName)
 			}
-			libraries[i] = lib
-			return nil
+		}
+		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
+	}
+
+	// Generate all libraries in parallel.
+	g, gctx := errgroup.WithContext(ctx)
+	for _, lib := range libraries {
+		lib := lib
+		g.Go(func() error {
+			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return err
 	}
 
+	// Format all libraries sequentially.
 	for _, lib := range libraries {
-		if lib == nil {
-			// Skip formatting if generation skipped.
-			continue
-		}
 		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
 			return err
 		}
@@ -185,40 +174,24 @@ func deriveAPIPath(language, name string) string {
 	}
 }
 
-func generateLibrary(ctx context.Context, cfg *config.Config, libraryName string, googleapisDir string, rustSources *rust.Sources) (*config.Library, error) {
-	for _, lib := range cfg.Libraries {
-		if lib.Name == libraryName {
-			if lib.SkipGenerate {
-				return nil, nil
-			}
-			lib, err := prepareLibrary(cfg.Language, lib, cfg.Default, true)
-			if err != nil {
-				return nil, err
-			}
-			return generate(ctx, cfg.Language, lib, googleapisDir, rustSources)
-		}
+func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
+	if lib.SkipGenerate {
+		return false
 	}
-	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
+	return all || lib.Name == libraryName
 }
 
-func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, rustSources *rust.Sources) (_ *config.Library, err error) {
+// prepareLibrary applies defaults and cleans the output directory.
+func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+	library, err := applyDefaults(language, lib, defaults)
+	if err != nil {
+		return nil, err
+	}
 	switch language {
 	case languageFake:
-		if err := fakeGenerate(library); err != nil {
-			return nil, err
-		}
-	case languageDart:
+		// No cleaning needed.
+	case languageDart, languagePython:
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return nil, err
-		}
-		if err := dart.Generate(ctx, library, googleapisDir); err != nil {
-			return nil, err
-		}
-	case languagePython:
-		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return nil, err
-		}
-		if err := python.Generate(ctx, library, googleapisDir); err != nil {
 			return nil, err
 		}
 	case languageRust:
@@ -227,15 +200,34 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return nil, fmt.Errorf("library %q: %w", library.Name, err)
 		}
 		if err := cleanOutput(library.Output, keep); err != nil {
-			return nil, fmt.Errorf("library %q: %w", library.Name, err)
-		}
-		if err := rust.Generate(ctx, library, rustSources); err != nil {
 			return nil, err
 		}
-	default:
-		return nil, fmt.Errorf("language %q does not support generation", language)
 	}
 	return library, nil
+}
+
+func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, rustSources *rust.Sources) error {
+	switch language {
+	case languageFake:
+		if err := fakeGenerate(library); err != nil {
+			return err
+		}
+	case languageDart:
+		if err := dart.Generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	case languagePython:
+		if err := python.Generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	case languageRust:
+		if err := rust.Generate(ctx, library, rustSources); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("language %q does not support generation", language)
+	}
+	return nil
 }
 
 // fetchRustSources fetches all source repositories needed for Rust generation

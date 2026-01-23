@@ -110,21 +110,15 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	return defaultOutput(language, apiPath, defaultOut)
 }
 
-// prepareLibrary applies language-specific derivations and fills defaults.
-// For Rust libraries without an explicit output path, it derives the output
-// from the first api path.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default, fillInDefaults bool) (*config.Library, error) {
+// applyDefaults applies language-specific derivations and fills defaults.
+func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if len(lib.APIs) == 0 {
-		// If no apis are specified, create an empty api first
 		lib.APIs = append(lib.APIs, &config.API{})
 	}
-
-	// The googleapis path of a veneer library lives in language-specific configurations,
-	// so we only need to derive the path for non-veneer libraries.
 	if !lib.Veneer {
-		for _, ch := range lib.APIs {
-			if ch.Path == "" {
-				ch.Path = deriveAPIPath(language, lib.Name)
+		for _, api := range lib.APIs {
+			if api.Path == "" {
+				api.Path = deriveAPIPath(language, lib.Name)
 			}
 		}
 	}
@@ -134,9 +128,5 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 		}
 		lib.Output = defaultOutput(language, lib.APIs[0].Path, defaults.Output)
 	}
-	if fillInDefaults {
-		return fillDefaults(lib, defaults), nil
-	}
-
-	return lib, nil
+	return fillDefaults(lib, defaults), nil
 }
