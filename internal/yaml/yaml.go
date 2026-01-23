@@ -18,6 +18,7 @@ package yaml
 import (
 	"bytes"
 	"os"
+	"strings"
 
 	"github.com/google/yamlfmt/formatters/basic"
 	"github.com/googleapis/librarian/internal/license"
@@ -83,7 +84,7 @@ func Write(path string, v any) error {
 
 	var header string
 	// Add # comment prefix to each line of the license header.
-    var b strings.Builder
+	var b strings.Builder
 	for _, line := range license.LicenseHeader("2026") {
 		b.WriteString("#")
 		b.WriteString(line)

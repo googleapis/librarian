@@ -17,6 +17,7 @@ package yaml
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -79,15 +80,14 @@ func TestReadWrite(t *testing.T) {
 func TestWrite(t *testing.T) {
 	// Construct expected header
 	lines := license.LicenseHeader("2026")
-	var header string
+	var b strings.Builder
 	for _, line := range lines {
-		if line == "" {
-			header += "#\n"
-		} else {
-			header += "#" + line + "\n"
-		}
+		b.WriteString("#")
+		b.WriteString(line)
+		b.WriteString("\n")
 	}
-	header += "\n"
+	b.WriteString("\n")
+	header := b.String()
 
 	want := header + `name: test
 version: v1.0.0
