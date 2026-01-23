@@ -14,32 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#ModelCodec.GenerateRpcSamples}}
-{{#IsSimple}}
+{{#IsSimpleOrLRO}}
 ///
 /// # Example
 /// ```
 /// # use {{Service.Model.Codec.PackageNamespace}}::client::{{Service.Codec.Name}};
+{{#IsLRO}}
+/// # use lro::Poller;
+{{/IsLRO}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(
 {{> /templates/common/client_method_samples/parameters}}
 /// ) -> Result<()> {
-{{#ReturnsEmpty}}
-///     client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .send()
-///         .await?;
-{{/ReturnsEmpty}}
-{{^ReturnsEmpty}}
-///     let response = client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .send()
-///         .await?;
-///     println!("response {:?}", response);
-{{/ReturnsEmpty}}
+{{> /templates/common/client_method_samples/method_call}}
 ///     Ok(())
 /// }
 /// ```
-{{/IsSimple}}
+{{/IsSimpleOrLRO}}
 {{/ModelCodec.GenerateRpcSamples}}

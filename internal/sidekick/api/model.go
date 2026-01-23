@@ -372,6 +372,30 @@ func (m *Method) IsSimple() bool {
 		m.OperationInfo == nil && m.DiscoveryLro == nil
 }
 
+// IsLRO returns true if the method is a long-running operation.
+func (m *Method) IsLRO() bool {
+	return m.OperationInfo != nil
+}
+
+// IsSimpleOrLRO returns true if the method is simple or a long-running operation.
+func (m *Method) IsSimpleOrLRO() bool {
+	return m.IsSimple() || m.IsLRO()
+}
+
+// LongRunningResponseType returns the response type of the long-running operation.
+func (m *Method) LongRunningResponseType() *Message {
+	if m.OperationInfo == nil {
+		return nil
+	}
+	return m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+}
+
+// LongRunningReturnsEmpty returns true if the long-running operation returns an empty response.
+func (m *Method) LongRunningReturnsEmpty() bool {
+	responseType := m.LongRunningResponseType()
+	return responseType != nil && responseType.ID == ".google.protobuf.Empty"
+}
+
 // IsAIPStandard returns true if the method is one of the AIP standard methods.
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
