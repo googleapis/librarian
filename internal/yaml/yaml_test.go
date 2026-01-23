@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/license"
 )
 
 type testConfig struct {
@@ -76,7 +77,19 @@ func TestReadWrite(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	want := copyright + `name: test
+	// Construct expected header
+	lines := license.LicenseHeader("2026")
+	var header string
+	for _, line := range lines {
+		if line == "" {
+			header += "#\n"
+		} else {
+			header += "#" + line + "\n"
+		}
+	}
+	header += "\n"
+
+	want := header + `name: test
 version: v1.0.0
 `
 	path := filepath.Join(t.TempDir(), "test.yaml")

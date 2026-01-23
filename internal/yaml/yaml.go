@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/google/yamlfmt/formatters/basic"
+	"github.com/googleapis/librarian/internal/license"
 	"gopkg.in/yaml.v3"
 )
 
@@ -79,7 +80,19 @@ func Write(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	data = append([]byte(copyright), data...)
+
+	var header string
+	// Add # comment prefix to each line of the license header.
+	for _, line := range license.LicenseHeader("2026") {
+		if line == "" {
+			header += "#\n"
+		} else {
+			header += "#" + line + "\n"
+		}
+	}
+	header += "\n"
+
+	data = append([]byte(header), data...)
 	return os.WriteFile(path, data, 0644)
 }
 

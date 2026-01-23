@@ -18,9 +18,9 @@ package rust_prost
 import (
 	"strings"
 
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/license"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"github.com/googleapis/librarian/internal/sidekick/rust"
 )
