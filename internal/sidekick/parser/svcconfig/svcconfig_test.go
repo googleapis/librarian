@@ -17,9 +17,9 @@ package svcconfig
 import (
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/serviceconfig"
+	"cloud.google.com/go/sdk/internal/sidekick/sample"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 
 func TestExtractPackageName(t *testing.T) {

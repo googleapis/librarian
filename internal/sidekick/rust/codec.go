@@ -25,8 +25,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/language"
 	"github.com/iancoleman/strcase"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"

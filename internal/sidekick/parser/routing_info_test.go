@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestExamples(t *testing.T) {

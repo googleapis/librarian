@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestRun(t *testing.T) {

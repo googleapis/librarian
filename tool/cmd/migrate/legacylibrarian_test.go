@@ -20,9 +20,9 @@ import (
 	"os"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/config"
+	"cloud.google.com/go/sdk/internal/legacylibrarian/legacyconfig"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 )
 
 func TestRunMigrateLibrarian(t *testing.T) {

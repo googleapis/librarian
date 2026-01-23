@@ -20,13 +20,13 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/serviceconfig"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/api/apitest"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/sample"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 
 const computeDiscoveryFile = "../../testdata/disco/compute.v1.json"

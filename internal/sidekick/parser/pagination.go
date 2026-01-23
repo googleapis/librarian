@@ -17,8 +17,8 @@ package parser
 import (
 	"slices"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 )
 
 const (

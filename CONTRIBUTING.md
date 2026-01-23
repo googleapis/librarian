@@ -60,7 +60,7 @@ we operate with a limited contribution model.
 ## Becoming a contributor
 
 Review the guide for
-[Onboarding to Librarian](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md).
+[Onboarding to Librarian](https://cloud.google.com/go/sdk/blob/main/doc/onboarding.md).
 
 To contribute to this repository, ask a member of
 [cloud-sdk-librarian-admin](https://github.com/orgs/googleapis/teams/cloud-sdk-librarian-admin)
@@ -71,14 +71,14 @@ to add you to the
 
 Before doing any significant work, open an issue to propose your idea and
 ensure alignment. You can either
-[file a new issue](https://github.com/googleapis/librarian/issues/new/choose), or comment
-on an [existing one](https://github.com/googleapis/librarian/issues).
+[file a new issue](https://cloud.google.com/go/sdk/issues/new/choose), or comment
+on an [existing one](https://cloud.google.com/go/sdk/issues).
 
 A pull request (PR) that does not go through this coordination process may be
 closed to avoid wasted effort.
 
 Make sure your code follows the guidelines at
-[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
+[How We Write Go](https://cloud.google.com/go/sdk/blob/main/doc/howwewritego.md).
 
 ## Checking the issue tracker
 
@@ -86,13 +86,13 @@ We use GitHub issues to track tasks, bugs, and discussions.
 
 > _If it didn’t happen in a GitHub issue, it never happened._
 
-Use the [issue tracker](https://github.com/googleapis/librarian/issues) as your
+Use the [issue tracker](https://cloud.google.com/go/sdk/issues) as your
 source of truth.
 
 Every issue will also have an associated
-[milestone](https://github.com/googleapis/librarian/milestones). If an issue is
+[milestone](https://cloud.google.com/go/sdk/milestones). If an issue is
 not our roadmap, it will be under
-[Unplanned](https://github.com/googleapis/librarian/milestone/7).
+[Unplanned](https://cloud.google.com/go/sdk/milestone/7).
 
 ## Filing a new issue
 
@@ -137,7 +137,7 @@ matter how small the task.
 Use the format:
 
 ```
-// TODO(https://github.com/googleapis/librarian/issues/<number>): explain what needs to be done
+// TODO(https://cloud.google.com/go/sdk/issues/<number>): explain what needs to be done
 ```
 
 This helps provide context for future readers and keeps the TODO relevant and
@@ -219,7 +219,7 @@ the tool.
 The version follows the versioning conventions described at
 https://go.dev/ref/mod#versions.
 
-Fixes https://github.com/googleapis/librarian/issues/238
+Fixes https://cloud.google.com/go/sdk/issues/238
 ```
 
 ### First line
@@ -317,7 +317,7 @@ Using the GitHub "Revert" button is the preferred method over manually creating 
 
 ### Keeping the pull request dashboard clean
 
-We aim to keep https://github.com/googleapis/librarian/pulls clean so that we
+We aim to keep https://cloud.google.com/go/sdk/pulls clean so that we
 can quickly notice and review incoming changes that require attention.
 
 Given that goal, please do not open a pull request unless you are ready for a
@@ -347,7 +347,7 @@ Please avoid writing Bash scripts. If you believe non-Go code is necessary,
 file an issue following the guidelines above and include a clear justification.
 
 See the guidelines for
-[How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
+[How We Write Go](https://cloud.google.com/go/sdk/blob/main/doc/howwewritego.md).
 
 ## Expectations for the team
 
@@ -371,7 +371,7 @@ When reviewing a pull request:
 
 - Start by reading the PR description to understand the purpose and context. If
   the commit message doesn’t follow the
-  [commit message guidelines](https://github.com/googleapis/librarian/blob/main/CONTRIBUTING.md#commit-messages),
+  [commit message guidelines](https://cloud.google.com/go/sdk/blob/main/CONTRIBUTING.md#commit-messages),
   request changes.
 - Use `Approve` or `Request changes` explicitly. Avoid leaving ambiguous
   feedback.
@@ -381,7 +381,7 @@ When reviewing a pull request:
   satisfactory, even if the author forgot to click the re-request review.
 - If a review has stalled or the context has shifted, leave a comment to
   clarify expectations, or close the PR. Keeping the
-  [dashboard clean](https://github.com/googleapis/librarian/blob/main/CONTRIBUTING.md#keeping-the-pull-request-dashboard-clean)
+  [dashboard clean](https://cloud.google.com/go/sdk/blob/main/CONTRIBUTING.md#keeping-the-pull-request-dashboard-clean)
   is encouraged, and new PRs are easy to open.
 - The
   [user-review-requested:@me](https://github.com/googleapis/librarian/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A%40me)

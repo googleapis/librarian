@@ -17,9 +17,9 @@ package parser
 import (
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestPageSimple(t *testing.T) {

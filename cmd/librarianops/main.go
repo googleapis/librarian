@@ -20,7 +20,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/googleapis/librarian/internal/librarianops"
+	"cloud.google.com/go/sdk/internal/librarianops"
 )
 
 func main() {

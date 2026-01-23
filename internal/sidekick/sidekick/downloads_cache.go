@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	cmd "github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	cmd "cloud.google.com/go/sdk/internal/command"
+	"cloud.google.com/go/sdk/internal/fetch"
+	"cloud.google.com/go/sdk/internal/sidekick/config"
 )
 
 var (

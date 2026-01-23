@@ -23,11 +23,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/dart"
-	"github.com/googleapis/librarian/internal/librarian/python"
-	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/sdk/internal/config"
+	"cloud.google.com/go/sdk/internal/librarian/dart"
+	"cloud.google.com/go/sdk/internal/librarian/python"
+	"cloud.google.com/go/sdk/internal/librarian/rust"
+	"cloud.google.com/go/sdk/internal/yaml"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )

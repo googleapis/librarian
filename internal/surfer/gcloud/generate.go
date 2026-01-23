@@ -23,9 +23,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/utils"
-	"github.com/googleapis/librarian/internal/yaml"
+	"cloud.google.com/go/sdk/internal/sidekick/api"
+	"cloud.google.com/go/sdk/internal/surfer/gcloud/utils"
+	"cloud.google.com/go/sdk/internal/yaml"
 	"github.com/iancoleman/strcase"
 )
 

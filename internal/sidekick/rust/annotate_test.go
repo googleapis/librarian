@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/sdk/internal/sidekick/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestPackageNames(t *testing.T) {

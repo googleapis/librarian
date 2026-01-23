@@ -20,7 +20,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/testhelper"
+	"cloud.google.com/go/sdk/internal/testhelper"
 )
 
 func TestSampleFromProtobuf(t *testing.T) {

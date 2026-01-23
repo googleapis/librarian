@@ -1,4 +1,4 @@
-module github.com/googleapis/librarian
+module cloud.google.com/go/sdk
 
 go 1.25.5
 
