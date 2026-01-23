@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -53,7 +51,7 @@ func updateCommand() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
-				Usage: "update all sources",
+				Usage: "update discovery and googleapis sources",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -104,7 +102,7 @@ func runUpdate(all bool, sourceName string) error {
 
 	var sourceNamesToProcess []string
 	if all {
-		sourceNamesToProcess = slices.Collect(maps.Keys(sourceRepos))
+		sourceNamesToProcess = []string{"discovery", "googleapis"}
 	} else {
 		sourceNamesToProcess = []string{sourceName}
 	}
