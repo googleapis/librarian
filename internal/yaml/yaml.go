@@ -83,14 +83,14 @@ func Write(path string, v any) error {
 
 	var header string
 	// Add # comment prefix to each line of the license header.
+    var b strings.Builder
 	for _, line := range license.LicenseHeader("2026") {
-		if line == "" {
-			header += "#\n"
-		} else {
-			header += "#" + line + "\n"
-		}
+		b.WriteString("#")
+		b.WriteString(line)
+		b.WriteString("\n")
 	}
-	header += "\n"
+	b.WriteString("\n")
+	header = b.String()
 
 	data = append([]byte(header), data...)
 	return os.WriteFile(path, data, 0644)
