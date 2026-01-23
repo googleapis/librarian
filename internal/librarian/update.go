@@ -45,8 +45,14 @@ var (
 // updateCommand returns the `update` subcommand.
 func updateCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "update",
-		Usage:     "update sources to the latest version",
+		Name:  "update",
+		Usage: "update sources to the latest version",
+		Description: `Supported sources are:
+  - conformance
+  - discovery
+  - googleapis
+  - protobuf
+  - showcase`,
 		UsageText: "librarian update [--all | source]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{

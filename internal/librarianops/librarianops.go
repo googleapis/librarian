@@ -170,12 +170,7 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 			return err
 		}
 	}
-	if repoName == repoRust {
-		if err := runLibrarianWithVersion(ctx, version, "update", "discovery"); err != nil {
-			return err
-		}
-	}
-	if err := runLibrarianWithVersion(ctx, version, "update", "googleapis"); err != nil {
+	if err := runLibrarianWithVersion(ctx, version, "update", "--all"); err != nil {
 		return err
 	}
 	if err := runLibrarianWithVersion(ctx, version, "generate", "--all"); err != nil {
