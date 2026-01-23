@@ -16,6 +16,8 @@
 // librarian.yaml configuration files.
 package config
 
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
+
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
