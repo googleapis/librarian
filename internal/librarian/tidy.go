@@ -28,7 +28,7 @@ import (
 
 var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
-	errDuplicateAPIPath      = errors.New("duplicate channel path")
+	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
 )
 
@@ -95,8 +95,8 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	return lib.Output == derivedOutput
 }
 
-func isDerivableAPIPath(language string, name, channel string) bool {
-	return channel == deriveAPIPath(language, name)
+func isDerivableAPIPath(language string, name, api string) bool {
+	return api == deriveAPIPath(language, name)
 }
 
 func validateLibraries(cfg *config.Config) error {

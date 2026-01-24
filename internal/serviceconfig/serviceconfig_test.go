@@ -83,13 +83,13 @@ func TestNoGenprotoServiceConfigImports(t *testing.T) {
 func TestFind(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		channel string
+		api     string
 		want    *API
 		wantErr bool
 	}{
 		{
-			name:    "found",
-			channel: "google/cloud/secretmanager/v1",
+			name: "found",
+			api:  "google/cloud/secretmanager/v1",
 			want: &API{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -97,32 +97,32 @@ func TestFind(t *testing.T) {
 			},
 		},
 		{
-			name:    "not service config has title override",
-			channel: "google/cloud/orgpolicy/v1",
+			name: "not service config has title override",
+			api:  "google/cloud/orgpolicy/v1",
 			want: &API{
 				Path:  "google/cloud/orgpolicy/v1",
 				Title: "Organization Policy Types",
 			},
 		},
 		{
-			name:    "directory does not exist",
-			channel: "google/cloud/nonexistent/v1",
+			name: "directory does not exist",
+			api:  "google/cloud/nonexistent/v1",
 			want: &API{
 				Path: "google/cloud/nonexistent/v1",
 			},
 			wantErr: true,
 		},
 		{
-			name:    "service config override",
-			channel: "google/cloud/aiplatform/v1/schema/predict/instance",
+			name: "service config override",
+			api:  "google/cloud/aiplatform/v1/schema/predict/instance",
 			want: &API{
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 			},
 		},
 		{
-			name:    "openapi",
-			channel: "testdata/secretmanager_openapi_v1.json",
+			name: "openapi",
+			api:  "testdata/secretmanager_openapi_v1.json",
 			want: &API{
 				Path:          "google/cloud/secretmanager/v1",
 				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
@@ -130,8 +130,8 @@ func TestFind(t *testing.T) {
 			},
 		},
 		{
-			name:    "discovery",
-			channel: "discoveries/compute.v1.json",
+			name: "discovery",
+			api:  "discoveries/compute.v1.json",
 			want: &API{
 				Path:          "google/cloud/compute/v1",
 				Discovery:     "discoveries/compute.v1.json",
@@ -140,7 +140,7 @@ func TestFind(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Find(googleapisDir, test.channel)
+			got, err := Find(googleapisDir, test.api)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)

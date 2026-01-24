@@ -45,11 +45,11 @@ func addCommand() *cli.Command {
 			if name == "" {
 				return errMissingLibraryName
 			}
-			var channels []string
+			var apis []string
 			if len(args.Slice()) > 1 {
-				channels = args.Slice()[1:]
+				apis = args.Slice()[1:]
 			}
-			return runAdd(ctx, name, channels...)
+			return runAdd(ctx, name, apis...)
 		},
 	}
 }
@@ -74,15 +74,15 @@ func runAdd(ctx context.Context, name string, channel ...string) error {
 	return nil
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) *config.Config {
+func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string) *config.Config {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
 	}
 
-	for _, c := range channel {
+	for _, a := range api {
 		lib.APIs = append(lib.APIs, &config.API{
-			Path: c,
+			Path: a,
 		})
 	}
 	cfg.Libraries = append(cfg.Libraries, lib)

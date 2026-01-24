@@ -126,7 +126,7 @@ func TestFormatConfig(t *testing.T) {
 		t.Fatal("library google-cloud-storage-v1 not found after sorting")
 	}
 
-	t.Run("sorts channels by path", func(t *testing.T) {
+	t.Run("sorts apis by path", func(t *testing.T) {
 		want := []string{"a", "c"}
 		var got []string
 		for _, ch := range storageLib.APIs {
@@ -257,7 +257,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 			wantNumChnls: 1,
 		},
 		{
-			name: "channel removed if only derivable path",
+			name: "api removed if only derivable path",
 			config: &config.Config{
 				Sources: googleapisSource,
 				Libraries: []*config.Library{
@@ -292,7 +292,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 			}
 			lib := cfg.Libraries[0]
 			if len(lib.APIs) != test.wantNumChnls {
-				t.Fatalf("wrong number of channels")
+				t.Fatalf("wrong number of apis")
 			}
 			if test.wantNumChnls > 0 {
 				ch := lib.APIs[0]

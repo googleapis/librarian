@@ -229,15 +229,14 @@ func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
 	return res
 }
 
-func toAPIs(apis []*legacyconfig.API) []*config.API {
-	channels := make([]*config.API, 0, len(apis))
-	for _, api := range apis {
-		channels = append(channels, &config.API{
+func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
+	apis := make([]*config.API, 0, len(legacyapis))
+	for _, api := range legacyapis {
+		apis = append(apis, &config.API{
 			Path: api.Path,
 		})
 	}
-
-	return channels
+	return apis
 }
 
 func isEmptyGoModule(mod *config.GoModule) bool {

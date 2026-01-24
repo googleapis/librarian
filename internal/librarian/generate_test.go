@@ -48,10 +48,11 @@ func TestGenerateCommand(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		args    []string
-		wantErr error
-		want    []string
+		name             string
+		args             []string
+		wantErr          error
+		want             []string
+		wantPostGenerate bool
 	}{
 		{
 			name:    "no args",
@@ -69,14 +70,15 @@ func TestGenerateCommand(t *testing.T) {
 			want: []string{lib1},
 		},
 		{
-			name: "all flag",
-			args: []string{"librarian", "generate", "--all"},
-			want: []string{lib1, lib2},
+			name:             "all flag",
+			args:             []string{"librarian", "generate", "--all"},
+			want:             []string{lib1, lib2},
+			wantPostGenerate: true,
 		},
 		{
-			name: "skip generate",
-			args: []string{"librarian", "generate", lib3},
-			want: []string{},
+			name:    "skip generate",
+			args:    []string{"librarian", "generate", lib3},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -161,6 +163,13 @@ libraries:
 					t.Errorf("mismatch for STARTER.md for %q (-want +got):\n%s", libName, diff)
 				}
 			}
+
+			if test.wantPostGenerate {
+				postGeneratePath := filepath.Join(tempDir, "POST_GENERATE_README.md")
+				if _, err := os.Stat(postGeneratePath); err != nil {
+					t.Errorf("expected POST_GENERATE_README.md to exist, but got error: %v", err)
+				}
+			}
 		})
 	}
 }
@@ -185,9 +194,10 @@ func TestGenerateSkip(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name string
-		args []string
-		want []string
+		name    string
+		args    []string
+		wantErr error
+		want    []string
 	}{
 		{
 			name: "skip_generate with all flag",
@@ -195,8 +205,9 @@ func TestGenerateSkip(t *testing.T) {
 			want: []string{lib2},
 		},
 		{
-			name: "skip_generate with library name",
-			args: []string{"librarian", "generate", lib1},
+			name:    "skip_generate with library name",
+			args:    []string{"librarian", "generate", lib1},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -220,7 +231,14 @@ libraries:
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := Run(t.Context(), test.args...); err != nil {
+			err := Run(t.Context(), test.args...)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("want error %v, got %v", test.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
 				t.Fatal(err)
 			}
 			generated := make(map[string]bool)

@@ -31,7 +31,7 @@ import (
 // Generate generates a Python client library.
 func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no channels configured for library %q", library.Name)
+		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
 
 	// Convert library.Output to absolute path since protoc runs from a
@@ -50,11 +50,9 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// Some aspects of generation currently require the repo root. Compute it once here
 	// and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-
-	// Generate each channel separately.
-	for _, channel := range library.APIs {
-		if err := generateAPI(ctx, channel, library, googleapisDir, repoRoot); err != nil {
-			return fmt.Errorf("failed to generate channel %q: %w", channel.Path, err)
+	for _, api := range library.APIs {
+		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
+			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 
@@ -64,19 +62,19 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Remove the default version fudget here, as Generate should
-	// compute it. For now, use the last component of the first channel path as
+	// compute it. For now, use the last component of the first api path as
 	// the default version.
 	defaultVersion := filepath.Base(library.APIs[0].Path)
 
 	// Generate .repo-metadata.json from the service config in the first
-	// channel.
+	// api.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	channel, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
 	if err != nil {
 		return fmt.Errorf("failed to find service config: %w", err)
 	}
-	absoluteServiceConfig := filepath.Join(googleapisDir, channel.ServiceConfig)
+	absoluteServiceConfig := filepath.Join(googleapisDir, api.ServiceConfig)
 	if err := repometadata.Generate(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
@@ -100,8 +98,8 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	return nil
 }
 
-// generateAPI generates part of a library for a single channel.
-func generateAPI(ctx context.Context, channel *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+// generateAPI generates part of a library for a single api.
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
 	// Note: the Python Librarian container generates to a temporary directory,
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
@@ -109,23 +107,23 @@ func generateAPI(ctx context.Context, channel *config.API, library *config.Libra
 	// TODO(https://github.com/googleapis/librarian/issues/3210): generate
 	// directly in place.
 
-	stagingChildDirectory := getStagingChildDirectory(channel.Path)
+	stagingChildDirectory := getStagingChildDirectory(api.Path)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return err
 	}
-	protocOptions, err := createProtocOptions(channel, library, googleapisDir, stagingDir)
+	protocOptions, err := createProtocOptions(api, library, googleapisDir, stagingDir)
 	if err != nil {
 		return err
 	}
 
-	apiDir := filepath.Join(googleapisDir, channel.Path)
+	apiDir := filepath.Join(googleapisDir, api.Path)
 	protos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(protos) == 0 {
-		return fmt.Errorf("no protos found in channel %q", channel.Path)
+		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
 
 	// We want the proto filenames to be relative to googleapisDir
@@ -167,11 +165,11 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	opts = append(opts, "metadata")
 
 	// Add Python-specific options
-	// First common options that apply to all channels
+	// First common options that apply to all apis
 	if library.Python != nil && len(library.Python.OptArgs) > 0 {
 		opts = append(opts, library.Python.OptArgs...)
 	}
-	// Then options that apply to this specific channel
+	// Then options that apply to this specific api
 	if library.Python != nil && len(library.Python.OptArgsByAPI) > 0 {
 		apiOptArgs, ok := library.Python.OptArgsByAPI[ch.Path]
 		if ok {
@@ -202,12 +200,12 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
-	channel, err := serviceconfig.Find(googleapisDir, ch.Path)
+	api, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
 	}
-	if channel != nil && channel.ServiceConfig != "" {
-		opts = append(opts, fmt.Sprintf("service-yaml=%s", channel.ServiceConfig))
+	if api != nil && api.ServiceConfig != "" {
+		opts = append(opts, fmt.Sprintf("service-yaml=%s", api.ServiceConfig))
 	}
 
 	return []string{

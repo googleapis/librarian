@@ -253,43 +253,43 @@ func TestPrepareLibrary(t *testing.T) {
 		language    string
 		output      string
 		veneer      bool
-		channels    []*config.API
+		apis        []*config.API
 		wantOutput  string
 		wantErr     bool
 		wantAPIPath string
 	}{
 		{
-			name:       "empty output derives path from channel",
+			name:       "empty output derives path from api",
 			language:   "rust",
-			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated/cloud/secretmanager/v1",
 		},
 		{
 			name:       "explicit output keeps explicit path",
 			language:   "rust",
 			output:     "custom/output",
-			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "custom/output",
 		},
 		{
 			name:       "empty output uses default for non-rust",
 			language:   "go",
-			channels:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated",
 		},
 		{
-			name:        "rust with no channels creates default and derives path",
+			name:        "rust with no apis creates default and derives path",
 			language:    "rust",
-			channels:    nil,
+			apis:        nil,
 			wantOutput:  "src/generated/cloud/secretmanager/v1",
 			wantAPIPath: "google/cloud/secretmanager/v1",
 		},
 		{
-			name:        "veneer rust with no channels does not derive path",
+			name:        "veneer rust with no apis does not derive path",
 			language:    "rust",
 			output:      "src/storage/test/v1",
 			veneer:      true,
-			channels:    nil,
+			apis:        nil,
 			wantOutput:  "src/storage/test/v1",
 			wantAPIPath: "",
 		},
@@ -307,7 +307,7 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:        "rust lib without service config",
 			language:    "rust",
-			channels:    []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
+			apis:        []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
 		},
@@ -317,12 +317,12 @@ func TestPrepareLibrary(t *testing.T) {
 				Name:   "google-cloud-secretmanager-v1",
 				Output: test.output,
 				Veneer: test.veneer,
-				APIs:   test.channels,
+				APIs:   test.apis,
 			}
 			defaults := &config.Default{
 				Output: "src/generated",
 			}
-			got, err := prepareLibrary(test.language, lib, defaults, true)
+			got, err := applyDefaults(test.language, lib, defaults)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
@@ -338,7 +338,7 @@ func TestPrepareLibrary(t *testing.T) {
 			if len(got.APIs) > 0 {
 				ch := got.APIs[0]
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
-					t.Errorf("got channel path %q, want %q", ch.Path, test.wantAPIPath)
+					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
 				}
 			}
 		})

@@ -36,19 +36,19 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
-	channel, err := serviceconfig.Find(sources.Googleapis, ch.Path)
+	api, err := serviceconfig.Find(sources.Googleapis, ch.Path)
 	if err != nil {
 		return nil, err
 	}
-	if channel.Title != "" {
-		source["title-override"] = channel.Title
+	if api.Title != "" {
+		source["title-override"] = api.Title
 	}
 	var specSource string
 	switch specFormat {
 	case "disco":
-		specSource = channel.Discovery
+		specSource = api.Discovery
 	case "openapi":
-		specSource = channel.OpenAPI
+		specSource = api.OpenAPI
 	default:
 		specSource = ch.Path
 	}
@@ -61,7 +61,7 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources)
 		General: sidekickconfig.GeneralConfig{
 			Language:            "rust",
 			SpecificationFormat: specFormat,
-			ServiceConfig:       channel.ServiceConfig,
+			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: specSource,
 		},
 		Source: source,
