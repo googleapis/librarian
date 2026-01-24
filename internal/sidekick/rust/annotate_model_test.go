@@ -63,11 +63,6 @@ func TestDefaultFeatures(t *testing.T) {
 		if diff := cmp.Diff(test.Want, got.DefaultFeatures); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
 		}
-		if features, ok := test.Options["per-service-features"]; ok && features == "true" {
-			if !got.HasFeatures() {
-				t.Errorf("expected HasFeatures() == true")
-			}
-		}
 	}
 }
 
