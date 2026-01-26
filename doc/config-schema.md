@@ -4,6 +4,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Root Configuration
 
+[Source](../internal/config/config.go#L22)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `language` | string | Language is the language for this workspace (go, python, rust). |
@@ -16,6 +18,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Release Configuration
 
+[Source](../internal/config/config.go#L50)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `branch` | string | Branch sets the name of the release branch, typically `main` |
@@ -27,12 +31,16 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Tool Configuration
 
+[Source](../internal/config/config.go#L76)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the name of the tool e.g. nox. |
 | `version` | string | Version is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
+
+[Source](../internal/config/config.go#L85)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -44,6 +52,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Source Configuration
 
+[Source](../internal/config/config.go#L103)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `branch` | string | Branch is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
@@ -53,6 +63,8 @@ This document describes the schema for the `librarian.yaml` file.
 | `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
 
 ## Default Configuration
+
+[Source](../internal/config/config.go#L124)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -64,6 +76,8 @@ This document describes the schema for the `librarian.yaml` file.
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
 
 ## Library Configuration
+
+[Source](../internal/config/config.go#L148)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -88,11 +102,15 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## API Configuration
 
+[Source](../internal/config/config.go#L217)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
 ## DartPackage Configuration
+
+[Source](../internal/config/language.go#L279)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -113,6 +131,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## GoAPI Configuration
 
+[Source](../internal/config/language.go#L27)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string |  |
@@ -123,6 +143,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## GoModule Configuration
 
+[Source](../internal/config/language.go#L20)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string |  |
@@ -131,12 +153,16 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## PythonPackage Configuration
 
+[Source](../internal/config/language.go#L264)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all channels. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by channel. In each entry, the key is the channel (API path) and the value is the list of options to pass when generating that API channel. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 
 ## RustCrate Configuration
+
+[Source](../internal/config/language.go#L127)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -165,6 +191,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustDefault Configuration
 
+[Source](../internal/config/language.go#L36)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. |
@@ -174,12 +202,16 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustDiscovery Configuration
 
+[Source](../internal/config/language.go#L246)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
 | `pollers` | list of [RustPoller](#rustpoller-configuration) | Pollers is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
+
+[Source](../internal/config/language.go#L225)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -188,6 +220,8 @@ This document describes the schema for the `librarian.yaml` file.
 | `replace` | string | Replace is the replacement text. |
 
 ## RustModule Configuration
+
+[Source](../internal/config/language.go#L53)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -216,6 +250,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustPackageDependency Configuration
 
+[Source](../internal/config/language.go#L197)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the dependency name. It is listed first so it appears at the top of each dependency entry in YAML. |
@@ -228,12 +264,16 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustPaginationOverride Configuration
 
+[Source](../internal/config/language.go#L237)
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | ItemField is the name of the field used for items. |
 
 ## RustPoller Configuration
+
+[Source](../internal/config/language.go#L255)
 
 | Field | Type | Description |
 | :--- | :--- | :--- |

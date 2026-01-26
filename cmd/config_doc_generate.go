@@ -55,7 +55,7 @@ func run() error {
 
 func generate(out io.Writer, dir string) error {
 	cfg := &packages.Config{
-		Mode:  packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles,
+		Mode:  packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
 		Dir:   dir,
 		Tests: false,
 	}
@@ -73,11 +73,20 @@ func generate(out io.Writer, dir string) error {
 
 	structs := make(map[string]*ast.StructType)
 	docs := make(map[string]string)
+	sources := make(map[string]string)
 	var configKeys []string
 	var otherKeys []string
 
+	root := "."
+	if pkg.Module != nil {
+		root = pkg.Module.Dir
+	}
+
 	for _, file := range pkg.Syntax {
-		isConfig := filepath.Base(pkg.Fset.File(file.Pos()).Name()) == "config.go"
+		fileName := pkg.Fset.File(file.Pos()).Name()
+		relPath, _ := filepath.Rel(root, fileName)
+		isConfig := filepath.Base(fileName) == "config.go"
+
 		ast.Inspect(file, func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
@@ -98,6 +107,9 @@ func generate(out io.Writer, dir string) error {
 				docs[name] = cleanDoc(ts.Doc.Text())
 			}
 
+			line := pkg.Fset.Position(ts.Pos()).Line
+			sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
+
 			if isConfig {
 				configKeys = append(configKeys, name)
 			} else {
@@ -115,7 +127,7 @@ func generate(out io.Writer, dir string) error {
 
 	// Write Config objects first, then others.
 	for _, k := range append(configKeys, otherKeys...) {
-		writeStruct(out, k, structs[k], structs, docs)
+		writeStruct(out, k, structs[k], structs, docs, sources[k])
 	}
 
 	return nil
@@ -123,7 +135,7 @@ func generate(out io.Writer, dir string) error {
 
 // writeStruct writes a Markdown representation of a Go struct to the provided writer.
 // It generates a table of fields, including their YAML names, types, and descriptions.
-func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string) {
+func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string, sourceLink string) {
 	title := name + " Configuration"
 	if name == "Config" {
 		title = "Root Configuration"
@@ -132,6 +144,9 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 	fmt.Fprintln(out)
 	fmt.Fprintf(out, "## %s\n", title)
 	fmt.Fprintln(out)
+	if sourceLink != "" {
+		fmt.Fprintf(out, "[Source](%s)\n\n", sourceLink)
+	}
 	if doc := docs[name]; doc != "" {
 		fmt.Fprintf(out, "%s\n", doc)
 		fmt.Fprintln(out)

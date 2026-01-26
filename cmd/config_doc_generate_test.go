@@ -243,20 +243,20 @@ type Alpha struct {
 	if err := generate(&buf, dir); err != nil {
 		t.Fatal(err)
 	}
-
 	got := buf.String()
 
-	// Verify order: Root Configuration (Config), Second Configuration, Alpha Configuration, Other Configuration
 	configIdx := strings.Index(got, "## Root Configuration")
 	secondIdx := strings.Index(got, "## Second Configuration")
 	alphaIdx := strings.Index(got, "## Alpha Configuration")
 	otherIdx := strings.Index(got, "## Other Configuration")
-
 	if configIdx == -1 || secondIdx == -1 || alphaIdx == -1 || otherIdx == -1 {
 		t.Fatalf("missing objects in output: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
-
 	if !(configIdx < secondIdx && secondIdx < alphaIdx && alphaIdx < otherIdx) {
 		t.Errorf("incorrect order: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
+	}
+
+	if !strings.Contains(got, "[Source](../config.go#L4)") {
+		t.Error("output missing expected source link for Config")
 	}
 }
