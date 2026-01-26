@@ -156,7 +156,7 @@ type Library struct {
 
 	// API specifies which googleapis API to generate from (for generated
 	// libraries).
-	APIs []*API `yaml:"channels,omitempty"`
+	APIs []*API `yaml:"apis,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`

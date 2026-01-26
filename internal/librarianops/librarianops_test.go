@@ -56,7 +56,7 @@ libraries:
   - name: test-library
     version: 1.0.0
     output: output
-    channels:
+    apis:
       - path: google/cloud/secretmanager/v1
 `, googleapisDir)
 	if err := os.WriteFile(filepath.Join(repoDir, "librarian.yaml"), []byte(configContent), 0644); err != nil {
