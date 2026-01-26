@@ -76,9 +76,9 @@ func TestGenerateCommand(t *testing.T) {
 			wantPostGenerate: true,
 		},
 		{
-			name: "skip generate",
-			args: []string{"librarian", "generate", lib3},
-			want: []string{},
+			name:    "skip generate",
+			args:    []string{"librarian", "generate", lib3},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -194,9 +194,10 @@ func TestGenerateSkip(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name string
-		args []string
-		want []string
+		name    string
+		args    []string
+		wantErr error
+		want    []string
 	}{
 		{
 			name: "skip_generate with all flag",
@@ -204,8 +205,9 @@ func TestGenerateSkip(t *testing.T) {
 			want: []string{lib2},
 		},
 		{
-			name: "skip_generate with library name",
-			args: []string{"librarian", "generate", lib1},
+			name:    "skip_generate with library name",
+			args:    []string{"librarian", "generate", lib1},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -229,7 +231,14 @@ libraries:
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := Run(t.Context(), test.args...); err != nil {
+			err := Run(t.Context(), test.args...)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("want error %v, got %v", test.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
 				t.Fatal(err)
 			}
 			generated := make(map[string]bool)

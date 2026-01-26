@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -175,8 +174,10 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 			return err
 		}
 	}
-	if err := runLibrarianWithVersion(ctx, version, "update", "googleapis"); err != nil {
-		return err
+	if repoName != repoFake {
+		if err := runLibrarianWithVersion(ctx, version, "update", "googleapis"); err != nil {
+			return err
+		}
 	}
 	if err := runLibrarianWithVersion(ctx, version, "generate", "--all"); err != nil {
 		return err
@@ -237,15 +238,14 @@ func runCargoUpdate(ctx context.Context) error {
 }
 
 func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
-	cmd := exec.CommandContext(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
-	output, err := cmd.Output()
+	output, err := command.Output(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
 	if err != nil {
 		return "", fmt.Errorf("go list: %w", err)
 	}
 	var mod struct {
 		Version string `json:"Version"`
 	}
-	if err := json.Unmarshal(output, &mod); err != nil {
+	if err := json.Unmarshal([]byte(output), &mod); err != nil {
 		return "", fmt.Errorf("parsing go list output: %w", err)
 	}
 	if mod.Version == "" {

@@ -91,7 +91,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
-	derivedOutput := defaultOutput(cfg.Language, lib.APIs[0].Path, cfg.Default.Output)
+	derivedOutput := defaultOutput(cfg.Language, lib.Name, lib.APIs[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
 }
 

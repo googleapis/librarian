@@ -322,7 +322,7 @@ func TestPrepareLibrary(t *testing.T) {
 			defaults := &config.Default{
 				Output: "src/generated",
 			}
-			got, err := prepareLibrary(test.language, lib, defaults, true)
+			got, err := applyDefaults(test.language, lib, defaults)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")

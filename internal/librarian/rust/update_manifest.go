@@ -15,11 +15,13 @@
 package rust
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strings"
+
+	"github.com/googleapis/librarian/internal/command"
 )
 
 // CrateInfo contains the package information.
@@ -57,18 +59,16 @@ func updateCargoVersion(path, newVersion string) error {
 
 // shouldBumpManifestVersion checks if the manifest version needs to be bumped.
 // It returns false if the version has already been updated since the last tag.
-func shouldBumpManifestVersion(gitExe, lastTag, manifest string) (bool, error) {
+func shouldBumpManifestVersion(ctx context.Context, gitExe, lastTag, manifest string) (bool, error) {
 	delta := fmt.Sprintf("%s..HEAD", lastTag)
-	cmd := exec.Command(gitExe, "diff", delta, "--", manifest)
-	cmd.Dir = "."
-	contents, err := cmd.CombinedOutput()
+	contents, err := command.Output(ctx, gitExe, "diff", delta, "--", manifest)
 	if err != nil {
 		return false, err
 	}
 	if len(contents) == 0 {
 		return true, nil
 	}
-	lines := strings.Split(string(contents), "\n")
+	lines := strings.Split(contents, "\n")
 	has := func(prefix string) bool {
 		return slices.ContainsFunc(lines, func(line string) bool { return strings.HasPrefix(line, prefix) })
 	}
