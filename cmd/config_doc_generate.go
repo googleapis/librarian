@@ -143,9 +143,8 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 	for _, field := range st.Fields.List {
 		if len(field.Names) == 0 {
 			// Embedded struct
-			if ident, ok := field.Type.(*ast.Ident); ok {
-				fmt.Fprintf(out, "| (embedded) | [%s](#%s-configuration) | |\n", ident.Name, strings.ToLower(ident.Name))
-			}
+			typeName := getTypeName(field.Type)
+			fmt.Fprintf(out, "| (embedded) | %s | |\n", formatType(typeName, allStructs))
 			continue
 		}
 
