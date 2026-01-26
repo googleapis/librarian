@@ -76,12 +76,11 @@ For each repository, librarianops will:
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
   3. Resolve librarian version from @main and update version field in librarian.yaml
   4. Run librarian tidy
-  5. Run librarian update discovery (google-cloud-rust only)
-  6. Run librarian update googleapis
-  7. Run librarian generate --all
-  8. Run cargo update --workspace (google-cloud-rust only)
-  9. Commit changes
-  10. Create a pull request`,
+  5. Run librarian update --all
+  6. Run librarian generate --all
+  7. Run cargo update --workspace (google-cloud-rust only)
+  8. Commit changes
+  9. Create a pull request`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
@@ -169,13 +168,8 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 			return err
 		}
 	}
-	if repoName == repoRust {
-		if err := runLibrarianWithVersion(ctx, version, "update", "discovery"); err != nil {
-			return err
-		}
-	}
 	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, "update", "googleapis"); err != nil {
+		if err := runLibrarianWithVersion(ctx, version, "update", "--all"); err != nil {
 			return err
 		}
 	}
