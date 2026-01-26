@@ -83,7 +83,7 @@ This document describes the schema for the `librarian.yaml` file.
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
 | `version` | string | Version is the library version. |
-| `channels` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
+| `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | CopyrightYear is the copyright year for the library. |
 | `description_override` | string | DescriptionOverride overrides the library description. |
 | `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
@@ -157,8 +157,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all channels. Example: ["warehouse-package-name=google-cloud-batch"] |
-| `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by channel. In each entry, the key is the channel (API path) and the value is the list of options to pass when generating that API channel. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
+| `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
+| `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 
 ## RustCrate Configuration
 
