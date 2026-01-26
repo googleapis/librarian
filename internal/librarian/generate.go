@@ -285,6 +285,11 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return dart.Format(ctx, library)
 	case languageRust:
 		return rust.Format(ctx, library)
+	case languagePython:
+		// Python formatting is currently performed in the generate phase.
+		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
+		// generation and formatting for Python.
+		return nil
 	}
 	return fmt.Errorf("language %q does not support formatting", language)
 }
