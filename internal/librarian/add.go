@@ -54,7 +54,7 @@ func addCommand() *cli.Command {
 	}
 }
 
-func runAdd(ctx context.Context, name string, channel ...string) error {
+func runAdd(ctx context.Context, name string, api ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errConfigNotFound, err)
@@ -67,7 +67,7 @@ func runAdd(ctx context.Context, name string, channel ...string) error {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	cfg = addLibraryToLibrarianConfig(cfg, name, channel...)
+	cfg = addLibraryToLibrarianConfig(cfg, name, api...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}

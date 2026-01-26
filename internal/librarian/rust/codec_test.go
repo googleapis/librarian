@@ -390,7 +390,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -418,7 +418,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
+				Path: "testdata/secretmanager_openapi_v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -445,7 +445,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
@@ -598,7 +598,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/compute/v1",
+				Path: "discoveries/compute.v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{

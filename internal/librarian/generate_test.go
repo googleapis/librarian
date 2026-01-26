@@ -91,17 +91,17 @@ sources:
 libraries:
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/speech/v1
       - path: grafeas/v1
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/texttospeech/v1
   - name: %s
     output: %s
     skip_generate: true
-    channels:
+    apis:
       - path: google/cloud/speech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output, lib3, lib3Output)
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
@@ -221,11 +221,11 @@ libraries:
   - name: %s
     output: %s
     skip_generate: true
-    channels:
+    apis:
       - path: google/cloud/speech/v1
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/texttospeech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output)
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
@@ -266,14 +266,14 @@ libraries:
 
 // createGoogleapisServiceConfigs creates a mock googleapis directory structure
 // with service config files for testing purposes.
-// The configs map keys are channel paths (e.g., "google/cloud/speech/v1")
+// The configs map keys are api paths (e.g., "google/cloud/speech/v1")
 // and values are the service config filenames (e.g., "speech_v1.yaml").
 func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[string]string) string {
 	t.Helper()
 	googleapisDir := filepath.Join(tempDir, "googleapis")
 
-	for channelPath, filename := range configs {
-		dir := filepath.Join(googleapisDir, channelPath)
+	for apiPath, filename := range configs {
+		dir := filepath.Join(googleapisDir, apiPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}

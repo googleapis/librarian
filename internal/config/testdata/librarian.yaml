@@ -46,13 +46,13 @@ default:
         force_used: true
 libraries:
   - name: google-cloud-secretmanager-v1
-    channels:
+    apis:
       - path: google/cloud/secretmanager/v1
     version: 1.2.3
   - name: google-cloud-storage-v2
     roots:
       - googleapis
-    channels:
+    apis:
       - path: google/cloud/storage/v2
     version: 2.3.4
     rust:
