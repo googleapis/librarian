@@ -1342,7 +1342,7 @@ func TestProcessLibrary(t *testing.T) {
 			repo:  test.repo,
 			state: state,
 		}
-		err := r.processLibrary(test.libraryState)
+		err := r.processLibrary(t.Context(), test.libraryState)
 		if test.wantErr {
 			if err == nil {
 				t.Fatal("processLibrary() should return error")
@@ -1767,7 +1767,7 @@ func TestUpdateLibrary(t *testing.T) {
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}
-			err := r.updateLibrary(test.libraryState, test.commits)
+			err := r.updateLibrary(t.Context(), test.libraryState, test.commits)
 
 			if test.wantErr {
 				if err == nil {
@@ -1797,6 +1797,8 @@ func TestDetermineNextVersion(t *testing.T) {
 		libraryID       string
 		config          *legacyconfig.Config
 		librarianConfig *legacyconfig.LibrarianConfig
+		ghClient        GitHubClient
+		branch          string
 		wantVersion     string
 		wantErr         bool
 		wantErrMsg      string
@@ -1859,13 +1861,57 @@ func TestDetermineNextVersion(t *testing.T) {
 			wantVersion:    "2.5.0",
 			wantErr:        false,
 		},
+		{
+			name:   "preview ahead prerelease bump",
+			branch: "preview",
+			config: &legacyconfig.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &legacyconfig.LibrarianConfig{
+				Libraries: []*legacyconfig.LibraryConfig{},
+			},
+			ghClient: &mockGitHubClient{
+				librarianState: &legacyconfig.LibrarianState{
+					Image: "gcr.io/test/image:v1.2.3",
+					Libraries: []*legacyconfig.LibraryState{
+						{ID: "some-library", Version: "1.0.0", SourceRoots: []string{"test"}},
+					},
+				},
+			},
+			currentVersion: "1.1.0-preview.1",
+			wantVersion:    "1.1.0-preview.2",
+		},
+		{
+			name:   "preview-only prerelease bump",
+			branch: "preview",
+			config: &legacyconfig.Config{
+				Library: "some-library",
+			},
+			libraryID: "some-library",
+			librarianConfig: &legacyconfig.LibrarianConfig{
+				Libraries: []*legacyconfig.LibraryConfig{},
+			},
+			ghClient: &mockGitHubClient{
+				librarianState: &legacyconfig.LibrarianState{
+					Image: "gcr.io/test/image:v1.2.3",
+					Libraries: []*legacyconfig.LibraryState{
+						{ID: "not-the-same-lib", Version: "1.0.0", SourceRoots: []string{"other"}},
+					},
+				},
+			},
+			currentVersion: "1.1.0-preview.1",
+			wantVersion:    "1.1.0-preview.2",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := &stageRunner{
 				libraryVersion:  test.config.LibraryVersion,
 				librarianConfig: test.librarianConfig,
+				ghClient:        test.ghClient,
+				branch:          test.branch,
 			}
-			got, err := runner.determineNextVersion(test.commits, test.currentVersion, test.libraryID)
+			got, err := runner.determineNextVersion(t.Context(), test.commits, test.currentVersion, test.libraryID)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("determineNextVersion() should return error")
@@ -1876,6 +1922,9 @@ func TestDetermineNextVersion(t *testing.T) {
 				}
 
 				return
+			}
+			if err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantVersion, got); diff != "" {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)

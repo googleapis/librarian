@@ -150,7 +150,7 @@ func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) err
 				continue
 			}
 		}
-		if err := r.processLibrary(library); err != nil {
+		if err := r.processLibrary(ctx, library); err != nil {
 			return err
 		}
 
@@ -201,7 +201,7 @@ func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) err
 
 // processLibrary wrapper to process the library for release. Helps retrieve latest commits
 // since the last release and passing the changes to updateLibrary.
-func (r *stageRunner) processLibrary(library *legacyconfig.LibraryState) error {
+func (r *stageRunner) processLibrary(ctx context.Context, library *legacyconfig.LibraryState) error {
 	var tagName string
 	if library.Version != "0.0.0" {
 		tagFormat := legacyconfig.DetermineTagFormat(library.ID, library, r.librarianConfig)
@@ -213,7 +213,7 @@ func (r *stageRunner) processLibrary(library *legacyconfig.LibraryState) error {
 	}
 	// Filter specifically for commits relevant to a library
 	commits = filterCommitsByLibraryID(commits, library.ID)
-	return r.updateLibrary(library, commits)
+	return r.updateLibrary(ctx, library, commits)
 }
 
 // filterCommitsByLibraryID keeps the conventional commits if the given libraryID appears in the Footer or matches
@@ -243,7 +243,7 @@ func filterCommitsByLibraryID(commits []*legacygitrepo.ConventionalCommit, libra
 // 2. Updates the library's previous version and the new current version.
 //
 // 3. Set the library's release trigger to true.
-func (r *stageRunner) updateLibrary(library *legacyconfig.LibraryState, commits []*legacygitrepo.ConventionalCommit) error {
+func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.LibraryState, commits []*legacygitrepo.ConventionalCommit) error {
 	var nextVersion string
 	// If library version was explicitly set, attempt to use it. Otherwise, try to determine the version from the commits.
 	if r.libraryVersion != "" {
@@ -257,7 +257,7 @@ func (r *stageRunner) updateLibrary(library *legacyconfig.LibraryState, commits 
 		}
 	} else {
 		var err error
-		nextVersion, err = r.determineNextVersion(commits, library.Version, library.ID)
+		nextVersion, err = r.determineNextVersion(ctx, commits, library.Version, library.ID)
 		if err != nil {
 			return err
 		}
@@ -285,26 +285,53 @@ func (r *stageRunner) updateLibrary(library *legacyconfig.LibraryState, commits 
 
 // determineNextVersion determines the next valid SemVer version from the commits or from
 // the next_version override value in the config.yaml file.
-func (r *stageRunner) determineNextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
-	nextVersionFromCommits, err := NextVersion(commits, currentVersion)
+func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legacygitrepo.ConventionalCommit, currentVersion string, libraryID string) (string, error) {
+	var derivedNextVersion string
+	var err error
+	if r.branch == "preview" {
+		var stableVersion string
+		stableVersion, err = r.loadStableLibraryVersion(ctx, libraryID)
+		if err != nil {
+			return "", err
+		}
+		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
+	} else {
+		derivedNextVersion, err = NextVersion(commits, currentVersion)
+	}
 	if err != nil {
 		return "", err
 	}
 
 	if r.librarianConfig == nil {
 		slog.Debug("no librarian config")
-		return nextVersionFromCommits, nil
+		return derivedNextVersion, nil
 	}
 
 	// Look for next_version override from config.yaml
 	libraryConfig := r.librarianConfig.LibraryConfigFor(libraryID)
 	slog.Debug("looking up library config", "library", libraryID, slog.Any("config", libraryConfig))
 	if libraryConfig == nil || libraryConfig.NextVersion == "" {
-		return nextVersionFromCommits, nil
+		return derivedNextVersion, nil
 	}
 
 	// Compare versions and pick latest
-	return semver.MaxVersion(nextVersionFromCommits, libraryConfig.NextVersion), nil
+	return semver.MaxVersion(derivedNextVersion, libraryConfig.NextVersion), nil
+}
+
+func (r *stageRunner) loadStableLibraryVersion(ctx context.Context, libraryID string) (string, error) {
+	mainState, err := loadRepoStateFromGitHub(ctx, r.ghClient, "main")
+	if err != nil {
+		return "", err
+	}
+	mainLibState := mainState.LibraryByID(libraryID)
+	if mainLibState == nil {
+		// Library not configured for generation on main branch.
+		// This can happen if the library is new and only exists on the preview
+		// branch.
+		// Fallback to "0.0.0" as the stable version.
+		return "0.0.0", nil
+	}
+	return mainLibState.Version, nil
 }
 
 // toCommit converts a slice of legacygitrepo.ConventionalCommit to a slice of legacyconfig.Commit.
