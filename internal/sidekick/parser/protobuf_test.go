@@ -1871,10 +1871,13 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	}
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
-		if len(test.ResourceDefinitions) != 1 {
-			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		// With the fix, we expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
+		if len(test.ResourceDefinitions) != 2 {
+			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions))
 		}
-		wantResourceDef := &api.Resource{
+
+		// Verify Shelf
+		shelfResourceDef := &api.Resource{
 			Type: "library.googleapis.com/Shelf",
 			Patterns: []api.ResourcePattern{
 				{
@@ -1885,9 +1888,52 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 				},
 			},
 		}
+		// Find Shelf in the slice
+		var foundShelf *api.Resource
+		for _, r := range test.ResourceDefinitions {
+			if r.Type == "library.googleapis.com/Shelf" {
+				foundShelf = r
+				break
+			}
+		}
+		if foundShelf == nil {
+			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
+		}
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+			t.Errorf("ResourceDefinition (Shelf) mismatch (-want +got):\n%s", diff)
+		}
 
-		if diff := cmp.Diff(wantResourceDef, test.ResourceDefinitions[0], cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
-			t.Errorf("ResourceDefinition mismatch (-want +got):\n%s", diff)
+		// Verify Book
+		bookResourceDef := &api.Resource{
+			Type: "library.googleapis.com/Book",
+			Patterns: []api.ResourcePattern{
+				{
+					*api.NewPathSegment().WithLiteral("publishers"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*api.NewPathSegment().WithLiteral("shelves"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*api.NewPathSegment().WithLiteral("books"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("book").WithMatch()),
+				},
+			},
+			Plural:   "books",
+			Singular: "book",
+		}
+		// Find Book in the slice
+		var foundBook *api.Resource
+		for _, r := range test.ResourceDefinitions {
+			if r.Type == "library.googleapis.com/Book" {
+				foundBook = r
+				break
+			}
+		}
+		if foundBook == nil {
+			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Book' not found")
+		}
+		// Note: Book resource has 'Self' populated because it's a message resource.
+		// Ignoring Self/Codec for comparison.
+		if diff := cmp.Diff(bookResourceDef, foundBook, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+			t.Errorf("ResourceDefinition (Book) mismatch (-want +got):\n%s", diff)
 		}
 	})
 
