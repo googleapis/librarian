@@ -124,8 +124,13 @@ func generate(out io.Writer, dir string) error {
 // writeStruct writes a Markdown representation of a Go struct to the provided writer.
 // It generates a table of fields, including their YAML names, types, and descriptions.
 func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string) {
+	title := name + " Configuration"
+	if name == "Config" {
+		title = "Root Configuration"
+	}
+
 	fmt.Fprintln(out)
-	fmt.Fprintf(out, "## %s Object\n", name)
+	fmt.Fprintf(out, "## %s\n", title)
 	fmt.Fprintln(out)
 	if doc := docs[name]; doc != "" {
 		fmt.Fprintf(out, "%s\n", doc)
@@ -139,7 +144,7 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 		if len(field.Names) == 0 {
 			// Embedded struct
 			if ident, ok := field.Type.(*ast.Ident); ok {
-				fmt.Fprintf(out, "| (embedded) | [%s](#%s-object) | |\n", ident.Name, strings.ToLower(ident.Name))
+				fmt.Fprintf(out, "| (embedded) | [%s](#%s-configuration) | |\n", ident.Name, strings.ToLower(ident.Name))
 			}
 			continue
 		}
@@ -197,7 +202,11 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 	res := cleanType
 	// If it's one of our structs, link it
 	if _, ok := allStructs[cleanType]; ok {
-		res = fmt.Sprintf("[%s](#%s-object)", cleanType, strings.ToLower(cleanType))
+		anchor := strings.ToLower(cleanType) + "-configuration"
+		if cleanType == "Config" {
+			anchor = "root-configuration"
+		}
+		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
 	}
 
 	if isPointer {

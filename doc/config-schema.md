@@ -2,19 +2,19 @@
 
 This document describes the schema for the `librarian.yaml` file.
 
-## Config Object
+## Root Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `language` | string | Language is the language for this workspace (go, python, rust). |
 | `version` | string | Version is the librarian tool version to use. |
 | `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python". TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
-| `sources` | [Sources](#sources-object) (optional) | Sources references external source repositories. |
-| `release` | [Release](#release-object) (optional) | Release holds the configuration parameter for publishing and release subcommands. |
-| `default` | [Default](#default-object) (optional) | Default contains default settings for all libraries. They apply to all libraries unless overridden. |
-| `libraries` | list of [Library](#library-object) (optional) | Libraries contains configuration overrides for libraries that need special handling, and differ from default settings. |
+| `sources` | [Sources](#sources-configuration) (optional) | Sources references external source repositories. |
+| `release` | [Release](#release-configuration) (optional) | Release holds the configuration parameter for publishing and release subcommands. |
+| `default` | [Default](#default-configuration) (optional) | Default contains default settings for all libraries. They apply to all libraries unless overridden. |
+| `libraries` | list of [Library](#library-configuration) (optional) | Libraries contains configuration overrides for libraries that need special handling, and differ from default settings. |
 
-## Release Object
+## Release Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -25,24 +25,24 @@ This document describes the schema for the `librarian.yaml` file.
 | `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
 | `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
 
-## Tool Object
+## Tool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the name of the tool e.g. nox. |
 | `version` | string | Version is the version of the tool e.g. 1.2.4. |
 
-## Sources Object
+## Sources Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `conformance` | [Source](#source-object) (optional) | Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
-| `discovery` | [Source](#source-object) (optional) | Discovery is the discovery-artifact-manager repository configuration. |
-| `googleapis` | [Source](#source-object) (optional) | Googleapis is the googleapis repository configuration. |
-| `protobuf` | [Source](#source-object) (optional) | ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`. |
-| `showcase` | [Source](#source-object) (optional) | Showcase is the showcase repository configuration. |
+| `conformance` | [Source](#source-configuration) (optional) | Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
+| `discovery` | [Source](#source-configuration) (optional) | Discovery is the discovery-artifact-manager repository configuration. |
+| `googleapis` | [Source](#source-configuration) (optional) | Googleapis is the googleapis repository configuration. |
+| `protobuf` | [Source](#source-configuration) (optional) | ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`. |
+| `showcase` | [Source](#source-configuration) (optional) | Showcase is the showcase repository configuration. |
 
-## Source Object
+## Source Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -52,7 +52,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `sha256` | string | SHA256 is the expected hash of the tarball for this commit. |
 | `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
 
-## Default Object
+## Default Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -60,16 +60,16 @@ This document describes the schema for the `librarian.yaml` file.
 | `release_level` | string | ReleaseLevel is either "stable" or "preview". |
 | `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
-| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific default configuration. |
-| `rust` | [RustDefault](#rustdefault-object) (optional) | Rust contains Rust-specific default configuration. |
+| `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific default configuration. |
+| `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
 
-## Library Object
+## Library Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
 | `version` | string | Version is the library version. |
-| `channels` | list of [API](#api-object) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
+| `channels` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | CopyrightYear is the copyright year for the library. |
 | `description_override` | string | DescriptionOverride overrides the library description. |
 | `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
@@ -81,18 +81,18 @@ This document describes the schema for the `librarian.yaml` file.
 | `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Veneer indicates this library has hand-written code. A veneer may contain generated libraries. |
-| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific library configuration. |
-| `go` | [GoModule](#gomodule-object) (optional) | Go contains Go-specific library configuration. |
-| `python` | [PythonPackage](#pythonpackage-object) (optional) | Python contains Python-specific library configuration. |
-| `rust` | [RustCrate](#rustcrate-object) (optional) | Rust contains Rust-specific library configuration. |
+| `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific library configuration. |
+| `go` | [GoModule](#gomodule-configuration) (optional) | Go contains Go-specific library configuration. |
+| `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Python contains Python-specific library configuration. |
+| `rust` | [RustCrate](#rustcrate-configuration) (optional) | Rust contains Rust-specific library configuration. |
 
-## API Object
+## API Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
-## DartPackage Object
+## DartPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -111,7 +111,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `readme_quickstart_text` | string | ReadmeQuickstartText is text to use for the quickstart section in the README. |
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
 
-## GoAPI Object
+## GoAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -121,27 +121,27 @@ This document describes the schema for the `librarian.yaml` file.
 | `nested_protos` | list of string |  |
 | `proto_package` | string |  |
 
-## GoModule Object
+## GoModule Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string |  |
-| `go_apis` | list of [GoAPI](#goapi-object) (optional) |  |
+| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) |  |
 | `module_path_version` | string |  |
 
-## PythonPackage Object
+## PythonPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all channels. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by channel. In each entry, the key is the channel (API path) and the value is the list of options to pass when generating that API channel. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 
-## RustCrate Object
+## RustCrate Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| (embedded) | [RustDefault](#rustdefault-object) | |
-| `modules` | list of [RustModule](#rustmodule-object) (optional) | Modules specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. This is only used when the library has veneer: true. |
+| (embedded) | [RustDefault](#rustdefault-configuration) | |
+| `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Modules specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. This is only used when the library has veneer: true. |
 | `per_service_features` | bool | PerServiceFeatures enables per-service feature flags. |
 | `module_path` | string | ModulePath is the module path for the crate. |
 | `template_override` | string | TemplateOverride overrides the default template. |
@@ -158,28 +158,28 @@ This document describes the schema for the `librarian.yaml` file.
 | `include_grpc_only_methods` | bool | IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods. |
 | `post_process_protos` | string | PostProcessProtos indicates whether to post-process protos. |
 | `detailed_tracing_attributes` | bool | DetailedTracingAttributes indicates whether to include detailed tracing attributes. |
-| `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-object) | DocumentationOverrides contains overrides for element documentation. |
-| `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-object) | PaginationOverrides contains overrides for pagination configuration. |
+| `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | DocumentationOverrides contains overrides for element documentation. |
+| `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | PaginationOverrides contains overrides for pagination configuration. |
 | `name_overrides` | string | NameOverrides contains codec-level overrides for type and service names. |
-| `discovery` | [RustDiscovery](#rustdiscovery-object) (optional) | Discovery contains discovery-specific configuration for LRO polling. |
+| `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Discovery contains discovery-specific configuration for LRO polling. |
 
-## RustDefault Object
+## RustDefault Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-object) (optional) | PackageDependencies is a list of default package dependencies. |
+| `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. |
 | `disabled_rustdoc_warnings` | list of string | DisabledRustdocWarnings is a list of rustdoc warnings to disable. |
 | `generate_setter_samples` | string | GenerateSetterSamples indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | GenerateRpcSamples indicates whether to generate RPC samples. |
 
-## RustDiscovery Object
+## RustDiscovery Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
-| `pollers` | list of [RustPoller](#rustpoller-object) | Pollers is a list of LRO polling configurations. |
+| `pollers` | list of [RustPoller](#rustpoller-configuration) | Pollers is a list of LRO polling configurations. |
 
-## RustDocumentationOverride Object
+## RustDocumentationOverride Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -187,12 +187,12 @@ This document describes the schema for the `librarian.yaml` file.
 | `match` | string | Match is the text to match in the documentation. |
 | `replace` | string | Replace is the replacement text. |
 
-## RustModule Object
+## RustModule Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
-| `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-object) | DocumentationOverrides contains overrides for element documentation. |
+| `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | DocumentationOverrides contains overrides for element documentation. |
 | `extend_grpc_transport` | bool | ExtendGrpcTransport indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | GenerateSetterSamples indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | GenerateRpcSamples indicates whether to generate RPC samples. |
@@ -214,7 +214,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `source` | string | Source is the proto path to generate from (e.g., "google/storage/v2"). |
 | `template` | string | Template specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
 
-## RustPackageDependency Object
+## RustPackageDependency Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -226,14 +226,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `force_used` | bool | ForceUsed forces the dependency to be used even if not referenced. |
 | `used_if` | string | UsedIf specifies a condition for when the dependency is used. |
 
-## RustPaginationOverride Object
+## RustPaginationOverride Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | ItemField is the name of the field used for items. |
 
-## RustPoller Object
+## RustPoller Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |

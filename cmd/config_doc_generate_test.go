@@ -135,7 +135,7 @@ func TestFormatType(t *testing.T) {
 		{
 			name:     "internal struct",
 			typeName: "Repo",
-			want:     "[Repo](#repo-object)",
+			want:     "[Repo](#repo-configuration)",
 		},
 		{
 			name:     "pointer to basic",
@@ -145,7 +145,7 @@ func TestFormatType(t *testing.T) {
 		{
 			name:     "pointer to internal",
 			typeName: "*Repo",
-			want:     "[Repo](#repo-object) (optional)",
+			want:     "[Repo](#repo-configuration) (optional)",
 		},
 		{
 			name:     "slice of basic",
@@ -155,12 +155,12 @@ func TestFormatType(t *testing.T) {
 		{
 			name:     "slice of internal",
 			typeName: "[]Repo",
-			want:     "list of [Repo](#repo-object)",
+			want:     "list of [Repo](#repo-configuration)",
 		},
 		{
 			name:     "slice of pointers to internal",
 			typeName: "[]*Repo",
-			want:     "list of [Repo](#repo-object) (optional)",
+			want:     "list of [Repo](#repo-configuration) (optional)",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -246,18 +246,17 @@ type Alpha struct {
 
 	got := buf.String()
 
-	// Verify order: Config, Second, Alpha, Other
-	// (Config and Second from config.go in order, then Alpha and Other alphabetically)
-	configIdx := strings.Index(got, "## Config Object")
-	secondIdx := strings.Index(got, "## Second Object")
-	alphaIdx := strings.Index(got, "## Alpha Object")
-	otherIdx := strings.Index(got, "## Other Object")
+	// Verify order: Root Configuration (Config), Second Configuration, Alpha Configuration, Other Configuration
+	configIdx := strings.Index(got, "## Root Configuration")
+	secondIdx := strings.Index(got, "## Second Configuration")
+	alphaIdx := strings.Index(got, "## Alpha Configuration")
+	otherIdx := strings.Index(got, "## Other Configuration")
 
 	if configIdx == -1 || secondIdx == -1 || alphaIdx == -1 || otherIdx == -1 {
-		t.Fatalf("missing objects in output: config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
+		t.Fatalf("missing objects in output: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
 
 	if !(configIdx < secondIdx && secondIdx < alphaIdx && alphaIdx < otherIdx) {
-		t.Errorf("incorrect order: config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
+		t.Errorf("incorrect order: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
 }
