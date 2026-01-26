@@ -61,6 +61,10 @@ func fakeFormat(library *config.Library) error {
 	return os.WriteFile(readmePath, []byte(formatted), 0644)
 }
 
+func fakePostGenerate() error {
+	return os.WriteFile("POST_GENERATE_README.md", []byte("PostGenerated\n"), 0644)
+}
+
 func fakePublish(libraries []string, execute bool) error {
 	content := fmt.Sprintf("libraries=%s; execute=%v",
 		strings.Join(libraries, ","), execute)

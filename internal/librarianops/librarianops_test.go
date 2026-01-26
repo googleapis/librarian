@@ -20,11 +20,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
+const testLibrarianVersion = "v0.1.0"
+
 func TestGenerateCommand(t *testing.T) {
-	t.Skip("flaky test: TODO(https://github.com/googleapis/librarian/issues/3698)")
 	repoDir := t.TempDir()
 	if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
 		t.Fatal(err)
@@ -50,6 +54,7 @@ sources:
     dir: %s
 libraries:
   - name: test-library
+    version: 1.0.0
     output: output
     channels:
       - path: google/cloud/secretmanager/v1
@@ -102,5 +107,35 @@ func TestGenerateCommand_Errors(t *testing.T) {
 				t.Errorf("expected error, got nil")
 			}
 		})
+	}
+}
+
+func TestUpdateLibrarianVersion(t *testing.T) {
+	repoDir := t.TempDir()
+	configPath := filepath.Join(repoDir, "librarian.yaml")
+	initialConfig := &config.Config{
+		Language: "rust",
+		Version:  "v0.1.0",
+	}
+	if err := yaml.Write(configPath, initialConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	newVersion := testLibrarianVersion
+	if err := updateLibrarianVersion(newVersion, repoDir); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &config.Config{
+		Language: "rust",
+		Version:  newVersion,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

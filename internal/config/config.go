@@ -21,7 +21,13 @@ type Config struct {
 	// Language is the language for this workspace (go, python, rust).
 	Language string `yaml:"language"`
 
+	// Version is the librarian tool version to use.
+	Version string `yaml:"version,omitempty"`
+
 	// Repo is the repository name, such as "googleapis/google-cloud-python".
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/3003): Remove this
+	// field when .repo-metadata.json generation is removed.
 	Repo string `yaml:"repo,omitempty"`
 
 	// Sources references external source repositories.
@@ -186,10 +192,8 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
-	// Veneer indicates this library has hand-written code with generated
-	// submodules. When true, the library uses language-specific module
-	// configuration (e.g., rust.modules) instead of generating a complete crate
-	// from channels.
+	// Veneer indicates this library has hand-written code. A veneer may
+	// contain generated libraries.
 	Veneer bool `yaml:"veneer,omitempty"`
 
 	// Language-specific fields are below.

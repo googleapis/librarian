@@ -32,7 +32,6 @@ func TestAddLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
 		libName                string
-		output                 string
 		initialLibraries       []*config.Library
 		wantFinalLibraries     []*config.Library
 		wantGeneratedOutputDir string
@@ -41,14 +40,12 @@ func TestAddLibrary(t *testing.T) {
 		{
 			name:                   "create new library",
 			libName:                "google-cloud-secretmanager",
-			output:                 "newlib-output",
 			initialLibraries:       []*config.Library{},
 			wantGeneratedOutputDir: "newlib-output",
 			wantFinalLibraries: []*config.Library{
 				{
 					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
-					Output:        "newlib-output",
 				},
 			},
 		},
@@ -57,8 +54,7 @@ func TestAddLibrary(t *testing.T) {
 			libName: "google-cloud-secretmanager",
 			initialLibraries: []*config.Library{
 				{
-					Name:   "google-cloud-secretmanager",
-					Output: "existing-output",
+					Name: "google-cloud-secretmanager",
 				},
 			},
 			wantGeneratedOutputDir: "existing-output",
@@ -67,11 +63,9 @@ func TestAddLibrary(t *testing.T) {
 		{
 			name:    "create new library and tidy existing",
 			libName: "google-cloud-secretmanager",
-			output:  "newlib-output",
 			initialLibraries: []*config.Library{
 				{
-					Name:   "existinglib",
-					Output: "output",
+					Name: "existinglib",
 					APIs: []*config.API{
 						{Path: "google/cloud/secretmanager/v1"},
 					},
@@ -88,7 +82,6 @@ func TestAddLibrary(t *testing.T) {
 				{
 					Name:          "google-cloud-secretmanager",
 					CopyrightYear: copyrightYear,
-					Output:        "newlib-output",
 				},
 			},
 		},
@@ -116,7 +109,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			err = runAdd(t.Context(), test.libName, test.output)
+			err = runAdd(t.Context(), test.libName)
 			if test.wantError != nil {
 				if !errors.Is(err, test.wantError) {
 					t.Errorf("expected error %v, got %v", test.wantError, err)
@@ -151,11 +144,10 @@ func TestAddCommand(t *testing.T) {
 
 	testName := "google-cloud-secret-manager"
 	for _, test := range []struct {
-		name       string
-		args       []string
-		wantErr    error
-		wantAPIs   []*config.API
-		wantOutput string
+		name     string
+		args     []string
+		wantErr  error
+		wantAPIs []*config.API
 	}{
 		{
 			name:    "no args",
@@ -206,31 +198,6 @@ func TestAddCommand(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "library with multiple APIs and output flag",
-			args: []string{
-				"librarian",
-				"add",
-				testName,
-				"google/cloud/secretmanager/v1",
-				"google/cloud/secretmanager/v1beta2",
-				"google/cloud/secrets/v1beta1",
-				"--output",
-				"packages/google-cloud-secret-manager",
-			},
-			wantOutput: "packages/google-cloud-secret-manager",
-			wantAPIs: []*config.API{
-				{
-					Path: "google/cloud/secretmanager/v1",
-				},
-				{
-					Path: "google/cloud/secretmanager/v1beta2",
-				},
-				{
-					Path: "google/cloud/secrets/v1beta1",
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -269,12 +236,9 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if test.wantOutput != "" && got.Output != test.wantOutput {
-				t.Errorf("output = %q, want %q", got.Output, test.wantOutput)
-			}
 			if test.wantAPIs != nil {
 				if diff := cmp.Diff(test.wantAPIs, got.APIs); diff != "" {
-					t.Errorf("channels mismatch (-want +got):\n%s", diff)
+					t.Errorf("apis mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
@@ -285,20 +249,17 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
-		output      string
-		channels    []string
+		apis        []string
 		want        []*config.API
 	}{
 		{
 			name:        "library with no specification-source",
 			libraryName: "newlib",
-			output:      "output/newlib",
 		},
 		{
 			name:        "library with single API",
 			libraryName: "newlib",
-			output:      "output/newlib",
-			channels:    []string{"google/cloud/storage/v1"},
+			apis:        []string{"google/cloud/storage/v1"},
 			want: []*config.API{
 				{
 					Path: "google/cloud/storage/v1",
@@ -308,8 +269,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 		{
 			name:        "library with multiple APIs",
 			libraryName: "google-cloud-secret-manager",
-			output:      "output/google-cloud-secret-manager",
-			channels: []string{
+			apis: []string{
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
@@ -343,15 +303,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := addLibraryToLibrarianConfig(cfg, test.libraryName, test.output, test.channels...); err != nil {
-				t.Fatal(err)
-			}
-
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-
+			cfg = addLibraryToLibrarianConfig(cfg, test.libraryName, test.apis...)
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
@@ -360,14 +312,11 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if found.Output != test.output {
-				t.Errorf("output = %q, want %q", found.Output, test.output)
-			}
 			if found.Version != "" {
 				t.Errorf("version = %q, want %q", found.Version, "")
 			}
 			if diff := cmp.Diff(test.want, found.APIs); diff != "" {
-				t.Errorf("channels mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

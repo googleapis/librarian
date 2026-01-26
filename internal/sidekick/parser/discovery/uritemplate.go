@@ -26,6 +26,7 @@ const (
 	beginExpression = '{'
 	endExpression   = '}'
 	slash           = '/'
+	colon           = ':'
 )
 
 var (
@@ -61,6 +62,15 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 			break
 		}
 		pos++ // Skip slash
+	}
+	if pos != len(uriTemplate) && uriTemplate[pos] == colon {
+		pos++
+		literal, width, err := parseLiteral(uriTemplate[pos:])
+		if err != nil {
+			return nil, err
+		}
+		pos += width
+		template.Verb = literal.Literal
 	}
 	if pos != len(uriTemplate) {
 		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])
@@ -102,9 +112,12 @@ func parseExpression(input string) (*api.PathSegment, int, error) {
 	if !match {
 		return nil, 0, fmt.Errorf("invalid varname found on expression %q", input)
 	}
-	variable := api.NewPathVariable(tail).WithMatch()
+	variable := api.NewPathVariable(tail)
 	if allowReserved {
 		variable.WithAllowReserved()
+		variable.WithMatchRecursive()
+	} else {
+		variable.WithMatch()
 	}
 	return &api.PathSegment{Variable: variable}, end + 2, nil
 }

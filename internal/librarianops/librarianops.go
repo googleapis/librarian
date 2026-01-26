@@ -18,12 +18,16 @@ package librarianops
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -71,12 +75,14 @@ Use -C to work in a specific directory (assumes repository already exists there)
 For each repository, librarianops will:
   1. Clone the repository to a temporary directory
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
-  3. Run librarian update discovery (google-cloud-rust only)
-  4. Run librarian update googleapis
-  5. Run librarian generate --all
-  6. Run cargo update --workspace (google-cloud-rust only)
-  7. Commit changes
-  8. Create a pull request (pushes branch automatically)`,
+  3. Resolve librarian version from @main and update version field in librarian.yaml
+  4. Run librarian tidy
+  5. Run librarian update discovery (google-cloud-rust only)
+  6. Run librarian update googleapis
+  7. Run librarian generate --all
+  8. Run cargo update --workspace (google-cloud-rust only)
+  9. Commit changes
+  10. Create a pull request`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
@@ -152,15 +158,29 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 	if err := createBranch(ctx, time.Now()); err != nil {
 		return err
 	}
-	if repoName == repoRust {
-		if err := librarian.Run(ctx, "librarian", "update", "discovery"); err != nil {
+	version, err := getLibrarianVersionAtMain(ctx)
+	if err != nil {
+		return err
+	}
+	if err := updateLibrarianVersion(version, repoDir); err != nil {
+		return err
+	}
+	if repoName != repoFake {
+		if err := runLibrarianWithVersion(ctx, version, "tidy"); err != nil {
 			return err
 		}
 	}
-	if err := librarian.Run(ctx, "librarian", "update", "googleapis"); err != nil {
-		return err
+	if repoName == repoRust {
+		if err := runLibrarianWithVersion(ctx, version, "update", "discovery"); err != nil {
+			return err
+		}
 	}
-	if err := librarian.Run(ctx, "librarian", "generate", "--all"); err != nil {
+	if repoName != repoFake {
+		if err := runLibrarianWithVersion(ctx, version, "update", "googleapis"); err != nil {
+			return err
+		}
+	}
+	if err := runLibrarianWithVersion(ctx, version, "generate", "--all"); err != nil {
 		return err
 	}
 	if repoName == repoRust {
@@ -175,7 +195,7 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 		if err := pushBranch(ctx); err != nil {
 			return err
 		}
-		if err := createPR(ctx, repoName); err != nil {
+		if err := createPR(ctx, repoName, version); err != nil {
 			return err
 		}
 	}
@@ -202,17 +222,52 @@ func pushBranch(ctx context.Context) error {
 	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
 }
 
-func createPR(ctx context.Context, repoName string) error {
-	var body string
+func createPR(ctx context.Context, repoName, librarianVersion string) error {
+	sources := "googleapis"
 	if repoName == repoRust {
-		body = `Update googleapis/googleapis and googleapis/discovery-artifact-manager
-to the latest commit and regenerate all client libraries.`
-	} else {
-		body = `Update googleapis/googleapis to the latest commit and regenerate all client libraries.`
+		sources = "googleapis and discovery-artifact-manager"
 	}
-	return command.Run(ctx, "gh", "pr", "create", "--title", commitTitle, "--body", body)
+	title := fmt.Sprintf("chore: update librarian, %s, and regenerate", sources)
+	body := fmt.Sprintf(`Update librarian version to @main (%s).
+
+Update %s to the latest commit and regenerate all client libraries.`, librarianVersion, sources)
+	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
 }
 
 func runCargoUpdate(ctx context.Context) error {
 	return command.Run(ctx, "cargo", "update", "--workspace")
+}
+
+func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
+	cmd := exec.CommandContext(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("go list: %w", err)
+	}
+	var mod struct {
+		Version string `json:"Version"`
+	}
+	if err := json.Unmarshal(output, &mod); err != nil {
+		return "", fmt.Errorf("parsing go list output: %w", err)
+	}
+	if mod.Version == "" {
+		return "", fmt.Errorf("no version in go list output: %s", output)
+	}
+	return mod.Version, nil
+}
+
+func updateLibrarianVersion(version, repoDir string) error {
+	configPath := filepath.Join(repoDir, "librarian.yaml")
+	cfg, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		return err
+	}
+	cfg.Version = version
+	return yaml.Write(configPath, cfg)
+}
+
+func runLibrarianWithVersion(ctx context.Context, version string, args ...string) error {
+	return command.Run(ctx, "go",
+		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
+
 }

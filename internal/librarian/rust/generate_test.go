@@ -287,23 +287,23 @@ func TestGenerate(t *testing.T) {
 
 func TestDefaultLibraryName(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		channel string
-		want    string
+		name string
+		api  string
+		want string
 	}{
 		{
-			name:    "simple",
-			channel: "google/cloud/secretmanager/v1",
-			want:    "google-cloud-secretmanager-v1",
+			name: "simple",
+			api:  "google/cloud/secretmanager/v1",
+			want: "google-cloud-secretmanager-v1",
 		},
 		{
-			name:    "no slashes",
-			channel: "name",
-			want:    "name",
+			name: "no slashes",
+			api:  "name",
+			want: "name",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := defaultLibraryName(test.channel)
+			got := defaultLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

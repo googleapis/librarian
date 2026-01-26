@@ -383,6 +383,15 @@ func TestIsAIPStandard(t *testing.T) {
 		Model:        f.model,
 	}
 
+	validUndeleteMethod := &Method{
+		Name:      "UndeleteSecret",
+		InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+		OutputType: &Message{
+			Resource: f.resource,
+		},
+		Model: f.model,
+	}
+
 	// Setup for an invalid Get operation (e.g., wrong name)
 	invalidGetMethod := &Method{
 		Name:       "ListSecrets", // Not a Get method
@@ -404,6 +413,11 @@ func TestIsAIPStandard(t *testing.T) {
 		{
 			name:   "standard delete method returns true",
 			method: validDeleteMethod,
+			want:   true,
+		},
+		{
+			name:   "standard undelete method returns true",
+			method: validUndeleteMethod,
 			want:   true,
 		},
 		{
@@ -714,6 +728,141 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			got := tc.method.AIPStandardDeleteInfo()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("AIPStandardDeleteInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAIPStandardUndeleteInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardUndeleteInfo
+	}{
+		{
+			name: "valid simple undelete with wildcard resource reference",
+			method: &Method{
+				Name:      "UndeleteSecret",
+				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.wildcardResourceField}},
+				OutputType: &Message{
+					Resource: f.resource,
+				},
+				Model: f.model,
+			},
+			want: &AIPStandardUndeleteInfo{
+				ResourceNameRequestField: f.wildcardResourceField,
+			},
+		},
+		{
+			name: "valid simple undelete",
+			method: &Method{
+				Name:      "UndeleteSecret",
+				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OutputType: &Message{
+					Resource: f.resource,
+				},
+				Model: f.model,
+			},
+			want: &AIPStandardUndeleteInfo{
+				ResourceNameRequestField: f.resourceNameField,
+			},
+		},
+		{
+			name: "valid simple undelete with missing singular name on resource",
+			method: &Method{
+				Name:      "UndeleteSecret",
+				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameNoSingularField}},
+				OutputType: &Message{
+					Resource: f.resourceWithoutSingular,
+				},
+				Model: f.model,
+			},
+			want: &AIPStandardUndeleteInfo{
+				ResourceNameRequestField: f.resourceNameNoSingularField,
+			},
+		},
+		{
+			name: "valid lro undelete",
+			method: &Method{
+				Name:          "UndeleteSecret",
+				InputType:     &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+				OperationInfo: &OperationInfo{},
+				Model:         f.model,
+			},
+			want: &AIPStandardUndeleteInfo{
+				ResourceNameRequestField: f.resourceNameField,
+			},
+		},
+		{
+			name: "valid undelete with other name matching singular",
+			method: &Method{
+				Name:      "UndeleteSecret",
+				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceOtherNameField}},
+				OutputType: &Message{
+					Resource: f.resource,
+				},
+				Model: f.model,
+			},
+			want: &AIPStandardUndeleteInfo{
+				ResourceNameRequestField: f.resourceOtherNameField,
+			},
+		},
+		{
+			name: "incorrect method name",
+			method: &Method{
+				Name:      "RestoreSecret",
+				InputType: &Message{Name: "UndeleteSecretRequest", Fields: []*Field{f.resourceNameField}},
+				Model:     f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "incorrect request name",
+			method: &Method{
+				Name:      "UndeleteSecret",
+				InputType: &Message{Name: "RestoreSecretRequest", Fields: []*Field{f.resourceNameField}},
+				Model:     f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "resource not found in ResourceByType map",
+			method: &Method{
+				Name: "UndeleteSecret",
+				InputType: &Message{
+					Name: "UndeleteSecretRequest",
+					Fields: []*Field{
+						f.nonExistentResourceField,
+					},
+				},
+				Model: f.model, // model's ResourceByType does not contain the nonexistent resource
+			},
+			want: nil,
+		},
+		{
+			name: "invalid undelete with no matching field",
+			method: &Method{
+				Name: "UndeleteSecret",
+				InputType: &Message{
+					Name: "UndeleteSecretRequest",
+					Fields: []*Field{
+						f.nonExistentResourceField,
+						f.resourceOtherNameNoSingularField,
+					},
+				},
+				Model: f.model,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardUndeleteInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardUndeleteInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

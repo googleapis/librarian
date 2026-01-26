@@ -39,28 +39,22 @@ func addCommand() *cli.Command {
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
 		UsageText: "librarian add <library> [apis...] [flags]",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "output",
-				Usage: "output directory (optional, will be derived if not provided)",
-			},
-		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			args := c.Args()
 			name := args.First()
 			if name == "" {
 				return errMissingLibraryName
 			}
-			var channels []string
+			var apis []string
 			if len(args.Slice()) > 1 {
-				channels = args.Slice()[1:]
+				apis = args.Slice()[1:]
 			}
-			return runAdd(ctx, name, c.String("output"), channels...)
+			return runAdd(ctx, name, apis...)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, name, output string, channel ...string) error {
+func runAdd(ctx context.Context, name string, channel ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errConfigNotFound, err)
@@ -73,30 +67,27 @@ func runAdd(ctx context.Context, name, output string, channel ...string) error {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	if err := addLibraryToLibrarianConfig(cfg, name, output, channel...); err != nil {
-		return err
-	}
+	cfg = addLibraryToLibrarianConfig(cfg, name, channel...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name, output string, channel ...string) error {
+func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string) *config.Config {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-		Output:        output,
 	}
 
-	for _, c := range channel {
+	for _, a := range api {
 		lib.APIs = append(lib.APIs, &config.API{
-			Path: c,
+			Path: a,
 		})
 	}
 	cfg.Libraries = append(cfg.Libraries, lib)
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
-	return yaml.Write(librarianConfigPath, cfg)
+	return cfg
 }
