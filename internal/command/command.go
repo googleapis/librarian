@@ -28,8 +28,8 @@ import (
 // config.
 var Verbose bool
 
-// Run executes a program (with arguments) and captures any error output. It is a
-// convenience wrapper around RunWithEnv.
+// Run executes a program (with arguments). On error, stderr is included in the
+// error message. It is a convenience wrapper around RunWithEnv.
 func Run(ctx context.Context, command string, arg ...string) error {
 	return RunWithEnv(ctx, nil, command, arg...)
 }
@@ -38,6 +38,25 @@ func Run(ctx context.Context, command string, arg ...string) error {
 // variables and captures any error output. If env is nil or empty, the command
 // inherits the environment of the calling process.
 func RunWithEnv(ctx context.Context, env map[string]string, command string, arg ...string) error {
+	_, err := runCmd(ctx, env, command, arg...)
+	return err
+}
+
+// Output executes a program (with arguments) and returns stdout. It is a
+// convenience wrapper around OutputWithEnv.
+func Output(ctx context.Context, command string, arg ...string) (string, error) {
+	return OutputWithEnv(ctx, nil, command, arg...)
+}
+
+// OutputWithEnv executes a program (with arguments) and optional environment
+// variables and returns stdout. If env is nil or empty, the command inherits
+// the environment of the calling process. On error, stderr is included in the
+// error message.
+func OutputWithEnv(ctx context.Context, env map[string]string, command string, arg ...string) (string, error) {
+	return runCmd(ctx, env, command, arg...)
+}
+
+func runCmd(ctx context.Context, env map[string]string, command string, arg ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, command, arg...)
 	if len(env) > 0 {
 		cmd.Env = os.Environ()
@@ -48,10 +67,14 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 	if Verbose {
 		fmt.Fprintf(os.Stdout, "%s\n", cmd.String())
 	}
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%v: %v\n%s", cmd, err, output)
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return "", fmt.Errorf("%s: %v\n%s", cmd, err, exitErr.Stderr)
+		}
+		return "", fmt.Errorf("%s: %v", cmd, err)
 	}
-	return nil
+	return string(output), nil
 }
 
 // GetExecutablePath finds the path for a given command, checking for an

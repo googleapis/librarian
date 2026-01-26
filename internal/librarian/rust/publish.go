@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
-	"os"
-	"os/exec"
 	"slices"
 	"strings"
 
@@ -64,12 +62,11 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
 	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
-	cmd := exec.CommandContext(ctx, cargoPath, "workspaces", "plan", "--skip-published")
+	var env map[string]string
 	if config.RootsPem != "" {
-		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
+		env = map[string]string{"CARGO_HTTP_CAINFO": config.RootsPem}
 	}
-	cmd.Dir = "."
-	output, err := cmd.Output()
+	output, err := command.OutputWithEnv(ctx, env, cargoPath, "workspaces", "plan", "--skip-published")
 	if err != nil {
 		return err
 	}
@@ -111,12 +108,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	} else if dryRun {
 		args = append(args, "--dry-run")
 	}
-	cmd = exec.CommandContext(ctx, cargoPath, args...)
-	if config.RootsPem != "" {
-		cmd.Env = append(os.Environ(), fmt.Sprintf("CARGO_HTTP_CAINFO=%s", config.RootsPem))
-	}
-	cmd.Dir = "."
-	return cmd.Run()
+	return command.RunWithEnv(ctx, env, cargoPath, args...)
 }
 
 func isMockCargo(path string) bool {

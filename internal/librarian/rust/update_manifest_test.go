@@ -48,7 +48,7 @@ func TestShouldBumpManifestVersionSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	needsBump, err := shouldBumpManifestVersion("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestShouldBumpManifestVersionNewCrate(t *testing.T) {
 	}
 	name := path.Join("src", "new", "Cargo.toml")
 
-	needsBump, err := shouldBumpManifestVersion("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestShouldBumpManifestVersionNoChange(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
-	needsBump, err := shouldBumpManifestVersion("git", tag, name)
+	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.SetupForVersionBump(t, tag)
 	name := path.Join("src", "storage", "Cargo.toml")
-	if updated, err := shouldBumpManifestVersion("git", "not-a-valid-tag", name); err == nil {
+	if updated, err := shouldBumpManifestVersion(t.Context(), "git", "not-a-valid-tag", name); err == nil {
 		t.Errorf("expected an error with an valid tag, got=%v", updated)
 	}
 }

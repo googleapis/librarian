@@ -183,7 +183,7 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, l
 	case languageFake:
 		return fakeBumpLibrary(lib, version)
 	case languageRust:
-		return rust.Bump(lib, output, version, gitExe, lastTag)
+		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
 	default:
 		return fmt.Errorf("%q does not support bump", cfg.Language)
 	}
