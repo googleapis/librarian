@@ -18,6 +18,9 @@ package main
 
 import (
 	"go/ast"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -197,5 +200,64 @@ func TestCleanDoc(t *testing.T) {
 				t.Errorf("cleanDoc() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestGenerate(t *testing.T) {
+	dir := t.TempDir()
+
+	configContent := `
+package config
+// Config doc
+type Config struct {
+	A string ` + "`" + `yaml:"a"` + "`" + `
+}
+// Second doc
+type Second struct {
+	B int ` + "`" + `yaml:"b"` + "`" + `
+}
+`
+	otherContent := `
+package config
+// Other doc
+type Other struct {
+	C bool ` + "`" + `yaml:"c"` + "`" + `
+}
+// Alpha doc
+type Alpha struct {
+	D string ` + "`" + `yaml:"d"` + "`" + `
+}
+`
+
+	if err := os.WriteFile(filepath.Join(dir, "config.go"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "other.go"), []byte(otherContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module config\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf strings.Builder
+	if err := generate(&buf, dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got := buf.String()
+
+	// Verify order: Config, Second, Alpha, Other
+	// (Config and Second from config.go in order, then Alpha and Other alphabetically)
+	configIdx := strings.Index(got, "## Config Object")
+	secondIdx := strings.Index(got, "## Second Object")
+	alphaIdx := strings.Index(got, "## Alpha Object")
+	otherIdx := strings.Index(got, "## Other Object")
+
+	if configIdx == -1 || secondIdx == -1 || alphaIdx == -1 || otherIdx == -1 {
+		t.Fatalf("missing objects in output: config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
+	}
+
+	if !(configIdx < secondIdx && secondIdx < alphaIdx && alphaIdx < otherIdx) {
+		t.Errorf("incorrect order: config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
 }

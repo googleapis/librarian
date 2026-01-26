@@ -20,20 +20,20 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/parser"
-	"go/token"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 var (
-	inputDir     = flag.String("input", "internal/config", "Input directory containing config structs")
-	outputFile   = flag.String("output", "doc/config-schema.md", "Output file for documentation")
-	reWhitespace = regexp.MustCompile(`\s+`)
+	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
+	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
 )
 
 func main() {
@@ -44,21 +44,40 @@ func main() {
 }
 
 func run() error {
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, *inputDir, nil, parser.ParseComments)
+	out, err := os.Create(*outputFile)
 	if err != nil {
 		return err
 	}
+	defer out.Close()
 
-	pkg, ok := pkgs["config"]
-	if !ok {
-		return fmt.Errorf("package config not found in %s", *inputDir)
+	return generate(out, *inputDir)
+}
+
+func generate(out io.Writer, dir string) error {
+	cfg := &packages.Config{
+		Mode:  packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles,
+		Dir:   dir,
+		Tests: false,
+	}
+	pkgs, err := packages.Load(cfg, ".")
+	if err != nil {
+		return err
+	}
+	if len(pkgs) == 0 {
+		return fmt.Errorf("no packages found in %s", dir)
+	}
+	pkg := pkgs[0]
+	if len(pkg.Errors) > 0 {
+		return pkg.Errors[0]
 	}
 
 	structs := make(map[string]*ast.StructType)
 	docs := make(map[string]string)
+	var configKeys []string
+	var otherKeys []string
 
-	for _, file := range pkg.Files {
+	for _, file := range pkg.Syntax {
+		isConfig := filepath.Base(pkg.Fset.File(file.Pos()).Name()) == "config.go"
 		ast.Inspect(file, func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
@@ -68,46 +87,43 @@ func run() error {
 			if !ok {
 				return true
 			}
-			structs[ts.Name.Name] = st
+
+			name := ts.Name.Name
+			if structs[name] != nil {
+				return true // Already seen
+			}
+
+			structs[name] = st
 			if ts.Doc != nil {
-				docs[ts.Name.Name] = cleanDoc(ts.Doc.Text())
+				docs[name] = cleanDoc(ts.Doc.Text())
+			}
+
+			if isConfig {
+				configKeys = append(configKeys, name)
+			} else {
+				otherKeys = append(otherKeys, name)
 			}
 			return true
 		})
 	}
 
-	out, err := os.Create(*outputFile)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
+	sort.Strings(otherKeys)
 
 	fmt.Fprintln(out, "# librarian.yaml Schema")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "This document describes the schema for the `librarian.yaml` file.")
 
-	// Start with Config struct
-	if st, ok := structs["Config"]; ok {
-		writeStruct(out, "Config", st, structs, docs)
-	}
-
-	// Write other referenced structs in alphabetical order
-	keys := make([]string, 0, len(structs))
-	for k := range structs {
-		if k != "Config" {
-			keys = append(keys, k)
-		}
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
+	// Write Config objects first, then others.
+	for _, k := range append(configKeys, otherKeys...) {
 		writeStruct(out, k, structs[k], structs, docs)
 	}
 
 	return nil
 }
 
-func writeStruct(out *os.File, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string) {
+// writeStruct writes a Markdown representation of a Go struct to the provided writer.
+// It generates a table of fields, including their YAML names, types, and descriptions.
+func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string) {
 	fmt.Fprintln(out)
 	fmt.Fprintf(out, "## %s Object\n", name)
 	fmt.Fprintln(out)
@@ -195,7 +211,5 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 }
 
 func cleanDoc(doc string) string {
-	doc = strings.TrimSpace(doc)
-	doc = strings.ReplaceAll(doc, "\n", " ")
-	return reWhitespace.ReplaceAllString(doc, " ")
+	return strings.Join(strings.Fields(doc), " ")
 }

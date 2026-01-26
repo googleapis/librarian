@@ -10,9 +10,81 @@ This document describes the schema for the `librarian.yaml` file.
 | `version` | string | Version is the librarian tool version to use. |
 | `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python". TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
 | `sources` | [Sources](#sources-object) (optional) | Sources references external source repositories. |
-| `release` | [Release](#release-object) (optional) | Release holds the configuration parameter for any `${lang}-release` subcommand. |
-| `default` | [Default](#default-object) (optional) | Default contains default settings for all libraries. |
+| `release` | [Release](#release-object) (optional) | Release holds the configuration parameter for publishing and release subcommands. |
+| `default` | [Default](#default-object) (optional) | Default contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-object) (optional) | Libraries contains configuration overrides for libraries that need special handling, and differ from default settings. |
+
+## Release Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `branch` | string | Branch sets the name of the release branch, typically `main` |
+| `ignored_changes` | list of string | IgnoredChanges defines globs that are ignored in change analysis. |
+| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled. This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
+| `remote` | string | Remote sets the name of the source-of-truth remote for releases, typically `upstream`. |
+| `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
+| `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
+
+## Tool Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Name is the name of the tool e.g. nox. |
+| `version` | string | Version is the version of the tool e.g. 1.2.4. |
+
+## Sources Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `conformance` | [Source](#source-object) (optional) | Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
+| `discovery` | [Source](#source-object) (optional) | Discovery is the discovery-artifact-manager repository configuration. |
+| `googleapis` | [Source](#source-object) (optional) | Googleapis is the googleapis repository configuration. |
+| `protobuf` | [Source](#source-object) (optional) | ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`. |
+| `showcase` | [Source](#source-object) (optional) | Showcase is the showcase repository configuration. |
+
+## Source Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `branch` | string | Branch is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
+| `commit` | string | Commit is the git commit hash or tag to use. |
+| `dir` | string | Dir is a local directory path to use instead of fetching. If set, Commit and SHA256 are ignored. |
+| `sha256` | string | SHA256 is the expected hash of the tarball for this commit. |
+| `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
+
+## Default Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `output` | string | Output is the directory where code is written. For example, for Rust this is src/generated. |
+| `release_level` | string | ReleaseLevel is either "stable" or "preview". |
+| `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
+| `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
+| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific default configuration. |
+| `rust` | [RustDefault](#rustdefault-object) (optional) | Rust contains Rust-specific default configuration. |
+
+## Library Object
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Name is the library name, such as "secretmanager" or "storage". |
+| `version` | string | Version is the library version. |
+| `channels` | list of [API](#api-object) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
+| `copyright_year` | string | CopyrightYear is the copyright year for the library. |
+| `description_override` | string | DescriptionOverride overrides the library description. |
+| `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
+| `output` | string | Output is the directory where code is written. This overrides Default.Output. |
+| `release_level` | string | ReleaseLevel is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
+| `skip_generate` | bool | SkipGenerate disables code generation for this library. |
+| `skip_publish` | bool | SkipPublish disables publishing for this library. |
+| `skip_release` | bool | SkipRelease disables releasing for this library. |
+| `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
+| `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
+| `veneer` | bool | Veneer indicates this library has hand-written code. A veneer may contain generated libraries. |
+| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific library configuration. |
+| `go` | [GoModule](#gomodule-object) (optional) | Go contains Go-specific library configuration. |
+| `python` | [PythonPackage](#pythonpackage-object) (optional) | Python contains Python-specific library configuration. |
+| `rust` | [RustCrate](#rustcrate-object) (optional) | Rust contains Rust-specific library configuration. |
 
 ## API Object
 
@@ -39,17 +111,6 @@ This document describes the schema for the `librarian.yaml` file.
 | `readme_quickstart_text` | string | ReadmeQuickstartText is text to use for the quickstart section in the README. |
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
 
-## Default Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `output` | string | Output is the directory where code is written. For example, for Rust this is src/generated. |
-| `release_level` | string | ReleaseLevel is either "stable" or "preview". |
-| `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
-| `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
-| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific default configuration. |
-| `rust` | [RustDefault](#rustdefault-object) (optional) | Rust contains Rust-specific default configuration. |
-
 ## GoAPI Object
 
 | Field | Type | Description |
@@ -68,46 +129,12 @@ This document describes the schema for the `librarian.yaml` file.
 | `go_apis` | list of [GoAPI](#goapi-object) (optional) |  |
 | `module_path_version` | string |  |
 
-## Library Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Name is the library name, such as "secretmanager" or "storage". |
-| `version` | string | Version is the library version. |
-| `channels` | list of [API](#api-object) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
-| `copyright_year` | string | CopyrightYear is the copyright year for the library. |
-| `description_override` | string | DescriptionOverride overrides the library description. |
-| `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
-| `output` | string | Output is the directory where code is written. This overrides Default.Output. |
-| `release_level` | string | ReleaseLevel is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
-| `skip_generate` | bool | SkipGenerate disables code generation for this library. |
-| `skip_publish` | bool | SkipPublish disables publishing for this library. |
-| `skip_release` | bool | SkipRelease disables releasing for this library. |
-| `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
-| `veneer` | bool | Veneer indicates this library has hand-written code. A veneer may contain generated libraries. |
-| `dart` | [DartPackage](#dartpackage-object) (optional) | Dart contains Dart-specific library configuration. |
-| `go` | [GoModule](#gomodule-object) (optional) | Go contains Go-specific library configuration. |
-| `python` | [PythonPackage](#pythonpackage-object) (optional) | Python contains Python-specific library configuration. |
-| `rust` | [RustCrate](#rustcrate-object) (optional) | Rust contains Rust-specific library configuration. |
-
 ## PythonPackage Object
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all channels. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by channel. In each entry, the key is the channel (API path) and the value is the list of options to pass when generating that API channel. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
-
-## Release Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `branch` | string | Branch sets the name of the release branch, typically `main` |
-| `ignored_changes` | list of string | IgnoredChanges defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled. This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `remote` | string | Remote sets the name of the source-of-truth remote for releases, typically `upstream`. |
-| `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
-| `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
 
 ## RustCrate Object
 
@@ -212,30 +239,3 @@ This document describes the schema for the `librarian.yaml` file.
 | :--- | :--- | :--- |
 | `prefix` | string | Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
 | `method_id` | string | MethodID is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
-
-## Source Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `branch` | string | Branch is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
-| `commit` | string | Commit is the git commit hash or tag to use. |
-| `dir` | string | Dir is a local directory path to use instead of fetching. If set, Commit and SHA256 are ignored. |
-| `sha256` | string | SHA256 is the expected hash of the tarball for this commit. |
-| `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
-
-## Sources Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `conformance` | [Source](#source-object) (optional) | Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
-| `discovery` | [Source](#source-object) (optional) | Discovery is the discovery-artifact-manager repository configuration. |
-| `googleapis` | [Source](#source-object) (optional) | Googleapis is the googleapis repository configuration. |
-| `protobuf` | [Source](#source-object) (optional) | ProtobufSrc is the path to the `protobuf` repository, used as include directory for `protoc`. |
-| `showcase` | [Source](#source-object) (optional) | Showcase is the showcase repository configuration. |
-
-## Tool Object
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Name is the name of the tool e.g. nox. |
-| `version` | string | Version is the version of the tool e.g. 1.2.4. |
