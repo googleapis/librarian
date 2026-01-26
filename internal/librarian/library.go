@@ -107,7 +107,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if defaults != nil {
 		defaultOut = defaults.Output
 	}
-	return defaultOutput(language, apiPath, defaultOut)
+	return defaultOutput(language, lib.Name, apiPath, defaultOut)
 }
 
 // applyDefaults applies language-specific derivations and fills defaults.
@@ -126,7 +126,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		if lib.Veneer {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
-		lib.Output = defaultOutput(language, lib.APIs[0].Path, defaults.Output)
+		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
 	}
 	return fillDefaults(lib, defaults), nil
 }

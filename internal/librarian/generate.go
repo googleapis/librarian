@@ -156,10 +156,12 @@ func postGenerate(ctx context.Context, language string) error {
 	}
 }
 
-func defaultOutput(language, api, defaultOut string) string {
+func defaultOutput(language, name, api, defaultOut string) string {
 	switch language {
 	case languageRust:
 		return rust.DefaultOutput(api, defaultOut)
+	case languagePython:
+		return python.DefaultOutputByName(name, defaultOut)
 	default:
 		return defaultOut
 	}
@@ -285,6 +287,11 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return dart.Format(ctx, library)
 	case languageRust:
 		return rust.Format(ctx, library)
+	case languagePython:
+		// Python formatting is currently performed in the generate phase.
+		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
+		// generation and formatting for Python.
+		return nil
 	}
 	return fmt.Errorf("language %q does not support formatting", language)
 }

@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -30,12 +31,12 @@ var (
 
 // Bump checks if a version bump is required and performs it.
 // It returns without error if no bump is needed (version already updated since lastTag).
-func Bump(library *config.Library, output, version, gitExe, lastTag string) error {
+func Bump(ctx context.Context, library *config.Library, output, version, gitExe, lastTag string) error {
 	if version == "" {
 		return errMissingVersion
 	}
 	cargoFile := filepath.Join(output, "Cargo.toml")
-	needed, err := shouldBumpManifestVersion(gitExe, lastTag, cargoFile)
+	needed, err := shouldBumpManifestVersion(ctx, gitExe, lastTag, cargoFile)
 	if err != nil {
 		return err
 	}
