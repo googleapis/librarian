@@ -37,23 +37,31 @@ publish                = false
 [lints]
 workspace = true
 {{/Codec.DetailedTracingAttributes}}
-{{#Codec.PerServiceFeatures}}
+{{#Codec.HasServices}}
 
 [features]
 default = [
+    "default-rustls-provider",
     {{#Codec.DefaultFeatures}}
     "{{{.}}}",
     {{/Codec.DefaultFeatures}}
 ]
+# Enabled by default. Use the default rustls crypto provider ([aws-lc-rs]) for
+# TLS and authentication. Applications with specific requirements for
+# cryptography (such as exclusively using the [ring] crate) should disable this
+# default and call `rustls::crypto::CryptoProvider::install_default()`.
+default-rustls-provider = ["gaxi/_default-rustls-provider"]
+{{#Codec.PerServiceFeatures}}
 {{#Codec.Services}}
 # Enables `client::{{Codec.Name}}` and all the types it depends on.
 {{Codec.FeatureName}} = []
 {{/Codec.Services}}
+{{/Codec.PerServiceFeatures}}
 
 {{! We want docs for all features, not just the default features. }}
 [package.metadata.docs.rs]
 all-features = true
-{{/Codec.PerServiceFeatures}}
+{{/Codec.HasServices}}
 
 [dependencies]
 {{#Codec.RequiredPackages}}

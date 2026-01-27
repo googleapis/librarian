@@ -327,8 +327,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
 		lib.Output = relativePath
-
-		// Add channels
 		lib.APIs = append(lib.APIs, &config.API{
 			Path: apiPath,
 		})

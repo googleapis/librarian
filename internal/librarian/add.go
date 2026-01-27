@@ -45,16 +45,16 @@ func addCommand() *cli.Command {
 			if name == "" {
 				return errMissingLibraryName
 			}
-			var channels []string
+			var apis []string
 			if len(args.Slice()) > 1 {
-				channels = args.Slice()[1:]
+				apis = args.Slice()[1:]
 			}
-			return runAdd(ctx, name, channels...)
+			return runAdd(ctx, name, apis...)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, name string, channel ...string) error {
+func runAdd(ctx context.Context, name string, api ...string) error {
 	cfg, err := yaml.Read[config.Config](librarianConfigPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errConfigNotFound, err)
@@ -67,22 +67,22 @@ func runAdd(ctx context.Context, name string, channel ...string) error {
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	cfg = addLibraryToLibrarianConfig(cfg, name, channel...)
+	cfg = addLibraryToLibrarianConfig(cfg, name, api...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name string, channel ...string) *config.Config {
+func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string) *config.Config {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
 	}
 
-	for _, c := range channel {
+	for _, a := range api {
 		lib.APIs = append(lib.APIs, &config.API{
-			Path: c,
+			Path: a,
 		})
 	}
 	cfg.Libraries = append(cfg.Libraries, lib)

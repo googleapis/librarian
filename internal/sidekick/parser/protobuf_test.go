@@ -1871,10 +1871,13 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	}
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
-		if len(test.ResourceDefinitions) != 1 {
-			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		// We expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
+		if len(test.ResourceDefinitions) != 2 {
+			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions))
 		}
-		wantResourceDef := &api.Resource{
+
+		// Verify Shelf
+		shelfResourceDef := &api.Resource{
 			Type: "library.googleapis.com/Shelf",
 			Patterns: []api.ResourcePattern{
 				{
@@ -1885,9 +1888,52 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 				},
 			},
 		}
+		// Find Shelf in the slice
+		var foundShelf *api.Resource
+		for _, r := range test.ResourceDefinitions {
+			if r.Type == "library.googleapis.com/Shelf" {
+				foundShelf = r
+				break
+			}
+		}
+		if foundShelf == nil {
+			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
+		}
+		if diff := cmp.Diff(shelfResourceDef, foundShelf, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
+			t.Errorf("ResourceDefinition (Shelf) mismatch (-want +got):\n%s", diff)
+		}
 
-		if diff := cmp.Diff(wantResourceDef, test.ResourceDefinitions[0], cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
-			t.Errorf("ResourceDefinition mismatch (-want +got):\n%s", diff)
+		// Verify Book
+		bookResourceDef := &api.Resource{
+			Type: "library.googleapis.com/Book",
+			Patterns: []api.ResourcePattern{
+				{
+					*api.NewPathSegment().WithLiteral("publishers"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*api.NewPathSegment().WithLiteral("shelves"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*api.NewPathSegment().WithLiteral("books"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("book").WithMatch()),
+				},
+			},
+			Plural:   "books",
+			Singular: "book",
+		}
+		// Find Book in the slice
+		var foundBook *api.Resource
+		for _, r := range test.ResourceDefinitions {
+			if r.Type == "library.googleapis.com/Book" {
+				foundBook = r
+				break
+			}
+		}
+		if foundBook == nil {
+			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Book' not found")
+		}
+		// Note: Book resource has 'Self' populated because it's a message resource.
+		// Ignoring Self/Codec for comparison.
+		if diff := cmp.Diff(bookResourceDef, foundBook, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
+			t.Errorf("ResourceDefinition (Book) mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -2044,6 +2090,38 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		field := msg.Fields[0] // simple_field
 		if field.IsResourceReference() {
 			t.Errorf("Expected simple_field not to be ResourceReference, got %v", field.ResourceReference)
+		}
+	})
+}
+
+func TestProtobuf_ResourceCoverage(t *testing.T) {
+	requireProtoc(t)
+
+	t.Run("Deduplication", func(t *testing.T) {
+		test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_coverage.proto"))
+		if err != nil {
+			t.Fatalf("Failed to make API for Protobuf %v", err)
+		}
+
+		// Verify only 1 resource exists and it is the message-level one ("book_message").
+		// This confirms that message-level resources overwrite file-level resources with the same type.
+		if len(test.ResourceDefinitions) != 1 {
+			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		}
+		got := test.ResourceDefinitions[0]
+		if got.Singular != "book_message" {
+			t.Errorf("Expected singular 'book_message', got %q", got.Singular)
+		}
+		// Verify Self is set (only message resources have Self populated by processResourceAnnotation)
+		if got.Self == nil {
+			t.Errorf("Expected Resource.Self to be populated for message-level resource")
+		}
+	})
+
+	t.Run("InvalidPattern", func(t *testing.T) {
+		_, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_invalid.proto"))
+		if err == nil {
+			t.Errorf("Expected error for invalid resource pattern, got nil")
 		}
 	})
 }

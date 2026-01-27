@@ -45,7 +45,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		return generateVeneer(ctx, library, sources)
 	}
 	if len(library.APIs) != 1 {
-		return fmt.Errorf("the Rust generator only supports a single channel per library")
+		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
 	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
@@ -75,6 +75,11 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		validate(ctx, library.Output)
 	}
 	return nil
+}
+
+// UpdateWorkspace updates dependencies for the entire Rust workspace.
+func UpdateWorkspace(ctx context.Context) error {
+	return command.Run(ctx, "cargo", "update", "--workspace")
 }
 
 // Format formats a generated Rust library. Must be called sequentially;
@@ -155,23 +160,23 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// defaultLibraryName derives a library name from a channel path.
+// defaultLibraryName derives a library name from a api path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
-func defaultLibraryName(channel string) string {
-	return strings.ReplaceAll(channel, "/", "-")
+func defaultLibraryName(api string) string {
+	return strings.ReplaceAll(api, "/", "-")
 }
 
-// DeriveAPIPath derives a channel path from a library name.
+// DeriveAPIPath derives a api path from a library name.
 // For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
 func DeriveAPIPath(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
 
-// DefaultOutput derives an output path from a channel path and default output.
+// DefaultOutput derives an output path from a api path and default output.
 // For example: google/cloud/secretmanager/v1 with default src/generated/
 // returns src/generated/cloud/secretmanager/v1.
-func DefaultOutput(channel, defaultOutput string) string {
-	return filepath.Join(defaultOutput, strings.TrimPrefix(channel, "google/"))
+func DefaultOutput(api, defaultOutput string) string {
+	return filepath.Join(defaultOutput, strings.TrimPrefix(api, "google/"))
 }
 
 // generateRustStorage generates rust StorageControl client.

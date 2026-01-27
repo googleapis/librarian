@@ -8,6 +8,14 @@
 *.so
 *.dylib
 
+# Binaries
+cmd/legacyautomation/legacyautomation
+cmd/legacylibrarian/legacylibrarian
+cmd/librarian/librarian
+cmd/librarianops/librarianops
+cmd/sidekick/sidekick
+cmd/surfer/surfer
+
 # Test binary, built with `go test -c`
 *.test
 

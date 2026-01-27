@@ -23,7 +23,7 @@ type GoModule struct {
 	ModulePathVersion           string   `yaml:"module_path_version,omitempty"`
 }
 
-// GoAPI represents configuration for a single API channel within a Go module.
+// GoAPI represents configuration for a single API api within a Go module.
 type GoAPI struct {
 	Path            string   `yaml:"path,omitempty"`
 	ClientDirectory string   `yaml:"client_directory,omitempty"`
@@ -263,14 +263,14 @@ type RustPoller struct {
 // PythonPackage contains Python-specific library configuration.
 type PythonPackage struct {
 	// OptArgs contains additional options passed to the generator, where
-	// the options are common to all channels.
+	// the options are common to all apis.
 	// Example: ["warehouse-package-name=google-cloud-batch"]
 	OptArgs []string `yaml:"opt_args,omitempty"`
 
 	// OptArgsByAPI contains additional options passed to the generator,
-	// where the options vary by channel. In each entry, the key is the channel
+	// where the options vary by api. In each entry, the key is the api
 	// (API path) and the value is the list of options to pass when generating
-	// that API channel.
+	// that API.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByAPI map[string][]string `yaml:"opt_args_by_api,omitempty"`
 }

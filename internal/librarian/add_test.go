@@ -238,7 +238,7 @@ func TestAddCommand(t *testing.T) {
 			}
 			if test.wantAPIs != nil {
 				if diff := cmp.Diff(test.wantAPIs, got.APIs); diff != "" {
-					t.Errorf("channels mismatch (-want +got):\n%s", diff)
+					t.Errorf("apis mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
@@ -249,7 +249,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
-		channels    []string
+		apis        []string
 		want        []*config.API
 	}{
 		{
@@ -259,7 +259,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 		{
 			name:        "library with single API",
 			libraryName: "newlib",
-			channels:    []string{"google/cloud/storage/v1"},
+			apis:        []string{"google/cloud/storage/v1"},
 			want: []*config.API{
 				{
 					Path: "google/cloud/storage/v1",
@@ -269,7 +269,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 		{
 			name:        "library with multiple APIs",
 			libraryName: "google-cloud-secret-manager",
-			channels: []string{
+			apis: []string{
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
@@ -303,7 +303,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			cfg = addLibraryToLibrarianConfig(cfg, test.libraryName, test.channels...)
+			cfg = addLibraryToLibrarianConfig(cfg, test.libraryName, test.apis...)
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
@@ -316,7 +316,7 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 				t.Errorf("version = %q, want %q", found.Version, "")
 			}
 			if diff := cmp.Diff(test.want, found.APIs); diff != "" {
-				t.Errorf("channels mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
