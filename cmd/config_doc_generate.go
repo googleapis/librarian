@@ -45,12 +45,9 @@ const (
 
 var structTemplate = template.Must(template.New("struct").Parse(`
 ## {{.Title}}
-{{if .SourceLink}}
-[Link to code]({{.SourceLink}})
-{{end}}
-{{if .Doc}}{{.Doc}}
-{{end}}
-| Field | Type | Description |
+{{if .SourceLink}}[Link to code]({{.SourceLink}})
+{{end}}{{if .Doc}}{{.Doc}}
+{{end}}| Field | Type | Description |
 | :--- | :--- | :--- |
 {{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
 {{end}}`))
@@ -182,12 +179,10 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 	if !ok {
 		return d, true
 	}
-
 	name := ts.Name.Name
 	if d.structs[name] != nil {
 		return d, true // Already seen
 	}
-
 	d.structs[name] = st
 	if ts.Doc != nil {
 		d.docs[name] = cleanDoc(ts.Doc.Text())
@@ -209,15 +204,12 @@ func (d *docData) generate(output io.Writer) error {
 	fmt.Fprintln(output, "# librarian.yaml Schema")
 	fmt.Fprintln(output)
 	fmt.Fprintln(output, "This document describes the schema for the `librarian.yaml` file.")
-
 	// Write Config objects first, then others.
 	for _, k := range append(d.configKeys, d.otherKeys...) {
 		if err := d.writeStruct(output, k, d.sources[k]); err != nil {
 			return err
 		}
-
 	}
-
 	return nil
 }
 
@@ -235,7 +227,6 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 		SourceLink: sourceLink,
 		Doc:        d.docs[name],
 	}
-
 	for _, field := range st.Fields.List {
 		if len(field.Names) == 0 {
 			// Embedded struct
@@ -264,7 +255,6 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			Description: description,
 		})
 	}
-
 	return structTemplate.Execute(output, structData)
 }
 
@@ -319,7 +309,6 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 	if isSlice {
 		res = "list of " + res
 	}
-
 	return res
 }
 

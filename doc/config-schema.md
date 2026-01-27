@@ -3,10 +3,7 @@
 This document describes the schema for the `librarian.yaml` file.
 
 ## Root Configuration
-
 [Link to code](../internal/config/config.go#L22)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `language` | string | Language is the language for this workspace (go, python, rust). |
@@ -18,10 +15,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `libraries` | list of [Library](#library-configuration) (optional) | Libraries contains configuration overrides for libraries that need special handling, and differ from default settings. |
 
 ## Release Configuration
-
 [Link to code](../internal/config/config.go#L50)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `branch` | string | Branch sets the name of the release branch, typically `main` |
@@ -32,20 +26,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
 
 ## Tool Configuration
-
 [Link to code](../internal/config/config.go#L76)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the name of the tool e.g. nox. |
 | `version` | string | Version is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
-
 [Link to code](../internal/config/config.go#L85)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `conformance` | [Source](#source-configuration) (optional) | Conformance is the path to the `conformance-tests` repository, used as include directory for `protoc`. |
@@ -55,10 +43,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `showcase` | [Source](#source-configuration) (optional) | Showcase is the showcase repository configuration. |
 
 ## Source Configuration
-
 [Link to code](../internal/config/config.go#L103)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `branch` | string | Branch is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
@@ -68,10 +53,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
 
 ## Default Configuration
-
 [Link to code](../internal/config/config.go#L124)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `output` | string | Output is the directory where code is written. For example, for Rust this is src/generated. |
@@ -82,10 +64,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
 
 ## Library Configuration
-
 [Link to code](../internal/config/config.go#L148)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
@@ -108,19 +87,13 @@ This document describes the schema for the `librarian.yaml` file.
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Rust contains Rust-specific library configuration. |
 
 ## API Configuration
-
 [Link to code](../internal/config/config.go#L217)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
 ## DartPackage Configuration
-
 [Link to code](../internal/config/language.go#L279)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -139,10 +112,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
 
 ## GoAPI Configuration
-
 [Link to code](../internal/config/language.go#L27)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string |  |
@@ -152,10 +122,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `proto_package` | string |  |
 
 ## GoModule Configuration
-
 [Link to code](../internal/config/language.go#L20)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string |  |
@@ -163,20 +130,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `module_path_version` | string |  |
 
 ## PythonPackage Configuration
-
 [Link to code](../internal/config/language.go#L264)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 
 ## RustCrate Configuration
-
 [Link to code](../internal/config/language.go#L127)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
@@ -203,10 +164,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Discovery contains discovery-specific configuration for LRO polling. |
 
 ## RustDefault Configuration
-
 [Link to code](../internal/config/language.go#L36)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. |
@@ -215,20 +173,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `generate_rpc_samples` | string | GenerateRpcSamples indicates whether to generate RPC samples. |
 
 ## RustDiscovery Configuration
-
 [Link to code](../internal/config/language.go#L246)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
 | `pollers` | list of [RustPoller](#rustpoller-configuration) | Pollers is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
-
 [Link to code](../internal/config/language.go#L225)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified element ID (e.g., .google.cloud.dialogflow.v2.Message.field). |
@@ -236,10 +188,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `replace` | string | Replace is the replacement text. |
 
 ## RustModule Configuration
-
 [Link to code](../internal/config/language.go#L53)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
@@ -266,10 +215,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `template` | string | Template specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
 
 ## RustPackageDependency Configuration
-
 [Link to code](../internal/config/language.go#L197)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the dependency name. It is listed first so it appears at the top of each dependency entry in YAML. |
@@ -281,20 +227,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `used_if` | string | UsedIf specifies a condition for when the dependency is used. |
 
 ## RustPaginationOverride Configuration
-
 [Link to code](../internal/config/language.go#L237)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | ItemField is the name of the field used for items. |
 
 ## RustPoller Configuration
-
 [Link to code](../internal/config/language.go#L255)
-
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `prefix` | string | Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
