@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: Rust & Sidekick
+name: Rust
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
@@ -50,3 +50,39 @@ jobs:
         run: go test -race ./internal/sidekick/...
       - name: Run internal/librarian/rust tests
         run: go test -race ./internal/librarian/rust
+  google-cloud-rust-integration-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - uses: ./.github/actions/install-protoc
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install taplo
+        run: |
+          set -e
+          curl -fsSL https://github.com/tamasfe/taplo/releases/download/$VERSION/taplo-linux-x86_64.gz | gunzip -c - | sudo tee /usr/local/bin/taplo > /dev/null
+          sha512sum -c <(echo "$CHECKSUM /usr/local/bin/taplo")
+          sudo chmod +x /usr/local/bin/taplo
+        env:
+          VERSION: 0.10.0
+          CHECKSUM: 33587a0beb692561b1bc411f484f088117b45d14e993cdb8e5d66dd967026d9e166ab8b23ec7c4791d1c17ec8bd9f1d6b05a16e742c70c6a6f16dc5f7ca3ff53
+      - name: Install librarian
+        run: go install ./cmd/librarian
+      - name: Checkout google-cloud-rust
+        uses: actions/checkout@v5
+        with:
+          repository: googleapis/google-cloud-rust
+          path: google-cloud-rust
+      - name: Run librarian generate --all against google-cloud-rust
+        working-directory: google-cloud-rust
+        run: librarian generate --all
+      # We only verify that generation succeeds and the output compiles.
+      # We don't check for diffs because librarian changes may intentionally
+      # produce different output, and requiring identical output would make
+      # backwards-incompatible changes a multi-step process.
+      - name: Verify generated code compiles
+        working-directory: google-cloud-rust
+        run: cargo check -p google-cloud-showcase-v1beta1
