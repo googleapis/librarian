@@ -141,7 +141,7 @@ func Find(googleapisDir, path string) (*API, error) {
 			return populateTitle(googleapisDir, result)
 		}
 	}
-	return populateTitle(googleapisDir, result)
+	return result, nil
 }
 
 func populateTitle(googleapisDir string, api *API) (*API, error) {
