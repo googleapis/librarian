@@ -68,6 +68,9 @@ func run() error {
 	return d.generate(out)
 }
 
+// loadPackage loads the Go package from the specified directory and returns
+// its type and syntax information. It returns an error if no packages are
+// found or if there are any parsing/type errors.
 func loadPackage(dir string) (*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
@@ -91,6 +94,7 @@ func loadPackage(dir string) (*packages.Package, error) {
 	return pkg, nil
 }
 
+// docData holds the collected metadata for generating documentation from the Go package.
 type docData struct {
 	pkg        *packages.Package
 	structs    map[string]*ast.StructType
@@ -100,6 +104,7 @@ type docData struct {
 	otherKeys  []string
 }
 
+// newDocData constructs a docData by inspecting all files in the provided package.
 func newDocData(pkg *packages.Package) (*docData, error) {
 	data := &docData{
 		pkg:     pkg,
@@ -120,36 +125,10 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 			return nil, err
 		}
 		isConfig := filepath.Base(fileName) == "config.go"
-
 		ast.Inspect(file, func(n ast.Node) bool {
-			ts, ok := n.(*ast.TypeSpec)
-			if !ok {
-				return true
-			}
-			st, ok := ts.Type.(*ast.StructType)
-			if !ok {
-				return true
-			}
-
-			name := ts.Name.Name
-			if data.structs[name] != nil {
-				return true // Already seen
-			}
-
-			data.structs[name] = st
-			if ts.Doc != nil {
-				data.docs[name] = cleanDoc(ts.Doc.Text())
-			}
-
-			line := pkg.Fset.Position(ts.Pos()).Line
-			data.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
-
-			if isConfig {
-				data.configKeys = append(data.configKeys, name)
-			} else {
-				data.otherKeys = append(data.otherKeys, name)
-			}
-			return true
+			var cont bool
+			data, cont = data.collectStructs(n, relPath, isConfig)
+			return cont
 		})
 	}
 
@@ -157,6 +136,40 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 	return data, nil
 }
 
+// collectStructs is the collectStructs function used by ast.Inspect to identify and extract
+// struct type definitions and their associated documentation.
+func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*docData, bool) {
+	ts, ok := n.(*ast.TypeSpec)
+	if !ok {
+		return d, true
+	}
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok {
+		return d, true
+	}
+
+	name := ts.Name.Name
+	if d.structs[name] != nil {
+		return d, true // Already seen
+	}
+
+	d.structs[name] = st
+	if ts.Doc != nil {
+		d.docs[name] = cleanDoc(ts.Doc.Text())
+	}
+
+	line := d.pkg.Fset.Position(ts.Pos()).Line
+	d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
+
+	if isConfig {
+		d.configKeys = append(d.configKeys, name)
+	} else {
+		d.otherKeys = append(d.otherKeys, name)
+	}
+	return d, true
+}
+
+// generate writes the collected documentation in Markdown format to the provided writer.
 func (d *docData) generate(out io.Writer) error {
 	fmt.Fprintln(out, "# librarian.yaml Schema")
 	fmt.Fprintln(out)
