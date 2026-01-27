@@ -72,6 +72,8 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 		cmd.Response = &Response{
 			IDField: "name",
 		}
+		// List commands should have a default output format.
+		cmd.Output = newOutputConfig(method, model)
 	}
 
 	if utils.IsUpdate(method) {
@@ -82,7 +84,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	}
 
 	if method.OperationInfo != nil {
-		cmd.Async = newAsync(method, overrides)
+		cmd.Async = newAsync(method, model, overrides)
 	}
 
 	return cmd, nil
@@ -409,18 +411,91 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 // newRequest creates the `Request` part of the command definition.
 func newRequest(method *api.Method, overrides *Config, model *api.API) *Request {
-	// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
-	return &Request{
+	req := &Request{
 		APIVersion: apiVersion(overrides),
+		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
 		Collection: []string{fmt.Sprintf("parallelstore.projects.locations.%s", utils.GetPluralResourceNameForMethod(method, model))},
 	}
+
+	// For custom methods (AIP-136), we explicitly set the method name in the request configuration.
+	if utils.IsCustomMethod(method) {
+		req.Method = strcase.ToLowerCamel(method.Name)
+	}
+
+	return req
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(_ *api.Method, _ *Config) *Async {
-	return &Async{
+func newAsync(method *api.Method, model *api.API, _ *Config) *Async {
+	async := &Async{
 		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
 		Collection: []string{"parallelstore.projects.locations.operations"},
+	}
+
+	// Determine if the operation result should be extracted as the resource.
+	// This is true if the operation response type matches the method's resource type.
+	resource := utils.GetResourceForMethod(method, model)
+	if resource != nil {
+		// Heuristic: Check if response type ID (e.g. "Instance") matches the resource singular name.
+		responseType := method.OperationInfo.ResponseTypeID
+		singular := utils.GetSingularResourceNameForMethod(method, model)
+		if strings.EqualFold(responseType, singular) || strings.HasSuffix(resource.Type, "/"+responseType) {
+			async.ExtractResourceResult = true
+		} else {
+			async.ExtractResourceResult = false
+		}
+	}
+
+	return async
+}
+
+// newOutputConfig generates the output configuration for List commands.
+func newOutputConfig(method *api.Method, model *api.API) *OutputConfig {
+	// We need to find the resource message to determine the columns.
+	// For List, the output type is `ListXxxResponse`, which has a repeated field of the resource.
+	if method.OutputType == nil {
+		return nil
+	}
+
+	var resourceMsg *api.Message
+	for _, f := range method.OutputType.Fields {
+		if f.Repeated && f.MessageType != nil {
+			resourceMsg = f.MessageType
+			break
+		}
+	}
+
+	if resourceMsg == nil {
+		return nil
+	}
+
+	// We generate a table format string.
+	// We pick "name" as the first column, and then a few other scalar fields.
+	var columns []string
+	columns = append(columns, "name")
+
+	count := 0
+	for _, f := range resourceMsg.Fields {
+		if f.Name == "name" {
+			continue
+		}
+		// Skip complex types for now to keep the table simple.
+		if f.MessageType != nil || f.Repeated || f.Map {
+			continue
+		}
+		// Skip description as it can be long.
+		if f.Name == "description" {
+			continue
+		}
+		columns = append(columns, f.JSONName)
+		count++
+		if count >= 5 { // Limit columns
+			break
+		}
+	}
+
+	return &OutputConfig{
+		Format: fmt.Sprintf("table(%s)", strings.Join(columns, ",")),
 	}
 }
 
