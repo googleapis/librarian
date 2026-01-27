@@ -2094,6 +2094,38 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 }
 
+func TestProtobuf_ResourceCoverage(t *testing.T) {
+	requireProtoc(t)
+
+	t.Run("Deduplication", func(t *testing.T) {
+		test, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_coverage.proto"))
+		if err != nil {
+			t.Fatalf("Failed to make API for Protobuf %v", err)
+		}
+
+		// Verify only 1 resource exists and it is the message-level one ("book_message").
+		// This confirms that message-level resources overwrite file-level resources with the same type.
+		if len(test.ResourceDefinitions) != 1 {
+			t.Fatalf("Expected 1 ResourceDefinition, got %d", len(test.ResourceDefinitions))
+		}
+		got := test.ResourceDefinitions[0]
+		if got.Singular != "book_message" {
+			t.Errorf("Expected singular 'book_message', got %q", got.Singular)
+		}
+		// Verify Self is set (only message resources have Self populated by processResourceAnnotation)
+		if got.Self == nil {
+			t.Errorf("Expected Resource.Self to be populated for message-level resource")
+		}
+	})
+
+	t.Run("InvalidPattern", func(t *testing.T) {
+		_, err := makeAPIForProtobuf(nil, newTestCodeGeneratorRequest(t, "resource_invalid.proto"))
+		if err == nil {
+			t.Errorf("Expected error for invalid resource pattern, got nil")
+		}
+	})
+}
+
 func TestProtobuf_ParseBadFiles(t *testing.T) {
 	requireProtoc(t)
 	for _, general := range []config.GeneralConfig{

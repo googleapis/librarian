@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package test;
+
+import "google/api/resource.proto";
+
+option (google.api.resource_definition) = {
+  type: "test.googleapis.com/Book"
+  pattern: "shelves/{shelf}/books/{book}"
+  singular: "book_file"
+};
+
+message Book {
+  option (google.api.resource) = {
+    type: "test.googleapis.com/Book"
+    pattern: "shelves/{shelf}/books/{book}"
+    singular: "book_message" // This should win in deduplication
+  };
+  string name = 1;
+}
