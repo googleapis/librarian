@@ -187,10 +187,8 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 	if ts.Doc != nil {
 		d.docs[name] = cleanDoc(ts.Doc.Text())
 	}
-
 	line := d.pkg.Fset.Position(ts.Pos()).Line
 	d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
-
 	if isConfig {
 		d.configKeys = append(d.configKeys, name)
 	} else {
@@ -221,7 +219,6 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 	if name == "Config" {
 		title = "Root" + configSuffix
 	}
-
 	structData := structData{
 		Title:      title,
 		SourceLink: sourceLink,
@@ -237,18 +234,15 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			})
 			continue
 		}
-
 		yamlName := extractYamlName(field.Tag)
 		if yamlName == "" || yamlName == "-" {
 			continue
 		}
-
 		typeName := getTypeName(field.Type)
 		description := ""
 		if field.Doc != nil {
 			description = cleanDoc(field.Doc.Text())
 		}
-
 		structData.Fields = append(structData.Fields, fieldData{
 			Name:        fmt.Sprintf("`%s`", yamlName),
 			Type:        formatType(typeName, d.structs),
@@ -262,8 +256,8 @@ func extractYamlName(tag *ast.BasicLit) string {
 	if tag == nil {
 		return ""
 	}
-	t := reflect.StructTag(strings.Trim(tag.Value, "`"))
-	val := t.Get("yaml")
+	tagValue := reflect.StructTag(strings.Trim(tag.Value, "`"))
+	val := tagValue.Get("yaml")
 	if val == "" {
 		return ""
 	}
@@ -292,7 +286,6 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 	cleanType := strings.TrimPrefix(typeName, "[]")
 	isPointer := strings.HasPrefix(cleanType, "*")
 	cleanType = strings.TrimPrefix(cleanType, "*")
-
 	res := cleanType
 	// If it's one of our structs, link it
 	if _, ok := allStructs[cleanType]; ok {
@@ -302,7 +295,6 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 		}
 		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
 	}
-
 	if isPointer {
 		res = res + " (optional)"
 	}
