@@ -37,8 +37,14 @@ var (
 	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
 )
 
-const configSuffix = " Configuration"
+const (
+	configSuffix      = " Configuration"
+	primaryConfigFile = "config.go"
+)
 
+// main is the entry point for the config doc generator tool.
+// It scans Go source files for struct definitions and extracts YAML tags, types,
+// and doc comments to produce a schema document for librarian.yaml.
 func main() {
 	flag.Parse()
 	if err := run(); err != nil {
@@ -85,7 +91,7 @@ func loadPackage(dir string) (*packages.Package, error) {
 	}
 	pkg := pkgs[0]
 	if len(pkg.Errors) > 0 {
-		var errs []error
+		errs := make([]error, 0, len(pkg.Errors))
 		for _, e := range pkg.Errors {
 			errs = append(errs, e)
 		}
@@ -124,7 +130,7 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 		if err != nil {
 			return nil, err
 		}
-		isConfig := filepath.Base(fileName) == "config.go"
+		isConfig := filepath.Base(fileName) == primaryConfigFile
 		ast.Inspect(file, func(n ast.Node) bool {
 			var cont bool
 			data, cont = data.collectStructs(n, relPath, isConfig)
@@ -136,7 +142,7 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 	return data, nil
 }
 
-// collectStructs is the collectStructs function used by ast.Inspect to identify and extract
+// collectStructs is the visitor function used by ast.Inspect to identify and extract
 // struct type definitions and their associated documentation.
 func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*docData, bool) {
 	ts, ok := n.(*ast.TypeSpec)
