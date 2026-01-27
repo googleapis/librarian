@@ -226,10 +226,27 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			eFQN := fFQN + "." + e.GetName()
 			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
 		}
-		if err := processResourceDefinitions(f, result); err != nil {
+		resources, err := processFileResourceDefinitions(f)
+		if err != nil {
 			return nil, err
 		}
+		result.ResourceDefinitions = append(result.ResourceDefinitions, resources...)
 	}
+
+	// Consolidate resources.
+	// Message-level resources (in state.ResourceByType) take precedence over
+	// file-level resources (already in result.ResourceDefinitions).
+	allResources := make(map[string]*api.Resource, len(result.ResourceDefinitions)+len(state.ResourceByType))
+	for _, r := range result.ResourceDefinitions {
+		allResources[r.Type] = r
+	}
+	maps.Copy(allResources, state.ResourceByType)
+	result.ResourceDefinitions = slices.Collect(maps.Values(allResources))
+
+	// Sort to ensure deterministic output.
+	slices.SortFunc(result.ResourceDefinitions, func(a, b *api.Resource) int {
+		return strings.Compare(a.Type, b.Type)
+	})
 
 	// Then we need to add the messages, enums and services to the list of
 	// elements to be generated.
@@ -581,31 +598,35 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 	return nil
 }
 
-func processResourceDefinitions(f *descriptorpb.FileDescriptorProto, result *api.API) error {
+// processFileResourceDefinitions extracts resource definitions from file-level options.
+// This must be called for all files (including dependencies) to ensure that
+// resources referenced but not defined in the source files are available.
+func processFileResourceDefinitions(f *descriptorpb.FileDescriptorProto) ([]*api.Resource, error) {
 	if f.Options == nil || !proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
-		return nil
+		return nil, nil
 	}
 
 	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
 	res, ok := ext.([]*annotations.ResourceDescriptor)
 	if !ok {
-		return fmt.Errorf("unexpected type for E_ResourceDefinition extension: %T", ext)
+		return nil, fmt.Errorf("unexpected type for E_ResourceDefinition extension: %T", ext)
 	}
 
+	var resources []*api.Resource
 	for _, r := range res {
 		patterns, err := parseResourcePatterns(r.GetPattern())
 		if err != nil {
-			return fmt.Errorf("in file %q: %w", f.GetName(), err)
+			return nil, fmt.Errorf("in file %q: %w", f.GetName(), err)
 		}
 
-		result.ResourceDefinitions = append(result.ResourceDefinitions, &api.Resource{
+		resources = append(resources, &api.Resource{
 			Type:     r.GetType(),
 			Patterns: patterns,
 			Plural:   r.GetPlural(),
 			Singular: r.GetSingular(),
 		})
 	}
-	return nil
+	return resources, nil
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/3036): This function needs
