@@ -186,6 +186,32 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid semver v1 prerelease version",
+			library: &LibraryState{
+				ID:          "a/b",
+				Version:     "1.2.3-dev1",
+				SourceRoots: []string{"src/a", "src/b"},
+				APIs: []*API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "valid semver v2 prerelease version",
+			library: &LibraryState{
+				ID:          "a/b",
+				Version:     "1.2.3-dev.1",
+				SourceRoots: []string{"src/a", "src/b"},
+				APIs: []*API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+		},
+		{
 			name: "invalid version no prerelease separator",
 			library: &LibraryState{
 				ID:          "a/b",
