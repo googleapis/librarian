@@ -79,12 +79,12 @@ func main() {
 }
 
 func run() error {
-	out, err := os.Create(*outputFile)
+	output, err := os.Create(*outputFile)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		cerr := out.Close()
+		cerr := output.Close()
 		if err == nil {
 			err = cerr
 		}
@@ -97,23 +97,23 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return d.generate(out)
+	return d.generate(output)
 }
 
 // loadPackage loads the Go package from the specified directory and returns
 // its type and syntax information. It returns an error if no packages are
 // found or if there are any parsing/type errors.
-func loadPackage(dir string) (*packages.Package, error) {
+func loadPackage(inputDir string) (*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
-		Dir:  dir,
+		Dir:  inputDir,
 	}
 	pkgs, err := packages.Load(cfg, ".")
 	if err != nil {
 		return nil, err
 	}
 	if len(pkgs) == 0 {
-		return nil, fmt.Errorf("no packages found in %s", dir)
+		return nil, fmt.Errorf("no packages found in %s", inputDir)
 	}
 	pkg := pkgs[0]
 	if len(pkg.Errors) > 0 {
@@ -202,14 +202,14 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 }
 
 // generate writes the collected documentation in Markdown format to the provided writer.
-func (d *docData) generate(out io.Writer) error {
-	fmt.Fprintln(out, "# librarian.yaml Schema")
-	fmt.Fprintln(out)
-	fmt.Fprintln(out, "This document describes the schema for the `librarian.yaml` file.")
+func (d *docData) generate(output io.Writer) error {
+	fmt.Fprintln(output, "# librarian.yaml Schema")
+	fmt.Fprintln(output)
+	fmt.Fprintln(output, "This document describes the schema for the `librarian.yaml` file.")
 
 	// Write Config objects first, then others.
 	for _, k := range append(d.configKeys, d.otherKeys...) {
-		d.writeStruct(out, k, d.sources[k])
+		d.writeStruct(output, k, d.sources[k])
 	}
 
 	return nil
@@ -217,7 +217,7 @@ func (d *docData) generate(out io.Writer) error {
 
 // writeStruct writes a Markdown representation of a Go struct to the provided writer.
 // It generates a table of fields, including their YAML names, types, and descriptions.
-func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
+func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) {
 	st := d.structs[name]
 	title := name + configSuffix
 	if name == "Config" {
@@ -259,7 +259,7 @@ func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
 		})
 	}
 
-	if err := structTemplate.Execute(out, structData); err != nil {
+	if err := structTemplate.Execute(output, structData); err != nil {
 		log.Printf("error executing template for %s: %v", name, err)
 	}
 }
