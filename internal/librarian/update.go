@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -47,13 +45,19 @@ var (
 // updateCommand returns the `update` subcommand.
 func updateCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "update",
-		Usage:     "update sources to the latest version",
+		Name:  "update",
+		Usage: "update sources to the latest version",
+		Description: `Supported sources are:
+  - conformance
+  - discovery
+  - googleapis
+  - protobuf
+  - showcase`,
 		UsageText: "librarian update [--all | source]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
-				Usage: "update all sources",
+				Usage: "update discovery and googleapis sources",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -104,7 +108,7 @@ func runUpdate(all bool, sourceName string) error {
 
 	var sourceNamesToProcess []string
 	if all {
-		sourceNamesToProcess = slices.Collect(maps.Keys(sourceRepos))
+		sourceNamesToProcess = []string{"discovery", "googleapis"}
 	} else {
 		sourceNamesToProcess = []string{sourceName}
 	}

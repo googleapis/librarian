@@ -56,7 +56,7 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 		"googleapis-root": googleapisDir,
 	}
 
-	channel, err := serviceconfig.Find(googleapisDir, ch.Path)
+	api, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 		General: sidekickconfig.GeneralConfig{
 			Language:            "dart",
 			SpecificationFormat: "protobuf",
-			ServiceConfig:       channel.ServiceConfig,
+			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: ch.Path,
 		},
 		Source: source,

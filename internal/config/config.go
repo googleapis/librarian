@@ -156,7 +156,7 @@ type Library struct {
 
 	// API specifies which googleapis API to generate from (for generated
 	// libraries).
-	APIs []*API `yaml:"channels,omitempty"`
+	APIs []*API `yaml:"apis,omitempty"`
 
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
@@ -192,10 +192,8 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
-	// Veneer indicates this library has hand-written code with generated
-	// submodules. When true, the library uses language-specific module
-	// configuration (e.g., rust.modules) instead of generating a complete crate
-	// from channels.
+	// Veneer indicates this library has hand-written code. A veneer may
+	// contain generated libraries.
 	Veneer bool `yaml:"veneer,omitempty"`
 
 	// Language-specific fields are below.

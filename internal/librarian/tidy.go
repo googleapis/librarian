@@ -28,7 +28,7 @@ import (
 
 var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
-	errDuplicateAPIPath      = errors.New("duplicate channel path")
+	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
 )
 
@@ -91,12 +91,12 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
-	derivedOutput := defaultOutput(cfg.Language, lib.APIs[0].Path, cfg.Default.Output)
+	derivedOutput := defaultOutput(cfg.Language, lib.Name, lib.APIs[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
 }
 
-func isDerivableAPIPath(language string, name, channel string) bool {
-	return channel == deriveAPIPath(language, name)
+func isDerivableAPIPath(language string, name, api string) bool {
+	return api == deriveAPIPath(language, name)
 }
 
 func validateLibraries(cfg *config.Config) error {

@@ -29,7 +29,6 @@ import (
 const testLibrarianVersion = "v0.1.0"
 
 func TestGenerateCommand(t *testing.T) {
-	t.Skip("flaky test: TODO(https://github.com/googleapis/librarian/issues/3698)")
 	repoDir := t.TempDir()
 	if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
 		t.Fatal(err)
@@ -57,7 +56,7 @@ libraries:
   - name: test-library
     version: 1.0.0
     output: output
-    channels:
+    apis:
       - path: google/cloud/secretmanager/v1
 `, googleapisDir)
 	if err := os.WriteFile(filepath.Join(repoDir, "librarian.yaml"), []byte(configContent), 0644); err != nil {

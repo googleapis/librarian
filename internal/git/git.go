@@ -16,11 +16,9 @@
 package git
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"slices"
 	"strings"
 
@@ -39,8 +37,7 @@ var (
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
 func AssertGitStatusClean(ctx context.Context, git string) error {
-	cmd := exec.CommandContext(ctx, git, "status", "--porcelain")
-	output, err := cmd.Output()
+	output, err := command.Output(ctx, git, "status", "--porcelain")
 	if err != nil {
 		return fmt.Errorf("failed to check git status: %w", err)
 	}
@@ -53,23 +50,20 @@ func AssertGitStatusClean(ctx context.Context, git string) error {
 // GetLastTag returns the last git tag for the given release configuration.
 func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, error) {
 	ref := fmt.Sprintf("%s/%s", remote, branch)
-	cmd := exec.CommandContext(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
-	contents, err := cmd.CombinedOutput()
+	tag, err := command.Output(ctx, gitExe, "describe", "--abbrev=0", "--tags", ref)
 	if err != nil {
-		return "", fmt.Errorf("failed to get last tag for repo %s: %w\noutput: %s", ref, err, string(contents))
+		return "", fmt.Errorf("failed to get last tag for repo %s: %w", ref, err)
 	}
-	tag := string(contents)
 	return strings.TrimSuffix(tag, "\n"), nil
 }
 
 // FilesChangedSince returns the files changed since the given git ref.
 func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges []string) ([]string, error) {
-	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", ref)
-	output, err := cmd.CombinedOutput()
+	output, err := command.Output(ctx, gitExe, "diff", "--name-only", ref)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get files changed since tag %s: %w\noutput: %s", ref, err, string(output))
+		return nil, fmt.Errorf("failed to get files changed since tag %s: %w", ref, err)
 	}
-	return filesFilter(ignoredChanges, strings.Split(string(output), "\n")), nil
+	return filesFilter(ignoredChanges, strings.Split(output, "\n")), nil
 }
 
 func filesFilter(ignoredChanges []string, files []string) []string {
@@ -91,12 +85,11 @@ func filesFilter(ignoredChanges []string, files []string) []string {
 // IsNewFile returns true if the given file is new since the given git ref.
 func IsNewFile(ctx context.Context, gitExe, ref, name string) bool {
 	delta := fmt.Sprintf("%s..HEAD", ref)
-	cmd := exec.CommandContext(ctx, gitExe, "diff", "--summary", delta, "--", name)
-	output, err := cmd.CombinedOutput()
+	output, err := command.Output(ctx, gitExe, "diff", "--summary", delta, "--", name)
 	if err != nil {
 		return false
 	}
-	return bytes.HasPrefix(output, []byte(" create mode "))
+	return strings.HasPrefix(output, " create mode ")
 }
 
 // CheckVersion checks that the git version command can run.
@@ -120,25 +113,23 @@ func ShowFileAtRemoteBranch(ctx context.Context, gitExe, remote, branch, path st
 // given revision (which can be a tag, a commit, a remote/branch etc).
 func ShowFileAtRevision(ctx context.Context, gitExe, revision, path string) (string, error) {
 	revisionAndPath := fmt.Sprintf("%s:%s", revision, path)
-	cmd := exec.CommandContext(ctx, gitExe, "show", revisionAndPath)
-	output, err := cmd.CombinedOutput()
+	output, err := command.Output(ctx, gitExe, "show", revisionAndPath)
 	if err != nil {
-		return "", errors.Join(fmt.Errorf("%w: %s", errGitShow, revisionAndPath), fmt.Errorf("%w\noutput: %s", err, string(output)))
+		return "", errors.Join(fmt.Errorf("%w: %s", errGitShow, revisionAndPath), err)
 	}
-	return strings.TrimSuffix(string(output), "\n"), nil
+	return strings.TrimSuffix(output, "\n"), nil
 }
 
 // MatchesBranchPoint returns an error if the local repository has unpushed changes.
 func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) error {
 	remoteBranch := fmt.Sprintf("%s/%s", remote, branch)
 	delta := fmt.Sprintf("%s...HEAD", remoteBranch)
-	cmd := exec.CommandContext(ctx, gitExe, "diff", "--name-only", delta)
-	output, err := cmd.CombinedOutput()
+	output, err := command.Output(ctx, gitExe, "diff", "--name-only", delta)
 	if err != nil {
-		return fmt.Errorf("failed to diff against branch %s: %w\noutput: %s", remoteBranch, err, string(output))
+		return fmt.Errorf("failed to diff against branch %s: %w", remoteBranch, err)
 	}
 	if len(output) != 0 {
-		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, string(output))
+		return fmt.Errorf("the local repository does not match its branch point from %s, change files:\n%s", remoteBranch, output)
 	}
 	return nil
 }
@@ -146,12 +137,11 @@ func MatchesBranchPoint(ctx context.Context, gitExe, remote, branch string) erro
 // FindCommitsForPath returns the full hashes of all commits affecting the given path.
 // The commits are returned in normal log order, i.e. latest commit first.
 func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, error) {
-	cmd := exec.CommandContext(ctx, gitExe, "log", "--pretty=format:%H", "--", path)
-	output, err := cmd.CombinedOutput()
+	output, err := command.Output(ctx, gitExe, "log", "--pretty=format:%H", "--", path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get change commits from path %s: %w\noutput: %s", path, err, string(output))
+		return nil, fmt.Errorf("failed to get change commits from path %s: %w", path, err)
 	}
-	return strings.Fields(string(output)), nil
+	return strings.Fields(output), nil
 }
 
 // Checkout checks out the given revision. If revision is a commit rather than a
@@ -159,10 +149,9 @@ func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, err
 // name of a valid path, that file is checked out instead. (Git does not provide a
 // way of differentiation between these.)
 func Checkout(ctx context.Context, git, revision string) error {
-	cmd := exec.CommandContext(ctx, git, "checkout", revision)
-	contents, err := cmd.CombinedOutput()
+	_, err := command.Output(ctx, git, "checkout", revision)
 	if err != nil {
-		return fmt.Errorf("failed to checkout revision %s: %w\noutput: %s", revision, err, string(contents))
+		return fmt.Errorf("failed to checkout revision %s: %w", revision, err)
 	}
 	return nil
 }

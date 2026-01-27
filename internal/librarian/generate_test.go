@@ -48,10 +48,11 @@ func TestGenerateCommand(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		args    []string
-		wantErr error
-		want    []string
+		name             string
+		args             []string
+		wantErr          error
+		want             []string
+		wantPostGenerate bool
 	}{
 		{
 			name:    "no args",
@@ -69,14 +70,15 @@ func TestGenerateCommand(t *testing.T) {
 			want: []string{lib1},
 		},
 		{
-			name: "all flag",
-			args: []string{"librarian", "generate", "--all"},
-			want: []string{lib1, lib2},
+			name:             "all flag",
+			args:             []string{"librarian", "generate", "--all"},
+			want:             []string{lib1, lib2},
+			wantPostGenerate: true,
 		},
 		{
-			name: "skip generate",
-			args: []string{"librarian", "generate", lib3},
-			want: []string{},
+			name:    "skip generate",
+			args:    []string{"librarian", "generate", lib3},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -89,17 +91,17 @@ sources:
 libraries:
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/speech/v1
       - path: grafeas/v1
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/texttospeech/v1
   - name: %s
     output: %s
     skip_generate: true
-    channels:
+    apis:
       - path: google/cloud/speech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output, lib3, lib3Output)
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
@@ -161,6 +163,13 @@ libraries:
 					t.Errorf("mismatch for STARTER.md for %q (-want +got):\n%s", libName, diff)
 				}
 			}
+
+			if test.wantPostGenerate {
+				postGeneratePath := filepath.Join(tempDir, "POST_GENERATE_README.md")
+				if _, err := os.Stat(postGeneratePath); err != nil {
+					t.Errorf("expected POST_GENERATE_README.md to exist, but got error: %v", err)
+				}
+			}
 		})
 	}
 }
@@ -185,9 +194,10 @@ func TestGenerateSkip(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name string
-		args []string
-		want []string
+		name    string
+		args    []string
+		wantErr error
+		want    []string
 	}{
 		{
 			name: "skip_generate with all flag",
@@ -195,8 +205,9 @@ func TestGenerateSkip(t *testing.T) {
 			want: []string{lib2},
 		},
 		{
-			name: "skip_generate with library name",
-			args: []string{"librarian", "generate", lib1},
+			name:    "skip_generate with library name",
+			args:    []string{"librarian", "generate", lib1},
+			wantErr: errSkipGenerate,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -210,17 +221,24 @@ libraries:
   - name: %s
     output: %s
     skip_generate: true
-    channels:
+    apis:
       - path: google/cloud/speech/v1
   - name: %s
     output: %s
-    channels:
+    apis:
       - path: google/cloud/texttospeech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output)
 			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := Run(t.Context(), test.args...); err != nil {
+			err := Run(t.Context(), test.args...)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("want error %v, got %v", test.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
 				t.Fatal(err)
 			}
 			generated := make(map[string]bool)
@@ -248,14 +266,14 @@ libraries:
 
 // createGoogleapisServiceConfigs creates a mock googleapis directory structure
 // with service config files for testing purposes.
-// The configs map keys are channel paths (e.g., "google/cloud/speech/v1")
+// The configs map keys are api paths (e.g., "google/cloud/speech/v1")
 // and values are the service config filenames (e.g., "speech_v1.yaml").
 func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[string]string) string {
 	t.Helper()
 	googleapisDir := filepath.Join(tempDir, "googleapis")
 
-	for channelPath, filename := range configs {
-		dir := filepath.Join(googleapisDir, channelPath)
+	for apiPath, filename := range configs {
+		dir := filepath.Join(googleapisDir, apiPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}

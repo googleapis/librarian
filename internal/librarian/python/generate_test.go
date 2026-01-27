@@ -374,6 +374,14 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestDefaultOutputByName(t *testing.T) {
+	want := "packages/google-cloud-secret-manager"
+	got := DefaultOutputByName("google-cloud-secret-manager", "packages")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func requirePythonModule(t *testing.T, module string) {
 	t.Helper()
 	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))
