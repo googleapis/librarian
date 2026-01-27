@@ -239,8 +239,17 @@ type Alpha struct {
 		t.Fatal(err)
 	}
 
+	pkg, err := loadPackage(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var buf strings.Builder
-	if err := generate(&buf, dir); err != nil {
+	d, err := newDocData(pkg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.generate(&buf); err != nil {
 		t.Fatal(err)
 	}
 	got := buf.String()

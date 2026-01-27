@@ -48,34 +48,58 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	return generate(out, *inputDir)
-}
-
-func generate(out io.Writer, dir string) error {
-	cfg := &packages.Config{
-		Mode:  packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
-		Dir:   dir,
-		Tests: false,
-	}
-	pkgs, err := packages.Load(cfg, ".")
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	pkg, err := loadPackage(*inputDir)
 	if err != nil {
 		return err
 	}
+	d, err := newDocData(pkg)
+	if err != nil {
+		return err
+	}
+	return d.generate(out)
+}
+
+func loadPackage(dir string) (*packages.Package, error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
+		Dir:  dir,
+	}
+	pkgs, err := packages.Load(cfg, ".")
+	if err != nil {
+		return nil, err
+	}
 	if len(pkgs) == 0 {
-		return fmt.Errorf("no packages found in %s", dir)
+		return nil, fmt.Errorf("no packages found in %s", dir)
 	}
 	pkg := pkgs[0]
 	if len(pkg.Errors) > 0 {
-		return pkg.Errors[0]
+		return nil, pkg.Errors[0]
 	}
+	return pkg, nil
+}
 
-	structs := make(map[string]*ast.StructType)
-	docs := make(map[string]string)
-	sources := make(map[string]string)
-	var configKeys []string
-	var otherKeys []string
+type docData struct {
+	pkg        *packages.Package
+	structs    map[string]*ast.StructType
+	docs       map[string]string
+	sources    map[string]string
+	configKeys []string
+	otherKeys  []string
+}
+
+func newDocData(pkg *packages.Package) (*docData, error) {
+	d := &docData{
+		pkg:     pkg,
+		structs: make(map[string]*ast.StructType),
+		docs:    make(map[string]string),
+		sources: make(map[string]string),
+	}
 
 	root := "."
 	if pkg.Module != nil {
@@ -84,7 +108,10 @@ func generate(out io.Writer, dir string) error {
 
 	for _, file := range pkg.Syntax {
 		fileName := pkg.Fset.File(file.Pos()).Name()
-		relPath, _ := filepath.Rel(root, fileName)
+		relPath, err := filepath.Rel(root, fileName)
+		if err != nil {
+			return nil, err
+		}
 		isConfig := filepath.Base(fileName) == "config.go"
 
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -98,36 +125,39 @@ func generate(out io.Writer, dir string) error {
 			}
 
 			name := ts.Name.Name
-			if structs[name] != nil {
+			if d.structs[name] != nil {
 				return true // Already seen
 			}
 
-			structs[name] = st
+			d.structs[name] = st
 			if ts.Doc != nil {
-				docs[name] = cleanDoc(ts.Doc.Text())
+				d.docs[name] = cleanDoc(ts.Doc.Text())
 			}
 
 			line := pkg.Fset.Position(ts.Pos()).Line
-			sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
+			d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
 
 			if isConfig {
-				configKeys = append(configKeys, name)
+				d.configKeys = append(d.configKeys, name)
 			} else {
-				otherKeys = append(otherKeys, name)
+				d.otherKeys = append(d.otherKeys, name)
 			}
 			return true
 		})
 	}
 
-	sort.Strings(otherKeys)
+	sort.Strings(d.otherKeys)
+	return d, nil
+}
 
+func (d *docData) generate(out io.Writer) error {
 	fmt.Fprintln(out, "# librarian.yaml Schema")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "This document describes the schema for the `librarian.yaml` file.")
 
 	// Write Config objects first, then others.
-	for _, k := range append(configKeys, otherKeys...) {
-		writeStruct(out, k, structs[k], structs, docs, sources[k])
+	for _, k := range append(d.configKeys, d.otherKeys...) {
+		d.writeStruct(out, k, d.sources[k])
 	}
 
 	return nil
@@ -135,7 +165,8 @@ func generate(out io.Writer, dir string) error {
 
 // writeStruct writes a Markdown representation of a Go struct to the provided writer.
 // It generates a table of fields, including their YAML names, types, and descriptions.
-func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[string]*ast.StructType, docs map[string]string, sourceLink string) {
+func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
+	st := d.structs[name]
 	title := name + " Configuration"
 	if name == "Config" {
 		title = "Root Configuration"
@@ -147,7 +178,7 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 	if sourceLink != "" {
 		fmt.Fprintf(out, "[Source](%s)\n\n", sourceLink)
 	}
-	if doc := docs[name]; doc != "" {
+	if doc := d.docs[name]; doc != "" {
 		fmt.Fprintf(out, "%s\n", doc)
 		fmt.Fprintln(out)
 	}
@@ -159,7 +190,7 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 		if len(field.Names) == 0 {
 			// Embedded struct
 			typeName := getTypeName(field.Type)
-			fmt.Fprintf(out, "| (embedded) | %s | |\n", formatType(typeName, allStructs))
+			fmt.Fprintf(out, "| (embedded) | %s | |\n", formatType(typeName, d.structs))
 			continue
 		}
 
@@ -174,7 +205,7 @@ func writeStruct(out io.Writer, name string, st *ast.StructType, allStructs map[
 			description = cleanDoc(field.Doc.Text())
 		}
 
-		fmt.Fprintf(out, "| `%s` | %s | %s |\n", yamlName, formatType(typeName, allStructs), description)
+		fmt.Fprintf(out, "| `%s` | %s | %s |\n", yamlName, formatType(typeName, d.structs), description)
 	}
 }
 
