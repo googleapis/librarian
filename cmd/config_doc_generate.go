@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"text/template"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -41,6 +42,31 @@ const (
 	configSuffix      = " Configuration"
 	primaryConfigFile = "config.go"
 )
+
+var structTemplate = template.Must(template.New("struct").Parse(`
+## {{.Title}}
+{{if .SourceLink}}
+[Link to code]({{.SourceLink}})
+{{end}}
+{{if .Doc}}{{.Doc}}
+{{end}}
+| Field | Type | Description |
+| :--- | :--- | :--- |
+{{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
+{{end}}`))
+
+type structData struct {
+	Title      string
+	SourceLink string
+	Doc        string
+	Fields     []fieldData
+}
+
+type fieldData struct {
+	Name        string
+	Type        string
+	Description string
+}
 
 // main is the entry point for the config doc generator tool.
 // It scans Go source files for struct definitions and extracts YAML tags, types,
@@ -198,25 +224,20 @@ func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
 		title = "Root" + configSuffix
 	}
 
-	fmt.Fprintln(out)
-	fmt.Fprintf(out, "## %s\n", title)
-	fmt.Fprintln(out)
-	if sourceLink != "" {
-		fmt.Fprintf(out, "[Source](%s)\n\n", sourceLink)
+	structData := structData{
+		Title:      title,
+		SourceLink: sourceLink,
+		Doc:        d.docs[name],
 	}
-	if doc := d.docs[name]; doc != "" {
-		fmt.Fprintf(out, "%s\n", doc)
-		fmt.Fprintln(out)
-	}
-
-	fmt.Fprintln(out, "| Field | Type | Description |")
-	fmt.Fprintln(out, "| :--- | :--- | :--- |")
 
 	for _, field := range st.Fields.List {
 		if len(field.Names) == 0 {
 			// Embedded struct
 			typeName := getTypeName(field.Type)
-			fmt.Fprintf(out, "| (embedded) | %s | |\n", formatType(typeName, d.structs))
+			structData.Fields = append(structData.Fields, fieldData{
+				Name: "(embedded)",
+				Type: formatType(typeName, d.structs),
+			})
 			continue
 		}
 
@@ -231,7 +252,15 @@ func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
 			description = cleanDoc(field.Doc.Text())
 		}
 
-		fmt.Fprintf(out, "| `%s` | %s | %s |\n", yamlName, formatType(typeName, d.structs), description)
+		structData.Fields = append(structData.Fields, fieldData{
+			Name:        fmt.Sprintf("`%s`", yamlName),
+			Type:        formatType(typeName, d.structs),
+			Description: description,
+		})
+	}
+
+	if err := structTemplate.Execute(out, structData); err != nil {
+		log.Printf("error executing template for %s: %v", name, err)
 	}
 }
 

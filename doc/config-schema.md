@@ -4,7 +4,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Root Configuration
 
-[Source](../internal/config/config.go#L22)
+[Link to code](../internal/config/config.go#L22)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -18,7 +19,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Release Configuration
 
-[Source](../internal/config/config.go#L50)
+[Link to code](../internal/config/config.go#L50)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -31,7 +33,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Tool Configuration
 
-[Source](../internal/config/config.go#L76)
+[Link to code](../internal/config/config.go#L76)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -40,7 +43,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Sources Configuration
 
-[Source](../internal/config/config.go#L85)
+[Link to code](../internal/config/config.go#L85)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -52,7 +56,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Source Configuration
 
-[Source](../internal/config/config.go#L103)
+[Link to code](../internal/config/config.go#L103)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -64,7 +69,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Default Configuration
 
-[Source](../internal/config/config.go#L124)
+[Link to code](../internal/config/config.go#L124)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -77,7 +83,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## Library Configuration
 
-[Source](../internal/config/config.go#L148)
+[Link to code](../internal/config/config.go#L148)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -102,7 +109,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## API Configuration
 
-[Source](../internal/config/config.go#L217)
+[Link to code](../internal/config/config.go#L217)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -110,7 +118,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## DartPackage Configuration
 
-[Source](../internal/config/language.go#L279)
+[Link to code](../internal/config/language.go#L279)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -131,7 +140,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## GoAPI Configuration
 
-[Source](../internal/config/language.go#L27)
+[Link to code](../internal/config/language.go#L27)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -143,7 +153,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## GoModule Configuration
 
-[Source](../internal/config/language.go#L20)
+[Link to code](../internal/config/language.go#L20)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -153,7 +164,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## PythonPackage Configuration
 
-[Source](../internal/config/language.go#L264)
+[Link to code](../internal/config/language.go#L264)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -162,11 +174,12 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustCrate Configuration
 
-[Source](../internal/config/language.go#L127)
+[Link to code](../internal/config/language.go#L127)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| (embedded) | [RustDefault](#rustdefault-configuration) | |
+| (embedded) | [RustDefault](#rustdefault-configuration) |  |
 | `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Modules specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. This is only used when the library has veneer: true. |
 | `per_service_features` | bool | PerServiceFeatures enables per-service feature flags. |
 | `module_path` | string | ModulePath is the module path for the crate. |
@@ -191,7 +204,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustDefault Configuration
 
-[Source](../internal/config/language.go#L36)
+[Link to code](../internal/config/language.go#L36)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -202,7 +216,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustDiscovery Configuration
 
-[Source](../internal/config/language.go#L246)
+[Link to code](../internal/config/language.go#L246)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -211,7 +226,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustDocumentationOverride Configuration
 
-[Source](../internal/config/language.go#L225)
+[Link to code](../internal/config/language.go#L225)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -221,7 +237,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustModule Configuration
 
-[Source](../internal/config/language.go#L53)
+[Link to code](../internal/config/language.go#L53)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -250,7 +267,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustPackageDependency Configuration
 
-[Source](../internal/config/language.go#L197)
+[Link to code](../internal/config/language.go#L197)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -264,7 +282,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustPaginationOverride Configuration
 
-[Source](../internal/config/language.go#L237)
+[Link to code](../internal/config/language.go#L237)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -273,7 +292,8 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustPoller Configuration
 
-[Source](../internal/config/language.go#L255)
+[Link to code](../internal/config/language.go#L255)
+
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
