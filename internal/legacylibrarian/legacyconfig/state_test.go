@@ -186,6 +186,36 @@ func TestLibrary_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid version no prerelease separator",
+			library: &LibraryState{
+				ID:          "a/b",
+				Version:     "1.2.3dev0",
+				SourceRoots: []string{"src/a", "src/b"},
+				APIs: []*API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid version",
+		},
+		{
+			name: "invalid version bad prerelease separator",
+			library: &LibraryState{
+				ID:          "a/b",
+				Version:     "1.2.3.dev0",
+				SourceRoots: []string{"src/a", "src/b"},
+				APIs: []*API{
+					{
+						Path: "a/b/v1",
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid version",
+		},
+		{
 			name: "invalid id characters",
 			library: &LibraryState{
 				ID: "a/b!",
