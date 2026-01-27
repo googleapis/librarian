@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -806,6 +807,18 @@ func TestToSidekickConfig(t *testing.T) {
 			// because serviceconfig.Find always uses it, even if googleapis is not in Roots.
 			if test.api != nil && test.api.Path != "" {
 				googleapisDir = setupTestDir(t, test.api.Path)
+
+				// Create a dummy service config file if one is expected in the want output.
+				if test.want.General.ServiceConfig != "" {
+					configPath := filepath.Join(googleapisDir, test.want.General.ServiceConfig)
+					if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+						t.Fatal(err)
+					}
+					content := fmt.Sprintf("type: google.api.Service\nname: %s\ntitle: %s\n", test.library.Name, test.want.Source["title-override"])
+					if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
 			}
 
 			// Determine which directories need to be created based on test.library.Roots
