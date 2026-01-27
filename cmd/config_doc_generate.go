@@ -78,10 +78,10 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (err error) {
 	output, err := os.Create(*outputFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating output file: %w", err)
 	}
 	defer func() {
 		cerr := output.Close()
@@ -91,13 +91,16 @@ func run() error {
 	}()
 	pkg, err := loadPackage(*inputDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading package: %w", err)
 	}
 	d, err := newDocData(pkg)
 	if err != nil {
-		return err
+		return fmt.Errorf("inspecting package syntax: %w", err)
 	}
-	return d.generate(output)
+	if err := d.generate(output); err != nil {
+		return fmt.Errorf("generating documentation: %w", err)
+	}
+	return nil
 }
 
 // loadPackage loads the Go package from the specified directory and returns
@@ -138,7 +141,7 @@ type docData struct {
 
 // newDocData constructs a docData by inspecting all files in the provided package.
 func newDocData(pkg *packages.Package) (*docData, error) {
-	data := &docData{
+	d := &docData{
 		pkg:     pkg,
 		structs: make(map[string]*ast.StructType),
 		docs:    make(map[string]string),
@@ -159,13 +162,13 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 		isConfig := filepath.Base(fileName) == primaryConfigFile
 		ast.Inspect(file, func(n ast.Node) bool {
 			var cont bool
-			data, cont = data.collectStructs(n, relPath, isConfig)
+			d, cont = d.collectStructs(n, relPath, isConfig)
 			return cont
 		})
 	}
 
-	sort.Strings(data.otherKeys)
-	return data, nil
+	sort.Strings(d.otherKeys)
+	return d, nil
 }
 
 // collectStructs is the visitor function used by ast.Inspect to identify and extract
@@ -209,7 +212,10 @@ func (d *docData) generate(output io.Writer) error {
 
 	// Write Config objects first, then others.
 	for _, k := range append(d.configKeys, d.otherKeys...) {
-		d.writeStruct(output, k, d.sources[k])
+		if err := d.writeStruct(output, k, d.sources[k]); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
@@ -217,7 +223,7 @@ func (d *docData) generate(output io.Writer) error {
 
 // writeStruct writes a Markdown representation of a Go struct to the provided writer.
 // It generates a table of fields, including their YAML names, types, and descriptions.
-func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) {
+func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) error {
 	st := d.structs[name]
 	title := name + configSuffix
 	if name == "Config" {
@@ -259,9 +265,7 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 		})
 	}
 
-	if err := structTemplate.Execute(output, structData); err != nil {
-		log.Printf("error executing template for %s: %v", name, err)
-	}
+	return structTemplate.Execute(output, structData)
 }
 
 func extractYamlName(tag *ast.BasicLit) string {

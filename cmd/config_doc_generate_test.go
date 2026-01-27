@@ -265,7 +265,7 @@ type Alpha struct {
 		t.Errorf("incorrect order: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
 
-	if !strings.Contains(got, "[Source](../config.go#L4)") {
+	if !strings.Contains(got, "[Link to code](../config.go#L4)") {
 		t.Error("output missing expected source link for Config")
 	}
 }
