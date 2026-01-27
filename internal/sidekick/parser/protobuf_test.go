@@ -1871,7 +1871,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	}
 
 	t.Run("API.ResourceDefinitions", func(t *testing.T) {
-		// With the fix, we expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
+		// We expect 2 ResourceDefinitions: Shelf (file-level) and Book (message-level).
 		if len(test.ResourceDefinitions) != 2 {
 			t.Fatalf("Expected 2 ResourceDefinitions, got %d", len(test.ResourceDefinitions))
 		}
