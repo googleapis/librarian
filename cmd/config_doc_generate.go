@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -35,6 +36,8 @@ var (
 	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
 	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
 )
+
+const configSuffix = " Configuration"
 
 func main() {
 	flag.Parse()
@@ -79,7 +82,11 @@ func loadPackage(dir string) (*packages.Package, error) {
 	}
 	pkg := pkgs[0]
 	if len(pkg.Errors) > 0 {
-		return nil, pkg.Errors[0]
+		var errs []error
+		for _, e := range pkg.Errors {
+			errs = append(errs, e)
+		}
+		return nil, errors.Join(errs...)
 	}
 	return pkg, nil
 }
@@ -94,21 +101,21 @@ type docData struct {
 }
 
 func newDocData(pkg *packages.Package) (*docData, error) {
-	d := &docData{
+	data := &docData{
 		pkg:     pkg,
 		structs: make(map[string]*ast.StructType),
 		docs:    make(map[string]string),
 		sources: make(map[string]string),
 	}
 
-	root := "."
+	moduleRoot := "."
 	if pkg.Module != nil {
-		root = pkg.Module.Dir
+		moduleRoot = pkg.Module.Dir
 	}
 
 	for _, file := range pkg.Syntax {
 		fileName := pkg.Fset.File(file.Pos()).Name()
-		relPath, err := filepath.Rel(root, fileName)
+		relPath, err := filepath.Rel(moduleRoot, fileName)
 		if err != nil {
 			return nil, err
 		}
@@ -125,29 +132,29 @@ func newDocData(pkg *packages.Package) (*docData, error) {
 			}
 
 			name := ts.Name.Name
-			if d.structs[name] != nil {
+			if data.structs[name] != nil {
 				return true // Already seen
 			}
 
-			d.structs[name] = st
+			data.structs[name] = st
 			if ts.Doc != nil {
-				d.docs[name] = cleanDoc(ts.Doc.Text())
+				data.docs[name] = cleanDoc(ts.Doc.Text())
 			}
 
 			line := pkg.Fset.Position(ts.Pos()).Line
-			d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
+			data.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
 
 			if isConfig {
-				d.configKeys = append(d.configKeys, name)
+				data.configKeys = append(data.configKeys, name)
 			} else {
-				d.otherKeys = append(d.otherKeys, name)
+				data.otherKeys = append(data.otherKeys, name)
 			}
 			return true
 		})
 	}
 
-	sort.Strings(d.otherKeys)
-	return d, nil
+	sort.Strings(data.otherKeys)
+	return data, nil
 }
 
 func (d *docData) generate(out io.Writer) error {
@@ -167,9 +174,9 @@ func (d *docData) generate(out io.Writer) error {
 // It generates a table of fields, including their YAML names, types, and descriptions.
 func (d *docData) writeStruct(out io.Writer, name string, sourceLink string) {
 	st := d.structs[name]
-	title := name + " Configuration"
+	title := name + configSuffix
 	if name == "Config" {
-		title = "Root Configuration"
+		title = "Root" + configSuffix
 	}
 
 	fmt.Fprintln(out)
