@@ -747,9 +747,9 @@ func TestSummaryRegex(t *testing.T) {
 			wantMatch:   true,
 		},
 		{
-			name:        "no space after colon",
-			input:       "google-cloud-storage:v1.2.3",
-			wantMatch:   false,
+			name:      "no space after colon",
+			input:     "google-cloud-storage:v1.2.3",
+			wantMatch: false,
 		},
 		{
 			name:        "extra spaces",
