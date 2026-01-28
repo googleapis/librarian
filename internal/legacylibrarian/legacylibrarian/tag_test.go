@@ -226,9 +226,9 @@ func TestParsePullRequestBody(t *testing.T) {
 Librarian Version: v0.2.0
 Language Image: image
 
-<details><summary>google-cloud-storage: 1.2.3</summary>
+<details><summary>google-cloud-storage: v1.2.3</summary>
 
-[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
 ### Features
 
@@ -239,7 +239,7 @@ Language Image: image
 				{
 					Version: "1.2.3",
 					Library: "google-cloud-storage",
-					Body: `[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
 ### Features
 
@@ -253,9 +253,9 @@ Language Image: image
 Librarian Version: 1.2.3
 Language Image: gcr.io/test/image:latest
 
-<details><summary>library-one: 1.0.0</summary>
+<details><summary>library-one: v1.0.0</summary>
 
-[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
+[v1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
 
 ### Features
 
@@ -263,9 +263,9 @@ Language Image: gcr.io/test/image:latest
 
 </details>
 
-<details><summary>library-two: 2.3.4</summary>
+<details><summary>library-two: v2.3.4</summary>
 
-[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
+[v2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -276,7 +276,7 @@ Language Image: gcr.io/test/image:latest
 				{
 					Version: "1.0.0",
 					Library: "library-one",
-					Body: `[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
+					Body: `[v1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
 
 ### Features
 
@@ -285,7 +285,7 @@ Language Image: gcr.io/test/image:latest
 				{
 					Version: "2.3.4",
 					Library: "library-two",
-					Body: `[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
+					Body: `[v2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -321,7 +321,7 @@ some content
 </details>`,
 			want: []libraryRelease{
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
 				},
@@ -344,7 +344,7 @@ some content
 </details>`,
 			want: []libraryRelease{
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
 				},
@@ -410,7 +410,7 @@ Libraries: a,b,c
 * this is another bulk change`,
 				},
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
