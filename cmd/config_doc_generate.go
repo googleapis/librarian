@@ -39,12 +39,21 @@ var (
 )
 
 const (
-	configSuffix      = " Configuration"
 	primaryConfigFile = "config.go"
+	rootStructName    = "Config"
+
+	// Markdown title components
+	titleSuffix = " Configuration"
+	rootTitle   = "Root"
+
+	// Markdown anchor components
+	anchorSuffix = "-configuration"
+	rootAnchor   = "root-configuration"
 )
 
 var structTemplate = template.Must(template.New("struct").Parse(`
 ## {{.Title}}
+
 {{if .SourceLink}}[Link to code]({{.SourceLink}})
 {{end}}{{if .Doc}}{{.Doc}}
 {{end}}| Field | Type | Description |
@@ -215,9 +224,9 @@ func (d *docData) generate(output io.Writer) error {
 // It generates a table of fields, including their YAML names, types, and descriptions.
 func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) error {
 	st := d.structs[name]
-	title := name + configSuffix
-	if name == "Config" {
-		title = "Root" + configSuffix
+	title := name + titleSuffix
+	if name == rootStructName {
+		title = rootTitle + titleSuffix
 	}
 	structData := structData{
 		Title:      title,
@@ -289,9 +298,9 @@ func formatType(typeName string, allStructs map[string]*ast.StructType) string {
 	res := cleanType
 	// If it's one of our structs, link it
 	if _, ok := allStructs[cleanType]; ok {
-		anchor := strings.ToLower(cleanType) + "-configuration"
-		if cleanType == "Config" {
-			anchor = "root-configuration"
+		anchor := strings.ToLower(cleanType) + anchorSuffix
+		if cleanType == rootStructName {
+			anchor = rootAnchor
 		}
 		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
 	}

@@ -3,6 +3,7 @@
 This document describes the schema for the `librarian.yaml` file.
 
 ## Root Configuration
+
 [Link to code](../internal/config/config.go#L22)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -15,6 +16,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `libraries` | list of [Library](#library-configuration) (optional) | Libraries contains configuration overrides for libraries that need special handling, and differ from default settings. |
 
 ## Release Configuration
+
 [Link to code](../internal/config/config.go#L50)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -26,6 +28,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
 
 ## Tool Configuration
+
 [Link to code](../internal/config/config.go#L76)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -33,6 +36,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `version` | string | Version is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
+
 [Link to code](../internal/config/config.go#L85)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -43,6 +47,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `showcase` | [Source](#source-configuration) (optional) | Showcase is the showcase repository configuration. |
 
 ## Source Configuration
+
 [Link to code](../internal/config/config.go#L103)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -53,6 +58,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `subpath` | string | Subpath is a directory inside the fetched archive that should be treated as the root for operations. |
 
 ## Default Configuration
+
 [Link to code](../internal/config/config.go#L124)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -64,6 +70,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
 
 ## Library Configuration
+
 [Link to code](../internal/config/config.go#L148)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -87,12 +94,14 @@ This document describes the schema for the `librarian.yaml` file.
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Rust contains Rust-specific library configuration. |
 
 ## API Configuration
+
 [Link to code](../internal/config/config.go#L217)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
 ## DartPackage Configuration
+
 [Link to code](../internal/config/language.go#L279)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -112,6 +121,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
 
 ## GoAPI Configuration
+
 [Link to code](../internal/config/language.go#L27)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -122,6 +132,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `proto_package` | string |  |
 
 ## GoModule Configuration
+
 [Link to code](../internal/config/language.go#L20)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -130,6 +141,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `module_path_version` | string |  |
 
 ## PythonPackage Configuration
+
 [Link to code](../internal/config/language.go#L264)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -137,6 +149,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 
 ## RustCrate Configuration
+
 [Link to code](../internal/config/language.go#L127)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -164,6 +177,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Discovery contains discovery-specific configuration for LRO polling. |
 
 ## RustDefault Configuration
+
 [Link to code](../internal/config/language.go#L36)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -173,6 +187,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `generate_rpc_samples` | string | GenerateRpcSamples indicates whether to generate RPC samples. |
 
 ## RustDiscovery Configuration
+
 [Link to code](../internal/config/language.go#L246)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -180,6 +195,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `pollers` | list of [RustPoller](#rustpoller-configuration) | Pollers is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
+
 [Link to code](../internal/config/language.go#L225)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -188,6 +204,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `replace` | string | Replace is the replacement text. |
 
 ## RustModule Configuration
+
 [Link to code](../internal/config/language.go#L53)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -215,6 +232,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `template` | string | Template specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
 
 ## RustPackageDependency Configuration
+
 [Link to code](../internal/config/language.go#L197)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -227,6 +245,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `used_if` | string | UsedIf specifies a condition for when the dependency is used. |
 
 ## RustPaginationOverride Configuration
+
 [Link to code](../internal/config/language.go#L237)
 | Field | Type | Description |
 | :--- | :--- | :--- |
@@ -234,6 +253,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `item_field` | string | ItemField is the name of the field used for items. |
 
 ## RustPoller Configuration
+
 [Link to code](../internal/config/language.go#L255)
 | Field | Type | Description |
 | :--- | :--- | :--- |
