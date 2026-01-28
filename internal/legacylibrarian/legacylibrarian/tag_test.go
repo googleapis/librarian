@@ -723,3 +723,62 @@ func Test_tagRunner_run_processPullRequests(t *testing.T) {
 		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
 	}
 }
+
+func TestSummaryRegex(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		input       string
+		wantLibrary string
+		wantVersion string
+		wantMatch   bool
+	}{
+		{
+			name:        "standard with v prefix",
+			input:       "google-cloud-storage: v1.2.3",
+			wantLibrary: "google-cloud-storage",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+		{
+			name:        "standard without v prefix",
+			input:       "google-cloud-storage: 1.2.3",
+			wantLibrary: "google-cloud-storage",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+		{
+			name:        "no space after colon",
+			input:       "google-cloud-storage:v1.2.3",
+			wantMatch:   false,
+		},
+		{
+			name:        "extra spaces",
+			input:       "  google-cloud-storage  : v1.2.3",
+			wantLibrary: "  google-cloud-storage  ",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			matches := summaryRegex.FindStringSubmatch(tc.input)
+			if !tc.wantMatch {
+				if matches != nil {
+					t.Errorf("expected no match for %q, but got %v", tc.input, matches)
+				}
+				return
+			}
+			if matches == nil {
+				t.Fatalf("expected match for %q, but got none", tc.input)
+			}
+			if len(matches) != 3 {
+				t.Fatalf("expected 3 match groups, got %d", len(matches))
+			}
+			if got := matches[1]; got != tc.wantLibrary {
+				t.Errorf("library mismatch: got %q, want %q", got, tc.wantLibrary)
+			}
+			if got := matches[2]; got != tc.wantVersion {
+				t.Errorf("version mismatch: got %q, want %q", got, tc.wantVersion)
+			}
+		})
+	}
+}
