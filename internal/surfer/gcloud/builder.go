@@ -451,52 +451,79 @@ func newAsync(method *api.Method, model *api.API, _ *Config) *Async {
 
 // newOutputConfig generates the output configuration for List commands.
 func newOutputConfig(method *api.Method, model *api.API) *OutputConfig {
-	// We need to find the resource message to determine the columns.
-	// For List, the output type is `ListXxxResponse`, which has a repeated field of the resource.
-	if method.OutputType == nil {
+	// We only generate output config for list methods.
+	if !utils.IsList(method) {
 		return nil
 	}
 
-	var resourceMsg *api.Message
-	for _, f := range method.OutputType.Fields {
-		if f.Repeated && f.MessageType != nil {
-			resourceMsg = f.MessageType
-			break
-		}
-	}
-
+	resourceMsg := findResourceMessage(method.OutputType)
 	if resourceMsg == nil {
 		return nil
 	}
 
-	// We generate a table format string.
-	// We pick "name" as the first column, and then a few other scalar fields.
-	var columns []string
-	columns = append(columns, "name")
-
-	count := 0
-	for _, f := range resourceMsg.Fields {
-		if f.Name == "name" {
-			continue
-		}
-		// Skip complex types for now to keep the table simple.
-		if f.MessageType != nil || f.Repeated || f.Map {
-			continue
-		}
-		// Skip description as it can be long.
-		if f.Name == "description" {
-			continue
-		}
-		columns = append(columns, f.JSONName)
-		count++
-		if count >= 5 { // Limit columns
-			break
-		}
+	format := newFormat(resourceMsg)
+	if format == "" {
+		return nil
 	}
 
 	return &OutputConfig{
-		Format: fmt.Sprintf("table(%s)", strings.Join(columns, ",")),
+		Format: format,
 	}
+}
+
+// findResourceMessage identifies the primary resource message within a List response.
+// Per AIP-132, this is usually the repeated field in the response message.
+func findResourceMessage(outputType *api.Message) *api.Message {
+	if outputType == nil {
+		return nil
+	}
+	for _, f := range outputType.Fields {
+		if f.Repeated && f.MessageType != nil {
+			return f.MessageType
+		}
+	}
+	return nil
+}
+
+// newFormat generates a gcloud table format string from a message definition.
+func newFormat(message *api.Message) string {
+	var columns []string
+	// TODO(santiquiroga): Look at AIP-157 for guidance on which fields to exclude,
+	// especially focusing on costly status fields.
+	for _, f := range message.Fields {
+		// Include scalars and enums.
+		isScalar := f.Typez == api.STRING_TYPE ||
+			f.Typez == api.INT32_TYPE || f.Typez == api.INT64_TYPE ||
+			f.Typez == api.BOOL_TYPE || f.Typez == api.ENUM_TYPE ||
+			f.Typez == api.DOUBLE_TYPE || f.Typez == api.FLOAT_TYPE
+
+		if isScalar {
+			if f.Repeated {
+				// Format repeated scalars with .join(',').
+				columns = append(columns, fmt.Sprintf("%s.join(',')", f.JSONName))
+			} else {
+				columns = append(columns, f.JSONName)
+			}
+			continue
+		}
+
+		// Include timestamps (usually messages like google.protobuf.Timestamp).
+		if f.MessageType != nil && strings.HasSuffix(f.TypezID, ".Timestamp") {
+			columns = append(columns, f.JSONName)
+		}
+	}
+
+	return newTable(columns)
+}
+
+// newTable constructs a gcloud table format string from a list of columns.
+// It follows the convention of placing each column on a new line for better
+// readability in the command YAML.
+func newTable(columns []string) string {
+	if len(columns) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("table(\n%s)", strings.Join(columns, ",\n"))
 }
 
 // findHelpTextRule finds the help text rule from the config that applies to the current method.
