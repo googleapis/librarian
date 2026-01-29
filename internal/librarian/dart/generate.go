@@ -28,8 +28,8 @@ import (
 )
 
 // Generate generates a Dart client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], googleapisDir)
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
+	sidekickConfig, err := toSidekickConfig(cfg, library, library.APIs[0], googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir string) (*sidekickconfig.Config, error) {
+func toSidekickConfig(cfg *config.Config, library *config.Library, ch *config.API, googleapisDir string) (*sidekickconfig.Config, error) {
 	source := map[string]string{
 		"googleapis-root": googleapisDir,
 	}
@@ -70,6 +70,8 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 		},
 		Source: source,
 		Codec:  buildCodec(library),
+
+		Config: cfg,
 	}
 	return sidekickCfg, nil
 }

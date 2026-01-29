@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -60,6 +61,9 @@ type Config struct {
 	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
 	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
 	Release             *Release                `toml:"release,omitempty"`
+
+	// Add config until we can migrate to it
+	Config *config.Config `toml:"config,omitempty"`
 }
 
 // GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the

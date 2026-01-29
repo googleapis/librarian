@@ -885,7 +885,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Conformance: conformanceDir,
 					Showcase:    showcaseDir,
 				}
-				got, err := toSidekickConfig(test.library, test.api, sources)
+				got, err := toSidekickConfig(&config.Config{}, test.library, test.api, sources)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -897,6 +897,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Codec:               test.want.Codec,
 					CommentOverrides:    test.want.CommentOverrides,
 					PaginationOverrides: test.want.PaginationOverrides,
+					Config:              &config.Config{},
 				}
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
