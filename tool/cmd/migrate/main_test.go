@@ -40,8 +40,8 @@ func TestReadRootSidekick(t *testing.T) {
 				Version:  "0.4.0",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
-						Commit: "fe58211356a91f4140ed51893703910db05ade91",
-						SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
+						Commit: "211d22fa6dfabfa52cbda04d1aee852a01301edf",
+						SHA256: "9aa6e5167f76b869b53b71f9fe963e6e17ec58b2cbdeb30715ef95b92faabfc5",
 					},
 					Showcase: &config.Source{
 						Commit: "69bdd62035d793f3d23a0c960dee547023c1c5ac",
