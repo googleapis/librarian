@@ -157,9 +157,9 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	googleapisRoot := sidekick.Source["googleapis-root"]
 	showcaseRoot := sidekick.Source["showcase-root"]
 	showcaseSHA256 := sidekick.Source["showcase-sha256"]
-	protobufRoot := sidekick.Source["protobuf-src-root"]
-	protobufSHA256 := sidekick.Source["protobuf-src-sha256"]
-	protobufSubDir := sidekick.Source["protobuf-src-subdir"]
+	protobufRoot := sidekick.Source["protobuf-root"]
+	protobufSHA256 := sidekick.Source["protobuf-sha256"]
+	protobufSubDir := sidekick.Source["protobuf-subdir"]
 	conformanceRoot := sidekick.Source["conformance-root"]
 	conformanceSHA256 := sidekick.Source["conformance-sha256"]
 
