@@ -722,7 +722,6 @@ func parseDartPackages(codec map[string]string) map[string]string {
 		}
 		packages[key] = value
 	}
-
 	return packages
 }
 
