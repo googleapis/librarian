@@ -149,37 +149,32 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 		return nil, err
 	}
 
-	releaseLevel := sidekick.Codec["release-level"]
-	warnings := sidekick.Codec["disabled-rustdoc-warnings"]
-	discoverySHA256 := sidekick.Source["discovery-sha256"]
-	discoveryRoot := sidekick.Source["discovery-root"]
+	version := sidekick.Codec["version"]
+	apiKeys := sidekick.Codec["api-keys-environment-variables"]
+	issueTrackerURL := sidekick.Codec["issue-tracker-url"]
 	googleapisSHA256 := sidekick.Source["googleapis-sha256"]
 	googleapisRoot := sidekick.Source["googleapis-root"]
 	showcaseRoot := sidekick.Source["showcase-root"]
 	showcaseSHA256 := sidekick.Source["showcase-sha256"]
-	protobufRoot := sidekick.Source["protobuf-src-root"]
-	protobufSHA256 := sidekick.Source["protobuf-src-sha256"]
-	protobufSubDir := sidekick.Source["protobuf-src-subdir"]
+	protobufRoot := sidekick.Source["protobuf-root"]
+	protobufSHA256 := sidekick.Source["protobuf-sha256"]
+	protobufSubDir := sidekick.Source["protobuf-subdir"]
 	conformanceRoot := sidekick.Source["conformance-root"]
 	conformanceSHA256 := sidekick.Source["conformance-sha256"]
-	generateSetterSamples := sidekick.Codec["generate-setter-samples"]
 
-	discoveryCommit := strings.TrimSuffix(strings.TrimPrefix(discoveryRoot, discoveryArchivePrefix), tarballSuffix)
 	googleapisCommit := strings.TrimSuffix(strings.TrimPrefix(googleapisRoot, googleapisArchivePrefix), tarballSuffix)
 	showcaseCommit := strings.TrimSuffix(strings.TrimPrefix(showcaseRoot, showcaseArchivePrefix), tarballSuffix)
 	protobufCommit := strings.TrimSuffix(strings.TrimPrefix(protobufRoot, protobufArchivePrefix), tarballSuffix)
 	conformanceCommit := strings.TrimSuffix(strings.TrimPrefix(conformanceRoot, conformanceArchivePrefix), tarballSuffix)
 
-	// Parse package dependencies
-	packageDependencies := parsePackageDependencies(sidekick.Codec)
+	prefix := parseKeyWithPrefix(sidekick.Codec, "prefix:")
+	packages := parseKeyWithPrefix(sidekick.Codec, "package:")
+	protos := parseKeyWithPrefix(sidekick.Codec, "proto:")
 
 	cfg := &config.Config{
-		Language: "rust",
+		Language: "dart",
+		Version:  version,
 		Sources: &config.Sources{
-			Discovery: &config.Source{
-				Commit: discoveryCommit,
-				SHA256: discoverySHA256,
-			},
 			Googleapis: &config.Source{
 				Commit: googleapisCommit,
 				SHA256: googleapisSHA256,
@@ -199,12 +194,13 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			},
 		},
 		Default: &config.Default{
-			Output:       "src/generated/",
-			ReleaseLevel: releaseLevel,
-			Rust: &config.RustDefault{
-				PackageDependencies:     packageDependencies,
-				DisabledRustdocWarnings: strToSlice(warnings, false),
-				GenerateSetterSamples:   generateSetterSamples,
+			Output: "generated/",
+			Dart: &config.DartPackage{
+				APIKeysEnvironmentVariables: apiKeys,
+				IssueTrackerURL:             issueTrackerURL,
+				Prefixes:                    prefix,
+				Protos:                      protos,
+				Packages:                    packages,
 			},
 		},
 	}
@@ -712,6 +708,17 @@ func parsePackageDependencies(codec map[string]string) []*config.RustPackageDepe
 	})
 
 	return packageDeps
+}
+
+func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]string {
+	res := make(map[string]string)
+	for key, value := range codec {
+		if !strings.HasPrefix(key, prefix) {
+			continue
+		}
+		res[key] = value
+	}
+	return res
 }
 
 func strToBool(s string) bool {

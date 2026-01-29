@@ -36,15 +36,12 @@ func TestReadRootSidekick(t *testing.T) {
 			name: "success",
 			path: "testdata/root-sidekick/success",
 			want: &config.Config{
-				Language: "rust",
+				Language: "dart",
+				Version:  "0.4.0",
 				Sources: &config.Sources{
-					Discovery: &config.Source{
-						Commit: "0bb1100f52bf0bae06f4b4d76742e7eba5c59793",
-						SHA256: "67c8d3792f0ebf5f0582dce675c379d0f486604eb0143814c79e788954aa1212",
-					},
 					Googleapis: &config.Source{
-						Commit: "fe58211356a91f4140ed51893703910db05ade91",
-						SHA256: "839e897c39cada559b97d64f90378715a4a43fbc972d8cf93296db4156662085",
+						Commit: "211d22fa6dfabfa52cbda04d1aee852a01301edf",
+						SHA256: "9aa6e5167f76b869b53b71f9fe963e6e17ec58b2cbdeb30715ef95b92faabfc5",
 					},
 					Showcase: &config.Source{
 						Commit: "69bdd62035d793f3d23a0c960dee547023c1c5ac",
@@ -61,35 +58,36 @@ func TestReadRootSidekick(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					Output:       "src/generated/",
-					ReleaseLevel: "stable",
-					Rust: &config.RustDefault{
-						DisabledRustdocWarnings: []string{
-							"redundant_explicit_links",
-							"broken_intra_doc_links",
+					Output:       "generated/",
+					ReleaseLevel: "",
+					Dart: &config.DartPackage{
+						APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
+						IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
+						Packages: map[string]string{
+							"package:google_cloud_api":          "^0.4.0",
+							"package:google_cloud_iam_v1":       "^0.4.0",
+							"package:google_cloud_location":     "^0.4.0",
+							"package:google_cloud_logging_type": "^0.4.0",
+							"package:google_cloud_longrunning":  "^0.4.0",
+							"package:google_cloud_protobuf":     "^0.4.0",
+							"package:google_cloud_rpc":          "^0.4.0",
+							"package:google_cloud_type":         "^0.4.0",
+							"package:googleapis_auth":           "^2.0.0",
+							"package:http":                      "^1.3.0",
 						},
-						PackageDependencies: []*config.RustPackageDependency{
-							{
-								Feature: "_internal-http-client",
-								Name:    "gaxi",
-								Package: "google-cloud-gax-internal",
-								Source:  "internal",
-								UsedIf:  "services",
-							},
-							{
-								Name:      "lazy_static",
-								Package:   "lazy_static",
-								UsedIf:    "services",
-								ForceUsed: true,
-							},
+						Prefixes: map[string]string{"prefix:google.logging.type": "logging_type"},
+						Protos: map[string]string{
+							"proto:google.api":            "package:google_cloud_api/api.dart",
+							"proto:google.cloud.common":   "package:google_cloud_common/common.dart",
+							"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+							"proto:google.iam.v1":         "package:google_cloud_iam_v1/iam.dart",
+							"proto:google.logging.type":   "package:google_cloud_logging_type/logging_type.dart",
+							"proto:google.longrunning":    "package:google_cloud_longrunning/longrunning.dart",
+							"proto:google.protobuf":       "package:google_cloud_protobuf/protobuf.dart",
+							"proto:google.rpc":            "package:google_cloud_rpc/rpc.dart",
+							"proto:google.type":           "package:google_cloud_type/type.dart",
 						},
-						GenerateSetterSamples: "true",
 					},
-				},
-				Release: &config.Release{
-					Remote:         "upstream",
-					Branch:         "main",
-					IgnoredChanges: []string{".repo-metadata.json", ".sidekick.toml"},
 				},
 			},
 		},
@@ -886,6 +884,48 @@ func TestRunMigrateCommand(t *testing.T) {
 				}
 			}
 
+		})
+	}
+}
+
+func TestParseWithPrefix(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		prefix string
+		want   map[string]string
+	}{
+		{
+			name:   "prefix: as a prefix",
+			prefix: "prefix:",
+			want: map[string]string{
+				"prefix:google.logging.type": "logging_type",
+			},
+		},
+		{
+			name:   "package: as a prefix",
+			prefix: "package:",
+			want: map[string]string{
+				"package:googleapis_auth": "^2.0.0",
+			},
+		},
+		{
+			name:   "proto: as a prefix",
+			prefix: "proto:",
+			want: map[string]string{
+				"proto:google.protobuf": "package:google_cloud_protobuf/protobuf.dart",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			codec := map[string]string{
+				"prefix:google.logging.type": "logging_type",
+				"package:googleapis_auth":    "^2.0.0",
+				"proto:google.protobuf":      "package:google_cloud_protobuf/protobuf.dart",
+			}
+			got := parseKeyWithPrefix(codec, test.prefix)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }

@@ -16,6 +16,8 @@
 // librarian.yaml configuration files.
 package config
 
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
+
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
@@ -33,10 +35,10 @@ type Config struct {
 	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
 
-	// Release holds the configuration parameter for any `${lang}-release` subcommand.
+	// Release holds the configuration parameter for publishing and release subcommands.
 	Release *Release `yaml:"release,omitempty"`
 
-	// Default contains default settings for all libraries.
+	// Default contains default settings for all libraries. They apply to all libraries unless overridden.
 	Default *Default `yaml:"default,omitempty"`
 
 	// Libraries contains configuration overrides for libraries that need
