@@ -32,13 +32,13 @@ import (
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
 
 const (
 	sidekickFile             = ".sidekick.toml"
 	cargoFile                = "Cargo.toml"
-	discoveryArchivePrefix   = "https://github.com/googleapis/discovery-artifact-manager/archive/"
 	googleapisArchivePrefix  = "https://github.com/googleapis/googleapis/archive/"
 	showcaseArchivePrefix    = "https://github.com/googleapis/gapic-showcase/archive/"
 	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
@@ -64,6 +64,18 @@ var (
 var excludedVeneerLibraries = map[string]struct{}{
 	"echo-server": {},
 	"gcp-sdk":     {},
+}
+
+type PubSpec struct {
+	name            string            `yaml:"name,omitempty"`
+	description     string            `yaml:"description,omitempty"`
+	version         string            `yaml:"version,omitempty"`
+	repository      string            `yaml:"repository,omitempty"`
+	issueTracker    string            `yaml:"issue_tracker,omitempty"`
+	environment     map[string]string `yaml:"environment,omitempty"`
+	resolution      string            `yaml:"resolution,omitempty"`
+	dependencies    map[string]string `yaml:"dependencies,omitempty"`
+	devDependencies map[string]string `yaml:"dev_dependencies,omitempty"`
 }
 
 func main() {
@@ -297,7 +309,13 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			specificationFormat = "protobuf"
 		}
 
-		// Create or update library
+		dir := filepath.Dir(file)
+		pubSpec, err := readPubSpec(dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read pubspec.yaml at %s: %w", dir, err)
+		}
+
+		libraryName := pubSpec.name
 		lib, exists := libraries[libraryName]
 		if !exists {
 			lib = &config.Library{
@@ -305,140 +323,61 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			}
 			libraries[libraryName] = lib
 		}
-		lib.SpecificationFormat = specificationFormat
+
+		if pubSpec.version != "" {
+			lib.Version = pubSpec.version
+		}
+
+		lib.APIs = append(lib.APIs, &config.API{
+			Path: apiPath,
+		})
+
+		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
+			lib.CopyrightYear = copyrightYear
+		}
+
+		if pubSpec.description != "" {
+			lib.DescriptionOverride = pubSpec.description
+		}
+
 		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
 		lib.Output = relativePath
-		lib.APIs = append(lib.APIs, &config.API{
-			Path: apiPath,
-		})
 
-		// Parse library-level configuration
-		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
-			lib.CopyrightYear = copyrightYear
+		if _, ok := sidekick.Codec["not-for-publication"]; ok {
+			lib.SkipPublish = true
 		}
 
-		lib.Dart = &config.DartPackage{}
+		lib.SpecificationFormat = specificationFormat
+
+		dartPackage := &config.DartPackage{}
 		if apiKeys, ok := sidekick.Codec["api-keys-environment-variables"]; ok && apiKeys != "" {
-			lib.Dart.APIKeysEnvironmentVariables = apiKeys
+			dartPackage.APIKeysEnvironmentVariables = apiKeys
 		}
+
 		if devDeps, ok := sidekick.Codec["dev-dependencies"]; ok && devDeps != "" {
-			lib.Dart.DevDependencies = devDeps
+			dartPackage.DevDependencies = devDeps
+		}
+		if extraImports, ok := sidekick.Codec["extra-imports"]; ok && extraImports != "" {
+			dartPackage.ExtraImports = extraImports
+		}
+		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
+			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
-			lib.Dart.RepositoryURL = repoURL
+			dartPackage.RepositoryURL = repoURL
 		}
 		if afterTitle, ok := sidekick.Codec["readme-after-title-text"]; ok && afterTitle != "" {
-			lib.Dart.ReadmeAfterTitleText = afterTitle
+			dartPackage.ReadmeAfterTitleText = afterTitle
 		}
 		if quickStart, ok := sidekick.Codec["readme-quickstart-text"]; ok && quickStart != "" {
-			lib.Dart.ReadmeQuickstartText = quickStart
+			dartPackage.ReadmeQuickstartText = quickStart
 		}
 
-		// Parse Rust-specific configuration from .sidekick.toml source section
-		if descriptionOverride, ok := sidekick.Source["description-override"]; ok {
-			lib.DescriptionOverride = descriptionOverride
-		}
-
-		includeList := sidekick.Source["include-list"]
-		includeIds := sidekick.Source["include-ids"]
-		skippedIds := sidekick.Source["skipped-ids"]
-		roots := sidekick.Source["roots"]
-
-		// Parse Rust-specific configuration from sidekick.toml codec section
-		disabledRustdocWarnings := sidekick.Codec["disabled-rustdoc-warnings"]
-		perServiceFeatures := sidekick.Codec["per-service-features"]
-		modulePath := sidekick.Codec["module-path"]
-		templateOverride := sidekick.Codec["template-override"]
-		packageNameOverride := sidekick.Codec["package-name-override"]
-		rootName := sidekick.Codec["root-name"]
-		defaultFeatures := sidekick.Codec["default-features"]
-		disabledClippyWarnings := sidekick.Codec["disabled-clippy-warnings"]
-		hasVeneer := sidekick.Codec["has-veneer"]
-		routingRequired := sidekick.Codec["routing-required"]
-		includeGrpcOnlyMethods := sidekick.Codec["include-grpc-only-methods"]
-		generateSetterSamples := sidekick.Codec["generate-setter-samples"]
-		generateRpcSamples := sidekick.Codec["generate-rpc-samples"]
-		postProcessProtos := sidekick.Codec["post-process-protos"]
-		detailedTracingAttributes := sidekick.Codec["detailed-tracing-attributes"]
-		nameOverrides := sidekick.Codec["name-overrides"]
-
-		// Parse package dependencies
-		packageDeps := parsePackageDependencies(sidekick.Codec)
-
-		// Parse documentation overrides
-		var documentationOverrides []config.RustDocumentationOverride
-		for _, do := range sidekick.CommentOverrides {
-			if strings.HasPrefix(do.Replace, "\n") {
-				// this ensures that newline is preserved in yaml format
-				do.Replace = " " + do.Replace
-			}
-			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
-				ID:      do.ID,
-				Match:   do.Match,
-				Replace: do.Replace,
-			})
-		}
-
-		// Parse pagination overrides
-		var paginationOverrides []config.RustPaginationOverride
-		for _, po := range sidekick.PaginationOverrides {
-			paginationOverrides = append(paginationOverrides, config.RustPaginationOverride{
-				ID:        po.ID,
-				ItemField: po.ItemField,
-			})
-		}
-
-		// Set Rust-specific configuration only if there's actual config
-		rustCrate := &config.RustCrate{
-			RustDefault: config.RustDefault{
-				PackageDependencies:     packageDeps,
-				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings, false),
-				GenerateSetterSamples:   generateSetterSamples,
-				GenerateRpcSamples:      generateRpcSamples,
-			},
-			PerServiceFeatures:        strToBool(perServiceFeatures),
-			ModulePath:                modulePath,
-			TemplateOverride:          templateOverride,
-			PackageNameOverride:       packageNameOverride,
-			RootName:                  rootName,
-			Roots:                     strToSlice(roots, false),
-			DefaultFeatures:           strToSlice(defaultFeatures, false),
-			IncludeList:               strToSlice(includeList, false),
-			IncludedIds:               strToSlice(includeIds, false),
-			SkippedIds:                strToSlice(skippedIds, false),
-			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings, false),
-			HasVeneer:                 strToBool(hasVeneer),
-			RoutingRequired:           strToBool(routingRequired),
-			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
-			PostProcessProtos:         postProcessProtos,
-			DetailedTracingAttributes: strToBool(detailedTracingAttributes),
-			DocumentationOverrides:    documentationOverrides,
-			PaginationOverrides:       paginationOverrides,
-			NameOverrides:             nameOverrides,
-		}
-
-		if sidekick.Discovery != nil {
-			if lib.Rust == nil {
-				lib.Rust = &config.RustCrate{}
-			}
-			pollers := make([]config.RustPoller, len(sidekick.Discovery.Pollers))
-			for i, p := range sidekick.Discovery.Pollers {
-				pollers[i] = config.RustPoller{
-					Prefix:   p.Prefix,
-					MethodID: p.MethodID,
-				}
-			}
-			rustCrate.Discovery = &config.RustDiscovery{
-				OperationID: sidekick.Discovery.OperationID,
-				Pollers:     pollers,
-			}
-		}
-
-		if !isEmptyRustCrate(rustCrate) {
-			lib.Rust = rustCrate
+		if !isEmptyDartPackage(dartPackage) {
+			lib.Dart = dartPackage
 		}
 	}
 
@@ -726,8 +665,8 @@ func strToSlice(s string, wantEmpty bool) []string {
 	return strings.Split(s, ",")
 }
 
-func isEmptyRustCrate(r *config.RustCrate) bool {
-	return reflect.DeepEqual(r, &config.RustCrate{})
+func isEmptyDartPackage(r *config.DartPackage) bool {
+	return reflect.DeepEqual(r, &config.DartPackage{})
 }
 
 func readTOML[T any](file string) (*T, error) {
@@ -758,4 +697,8 @@ func readCargoConfig(dir string) (*rust.Cargo, error) {
 		return nil, fmt.Errorf("failed to unmarshal cargo: %w", err)
 	}
 	return &cargo, nil
+}
+
+func readPubSpec(dir string) (*PubSpec, error) {
+	return yaml.Read[PubSpec](filepath.Join(dir, "pubspec.yaml"))
 }
