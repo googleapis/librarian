@@ -162,3 +162,86 @@ func TestNewParam(t *testing.T) {
 		})
 	}
 }
+
+func TestNewOutputConfig(t *testing.T) {
+	instanceMsg := &api.Message{
+		Fields: []*api.Field{
+			{Name: "name", JSONName: "name", Typez: api.STRING_TYPE},
+			{Name: "create_time", JSONName: "createTime", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Timestamp", MessageType: &api.Message{}},
+			{Name: "state", JSONName: "state", Typez: api.ENUM_TYPE},
+			{Name: "capacity_gib", JSONName: "capacityGib", Typez: api.INT64_TYPE},
+			{Name: "access_points", JSONName: "accessPoints", Typez: api.STRING_TYPE, Repeated: true},
+		},
+	}
+
+	listMethod := &api.Method{
+		Name: "ListInstances",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "GET"}},
+		},
+		OutputType: &api.Message{
+			Fields: []*api.Field{
+				{
+					Name:        "instances",
+					Repeated:    true,
+					MessageType: instanceMsg,
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   *OutputConfig
+	}{
+		{
+			name:   "standard list method",
+			method: listMethod,
+			want: &OutputConfig{
+				Format: "table(\nname,\ncreateTime,\nstate,\ncapacityGib,\naccessPoints.join(','))",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := newOutputConfig(test.method, &api.API{})
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewOutputConfig_Error(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+	}{
+		{
+			name: "not a list method",
+			method: &api.Method{
+				Name: "CreateInstance",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "POST"}},
+				},
+			},
+		},
+		{
+			name: "missing output type",
+			method: &api.Method{
+				Name: "ListInstances",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET"}},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := newOutputConfig(test.method, &api.API{}); got != nil {
+				t.Errorf("newOutputConfig() = %v, want nil", got)
+			}
+		})
+	}
+}
