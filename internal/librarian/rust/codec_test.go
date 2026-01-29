@@ -667,7 +667,7 @@ func TestToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-showcase",
 				Rust: &config.RustCrate{
-					Roots: []string{"showcase"},
+					Roots: []string{"showcase", "googleapis"},
 				},
 			},
 			api: &config.API{
@@ -681,8 +681,10 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
-					"showcase-root": "",
-					"roots":         "showcase",
+					"googleapis-root": "",
+					"showcase-root":   "",
+					"roots":           "showcase,googleapis",
+					"title-override":  "Client Libraries Showcase API",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-showcase",
@@ -834,9 +836,7 @@ func TestToSidekickConfig(t *testing.T) {
 					case "conformance":
 						conformanceDir = t.TempDir()
 					case "showcase":
-						if test.api != nil && test.api.Path != "" {
-							showcaseDir = setupTestDir(t, test.api.Path)
-						}
+						showcaseDir = filepath.Join("..", "..", "testdata", "gapic-showcase")
 					}
 				}
 			}
