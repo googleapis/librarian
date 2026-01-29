@@ -152,7 +152,6 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 	version := sidekick.Codec["version"]
 	apiKeys := sidekick.Codec["api-keys-environment-variables"]
 	issueTrackerURL := sidekick.Codec["issue-tracker-url"]
-	releaseLevel := sidekick.Codec["release-level"]
 	googleapisSHA256 := sidekick.Source["googleapis-sha256"]
 	googleapisRoot := sidekick.Source["googleapis-root"]
 	showcaseRoot := sidekick.Source["showcase-root"]
@@ -195,8 +194,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 			},
 		},
 		Default: &config.Default{
-			Output:       "generated/",
-			ReleaseLevel: releaseLevel,
+			Output: "generated/",
 			Dart: &config.DartPackage{
 				APIKeysEnvironmentVariables: apiKeys,
 				IssueTrackerURL:             issueTrackerURL,
