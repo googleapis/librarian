@@ -169,97 +169,39 @@ func TestBuildGAPIC(t *testing.T) {
 		{
 			name: "read_sidekick_files",
 			files: []string{
-				"testdata/read-sidekick-files/success-read/.sidekick.toml",
-				"testdata/read-sidekick-files/success-read/nested/.sidekick.toml",
+				"testdata/read-sidekick-files/success-read/library-a/.sidekick.toml",
+				"testdata/read-sidekick-files/success-read/library-b/.sidekick.toml",
 			},
 			want: map[string]*config.Library{
-				"google-cloud-security-publicca-v1": {
-					Name: "google-cloud-security-publicca-v1",
+				"google_cloud_ai_generativelanguage_v1beta": {
+					Name:    "google_cloud_ai_generativelanguage_v1beta",
+					Version: "0.4.0",
 					APIs: []*config.API{
 						{
-							Path: "google/cloud/security/publicca/v1",
+							Path: "google/ai/generativelanguage/v1beta",
 						},
 					},
-					Version:       "1.1.0",
-					CopyrightYear: "2025",
-					Keep: []string{
-						"src/errors.rs",
-						"src/operation.rs",
-					},
-					DescriptionOverride: "Description override",
-					SpecificationFormat: "discovery",
-					Output:              "testdata/read-sidekick-files/success-read/nested",
-					Rust: &config.RustCrate{
-						RustDefault: config.RustDefault{
-							DisabledRustdocWarnings: []string{"bare_urls", "broken_intra_doc_links", "redundant_explicit_links"},
-							GenerateSetterSamples:   "true",
-							GenerateRpcSamples:      "true",
-						},
-						PerServiceFeatures:        true,
-						ModulePath:                "crate",
-						TemplateOverride:          "templates/mod",
-						PackageNameOverride:       "google-cloud-security-publicca-v1",
-						RootName:                  "conformance-root",
-						Roots:                     []string{"discovery", "googleapis"},
-						DefaultFeatures:           []string{"instances", "projects"},
-						IncludeList:               []string{"api.proto", "source_context.proto", "type.proto", "descriptor.proto"},
-						IncludedIds:               []string{".google.iam.v2.Resource"},
-						SkippedIds:                []string{".google.iam.v1.ResourcePolicyMember"},
-						DisabledClippyWarnings:    []string{"doc_lazy_continuation"},
-						HasVeneer:                 true,
-						RoutingRequired:           true,
-						IncludeGrpcOnlyMethods:    true,
-						PostProcessProtos:         "example post processing",
-						DetailedTracingAttributes: true,
-						NameOverrides:             ".google.cloud.security/publicca.v1.Storage=StorageControl",
-					},
-				},
-				"google-cloud-sql-v1": {
-					Name: "google-cloud-sql-v1",
-					APIs: []*config.API{
-						{
-							Path: "google/cloud/sql/v1",
-						},
-					},
-					SkipPublish:         true,
-					Version:             "1.2.0",
 					CopyrightYear:       "2025",
-					SpecificationFormat: "openapi",
-					Output:              "testdata/read-sidekick-files/success-read",
-					Rust: &config.RustCrate{
-						RustDefault: config.RustDefault{
-							PackageDependencies: []*config.RustPackageDependency{
-								{
-									Feature: "_internal-http-client",
-									Name:    "gaxi",
-									Package: "google-cloud-gax-internal",
-									Source:  "internal",
-									UsedIf:  "services",
-								},
-								{
-									ForceUsed: true,
-									Name:      "lazy_static",
-									Package:   "lazy_static",
-									UsedIf:    "services",
-									Ignore:    true,
-								},
-							},
-						},
-						DocumentationOverrides: []config.RustDocumentationOverride{
-							{
-								ID:      ".google.api.ProjectProperties",
-								Match:   "example match",
-								Replace: "example replace",
-							},
-						},
-						PaginationOverrides: []config.RustPaginationOverride{
-							{
-								ID:        ".google.cloud.sql.v1.SqlInstancesService.List",
-								ItemField: "items",
-							},
-						},
+					DescriptionOverride: "The Google Cloud client library for the Generative Language API.",
+					Output:              "",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						APIKeysEnvironmentVariables: "GOOGLE_API_KEY,GEMINI_API_KEY",
+						DevDependencies:             "googleapis_auth,test,test_utils",
+						ReadmeAfterTitleText: `
+> [!TIP]
+> Flutter applications should use
+> [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic).
+>
+> The Generative Language API is meant for Dart command-line, cloud, and server applications.
+> For mobile and web applications, see instead
+> [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic), which provides
+> client-side access to both the Gemini Developer API and Vertex AI.`,
+						ReadmeQuickstartText: ``,
+						RepositoryURL:        "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta",
 					},
 				},
+				"google-cloud-sql-v1": {},
 			},
 		},
 		{
