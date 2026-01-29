@@ -103,7 +103,7 @@ func Find(googleapisDir, path string) (*API, error) {
 
 	// If service config is overridden in allowlist, use it
 	if result.ServiceConfig != "" {
-		return result, nil
+		return populateTitle(googleapisDir, result)
 	}
 
 	// Search filesystem for service config
@@ -138,10 +138,22 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 		if isServiceConfig {
 			result.ServiceConfig = filepath.Join(result.Path, name)
-			return result, nil
+			return populateTitle(googleapisDir, result)
 		}
 	}
 	return result, nil
+}
+
+func populateTitle(googleapisDir string, api *API) (*API, error) {
+	if api.Title != "" || api.ServiceConfig == "" {
+		return api, nil
+	}
+	cfg, err := Read(filepath.Join(googleapisDir, api.ServiceConfig))
+	if err != nil {
+		return nil, err
+	}
+	api.Title = cfg.GetTitle()
+	return api, nil
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
