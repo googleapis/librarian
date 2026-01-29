@@ -714,6 +714,17 @@ func parsePackageDependencies(codec map[string]string) []*config.RustPackageDepe
 	return packageDeps
 }
 
+func parseDartPackages(codec map[string]string) map[string]string {
+	packages := make(map[string]string)
+	for key, value := range codec {
+		if !strings.HasPrefix(key, "package:") {
+			continue
+		}
+		packages[key] = value
+	}
+	return packages
+}
+
 func strToBool(s string) bool {
 	return s == "true"
 }

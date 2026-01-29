@@ -889,3 +889,33 @@ func TestRunMigrateCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDartPackages(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name  string
+		codec map[string]string
+		want  map[string]string
+	}{
+		{
+			name: "success",
+			codec: map[string]string{
+				"prefix:google.logging.type": "logging_type",
+				"package:googleapis_auth":    "^2.0.0",
+				"package:http":               "^1.3.0",
+			},
+			want: map[string]string{
+				"package:googleapis_auth": "^2.0.0",
+				"package:http":            "^1.3.0",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := parseDartPackages(test.codec)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
