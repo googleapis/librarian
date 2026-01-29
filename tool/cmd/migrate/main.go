@@ -107,7 +107,7 @@ func runSidekickMigration(ctx context.Context, repoPath string) error {
 		return fmt.Errorf("failed to read root .sidekick.toml from %q: %w", repoPath, err)
 	}
 
-	sidekickFiles, err := findSidekickFiles(filepath.Join(repoPath, "src", "generated"))
+	sidekickFiles, err := findSidekickFiles(filepath.Join(repoPath, "generated"))
 	if err != nil {
 		return fmt.Errorf("failed to find sidekick.toml files: %w", err)
 	}
@@ -293,20 +293,8 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		specificationFormat := sidekick.General.SpecificationFormat
-		if specificationFormat == "disco" {
-			specificationFormat = "discovery"
-		}
-
-		// Read Cargo.toml in the same directory to get the actual library name
-		dir := filepath.Dir(file)
-		cargo, err := readCargoConfig(dir)
-		if err != nil {
-			return nil, err
-		}
-
-		libraryName := cargo.Package.Name
-		if libraryName == "" {
-			continue
+		if specificationFormat == "" {
+			specificationFormat = "protobuf"
 		}
 
 		// Create or update library
@@ -327,30 +315,26 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			Path: apiPath,
 		})
 
-		// Set version from Cargo.toml (more authoritative than sidekick)
-		if cargo.Package.Version != "" && cargo.Package.Version != "0.0.0" {
-			lib.Version = cargo.Package.Version
-		} else if version, ok := sidekick.Codec["version"]; ok && lib.Version == "" && version != "0.0.0" {
-			lib.Version = version
-		}
-
-		// Set publish disabled from Cargo.toml
-		if !cargo.Package.Publish {
-			lib.SkipPublish = true
-		}
-
 		// Parse library-level configuration
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
 
-		if extraModules, ok := sidekick.Codec["extra-modules"]; ok {
-			for _, module := range strToSlice(extraModules, false) {
-				if module == "" {
-					continue
-				}
-				lib.Keep = append(lib.Keep, fmt.Sprintf("src/%s.rs", module))
-			}
+		lib.Dart = &config.DartPackage{}
+		if apiKeys, ok := sidekick.Codec["api-keys-environment-variables"]; ok && apiKeys != "" {
+			lib.Dart.APIKeysEnvironmentVariables = apiKeys
+		}
+		if devDeps, ok := sidekick.Codec["dev-dependencies"]; ok && devDeps != "" {
+			lib.Dart.DevDependencies = devDeps
+		}
+		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
+			lib.Dart.RepositoryURL = repoURL
+		}
+		if afterTitle, ok := sidekick.Codec["readme-after-title-text"]; ok && afterTitle != "" {
+			lib.Dart.ReadmeAfterTitleText = afterTitle
+		}
+		if quickStart, ok := sidekick.Codec["readme-quickstart-text"]; ok && quickStart != "" {
+			lib.Dart.ReadmeQuickstartText = quickStart
 		}
 
 		// Parse Rust-specific configuration from .sidekick.toml source section

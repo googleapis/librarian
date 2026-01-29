@@ -194,7 +194,7 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
-	// Veneer indicates this library has hand-written code. A veneer may
+	// Veneer indicates this library has handwritten code. A veneer may
 	// contain generated libraries.
 	Veneer bool `yaml:"veneer,omitempty"`
 
