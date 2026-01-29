@@ -65,35 +65,4 @@ If you set your API key as the environment variable `GEMINI_API_KEY` or
 `GOOGLE_API_KEY`, the API key will be picked up automatically by the client
 when using the Gemini API libraries. Otherwise you will need to pass your
 API key as an argument when initializing the client.
-
-> [!NOTE]
->
-> Models names must be prefixed with the string `'models/'`. For example,
-> `'models/gemini-2.5-pro'`.
-
-```dart
-import 'package:google_cloud_ai_generativelanguage_v1beta/generativelanguage.dart';
-
-void main() async {
-  // Pass your API key here if the GEMINI_API_KEY environment variable is not set.
-  // See https://ai.google.dev/gemini-api/docs/api-key
-  final service = GenerativeService.fromApiKey();
-
-  final request = GenerateContentRequest(
-    model: 'models/gemini-2.5-flash',
-    contents: [
-      Content(parts: [Part(text: 'Explain how AI works in a few words')]),
-    ],
-  );
-
-  final result = await service.generateContent(request);
-  final parts = result.candidates.firstOrNull?.content?.parts;
-  if (parts == null) {
-    print('<No textual response>');
-  } else {
-    print(parts.map((p) => p.text!).join(''));
-  }
-
-  service.close();
-}
-```'''
+'''

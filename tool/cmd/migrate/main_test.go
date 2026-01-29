@@ -196,8 +196,34 @@ func TestBuildGAPIC(t *testing.T) {
 > For mobile and web applications, see instead
 > [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic), which provides
 > client-side access to both the Gemini Developer API and Vertex AI.`,
-						ReadmeQuickstartText: "",
-						RepositoryURL:        "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta",
+						ReadmeQuickstartText: `## Quickstart
+
+This quickstart shows you how to install the package and make your first
+Gemini API request.
+
+### Before you begin
+
+You need a Gemini API key. If you don't already have one, you can get it for
+free in [Google AI Studio](https://aistudio.google.com/app/api-keys)
+([step-by-step instructions](https://ai.google.dev/gemini-api/docs/api-key)).
+
+### Installing the package into your application
+
+> [!TIP]
+> You can create a skeleton application by running the terminal command: ` + "`dart create myapp`\n\n" +
+							`Run the terminal command:
+` + "\n```sh\ndart pub add google_cloud_ai_generativelanguage_v1beta\n```\n\n" +
+							`### Make your first request
+
+Here is an example that uses the generateContent method to send a request to
+the Gemini API using the Gemini 2.5 Flash model.
+
+If you set your API key as the environment variable ` + "`GEMINI_API_KEY` or\n" +
+							"`GOOGLE_API_KEY`" + `, the API key will be picked up automatically by the client
+when using the Gemini API libraries. Otherwise you will need to pass your
+API key as an argument when initializing the client.
+`,
+						RepositoryURL: "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta",
 					},
 				},
 				"google_cloud_rpc": {
