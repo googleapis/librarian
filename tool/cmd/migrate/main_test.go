@@ -183,13 +183,12 @@ func TestBuildGAPIC(t *testing.T) {
 					},
 					CopyrightYear:       "2025",
 					DescriptionOverride: "The Google Cloud client library for the Generative Language API.",
-					Output:              "",
+					Output:              "testdata/read-sidekick-files/success-read/library-a",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
 						APIKeysEnvironmentVariables: "GOOGLE_API_KEY,GEMINI_API_KEY",
 						DevDependencies:             "googleapis_auth,test,test_utils",
-						ReadmeAfterTitleText: `
-> [!TIP]
+						ReadmeAfterTitleText: `> [!TIP]
 > Flutter applications should use
 > [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic).
 >
@@ -197,11 +196,24 @@ func TestBuildGAPIC(t *testing.T) {
 > For mobile and web applications, see instead
 > [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic), which provides
 > client-side access to both the Gemini Developer API and Vertex AI.`,
-						ReadmeQuickstartText: ``,
+						ReadmeQuickstartText: "",
 						RepositoryURL:        "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta",
 					},
 				},
-				"google-cloud-sql-v1": {},
+				"google_cloud_rpc": {
+					Name:                "google_cloud_rpc",
+					Version:             "0.4.0",
+					APIs:                []*config.API{{Path: "google/rpc"}},
+					CopyrightYear:       "2025",
+					DescriptionOverride: "The Google Cloud client library for the Google RPC Types.",
+					Output:              "testdata/read-sidekick-files/success-read/library-b",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						DevDependencies: "test",
+						PartFile:        "src/rpc.p.dart",
+						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
+					},
+				},
 			},
 		},
 		{

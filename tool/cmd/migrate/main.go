@@ -67,15 +67,15 @@ var excludedVeneerLibraries = map[string]struct{}{
 }
 
 type PubSpec struct {
-	name            string            `yaml:"name,omitempty"`
-	description     string            `yaml:"description,omitempty"`
-	version         string            `yaml:"version,omitempty"`
-	repository      string            `yaml:"repository,omitempty"`
-	issueTracker    string            `yaml:"issue_tracker,omitempty"`
-	environment     map[string]string `yaml:"environment,omitempty"`
-	resolution      string            `yaml:"resolution,omitempty"`
-	dependencies    map[string]string `yaml:"dependencies,omitempty"`
-	devDependencies map[string]string `yaml:"dev_dependencies,omitempty"`
+	Name            string            `yaml:"name,omitempty"`
+	Description     string            `yaml:"description,omitempty"`
+	Version         string            `yaml:"version,omitempty"`
+	Repository      string            `yaml:"repository,omitempty"`
+	IssueTracker    string            `yaml:"issue_tracker,omitempty"`
+	Environment     map[string]string `yaml:"environment,omitempty"`
+	Resolution      string            `yaml:"resolution,omitempty"`
+	Dependencies    map[string]string `yaml:"dependencies,omitempty"`
+	DevDependencies map[string]string `yaml:"dev_dependencies,omitempty"`
 }
 
 func main() {
@@ -315,7 +315,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			return nil, fmt.Errorf("failed to read pubspec.yaml at %s: %w", dir, err)
 		}
 
-		libraryName := pubSpec.name
+		libraryName := pubSpec.Name
 		lib, exists := libraries[libraryName]
 		if !exists {
 			lib = &config.Library{
@@ -324,8 +324,8 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			libraries[libraryName] = lib
 		}
 
-		if pubSpec.version != "" {
-			lib.Version = pubSpec.version
+		if pubSpec.Version != "" {
+			lib.Version = pubSpec.Version
 		}
 
 		lib.APIs = append(lib.APIs, &config.API{
@@ -336,8 +336,8 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			lib.CopyrightYear = copyrightYear
 		}
 
-		if pubSpec.description != "" {
-			lib.DescriptionOverride = pubSpec.description
+		if pubSpec.Description != "" {
+			lib.DescriptionOverride = pubSpec.Description
 		}
 
 		relativePath, err := filepath.Rel(repoPath, dir)
