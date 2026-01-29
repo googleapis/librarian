@@ -891,6 +891,7 @@ func TestRunMigrateCommand(t *testing.T) {
 }
 
 func TestParseDartPackages(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name  string
 		codec map[string]string
@@ -910,6 +911,7 @@ func TestParseDartPackages(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := parseDartPackages(test.codec)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
