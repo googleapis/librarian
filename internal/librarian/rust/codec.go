@@ -37,7 +37,7 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources)
 		source["description-override"] = library.DescriptionOverride
 	}
 	root := sources.Googleapis
-	if source["roots"] == "showcase" {
+	if strings.Contains(source["roots"], "showcase") {
 		root = sources.Showcase
 	}
 	api, err := serviceconfig.Find(root, ch.Path)
