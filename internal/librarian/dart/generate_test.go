@@ -49,16 +49,16 @@ func TestGenerate(t *testing.T) {
 			APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 			IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
 			Packages: map[string]string{
-				"googleapis_auth":           "^2.0.0",
-				"http":                      "^1.3.0",
-				"google_cloud_api":          "^0.4.0",
-				"google_cloud_iam_v1":       "^0.4.0",
-				"google_cloud_protobuf":     "^0.4.0",
-				"google_cloud_location":     "^0.4.0",
-				"google_cloud_longrunning":  "^0.4.0",
-				"google_cloud_logging_type": "^0.4.0",
-				"google_cloud_rpc":          "^0.4.0",
-				"google_cloud_type":         "^0.4.0",
+				"package:googleapis_auth":           "^2.0.0",
+				"package:http":                      "^1.3.0",
+				"package:google_cloud_api":          "^0.4.0",
+				"package:google_cloud_iam_v1":       "^0.4.0",
+				"package:google_cloud_protobuf":     "^0.4.0",
+				"package:google_cloud_location":     "^0.4.0",
+				"package:google_cloud_longrunning":  "^0.4.0",
+				"package:google_cloud_logging_type": "^0.4.0",
+				"package:google_cloud_rpc":          "^0.4.0",
+				"package:google_cloud_type":         "^0.4.0",
 			},
 		},
 	}
@@ -237,8 +237,8 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				Dart: &config.DartPackage{
 					Packages: map[string]string{
-						"googleapis_auth": "^2.0.0",
-						"http":            "^1.3.0",
+						"package:googleapis_auth": "^2.0.0",
+						"package:http":            "^1.3.0",
 					},
 				},
 			},
@@ -295,7 +295,7 @@ func TestBuildCodec(t *testing.T) {
 					ReadmeQuickstartText:        "Run `dart pub add` to install.",
 					RepositoryURL:               "https://github.com/googleapis/google-cloud-dart",
 					Packages: map[string]string{
-						"googleapis_auth": "^2.0.0",
+						"package:googleapis_auth": "^2.0.0",
 					},
 					Prefixes: map[string]string{
 						"google.protobuf": "pb",
