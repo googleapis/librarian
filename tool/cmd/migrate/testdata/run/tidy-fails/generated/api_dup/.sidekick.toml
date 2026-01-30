@@ -1,19 +1,22 @@
-[general]
-specification-source = 'google/cloud/sql/v1'
-service-config       = 'google/cloud/sql/v1/sqladmin_v1.yaml'
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-[[pagination-overrides]]
-id         = '.google.cloud.sql.v1.SqlInstancesService.List'
-item-field = 'items'
+[general]
+specification-source = 'google/logging/v2'
+service-config = 'google/logging/v2/logging_v2.yaml'
 
 [codec]
-version        = '1.2.0'
 copyright-year = '2025'
-'package:lazy_static' = 'used-if=services,package=lazy_static,force-used=true'
-'package:gaxi'        = 'used-if=services,package=google-cloud-gax-internal,feature=_internal-http-client,source=internal'
-
-
-[[documentation-overrides]]
-id = '.google.api.ProjectProperties'
-match = 'example match'
-replace = 'example replace'
+dev-dependencies = 'googleapis_auth,test,test_utils'
+repository-url = 'https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_logging_v2'
