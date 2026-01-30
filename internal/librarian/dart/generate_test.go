@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -355,6 +357,135 @@ func TestBuildCodec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildCodec(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestToSidekickConfig(t *testing.T) {
+	googleapisDir := t.TempDir()
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		channel       *config.API
+		googleapisDir string
+		want          *sidekickconfig.Config
+		wantErr       error
+	}{
+		{
+			name:    "empty library",
+			library: &config.Library{},
+			channel: &config.API{
+				Path: "google/example/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/example/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": googleapisDir,
+				},
+				Codec: map[string]string{},
+			},
+		},
+		{
+			name: "with name-override",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					NameOverride: "override-name",
+				},
+			},
+			channel: &config.API{
+				Path: "google/example/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/example/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": googleapisDir,
+					"name-override":   "override-name",
+				},
+				Codec: map[string]string{},
+			},
+		},
+		{
+			name: "with dart package",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
+					Dependencies:                "dep-1,dep-2",
+					DevDependencies:             "dev-dep-1,dev-dep-2",
+					ExtraImports:                "extra-imports",
+					IssueTrackerURL:             "https://tracker/issues",
+					LibraryPathOverride:         "library-path-override",
+					NotForPublication:           "false",
+					PartFile:                    "part-file",
+					ReadmeAfterTitleText:        "readme-after-title-text",
+					ReadmeQuickstartText:        "readme-quickstart-text",
+					RepositoryURL:               "https://github.com/googleapis/google-cloud-dart",
+					Packages: map[string]string{
+						"package:googleapis_auth": "^2.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api": "package:google_cloud_api/api.dart",
+					},
+				},
+			},
+			channel: &config.API{
+				Path: "google/example/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/example/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": googleapisDir,
+				},
+				Codec: map[string]string{
+					"api-keys-environment-variables":    "GOOGLE_API_KEY",
+					"dependencies":                      "dep-1,dep-2",
+					"dev-dependencies":                  "dev-dep-1,dev-dep-2",
+					"extra-imports":                     "extra-imports",
+					"issue-tracker-url":                 "https://tracker/issues",
+					"library-path-override":             "library-path-override",
+					"not-for-publication":               "false",
+					"package:googleapis_auth":           "^2.0.0",
+					"part-file":                         "part-file",
+					"prefix:prefix:google.logging.type": "logging_type",
+					"proto:proto:google.api":            "package:google_cloud_api/api.dart",
+					"readme-after-title-text":           "readme-after-title-text",
+					"readme-quickstart-text":            "readme-quickstart-text",
+					"repository-url":                    "https://github.com/googleapis/google-cloud-dart",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := toSidekickConfig(test.library, test.channel, test.googleapisDir)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("toSidekickConfig() error = %v, wantErr %v", err, test.wantErr)
+				}
+				return
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
