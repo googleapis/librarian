@@ -16,9 +16,13 @@ package librarian
 
 import (
 	_ "embed"
+	"fmt"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 //go:embed version.txt
@@ -58,6 +62,38 @@ func version(info *debug.BuildInfo) string {
 		}
 	}
 	return info.Main.Version
+}
+
+// loadConfig reads librarian.yaml and verifies that the librarian binary
+// version matches the version specified in the configuration file. It returns
+// the config and an error if the versions do not match. The check is skipped
+// if the binary version is "not available", which occurs during local
+// development without VCS info.
+func loadConfig() (*config.Config, error) {
+	cfg, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errConfigNotFound, err)
+	}
+	if err := compareVersions(cfg.Version, Version()); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+func compareVersions(configVersion, binaryVersion string) error {
+	if configVersion == "" {
+		return fmt.Errorf("librarian.yaml does not specify a version")
+	}
+	// Skip check for local builds, which have no version info.
+	if binaryVersion == versionNotAvailable {
+		return nil
+	}
+	if configVersion != binaryVersion {
+		return fmt.Errorf(`binary version %s does not match librarian.yaml version %s
+	go run github.com/googleapis/librarian/cmd/librarian@%s`,
+			binaryVersion, configVersion, configVersion)
+	}
+	return nil
 }
 
 // newPseudoVersion constructs a pseudo-version string from the build info.

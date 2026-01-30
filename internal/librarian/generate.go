@@ -27,7 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -66,16 +65,16 @@ func generateCommand() *cli.Command {
 			if all && libraryName != "" {
 				return errBothLibraryAndAllFlag
 			}
-			return runGenerate(ctx, all, libraryName)
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			return runGenerate(ctx, cfg, all, libraryName)
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, all bool, libraryName string) error {
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
-	if err != nil {
-		return err
-	}
+func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}

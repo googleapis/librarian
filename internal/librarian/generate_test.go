@@ -224,6 +224,7 @@ func TestGenerateSkip(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
 			configContent := fmt.Sprintf(`language: fake
+version: v0.1.0
 sources:
   googleapis:
     dir: %s

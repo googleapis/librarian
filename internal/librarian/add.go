@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -49,16 +48,16 @@ func addCommand() *cli.Command {
 			if len(args.Slice()) > 1 {
 				apis = args.Slice()[1:]
 			}
-			return runAdd(ctx, name, apis...)
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			return runAdd(ctx, cfg, name, apis...)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, name string, api ...string) error {
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
-	if err != nil {
-		return fmt.Errorf("%w: %w", errConfigNotFound, err)
-	}
+func runAdd(ctx context.Context, cfg *config.Config, name string, api ...string) error {
 	// check for existing libraries, if it exists return an error
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		return lib.Name == name

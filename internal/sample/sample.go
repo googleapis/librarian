@@ -71,6 +71,7 @@ var (
 func Config() *config.Config {
 	return &config.Config{
 		Language: "fake",
+		Version:  "v0.1.0",
 		Default:  &config.Default{},
 		Release: &config.Release{
 			Remote: "origin",
