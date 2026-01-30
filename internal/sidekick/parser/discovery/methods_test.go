@@ -171,7 +171,7 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
 			if got.APIVersion != test.wantVersion {
-				t.Errorf("method.Version = %q, want = %q", got.APIVersion, test.wantVersion)
+				t.Errorf("method.APIVersion = %q, want = %q", got.APIVersion, test.wantVersion)
 			}
 		})
 	}
