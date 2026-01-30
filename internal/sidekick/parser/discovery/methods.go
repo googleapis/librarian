@@ -138,6 +138,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Bindings:      []*api.PathBinding{binding},
 			BodyFieldPath: bodyPathField,
 		},
+		APIVersion: input.APIVersion,
 	}
 	return method, nil
 }

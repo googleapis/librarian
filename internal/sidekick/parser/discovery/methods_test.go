@@ -138,6 +138,45 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 	}
 }
 
+func TestMakeServiceMethodsApiversion(t *testing.T) {
+	model, err := ComputeDisco(t, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		id          string
+		wantVersion string
+	}{
+		{
+			id:          "..acceleratorTypes.get",
+			wantVersion: "v1_20260130",
+		},
+		{
+			id:          "..acceleratorTypes.list",
+			wantVersion: "v1_20260131",
+		},
+		{
+			id:          "..addresses.delete",
+			wantVersion: "v1_20260205",
+		},
+		{
+			id:          "..addresses.get",
+			wantVersion: "",
+		},
+	} {
+		t.Run(test.id, func(t *testing.T) {
+			got, ok := model.State.MethodByID[test.id]
+			if !ok {
+				t.Fatalf("expected method %s in the API model", test.id)
+			}
+			if got.APIVersion != test.wantVersion {
+				t.Errorf("method.Version = %q, want = %q", got.APIVersion, test.wantVersion)
+			}
+		})
+	}
+}
+
 func TestMethodEmptyBody(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
 	if err != nil {
