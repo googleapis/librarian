@@ -242,6 +242,8 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			specificationFormat = "protobuf"
 		}
 
+		// Library name or package name is derived from api path by packageName function in dart package.
+		// However, each library in the librarian configuration should have a name.
 		libraryName := genLibraryName(apiPath)
 		lib := &config.Library{
 			Name: libraryName,
