@@ -328,7 +328,4 @@ type DartPackage struct {
 
 	// TitleOverride overrides the API title.
 	TitleOverride string `yaml:"title_override,omitempty"`
-
-	// Version is the version of the dart package.
-	Version string `yaml:"version,omitempty"`
 }
