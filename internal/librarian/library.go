@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -83,7 +84,7 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 		lib.Dart.Dependencies = d.Dart.Dependencies
 	}
 	if lib.Dart.Packages == nil {
-		lib.Dart.Packages = d.Dart.Packages
+		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
 	}
 
 	return lib
