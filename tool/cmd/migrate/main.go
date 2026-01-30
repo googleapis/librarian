@@ -181,7 +181,6 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 				Prefixes:                    prefix,
 				Protos:                      protos,
 				Packages:                    packages,
-				Version:                     version,
 			},
 		},
 	}

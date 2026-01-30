@@ -87,7 +87,6 @@ func TestReadRootSidekick(t *testing.T) {
 							"proto:google.rpc":            "package:google_cloud_rpc/rpc.dart",
 							"proto:google.type":           "package:google_cloud_type/type.dart",
 						},
-						Version: "0.4.0",
 					},
 				},
 			},
