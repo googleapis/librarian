@@ -406,7 +406,9 @@ func checkApiVersionComments(t *testing.T, outDir string) {
 		t.Run(test.featureName, func(t *testing.T) {
 			target := fmt.Sprintf(`#[cfg(feature = "%s")]`, test.featureName)
 			anchor := slices.Index(lines, target)
-			if anchor < 50 {
+			// The target cannot appear in the first 100 lines, there is enough boilerplate
+			// and intros to prevent this.
+			if anchor < 100 {
 				t.Fatalf("cannot find %s in generated client.rs file: \n%v", target, lines[0:200])
 			}
 			subHaystack := lines[anchor-50 : anchor]
@@ -424,7 +426,9 @@ func checkApiVersionComments(t *testing.T, outDir string) {
 func checkNoCommentsWithoutApiVersion(t *testing.T, lines []string) {
 	target := `#[cfg(feature = "instances")]`
 	anchor := slices.Index(lines, target)
-	if anchor < 50 {
+	// The target cannot appear in the first 100 lines, there is enough boilerplate
+	// and intros to prevent this.
+	if anchor < 100 {
 		t.Fatalf("cannot find %s in generated client.rs file", target)
 	}
 	subHaystack := lines[anchor-50 : anchor]
