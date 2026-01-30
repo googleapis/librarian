@@ -481,6 +481,7 @@ func TestProcessPullRequest(t *testing.T) {
 		wantCreateReleaseCalls int
 		wantReplaceLabelsCalls int
 		wantCreateTagCalls     int
+		wantReleaseNames       []string
 	}{
 		{
 			name: "happy path",
@@ -491,6 +492,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "no release details",
@@ -532,6 +534,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "skip_a_library_release",
@@ -569,6 +572,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantErrMsg:             "failed to create release",
 			wantCreateReleaseCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "replace labels fails",
@@ -581,6 +585,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "create tag fails",
@@ -614,6 +619,9 @@ func TestProcessPullRequest(t *testing.T) {
 			}
 			if test.ghClient.replaceLabelsCalls != test.wantReplaceLabelsCalls {
 				t.Errorf("replaceLabelsCalls = %v, want %v", test.ghClient.replaceLabelsCalls, test.wantReplaceLabelsCalls)
+			}
+			if diff := cmp.Diff(test.wantReleaseNames, test.ghClient.releaseNames); diff != "" {
+				t.Errorf("releaseNames mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -721,6 +729,10 @@ func Test_tagRunner_run_processPullRequests(t *testing.T) {
 	}
 	if ghClient.replaceLabelsCalls != 1 {
 		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
+	}
+	wantReleaseNames := []string{"google-cloud-storage: v1.2.3"}
+	if diff := cmp.Diff(wantReleaseNames, ghClient.releaseNames); diff != "" {
+		t.Errorf("releaseNames mismatch (-want +got):\n%s", diff)
 	}
 }
 
