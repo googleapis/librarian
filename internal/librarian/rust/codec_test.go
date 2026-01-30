@@ -31,10 +31,11 @@ const (
 	showcaseRoot    = "../../../internal/testdata/gapic-showcase"
 )
 
-func absPath(p string) string {
+func absPath(t *testing.T, p string) string {
+	t.Helper()
 	a, err := filepath.Abs(p)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return a
 }
@@ -62,7 +63,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -90,7 +91,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -119,7 +120,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -160,7 +161,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -200,7 +201,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -238,7 +239,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -271,7 +272,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -323,7 +324,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -366,7 +367,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -400,8 +401,8 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
-					"discovery-root":  absPath(discoveryRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
 					"title-override":  "Google Compute Engine API",
 				},
@@ -430,7 +431,7 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
@@ -459,9 +460,9 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
-					"discovery-root":  absPath(discoveryRoot),
-					"showcase-root":   absPath(showcaseRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
+					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "googleapis,discovery,showcase",
 					"title-override":  "Google Compute Engine API",
 				},
@@ -485,7 +486,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/apps/script/type/gmail",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
 				},
@@ -510,7 +511,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/longrunning",
 				},
 				Source: map[string]string{
-					"googleapis-root":      absPath(googleapisRoot),
+					"googleapis-root":      absPath(t, googleapisRoot),
 					"description-override": "Defines types and an abstract service to handle long-running operations.",
 					"roots":                "googleapis",
 				},
@@ -541,7 +542,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/spanner/admin/database/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
 				},
@@ -568,7 +569,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storageinsights/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -614,8 +615,8 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
-					"discovery-root":  absPath(discoveryRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
 					"title-override":  "Google Compute Engine API",
 				},
@@ -659,9 +660,9 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/vision/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root":   absPath(googleapisRoot),
-					"protobuf-src-root": absPath(protobufSrcRoot),
-					"conformance-root":  absPath(conformanceRoot),
+					"googleapis-root":   absPath(t, googleapisRoot),
+					"protobuf-src-root": absPath(t, protobufSrcRoot),
+					"conformance-root":  absPath(t, conformanceRoot),
 					"roots":             "googleapis,protobuf-src,conformance",
 				},
 				Codec: map[string]string{
@@ -688,8 +689,8 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
-					"showcase-root":   absPath(showcaseRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
+					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "showcase,googleapis",
 					"title-override":  "Client Libraries Showcase API",
 				},
@@ -716,7 +717,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationFormat: "protobuf",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 			},
@@ -739,7 +740,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationFormat: "none",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 			},
@@ -761,7 +762,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Language: "rust+prost",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
 			},
@@ -786,7 +787,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/logging/type",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Logging types",
 				},
@@ -813,7 +814,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationFormat: "protobuf",
 				},
 				Source: map[string]string{
-					"googleapis-root": absPath(googleapisRoot),
+					"googleapis-root": absPath(t, googleapisRoot),
 					"included-ids":    "id1,id2",
 					"include-list":    "example-list",
 					"roots":           "googleapis",
@@ -824,11 +825,11 @@ func TestToSidekickConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &Sources{
-				Conformance: absPath(conformanceRoot),
-				Discovery:   absPath(discoveryRoot),
-				Googleapis:  absPath(googleapisRoot),
-				ProtobufSrc: absPath(protobufSrcRoot),
-				Showcase:    absPath(showcaseRoot),
+				Conformance: absPath(t, conformanceRoot),
+				Discovery:   absPath(t, discoveryRoot),
+				Googleapis:  absPath(t, googleapisRoot),
+				ProtobufSrc: absPath(t, protobufSrcRoot),
+				Showcase:    absPath(t, showcaseRoot),
 			}
 
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
