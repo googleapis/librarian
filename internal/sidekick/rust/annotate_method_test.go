@@ -126,6 +126,37 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	}
 }
 
+func TestAnnotateMethodAPIVersion(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Inject an APIVersion to the existing model.
+	methodID := ".test.v1.ResourceService.Delete"
+	gotMethod, ok := model.State.MethodByID[methodID]
+	if !ok {
+		t.Fatalf("missing method %s", methodID)
+	}
+	gotMethod.APIVersion = "v1_20260205"
+
+	codec, err := newCodec("disco", map[string]string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = annotateModel(model, codec)
+
+	got := gotMethod.Codec.(*methodAnnotation)
+	want := []systemParameter{
+		{Name: "$alt", Value: "json"},
+		{Name: "$apiVersion", Value: "v1_20260205"},
+	}
+	if diff := cmp.Diff(want, got.SystemParameters); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
 func annotateMethodModel(t *testing.T) *api.API {
 	t.Helper()
 	request := &api.Message{

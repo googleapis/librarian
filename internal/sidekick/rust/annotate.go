@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"cmp"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -153,6 +154,16 @@ func (s *serviceAnnotations) HasLROs() bool {
 		return true
 	}
 	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
+}
+
+// MaximumAPIVersion returns the highest (in alphanumeric order) APIVersion of
+// all the methods in the service.
+func (s *serviceAnnotations) MaximumAPIVersion() string {
+	if len(s.Methods) == 0 {
+		return ""
+	}
+	max := slices.MaxFunc(s.Methods, func(a, b *api.Method) int { return cmp.Compare(a.APIVersion, b.APIVersion) })
+	return max.APIVersion
 }
 
 // FeatureName returns the feature name for the service.
@@ -990,6 +1001,14 @@ func (c *codec) annotateMethod(m *api.Method) {
 	}
 	serviceName := c.ServiceName(m.Service)
 	resourceNameFields := c.findResourceNameFields(m)
+	systemParameters := make([]systemParameter, len(c.systemParameters))
+	copy(systemParameters, c.systemParameters)
+	if m.APIVersion != "" {
+		systemParameters = append(systemParameters, systemParameter{
+			Name:  "$apiVersion",
+			Value: m.APIVersion,
+		})
+	}
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name),
 		NameNoMangling:            toSnakeNoMangling(m.Name),
@@ -1000,7 +1019,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 		ServiceNameToPascal:       toPascal(serviceName),
 		ServiceNameToCamel:        toCamel(serviceName),
 		ServiceNameToSnake:        toSnake(serviceName),
-		SystemParameters:          c.systemParameters,
+		SystemParameters:          systemParameters,
 		ReturnType:                returnType,
 		HasVeneer:                 c.hasVeneer,
 		RoutingRequired:           c.routingRequired,

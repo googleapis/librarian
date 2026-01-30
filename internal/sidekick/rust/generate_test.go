@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -136,6 +137,40 @@ func TestRustFromOpenAPI(t *testing.T) {
 		}
 	}
 	importsModelModules(t, path.Join(outDir, "src", "model.rs"))
+}
+
+func TestRustFromDiscovery(t *testing.T) {
+	outDir := t.TempDir()
+
+	cfg := &config.Config{
+		General: config.GeneralConfig{
+			SpecificationFormat: "disco",
+			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
+			SpecificationSource: path.Join(testdataDir, "disco/compute.v1.json"),
+		},
+		Codec: map[string]string{
+			"per-service-features": "true",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range expectedInCrate {
+		filename := path.Join(outDir, expected)
+		stat, err := os.Stat(filename)
+		if os.IsNotExist(err) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+		if stat.Mode().Perm()|0666 != 0666 {
+			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+	importsModelModules(t, path.Join(outDir, "src", "model.rs"))
+	checkApiVersionComments(t, outDir)
 }
 
 func TestRustFromProtobuf(t *testing.T) {
@@ -345,6 +380,59 @@ func importsModelModules(t *testing.T, filename string) {
 		if !slices.Contains(lines, want) {
 			t.Errorf("expected file %s to have a line matching %q, got:\n%s", filename, want, contents)
 		}
+	}
+}
+
+func checkApiVersionComments(t *testing.T, outDir string) {
+	t.Helper()
+	contents, err := os.ReadFile(path.Join(outDir, "src", "client.rs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(contents), "\n")
+	for _, test := range []struct {
+		featureName string
+		wantVersion string
+	}{
+		{
+			featureName: "accelerator-types",
+			wantVersion: "v1_20260131",
+		},
+		{
+			featureName: "addresses",
+			wantVersion: "v1_20260205",
+		},
+	} {
+		t.Run(test.featureName, func(t *testing.T) {
+			target := fmt.Sprintf(`#[cfg(feature = "%s")]`, test.featureName)
+			anchor := slices.Index(lines, target)
+			if anchor < 50 {
+				t.Fatalf("cannot find %s in generated client.rs file: \n%v", target, lines[0:200])
+			}
+			subHaystack := lines[anchor-50 : anchor]
+			found := slices.IndexFunc(subHaystack, func(line string) bool {
+				return strings.Contains(line, test.wantVersion)
+			})
+			if found == -1 {
+				t.Errorf("cannot find API version (%s) in client comments: %v", test.wantVersion, subHaystack)
+			}
+		})
+	}
+	checkNoCommentsWithoutApiVersion(t, lines)
+}
+
+func checkNoCommentsWithoutApiVersion(t *testing.T, lines []string) {
+	target := `#[cfg(feature = "instances")]`
+	anchor := slices.Index(lines, target)
+	if anchor < 50 {
+		t.Fatalf("cannot find %s in generated client.rs file", target)
+	}
+	subHaystack := lines[anchor-50 : anchor]
+	found := slices.IndexFunc(subHaystack, func(line string) bool {
+		return strings.Contains(line, " with API version ")
+	})
+	if found != -1 {
+		t.Errorf("found unexpected API version line (%s) in client comments: %v", subHaystack[found], subHaystack)
 	}
 }
 

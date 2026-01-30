@@ -334,6 +334,68 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	}
 }
 
+func TestServiceAnnotationsAPIVersions(t *testing.T) {
+	setSingleMethodVersion := func(t *testing.T, model *api.API) {
+		t.Helper()
+		id := ".test.v1.ResourceService.GetResource"
+		method, ok := model.State.MethodByID[id]
+		if !ok {
+			t.Fatalf("cannot find method %s", id)
+		}
+		method.APIVersion = "v1_20260205"
+	}
+	setMultipleMethodVersions := func(t *testing.T, model *api.API) {
+		t.Helper()
+		setSingleMethodVersion(t, model)
+		id := ".test.v1.ResourceService.DeleteResource"
+		method, ok := model.State.MethodByID[id]
+		if !ok {
+			t.Fatalf("cannot find method %s", id)
+		}
+		method.APIVersion = "v1_20270305"
+	}
+
+	for _, test := range []struct {
+		wantVersion string
+		delta       func(t *testing.T, model *api.API)
+	}{
+		{
+			wantVersion: "",
+			delta:       func(_ *testing.T, _ *api.API) {},
+		},
+		{
+			wantVersion: "v1_20260205",
+			delta:       setSingleMethodVersion,
+		},
+		{
+			wantVersion: "v1_20270305",
+			delta:       setMultipleMethodVersions,
+		},
+	} {
+		t.Run(test.wantVersion, func(t *testing.T) {
+			model := serviceAnnotationsModel()
+			test.delta(t, model)
+			id := ".test.v1.ResourceService"
+			service, ok := model.State.ServiceByID[id]
+			if !ok {
+				t.Fatalf("cannot find service %s", id)
+			}
+			codec, err := newCodec("protobuf", map[string]string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = annotateModel(model, codec)
+			got := service.Codec.(*serviceAnnotations)
+			if got == nil {
+				t.Fatalf("no annotations for service %s", service.ID)
+			}
+			if gotVersion := got.MaximumAPIVersion(); gotVersion != test.wantVersion {
+				t.Errorf("got.MaximumAPIVersion() = %q, want = %q", gotVersion, test.wantVersion)
+			}
+		})
+	}
+}
+
 func TestServiceAnnotationsLROTypes(t *testing.T) {
 	create := &api.Message{
 		Name:    "CreateResourceRequest",
