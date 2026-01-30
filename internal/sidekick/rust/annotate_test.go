@@ -364,6 +364,17 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			delta:       func(_ *testing.T, _ *api.API) {},
 		},
 		{
+			wantVersion: "",
+			delta: func(t *testing.T, model *api.API) {
+				id := ".test.v1.ResourceService"
+				service, ok := model.State.ServiceByID[id]
+				if !ok {
+					t.Fatalf("cannot find service %s", id)
+				}
+				service.Methods = []*api.Method{}
+			},
+		},
+		{
 			wantVersion: "v1_20260205",
 			delta:       setSingleMethodVersion,
 		},
