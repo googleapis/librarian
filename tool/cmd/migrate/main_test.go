@@ -174,6 +174,7 @@ func TestBuildGAPIC(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
+					Name: "google_cloud_ai_generativelanguage_v1beta",
 					APIs: []*config.API{
 						{
 							Path: "google/ai/generativelanguage/v1beta",
@@ -224,6 +225,7 @@ API key as an argument when initializing the client.
 					},
 				},
 				{
+					Name:                "google_cloud_rpc",
 					APIs:                []*config.API{{Path: "google/rpc"}},
 					CopyrightYear:       "2025",
 					Output:              "testdata/read-sidekick-files/success-read/library-b",
@@ -367,6 +369,32 @@ func TestParseWithPrefix(t *testing.T) {
 				"proto:google.protobuf":      "package:google_cloud_protobuf/protobuf.dart",
 			}
 			got := parseKeyWithPrefix(codec, test.prefix)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "google/ as prefix",
+			path: "google/ai/generativelanguage/v1beta",
+			want: "google_cloud_ai_generativelanguage_v1beta",
+		},
+		{
+			name: "google/cloud/ as prefix",
+			path: "google/cloud/example/nested/v1",
+			want: "google_cloud_example_nested_v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := genLibraryName(test.path)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

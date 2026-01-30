@@ -242,8 +242,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			specificationFormat = "protobuf"
 		}
 
-		// library name will be derived from service config.
+		libraryName := genLibraryName(apiPath)
 		lib := &config.Library{
+			Name: libraryName,
 			APIs: []*config.API{
 				{
 					Path: apiPath,
@@ -316,6 +317,12 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 func buildConfig(libraries []*config.Library, defaults *config.Config) *config.Config {
 	defaults.Libraries = libraries
 	return defaults
+}
+
+func genLibraryName(path string) string {
+	path = strings.TrimPrefix(path, "google/cloud/")
+	path = strings.TrimPrefix(path, "google/")
+	return "google_cloud_" + strings.ReplaceAll(path, "/", "_")
 }
 
 func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]string {
