@@ -25,9 +25,9 @@ import (
 
 const (
 	googleapisRoot  = "../../../internal/testdata/googleapis"
-	discoveryRoot   = "../../../internal/testdata/discovery"
-	protobufSrcRoot = "../../../internal/testdata/protobuf-src"
-	conformanceRoot = "../../../internal/testdata/conformance"
+	discoveryRoot   = "fake/path/to/testdata/discovery"
+	protobufSrcRoot = "fake/path/to/testdata/protobuf-src"
+	conformanceRoot = "fake/path/to/testdata/conformance"
 	showcaseRoot    = "../../../internal/testdata/gapic-showcase"
 )
 
