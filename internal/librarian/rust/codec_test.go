@@ -33,11 +33,11 @@ const (
 
 func absPath(t *testing.T, p string) string {
 	t.Helper()
-	a, err := filepath.Abs(p)
+	abs, err := filepath.Abs(p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return a
+	return abs
 }
 
 func TestToSidekickConfig(t *testing.T) {
