@@ -73,6 +73,28 @@ func TestFillDefaults(t *testing.T) {
 			lib:      &config.Library{Output: "foo/"},
 			want:     &config.Library{Output: "foo/"},
 		},
+		{
+			name: "dart defaults",
+			defaults: &config.Default{
+				Dart: &config.DartPackage{
+					Dependencies:    "dep-1,dep-2",
+					IssueTrackerURL: "https://issue-tracker-example/dart",
+					Packages: map[string]string{
+						"package:one": "^1.2.3",
+						"package:two": "^2.0.0",
+					},
+				},
+			},
+			lib: &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output: "foo/",
+				Dart: &config.DartPackage{
+					Dependencies:    "dep-1,dep-2",
+					IssueTrackerURL: "https://issue-tracker-example/dart",
+					Packages:        map[string]string{"package:one": "^1.2.3", "package:two": "^2.0.0"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)

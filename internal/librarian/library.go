@@ -84,6 +84,7 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 		lib.Dart.Dependencies = d.Dart.Dependencies
 	}
 	if lib.Dart.Packages == nil {
+		lib.Dart.Packages = make(map[string]string)
 		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
 	}
 
