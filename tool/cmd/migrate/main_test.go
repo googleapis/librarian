@@ -186,7 +186,6 @@ func TestBuildGAPIC(t *testing.T) {
 					Dart: &config.DartPackage{
 						APIKeysEnvironmentVariables: "GOOGLE_API_KEY,GEMINI_API_KEY",
 						DevDependencies:             "googleapis_auth,test,test_utils",
-						IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
 						ReadmeAfterTitleText: `> [!TIP]
 > Flutter applications should use
 > [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic).
@@ -234,7 +233,6 @@ API key as an argument when initializing the client.
 					Dart: &config.DartPackage{
 						Dependencies:    "googleapis_auth,http",
 						DevDependencies: "test",
-						IssueTrackerURL: "https://github.com/googleapis/google-cloud-dart/issues",
 						PartFile:        "src/rpc.p.dart",
 						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
 					},

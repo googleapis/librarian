@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -36,6 +37,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
+	}
+	if d.Dart != nil {
+		return fillDart(lib, d)
 	}
 	return lib
 }
@@ -66,6 +70,24 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 			mod.GenerateRpcSamples = lib.Rust.GenerateRpcSamples
 		}
 	}
+	return lib
+}
+
+func fillDart(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Dart == nil {
+		lib.Dart = &config.DartPackage{}
+	}
+	if lib.Dart.IssueTrackerURL == "" {
+		lib.Dart.IssueTrackerURL = d.Dart.IssueTrackerURL
+	}
+	if lib.Dart.Dependencies == "" {
+		lib.Dart.Dependencies = d.Dart.Dependencies
+	}
+	if lib.Dart.Packages == nil {
+		lib.Dart.Packages = make(map[string]string)
+		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
+	}
+
 	return lib
 }
 
