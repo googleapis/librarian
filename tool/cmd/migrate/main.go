@@ -285,6 +285,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if devDeps, ok := sidekick.Codec["dev-dependencies"]; ok && devDeps != "" {
 			dartPackage.DevDependencies = devDeps
 		}
+		dartPackage.IssueTrackerURL = "https://github.com/googleapis/google-cloud-dart/issues"
 		if extraImports, ok := sidekick.Codec["extra-imports"]; ok && extraImports != "" {
 			dartPackage.ExtraImports = extraImports
 		}
