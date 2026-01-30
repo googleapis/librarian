@@ -79,6 +79,10 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
 // ServiceConfig and Title may be empty strings if not found or not configured.
+//
+// The Showcase API ("schema/google/showcase/v1beta1") is a special case:
+// it does not live under https://github.com/googleapis/googleapis.
+// For this API only, googleapisDir should point to showcase source dir instead.
 func Find(googleapisDir, path string) (*API, error) {
 	var result *API
 	for _, api := range APIs {
