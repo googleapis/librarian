@@ -128,10 +128,10 @@ func buildCodec(library *config.Library) map[string]string {
 		codec[key] = value
 	}
 	for key, value := range dart.Prefixes {
-		codec["prefix:"+key] = value
+		codec[key] = value
 	}
 	for key, value := range dart.Protos {
-		codec["proto:"+key] = value
+		codec[key] = value
 	}
 	return codec
 }
