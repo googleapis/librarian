@@ -302,6 +302,8 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if !isEmptyDartPackage(dartPackage) {
 			lib.Dart = dartPackage
 		}
+
+		libraries = append(libraries, lib)
 	}
 
 	sort.Slice(libraries, func(i, j int) bool {

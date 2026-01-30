@@ -163,7 +163,7 @@ func TestBuildGAPIC(t *testing.T) {
 		name     string
 		files    []string
 		repoPath string
-		want     map[string]*config.Library
+		want     []*config.Library
 		wantErr  error
 	}{
 		{
@@ -172,17 +172,14 @@ func TestBuildGAPIC(t *testing.T) {
 				"testdata/read-sidekick-files/success-read/library-a/.sidekick.toml",
 				"testdata/read-sidekick-files/success-read/library-b/.sidekick.toml",
 			},
-			want: map[string]*config.Library{
-				"google_cloud_ai_generativelanguage_v1beta": {
-					Name:    "google_cloud_ai_generativelanguage_v1beta",
-					Version: "0.4.0",
+			want: []*config.Library{
+				{
 					APIs: []*config.API{
 						{
 							Path: "google/ai/generativelanguage/v1beta",
 						},
 					},
 					CopyrightYear:       "2025",
-					DescriptionOverride: "The Google Cloud client library for the Generative Language API.",
 					Output:              "testdata/read-sidekick-files/success-read/library-a",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
@@ -226,15 +223,13 @@ API key as an argument when initializing the client.
 						RepositoryURL: "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta",
 					},
 				},
-				"google_cloud_rpc": {
-					Name:                "google_cloud_rpc",
-					Version:             "0.4.0",
+				{
 					APIs:                []*config.API{{Path: "google/rpc"}},
 					CopyrightYear:       "2025",
-					DescriptionOverride: "The Google Cloud client library for the Google RPC Types.",
 					Output:              "testdata/read-sidekick-files/success-read/library-b",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
+						Dependencies:    "googleapis_auth,http",
 						DevDependencies: "test",
 						PartFile:        "src/rpc.p.dart",
 						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
@@ -255,7 +250,7 @@ API key as an argument when initializing the client.
 			files: []string{
 				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
 			},
-			want: map[string]*config.Library{},
+			want: []*config.Library{},
 		},
 		{
 			name: "no_package_name",
@@ -288,7 +283,7 @@ API key as an argument when initializing the client.
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		libraries map[string]*config.Library
+		libraries []*config.Library
 		defaults  *config.Config
 		want      *config.Config
 		wantErr   error
@@ -315,8 +310,8 @@ func TestBuildConfig(t *testing.T) {
 		{
 			name:     "copy_libraries",
 			defaults: &config.Config{},
-			libraries: map[string]*config.Library{
-				"google-cloud-security-publicca-v1": {
+			libraries: []*config.Library{
+				{
 					Name: "google-cloud-security-publicca-v1",
 					APIs: []*config.API{
 						{
@@ -335,7 +330,7 @@ func TestBuildConfig(t *testing.T) {
 						NameOverrides:      ".google.cloud.security/publicca.v1.Storage=StorageControl",
 					},
 				},
-				"skipped": {
+				{
 					Name: "google-cloud-sql-v1",
 					APIs: []*config.API{
 						{
@@ -373,8 +368,8 @@ func TestBuildConfig(t *testing.T) {
 		{
 			name:     "service does not exist",
 			defaults: &config.Config{},
-			libraries: map[string]*config.Library{
-				"google-cloud-orgpolicy-v1": {
+			libraries: []*config.Library{
+				{
 					Name: "google-cloud-orgpolicy-v1",
 					APIs: []*config.API{
 						{
