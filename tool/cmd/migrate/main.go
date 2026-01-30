@@ -29,7 +29,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
@@ -405,59 +404,8 @@ func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]strin
 	return res
 }
 
-func strToBool(s string) bool {
-	return s == "true"
-}
-
-// strToSlice converts a comma-separated string into a slice of strings.
-//
-// The wantEmpty parameter controls the behavior when the input string is empty:
-//   - If true: Returns an empty initialized slice (make([]string, 0)).
-//   - If false: Returns nil.
-func strToSlice(s string, wantEmpty bool) []string {
-	if s == "" {
-		if wantEmpty {
-			return make([]string, 0)
-		}
-
-		return nil
-	}
-
-	return strings.Split(s, ",")
-}
-
 func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
-}
-
-func readTOML[T any](file string) (*T, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", file, err)
-	}
-
-	var tomlData T
-	if err := toml.Unmarshal(data, &tomlData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
-	}
-
-	return &tomlData, nil
-}
-
-func readCargoConfig(dir string) (*rust.Cargo, error) {
-	cargoData, err := os.ReadFile(filepath.Join(dir, cargoFile))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read cargo: %w", err)
-	}
-	cargo := rust.Cargo{
-		Package: &rust.CrateInfo{
-			Publish: true,
-		},
-	}
-	if err := toml.Unmarshal(cargoData, &cargo); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cargo: %w", err)
-	}
-	return &cargo, nil
 }
 
 func readPubSpec(dir string) (*PubSpec, error) {
