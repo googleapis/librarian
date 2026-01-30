@@ -30,7 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -58,18 +57,6 @@ var (
 
 	fetchSource = fetchGoogleapis
 )
-
-type PubSpec struct {
-	Name            string            `yaml:"name,omitempty"`
-	Description     string            `yaml:"description,omitempty"`
-	Version         string            `yaml:"version,omitempty"`
-	Repository      string            `yaml:"repository,omitempty"`
-	IssueTracker    string            `yaml:"issue_tracker,omitempty"`
-	Environment     map[string]string `yaml:"environment,omitempty"`
-	Resolution      string            `yaml:"resolution,omitempty"`
-	Dependencies    map[string]string `yaml:"dependencies,omitempty"`
-	DevDependencies map[string]string `yaml:"dev_dependencies,omitempty"`
-}
 
 func main() {
 	ctx := context.Background()
@@ -232,8 +219,8 @@ func findSidekickFiles(path string) ([]string, error) {
 	return files, nil
 }
 
-func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, error) {
-	libraries := make(map[string]*config.Library)
+func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
+	var libraries []*config.Library
 
 	for _, file := range files {
 		data, err := os.ReadFile(file)
@@ -246,7 +233,6 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
 		}
 
-		// Get API path
 		apiPath := sidekick.General.SpecificationSource
 		if apiPath == "" {
 			continue
@@ -257,46 +243,23 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			specificationFormat = "protobuf"
 		}
 
-		dir := filepath.Dir(file)
-		pubSpec, err := readPubSpec(dir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read pubspec.yaml at %s: %w", dir, err)
+		// library name will be derived from service config.
+		lib := &config.Library{
+			APIs: []*config.API{
+				{
+					Path: apiPath,
+				},
+			},
 		}
-
-		if pubSpec.Name == "" {
-			return nil, errLibraryNameNotFound
-		}
-		libraryName := pubSpec.Name
-		lib, exists := libraries[libraryName]
-		if !exists {
-			lib = &config.Library{
-				Name: libraryName,
-			}
-			libraries[libraryName] = lib
-		}
-
-		if pubSpec.Version != "" {
-			lib.Version = pubSpec.Version
-		}
-
-		lib.APIs = append(lib.APIs, &config.API{
-			Path: apiPath,
-		})
 
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
-
-		if pubSpec.Description != "" {
-			lib.DescriptionOverride = pubSpec.Description
-		}
-
-		relativePath, err := filepath.Rel(repoPath, dir)
+		relativePath, err := filepath.Rel(repoPath, filepath.Dir(file))
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
 		lib.Output = relativePath
-
 		if _, ok := sidekick.Codec["not-for-publication"]; ok {
 			lib.SkipPublish = true
 		}
@@ -304,10 +267,19 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		lib.SpecificationFormat = specificationFormat
 
 		dartPackage := &config.DartPackage{}
+		if titleOverride, ok := sidekick.Source["title-override"]; ok && titleOverride != "" {
+			dartPackage.TitleOverride = titleOverride
+		}
+		if nameOverride, ok := sidekick.Source["name-override"]; ok && nameOverride != "" {
+			dartPackage.NameOverride = nameOverride
+		}
+
 		if apiKeys, ok := sidekick.Codec["api-keys-environment-variables"]; ok && apiKeys != "" {
 			dartPackage.APIKeysEnvironmentVariables = apiKeys
 		}
-
+		if deps, ok := sidekick.Codec["dependencies"]; ok && deps != "" {
+			dartPackage.Dependencies = deps
+		}
 		if devDeps, ok := sidekick.Codec["dev-dependencies"]; ok && devDeps != "" {
 			dartPackage.DevDependencies = devDeps
 		}
@@ -332,21 +304,17 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 	}
 
+	sort.Slice(libraries, func(i, j int) bool {
+		return libraries[i].APIs[0].Path < libraries[j].APIs[0].Path
+	})
+
 	return libraries, nil
 }
 
 // buildConfig builds the complete config from libraries.
-func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
-	cfg := defaults
-	var libList []*config.Library
-	for _, lib := range libraries {
-		libList = append(libList, lib)
-	}
-	sort.Slice(libList, func(i, j int) bool {
-		return libList[i].Name < libList[j].Name
-	})
-	cfg.Libraries = libList
-	return cfg
+func buildConfig(libraries []*config.Library, defaults *config.Config) *config.Config {
+	defaults.Libraries = libraries
+	return defaults
 }
 
 func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]string {
@@ -362,8 +330,4 @@ func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]strin
 
 func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
-}
-
-func readPubSpec(dir string) (*PubSpec, error) {
-	return yaml.Read[PubSpec](filepath.Join(dir, "pubspec.yaml"))
 }

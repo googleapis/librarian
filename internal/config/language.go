@@ -322,4 +322,8 @@ type DartPackage struct {
 
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
+
+	TitleOverride string `yaml:"title_override,omitempty"`
+
+	NameOverride string `yaml:"name_override,omitempty"`
 }
