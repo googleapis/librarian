@@ -15,29 +15,28 @@
 package rust
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// setupTestDir creates a temporary directory structure for testing.
-// It creates subdirectories based on the provided paths and returns the temp directory root.
-func setupTestDir(t *testing.T, paths ...string) string {
-	t.Helper()
-	tmpDir := t.TempDir()
-	for _, path := range paths {
-		dir := filepath.Join(tmpDir, path)
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatal(err)
-		}
+const (
+	googleapisRoot  = "../../../internal/testdata/googleapis"
+	discoveryRoot   = "../../../internal/testdata/discovery"
+	protobufSrcRoot = "../../../internal/testdata/protobuf-src"
+	conformanceRoot = "../../../internal/testdata/conformance"
+	showcaseRoot    = "../../../internal/testdata/gapic-showcase"
+)
+
+func absPath(p string) string {
+	a, err := filepath.Abs(p)
+	if err != nil {
+		panic(err)
 	}
-	return tmpDir
+	return a
 }
 
 func TestToSidekickConfig(t *testing.T) {
@@ -63,7 +62,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -91,7 +90,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -120,7 +119,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -161,7 +160,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -201,7 +200,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -239,7 +238,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -272,7 +271,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -324,7 +323,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -367,7 +366,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storage/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -398,11 +397,13 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
+					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
-					"discovery-root":  "",
+					"googleapis-root": absPath(googleapisRoot),
+					"discovery-root":  absPath(discoveryRoot),
 					"roots":           "googleapis,discovery",
+					"title-override":  "Google Compute Engine API",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-compute-v1",
@@ -426,10 +427,12 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust",
 					SpecificationFormat: "openapi",
 					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"package-name-override": "secretmanager-openapi-v1",
@@ -453,12 +456,14 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
+					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
-					"discovery-root":  "",
-					"showcase-root":   "",
+					"googleapis-root": absPath(googleapisRoot),
+					"discovery-root":  absPath(discoveryRoot),
+					"showcase-root":   absPath(showcaseRoot),
 					"roots":           "googleapis,discovery,showcase",
+					"title-override":  "Google Compute Engine API",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-compute-v1",
@@ -480,7 +485,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/apps/script/type/gmail",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
 				},
@@ -505,7 +510,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/longrunning",
 				},
 				Source: map[string]string{
-					"googleapis-root":      "",
+					"googleapis-root":      absPath(googleapisRoot),
 					"description-override": "Defines types and an abstract service to handle long-running operations.",
 					"roots":                "googleapis",
 				},
@@ -536,7 +541,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/spanner/admin/database/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
 				},
@@ -563,7 +568,7 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/storageinsights/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
+					"googleapis-root": absPath(googleapisRoot),
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{
@@ -606,11 +611,13 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
+					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
-					"discovery-root":  "",
+					"googleapis-root": absPath(googleapisRoot),
+					"discovery-root":  absPath(discoveryRoot),
 					"roots":           "googleapis,discovery",
+					"title-override":  "Google Compute Engine API",
 				},
 				Codec: map[string]string{
 					"package-name-override": "google-cloud-compute-v1",
@@ -652,9 +659,9 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/cloud/vision/v1",
 				},
 				Source: map[string]string{
-					"googleapis-root":   "",
-					"protobuf-src-root": "",
-					"conformance-root":  "",
+					"googleapis-root":   absPath(googleapisRoot),
+					"protobuf-src-root": absPath(protobufSrcRoot),
+					"conformance-root":  absPath(conformanceRoot),
 					"roots":             "googleapis,protobuf-src,conformance",
 				},
 				Codec: map[string]string{
@@ -681,8 +688,8 @@ func TestToSidekickConfig(t *testing.T) {
 					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				},
 				Source: map[string]string{
-					"googleapis-root": "",
-					"showcase-root":   "../../testdata/gapic-showcase",
+					"googleapis-root": absPath(googleapisRoot),
+					"showcase-root":   absPath(showcaseRoot),
 					"roots":           "showcase,googleapis",
 					"title-override":  "Client Libraries Showcase API",
 				},
@@ -708,6 +715,10 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust_storage",
 					SpecificationFormat: "protobuf",
 				},
+				Source: map[string]string{
+					"googleapis-root": absPath(googleapisRoot),
+					"roots":           "googleapis",
+				},
 			},
 		},
 		{
@@ -727,6 +738,10 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "rust",
 					SpecificationFormat: "none",
 				},
+				Source: map[string]string{
+					"googleapis-root": absPath(googleapisRoot),
+					"roots":           "googleapis",
+				},
 			},
 		},
 		{
@@ -744,6 +759,10 @@ func TestToSidekickConfig(t *testing.T) {
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language: "rust+prost",
+				},
+				Source: map[string]string{
+					"googleapis-root": absPath(googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -767,8 +786,9 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/logging/type",
 				},
 				Source: map[string]string{
-					"roots":          "",
-					"title-override": "Logging types",
+					"googleapis-root": absPath(googleapisRoot),
+					"roots":           "googleapis",
+					"title-override":  "Logging types",
 				},
 			},
 		},
@@ -793,81 +813,22 @@ func TestToSidekickConfig(t *testing.T) {
 					SpecificationFormat: "protobuf",
 				},
 				Source: map[string]string{
-					"included-ids": "id1,id2",
-					"include-list": "example-list",
-					"roots":        "",
-					"skipped-ids":  "id3,id4",
+					"googleapis-root": absPath(googleapisRoot),
+					"included-ids":    "id1,id2",
+					"include-list":    "example-list",
+					"roots":           "googleapis",
+					"skipped-ids":     "id3,id4",
 				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// Set up temporary directories with proper structure
-			var googleapisDir, discoveryDir, protobufDir, conformanceDir, showcaseDir string
-
-			// Always create a googleapisDir with the api.Path structure
-			// because serviceconfig.Find always uses it, even if googleapis is not in Roots.
-			if test.api != nil && test.api.Path != "" {
-				googleapisDir = setupTestDir(t, test.api.Path)
-
-				// Create a dummy service config file if one is expected in the want output.
-				if test.want.General.ServiceConfig != "" {
-					configPath := filepath.Join(googleapisDir, test.want.General.ServiceConfig)
-					if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-						t.Fatal(err)
-					}
-					content := fmt.Sprintf("type: google.api.Service\nname: %s\ntitle: %s\n", test.library.Name, test.want.Source["title-override"])
-					if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
-						t.Fatal(err)
-					}
-				}
-			}
-
-			// Determine which directories need to be created based on test.library.Roots
-			if test.library.Rust != nil && test.library.Rust.Roots != nil {
-				for _, root := range test.library.Rust.Roots {
-					switch root {
-					case "discovery":
-						if test.api != nil && test.api.Path != "" {
-							discoveryDir = setupTestDir(t, test.api.Path)
-						}
-					case "protobuf-src":
-						protobufDir = t.TempDir()
-					case "conformance":
-						conformanceDir = t.TempDir()
-					case "showcase":
-						showcaseDir = filepath.Join("..", "..", "testdata", "gapic-showcase")
-					}
-				}
-			}
-
 			sources := &Sources{
-				Conformance: conformanceDir,
-				Discovery:   discoveryDir,
-				Googleapis:  googleapisDir,
-				ProtobufSrc: protobufDir,
-				Showcase:    showcaseDir,
-			}
-
-			// Create a copy of want.Source with actual temp directories
-			wantSource := make(map[string]string)
-			for k, v := range test.want.Source {
-				wantSource[k] = v
-			}
-			if _, ok := wantSource["googleapis-root"]; ok {
-				wantSource["googleapis-root"] = googleapisDir
-			}
-			if _, ok := wantSource["discovery-root"]; ok {
-				wantSource["discovery-root"] = discoveryDir
-			}
-			if _, ok := wantSource["protobuf-src-root"]; ok {
-				wantSource["protobuf-src-root"] = protobufDir
-			}
-			if _, ok := wantSource["conformance-root"]; ok {
-				wantSource["conformance-root"] = conformanceDir
-			}
-			if _, ok := wantSource["showcase-root"]; ok {
-				wantSource["showcase-root"] = showcaseDir
+				Conformance: absPath(conformanceRoot),
+				Discovery:   absPath(discoveryRoot),
+				Googleapis:  absPath(googleapisRoot),
+				ProtobufSrc: absPath(protobufSrcRoot),
+				Showcase:    absPath(showcaseRoot),
 			}
 
 			if test.library.Rust != nil && test.library.Rust.Modules != nil {
@@ -877,13 +838,8 @@ func TestToSidekickConfig(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					if test.want.Source != nil {
-						ignoreKey := cmpopts.IgnoreMapEntries(func(k string, v string) bool {
-							return k == "googleapis-root"
-						})
-						if diff := cmp.Diff(test.want.Source, got.Source, ignoreKey); diff != "" {
-							t.Errorf("mismatch (-want +got):\n%s", diff)
-						}
+					if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
+						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
 					commentOverrides = append(commentOverrides, got.CommentOverrides...)
 				}
@@ -891,27 +847,11 @@ func TestToSidekickConfig(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			} else {
-				sources := &Sources{
-					Googleapis:  googleapisDir,
-					Discovery:   discoveryDir,
-					ProtobufSrc: protobufDir,
-					Conformance: conformanceDir,
-					Showcase:    showcaseDir,
-				}
 				got, err := toSidekickConfig(test.library, test.api, sources)
 				if err != nil {
 					t.Fatal(err)
 				}
-				// Create a modified want with the actual directory paths
-				want := &sidekickconfig.Config{
-					General:             test.want.General,
-					Source:              wantSource,
-					Discovery:           test.want.Discovery,
-					Codec:               test.want.Codec,
-					CommentOverrides:    test.want.CommentOverrides,
-					PaginationOverrides: test.want.PaginationOverrides,
-				}
-				if diff := cmp.Diff(want, got); diff != "" {
+				if diff := cmp.Diff(test.want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
