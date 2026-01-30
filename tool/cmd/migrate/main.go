@@ -36,7 +36,6 @@ import (
 
 const (
 	sidekickFile             = ".sidekick.toml"
-	cargoFile                = "Cargo.toml"
 	googleapisArchivePrefix  = "https://github.com/googleapis/googleapis/archive/"
 	showcaseArchivePrefix    = "https://github.com/googleapis/gapic-showcase/archive/"
 	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
@@ -59,11 +58,6 @@ var (
 
 	fetchSource = fetchGoogleapis
 )
-
-var excludedVeneerLibraries = map[string]struct{}{
-	"echo-server": {},
-	"gcp-sdk":     {},
-}
 
 type PubSpec struct {
 	Name            string            `yaml:"name,omitempty"`

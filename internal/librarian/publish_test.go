@@ -75,17 +75,9 @@ func TestPublish(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Language: languageFake,
-				Libraries: []*config.Library{
-					{Name: sample.Lib1Name, Version: "1.0.0"},
-					{Name: sample.Lib2Name, Version: "1.2.0"},
-				},
-			}
-			opts := testhelper.SetupOptions{
-				Config: cfg,
-			}
-			testhelper.Setup(t, opts)
+			cfg := sample.Config()
+			cfg.Libraries[1].Version = "1.2.0"
+			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
 			if err := publish(t.Context(), cfg, test.library, test.execute); err != nil {
 				t.Fatal(err)
@@ -155,17 +147,9 @@ func TestPublish_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Language: languageFake,
-				Libraries: []*config.Library{
-					{Name: sample.Lib1Name, Version: "1.0.0"},
-					{Name: sample.Lib2Name, Version: "1.2.0"},
-				},
-			}
-			opts := testhelper.SetupOptions{
-				Config: cfg,
-			}
-			testhelper.Setup(t, opts)
+			cfg := sample.Config()
+			cfg.Libraries[1].Version = "1.2.0"
+			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
 			err := publish(t.Context(), cfg, test.library, false)
 			if err == nil {
@@ -178,17 +162,9 @@ func TestPublish_Error(t *testing.T) {
 // TestPublishCommand is just a single "does it look like it passes things
 // through to the publish function" test. TestPublish tests the bulk of the logic.
 func TestPublishCommand(t *testing.T) {
-	cfg := &config.Config{
-		Language: languageFake,
-		Libraries: []*config.Library{
-			{Name: sample.Lib1Name, Version: "1.0.0"},
-			{Name: sample.Lib2Name, Version: "1.2.0"},
-		},
-	}
-	opts := testhelper.SetupOptions{
-		Config: cfg,
-	}
-	testhelper.Setup(t, opts)
+	cfg := sample.Config()
+	cfg.Libraries[1].Version = "1.2.0"
+	testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 	cfg.Libraries[0].Version = "1.1.0"
 	writeConfigAndCommit(t, cfg)
 	cfg.Libraries[1].Version = "1.3.0"

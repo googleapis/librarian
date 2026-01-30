@@ -24,6 +24,10 @@ import (
 //go:embed version.txt
 var versionString string
 
+// versionNotAvailable is returned by Version when no VCS info is present,
+// which occurs during local development builds.
+const versionNotAvailable = "not available"
+
 // retractedVersions is a list of Go module versions that have been officially retracted
 // via the go.mod 'retract' directive. v1.0.2 added to account for local dev builds
 // from untagged commits.
@@ -40,18 +44,18 @@ func Version() string {
 }
 
 func version(info *debug.BuildInfo) string {
-	isRetracted := false
+	// Local development builds have no proper version tag, or have
+	// uncommitted changes indicated by the +dirty suffix.
+	if info.Main.Version == "" || info.Main.Version == "(devel)" ||
+		strings.HasSuffix(info.Main.Version, "+dirty") {
+		return versionNotAvailable
+	}
+	// Retracted versions should use a pseudo-version so users know
+	// they're running a retracted release.
 	for _, v := range retractedVersions {
 		if strings.HasPrefix(info.Main.Version, v) {
-			isRetracted = true
-			break
+			return newPseudoVersion(info)
 		}
-	}
-	// A pseudo-version should be used for retracted versions or for
-	// development builds that don't have a proper version tag.
-	isDevelBuild := info.Main.Version == "" || info.Main.Version == "(devel)"
-	if isRetracted || isDevelBuild {
-		return newPseudoVersion(info)
 	}
 	return info.Main.Version
 }
@@ -69,7 +73,7 @@ func newPseudoVersion(info *debug.BuildInfo) string {
 	}
 
 	if revision == "" && at == "" {
-		return "not available"
+		return versionNotAvailable
 	}
 	// Construct the pseudo-version string per
 	// https://go.dev/ref/mod#pseudo-versions.

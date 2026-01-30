@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -94,18 +95,10 @@ func TestAddLibrary(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 
-			cfg := &config.Config{
-				Language: languageFake,
-				Default: &config.Default{
-					Output: "output",
-				},
-				Libraries: test.initialLibraries,
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Dir: googleapisDir,
-					},
-				},
-			}
+			cfg := sample.Config()
+			cfg.Default.Output = "output"
+			cfg.Libraries = test.initialLibraries
+			cfg.Sources.Googleapis.Dir = googleapisDir
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -203,17 +196,10 @@ func TestAddCommand(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 
-			cfg := &config.Config{
-				Language: languageFake,
-				Default: &config.Default{
-					Output: "output",
-				},
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Dir: googleapisDir,
-					},
-				},
-			}
+			cfg := sample.Config()
+			cfg.Default.Output = "output"
+			cfg.Libraries = nil
+			cfg.Sources.Googleapis.Dir = googleapisDir
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -291,13 +277,11 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 
-			cfg := &config.Config{
-				Language: languageFake,
-				Libraries: []*config.Library{
-					{
-						Name:   "existinglib",
-						Output: "output/existinglib",
-					},
+			cfg := sample.Config()
+			cfg.Libraries = []*config.Library{
+				{
+					Name:   "existinglib",
+					Output: "output/existinglib",
 				},
 			}
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
