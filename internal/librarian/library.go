@@ -74,6 +74,9 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 }
 
 func fillDart(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Version == "" {
+		lib.Version = d.Dart.Version
+	}
 	if lib.Dart == nil {
 		lib.Dart = &config.DartPackage{}
 	}
