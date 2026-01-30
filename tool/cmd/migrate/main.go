@@ -60,11 +60,6 @@ var (
 	fetchSource = fetchGoogleapis
 )
 
-var excludedVeneerLibraries = map[string]struct{}{
-	"echo-server": {},
-	"gcp-sdk":     {},
-}
-
 func main() {
 	ctx := context.Background()
 	if err := run(ctx, os.Args[1:]); err != nil {
@@ -333,7 +328,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		}
 
 		if extraModules, ok := sidekick.Codec["extra-modules"]; ok {
-			for _, module := range strToSlice(extraModules, false) {
+			for _, module := range strToSlice(extraModules) {
 				if module == "" {
 					continue
 				}
@@ -399,7 +394,7 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 		rustCrate := &config.RustCrate{
 			RustDefault: config.RustDefault{
 				PackageDependencies:     packageDeps,
-				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings, false),
+				DisabledRustdocWarnings: strToSlice(disabledRustdocWarnings),
 				GenerateSetterSamples:   generateSetterSamples,
 				GenerateRpcSamples:      generateRpcSamples,
 			},
@@ -408,12 +403,12 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			TemplateOverride:          templateOverride,
 			PackageNameOverride:       packageNameOverride,
 			RootName:                  rootName,
-			Roots:                     strToSlice(roots, false),
-			DefaultFeatures:           strToSlice(defaultFeatures, false),
-			IncludeList:               strToSlice(includeList, false),
-			IncludedIds:               strToSlice(includeIds, false),
-			SkippedIds:                strToSlice(skippedIds, false),
-			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings, false),
+			Roots:                     strToSlice(roots),
+			DefaultFeatures:           strToSlice(defaultFeatures),
+			IncludeList:               strToSlice(includeList),
+			IncludedIds:               strToSlice(includeIds),
+			SkippedIds:                strToSlice(skippedIds),
+			DisabledClippyWarnings:    strToSlice(disabledClippyWarnings),
 			HasVeneer:                 strToBool(hasVeneer),
 			RoutingRequired:           strToBool(routingRequired),
 			IncludeGrpcOnlyMethods:    strToBool(includeGrpcOnlyMethods),
@@ -564,19 +559,11 @@ func strToBool(s string) bool {
 }
 
 // strToSlice converts a comma-separated string into a slice of strings.
-//
-// The wantEmpty parameter controls the behavior when the input string is empty:
-//   - If true: Returns an empty initialized slice (make([]string, 0)).
-//   - If false: Returns nil.
-func strToSlice(s string, wantEmpty bool) []string {
+// Returns nil if the string is empty.
+func strToSlice(s string) []string {
 	if s == "" {
-		if wantEmpty {
-			return make([]string, 0)
-		}
-
 		return nil
 	}
-
 	return strings.Split(s, ",")
 }
 
