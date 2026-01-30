@@ -82,6 +82,9 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Dart.Dependencies == "" {
 		lib.Dart.Dependencies = d.Dart.Dependencies
 	}
+	if lib.Dart.Packages == nil {
+		lib.Dart.Packages = d.Dart.Packages
+	}
 
 	return lib
 }

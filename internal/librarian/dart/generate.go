@@ -121,7 +121,7 @@ func buildCodec(library *config.Library) map[string]string {
 		codec["repository-url"] = dart.RepositoryURL
 	}
 	for key, value := range dart.Packages {
-		codec["package:"+key] = value
+		codec[key] = value
 	}
 	for key, value := range dart.Prefixes {
 		codec["prefix:"+key] = value
