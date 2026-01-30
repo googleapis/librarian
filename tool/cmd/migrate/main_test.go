@@ -162,7 +162,7 @@ func TestBuildGAPIC(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		files    []string
-		repoName string
+		repoPath string
 		want     map[string]*config.Library
 		wantErr  error
 	}{
@@ -245,9 +245,9 @@ API key as an argument when initializing the client.
 		{
 			name: "unable_to_calculate_output_path",
 			files: []string{
-				"testdata/read-sidekick-files/success-read/.sidekick.toml",
+				"testdata/read-sidekick-files/success-read/library-a/.sidekick.toml",
 			},
-			repoName: "/invalid/repo/path",
+			repoPath: "/invalid/repo/path",
 			wantErr:  errUnableToCalculateOutputPath,
 		},
 		{
@@ -266,7 +266,7 @@ API key as an argument when initializing the client.
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGAPIC(test.files, test.repoName)
+			got, err := buildGAPIC(test.files, test.repoPath)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
