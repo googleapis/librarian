@@ -71,6 +71,9 @@ var (
 		path.Join("deserialize.rs"),
 		path.Join("serialize.rs"),
 	}
+	// The test search for API Version comments in the 50 lines prior
+	// to the first #[cfg(feature = "${thing}")].
+	versionDistance = 50
 )
 
 func TestCodecError(t *testing.T) {
@@ -406,12 +409,10 @@ func checkApiVersionComments(t *testing.T, outDir string) {
 		t.Run(test.featureName, func(t *testing.T) {
 			target := fmt.Sprintf(`#[cfg(feature = "%s")]`, test.featureName)
 			anchor := slices.Index(lines, target)
-			// The target cannot appear in the first 100 lines, there is enough boilerplate
-			// and intros to prevent this.
-			if anchor < 100 {
-				t.Fatalf("cannot find %s in generated client.rs file: \n%v", target, lines[0:200])
+			if anchor <= versionDistance {
+				t.Fatalf("cannot find %s in generated client.rs file: \n%v", target, lines[0:versionDistance])
 			}
-			subHaystack := lines[anchor-50 : anchor]
+			subHaystack := lines[anchor-versionDistance : anchor]
 			found := slices.IndexFunc(subHaystack, func(line string) bool {
 				return strings.Contains(line, test.wantVersion)
 			})
@@ -426,12 +427,10 @@ func checkApiVersionComments(t *testing.T, outDir string) {
 func checkNoCommentsWithoutApiVersion(t *testing.T, lines []string) {
 	target := `#[cfg(feature = "instances")]`
 	anchor := slices.Index(lines, target)
-	// The target cannot appear in the first 100 lines, there is enough boilerplate
-	// and intros to prevent this.
-	if anchor < 100 {
-		t.Fatalf("cannot find %s in generated client.rs file", target)
+	if anchor <= versionDistance {
+		t.Fatalf("cannot find %s in generated client.rs file: \n%v", target, lines[0:versionDistance])
 	}
-	subHaystack := lines[anchor-50 : anchor]
+	subHaystack := lines[anchor-versionDistance : anchor]
 	found := slices.IndexFunc(subHaystack, func(line string) bool {
 		return strings.Contains(line, " with API version ")
 	})
