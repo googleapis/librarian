@@ -254,8 +254,8 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				Dart: &config.DartPackage{
 					Prefixes: map[string]string{
-						"google.protobuf": "pb",
-						"google.api":      "api",
+						"prefix:google.protobuf": "pb",
+						"prefix:google.api":      "api",
 					},
 				},
 			},
@@ -269,8 +269,8 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				Dart: &config.DartPackage{
 					Protos: map[string]string{
-						"google.api":      "package:google_cloud_api/api.dart",
-						"google.protobuf": "package:protobuf/protobuf.dart",
+						"proto:google.api":      "package:google_cloud_api/api.dart",
+						"proto:google.protobuf": "package:protobuf/protobuf.dart",
 					},
 				},
 			},
@@ -300,10 +300,10 @@ func TestBuildCodec(t *testing.T) {
 						"package:googleapis_auth": "^2.0.0",
 					},
 					Prefixes: map[string]string{
-						"google.protobuf": "pb",
+						"prefix:google.protobuf": "pb",
 					},
 					Protos: map[string]string{
-						"google.api": "package:google_cloud_api/api.dart",
+						"proto:google.api": "package:google_cloud_api/api.dart",
 					},
 				},
 			},
