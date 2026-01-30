@@ -83,11 +83,13 @@ func TestFillDefaults(t *testing.T) {
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
 					},
+					Version: "0.4.0",
 				},
 			},
 			lib: &config.Library{Output: "foo/"},
 			want: &config.Library{
-				Output: "foo/",
+				Output:  "foo/",
+				Version: "0.4.0",
 				Dart: &config.DartPackage{
 					Dependencies:    "dep-1,dep-2",
 					IssueTrackerURL: "https://issue-tracker-example/dart",
@@ -105,10 +107,12 @@ func TestFillDefaults(t *testing.T) {
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
 					},
+					Version: "0.4.0",
 				},
 			},
 			lib: &config.Library{
-				Output: "foo/",
+				Output:  "foo/",
+				Version: "0.5.0",
 				Dart: &config.DartPackage{
 					Dependencies:    "dep-3,dep-4",
 					IssueTrackerURL: "https://another-issue-tracker-example/dart",
@@ -118,7 +122,8 @@ func TestFillDefaults(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Output: "foo/",
+				Output:  "foo/",
+				Version: "0.5.0",
 				Dart: &config.DartPackage{
 					Dependencies:    "dep-3,dep-4",
 					IssueTrackerURL: "https://another-issue-tracker-example/dart",
