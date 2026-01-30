@@ -615,28 +615,6 @@ func buildConfig(libraries map[string]*config.Library, defaults *config.Config) 
 	return cfg
 }
 
-func parsePackageDependencies(codec map[string]string) []*config.RustPackageDependency {
-	var packageDeps []*config.RustPackageDependency
-	for key, value := range codec {
-		if !strings.HasPrefix(key, "package:") {
-			continue
-		}
-		pkgName := strings.TrimPrefix(key, "package:")
-
-		dep := parsePackageDependency(pkgName, value)
-		if dep != nil {
-			packageDeps = append(packageDeps, dep)
-		}
-	}
-
-	// Sort package dependencies by name
-	sort.Slice(packageDeps, func(i, j int) bool {
-		return packageDeps[i].Name < packageDeps[j].Name
-	})
-
-	return packageDeps
-}
-
 func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]string {
 	res := make(map[string]string)
 	for key, value := range codec {
