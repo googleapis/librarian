@@ -1001,8 +1001,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 	}
 	serviceName := c.ServiceName(m.Service)
 	resourceNameFields := c.findResourceNameFields(m)
-	systemParameters := make([]systemParameter, len(c.systemParameters))
-	copy(systemParameters, c.systemParameters)
+	systemParameters := slices.Clone(c.systemParameters)
 	if m.APIVersion != "" {
 		systemParameters = append(systemParameters, systemParameter{
 			Name:  "$apiVersion",
