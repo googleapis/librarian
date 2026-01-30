@@ -310,7 +310,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 	}
 
 	sort.Slice(libraries, func(i, j int) bool {
-		return libraries[i].APIs[0].Path < libraries[j].APIs[0].Path
+		return libraries[i].Name < libraries[j].Name
 	})
 
 	return libraries, nil
