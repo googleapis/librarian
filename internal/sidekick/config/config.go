@@ -61,9 +61,8 @@ type Config struct {
 	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
 	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
 	Release             *Release                `toml:"release,omitempty"`
-
 	// Add config until we can migrate to it
-	Config *config.Config `toml:"config,omitempty"`
+	Config *config.Config `toml:"-"`
 }
 
 // GeneralConfig contains configuration parameters that affect Parsers and Codecs, including the
