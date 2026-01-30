@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -115,19 +114,8 @@ func runSidekickMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read sidekick.toml files: %w", err)
 	}
-	cargoFiles, err := findCargos(filepath.Join(repoPath, "src"))
-	if err != nil {
-		return fmt.Errorf("failed to find Cargo.toml files: %w", err)
-	}
-	veneers, err := buildVeneer(cargoFiles, repoPath)
-	if err != nil {
-		return fmt.Errorf("failed to build veneers: %w", err)
-	}
-	allLibraries := make(map[string]*config.Library, len(libraries)+len(veneers))
-	maps.Copy(allLibraries, libraries)
-	maps.Copy(allLibraries, veneers)
 
-	cfg := buildConfig(allLibraries, defaults)
+	cfg := buildConfig(libraries, defaults)
 
 	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
@@ -499,156 +487,6 @@ func findCargos(path string) ([]string, error) {
 	return files, err
 }
 
-func buildVeneer(files []string, repoPath string) (map[string]*config.Library, error) {
-	veneers := make(map[string]*config.Library)
-	for _, file := range files {
-		cargo, err := readCargoConfig(filepath.Dir(file))
-		if err != nil {
-			return nil, err
-		}
-
-		if _, ok := excludedVeneerLibraries[cargo.Package.Name]; ok {
-			continue
-		}
-
-		dir := filepath.Dir(file)
-		rustModules, err := buildModules(dir, repoPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build modules in %q: %w", dir, err)
-		}
-		relativePath, err := filepath.Rel(repoPath, dir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to calculate relative path: %w", err)
-		}
-		name := cargo.Package.Name
-		veneer := &config.Library{
-			Name:          name,
-			Veneer:        true,
-			Output:        relativePath,
-			CopyrightYear: "2025",
-		}
-		if cargo.Package.Version != "" && cargo.Package.Version != "0.0.0" {
-			veneer.Version = cargo.Package.Version
-		}
-		veneers[name] = veneer
-		if len(rustModules) > 0 {
-			veneers[name].Rust = &config.RustCrate{
-				Modules: rustModules,
-			}
-		}
-		if !cargo.Package.Publish {
-			veneers[name].SkipPublish = true
-		}
-	}
-	return veneers, nil
-}
-
-func buildModules(rootDir string, repoPath string) ([]*config.RustModule, error) {
-	var modules []*config.RustModule
-	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() || d.Name() != sidekickFile {
-			return nil
-		}
-
-		if strings.Contains(path, "tests") {
-			// Only use a .sidekick.toml in tests directory to represent a rust module if the following directory
-			// exists:
-			//
-			// |-src
-			// |  |-generated
-			// |     |-.sidekick.toml
-			// |-Cargo.toml
-			// Only one pair of Cargo.toml and .sidekick.toml (within tests directory) is not comply this structure in
-			// google-cloud-rust, which is wkt/Cargo.toml and src/wkt/tests/common/src/generated/.sidekick.toml.
-			srcDir := strings.TrimSuffix(path, fmt.Sprintf("/src/generated/%s", sidekickFile))
-			if rootDir != srcDir {
-				return nil
-			}
-		}
-
-		sidekick, err := readTOML[sidekickconfig.Config](path)
-		if err != nil {
-			return err
-		}
-
-		includedIds := sidekick.Source["included-ids"]
-		includeList := sidekick.Source["include-list"]
-		skippedIds := sidekick.Source["skipped-ids"]
-		moduleRoots := make(map[string]string)
-		roots, ok := sidekick.Source["roots"]
-		if ok {
-			for _, root := range strings.Split(roots, ",") {
-				root = fmt.Sprintf("%s-root", root)
-				modPath, ok := sidekick.Source[root]
-				if ok {
-					moduleRoots[root] = modPath
-				}
-			}
-		}
-
-		hasVeneer := sidekick.Codec["has-veneer"]
-		includeGrpcOnlyMethods := sidekick.Codec["include-grpc-only-methods"]
-		routingRequired := sidekick.Codec["routing-required"]
-		extendGrpcTransport := sidekick.Codec["extend-grpc-transport"]
-		modulePath := sidekick.Codec["module-path"]
-		nameOverrides := sidekick.Codec["name-overrides"]
-		postProcessProtos := sidekick.Codec["post-process-protos"]
-		templateOverride := sidekick.Codec["template-override"]
-		generateSetterSamples := sidekick.Codec["generate-setter-samples"]
-
-		// Parse documentation overrides
-		var documentationOverrides []config.RustDocumentationOverride
-		for _, do := range sidekick.CommentOverrides {
-			documentationOverrides = append(documentationOverrides, config.RustDocumentationOverride{
-				ID:      do.ID,
-				Match:   do.Match,
-				Replace: do.Replace,
-			})
-		}
-		relativePath, err := filepath.Rel(repoPath, filepath.Dir(path))
-		if err != nil {
-			return fmt.Errorf("failed to calculate relative path: %w", err)
-		}
-		module := &config.RustModule{
-			DocumentationOverrides: documentationOverrides,
-			GenerateSetterSamples:  generateSetterSamples,
-			HasVeneer:              strToBool(hasVeneer),
-			IncludedIds:            strToSlice(includedIds, false),
-			IncludeGrpcOnlyMethods: strToBool(includeGrpcOnlyMethods),
-			IncludeList:            includeList,
-			ModulePath:             modulePath,
-			NameOverrides:          nameOverrides,
-			Output:                 relativePath,
-			PostProcessProtos:      postProcessProtos,
-			RoutingRequired:        strToBool(routingRequired),
-			ExtendGrpcTransport:    strToBool(extendGrpcTransport),
-			ServiceConfig:          sidekick.General.ServiceConfig,
-			SkippedIds:             strToSlice(skippedIds, false),
-			Source:                 sidekick.General.SpecificationSource,
-			Template:               strings.TrimPrefix(templateOverride, "templates/"),
-		}
-
-		if len(moduleRoots) > 0 {
-			module.ModuleRoots = moduleRoots
-		}
-
-		disabledRustdocWarnings, ok := sidekick.Codec["disabled-rustdoc-warnings"]
-		if ok {
-			module.DisabledRustdocWarnings = strToSlice(disabledRustdocWarnings, true)
-		}
-
-		modules = append(modules, module)
-
-		return nil
-	})
-
-	return modules, err
-}
-
 // buildConfig builds the complete config from libraries.
 func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
 	cfg := defaults
@@ -744,20 +582,6 @@ func strToSlice(s string, wantEmpty bool) []string {
 
 func isEmptyRustCrate(r *config.RustCrate) bool {
 	return reflect.DeepEqual(r, &config.RustCrate{})
-}
-
-func readTOML[T any](file string) (*T, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", file, err)
-	}
-
-	var tomlData T
-	if err := toml.Unmarshal(data, &tomlData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal %s: %w", file, err)
-	}
-
-	return &tomlData, nil
 }
 
 func readCargoConfig(dir string) (*rust.Cargo, error) {
