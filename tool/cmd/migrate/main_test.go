@@ -262,7 +262,7 @@ API key as an argument when initializing the client.
 			files: []string{
 				"testdata/read-sidekick-files/no-package-name/.sidekick.toml",
 			},
-			want: map[string]*config.Library{},
+			wantErr: errLibraryNameNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

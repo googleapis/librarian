@@ -57,6 +57,7 @@ var (
 	errTidyFailed                  = errors.New("librarian tidy failed")
 	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
 	errFetchSource                 = errors.New("cannot fetch source")
+	errLibraryNameNotFound         = errors.New("library name not found")
 
 	fetchSource = fetchGoogleapis
 )
@@ -315,6 +316,9 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 			return nil, fmt.Errorf("failed to read pubspec.yaml at %s: %w", dir, err)
 		}
 
+		if pubSpec.Name == "" {
+			return nil, errLibraryNameNotFound
+		}
 		libraryName := pubSpec.Name
 		lib, exists := libraries[libraryName]
 		if !exists {
