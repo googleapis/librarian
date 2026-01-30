@@ -366,7 +366,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	if err := Generate(t.Context(), library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), &config.Config{}, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {

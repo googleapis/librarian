@@ -35,7 +35,7 @@ func TestGenerate(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generate(t.Context(), &config.Config{}, library, "", nil); err != nil {
+	if err := generate(t.Context(), &config.Config{Language: languageFake}, library, "", nil); err != nil {
 		t.Fatal(err)
 	}
 
