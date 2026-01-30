@@ -335,55 +335,17 @@ func buildGAPIC(files []string, repoPath string) (map[string]*config.Library, er
 	return libraries, nil
 }
 
-// deriveLibraryName derives a library name from an API path.
-// For Rust: see go/cloud-rust:on-crate-names.
-func deriveLibraryName(apiPath string) string {
-	trimmedPath := strings.TrimPrefix(apiPath, "google/")
-	trimmedPath = strings.TrimPrefix(trimmedPath, "cloud/")
-	trimmedPath = strings.TrimPrefix(trimmedPath, "devtools/")
-	if strings.HasPrefix(trimmedPath, "api/apikeys/") {
-		trimmedPath = strings.TrimPrefix(trimmedPath, "api/")
-	}
-
-	return "google-cloud-" + strings.ReplaceAll(trimmedPath, "/", "-")
-}
-
 // buildConfig builds the complete config from libraries.
 func buildConfig(libraries map[string]*config.Library, defaults *config.Config) *config.Config {
 	cfg := defaults
-	// Convert libraries map to sorted slice, applying new schema logic
 	var libList []*config.Library
-
 	for _, lib := range libraries {
-		// Get the API path for this library
-		apiPath := ""
-		if len(lib.APIs) > 0 {
-			apiPath = lib.APIs[0].Path
-		}
-
-		// Derive expected library name from API path
-		expectedName := deriveLibraryName(apiPath)
-		nameMatchesConvention := lib.Name == expectedName
-		// Check if library has extra configuration beyond just name/api/version
-		hasExtraConfig := lib.CopyrightYear != "" ||
-			(lib.Rust != nil && (lib.Rust.PerServiceFeatures || len(lib.Rust.DisabledRustdocWarnings) > 0 ||
-				lib.Rust.GenerateSetterSamples != "" || lib.Rust.GenerateRpcSamples != "" ||
-				len(lib.Rust.PackageDependencies) > 0 || len(lib.Rust.PaginationOverrides) > 0 ||
-				lib.Rust.NameOverrides != ""))
-		// Only include in libraries section if specific data needs to be retained
-		if !nameMatchesConvention || hasExtraConfig || len(lib.APIs) > 1 {
-			libCopy := *lib
-			libList = append(libList, &libCopy)
-		}
+		libList = append(libList, lib)
 	}
-
-	// Sort libraries by name
 	sort.Slice(libList, func(i, j int) bool {
 		return libList[i].Name < libList[j].Name
 	})
-
 	cfg.Libraries = libList
-
 	return cfg
 }
 

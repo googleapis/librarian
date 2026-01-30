@@ -285,52 +285,6 @@ API key as an argument when initializing the client.
 	}
 }
 
-func TestDeriveLibraryName(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		api  string
-		want string
-	}{
-		{
-			name: "strip_google_prefix",
-			api:  "google/cloud/secretmanager/v1",
-			want: "google-cloud-secretmanager-v1",
-		},
-		{
-			name: "strip_devtools_prefix",
-			api:  "google/devtools/artifactregistry/v1",
-			want: "google-cloud-artifactregistry-v1",
-		},
-		{
-			name: "strip_api_prefix",
-			api:  "google/api/apikeys/v1",
-			want: "google-cloud-apikeys-v1",
-		},
-		{
-			name: "do_not_strip_api_prefix",
-			api:  "google/api/servicecontrol/v1",
-			want: "google-cloud-api-servicecontrol-v1",
-		},
-		{
-			name: "no_google_prefix",
-			api:  "grafeas/v1",
-			want: "google-cloud-grafeas-v1",
-		},
-		{
-			name: "no_cloud_prefix",
-			api:  "spanner/admin/instances/v1",
-			want: "google-cloud-spanner-admin-instances-v1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deriveLibraryName(test.api)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
 		name      string
