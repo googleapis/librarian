@@ -56,6 +56,10 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 		"googleapis-root": googleapisDir,
 	}
 
+	if library.Dart != nil && library.Dart.NameOverride != "" {
+		source["name-override"] = library.Dart.NameOverride
+	}
+
 	api, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
