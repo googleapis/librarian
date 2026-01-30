@@ -288,63 +288,6 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with veneer documentation overrides",
-			library: &config.Library{
-				Name: "google-cloud-storage",
-				Rust: &config.RustCrate{
-					Modules: []*config.RustModule{
-						{
-							DocumentationOverrides: []config.RustDocumentationOverride{
-								{
-									ID:      ".google.cloud.storage.v1.Bucket.name",
-									Match:   "bucket name",
-									Replace: "the name of the bucket",
-								},
-							},
-						},
-						{
-							DocumentationOverrides: []config.RustDocumentationOverride{
-								{
-									ID:      ".google.cloud.storage.v1.Bucket.id",
-									Match:   "bucket id",
-									Replace: "the id of the bucket",
-								},
-							},
-						},
-					},
-				},
-			},
-			api: &config.API{
-				Path: "google/cloud/storage/v1",
-			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
-				},
-				Source: map[string]string{
-					"googleapis-root": absPath(t, googleapisRoot),
-					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-storage",
-				},
-				CommentOverrides: []sidekickconfig.DocumentationOverride{
-					{
-						ID:      ".google.cloud.storage.v1.Bucket.name",
-						Match:   "bucket name",
-						Replace: "the name of the bucket",
-					},
-					{
-						ID:      ".google.cloud.storage.v1.Bucket.id",
-						Match:   "bucket id",
-						Replace: "the id of the bucket",
-					},
-				},
-			},
-		},
-		{
 			name: "with pagination overrides",
 			library: &config.Library{
 				Name: "google-cloud-storage",
@@ -699,6 +642,79 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sources := &Sources{
+				Conformance: absPath(t, conformanceRoot),
+				Discovery:   absPath(t, discoveryRoot),
+				Googleapis:  absPath(t, googleapisRoot),
+				ProtobufSrc: absPath(t, protobufSrcRoot),
+				Showcase:    absPath(t, showcaseRoot),
+			}
+
+			got, err := toSidekickConfig(test.library, test.api, sources)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestModuleToSidekickConfig(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *sidekickconfig.Config
+	}{
+		{
+			name: "with veneer documentation overrides",
+			library: &config.Library{
+				Name: "google-cloud-storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							DocumentationOverrides: []config.RustDocumentationOverride{
+								{
+									ID:      ".google.cloud.storage.v1.Bucket.name",
+									Match:   "bucket name",
+									Replace: "the name of the bucket",
+								},
+							},
+						},
+						{
+							DocumentationOverrides: []config.RustDocumentationOverride{
+								{
+									ID:      ".google.cloud.storage.v1.Bucket.id",
+									Match:   "bucket id",
+									Replace: "the id of the bucket",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &sidekickconfig.Config{
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
+				},
+				CommentOverrides: []sidekickconfig.DocumentationOverride{
+					{
+						ID:      ".google.cloud.storage.v1.Bucket.name",
+						Match:   "bucket name",
+						Replace: "the name of the bucket",
+					},
+					{
+						ID:      ".google.cloud.storage.v1.Bucket.id",
+						Match:   "bucket id",
+						Replace: "the id of the bucket",
+					},
+				},
+			},
+		},
 		{
 			name: "with custom module language",
 			library: &config.Library{
@@ -759,7 +775,8 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language: "rust+prost",
+					Language:            "rust+prost",
+					SpecificationFormat: "protobuf",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -832,29 +849,24 @@ func TestToSidekickConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			if test.library.Rust != nil && test.library.Rust.Modules != nil {
-				var commentOverrides []sidekickconfig.DocumentationOverride
-				for _, module := range test.library.Rust.Modules {
-					got, err := moduleToSidekickConfig(test.library, module, sources)
-					if err != nil {
-						t.Fatal(err)
-					}
-					if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
-						t.Errorf("mismatch (-want +got):\n%s", diff)
-					}
-					commentOverrides = append(commentOverrides, got.CommentOverrides...)
-				}
-				if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-			} else {
-				got, err := toSidekickConfig(test.library, test.api, sources)
+			var commentOverrides []sidekickconfig.DocumentationOverride
+			for _, module := range test.library.Rust.Modules {
+				got, err := moduleToSidekickConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
 				}
-				if diff := cmp.Diff(test.want, got); diff != "" {
+				if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
+				if test.want.General.Language != "" {
+					if diff := cmp.Diff(test.want.General, got.General); diff != "" {
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
+				}
+				commentOverrides = append(commentOverrides, got.CommentOverrides...)
+			}
+			if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
