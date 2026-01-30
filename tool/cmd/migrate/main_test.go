@@ -37,7 +37,6 @@ func TestReadRootSidekick(t *testing.T) {
 			path: "testdata/root-sidekick/success",
 			want: &config.Config{
 				Language: "dart",
-				Version:  "0.4.0",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "211d22fa6dfabfa52cbda04d1aee852a01301edf",
@@ -87,6 +86,7 @@ func TestReadRootSidekick(t *testing.T) {
 							"proto:google.rpc":            "package:google_cloud_rpc/rpc.dart",
 							"proto:google.type":           "package:google_cloud_type/type.dart",
 						},
+						Version: "0.4.0",
 					},
 				},
 			},
