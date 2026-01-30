@@ -53,7 +53,6 @@ var (
 	errTidyFailed                  = errors.New("librarian tidy failed")
 	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
 	errFetchSource                 = errors.New("cannot fetch source")
-	errLibraryNameNotFound         = errors.New("library name not found")
 
 	fetchSource = fetchGoogleapis
 )
