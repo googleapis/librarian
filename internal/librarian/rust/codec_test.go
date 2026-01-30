@@ -682,7 +682,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": "",
-					"showcase-root":   "",
+					"showcase-root":   "../../testdata/gapic-showcase",
 					"roots":           "showcase,googleapis",
 					"title-override":  "Client Libraries Showcase API",
 				},
