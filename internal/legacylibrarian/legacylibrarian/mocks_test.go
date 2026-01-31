@@ -57,6 +57,7 @@ type mockGitHubClient struct {
 	pullRequests            []*legacygithub.PullRequest
 	pullRequest             *legacygithub.PullRequest
 	createdRelease          *legacygithub.RepositoryRelease
+	releaseNames            []string
 	librarianState          *legacyconfig.LibrarianState
 	librarianConfig         *legacyconfig.LibrarianConfig
 }
@@ -108,6 +109,7 @@ func (m *mockGitHubClient) GetPullRequest(ctx context.Context, number int) (*leg
 
 func (m *mockGitHubClient) CreateRelease(ctx context.Context, tagName, releaseName, body, commitish string) (*legacygithub.RepositoryRelease, error) {
 	m.createReleaseCalls++
+	m.releaseNames = append(m.releaseNames, releaseName)
 	return m.createdRelease, m.createReleaseErr
 }
 

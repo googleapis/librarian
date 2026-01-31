@@ -82,9 +82,9 @@ func TestFormatReleaseNotes(t *testing.T) {
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 
@@ -132,9 +132,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 
@@ -180,9 +180,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 
@@ -235,9 +235,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>lib-a: 1.1.0</summary>
+<details><summary>lib-a: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/lib-a-1.0.0...lib-a-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/lib-a-1.0.0...lib-a-1.1.0) (%s)
 
 ### Features
 
@@ -246,9 +246,9 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>lib-b: 2.0.1</summary>
+<details><summary>lib-b: v2.0.1</summary>
 
-## [2.0.1](https://github.com/owner/repo/compare/lib-b-2.0.0...lib-b-2.0.1) (%s)
+## [v2.0.1](https://github.com/owner/repo/compare/lib-b-2.0.0...lib-b-2.0.1) (%s)
 
 ### Bug Fixes
 
@@ -290,9 +290,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 
@@ -329,9 +329,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 ### Features
 
@@ -380,9 +380,9 @@ Language Image: go:1.21`, librarianVersion),
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>my-library: 1.1.0</summary>
+<details><summary>my-library: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/my-library-1.0.0...my-library-1.1.0) (%s)
 
 </details>`,
 				librarianVersion, today),
@@ -440,9 +440,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>j: 1.1.0</summary>
+<details><summary>j: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
 
 ### Features
 
@@ -451,9 +451,9 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>k: 2.4.0</summary>
+<details><summary>k: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
 
 </details>
 
@@ -701,9 +701,9 @@ Language Image: go:1.21
 
 Librarian Version: %s
 Language Image: go:1.21
-<details><summary>j: 1.1.0</summary>
+<details><summary>j: v1.1.0</summary>
 
-## [1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
+## [v1.1.0](https://github.com/owner/repo/compare/j-1.0.0...j-1.1.0) (%s)
 
 ### Features
 
@@ -712,16 +712,16 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>k: 2.4.0</summary>
+<details><summary>k: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/k-2.3.0...k-2.4.0) (%s)
 
 </details>
 
 
-<details><summary>library-1: 2.4.0</summary>
+<details><summary>library-1: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-1-2.3.0...library-1-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-1-2.3.0...library-1-2.4.0) (%s)
 
 ### Documentation
 
@@ -730,9 +730,9 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>library-2: 2.4.0</summary>
+<details><summary>library-2: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-2-2.3.0...library-2-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-2-2.3.0...library-2-2.4.0) (%s)
 
 ### Documentation
 
@@ -741,20 +741,9 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>library-3: 2.4.0</summary>
+<details><summary>library-3: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-3-2.3.0...library-3-2.4.0) (%s)
-
-### Bug Fixes
-
-* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
-
-</details>
-
-
-<details><summary>library-4: 2.4.0</summary>
-
-## [2.4.0](https://github.com/owner/repo/compare/library-4-2.3.0...library-4-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-3-2.3.0...library-3-2.4.0) (%s)
 
 ### Bug Fixes
 
@@ -763,30 +752,41 @@ Language Image: go:1.21
 </details>
 
 
-<details><summary>library-5: 2.4.0</summary>
+<details><summary>library-4: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-5-2.3.0...library-5-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-4-2.3.0...library-4-2.4.0) (%s)
 
-</details>
+### Bug Fixes
 
-
-<details><summary>library-6: 2.4.0</summary>
-
-## [2.4.0](https://github.com/owner/repo/compare/library-6-2.3.0...library-6-2.4.0) (%s)
+* non bulk fix ([cdef0000](https://github.com/owner/repo/commit/cdef0000))
 
 </details>
 
 
-<details><summary>library-7: 2.4.0</summary>
+<details><summary>library-5: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-7-2.3.0...library-7-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-5-2.3.0...library-5-2.4.0) (%s)
 
 </details>
 
 
-<details><summary>library-8: 2.4.0</summary>
+<details><summary>library-6: v2.4.0</summary>
 
-## [2.4.0](https://github.com/owner/repo/compare/library-8-2.3.0...library-8-2.4.0) (%s)
+## [v2.4.0](https://github.com/owner/repo/compare/library-6-2.3.0...library-6-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-7: v2.4.0</summary>
+
+## [v2.4.0](https://github.com/owner/repo/compare/library-7-2.3.0...library-7-2.4.0) (%s)
+
+</details>
+
+
+<details><summary>library-8: v2.4.0</summary>
+
+## [v2.4.0](https://github.com/owner/repo/compare/library-8-2.3.0...library-8-2.4.0) (%s)
 
 </details>
 
