@@ -268,9 +268,9 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					DocumentationOverrides: []config.RustDocumentationOverride{
 						{
-							ID:      ".google.cloud.storage.v1.Bucket.name",
-							Match:   "bucket name",
-							Replace: "the name of the bucket",
+							ID:      ".google.cloud.secretmanager.v1.Secret.name",
+							Match:   "secret name",
+							Replace: "the name of the Secret",
 						},
 					},
 				},
@@ -295,9 +295,9 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
-						ID:      ".google.cloud.storage.v1.Bucket.name",
-						Match:   "bucket name",
-						Replace: "the name of the bucket",
+						ID:      ".google.cloud.secretmanager.v1.Secret.name",
+						Match:   "secret name",
+						Replace: "the name of the Secret",
 					},
 				},
 			},
@@ -309,8 +309,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					PaginationOverrides: []config.RustPaginationOverride{
 						{
-							ID:        ".google.cloud.storage.v1.Storage.ListBuckets",
-							ItemField: "buckets",
+							ID:        ".google.cloud.secretmanager.v1.Secret.ListSecrets",
+							ItemField: "secrets",
 						},
 					},
 				},
@@ -335,8 +335,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
-						ID:        ".google.cloud.storage.v1.Storage.ListBuckets",
-						ItemField: "buckets",
+						ID:        ".google.cloud.secretmanager.v1.Secret.ListSecrets",
+						ItemField: "secrets",
 					},
 				},
 			},
