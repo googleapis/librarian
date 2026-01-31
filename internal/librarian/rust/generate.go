@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -40,7 +41,7 @@ type Sources struct {
 }
 
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *Sources) error {
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -71,6 +72,18 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
 		return err
 	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// Remove the default version fudget here, as Generate should
+	// compute it. For now, use the last component of the first api path as
+	// the default version.
+	defaultVersion := filepath.Base(library.APIs[0].Path)
+
+	absoluteServiceConfig := filepath.Join(sources.Googleapis, sidekickConfig.General.ServiceConfig)
+	if err := repometadata.Generate(library, cfg.Language, "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, library.Output); err != nil {
+		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	}
+
 	if !exists {
 		validate(ctx, library.Output)
 	}
