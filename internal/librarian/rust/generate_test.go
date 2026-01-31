@@ -80,6 +80,13 @@ func TestGenerateVeneer(t *testing.T) {
 			t.Errorf("%s/model.rs missing SecretManagerService", dir)
 		}
 	}
+
+	// Verify that repo-metadata is NOT generated for veneers (modules)
+	if _, err := os.Stat(filepath.Join(outDir, ".repo-metadata.json")); err == nil {
+		t.Error("unexpected .repo-metadata.json in veneer output")
+	} else if !os.IsNotExist(err) {
+		t.Errorf("unexpected error checking for .repo-metadata.json: %v", err)
+	}
 }
 
 func TestSkipGenerateVeneer(t *testing.T) {
@@ -267,6 +274,7 @@ func TestGenerate(t *testing.T) {
 				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
+				{filepath.Join(outDir, ".repo-metadata.json"), "googleapis/google-cloud-rust"},
 			} {
 				t.Run(check.path, func(t *testing.T) {
 					if _, err := os.Stat(check.path); err != nil {

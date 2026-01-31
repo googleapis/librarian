@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -71,6 +72,18 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec); err != nil {
 		return err
 	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// Remove the default version fudget here, as Generate should
+	// compute it. For now, use the last component of the first api path as
+	// the default version.
+	defaultVersion := filepath.Base(library.APIs[0].Path)
+
+	absoluteServiceConfig := filepath.Join(sources.Googleapis, sidekickConfig.General.ServiceConfig)
+	if err := repometadata.Generate(library, "rust", "googleapis/google-cloud-rust", absoluteServiceConfig, defaultVersion, library.Output); err != nil {
+		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	}
+
 	if !exists {
 		validate(ctx, library.Output)
 	}
