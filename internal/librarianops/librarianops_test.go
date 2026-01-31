@@ -15,67 +15,110 @@
 package librarianops
 
 import (
-	"fmt"
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const testLibrarianVersion = "v0.1.0"
 
 func TestGenerateCommand(t *testing.T) {
-	repoDir := t.TempDir()
-	if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.email", "test@example.com"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.name", "Test User"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "-C", repoDir, "checkout", "-b", "main"); err != nil {
-		t.Fatal(err)
-	}
+	for _, test := range []struct {
+		name    string
+		verbose bool
+	}{
+		{"default", false},
+		{"verbose", true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoDir := t.TempDir()
+			if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.email", "test@example.com"); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.name", "Test User"); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Run(t.Context(), "git", "-C", repoDir, "checkout", "-b", "main"); err != nil {
+				t.Fatal(err)
+			}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
-	configContent := fmt.Sprintf(`language: fake
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: test-library
-    version: 1.0.0
-    output: output
-    apis:
-      - path: google/cloud/secretmanager/v1
-`, googleapisDir)
-	if err := os.WriteFile(filepath.Join(repoDir, "librarian.yaml"), []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "-C", repoDir, "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "-C", repoDir, "commit", "-m", "initial commit"); err != nil {
-		t.Fatal(err)
-	}
+			wd, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
+			cfg := sample.Config()
+			cfg.Sources.Googleapis = &config.Source{Dir: googleapisDir}
+			if err := yaml.Write(filepath.Join(repoDir, "librarian.yaml"), cfg); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Run(t.Context(), "git", "-C", repoDir, "add", "."); err != nil {
+				t.Fatal(err)
+			}
+			if err := command.Run(t.Context(), "git", "-C", repoDir, "commit", "-m", "initial commit"); err != nil {
+				t.Fatal(err)
+			}
 
-	args := []string{"librarianops", "generate", "-C", repoDir, "fake-repo"}
-	if err := Run(t.Context(), args...); err != nil {
-		t.Fatal(err)
-	}
-	readmePath := filepath.Join(repoDir, "output", "README.md")
-	if _, err := os.Stat(readmePath); err != nil {
-		t.Errorf("expected README.md to be generated: %v", err)
+			args := []string{"librarianops", "generate", "-C", repoDir, "fake-repo"}
+			if test.verbose {
+				args = append(args, "-v")
+				command.Verbose = true
+				defer func() { command.Verbose = false }()
+			}
+
+			if !test.verbose {
+				if err := Run(t.Context(), args...); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				old := os.Stdout
+				r, w, err := os.Pipe()
+				if err != nil {
+					t.Fatal(err)
+				}
+				os.Stdout = w
+				t.Cleanup(func() { os.Stdout = old })
+
+				runErr := Run(t.Context(), args...)
+				if err := w.Close(); err != nil {
+					// Close writer to signal EOF to reader.
+					t.Fatal(err)
+				}
+
+				var buf bytes.Buffer
+				if _, err := io.Copy(&buf, r); err != nil {
+					t.Fatalf("failed to read from pipe: %v", err)
+				}
+				if runErr != nil {
+					t.Fatal(runErr)
+				}
+
+				output := buf.String()
+				if !strings.Contains(output, "librarian@") {
+					t.Errorf("expected output to contain librarian command, got: %s", output)
+				}
+				if !strings.Contains(output, "-v") {
+					t.Errorf("expected output to contain -v flag, got: %s", output)
+				}
+			}
+
+			readmePath := filepath.Join(repoDir, sample.Lib1Output, "README.md")
+			if _, err := os.Stat(readmePath); err != nil {
+				t.Errorf("expected README.md to be generated: %v", err)
+			}
+		})
 	}
 }
 
