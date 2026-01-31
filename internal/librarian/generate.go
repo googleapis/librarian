@@ -124,9 +124,8 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
-		lib := lib
 		g.Go(func() error {
-			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
+			return generate(gctx, cfg, lib, googleapisDir, rustSources)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -207,8 +206,8 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return library, nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, rustSources *rust.Sources) error {
-	switch language {
+func generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string, rustSources *rust.Sources) error {
+	switch cfg.Language {
 	case languageFake:
 		if err := fakeGenerate(library); err != nil {
 			return err
@@ -218,7 +217,7 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return err
 		}
 	case languagePython:
-		if err := python.Generate(ctx, library, googleapisDir); err != nil {
+		if err := python.Generate(ctx, cfg, library, googleapisDir); err != nil {
 			return err
 		}
 	case languageRust:
@@ -226,7 +225,7 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return err
 		}
 	default:
-		return fmt.Errorf("language %q does not support generation", language)
+		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}
 	return nil
 }

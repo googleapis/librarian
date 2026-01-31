@@ -29,7 +29,7 @@ import (
 )
 
 // Generate generates a Python client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
@@ -68,14 +68,12 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 
 	// Generate .repo-metadata.json from the service config in the first
 	// api.
-	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
-	// hardcoding the language and repo name, instead getting it passed in.
 	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
 	if err != nil {
 		return fmt.Errorf("failed to find service config: %w", err)
 	}
 	absoluteServiceConfig := filepath.Join(googleapisDir, api.ServiceConfig)
-	if err := repometadata.Generate(library, "python", "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
+	if err := repometadata.Generate(library, cfg.Language, "googleapis/google-cloud-python", absoluteServiceConfig, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
