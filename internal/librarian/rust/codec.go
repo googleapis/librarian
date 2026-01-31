@@ -23,7 +23,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(cfg *config.Config, library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
+func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -66,8 +66,6 @@ func toSidekickConfig(cfg *config.Config, library *config.Library, ch *config.AP
 		},
 		Source: source,
 		Codec:  buildCodec(library),
-
-		Config: cfg,
 	}
 	if library.Rust != nil {
 		if len(library.Rust.DocumentationOverrides) > 0 {

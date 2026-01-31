@@ -62,7 +62,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	if err := Generate(t.Context(), &config.Config{}, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {

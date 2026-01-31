@@ -67,7 +67,7 @@ func TestGenerateVeneer(t *testing.T) {
 	sources := &Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), &config.Config{}, library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -110,7 +110,7 @@ func TestSkipGenerateVeneer(t *testing.T) {
 	sources := &Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), &config.Config{}, library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -254,7 +254,7 @@ func TestGenerate(t *testing.T) {
 			sources := &Sources{
 				Googleapis: googleapisDir,
 			}
-			if err := Generate(t.Context(), &config.Config{}, library, sources); err != nil {
+			if err := Generate(t.Context(), library, sources); err != nil {
 				t.Fatal(err)
 			}
 

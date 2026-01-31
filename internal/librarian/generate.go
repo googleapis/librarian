@@ -214,7 +214,7 @@ func generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	case languageDart:
-		if err := dart.Generate(ctx, cfg, library, googleapisDir); err != nil {
+		if err := dart.Generate(ctx, library, googleapisDir); err != nil {
 			return err
 		}
 	case languagePython:
@@ -222,7 +222,7 @@ func generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return err
 		}
 	case languageRust:
-		if err := rust.Generate(ctx, cfg, library, rustSources); err != nil {
+		if err := rust.Generate(ctx, library, rustSources); err != nil {
 			return err
 		}
 	default:

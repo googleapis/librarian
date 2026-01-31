@@ -40,7 +40,7 @@ type Sources struct {
 }
 
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *Sources) error {
+func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -48,7 +48,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := toSidekickConfig(cfg, library, library.APIs[0], sources)
+	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
