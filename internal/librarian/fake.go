@@ -79,3 +79,9 @@ func fakeCreateSkeleton(library *config.Library) error {
 	starterPath := filepath.Join(library.Output, "STARTER.md")
 	return os.WriteFile(starterPath, []byte(content), 0644)
 }
+
+// fakeDefaultLibraryName derives a library name from an API path by
+// replacing "/" with "-".
+func fakeDefaultLibraryName(api string) string {
+	return strings.ReplaceAll(api, "/", "-")
+}

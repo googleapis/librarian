@@ -382,6 +382,27 @@ func TestDefaultOutputByName(t *testing.T) {
 	}
 }
 
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		api  string
+		want string
+	}{
+		{"google/cloud/secretmanager/v1", "google-cloud-secretmanager"},
+		{"google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
+		{"google/cloud/storage/v2alpha", "google-cloud-storage"},
+		{"google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
+		{"google/api/v1", "google-api"},
+		{"google/cloud/vision", "google-cloud-vision"},
+	} {
+		t.Run(test.api, func(t *testing.T) {
+			got := DefaultLibraryName(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func requirePythonModule(t *testing.T, module string) {
 	t.Helper()
 	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))

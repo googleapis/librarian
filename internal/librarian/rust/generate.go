@@ -160,9 +160,9 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// defaultLibraryName derives a library name from a api path.
+// DefaultLibraryName derives a library name from a api path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
-func defaultLibraryName(api string) string {
+func DefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
 

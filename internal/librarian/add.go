@@ -24,12 +24,14 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/urfave/cli/v3"
 )
 
 var (
 	errLibraryAlreadyExists = errors.New("library already exists in config")
-	errMissingLibraryName   = errors.New("must provide library name")
+	errMissingAPI           = errors.New("must provide at least one API")
 	errConfigNotFound       = errors.New("librarian.yaml not found")
 )
 
@@ -37,27 +39,24 @@ func addCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
-		UsageText: "librarian add <library> [apis...] [flags]",
+		UsageText: "librarian add <apis...> [flags]",
 		Action: func(ctx context.Context, c *cli.Command) error {
-			args := c.Args()
-			name := args.First()
-			if name == "" {
-				return errMissingLibraryName
-			}
-			var apis []string
-			if len(args.Slice()) > 1 {
-				apis = args.Slice()[1:]
+			apis := c.Args().Slice()
+			if len(apis) == 0 {
+				return errMissingAPI
 			}
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
-			return runAdd(ctx, cfg, name, apis...)
+			return runAdd(ctx, cfg, apis...)
 		},
 	}
 }
 
-func runAdd(ctx context.Context, cfg *config.Config, name string, api ...string) error {
+func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
+	name := deriveLibraryName(cfg.Language, apis[0])
+
 	// check for existing libraries, if it exists return an error
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		return lib.Name == name
@@ -66,11 +65,24 @@ func runAdd(ctx context.Context, cfg *config.Config, name string, api ...string)
 		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
-	cfg = addLibraryToLibrarianConfig(cfg, name, api...)
+	cfg = addLibraryToLibrarianConfig(cfg, name, apis...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
 	return nil
+}
+
+// deriveLibraryName derives a library name from an API path.
+// The derivation is language-specific.
+func deriveLibraryName(language, api string) string {
+	switch language {
+	case languageRust:
+		return rust.DefaultLibraryName(api)
+	case languagePython:
+		return python.DefaultLibraryName(api)
+	default:
+		return fakeDefaultLibraryName(api)
+	}
 }
 
 func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string) *config.Config {
