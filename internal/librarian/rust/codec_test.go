@@ -40,7 +40,7 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
-func TestToSidekickConfig(t *testing.T) {
+func TestLibraryToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -50,31 +50,34 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "minimal config",
 			library: &config.Library{
-				Name: "google-cloud-storage",
-				Rust: &config.RustCrate{},
+				Name:   "google-cloud-secretmanager",
+				Rust:   &config.RustCrate{},
+				Veneer: true,
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with version and release level",
 			library: &config.Library{
-				Name:         "google-cloud-storage",
+				Name:         "google-cloud-secretmanager",
 				Version:      "0.1.0",
 				ReleaseLevel: "preview",
 				Rust: &config.RustCrate{
@@ -82,57 +85,61 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"version":               "0.1.0",
 					"release-level":         "preview",
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with copyright year",
 			library: &config.Library{
-				Name:          "google-cloud-storage",
+				Name:          "google-cloud-secretmanager",
 				CopyrightYear: "2024",
 				Rust: &config.RustCrate{
 					Roots: []string{"googleapis"},
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"copyright-year":        "2024",
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with rust config",
 			library: &config.Library{
-				Name: "google-cloud-storage",
+				Name: "google-cloud-secretmanager",
 				Keep: []string{"src/extra-module.rs"},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
@@ -152,17 +159,19 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"module-path":                 "gcs",
@@ -178,42 +187,44 @@ func TestToSidekickConfig(t *testing.T) {
 					"default-features":            "default-feature",
 					"extra-modules":               "extra-module",
 					"template-override":           "custom-template",
-					"package-name-override":       "google-cloud-storage",
+					"package-name-override":       "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with skip publish (not for publication)",
 			library: &config.Library{
-				Name:        "google-cloud-storage",
+				Name:        "google-cloud-secretmanager",
 				SkipPublish: true,
 				Rust: &config.RustCrate{
 					Roots: []string{"googleapis"},
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"not-for-publication":   "true",
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with package dependencies",
 			library: &config.Library{
-				Name: "google-cloud-storage",
+				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						PackageDependencies: []*config.RustPackageDependency{
@@ -230,28 +241,30 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
 					"package:tokio":         "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async",
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
 		{
 			name: "with documentation overrides",
 			library: &config.Library{
-				Name: "google-cloud-storage",
+				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					DocumentationOverrides: []config.RustDocumentationOverride{
 						{
@@ -263,20 +276,22 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
@@ -288,9 +303,9 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with pagination overrides",
+			name: "with pagination secretmanager",
 			library: &config.Library{
-				Name: "google-cloud-storage",
+				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					PaginationOverrides: []config.RustPaginationOverride{
 						{
@@ -301,20 +316,22 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			api: &config.API{
-				Path: "google/cloud/storage/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storage/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
+					"title-override":  "Secret Manager API",
 				},
 				Codec: map[string]string{
-					"package-name-override": "google-cloud-storage",
+					"package-name-override": "google-cloud-secretmanager",
 				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
@@ -652,7 +669,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			got, err := toSidekickConfig(test.library, test.api, sources)
+			got, err := libraryToSidekickConfig(test.library, test.api, sources)
 			if err != nil {
 				t.Fatal(err)
 			}
