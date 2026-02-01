@@ -258,6 +258,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
+		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
+			lib.DescriptionOverride = descriptionOverride
+		}
 		relativePath, err := filepath.Rel(repoPath, filepath.Dir(file))
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
@@ -270,9 +273,6 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		lib.SpecificationFormat = specificationFormat
 
 		dartPackage := &config.DartPackage{}
-		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
-			dartPackage.DescriptionOverride = descriptionOverride
-		}
 		if titleOverride, ok := sidekick.Source["title-override"]; ok && titleOverride != "" {
 			dartPackage.TitleOverride = titleOverride
 		}
