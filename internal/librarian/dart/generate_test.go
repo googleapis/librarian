@@ -395,6 +395,29 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with description-override",
+			library: &config.Library{
+				DescriptionOverride: "this is a description override",
+			},
+			channel: &config.API{
+				Path: "google/example/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/example/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root":      googleapisDir,
+					"description-override": "this is a description override",
+				},
+				Codec: map[string]string{},
+			},
+		},
+		{
 			name: "with name-override",
 			library: &config.Library{
 				Dart: &config.DartPackage{

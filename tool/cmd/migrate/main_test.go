@@ -228,6 +228,7 @@ API key as an argument when initializing the client.
 					Name:                "google_cloud_rpc",
 					APIs:                []*config.API{{Path: "google/rpc"}},
 					CopyrightYear:       "2025",
+					DescriptionOverride: "Additional metadata for operations.",
 					Output:              "testdata/read-sidekick-files/success-read/library-b",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
