@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -37,7 +38,7 @@ func TestReadRootSidekick(t *testing.T) {
 			path: "testdata/root-sidekick/success",
 			want: &config.Config{
 				Language: "dart",
-				Version:  "not available",
+				Version:  librarian.Version(),
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "211d22fa6dfabfa52cbda04d1aee852a01301edf",
