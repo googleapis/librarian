@@ -153,6 +153,7 @@ func readRootSidekick(repoPath string) (*config.Config, error) {
 
 	cfg := &config.Config{
 		Language: "dart",
+		Version:  librarian.Version(),
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: googleapisCommit,
