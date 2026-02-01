@@ -270,6 +270,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		lib.SpecificationFormat = specificationFormat
 
 		dartPackage := &config.DartPackage{}
+		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
+			dartPackage.DescriptionOverride = descriptionOverride
+		}
 		if titleOverride, ok := sidekick.Source["title-override"]; ok && titleOverride != "" {
 			dartPackage.TitleOverride = titleOverride
 		}
