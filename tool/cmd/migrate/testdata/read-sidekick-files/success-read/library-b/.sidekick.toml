@@ -16,6 +16,9 @@
 specification-source = 'google/rpc'
 service-config = 'google/rpc/rpc_publish.yaml'
 
+[source]
+description-override = 'Additional metadata for operations.'
+
 [codec]
 copyright-year = '2025'
 part-file = 'src/rpc.p.dart'
