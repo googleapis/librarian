@@ -284,6 +284,7 @@ type DartPackage struct {
 	// Dependencies is a comma-separated list of dependencies.
 	Dependencies string `yaml:"dependencies,omitempty"`
 
+	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description-override,omitempty"`
 
 	// DevDependencies is a comma-separated list of development dependencies.
