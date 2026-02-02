@@ -303,6 +303,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
+					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
 			},
@@ -326,6 +327,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root":      googleapisDir,
 					"description-override": "this is a description override",
+					"roots":                "googleapis",
 				},
 				Codec: map[string]string{},
 			},
@@ -351,6 +353,7 @@ func TestToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"name-override":   "override-name",
+					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
 			},
