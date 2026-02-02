@@ -856,6 +856,31 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with conformance as module source",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Source: "conformance",
+						},
+					},
+					Roots: []string{"conformance"},
+				},
+			},
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "rust",
+					SpecificationFormat: "protobuf",
+					SpecificationSource: "conformance",
+				},
+				Source: map[string]string{
+					"conformance-root": absPath(t, conformanceRoot),
+					"roots":            "conformance",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &Sources{

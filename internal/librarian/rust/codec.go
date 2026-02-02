@@ -234,7 +234,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	if module.IncludeList != "" {
 		source["include-list"] = module.IncludeList
 	}
-	if module.Source != "" {
+	if module.Source != "" && source["roots"] == "googleapis" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
