@@ -17,7 +17,6 @@ package librarian
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -87,31 +86,15 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Dart.IssueTrackerURL == "" {
 		lib.Dart.IssueTrackerURL = d.Dart.IssueTrackerURL
 	}
-	lib.Dart.Packages = mergeMaps(lib.Dart.Packages, d.Dart.Packages)
-	lib.Dart.Prefixes = mergeMaps(lib.Dart.Prefixes, d.Dart.Prefixes)
-	lib.Dart.Protos = mergeMaps(lib.Dart.Protos, d.Dart.Protos)
-	lib.Dart.Dependencies = mergeDartDependencies(lib.Dart.Dependencies, d.Dart.Dependencies)
-	return lib
-}
+	if lib.Dart.Dependencies == "" {
+		lib.Dart.Dependencies = d.Dart.Dependencies
+	}
+	if lib.Dart.Packages == nil {
+		lib.Dart.Packages = make(map[string]string)
+		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
+	}
 
-func mergeDartDependencies(libDeps, defaultDeps string) string {
-	seen := make(map[string]bool)
-	var deps []string
-	for _, dep := range strings.Split(libDeps, ",") {
-		dep = strings.TrimSpace(dep)
-		if dep == "" {
-			continue
-		}
-		seen[dep] = true
-		deps = append(deps, dep)
-	}
-	for _, dep := range strings.Split(defaultDeps, ",") {
-		if seen[dep] {
-			continue
-		}
-		deps = append(deps, dep)
-	}
-	return strings.Join(deps, ",")
+	return lib
 }
 
 // mergePackageDependencies merges default and library package dependencies,
@@ -174,24 +157,4 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
 	}
 	return fillDefaults(lib, defaults), nil
-}
-
-// mergeMaps merges key-values of src and dst maps.
-// When a key in src is already present in dst, the value in dst will NOT be overwritten
-// by the value associated with the key in src.
-func mergeMaps(dst, src map[string]string) map[string]string {
-	if dst == nil {
-		dst = make(map[string]string)
-		maps.Copy(dst, src)
-		return dst
-	}
-
-	res := make(map[string]string)
-	for key, value := range src {
-		res[key] = value
-	}
-	for key, value := range dst {
-		res[key] = value
-	}
-	return res
 }
