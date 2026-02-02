@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/common"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -416,7 +417,10 @@ func TestToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := toSidekickConfig(test.library, test.channel, test.googleapisDir)
+			sources := &common.Sources{
+				Googleapis: test.googleapisDir,
+			}
+			got, err := toSidekickConfig(test.library, test.channel, sources)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("toSidekickConfig() error = %v, wantErr %v", err, test.wantErr)
