@@ -124,6 +124,13 @@ func TestFillDefaults(t *testing.T) {
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
 					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
 					Version: "0.4.0",
 				},
 			},
@@ -137,6 +144,12 @@ func TestFillDefaults(t *testing.T) {
 					Packages: map[string]string{
 						"package:three": "^1.0.0",
 					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type_v2",
+					},
+					Protos: map[string]string{
+						"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+					},
 				},
 			},
 			want: &config.Library{
@@ -147,7 +160,17 @@ func TestFillDefaults(t *testing.T) {
 					Dependencies:                "dep-1,dep-3,dep-4,dep-2",
 					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
 					Packages: map[string]string{
+						"package:one":   "^1.2.3",
+						"package:two":   "^2.0.0",
 						"package:three": "^1.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type_v2",
+					},
+					Protos: map[string]string{
+						"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+						"proto:google.api":            "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common":   "package:google_cloud_common/common.dart",
 					},
 				},
 			},
