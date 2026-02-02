@@ -177,6 +177,9 @@ type Library struct {
 	// overrides Default.ReleaseLevel.
 	ReleaseLevel string `yaml:"release_level,omitempty"`
 
+	// Roots specifies the source roots to use for generation. Defaults to googleapis.
+	Roots []string `yaml:"roots,omitempty"`
+
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
 
@@ -213,7 +216,7 @@ type Library struct {
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// API describes a API to include in a library.
+// API describes an API to include in a library.
 type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
