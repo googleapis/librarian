@@ -94,6 +94,8 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	return lib
 }
 
+// mergeDartDependencies merges library dependencies with default dependencies.
+// Duplicate dependencies in defaults will be ignored.
 func mergeDartDependencies(libDeps, defaultDeps string) string {
 	seen := make(map[string]bool)
 	var deps []string
