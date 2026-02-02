@@ -91,6 +91,14 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 		lib.Dart.Packages = make(map[string]string)
 		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
 	}
+	if lib.Dart.Prefixes == nil {
+		lib.Dart.Prefixes = make(map[string]string)
+		maps.Copy(lib.Dart.Prefixes, d.Dart.Prefixes)
+	}
+	if lib.Dart.Protos == nil {
+		lib.Dart.Protos = make(map[string]string)
+		maps.Copy(lib.Dart.Protos, d.Dart.Protos)
+	}
 	lib.Dart.Dependencies = mergeDartDependencies(lib.Dart.Dependencies, d.Dart.Dependencies)
 	return lib
 }
