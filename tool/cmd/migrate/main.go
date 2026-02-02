@@ -300,6 +300,8 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			dartPackage.ExtraImports = extraImports
 		}
 		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
+			// part-file in .sidekick.toml starts with src/, however, the file path is
+			// actually {output}/lib/src/*.
 			path := filepath.Join(dir, "lib", partFile)
 			if _, err := os.Stat(path); err != nil {
 				return nil, fmt.Errorf("failed to stat %s: %w", path, err)
