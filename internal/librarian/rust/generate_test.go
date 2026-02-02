@@ -303,7 +303,7 @@ func TestDefaultLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := defaultLibraryName(test.api)
+			got := DefaultLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

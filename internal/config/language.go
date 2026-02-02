@@ -296,6 +296,9 @@ type DartPackage struct {
 	// LibraryPathOverride overrides the library path.
 	LibraryPathOverride string `yaml:"library_path_override,omitempty"`
 
+	// NameOverride overrides the package name
+	NameOverride string `yaml:"name_override,omitempty"`
+
 	// NotForPublication indicates whether this package should not be published.
 	NotForPublication string `yaml:"not_for_publication,omitempty"`
 
@@ -322,4 +325,10 @@ type DartPackage struct {
 
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
+
+	// TitleOverride overrides the API title.
+	TitleOverride string `yaml:"title_override,omitempty"`
+
+	// Version is the version of the dart package.
+	Version string `yaml:"version,omitempty"`
 }

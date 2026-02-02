@@ -90,10 +90,15 @@ For each repository, librarianops will:
 				Name:  "C",
 				Usage: "work in `directory` (assumes repo exists)",
 			},
+			&cli.BoolFlag{
+				Name:  "v",
+				Usage: "run librarian with verbose output",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
 			workDir := cmd.String("C")
+			command.Verbose = cmd.Bool("v")
 			repoName := ""
 			if cmd.Args().Len() > 0 {
 				repoName = cmd.Args().Get(0)
@@ -107,15 +112,15 @@ For each repository, librarianops will:
 			if all && workDir != "" {
 				return fmt.Errorf("cannot use -C with --all")
 			}
-			return runGenerate(ctx, all, repoName, workDir)
+			return runGenerate(ctx, all, repoName, workDir, command.Verbose)
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, all bool, repoName, repoDir string) error {
+func runGenerate(ctx context.Context, all bool, repoName, repoDir string, verbose bool) error {
 	if all {
 		for name := range supportedRepositories {
-			if err := processRepo(ctx, name, ""); err != nil {
+			if err := processRepo(ctx, name, "", verbose); err != nil {
 				return err
 			}
 		}
@@ -125,10 +130,10 @@ func runGenerate(ctx context.Context, all bool, repoName, repoDir string) error 
 	if !supportedRepositories[repoName] {
 		return fmt.Errorf("repository %q not found in supported repositories list", repoName)
 	}
-	return processRepo(ctx, repoName, repoDir)
+	return processRepo(ctx, repoName, repoDir, verbose)
 }
 
-func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
+func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (err error) {
 	if repoDir == "" {
 		repoDir, err = os.MkdirTemp("", "librarianops-"+repoName+"-*")
 		if err != nil {
@@ -164,16 +169,16 @@ func processRepo(ctx context.Context, repoName, repoDir string) (err error) {
 		return err
 	}
 	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, "tidy"); err != nil {
+		if err := runLibrarianWithVersion(ctx, version, verbose, "tidy"); err != nil {
 			return err
 		}
 	}
 	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, "update", "--all"); err != nil {
+		if err := runLibrarianWithVersion(ctx, version, verbose, "update", "--all"); err != nil {
 			return err
 		}
 	}
-	if err := runLibrarianWithVersion(ctx, version, "generate", "--all"); err != nil {
+	if err := runLibrarianWithVersion(ctx, version, verbose, "generate", "--all"); err != nil {
 		return err
 	}
 	if repoName == repoRust {
@@ -258,8 +263,10 @@ func updateLibrarianVersion(version, repoDir string) error {
 	return yaml.Write(configPath, cfg)
 }
 
-func runLibrarianWithVersion(ctx context.Context, version string, args ...string) error {
+func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {
+	if verbose {
+		args = append([]string{"-v"}, args...)
+	}
 	return command.Run(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
-
 }

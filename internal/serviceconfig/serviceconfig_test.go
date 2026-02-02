@@ -88,12 +88,13 @@ func TestFind(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "found",
+			name: "found with title",
 			api:  "google/cloud/secretmanager/v1",
 			want: &API{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
+				Title:         "Secret Manager API",
 			},
 		},
 		{
@@ -118,6 +119,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+				Title:         "Vertex AI API",
 			},
 		},
 		{
@@ -127,6 +129,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/secretmanager/v1",
 				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Title:         "Secret Manager API",
 			},
 		},
 		{
@@ -136,6 +139,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/compute/v1",
 				Discovery:     "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				Title:         "Google Compute Engine API",
 			},
 		},
 	} {

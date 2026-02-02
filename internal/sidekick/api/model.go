@@ -264,6 +264,10 @@ type Method struct {
 	// `google.api.MethodSettings.auto_populated_fields` entry in
 	// `google.api.Publishing.method_settings` in the service config file.
 	AutoPopulated []*Field
+	// APIVersion contains the interface-based-versioning version.
+	//
+	// If this is empty, then the method does not have a version annotation.
+	APIVersion string
 	// Model is the model this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API

@@ -56,6 +56,13 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 		"googleapis-root": googleapisDir,
 	}
 
+	if library.DescriptionOverride != "" {
+		source["description-override"] = library.DescriptionOverride
+	}
+	if library.Dart != nil && library.Dart.NameOverride != "" {
+		source["name-override"] = library.Dart.NameOverride
+	}
+
 	api, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
@@ -121,13 +128,13 @@ func buildCodec(library *config.Library) map[string]string {
 		codec["repository-url"] = dart.RepositoryURL
 	}
 	for key, value := range dart.Packages {
-		codec["package:"+key] = value
+		codec[key] = value
 	}
 	for key, value := range dart.Prefixes {
-		codec["prefix:"+key] = value
+		codec[key] = value
 	}
 	for key, value := range dart.Protos {
-		codec["proto:"+key] = value
+		codec[key] = value
 	}
 	return codec
 }

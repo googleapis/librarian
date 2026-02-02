@@ -78,17 +78,16 @@ func updateCommand() *cli.Command {
 					return fmt.Errorf("%w: %s", errUnknownSource, source)
 				}
 			}
-
-			return runUpdate(all, source)
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			return runUpdate(cfg, all, source)
 		},
 	}
 }
 
-func runUpdate(all bool, sourceName string) error {
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
-	if err != nil {
-		return err
-	}
+func runUpdate(cfg *config.Config, all bool, sourceName string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}

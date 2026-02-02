@@ -23,7 +23,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
+func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -36,7 +36,11 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *Sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
-	api, err := serviceconfig.Find(sources.Googleapis, ch.Path)
+	root := sources.Googleapis
+	if ch.Path == "schema/google/showcase/v1beta1" {
+		root = sources.Showcase
+	}
+	api, err := serviceconfig.Find(root, ch.Path)
 	if err != nil {
 		return nil, err
 	}

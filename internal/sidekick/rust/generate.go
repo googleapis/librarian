@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
@@ -28,25 +27,25 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
-	codec, err := newCodec(cfg.General.SpecificationFormat, cfg.Codec)
+func Generate(ctx context.Context, model *api.API, outdir, specFormat string, codec map[string]string) error {
+	c, err := newCodec(specFormat, codec)
 	if err != nil {
 		return err
 	}
-	annotations := annotateModel(model, codec)
+	annotations := annotateModel(model, c)
 	provider := templatesProvider()
-	generatedFiles := codec.generatedFiles(annotations.HasServices())
+	generatedFiles := c.generatedFiles(annotations.HasServices())
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
 // GenerateStorage generates Rust code for the storage service.
-func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageConfig *config.Config, controlModel *api.API, controlConfig *config.Config) error {
-	storageCodec, err := newCodec(storageConfig.General.SpecificationFormat, storageConfig.Codec)
+func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageSpecFormat string, storageCodecOpts map[string]string, controlModel *api.API, controlSpecFormat string, controlCodecOpts map[string]string) error {
+	storageCodec, err := newCodec(storageSpecFormat, storageCodecOpts)
 	if err != nil {
 		return err
 	}
 	annotateModel(storageModel, storageCodec)
-	controlCodec, err := newCodec(controlConfig.General.SpecificationFormat, controlConfig.Codec)
+	controlCodec, err := newCodec(controlSpecFormat, controlCodecOpts)
 	if err != nil {
 		return err
 	}

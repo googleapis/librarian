@@ -1,0 +1,68 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[general]
+specification-source = 'google/ai/generativelanguage/v1beta'
+service-config = 'google/ai/generativelanguage/v1beta/generativelanguage_v1beta.yaml'
+
+[codec]
+copyright-year = '2025'
+
+api-keys-environment-variables = 'GOOGLE_API_KEY,GEMINI_API_KEY'
+dev-dependencies = 'googleapis_auth,test,test_utils'
+repository-url = 'https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta'
+
+readme-after-title-text = '''
+> [!TIP]
+> Flutter applications should use
+> [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic).
+>
+> The Generative Language API is meant for Dart command-line, cloud, and server applications.
+> For mobile and web applications, see instead
+> [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic), which provides
+> client-side access to both the Gemini Developer API and Vertex AI.'''
+
+readme-quickstart-text = '''
+## Quickstart
+
+This quickstart shows you how to install the package and make your first
+Gemini API request.
+
+### Before you begin
+
+You need a Gemini API key. If you don't already have one, you can get it for
+free in [Google AI Studio](https://aistudio.google.com/app/api-keys)
+([step-by-step instructions](https://ai.google.dev/gemini-api/docs/api-key)).
+
+### Installing the package into your application
+
+> [!TIP]
+> You can create a skeleton application by running the terminal command: `dart create myapp`
+
+Run the terminal command:
+
+```sh
+dart pub add google_cloud_ai_generativelanguage_v1beta
+```
+
+### Make your first request
+
+Here is an example that uses the generateContent method to send a request to
+the Gemini API using the Gemini 2.5 Flash model.
+
+If you set your API key as the environment variable `GEMINI_API_KEY` or
+`GOOGLE_API_KEY`, the API key will be picked up automatically by the client
+when using the Gemini API libraries. Otherwise you will need to pass your
+API key as an argument when initializing the client.
+'''

@@ -34,7 +34,7 @@ regeneration of existing ones. Librarian works by delegating language-specific
 tasks to a container, which is configured in the .librarian/state.yaml file.
 Librarian is environment aware and will check if the current directory is the
 root of a librarian repository. If you are not executing in such a directory the
-'--repo' flag must be provided.
+'-repo' flag must be provided.
 
 # Onboarding a new library
 
@@ -46,25 +46,25 @@ proceed with generation.
 
 Example:
 
-	librarian generate --library=secretmanager --api=google/cloud/secretmanager/v1
+	legacylibrarian generate -library=secretmanager -api=google/cloud/secretmanager/v1
 
 # Regenerating existing libraries
 
 You can regenerate a single, existing library by specifying either the library
 ID or the API path. If no specific library or API is provided, Librarian will
-regenerate all libraries listed in '.librarian/state.yaml'. If '--library' or
-'--api' is specified the whole library will be regenerated.
+regenerate all libraries listed in '.librarian/state.yaml'. If '-library' or
+'-api' is specified the whole library will be regenerated.
 
 Examples:
 
 	# Regenerate a single library by its ID
-	librarian generate --library=secretmanager
+	legacylibrarian generate -library=secretmanager
 
 	# Regenerate a single library by its API path
-	librarian generate --api=google/cloud/secretmanager/v1
+	legacylibrarian generate -api=google/cloud/secretmanager/v1
 
 	# Regenerate all libraries in the repository
-	librarian generate
+	legacylibrarian generate
 
 # Workflow and Options:
 
@@ -73,9 +73,9 @@ The generation process involves delegating to the language container's
 directories and copies the new files into place, according to the configuration
 in '.librarian/state.yaml'.
 
-  - If the '--build' flag is specified, the 'build' command is also executed in
+  - If the '-build' flag is specified, the 'build' command is also executed in
     the container to compile and validate the generated code.
-  - If the '--push' flag is provided, the changes are committed to a new branch,
+  - If the '-push' flag is provided, the changes are committed to a new branch,
     and a pull request is created on GitHub. Otherwise, the changes are left in
     your local working directory for inspection. When pushing to a remote branch,
     you have the option of using HTTPS or SSH. Librarian will automatically determine
@@ -83,11 +83,11 @@ in '.librarian/state.yaml'.
 
 Example with build and push:
 
-	LIBRARIAN_GITHUB_TOKEN=xxx librarian generate --push --build
+	LIBRARIAN_GITHUB_TOKEN=xxx legacylibrarian generate -push -build
 
 Usage:
 
-	librarian generate [flags]
+	legacylibrarian generate [flags]
 
 Flags:
 
@@ -97,6 +97,9 @@ Flags:
 	-api-source string
 	  	The location of an API specification repository.
 	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+	-api-source-branch string
+	  	The target branch of the API specification repository to checkout.
+	  	Can only be used with a remote -api-source. (default "master")
 	-branch string
 	  	The branch to use with remote code repositories. It is ignored if
 	  	you are using a local repository. This is used to specify which branch to clone
@@ -143,7 +146,7 @@ Manages releases of libraries.
 
 Usage:
 
-	librarian release <command> [arguments]
+	legacylibrarian release <command> [arguments]
 
 Commands:
 
@@ -157,7 +160,7 @@ a new release. It automates the creation of a release pull request by parsing
 conventional commits, determining the next semantic version for each library,
 and generating a changelog. Librarian is environment aware and will check if the
 current directory is the root of a librarian repository. If you are not
-executing in such a directory the '--repo' flag must be provided.
+executing in such a directory the '-repo' flag must be provided.
 
 This command scans the git history since the last release, identifies changes
 (feat, fix, BREAKING CHANGE), and calculates the appropriate version bump
@@ -165,34 +168,34 @@ according to semver rules. It then delegates all language-specific file
 modifications, such as updating a CHANGELOG.md or bumping the version in a pom.xml,
 to the configured language-specific container.
 
-If a specific library is configured for release via the '--library' flag, a single
+If a specific library is configured for release via the '-library' flag, a single
 releasable change is needed to automatically calculate a version bump. If there are
-no releasable changes since the last release, the '--version' flag should be included
+no releasable changes since the last release, the '-version' flag should be included
 to set a new version for the library. The new version must be "SemVer" greater than the
 current version.
 
 By default, 'release stage' leaves the changes in your local working directory
-for inspection. Use the '--push' flag to automatically commit the changes to
-a new branch and create a pull request on GitHub. The '--commit' flag may be
+for inspection. Use the '-push' flag to automatically commit the changes to
+a new branch and create a pull request on GitHub. The '-commit' flag may be
 used to create a local commit without creating a pull request; this flag is
-ignored if '--push' is also specified. When pushing to a remote branch,
+ignored if '-push' is also specified. When pushing to a remote branch,
 you have the option of using HTTPS or SSH. Librarian will automatically determine
 whether to use HTTPS or SSH based on the remote URI.
 
 Examples:
 
 	# Create a release PR for all libraries with pending changes.
-	librarian release stage --push
+	legacylibrarian release stage -push
 
 	# Create a release PR for a single library.
-	librarian release stage --library=secretmanager --push
+	legacylibrarian release stage -library=secretmanager -push
 
 	# Manually specify a version for a single library, overriding the calculation.
-	librarian release stage --library=secretmanager --library-version=2.0.0 --push
+	legacylibrarian release stage -library=secretmanager -library-version=2.0.0 -push
 
 Usage:
 
-	librarian release stage [flags]
+	legacylibrarian release stage [flags]
 
 Flags:
 
@@ -246,21 +249,21 @@ This command's primary responsibilities are to:
   - Update the pull request's label from 'release:pending' to 'release:done' to
     mark the process as complete.
 
-You can target a specific merged pull request using the '--pr' flag. If no pull
+You can target a specific merged pull request using the '-pr' flag. If no pull
 request is specified, the command will automatically search for and process all
 merged pull requests with the 'release:pending' label from the last 30 days.
 
 Examples:
 
 	# Tag and create a GitHub release for a specific merged PR.
-	librarian release tag --repo=https://github.com/googleapis/google-cloud-go --pr=https://github.com/googleapis/google-cloud-go/pull/123
+	legacylibrarian release tag -repo=https://github.com/googleapis/google-cloud-go -pr=https://github.com/googleapis/google-cloud-go/pull/123
 
 	# Find and process all pending merged release PRs in a repository.
-	librarian release tag --repo=https://github.com/googleapis/google-cloud-go
+	legacylibrarian release tag -repo=https://github.com/googleapis/google-cloud-go
 
 Usage:
 
-	librarian release tag [arguments]
+	legacylibrarian release tag [arguments]
 
 Flags:
 
@@ -298,20 +301,23 @@ This command's primary responsibilities are to:
 Examples:
 
 	# Create a PR that updates the language container to latest image.
-	librarian update-image --commit --push
+	legacylibrarian update-image -commit -push
 
 	# Create a PR that updates the language container to the specified image.
-	librarian update-image --commit --push --image=<some-image-with-sha>
+	legacylibrarian update-image -commit -push -image=<some-image-with-sha>
 
 Usage:
 
-	librarian update-image [flags]
+	legacylibrarian update-image [flags]
 
 Flags:
 
 	-api-source string
 	  	The location of an API specification repository.
 	  	Can be a remote URL or a local file path. (default "https://github.com/googleapis/googleapis")
+	-api-source-branch string
+	  	The target branch of the API specification repository to checkout.
+	  	Can only be used with a remote -api-source. (default "master")
 	-branch string
 	  	The branch to use with remote code repositories. It is ignored if
 	  	you are using a local repository. This is used to specify which branch to clone
@@ -364,10 +370,10 @@ Flags:
 
 # version
 
-Version prints version information for the librarian binary.
+Version prints version information for the legacylibrarian binary.
 
 Usage:
 
-	librarian version
+	legacylibrarian version
 */
 package main

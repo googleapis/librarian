@@ -23,6 +23,8 @@ import (
 )
 
 const (
+	// LibrarianVersion is the librarian version used in [Config].
+	LibrarianVersion = "v0.1.0"
 	// Lib1Name is the name of the first library added to the [Config].
 	Lib1Name = "google-cloud-storage"
 	// Lib2Name is the name of the second library added to the [Config].
@@ -71,6 +73,7 @@ var (
 func Config() *config.Config {
 	return &config.Config{
 		Language: "fake",
+		Version:  LibrarianVersion,
 		Default:  &config.Default{},
 		Release: &config.Release{
 			Remote: "origin",

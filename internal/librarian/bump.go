@@ -79,28 +79,26 @@ Examples:
 				Usage: "specific version to update to; not valid with --all",
 			},
 		},
-		Action: bumpAction,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			all := cmd.Bool("all")
+			libraryName := cmd.Args().First()
+			versionOverride := cmd.String("version")
+			if !all && libraryName == "" {
+				return errMissingLibraryOrAllFlag
+			}
+			if all && libraryName != "" {
+				return errBothLibraryAndAllFlag
+			}
+			if all && versionOverride != "" {
+				return errBothVersionAndAllFlag
+			}
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+			return runBump(ctx, cfg, all, libraryName, versionOverride)
+		},
 	}
-}
-
-func bumpAction(ctx context.Context, cmd *cli.Command) error {
-	all := cmd.Bool("all")
-	libraryName := cmd.Args().First()
-	versionOverride := cmd.String("version")
-	if !all && libraryName == "" {
-		return errMissingLibraryOrAllFlag
-	}
-	if all && libraryName != "" {
-		return errBothLibraryAndAllFlag
-	}
-	if all && versionOverride != "" {
-		return errBothVersionAndAllFlag
-	}
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
-	if err != nil {
-		return errors.Join(errConfigNotFound, err)
-	}
-	return runBump(ctx, cfg, all, libraryName, versionOverride)
 }
 
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {

@@ -26,6 +26,6 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := librarian.Run(ctx, os.Args...); err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("librarian: %v", err)
 	}
 }

@@ -297,3 +297,16 @@ func cleanUpFilesAfterPostProcessing(repoRoot string) error {
 func DefaultOutputByName(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
+
+// DefaultLibraryName derives a library name from an API path by stripping
+// the version suffix and replacing "/" with "-".
+// For example: "google/cloud/secretmanager/v1" ->
+// "google-cloud-secretmanager".
+func DefaultLibraryName(api string) string {
+	path := api
+	if v := filepath.Base(api); len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
+		path = filepath.Dir(api)
+	}
+	return strings.ReplaceAll(path, "/", "-")
+}
