@@ -78,7 +78,7 @@ func updateCommand() *cli.Command {
 					return fmt.Errorf("%w: %s", errUnknownSource, source)
 				}
 			}
-			cfg, err := loadConfig()
+			cfg, err := loadConfig(ctx)
 			if err != nil {
 				return err
 			}

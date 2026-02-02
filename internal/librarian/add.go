@@ -46,7 +46,7 @@ func addCommand() *cli.Command {
 			if len(apis) == 0 {
 				return errMissingAPI
 			}
-			cfg, err := loadConfig()
+			cfg, err := loadConfig(ctx)
 			if err != nil {
 				return err
 			}

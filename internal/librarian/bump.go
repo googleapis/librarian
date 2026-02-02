@@ -92,7 +92,7 @@ Examples:
 			if all && versionOverride != "" {
 				return errBothVersionAndAllFlag
 			}
-			cfg, err := loadConfig()
+			cfg, err := loadConfig(ctx)
 			if err != nil {
 				return err
 			}

@@ -65,7 +65,7 @@ func generateCommand() *cli.Command {
 			if all && libraryName != "" {
 				return errBothLibraryAndAllFlag
 			}
-			cfg, err := loadConfig()
+			cfg, err := loadConfig(ctx)
 			if err != nil {
 				return err
 			}
