@@ -28,6 +28,7 @@ limitations under the License.
 /// Implements a client for the {{Codec.APITitle}}.
 {{^Codec.HasVeneer}}
 ///
+{{^Codec.InternalBuilder}}
 /// # Example
 /// ```
 /// # async fn sample() -> gax::client_builder::Result<()> {
@@ -36,6 +37,7 @@ limitations under the License.
 /// // use `client` to make requests to the {{Codec.APITitle}}.
 /// # Ok(()) }
 /// ```
+{{/Codec.InternalBuilder}}
 ///
 /// # Service Description
 ///
@@ -91,6 +93,7 @@ pub struct {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     {{^Codec.HasVeneer}}
+    {{^Codec.InternalBuilder}}
     /// Returns a builder for [{{Codec.Name}}].
     ///
     /// ```
@@ -99,7 +102,8 @@ impl {{Codec.Name}} {
     /// let client = {{Codec.Name}}::builder().build().await?;
     /// # Ok(()) }
     /// ```
-    pub fn builder() -> super::builder::{{Codec.ModuleName}}::ClientBuilder {
+    {{/Codec.InternalBuilder}}
+    {{#Codec.InternalBuilder}}pub(crate){{/Codec.InternalBuilder}}{{^Codec.InternalBuilder}}pub{{/Codec.InternalBuilder}} fn builder() -> super::builder::{{Codec.ModuleName}}::ClientBuilder {
         gax::client_builder::internal::new_builder(super::builder::{{Codec.ModuleName}}::client::Factory)
     }
     {{/Codec.HasVeneer}}
@@ -135,7 +139,7 @@ impl {{Codec.Name}} {
     {{#Codec.Methods}}
 
     {{> /templates/common/client_method_preamble}}
-    pub fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
+    {{#Codec.InternalBuilder}}pub(crate){{/Codec.InternalBuilder}}{{^Codec.InternalBuilder}}pub{{/Codec.InternalBuilder}} fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
     {
         super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}::new(self.inner.clone())
     }
