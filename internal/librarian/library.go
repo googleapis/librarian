@@ -183,18 +183,10 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // When a key in src is already present in dst, the value in dst will NOT be overwritten
 // by the value associated with the key in src.
 func mergeMaps(dst, src map[string]string) map[string]string {
-	if dst == nil {
-		dst = make(map[string]string)
-		maps.Copy(dst, src)
-		return dst
-	}
-
 	res := make(map[string]string)
-	for key, value := range src {
-		res[key] = value
-	}
-	for key, value := range dst {
-		res[key] = value
+	maps.Copy(res, src)
+	if dst != nil {
+		maps.Copy(res, dst)
 	}
 	return res
 }
