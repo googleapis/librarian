@@ -70,9 +70,9 @@ Librarian Version: {{.LibrarianVersion}}
 Language Image: {{.ImageVersion}}
 {{ $prInfo := . }}
 {{- range .NoteSections -}}
-<details><summary>{{.LibraryID}}: {{.NewVersion}}</summary>
+<details><summary>{{.LibraryID}}: v{{.NewVersion}}</summary>
 
-## [{{.NewVersion}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{$prInfo.Date}})
+## [v{{.NewVersion}}]({{"https://github.com/"}}{{$prInfo.RepoOwner}}/{{$prInfo.RepoName}}/compare/{{.PreviousTag}}...{{.NewTag}}) ({{$prInfo.Date}})
 {{ range .CommitSections }}
 ### {{.Heading}}
 {{ range .Commits }}
