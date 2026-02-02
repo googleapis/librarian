@@ -196,7 +196,7 @@ pub mod {{Codec.ModuleName}} {
         {{/Pagination}}
         {{#DiscoveryLro}}
 
-        /// Creates a [Poller][lro::Poller] to work with `{{Codec.MethodName}}`.
+        /// Creates a [Poller][google_cloud_lro::Poller] to work with `{{Codec.MethodName}}`.
         pub fn poller(
             self
         ) -> impl google_cloud_lro::Poller<{{Codec.ReturnType}}, {{Codec.ReturnType}}>
@@ -242,7 +242,7 @@ pub mod {{Codec.ModuleName}} {
         {{/DiscoveryLro}}
         {{#OperationInfo}}
 
-        /// Creates a [Poller][lro::Poller] to work with `{{Method.Codec.Name}}`.
+        /// Creates a [Poller][google_cloud_lro::Poller] to work with `{{Method.Codec.Name}}`.
         pub fn poller(
             self
         ) ->
