@@ -17,6 +17,7 @@ package librarian
 import (
 	"fmt"
 	"maps"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -86,15 +87,28 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Dart.IssueTrackerURL == "" {
 		lib.Dart.IssueTrackerURL = d.Dart.IssueTrackerURL
 	}
-	if lib.Dart.Dependencies == "" {
-		lib.Dart.Dependencies = d.Dart.Dependencies
-	}
 	if lib.Dart.Packages == nil {
 		lib.Dart.Packages = make(map[string]string)
 		maps.Copy(lib.Dart.Packages, d.Dart.Packages)
 	}
-
+	lib.Dart.Dependencies = mergeDartDependencies(lib.Dart.Dependencies, d.Dart.Dependencies)
 	return lib
+}
+
+func mergeDartDependencies(libDeps, defaultDeps string) string {
+	seen := make(map[string]bool)
+	var deps []string
+	for _, dep := range strings.Split(libDeps, ",") {
+		seen[dep] = true
+		deps = append(deps, dep)
+	}
+	for _, dep := range strings.Split(defaultDeps, ",") {
+		if seen[dep] {
+			continue
+		}
+		deps = append(deps, dep)
+	}
+	return strings.Join(deps, ",")
 }
 
 // mergePackageDependencies merges default and library package dependencies,
