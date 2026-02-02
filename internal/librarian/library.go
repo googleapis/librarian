@@ -80,6 +80,9 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Dart == nil {
 		lib.Dart = &config.DartPackage{}
 	}
+	if lib.Dart.APIKeysEnvironmentVariables == "" {
+		lib.Dart.APIKeysEnvironmentVariables = d.Dart.APIKeysEnvironmentVariables
+	}
 	if lib.Dart.IssueTrackerURL == "" {
 		lib.Dart.IssueTrackerURL = d.Dart.IssueTrackerURL
 	}
