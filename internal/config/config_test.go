@@ -81,8 +81,8 @@ func TestRead(t *testing.T) {
 				APIs: []*API{
 					{Path: "google/cloud/storage/v2"},
 				},
+				Roots: []string{"googleapis"},
 				Rust: &RustCrate{
-					Roots: []string{"googleapis"},
 					RustDefault: RustDefault{
 						DisabledRustdocWarnings: []string{"rustdoc::bare_urls"},
 					},
