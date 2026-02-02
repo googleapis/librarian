@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -256,7 +257,11 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		}
 
 		dir := filepath.Dir(file)
-		lib.Keep = parseKeep(dir)
+		keep, err := parseKeep(dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
+		}
+		lib.Keep = keep
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
@@ -349,13 +354,35 @@ func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
 }
 
-func parseKeep(base string) []string {
+func parseKeep(base string) ([]string, error) {
 	var res []string
 	for _, sub := range []string{"example", "test"} {
 		subDir := filepath.Join(base, sub)
-		if _, err := os.Stat(subDir); err == nil {
-			res = append(res, sub)
+		if _, err := os.Stat(subDir); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+
+		err := filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !d.IsDir() {
+				relativePath, err := filepath.Rel(base, path)
+				if err != nil {
+					return err
+				}
+				res = append(res, relativePath)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
-	return res
+	return res, nil
 }
