@@ -255,13 +255,23 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			},
 		}
 
+		dir := filepath.Dir(file)
+		exampleDir := filepath.Join(dir, "example")
+		if _, err := os.Stat(exampleDir); err == nil {
+			lib.Keep = append(lib.Keep, exampleDir)
+		}
+		testDir := filepath.Join(dir, "test")
+		if _, err := os.Stat(testDir); err == nil {
+			lib.Keep = append(lib.Keep, testDir)
+		}
+
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
 		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
 			lib.DescriptionOverride = descriptionOverride
 		}
-		relativePath, err := filepath.Rel(repoPath, filepath.Dir(file))
+		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
