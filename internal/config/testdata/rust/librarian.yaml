@@ -52,12 +52,13 @@ libraries:
   - name: google-cloud-storage-v2
     apis:
       - path: google/cloud/storage/v2
+    roots:
+      - googleapis
     version: 2.3.4
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
-      roots:
-        - googleapis
+
   - name: google-cloud-storage
     version: 1.4.0
     veneer: true

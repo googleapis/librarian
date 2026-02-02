@@ -33,7 +33,7 @@ const (
 // DocumentationOverride describes overrides for the documentation of a single element.
 //
 // This should be used sparingly. Generally we should prefer updating the
-// comments upstream, and then getting a new version of the services
+// comments upstream, and then getting a new version of the services'
 // specification. The exception may be when the fixes take a long time, or are
 // specific to one language.
 type DocumentationOverride struct {
