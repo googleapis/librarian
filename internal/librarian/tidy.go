@@ -73,6 +73,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 		// Veneers are never generated, so ensure skip_generate is false.
 		lib.SkipGenerate = false
 	}
+	if len(lib.Roots) == 1 && lib.Roots[0] == "googleapis" {
+		lib.Roots = nil
+	}
 	// Only remove derivable API paths when there's exactly one API.
 	// When there are multiple APIs, preserve all of them.
 	if len(lib.APIs) == 1 && isDerivableAPIPath(cfg.Language, lib.Name, lib.APIs[0].Path) {
