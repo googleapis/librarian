@@ -466,6 +466,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Protos: map[string]string{
 						"proto:google.api": "package:google_cloud_api/api.dart",
 					},
+					TitleOverride: "library-title-override",
 				},
 			},
 			channel: &config.API{
@@ -481,6 +482,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
+					"title-override":  "library-title-override",
 				},
 				Codec: map[string]string{
 					"api-keys-environment-variables": "GOOGLE_API_KEY",
