@@ -326,6 +326,9 @@ type DartPackage struct {
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
 
+	// Roots specifies the source roots to use for generation. Defaults to googleapis.
+	Roots []string `yaml:"roots,omitempty"`
+
 	// TitleOverride overrides the API title.
 	TitleOverride string `yaml:"title_override,omitempty"`
 

@@ -213,7 +213,7 @@ type Library struct {
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// API describes a API to include in a library.
+// API describes an API to include in a library.
 type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
