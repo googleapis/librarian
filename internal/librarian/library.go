@@ -106,7 +106,8 @@ func mergeDartDependencies(libDeps, defaultDeps string) string {
 		deps = append(deps, dep)
 	}
 	for _, dep := range strings.Split(defaultDeps, ",") {
-		if seen[dep] {
+		dep = strings.TrimSpace(dep)
+		if dep == "" || seen[dep] {
 			continue
 		}
 		deps = append(deps, dep)
