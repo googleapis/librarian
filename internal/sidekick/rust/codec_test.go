@@ -1079,6 +1079,24 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	}
 }
 
+func TestPackageNameToRootModule(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"lro", "lro"},
+		{"google-cloud-lro", "google_cloud_lro"},
+		{"google-cloud-secretmanager-v1", "google_cloud_secretmanager_v1"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := packageNameToRootModule(test.input)
+			if got != test.want {
+				t.Errorf("packageNameToRootModule() = %q, want = %q", test.input, test.want)
+			}
+		})
+	}
+}
+
 type rustCaseConvertTest struct {
 	Input    string
 	Expected string
@@ -1821,6 +1839,47 @@ Truncated link: [text](https://example11.com`
 	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestRustPackageName(t *testing.T) {
+	wkt := &packagez{
+		name:        "wkt",
+		packageName: "google-cloud-wkt",
+	}
+	iam := &packagez{
+		name:        "iam_v1",
+		packageName: "google-cloud-iam-v1",
+	}
+	longRunning := &packagez{
+		name:        "google-cloud-longrunning",
+		packageName: "google-cloud-longrunning",
+	}
+	c := &codec{
+		modulePath: "crate::model",
+		packageMapping: map[string]*packagez{
+			"google.protobuf":          wkt,
+			"google.cloud.iam.v1":      iam,
+			"google.cloud.longrunning": longRunning,
+		},
+	}
+
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"google.protobuf", "wkt"},
+		{"google.cloud.iam.v1", "iam_v1::model"},
+		{"google.cloud.longrunning", "google_cloud_longrunning::model"},
+		{"google.test.v7", "crate::model"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			// Use "google.test.v7" as the
+			got := modelModule(test.input, c.modulePath, "google.test.v7", c.packageMapping)
+			if got != test.want {
+				t.Errorf("modelModule() = %q, want =%q", got, test.want)
+			}
+		})
 	}
 }
 

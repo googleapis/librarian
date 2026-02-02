@@ -183,11 +183,13 @@ func TestBuildGAPIC(t *testing.T) {
 						},
 					},
 					CopyrightYear:       "2025",
+					Keep:                []string{"lib/src/example-part.p.txt"},
 					Output:              "testdata/read-sidekick-files/success-read/library-a",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
 						APIKeysEnvironmentVariables: "GOOGLE_API_KEY,GEMINI_API_KEY",
 						DevDependencies:             "googleapis_auth,test,test_utils",
+						PartFile:                    "src/example-part.p.txt",
 						ReadmeAfterTitleText: `> [!TIP]
 > Flutter applications should use
 > [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic).
@@ -235,14 +237,12 @@ API key as an argument when initializing the client.
 						"example/example-file1.txt",
 						"test/nested/test-nested-file.txt",
 						"test/test-file.txt",
-						"src/rpc.p.dart",
 					},
 					Output:              "testdata/read-sidekick-files/success-read/library-b",
 					SpecificationFormat: "protobuf",
 					Dart: &config.DartPackage{
 						Dependencies:    "googleapis_auth,http",
 						DevDependencies: "test",
-						PartFile:        "src/rpc.p.dart",
 						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
 					},
 				},

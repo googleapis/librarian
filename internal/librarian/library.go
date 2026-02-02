@@ -94,6 +94,8 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	return lib
 }
 
+// mergeDartDependencies merges library dependencies with default dependencies.
+// Duplicate dependencies in defaults will be ignored.
 func mergeDartDependencies(libDeps, defaultDeps string) string {
 	seen := make(map[string]bool)
 	var deps []string
@@ -106,7 +108,8 @@ func mergeDartDependencies(libDeps, defaultDeps string) string {
 		deps = append(deps, dep)
 	}
 	for _, dep := range strings.Split(defaultDeps, ",") {
-		if seen[dep] {
+		dep = strings.TrimSpace(dep)
+		if dep == "" || seen[dep] {
 			continue
 		}
 		deps = append(deps, dep)
@@ -180,18 +183,10 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // When a key in src is already present in dst, the value in dst will NOT be overwritten
 // by the value associated with the key in src.
 func mergeMaps(dst, src map[string]string) map[string]string {
-	if dst == nil {
-		dst = make(map[string]string)
-		maps.Copy(dst, src)
-		return dst
-	}
-
 	res := make(map[string]string)
-	for key, value := range src {
-		res[key] = value
-	}
-	for key, value := range dst {
-		res[key] = value
+	maps.Copy(res, src)
+	if dst != nil {
+		maps.Copy(res, dst)
 	}
 	return res
 }
