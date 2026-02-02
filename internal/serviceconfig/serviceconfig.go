@@ -176,3 +176,22 @@ func isServiceConfigFile(path string) (bool, error) {
 	}
 	return false, scanner.Err()
 }
+
+// FindGRPCServiceConfig searches for gRPC service config files in the given
+// API directory. It returns the path relative to googleapisDir for use with
+// protoc's retry-config option. Returns empty string if no config is found.
+// Returns an error if multiple matching files exist.
+func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
+	pattern := filepath.Join(googleapisDir, path, "*_grpc_service_config.json")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", err
+	}
+	if len(matches) == 0 {
+		return "", nil
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("multiple gRPC service config files found in %q", path)
+	}
+	return filepath.Rel(googleapisDir, matches[0])
+}

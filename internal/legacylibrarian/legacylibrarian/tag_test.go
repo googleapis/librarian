@@ -226,9 +226,9 @@ func TestParsePullRequestBody(t *testing.T) {
 Librarian Version: v0.2.0
 Language Image: image
 
-<details><summary>google-cloud-storage: 1.2.3</summary>
+<details><summary>google-cloud-storage: v1.2.3</summary>
 
-[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
 ### Features
 
@@ -239,7 +239,7 @@ Language Image: image
 				{
 					Version: "1.2.3",
 					Library: "google-cloud-storage",
-					Body: `[1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
+					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
 ### Features
 
@@ -253,9 +253,9 @@ Language Image: image
 Librarian Version: 1.2.3
 Language Image: gcr.io/test/image:latest
 
-<details><summary>library-one: 1.0.0</summary>
+<details><summary>library-one: v1.0.0</summary>
 
-[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
+[v1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
 
 ### Features
 
@@ -263,9 +263,9 @@ Language Image: gcr.io/test/image:latest
 
 </details>
 
-<details><summary>library-two: 2.3.4</summary>
+<details><summary>library-two: v2.3.4</summary>
 
-[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
+[v2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -276,7 +276,7 @@ Language Image: gcr.io/test/image:latest
 				{
 					Version: "1.0.0",
 					Library: "library-one",
-					Body: `[1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
+					Body: `[v1.0.0](https://github.com/googleapis/repo/compare/library-one-v0.9.0...library-one-v1.0.0) (2025-08-15)
 
 ### Features
 
@@ -285,7 +285,7 @@ Language Image: gcr.io/test/image:latest
 				{
 					Version: "2.3.4",
 					Library: "library-two",
-					Body: `[2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
+					Body: `[v2.3.4](https://github.com/googleapis/repo/compare/library-two-v2.3.3...library-two-v2.3.4) (2025-08-15)
 
 ### Bug Fixes
 
@@ -321,7 +321,7 @@ some content
 </details>`,
 			want: []libraryRelease{
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
 				},
@@ -344,7 +344,7 @@ some content
 </details>`,
 			want: []libraryRelease{
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body:    "[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)",
 				},
@@ -410,7 +410,7 @@ Libraries: a,b,c
 * this is another bulk change`,
 				},
 				{
-					Version: "v1.2.3",
+					Version: "1.2.3",
 					Library: "google-cloud-storage",
 					Body: `[v1.2.3](https://github.com/googleapis/google-cloud-go/compare/google-cloud-storage-v1.2.2...google-cloud-storage-v1.2.3) (2025-08-15)
 
@@ -481,6 +481,7 @@ func TestProcessPullRequest(t *testing.T) {
 		wantCreateReleaseCalls int
 		wantReplaceLabelsCalls int
 		wantCreateTagCalls     int
+		wantReleaseNames       []string
 	}{
 		{
 			name: "happy path",
@@ -491,6 +492,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "no release details",
@@ -532,6 +534,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "skip_a_library_release",
@@ -569,6 +572,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantErrMsg:             "failed to create release",
 			wantCreateReleaseCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "replace labels fails",
@@ -581,6 +585,7 @@ func TestProcessPullRequest(t *testing.T) {
 			wantCreateReleaseCalls: 1,
 			wantReplaceLabelsCalls: 1,
 			wantCreateTagCalls:     1,
+			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
 			name: "create tag fails",
@@ -614,6 +619,9 @@ func TestProcessPullRequest(t *testing.T) {
 			}
 			if test.ghClient.replaceLabelsCalls != test.wantReplaceLabelsCalls {
 				t.Errorf("replaceLabelsCalls = %v, want %v", test.ghClient.replaceLabelsCalls, test.wantReplaceLabelsCalls)
+			}
+			if diff := cmp.Diff(test.wantReleaseNames, test.ghClient.releaseNames); diff != "" {
+				t.Errorf("releaseNames mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -721,5 +729,68 @@ func Test_tagRunner_run_processPullRequests(t *testing.T) {
 	}
 	if ghClient.replaceLabelsCalls != 1 {
 		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
+	}
+	wantReleaseNames := []string{"google-cloud-storage: v1.2.3"}
+	if diff := cmp.Diff(wantReleaseNames, ghClient.releaseNames); diff != "" {
+		t.Errorf("releaseNames mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSummaryRegex(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		input       string
+		wantLibrary string
+		wantVersion string
+		wantMatch   bool
+	}{
+		{
+			name:        "standard with v prefix",
+			input:       "google-cloud-storage: v1.2.3",
+			wantLibrary: "google-cloud-storage",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+		{
+			name:        "standard without v prefix",
+			input:       "google-cloud-storage: 1.2.3",
+			wantLibrary: "google-cloud-storage",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+		{
+			name:      "no space after colon",
+			input:     "google-cloud-storage:v1.2.3",
+			wantMatch: false,
+		},
+		{
+			name:        "extra spaces",
+			input:       "  google-cloud-storage  : v1.2.3",
+			wantLibrary: "  google-cloud-storage  ",
+			wantVersion: "1.2.3",
+			wantMatch:   true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			matches := summaryRegex.FindStringSubmatch(tc.input)
+			if !tc.wantMatch {
+				if matches != nil {
+					t.Errorf("expected no match for %q, but got %v", tc.input, matches)
+				}
+				return
+			}
+			if matches == nil {
+				t.Fatalf("expected match for %q, but got none", tc.input)
+			}
+			if len(matches) != 3 {
+				t.Fatalf("expected 3 match groups, got %d", len(matches))
+			}
+			if got := matches[1]; got != tc.wantLibrary {
+				t.Errorf("library mismatch: got %q, want %q", got, tc.wantLibrary)
+			}
+			if got := matches[2]; got != tc.wantVersion {
+				t.Errorf("version mismatch: got %q, want %q", got, tc.wantVersion)
+			}
+		})
 	}
 }

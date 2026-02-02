@@ -46,7 +46,7 @@ var (
 	bulkChangeSectionRegex = regexp.MustCompile(`(feat|fix|perf|revert|docs): (.*)\nLibraries: (.*)`)
 	contentRegex           = regexp.MustCompile(`### (Features|Bug Fixes|Performance Improvements|Reverts|Documentation)\n`)
 	detailsRegex           = regexp.MustCompile(`(?s)<details><summary>(.*?)</summary>(.*?)</details>`)
-	summaryRegex           = regexp.MustCompile(`(.*?): (v?\d+\.\d+\.\d+)`)
+	summaryRegex           = regexp.MustCompile(`(.*?): v?(\d+\.\d+\.\d+)`)
 
 	libraryReleaseTemplate = template.Must(template.New("libraryRelease").Parse(`### {{.Type}}
 {{ range .Messages }}
@@ -222,7 +222,7 @@ func (r *tagRunner) processPullRequest(ctx context.Context, p *legacygithub.Pull
 		slog.Info("creating release", "library", release.Library, "version", release.Version)
 		tagFormat := legacyconfig.DetermineTagFormat(release.Library, libraryState, librarianConfig)
 		tagName := legacyconfig.FormatTag(tagFormat, release.Library, release.Version)
-		releaseName := fmt.Sprintf("%s %s", release.Library, release.Version)
+		releaseName := fmt.Sprintf("%s: v%s", release.Library, release.Version)
 		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
 			return fmt.Errorf("failed to create release: %w", err)
 		}
