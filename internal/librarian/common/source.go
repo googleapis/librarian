@@ -30,10 +30,6 @@ type Sources struct {
 
 func AddLibraryRoots(library *config.Library, sources *Sources) map[string]string {
 	source := make(map[string]string)
-	if library.Dart == nil {
-		library.Dart = &config.DartPackage{}
-	}
-
 	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
 		source["googleapis-root"] = sources.Googleapis
