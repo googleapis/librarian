@@ -99,14 +99,14 @@ func TestCodecError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, errorConfig); err == nil {
+	if err := Generate(t.Context(), model, outDir, errorConfig.General.SpecificationFormat, errorConfig.Codec); err == nil {
 		t.Errorf("expected an error with invalid Codec options")
 	}
 
-	if err := GenerateStorage(t.Context(), outDir, model, errorConfig, model, goodConfig); err == nil {
+	if err := GenerateStorage(t.Context(), outDir, model, errorConfig.General.SpecificationFormat, errorConfig.Codec, model, goodConfig.General.SpecificationFormat, goodConfig.Codec); err == nil {
 		t.Errorf("expected an error with invalid Codec options for storage")
 	}
-	if err := GenerateStorage(t.Context(), outDir, model, goodConfig, model, errorConfig); err == nil {
+	if err := GenerateStorage(t.Context(), outDir, model, goodConfig.General.SpecificationFormat, goodConfig.Codec, model, errorConfig.General.SpecificationFormat, errorConfig.Codec); err == nil {
 		t.Errorf("expected an error with invalid Codec options for control")
 	}
 }
@@ -126,7 +126,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -159,7 +159,7 @@ func TestRustFromDiscovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -194,7 +194,7 @@ func TestRustFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -233,7 +233,7 @@ func TestRustClient(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 			t.Fatal(err)
 		}
 		for _, expected := range expectedInClient {
@@ -278,7 +278,7 @@ func TestRustNosvc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInNosvc {
@@ -316,7 +316,7 @@ func TestRustModuleRpc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, path.Join(outDir, "rpc"), cfg); err != nil {
+	if err := Generate(t.Context(), model, path.Join(outDir, "rpc"), cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -356,7 +356,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, path.Join(outDir, "wkt"), cfg); err != nil {
+	if err := Generate(t.Context(), model, path.Join(outDir, "wkt"), cfg.General.SpecificationFormat, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 

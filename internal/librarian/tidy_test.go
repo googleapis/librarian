@@ -23,10 +23,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
-
-const testLibrarianVersion = "v0.1.0"
 
 func TestValidateLibraries(t *testing.T) {
 	for _, test := range []struct {
@@ -175,7 +174,7 @@ libraries:
     version: "1.0.0"
   - name: google-cloud-bigquery-v1
     version: "2.0.0"
-`, testLibrarianVersion)
+`, sample.LibrarianVersion)
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -187,8 +186,8 @@ libraries:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Version != testLibrarianVersion {
-		t.Errorf("version = %q, want %q", cfg.Version, testLibrarianVersion)
+	if cfg.Version != sample.LibrarianVersion {
+		t.Errorf("version = %q, want %q", cfg.Version, sample.LibrarianVersion)
 	}
 
 	var got []string

@@ -98,7 +98,7 @@ For each repository, librarianops will:
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
 			workDir := cmd.String("C")
-			verbose := cmd.Bool("v")
+			command.Verbose = cmd.Bool("v")
 			repoName := ""
 			if cmd.Args().Len() > 0 {
 				repoName = cmd.Args().Get(0)
@@ -112,7 +112,7 @@ For each repository, librarianops will:
 			if all && workDir != "" {
 				return fmt.Errorf("cannot use -C with --all")
 			}
-			return runGenerate(ctx, all, repoName, workDir, verbose)
+			return runGenerate(ctx, all, repoName, workDir, command.Verbose)
 		},
 	}
 }

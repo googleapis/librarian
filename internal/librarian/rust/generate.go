@@ -68,7 +68,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 			return err
 		}
 	}
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec); err != nil {
 		return err
 	}
 	if !exists {
@@ -110,7 +110,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
-			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
+			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec)
 		case "rust_storage":
 			return generateRustStorage(ctx, library, module.Output, sources)
 		case "rust+prost":
@@ -160,9 +160,9 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// defaultLibraryName derives a library name from a api path.
+// DefaultLibraryName derives a library name from a api path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
-func defaultLibraryName(api string) string {
+func DefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
 
@@ -212,7 +212,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
 
-	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig, controlModel, controlConfig)
+	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig.General.SpecificationFormat, storageConfig.Codec, controlModel, controlConfig.General.SpecificationFormat, controlConfig.Codec)
 }
 
 func findModuleByOutput(library *config.Library, output string) *config.RustModule {

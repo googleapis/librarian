@@ -78,7 +78,7 @@ func refreshDir(ctx context.Context, rootConfig *config.Config, cmdLine *Command
 
 	switch config.General.Language {
 	case "rust":
-		return rust.Generate(ctx, model, output, config)
+		return rust.Generate(ctx, model, output, config.General.SpecificationFormat, config.Codec)
 	case "rust_storage":
 		// The StorageControl client depends on multiple specification sources.
 		// We load them both here manually, and pass them along to
@@ -91,7 +91,7 @@ func refreshDir(ctx context.Context, rootConfig *config.Config, cmdLine *Command
 		if err != nil {
 			return err
 		}
-		return rust.GenerateStorage(ctx, output, storageModel, storageConfig, controlModel, controlConfig)
+		return rust.GenerateStorage(ctx, output, storageModel, storageConfig.General.SpecificationFormat, storageConfig.Codec, controlModel, controlConfig.General.SpecificationFormat, controlConfig.Codec)
 	case "rust+prost":
 		return rust_prost.Generate(ctx, model, output, config)
 	case "dart":

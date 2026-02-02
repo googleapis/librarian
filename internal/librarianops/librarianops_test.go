@@ -29,8 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-const testLibrarianVersion = "v0.1.0"
-
 func TestGenerateCommand(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -158,13 +156,13 @@ func TestUpdateLibrarianVersion(t *testing.T) {
 	configPath := filepath.Join(repoDir, "librarian.yaml")
 	initialConfig := &config.Config{
 		Language: "rust",
-		Version:  "v0.1.0",
+		Version:  sample.LibrarianVersion,
 	}
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
 	}
 
-	newVersion := testLibrarianVersion
+	newVersion := "v0.2.0"
 	if err := updateLibrarianVersion(newVersion, repoDir); err != nil {
 		t.Fatal(err)
 	}
@@ -180,5 +178,35 @@ func TestUpdateLibrarianVersion(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestVerboseFlagSetsCommandVerbose(t *testing.T) {
+	origVerbose := command.Verbose
+	defer func() { command.Verbose = origVerbose }()
+
+	for _, test := range []struct {
+		name        string
+		args        []string
+		wantVerbose bool
+	}{
+		{
+			name:        "without -v flag",
+			args:        []string{"librarianops", "generate", "fake-repo"},
+			wantVerbose: false,
+		},
+		{
+			name:        "with -v flag",
+			args:        []string{"librarianops", "generate", "-v", "fake-repo"},
+			wantVerbose: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			command.Verbose = false
+			Run(t.Context(), test.args...)
+			if command.Verbose != test.wantVerbose {
+				t.Errorf("command.Verbose = %v, want %v", command.Verbose, test.wantVerbose)
+			}
+		})
 	}
 }
