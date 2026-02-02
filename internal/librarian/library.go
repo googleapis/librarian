@@ -176,6 +176,9 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	return fillDefaults(lib, defaults), nil
 }
 
+// mergeMaps merges key-values of src and dst maps.
+// When a key in src is already present in dst, the value in dst will NOT be overwritten
+// by the value associated with the key in src.
 func mergeMaps(dst, src map[string]string) map[string]string {
 	if dst == nil {
 		dst = make(map[string]string)
