@@ -303,6 +303,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			dartPackage.ExtraImports = extraImports
 		}
 		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
+			lib.Keep = append(lib.Keep, partFile)
 			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
