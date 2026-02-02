@@ -77,8 +77,9 @@ func TestFillDefaults(t *testing.T) {
 			name: "dart defaults",
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
-					Dependencies:    "dep-1,dep-2",
-					IssueTrackerURL: "https://issue-tracker-example/dart",
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
@@ -91,9 +92,10 @@ func TestFillDefaults(t *testing.T) {
 				Output:  "foo/",
 				Version: "0.4.0",
 				Dart: &config.DartPackage{
-					Dependencies:    "dep-1,dep-2",
-					IssueTrackerURL: "https://issue-tracker-example/dart",
-					Packages:        map[string]string{"package:one": "^1.2.3", "package:two": "^2.0.0"},
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
+					Packages:                    map[string]string{"package:one": "^1.2.3", "package:two": "^2.0.0"},
 				},
 			},
 		},
@@ -101,8 +103,9 @@ func TestFillDefaults(t *testing.T) {
 			name: "dart defaults do not override library params",
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
-					Dependencies:    "dep-1,dep-2",
-					IssueTrackerURL: "https://issue-tracker-example/dart",
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
@@ -114,8 +117,9 @@ func TestFillDefaults(t *testing.T) {
 				Output:  "foo/",
 				Version: "0.5.0",
 				Dart: &config.DartPackage{
-					Dependencies:    "dep-3,dep-4",
-					IssueTrackerURL: "https://another-issue-tracker-example/dart",
+					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
+					Dependencies:                "dep-3,dep-4",
+					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:three": "^1.0.0",
 					},
@@ -125,8 +129,9 @@ func TestFillDefaults(t *testing.T) {
 				Output:  "foo/",
 				Version: "0.5.0",
 				Dart: &config.DartPackage{
-					Dependencies:    "dep-3,dep-4",
-					IssueTrackerURL: "https://another-issue-tracker-example/dart",
+					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
+					Dependencies:                "dep-3,dep-4",
+					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:three": "^1.0.0",
 					},
