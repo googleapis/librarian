@@ -136,6 +136,44 @@ func TestClippyWarnings(t *testing.T) {
 	}
 }
 
+func TestInternalBuilderAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		Options map[string]string
+		Want    bool
+	}{
+		{
+			Options: map[string]string{},
+			Want:    false,
+		},
+		{
+			Options: map[string]string{
+				"internal-builder": "true",
+			},
+			Want: true,
+		},
+		{
+			Options: map[string]string{
+				"internal-builder": "false",
+			},
+			Want: false,
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec, err := newCodec("protobuf", test.Options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := annotateModel(model, codec)
+		if got.InternalBuilder != test.Want {
+			t.Errorf("mismatch in InternalBuilder, want=%v, got=%v", test.Want, got.InternalBuilder)
+		}
+		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		if svcAnn.InternalBuilder != test.Want {
+			t.Errorf("mismatch in service InternalBuilder, want=%v, got=%v", test.Want, svcAnn.InternalBuilder)
+		}
+	}
+}
+
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",

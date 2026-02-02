@@ -78,6 +78,8 @@ type modelAnnotations struct {
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
+	// If true, the generated builders's visibility should be restricted to the crate.
+	InternalBuilder bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -134,6 +136,8 @@ type serviceAnnotations struct {
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
+	// If true, the generated builders's visibility should be restricted to the crate.
+	InternalBuilder bool
 }
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
@@ -249,6 +253,7 @@ type methodAnnotation struct {
 	DetailedTracingAttributes bool
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
+	InternalBuilder           bool
 }
 
 type pathInfoAnnotation struct {
@@ -673,6 +678,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
+		InternalBuilder:           codec.internalBuilder,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
@@ -932,6 +938,7 @@ func (c *codec) annotateService(s *api.Service) {
 		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
+		InternalBuilder:           c.internalBuilder,
 	}
 	s.Codec = ann
 }
@@ -1025,6 +1032,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		ResourceNameFields:        resourceNameFields,
 		HasResourceNameFields:     len(resourceNameFields) > 0,
+		InternalBuilder:           c.internalBuilder,
 	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes

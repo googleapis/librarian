@@ -157,6 +157,32 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	}
 }
 
+func TestAnnotateMethodInternalBuilder(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec, err := newCodec("protobuf", map[string]string{
+		"internal-builder": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = annotateModel(model, codec)
+
+	methodID := ".test.v1.ResourceService.Delete"
+	gotMethod, ok := model.State.MethodByID[methodID]
+	if !ok {
+		t.Fatalf("missing method %s", methodID)
+	}
+	got := gotMethod.Codec.(*methodAnnotation)
+	if !got.InternalBuilder {
+		t.Errorf("expected InternalBuilder to be true for method %s", methodID)
+	}
+}
+
 func annotateMethodModel(t *testing.T) *api.API {
 	t.Helper()
 	request := &api.Message{
