@@ -177,6 +177,9 @@ type Library struct {
 	// overrides Default.ReleaseLevel.
 	ReleaseLevel string `yaml:"release_level,omitempty"`
 
+	// Roots specifies the source roots to use for generation. Defaults to googleapis.
+	Roots []string `yaml:"roots,omitempty"`
+
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
 

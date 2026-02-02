@@ -147,9 +147,6 @@ type RustCrate struct {
 	// RootName is the root name for the crate.
 	RootName string `yaml:"root_name,omitempty"`
 
-	// Roots specifies the source roots to use for generation. Defaults to googleapis.
-	Roots []string `yaml:"roots,omitempty"`
-
 	// DefaultFeatures is a list of default features to enable.
 	DefaultFeatures []string `yaml:"default_features,omitempty"`
 
@@ -325,9 +322,6 @@ type DartPackage struct {
 
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
-
-	// Roots specifies the source roots to use for generation. Defaults to googleapis.
-	Roots []string `yaml:"roots,omitempty"`
 
 	// TitleOverride overrides the API title.
 	TitleOverride string `yaml:"title_override,omitempty"`

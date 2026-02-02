@@ -214,7 +214,7 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return err
 		}
 	case languageDart:
-		if err := dart.Generate(ctx, library, googleapisDir); err != nil {
+		if err := dart.Generate(ctx, library, sources); err != nil {
 			return err
 		}
 	case languagePython:

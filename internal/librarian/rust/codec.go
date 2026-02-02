@@ -19,11 +19,12 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/common"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
+func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *common.Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -32,7 +33,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 		specFormat = "disco"
 	}
 
-	source := addLibraryRoots(library, sources)
+	source := common.AddLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
@@ -223,8 +224,8 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) (*sidekickconfig.Config, error) {
-	source := addLibraryRoots(library, sources)
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *common.Sources) (*sidekickconfig.Config, error) {
+	source := common.AddLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}
@@ -317,36 +318,4 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 		codec["root-name"] = module.RootName
 	}
 	return codec
-}
-
-func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
-	source := make(map[string]string)
-	if library.Rust == nil {
-		library.Rust = &config.RustCrate{}
-	}
-
-	if len(library.Rust.Roots) == 0 && sources.Googleapis != "" {
-		// Default to googleapis if no roots are specified.
-		source["googleapis-root"] = sources.Googleapis
-		source["roots"] = "googleapis"
-	} else {
-		source["roots"] = strings.Join(library.Rust.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
-		for _, root := range library.Rust.Roots {
-			if r, ok := rootMap[root]; ok && r.path != "" {
-				source[r.key] = r.path
-			}
-		}
-	}
-
-	return source
 }

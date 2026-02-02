@@ -24,23 +24,14 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/common"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
 
-// Sources contains the directory paths for source repositories used by
-// sidekick.
-type Sources struct {
-	Conformance string
-	Discovery   string
-	Googleapis  string
-	ProtobufSrc string
-	Showcase    string
-}
-
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
+func Generate(ctx context.Context, library *config.Library, sources *common.Sources) error {
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -95,7 +86,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *Sources) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *common.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
@@ -183,7 +174,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *Sources) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *common.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
