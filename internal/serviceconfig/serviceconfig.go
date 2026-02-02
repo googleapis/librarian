@@ -99,10 +99,8 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3627): all APIs
-	// should be listed in the allowlist
 	if result == nil {
-		return &API{Path: path}, nil
+		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
 
 	// If service config is overridden in allowlist, use it
