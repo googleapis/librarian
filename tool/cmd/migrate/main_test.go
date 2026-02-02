@@ -232,8 +232,9 @@ API key as an argument when initializing the client.
 					CopyrightYear:       "2025",
 					DescriptionOverride: "Additional metadata for operations.",
 					Keep: []string{
-						"example",
-						"test",
+						"example/example-file1.txt",
+						"test/nested/test-nested-file.txt",
+						"test/test-file.txt",
 						"src/rpc.p.dart",
 					},
 					Output:              "testdata/read-sidekick-files/success-read/library-b",
