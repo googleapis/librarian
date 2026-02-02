@@ -48,7 +48,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
+	sidekickConfig, err := libraryToSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}

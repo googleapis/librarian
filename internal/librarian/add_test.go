@@ -28,7 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestAddLibrary(t *testing.T) {
+func TestAddLibraryCommand(t *testing.T) {
 	copyrightYear := strconv.Itoa(time.Now().Year())
 	for _, test := range []struct {
 		name                   string
@@ -204,32 +204,32 @@ func TestAddCommand(t *testing.T) {
 	}
 }
 
-func TestAddLibraryToLibrarianYaml(t *testing.T) {
+func TestAddLibrary(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		libraryName string
-		apis        []string
-		want        []*config.API
+		name     string
+		apis     []string
+		wantName string
+		wantAPIs []*config.API
 	}{
 		{
-			name:        "library with single API",
-			libraryName: "newlib",
-			apis:        []string{"google/cloud/storage/v1"},
-			want: []*config.API{
+			name:     "library with single API",
+			apis:     []string{"google/cloud/storage/v1"},
+			wantName: "google-cloud-storage-v1",
+			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/storage/v1",
 				},
 			},
 		},
 		{
-			name:        "library with multiple APIs",
-			libraryName: "google-cloud-secret-manager",
+			name: "library with multiple APIs",
 			apis: []string{
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
 			},
-			want: []*config.API{
+			wantName: "google-cloud-secretmanager-v1",
+			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
 				},
@@ -256,19 +256,22 @@ func TestAddLibraryToLibrarianYaml(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			cfg = addLibraryToLibrarianConfig(cfg, test.libraryName, test.apis...)
+			cfg, err := addLibrary(cfg, test.apis...)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
 
-			found, err := findLibrary(cfg, test.libraryName)
+			found, err := findLibrary(cfg, test.wantName)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if found.Version != "" {
 				t.Errorf("version = %q, want %q", found.Version, "")
 			}
-			if diff := cmp.Diff(test.want, found.APIs); diff != "" {
+			if diff := cmp.Diff(test.wantAPIs, found.APIs); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

@@ -56,15 +56,10 @@ func addCommand() *cli.Command {
 }
 
 func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
-	name := deriveLibraryName(cfg.Language, apis[0])
-	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
-		return lib.Name == name
-	})
-	if exists {
-		return fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+	cfg, err := addLibrary(cfg, apis...)
+	if err != nil {
+		return err
 	}
-
-	cfg = addLibraryToLibrarianConfig(cfg, name, apis...)
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
@@ -86,13 +81,20 @@ func deriveLibraryName(language, api string) string {
 	}
 }
 
-func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string) *config.Config {
+func addLibrary(cfg *config.Config, apis ...string) (*config.Config, error) {
+	name := deriveLibraryName(cfg.Language, apis[0])
+	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
+		return lib.Name == name
+	})
+	if exists {
+		return nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+	}
+
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
 	}
-
-	for _, a := range api {
+	for _, a := range apis {
 		lib.APIs = append(lib.APIs, &config.API{
 			Path: a,
 		})
@@ -101,5 +103,5 @@ func addLibraryToLibrarianConfig(cfg *config.Config, name string, api ...string)
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
-	return cfg
+	return cfg, nil
 }
