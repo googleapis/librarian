@@ -720,7 +720,7 @@ func httpPathFmt(t *api.PathTemplate) string {
 	return fmt
 }
 
-// packageNameToNamespace converts a package name to the root module of the
+// packageNameToRootModule converts a package name to the root module of the
 // package.
 //
 // In Rust it is customary for packages names to use kebab-case, such as
