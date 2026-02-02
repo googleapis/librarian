@@ -20,7 +20,7 @@ limitations under the License.
 /// ```
 /// # use {{Service.Model.Codec.PackageNamespace}}::client::{{Service.Codec.Name}};
 {{#IsLRO}}
-/// # use lro::Poller;
+/// use google_cloud_lro::Poller;
 {{/IsLRO}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(

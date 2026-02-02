@@ -581,20 +581,26 @@ func (c *codec) methodInOutTypeName(id string, state *api.APIState, sourceSpecif
 	return fullyQualifiedMessageName(m, c.modulePath, sourceSpecificationPackageName, c.packageMapping)
 }
 
+// modelModule maps a package name in the model format (e.g. "google.cloud.longrunning") to the
+// module name containing the model (e.g. "google_cloud_longrunning::model").
+func modelModule(packageName string, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
+	if packageName == sourceSpecificationPackageName {
+		return modulePath
+	}
+	mapped, ok := packageMapping[packageName]
+	if !ok {
+		return packageNameToRootModule(packageName)
+	}
+	// TODO(#158) - maybe google.protobuf should not be this special?
+	if packageName == "google.protobuf" {
+		return packageNameToRootModule(mapped.name)
+	}
+	return packageNameToRootModule(mapped.name) + "::model"
+}
+
 func messageScopeName(m *api.Message, childPackageName, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
 	rustPkg := func(packageName string) string {
-		if packageName == sourceSpecificationPackageName {
-			return modulePath
-		}
-		mapped, ok := packageMapping[packageName]
-		if !ok {
-			return packageName
-		}
-		// TODO(#158) - maybe google.protobuf should not be this special?
-		if packageName == "google.protobuf" {
-			return mapped.name
-		}
-		return mapped.name + "::model"
+		return modelModule(packageName, modulePath, sourceSpecificationPackageName, packageMapping)
 	}
 
 	if m == nil {
@@ -712,6 +718,16 @@ func httpPathFmt(t *api.PathTemplate) string {
 		fmt = fmt + ":" + *t.Verb
 	}
 	return fmt
+}
+
+// packageNameToNamespace converts a package name to the root module of the
+// package.
+//
+// In Rust it is customary for packages names to use kebab-case, such as
+// `google-cloud-longrunning`. The root module of the package uses
+// `snake_case`, such as `google_cloud_longrunning`.
+func packageNameToRootModule(name string) string {
+	return strings.ReplaceAll(name, "-", "_")
 }
 
 // toSnake converts a name to `snake_case`. The Rust naming conventions use
@@ -868,7 +884,7 @@ func (c *codec) formatDocComments(
 // entity in the generated code. We do this by appending a number of link
 // definitions to the comments, e.g.
 //
-//	//// [google.longrunning.Operation]: lro::model::Operation
+//	//// [google.longrunning.Operation]: google_cloud_longrunning::model::Operation
 func protobufLinkMapping(doc ast.Node, source []byte) []string {
 	protobufLinks := map[string]bool{}
 	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -1409,7 +1425,7 @@ func externPackages(extraPackages []*packagez) []string {
 		if pkg.ignore || !pkg.used {
 			continue
 		}
-		names = append(names, strings.ReplaceAll(pkg.name, "-", "_"))
+		names = append(names, packageNameToRootModule(pkg.name))
 	}
 	sort.Strings(names)
 	return names
@@ -1433,17 +1449,17 @@ func (c *codec) packageName(model *api.API) string {
 	return PackageName(model, c.packageNameOverride)
 }
 
-func (c *codec) packageNamespace(model *api.API) string {
+func (c *codec) rootModuleName(model *api.API) string {
 	packageName := c.packageName(model)
-	return strings.ReplaceAll(packageName, "-", "_")
+	return packageNameToRootModule(packageName)
 }
 
 func (c *codec) nameInExamplesFromQualifiedName(qualifiedName string, model *api.API) string {
 	if strings.HasPrefix(qualifiedName, c.modulePath+"::") {
-		if c.packageNamespace(model) == "google_cloud_wkt" {
+		if c.rootModuleName(model) == "google_cloud_wkt" {
 			return strings.Replace(qualifiedName, c.modulePath, "google_cloud_wkt", 1)
 		}
-		return strings.Replace(qualifiedName, c.modulePath, fmt.Sprintf("%s::model", c.packageNamespace(model)), 1)
+		return strings.Replace(qualifiedName, c.modulePath, fmt.Sprintf("%s::model", c.rootModuleName(model)), 1)
 	}
 	return qualifiedName
 }

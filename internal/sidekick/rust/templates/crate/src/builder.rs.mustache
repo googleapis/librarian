@@ -83,7 +83,7 @@ pub mod {{Codec.ModuleName}} {
     /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
     /// # async fn sample() -> gax::Result<()> {
     {{#OperationInfo}}
-    /// use lro::Poller;
+    /// use google_cloud_lro::Poller;
     ///
     /// let builder = prepare_request_builder();
     /// let response = builder.poller().until_done().await?;
@@ -199,7 +199,7 @@ pub mod {{Codec.ModuleName}} {
         /// Creates a [Poller][lro::Poller] to work with `{{Codec.MethodName}}`.
         pub fn poller(
             self
-        ) -> impl lro::Poller<{{Codec.ReturnType}}, {{Codec.ReturnType}}>
+        ) -> impl google_cloud_lro::Poller<{{Codec.ReturnType}}, {{Codec.ReturnType}}>
         {
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
@@ -232,7 +232,7 @@ pub mod {{Codec.ModuleName}} {
                 self.send().await
             };
 
-            lro::internal::new_discovery_poller(
+            google_cloud_lro::internal::new_discovery_poller(
                 polling_error_policy,
                 polling_backoff_policy,
                 start,
@@ -247,19 +247,19 @@ pub mod {{Codec.ModuleName}} {
             self
         ) ->
             {{#Codec.NoneAreEmpty}}
-            impl lro::Poller<{{Codec.ResponseType}}, {{Codec.MetadataType}}>
+            impl google_cloud_lro::Poller<{{Codec.ResponseType}}, {{Codec.MetadataType}}>
             {{/Codec.NoneAreEmpty}}
             {{#Codec.OnlyResponseIsEmpty}}
-            impl lro::Poller<(), {{Codec.MetadataType}}>
+            impl google_cloud_lro::Poller<(), {{Codec.MetadataType}}>
             {{/Codec.OnlyResponseIsEmpty}}
             {{#Codec.OnlyMetadataIsEmpty}}
-            impl lro::Poller<{{Codec.ResponseType}}, ()>
+            impl google_cloud_lro::Poller<{{Codec.ResponseType}}, ()>
             {{/Codec.OnlyMetadataIsEmpty}}
             {{#Codec.BothAreEmpty}}
-            impl lro::Poller<(), ()>
+            impl google_cloud_lro::Poller<(), ()>
             {{/Codec.BothAreEmpty}}
         {
-            type Operation = lro::internal::Operation<{{Codec.ResponseType}}, {{Codec.MetadataType}}>;
+            type Operation = google_cloud_lro::internal::Operation<{{Codec.ResponseType}}, {{Codec.MetadataType}}>;
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
 
@@ -285,16 +285,16 @@ pub mod {{Codec.ModuleName}} {
             };
 
             {{#Codec.NoneAreEmpty}}
-            lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+            google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.NoneAreEmpty}}
             {{#Codec.OnlyResponseIsEmpty}}
-            lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+            google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.OnlyResponseIsEmpty}}
             {{#Codec.OnlyMetadataIsEmpty}}
-            lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+            google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.OnlyMetadataIsEmpty}}
             {{#Codec.BothAreEmpty}}
-            lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+            google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.BothAreEmpty}}
         }
         {{/OperationInfo}}
