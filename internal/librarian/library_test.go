@@ -84,6 +84,13 @@ func TestFillDefaults(t *testing.T) {
 						"package:one": "^1.2.3",
 						"package:two": "^2.0.0",
 					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
 					Version: "0.4.0",
 				},
 			},
@@ -96,6 +103,13 @@ func TestFillDefaults(t *testing.T) {
 					Dependencies:                "dep-1,dep-2",
 					IssueTrackerURL:             "https://issue-tracker-example/dart",
 					Packages:                    map[string]string{"package:one": "^1.2.3", "package:two": "^2.0.0"},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
 				},
 			},
 		},
@@ -118,7 +132,7 @@ func TestFillDefaults(t *testing.T) {
 				Version: "0.5.0",
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
-					Dependencies:                "dep-3,dep-4",
+					Dependencies:                "dep-1,dep-3,dep-4",
 					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:three": "^1.0.0",
@@ -130,7 +144,7 @@ func TestFillDefaults(t *testing.T) {
 				Version: "0.5.0",
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
-					Dependencies:                "dep-3,dep-4",
+					Dependencies:                "dep-1,dep-3,dep-4,dep-2",
 					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
 					Packages: map[string]string{
 						"package:three": "^1.0.0",
