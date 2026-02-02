@@ -648,7 +648,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	}()
 	ann := &modelAnnotations{
 		PackageName:      codec.packageName(model),
-		PackageNamespace: codec.packageNamespace(model),
+		PackageNamespace: codec.rootModuleName(model),
 		PackageVersion:   codec.version,
 		ReleaseLevel:     codec.releaseLevel,
 		RequiredPackages: requiredPackages(codec.extraPackages),
@@ -1037,7 +1037,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 		m.OperationInfo.Codec = &operationInfo{
 			MetadataType:     metadataType,
 			ResponseType:     responseType,
-			PackageNamespace: c.packageNamespace(m.Model),
+			PackageNamespace: c.rootModuleName(m.Model),
 		}
 	}
 	if m.DiscoveryLro != nil {
