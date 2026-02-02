@@ -256,15 +256,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		}
 
 		dir := filepath.Dir(file)
-		exampleDir := filepath.Join(dir, "example")
-		if _, err := os.Stat(exampleDir); err == nil {
-			lib.Keep = append(lib.Keep, exampleDir)
-		}
-		testDir := filepath.Join(dir, "test")
-		if _, err := os.Stat(testDir); err == nil {
-			lib.Keep = append(lib.Keep, testDir)
-		}
-
+		lib.Keep = parseKeep(dir)
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
@@ -355,4 +347,15 @@ func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]strin
 
 func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
+}
+
+func parseKeep(base string) []string {
+	var res []string
+	for _, sub := range []string{"example", "test"} {
+		subDir := filepath.Join(base, sub)
+		if _, err := os.Stat(subDir); err == nil {
+			res = append(res, sub)
+		}
+	}
+	return res
 }
