@@ -61,6 +61,10 @@ var (
 		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
 		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
 	}
+
+	libraryToKeep = map[string][]string{
+		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+	}
 )
 
 func main() {
@@ -272,6 +276,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
 		}
 		lib.Keep = keep
+		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
+			lib.Keep = append(lib.Keep, additionalKeeps...)
+		}
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
