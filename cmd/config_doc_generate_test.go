@@ -25,7 +25,6 @@ import (
 )
 
 func TestGetFieldName(t *testing.T) {
-	d := &docData{}
 	for _, test := range []struct {
 		name     string
 		tagName  string
@@ -80,7 +79,7 @@ func TestGetFieldName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			*tagName = test.tagName
+			d := &docData{tag: test.tagName}
 			field := &ast.Field{
 				Tag: test.fieldTag,
 			}
@@ -144,10 +143,12 @@ func TestGetTypeName(t *testing.T) {
 }
 
 func TestFormatType(t *testing.T) {
-	allStructs := map[string]*ast.StructType{
-		"Repo": {},
+	d := &docData{
+		structs: map[string]*ast.StructType{
+			"Repo": {},
+		},
+		rootStruct: "Config",
 	}
-	root := "Config"
 
 	for _, test := range []struct {
 		name     string
@@ -191,7 +192,7 @@ func TestFormatType(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatType(test.typeName, allStructs, root)
+			got := d.formatType(test.typeName)
 			if got != test.want {
 				t.Errorf("formatType(%q) = %q, want %q", test.typeName, got, test.want)
 			}
@@ -271,17 +272,12 @@ type Alpha struct {
 		t.Fatal(err)
 	}
 
-	var buf strings.Builder
-	d, err := newDocData(pkg)
+	d, err := newDocData(pkg, "Config", "Root", "yaml", "librarian.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Reset flags to defaults for test
-	*rootStruct = "Config"
-	*rootTitleBlock = "Root"
-	*pageTitle = "librarian.yaml"
-
+	var buf strings.Builder
 	if err := d.generate(&buf); err != nil {
 		t.Fatal(err)
 	}

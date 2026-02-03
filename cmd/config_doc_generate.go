@@ -34,12 +34,12 @@ import (
 )
 
 var (
-	inputDir       = flag.String("input", "internal/config", "Input directory containing config structs")
-	outputFile     = flag.String("output", "doc/config-schema.md", "Output file for documentation")
-	rootStruct     = flag.String("root", "Config", "The name of the root struct to start documentation from")
-	rootTitleBlock = flag.String("root-title", "Root", "The title to use for the root struct block")
-	tagName        = flag.String("tag", "yaml", "The struct tag to use for field names (e.g., yaml, json)")
-	pageTitle      = flag.String("title", "librarian.yaml", "The title of the generated Markdown page")
+	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
+	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
+	rootStruct = flag.String("root", "Config", "The name of the root struct to start documentation from")
+	rootTitle  = flag.String("root-title", "Root", "The title to use for the root struct block")
+	tag        = flag.String("tag", "yaml", "The struct tag to use for field names (e.g., yaml, json)")
+	title      = flag.String("title", "librarian.yaml", "The title of the generated Markdown page")
 )
 
 const (
@@ -101,7 +101,7 @@ func run() (err error) {
 	if err != nil {
 		return fmt.Errorf("loading package: %w", err)
 	}
-	d, err := newDocData(pkg)
+	d, err := newDocData(pkg, *rootStruct, *rootTitle, *tag, *title)
 	if err != nil {
 		return fmt.Errorf("inspecting package syntax: %w", err)
 	}
@@ -139,21 +139,29 @@ func loadPackage(inputDir string) (*packages.Package, error) {
 
 // docData holds the collected metadata for generating documentation from the Go package.
 type docData struct {
-	pkg        *packages.Package
-	structs    map[string]*ast.StructType
-	docs       map[string]string
-	sources    map[string]string
-	configKeys []string
-	otherKeys  []string
+	pkg         *packages.Package
+	structs     map[string]*ast.StructType
+	docs        map[string]string
+	sources     map[string]string
+	configKeys  []string
+	otherKeys   []string
+	rootStruct  string
+	rootHeading string
+	tag         string
+	title       string
 }
 
 // newDocData constructs a docData by inspecting all files in the provided package.
-func newDocData(pkg *packages.Package) (*docData, error) {
+func newDocData(pkg *packages.Package, rootStruct, rootHeading, tag, title string) (*docData, error) {
 	d := &docData{
-		pkg:     pkg,
-		structs: make(map[string]*ast.StructType),
-		docs:    make(map[string]string),
-		sources: make(map[string]string),
+		pkg:         pkg,
+		structs:     make(map[string]*ast.StructType),
+		docs:        make(map[string]string),
+		sources:     make(map[string]string),
+		rootStruct:  rootStruct,
+		rootHeading: rootHeading,
+		tag:         tag,
+		title:       title,
 	}
 
 	moduleRoot := "."
@@ -210,9 +218,9 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 
 // generate writes the collected documentation in Markdown format to the provided writer.
 func (d *docData) generate(output io.Writer) error {
-	fmt.Fprintf(output, "# %s Schema\n", *pageTitle)
+	fmt.Fprintf(output, "# %s Schema\n", d.title)
 	fmt.Fprintln(output)
-	fmt.Fprintf(output, "This document describes the schema for the %s.\n", *pageTitle)
+	fmt.Fprintf(output, "This document describes the schema for the %s.\n", d.title)
 	// Write Config objects first, then others.
 	for _, k := range append(d.configKeys, d.otherKeys...) {
 		if err := d.writeStruct(output, k, d.sources[k]); err != nil {
@@ -227,8 +235,8 @@ func (d *docData) generate(output io.Writer) error {
 func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) error {
 	st := d.structs[name]
 	title := name + titleSuffix
-	if name == *rootStruct {
-		title = *rootTitleBlock + titleSuffix
+	if name == d.rootStruct {
+		title = d.rootHeading + titleSuffix
 	}
 	structData := structData{
 		Title:      title,
@@ -241,7 +249,7 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			typeName := getTypeName(field.Type)
 			structData.Fields = append(structData.Fields, fieldData{
 				Name: "(embedded)",
-				Type: formatType(typeName, d.structs, *rootStruct),
+				Type: d.formatType(typeName),
 			})
 			continue
 		}
@@ -256,7 +264,7 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 		}
 		structData.Fields = append(structData.Fields, fieldData{
 			Name:        fmt.Sprintf("`%s`", fieldName),
-			Type:        formatType(typeName, d.structs, *rootStruct),
+			Type:        d.formatType(typeName),
 			Description: description,
 		})
 	}
@@ -264,12 +272,12 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 }
 
 // getFieldName returns the documentation name for a field. It first attempts to
-// extract the name from the struct tag specified by the -tag flag. If the tag
-// is missing or empty, it falls back to the Go field name.
+// extract the name from the struct tag specified by the tagName field. If the
+// tag is missing or empty, it falls back to the Go field name.
 func (d *docData) getFieldName(field *ast.Field) string {
 	if field.Tag != nil {
 		tagValue := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
-		val := tagValue.Get(*tagName)
+		val := tagValue.Get(d.tag)
 		if val != "" {
 			return strings.Split(val, ",")[0]
 		}
@@ -297,16 +305,16 @@ func getTypeName(expr ast.Expr) string {
 	}
 }
 
-func formatType(typeName string, allStructs map[string]*ast.StructType, rootName string) string {
+func (d *docData) formatType(typeName string) string {
 	isSlice := strings.HasPrefix(typeName, "[]")
 	cleanType := strings.TrimPrefix(typeName, "[]")
 	isPointer := strings.HasPrefix(cleanType, "*")
 	cleanType = strings.TrimPrefix(cleanType, "*")
 	res := cleanType
 	// If it's one of our structs, link it
-	if _, ok := allStructs[cleanType]; ok {
+	if _, ok := d.structs[cleanType]; ok {
 		anchor := strings.ToLower(cleanType) + anchorSuffix
-		if cleanType == rootName {
+		if cleanType == d.rootStruct {
 			anchor = rootAnchor
 		}
 		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
