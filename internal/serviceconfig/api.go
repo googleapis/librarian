@@ -25,7 +25,8 @@ const (
 	titleGKEHubTypes               = "GKE Hub Types"
 	titleLoggingTypes              = "Logging types"
 
-	serviceConfigAIPlatformSchema = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+	serviceConfigAIPlatformSchema  = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+	serviceConfigAIPlatformV1Beta1 = "google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml"
 )
 
 // API describes an API path and its availability across languages.
@@ -105,6 +106,7 @@ var APIs = []API{
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema},
+	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1},
 	{Path: "google/cloud/alloydb/connectors/v1"},
 	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{langPython}},
