@@ -21,6 +21,7 @@ copyright-year = '2025'
 
 api-keys-environment-variables = 'GOOGLE_API_KEY,GEMINI_API_KEY'
 dev-dependencies = 'googleapis_auth,test,test_utils'
+part-file = 'src/example-part.p.txt'
 repository-url = 'https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_ai_generativelanguage_v1beta'
 
 readme-after-title-text = '''

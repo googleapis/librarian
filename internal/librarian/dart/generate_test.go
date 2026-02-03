@@ -376,7 +376,7 @@ func TestToSidekickConfig(t *testing.T) {
 			name:    "empty library",
 			library: &config.Library{},
 			channel: &config.API{
-				Path: "google/example/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: &sidekickconfig.Config{
@@ -384,7 +384,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "dart",
 					SpecificationFormat: "protobuf",
 					ServiceConfig:       "",
-					SpecificationSource: "google/example/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
 				},
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
@@ -398,7 +398,7 @@ func TestToSidekickConfig(t *testing.T) {
 				DescriptionOverride: "this is a description override",
 			},
 			channel: &config.API{
-				Path: "google/example/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: &sidekickconfig.Config{
@@ -406,7 +406,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "dart",
 					SpecificationFormat: "protobuf",
 					ServiceConfig:       "",
-					SpecificationSource: "google/example/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
 				},
 				Source: map[string]string{
 					"googleapis-root":      googleapisDir,
@@ -423,7 +423,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.API{
-				Path: "google/example/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: &sidekickconfig.Config{
@@ -431,11 +431,41 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "dart",
 					SpecificationFormat: "protobuf",
 					ServiceConfig:       "",
-					SpecificationSource: "google/example/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
 				},
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"name-override":   "override-name",
+				},
+				Codec: map[string]string{},
+			},
+		},
+		{
+			name: "with include list",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					IncludeList: []string{
+						"api.proto",
+						"duration.proto",
+						"empty.proto",
+						"field_mask.proto",
+					},
+				},
+			},
+			channel: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": googleapisDir,
+					"include-list":    "api.proto,duration.proto,empty.proto,field_mask.proto",
 				},
 				Codec: map[string]string{},
 			},
@@ -468,7 +498,7 @@ func TestToSidekickConfig(t *testing.T) {
 				},
 			},
 			channel: &config.API{
-				Path: "google/example/v1",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: &sidekickconfig.Config{
@@ -476,7 +506,7 @@ func TestToSidekickConfig(t *testing.T) {
 					Language:            "dart",
 					SpecificationFormat: "protobuf",
 					ServiceConfig:       "",
-					SpecificationSource: "google/example/v1",
+					SpecificationSource: "google/cloud/secretmanager/v1",
 				},
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,

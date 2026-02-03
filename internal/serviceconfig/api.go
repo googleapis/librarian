@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/api-allowlist-schema.md -root API -root-title API -title "API Allowlist"
+
 package serviceconfig
 
 const (
@@ -430,20 +432,33 @@ var APIs = []API{
 	{Path: "google/rpc"},
 	{Path: "google/rpc/context", Title: "RPC Audit and Logging Attributes"},
 	{Path: "google/shopping/css/v1", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/accounts/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/accounts/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/conversions/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/conversions/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/datasources/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/datasources/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/inventories/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/inventories/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/issueresolution/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/issueresolution/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/lfp/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/lfp/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/notifications/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/notifications/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/ordertracking/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/ordertracking/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/products/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/products/v1beta", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/productstudio/v1alpha", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/promotions/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/promotions/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/quota/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/quota/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/reports/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reports/v1alpha", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reports/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/reviews/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reviews/v1beta", Languages: []string{langPython}},
 	{Path: "google/shopping/type", Languages: []string{langPython}},
 	{Path: "google/spanner/admin/database/v1"},

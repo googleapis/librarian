@@ -1,6 +1,6 @@
 # librarian.yaml Schema
 
-This document describes the schema for the `librarian.yaml` file.
+This document describes the schema for the librarian.yaml.
 
 ## Root Configuration
 
@@ -9,7 +9,7 @@ This document describes the schema for the `librarian.yaml` file.
 | :--- | :--- | :--- |
 | `language` | string | Language is the language for this workspace (go, python, rust). |
 | `version` | string | Version is the librarian tool version to use. |
-| `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python". TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
+| `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python".<br><br>TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
 | `sources` | [Sources](#sources-configuration) (optional) | Sources references external source repositories. |
 | `release` | [Release](#release-configuration) (optional) | Release holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Default contains default settings for all libraries. They apply to all libraries unless overridden. |
@@ -22,7 +22,7 @@ This document describes the schema for the `librarian.yaml` file.
 | :--- | :--- | :--- |
 | `branch` | string | Branch sets the name of the release branch, typically `main` |
 | `ignored_changes` | list of string | IgnoredChanges defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled. This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
+| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
 | `remote` | string | Remote sets the name of the source-of-truth remote for releases, typically `upstream`. |
 | `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
 | `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
@@ -82,12 +82,13 @@ This document describes the schema for the `librarian.yaml` file.
 | `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
 | `output` | string | Output is the directory where code is written. This overrides Default.Output. |
 | `release_level` | string | ReleaseLevel is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
+| `roots` | list of string | Roots specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | SkipGenerate disables code generation for this library. |
 | `skip_publish` | bool | SkipPublish disables publishing for this library. |
 | `skip_release` | bool | SkipRelease disables releasing for this library. |
 | `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
-| `veneer` | bool | Veneer indicates this library has hand-written code. A veneer may contain generated libraries. |
+| `veneer` | bool | Veneer indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Go contains Go-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Python contains Python-specific library configuration. |
@@ -95,7 +96,7 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## API Configuration
 
-[Link to code](../internal/config/config.go#L217)
+[Link to code](../internal/config/config.go#L220)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
@@ -111,7 +112,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `extra_imports` | string | ExtraImports is additional imports to include in the generated library. |
 | `issue_tracker_url` | string | IssueTrackerURL is the URL for the issue tracker. |
 | `library_path_override` | string | LibraryPathOverride overrides the library path. |
-| `not_for_publication` | string | NotForPublication indicates whether this package should not be published. |
+| `name_override` | string | NameOverride overrides the package name |
 | `packages` | map[string]string | Packages maps Dart package names to version constraints. Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0". |
 | `part_file` | string | PartFile is the path to a part file to include in the generated library. |
 | `prefixes` | map[string]string | Prefixes maps protobuf package names to Dart import prefixes. Keys are in the format "prefix:google.protobuf" and values are the prefix names. |
@@ -119,6 +120,8 @@ This document describes the schema for the `librarian.yaml` file.
 | `readme_after_title_text` | string | ReadmeAfterTitleText is text to insert in the README after the title. |
 | `readme_quickstart_text` | string | ReadmeQuickstartText is text to use for the quickstart section in the README. |
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
+| `title_override` | string | TitleOverride overrides the API title. |
+| `version` | string | Version is the version of the dart package. |
 
 ## GoAPI Configuration
 
@@ -150,7 +153,7 @@ This document describes the schema for the `librarian.yaml` file.
 
 ## RustCrate Configuration
 
-[Link to code](../internal/config/language.go#L127)
+[Link to code](../internal/config/language.go#L130)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
@@ -160,7 +163,6 @@ This document describes the schema for the `librarian.yaml` file.
 | `template_override` | string | TemplateOverride overrides the default template. |
 | `package_name_override` | string | PackageNameOverride overrides the package name. |
 | `root_name` | string | RootName is the root name for the crate. |
-| `roots` | list of string | Roots specifies the source roots to use for generation. Defaults to googleapis. |
 | `default_features` | list of string | DefaultFeatures is a list of default features to enable. |
 | `include_list` | list of string | IncludeList is a list of items to include. |
 | `included_ids` | list of string | IncludedIds is a list of IDs to include. |
@@ -217,6 +219,7 @@ This document describes the schema for the `librarian.yaml` file.
 | `included_ids` | list of string | IncludedIds is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods. |
 | `include_list` | string | IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `internal_builders` | bool | InternalBuilders indicates whether generated builders should be internal to the crate. |
 | `language` | string | Language can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | ModulePath is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |

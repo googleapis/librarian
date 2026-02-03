@@ -20,10 +20,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -55,6 +57,23 @@ var (
 	errFetchSource                 = errors.New("cannot fetch source")
 
 	fetchSource = fetchGoogleapis
+
+	pathToName = map[string]string{
+		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
+		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
+	}
+
+	libraryToKeep = map[string][]string{
+		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+		"google_cloud_rpc": {
+			"lib/src/exceptions.dart",
+			"lib/src/versions.dart",
+			"lib/src/vm.dart",
+			"lib/src/web.dart",
+			"lib/exceptions.dart",
+			"lib/service_client.dart",
+		},
+	}
 )
 
 func main() {
@@ -243,9 +262,14 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			specificationFormat = "protobuf"
 		}
 
-		// Library name or package name is derived from api path by packageName function in dart package.
-		// However, each library in the librarian configuration should have a name.
-		libraryName := genLibraryName(apiPath)
+		var libraryName string
+		if name, ok := pathToName[filepath.Base(filepath.Dir(file))]; ok {
+			libraryName = name
+		} else {
+			// Library name or package name is derived from api path by packageName function in dart package.
+			// However, each library in the librarian configuration should have a name.
+			libraryName = genLibraryName(apiPath)
+		}
 		lib := &config.Library{
 			Name: libraryName,
 			APIs: []*config.API{
@@ -255,19 +279,39 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			},
 		}
 
+		dir := filepath.Dir(file)
+		keep, err := parseKeep(dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
+		}
+		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
+			keep = append(keep, additionalKeeps...)
+		}
+		slices.Sort(keep)
+		lib.Keep = keep
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
 		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
 			lib.DescriptionOverride = descriptionOverride
 		}
-		relativePath, err := filepath.Rel(repoPath, filepath.Dir(file))
+		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
 		lib.Output = relativePath
 		if _, ok := sidekick.Codec["not-for-publication"]; ok {
 			lib.SkipPublish = true
+		}
+		// in Dart .sidekick.toml, the protobuf source root is protobuf, while in Rust is protobuf-src.
+		// Convert protobuf to protobuf-src to reuse parsing logic in sidekick tool.
+		if roots, ok := sidekick.Source["roots"]; ok && roots != "" {
+			lib.Roots = strings.Split(roots, ",")
+			for i, root := range lib.Roots {
+				if root == "protobuf" {
+					lib.Roots[i] = "protobuf-src"
+				}
+			}
 		}
 
 		lib.SpecificationFormat = specificationFormat
@@ -292,7 +336,21 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if extraImports, ok := sidekick.Codec["extra-imports"]; ok && extraImports != "" {
 			dartPackage.ExtraImports = extraImports
 		}
+		if includeList, ok := sidekick.Source["include-list"]; ok && includeList != "" {
+			dartPackage.IncludeList = strings.Split(includeList, ",")
+		}
 		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
+			// part-file in .sidekick.toml starts with src/, however, the file path is
+			// actually {output}/lib/src/*.
+			path := filepath.Join(dir, "lib", partFile)
+			if _, err := os.Stat(path); err != nil {
+				return nil, fmt.Errorf("failed to stat %s: %w", path, err)
+			}
+			partFileRelPath, err := filepath.Rel(dir, path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
+			}
+			lib.Keep = append(lib.Keep, partFileRelPath)
 			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
@@ -303,6 +361,10 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		}
 		if quickStart, ok := sidekick.Codec["readme-quickstart-text"]; ok && quickStart != "" {
 			dartPackage.ReadmeQuickstartText = quickStart
+		}
+		prefix := parseKeyWithPrefix(sidekick.Codec, "prefix:")
+		if len(prefix) != 0 {
+			dartPackage.Prefixes = prefix
 		}
 
 		if !isEmptyDartPackage(dartPackage) {
@@ -344,4 +406,35 @@ func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]strin
 
 func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
+}
+
+// parseKeep generate files that should keep before library generation.
+// Only files inside example/ and test/ directories are considered, if existed.
+func parseKeep(base string) ([]string, error) {
+	var res []string
+	for _, sub := range []string{"example", "test"} {
+		subDir := filepath.Join(base, sub)
+		err := filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil
+				}
+				return err
+			}
+
+			if !d.IsDir() {
+				relativePath, err := filepath.Rel(base, path)
+				if err != nil {
+					return err
+				}
+				res = append(res, relativePath)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
