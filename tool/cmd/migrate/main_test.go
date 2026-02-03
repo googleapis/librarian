@@ -257,24 +257,6 @@ API key as an argument when initializing the client.
 			},
 			want: nil,
 		},
-		{
-			name: "special library dir",
-			files: []string{
-				"testdata/read-sidekick-files/special-dir/google_cloud_protojson_conformance/.sidekick.toml",
-			},
-			want: []*config.Library{
-				{
-					Name: "google_cloud_protobuf_test_messages_proto3",
-					APIs: []*config.API{
-						{
-							Path: "src/google/protobuf",
-						},
-					},
-					Output:              "testdata/read-sidekick-files/special-dir/google_cloud_protojson_conformance",
-					SpecificationFormat: "protobuf",
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGAPIC(test.files, test.repoPath)

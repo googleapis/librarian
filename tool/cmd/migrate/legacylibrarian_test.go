@@ -135,7 +135,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					Output:       "packages",
+					ReleaseLevel: "stable",
+					TagFormat:    defaultTagFormat,
+					Transport:    "grpc+rest",
 				},
 			},
 		},
@@ -151,10 +154,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							{
 								Path: "google/example/api/v1",
 							},
-						},
-						PreserveRegex: []string{
-							"example-preserve-1",
-							"example-preserve-2",
 						},
 					},
 					{
@@ -176,7 +175,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					Output:       "packages",
+					ReleaseLevel: "stable",
+					TagFormat:    defaultTagFormat,
+					Transport:    "grpc+rest",
 				},
 				Libraries: []*config.Library{
 					{
@@ -190,17 +192,13 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 								Path: "google/example/api/v1",
 							},
 						},
-						Keep: []string{
-							"example-preserve-1",
-							"example-preserve-2",
-						},
 					},
 				},
 			},
 		},
 		{
 			name: "has_a_librarian_config",
-			lang: "python",
+			lang: "go",
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
@@ -224,8 +222,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "python",
-				Repo:     "googleapis/google-cloud-python",
+				Language: "go",
+				Repo:     "googleapis/google-cloud-go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "abcd123",
@@ -284,78 +282,32 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	}
 }
 
-func TestBuildLibraries(t *testing.T) {
+func TestBuildGoLibraries(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		input *MigrationInput
 		want  []*config.Library
 	}{
 		{
-			name: "sorted_libraries",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "example-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path:          "google/example/api/v1",
-									ServiceConfig: "path/to/config.yaml",
-								},
-							},
-						},
-						{
-							ID: "another-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path:          "google/another/api/v1",
-									ServiceConfig: "another/config.yaml",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-			},
-			want: []*config.Library{
-				{
-					Name: "another-library",
-					APIs: []*config.API{
-						{
-							Path: "google/another/api/v1",
-						},
-					},
-				},
-				{
-					Name: "example-library",
-					APIs: []*config.API{
-						{
-							Path: "google/example/api/v1",
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "go_libraries",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
-							ID: "example-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path:          "google/example/api/v1",
-									ServiceConfig: "path/to/config.yaml",
-								},
-							},
-						},
-						{
 							ID: "another-library",
 							APIs: []*legacyconfig.API{
 								{
 									Path:          "google/another/api/v1",
 									ServiceConfig: "another/config.yaml",
+								},
+							},
+						},
+						{
+							ID: "example-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/example/api/v1",
+									ServiceConfig: "path/to/config.yaml",
 								},
 							},
 						},
@@ -419,7 +371,7 @@ func TestBuildLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildLibraries(test.input)
+			got := buildGoLibraries(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

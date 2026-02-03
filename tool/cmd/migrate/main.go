@@ -55,11 +55,6 @@ var (
 	errFetchSource                 = errors.New("cannot fetch source")
 
 	fetchSource = fetchGoogleapis
-
-	pathToName = map[string]string{
-		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
-		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
-	}
 )
 
 func main() {
@@ -248,14 +243,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			specificationFormat = "protobuf"
 		}
 
-		var libraryName string
-		if name, ok := pathToName[filepath.Base(filepath.Dir(file))]; ok {
-			libraryName = name
-		} else {
-			// Library name or package name is derived from api path by packageName function in dart package.
-			// However, each library in the librarian configuration should have a name.
-			libraryName = genLibraryName(apiPath)
-		}
+		// Library name or package name is derived from api path by packageName function in dart package.
+		// However, each library in the librarian configuration should have a name.
+		libraryName := genLibraryName(apiPath)
 		lib := &config.Library{
 			Name: libraryName,
 			APIs: []*config.API{
