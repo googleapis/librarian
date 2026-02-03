@@ -56,14 +56,10 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err != nil {
 		return err
 	}
-	exists := true
 	if _, err := os.Stat(library.Output); err != nil {
 		if !os.IsNotExist(err) {
 			return fmt.Errorf("cannot access output directory %q: %w", library.Output, err)
 		}
-		exists = false
-	}
-	if !exists {
 		if err := create(ctx, library.Output); err != nil {
 			return err
 		}
@@ -71,8 +67,8 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec); err != nil {
 		return err
 	}
-	if !exists {
-		validate(ctx, library.Output)
+	if err := validate(ctx, library.Output); err != nil {
+		return err
 	}
 	return nil
 }
