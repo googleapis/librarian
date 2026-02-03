@@ -306,11 +306,11 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			if _, err := os.Stat(path); err != nil {
 				return nil, fmt.Errorf("failed to stat %s: %w", path, err)
 			}
-			relPath, err := filepath.Rel(dir, path)
+			partFileRelPath, err := filepath.Rel(dir, path)
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 			}
-			lib.Keep = append(lib.Keep, relPath)
+			lib.Keep = append(lib.Keep, partFileRelPath)
 			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
