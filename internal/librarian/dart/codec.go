@@ -15,6 +15,8 @@
 package dart
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/common"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -83,6 +85,9 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 	if dart.ExtraImports != "" {
 		codec["extra-imports"] = dart.ExtraImports
+	}
+	if dart.IncludeList != nil {
+		codec["include-list"] = strings.Join(dart.IncludeList, ",")
 	}
 	if dart.IssueTrackerURL != "" {
 		codec["issue-tracker-url"] = dart.IssueTrackerURL

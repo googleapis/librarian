@@ -323,6 +323,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if nameOverride, ok := sidekick.Source["name-override"]; ok && nameOverride != "" {
 			dartPackage.NameOverride = nameOverride
 		}
+		if includeList, ok := sidekick.Source["include-list"]; ok && includeList != "" {
+			dartPackage.IncludeList = strings.Split(includeList, ",")
+		}
 
 		if apiKeys, ok := sidekick.Codec["api-keys-environment-variables"]; ok && apiKeys != "" {
 			dartPackage.APIKeysEnvironmentVariables = apiKeys
