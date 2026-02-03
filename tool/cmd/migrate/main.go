@@ -285,7 +285,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
 		}
 		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
-			lib.Keep = append(lib.Keep, additionalKeeps...)
+			keep = append(keep, additionalKeeps...)
 		}
 		slices.Sort(keep)
 		lib.Keep = keep

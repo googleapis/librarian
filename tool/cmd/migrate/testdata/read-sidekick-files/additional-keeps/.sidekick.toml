@@ -13,3 +13,12 @@
 # limitations under the License.
 
 [general]
+specification-source = 'google/rpc'
+service-config = 'google/rpc/rpc_publish.yaml'
+
+[codec]
+copyright-year = '2025'
+part-file = 'src/rpc.p.dart'
+dependencies = 'googleapis_auth,http'
+dev-dependencies = 'test'
+repository-url = 'https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc'
