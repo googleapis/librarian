@@ -69,9 +69,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-secretmanager",
-				},
 			},
 		},
 		{
@@ -97,11 +94,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
-				Codec: map[string]string{
-					"version":               "0.1.0",
-					"release-level":         "preview",
-					"package-name-override": "google-cloud-secretmanager",
-				},
 			},
 		},
 		{
@@ -125,10 +117,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
-				},
-				Codec: map[string]string{
-					"copyright-year":        "2024",
-					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
@@ -169,22 +157,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
-				Codec: map[string]string{
-					"module-path":                 "gcs",
-					"per-service-features":        "true",
-					"include-grpc-only-methods":   "true",
-					"detailed-tracing-attributes": "true",
-					"has-veneer":                  "true",
-					"routing-required":            "true",
-					"generate-setter-samples":     "true",
-					"generate-rpc-samples":        "true",
-					"disabled-rustdoc-warnings":   "broken_intra_doc_links",
-					"disabled-clippy-warnings":    "too_many_arguments",
-					"default-features":            "default-feature",
-					"extra-modules":               "extra-module",
-					"template-override":           "custom-template",
-					"package-name-override":       "google-cloud-secretmanager",
-				},
 			},
 		},
 		{
@@ -208,10 +180,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
-				},
-				Codec: map[string]string{
-					"not-for-publication":   "true",
-					"package-name-override": "google-cloud-secretmanager",
 				},
 			},
 		},
@@ -249,10 +217,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
-				Codec: map[string]string{
-					"package:tokio":         "package=tokio,source=1.0,force-used=true,used-if=feature = \"async\",feature=async",
-					"package-name-override": "google-cloud-secretmanager",
-				},
 			},
 		},
 		{
@@ -283,9 +247,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-secretmanager",
 				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
@@ -324,9 +285,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-secretmanager",
-				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
 						ID:        ".google.cloud.secretmanager.v1.Secret.ListSecrets",
@@ -358,9 +316,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis,discovery",
 					"title-override":  "Google Compute Engine API",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-compute-v1",
-				},
 			},
 		},
 		{
@@ -384,9 +339,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 					"title-override":  "Secret Manager API",
-				},
-				Codec: map[string]string{
-					"package-name-override": "secretmanager-openapi-v1",
 				},
 			},
 		},
@@ -414,9 +366,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis,discovery,showcase",
 					"title-override":  "Google Compute Engine API",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-compute-v1",
-				},
 			},
 		},
 		{
@@ -437,9 +386,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-apps-script-type-gmail",
 				},
 			},
 		},
@@ -462,9 +408,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root":      absPath(t, googleapisRoot),
 					"description-override": "Defines types and an abstract service to handle long-running operations.",
 					"roots":                "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-longrunning",
 				},
 			},
 		},
@@ -494,9 +437,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-spanner-admin-database-v1",
-				},
 			},
 		},
 		{
@@ -519,10 +459,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-storageinsights-v1",
-					"name-overrides":        ".google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_buckets=CloudStorageBucketsOneOf,.google.cloud.storageinsights.v1.DatasetConfig.cloud_storage_locations=CloudStorageLocationsOneOf",
 				},
 			},
 		},
@@ -568,9 +504,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"roots":           "googleapis,discovery",
 					"title-override":  "Google Compute Engine API",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-compute-v1",
-				},
 				Discovery: &sidekickconfig.Discovery{
 					OperationID: ".google.cloud.compute.v1.Operation",
 					Pollers: []*sidekickconfig.Poller{
@@ -611,9 +544,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"conformance-root":  absPath(t, conformanceRoot),
 					"roots":             "googleapis,protobuf-src,conformance",
 				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-vision-v1",
-				},
 			},
 		},
 		{
@@ -637,9 +567,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "showcase,googleapis",
 					"title-override":  "Client Libraries Showcase API",
-				},
-				Codec: map[string]string{
-					"package-name-override": "google-cloud-showcase",
 				},
 			},
 		},
@@ -995,6 +922,61 @@ func TestFormatPackageDependency(t *testing.T) {
 			got := formatPackageDependency(&test.dep)
 			if got != test.want {
 				t.Errorf("formatPackageDependency() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestBuildCodec(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    map[string]string
+	}{
+		{
+			name: "minimal config",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			want: map[string]string{
+				"package-name-override": "google-cloud-secretmanager",
+			},
+		},
+		{
+			name: "with version and release level",
+			library: &config.Library{
+				Name:         "google-cloud-secretmanager",
+				Version:      "0.1.0",
+				ReleaseLevel: "preview",
+			},
+			want: map[string]string{
+				"package-name-override": "google-cloud-secretmanager",
+				"version":               "0.1.0",
+				"release-level":         "preview",
+			},
+		},
+		{
+			name: "with rust config",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
+					},
+					ModulePath: "gcs",
+				},
+			},
+			want: map[string]string{
+				"package-name-override":     "google-cloud-secretmanager",
+				"disabled-rustdoc-warnings": "broken_intra_doc_links",
+				"module-path":               "gcs",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildCodec(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

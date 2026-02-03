@@ -69,7 +69,6 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 			SpecificationSource: specSource,
 		},
 		Source: source,
-		Codec:  buildCodec(library),
 	}
 	if library.Rust != nil {
 		if len(library.Rust.DocumentationOverrides) > 0 {
