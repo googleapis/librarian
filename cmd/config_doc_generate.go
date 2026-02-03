@@ -36,22 +36,27 @@ import (
 var (
 	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
 	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
+	rootStruct = flag.String("root", "Config", "The name of the root struct to start documentation from")
+	rootTitle  = flag.String("root-title", "Root", "The title to use for the root struct block")
+	tag        = flag.String("tag", "yaml", "The struct tag to use for field names (e.g., yaml, json)")
+	title      = flag.String("title", "librarian.yaml", "The title of the generated Markdown page")
 )
 
 const (
 	primaryConfigFile = "config.go"
-	rootStructName    = "Config"
 
 	// Markdown title components
 	titleSuffix = " Configuration"
-	rootTitle   = "Root"
 
 	// Markdown anchor components
 	anchorSuffix = "-configuration"
 	rootAnchor   = "root-configuration"
 )
 
-var structTemplate = template.Must(template.New("struct").Parse(`
+var docTemplate = template.Must(template.New("doc").Parse(`# {{.Title}} Schema
+
+This document describes the schema for the {{.Title}}.
+{{range .Structs}}
 ## {{.Title}}
 
 {{if .SourceLink}}[Link to code]({{.SourceLink}})
@@ -59,7 +64,12 @@ var structTemplate = template.Must(template.New("struct").Parse(`
 {{end}}| Field | Type | Description |
 | :--- | :--- | :--- |
 {{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
-{{end}}`))
+{{end}}{{end}}`))
+
+type pageData struct {
+	Title   string
+	Structs []structData
+}
 
 type structData struct {
 	Title      string
@@ -99,7 +109,7 @@ func run() (err error) {
 	if err != nil {
 		return fmt.Errorf("loading package: %w", err)
 	}
-	d, err := newDocData(pkg)
+	d, err := newDocData(pkg, *rootStruct, *rootTitle, *tag, *title)
 	if err != nil {
 		return fmt.Errorf("inspecting package syntax: %w", err)
 	}
@@ -137,21 +147,29 @@ func loadPackage(inputDir string) (*packages.Package, error) {
 
 // docData holds the collected metadata for generating documentation from the Go package.
 type docData struct {
-	pkg        *packages.Package
-	structs    map[string]*ast.StructType
-	docs       map[string]string
-	sources    map[string]string
-	configKeys []string
-	otherKeys  []string
+	pkg         *packages.Package
+	structs     map[string]*ast.StructType
+	docs        map[string]string
+	sources     map[string]string
+	configKeys  []string
+	otherKeys   []string
+	rootStruct  string
+	rootHeading string
+	tag         string
+	title       string
 }
 
 // newDocData constructs a docData by inspecting all files in the provided package.
-func newDocData(pkg *packages.Package) (*docData, error) {
+func newDocData(pkg *packages.Package, rootStruct, rootHeading, tag, title string) (*docData, error) {
 	d := &docData{
-		pkg:     pkg,
-		structs: make(map[string]*ast.StructType),
-		docs:    make(map[string]string),
-		sources: make(map[string]string),
+		pkg:         pkg,
+		structs:     make(map[string]*ast.StructType),
+		docs:        make(map[string]string),
+		sources:     make(map[string]string),
+		rootStruct:  rootStruct,
+		rootHeading: rootHeading,
+		tag:         tag,
+		title:       title,
 	}
 
 	moduleRoot := "."
@@ -208,25 +226,26 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 
 // generate writes the collected documentation in Markdown format to the provided writer.
 func (d *docData) generate(output io.Writer) error {
-	fmt.Fprintln(output, "# librarian.yaml Schema")
-	fmt.Fprintln(output)
-	fmt.Fprintln(output, "This document describes the schema for the `librarian.yaml` file.")
-	// Write Config objects first, then others.
+	pageData := pageData{
+		Title: d.title,
+	}
+	// Collect all struct data first
 	for _, k := range append(d.configKeys, d.otherKeys...) {
-		if err := d.writeStruct(output, k, d.sources[k]); err != nil {
+		sd, err := d.collectStructData(k, d.sources[k])
+		if err != nil {
 			return err
 		}
+		pageData.Structs = append(pageData.Structs, sd)
 	}
-	return nil
+	return docTemplate.Execute(output, pageData)
 }
 
-// writeStruct writes a Markdown representation of a Go struct to the provided writer.
-// It generates a table of fields, including their YAML names, types, and descriptions.
-func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) error {
+// collectStructData prepares the metadata for a single Go struct.
+func (d *docData) collectStructData(name string, sourceLink string) (structData, error) {
 	st := d.structs[name]
 	title := name + titleSuffix
-	if name == rootStructName {
-		title = rootTitle + titleSuffix
+	if name == d.rootStruct {
+		title = d.rootHeading + titleSuffix
 	}
 	structData := structData{
 		Title:      title,
@@ -239,12 +258,12 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			typeName := getTypeName(field.Type)
 			structData.Fields = append(structData.Fields, fieldData{
 				Name: "(embedded)",
-				Type: formatType(typeName, d.structs),
+				Type: d.formatType(typeName),
 			})
 			continue
 		}
-		yamlName := extractYamlName(field.Tag)
-		if yamlName == "" || yamlName == "-" {
+		fieldName := d.getFieldName(field)
+		if fieldName == "" || fieldName == "-" {
 			continue
 		}
 		typeName := getTypeName(field.Type)
@@ -253,24 +272,29 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			description = cleanDoc(field.Doc.Text())
 		}
 		structData.Fields = append(structData.Fields, fieldData{
-			Name:        fmt.Sprintf("`%s`", yamlName),
-			Type:        formatType(typeName, d.structs),
+			Name:        fmt.Sprintf("`%s`", fieldName),
+			Type:        d.formatType(typeName),
 			Description: description,
 		})
 	}
-	return structTemplate.Execute(output, structData)
+	return structData, nil
 }
 
-func extractYamlName(tag *ast.BasicLit) string {
-	if tag == nil {
-		return ""
+// getFieldName returns the documentation name for a field. It first attempts to
+// extract the name from the struct tag specified by the tagName field. If the
+// tag is missing or empty, it falls back to the Go field name.
+func (d *docData) getFieldName(field *ast.Field) string {
+	if field.Tag != nil {
+		tagValue := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+		val := tagValue.Get(d.tag)
+		if val != "" {
+			return strings.Split(val, ",")[0]
+		}
 	}
-	tagValue := reflect.StructTag(strings.Trim(tag.Value, "`"))
-	val := tagValue.Get("yaml")
-	if val == "" {
-		return ""
+	if len(field.Names) > 0 {
+		return field.Names[0].Name
 	}
-	return strings.Split(val, ",")[0]
+	return ""
 }
 
 func getTypeName(expr ast.Expr) string {
@@ -290,16 +314,16 @@ func getTypeName(expr ast.Expr) string {
 	}
 }
 
-func formatType(typeName string, allStructs map[string]*ast.StructType) string {
+func (d *docData) formatType(typeName string) string {
 	isSlice := strings.HasPrefix(typeName, "[]")
 	cleanType := strings.TrimPrefix(typeName, "[]")
 	isPointer := strings.HasPrefix(cleanType, "*")
 	cleanType = strings.TrimPrefix(cleanType, "*")
 	res := cleanType
 	// If it's one of our structs, link it
-	if _, ok := allStructs[cleanType]; ok {
+	if _, ok := d.structs[cleanType]; ok {
 		anchor := strings.ToLower(cleanType) + anchorSuffix
-		if cleanType == rootStructName {
+		if cleanType == d.rootStruct {
 			anchor = rootAnchor
 		}
 		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
