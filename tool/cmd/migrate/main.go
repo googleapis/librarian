@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -64,6 +65,14 @@ var (
 
 	libraryToKeep = map[string][]string{
 		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+		"google_cloud_rpc": {
+			"lib/src/exceptions.dart",
+			"lib/src/versions.dart",
+			"lib/src/vm.dart",
+			"lib/src/web.dart",
+			"lib/exceptions.dart",
+			"lib/service_client.dart",
+		},
 	}
 )
 
@@ -279,6 +288,7 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
 			lib.Keep = append(lib.Keep, additionalKeeps...)
 		}
+		slices.Sort(lib.Keep)
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
