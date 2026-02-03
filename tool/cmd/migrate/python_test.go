@@ -61,10 +61,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildPythonLibraries(test.input)
-			if err != nil {
-				t.Fatal(err)
-			}
+			got := buildPythonLibraries(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

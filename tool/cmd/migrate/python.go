@@ -21,7 +21,7 @@ import (
 // buildPythonLibraries builds a set of librarian libraries from legacylibrarian
 // libraries and the googleapis directory used to find settings in service
 // config files, BUILD.bazel files etc.
-func buildPythonLibraries(input *MigrationInput) ([]*config.Library, error) {
+func buildPythonLibraries(input *MigrationInput) []*config.Library {
 	var libraries []*config.Library
 	// No need to use legacyconfig.LibraryConfig - the only thing in
 	// the python config is a single global file entry.
@@ -36,5 +36,5 @@ func buildPythonLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		libraries = append(libraries, library)
 	}
-	return libraries, nil
+	return libraries
 }
