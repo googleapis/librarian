@@ -35,6 +35,9 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *common.S
 	if library.Dart != nil && library.Dart.TitleOverride != "" {
 		source["title-override"] = library.Dart.TitleOverride
 	}
+	if library.Dart != nil && library.Dart.IncludeList != nil {
+		source["include-list"] = strings.Join(library.Dart.IncludeList, ",")
+	}
 
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
@@ -85,9 +88,6 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 	if dart.ExtraImports != "" {
 		codec["extra-imports"] = dart.ExtraImports
-	}
-	if dart.IncludeList != nil {
-		codec["include-list"] = strings.Join(dart.IncludeList, ",")
 	}
 	if dart.IssueTrackerURL != "" {
 		codec["issue-tracker-url"] = dart.IssueTrackerURL
