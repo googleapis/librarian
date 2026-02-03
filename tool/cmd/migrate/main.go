@@ -319,11 +319,11 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			if _, err := os.Stat(path); err != nil {
 				return nil, fmt.Errorf("failed to stat %s: %w", path, err)
 			}
-			relPath, err := filepath.Rel(dir, path)
+			partFileRelPath, err := filepath.Rel(dir, path)
 			if err != nil {
 				return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 			}
-			lib.Keep = append(lib.Keep, relPath)
+			lib.Keep = append(lib.Keep, partFileRelPath)
 			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
@@ -377,19 +377,17 @@ func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
 }
 
+// parseKeep generate files that should keep before library generation.
+// Only files inside example/ and test/ directories are considered, if existed.
 func parseKeep(base string) ([]string, error) {
 	var res []string
 	for _, sub := range []string{"example", "test"} {
 		subDir := filepath.Join(base, sub)
-		if _, err := os.Stat(subDir); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				continue
-			}
-			return nil, err
-		}
-
 		err := filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil
+				}
 				return err
 			}
 
