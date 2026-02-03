@@ -64,7 +64,7 @@ var (
 	}
 
 	libraryToKeep = map[string][]string{
-		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+		"google_cloud_protobuf": {"lib/src/encoding.dart"},
 		"google_cloud_rpc": {
 			"lib/src/exceptions.dart",
 			"lib/src/versions.dart",
@@ -73,6 +73,7 @@ var (
 			"lib/exceptions.dart",
 			"lib/service_client.dart",
 		},
+		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
 	}
 )
 
