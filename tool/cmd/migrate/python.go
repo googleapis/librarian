@@ -27,9 +27,10 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 	// the python config is a single global file entry.
 
 	for _, libState := range input.librarianState.Libraries {
-		library := &config.Library{}
-		library.Name = libState.ID
-		library.Version = libState.Version
+		library := &config.Library{
+			Name:    libState.ID,
+			Version: libState.Version,
+		}
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
