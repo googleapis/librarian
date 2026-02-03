@@ -39,9 +39,9 @@ import (
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
-func ParseProtobuf(cfg *config.Config) (*api.API, error) {
+func ParseProtobuf(cfg *config.Config, overrides *ModelOverrides) (*api.API, error) {
 	source := cfg.General.SpecificationSource
-	request, err := newCodeGeneratorRequest(source, cfg.Source)
+	request, err := newCodeGeneratorRequest(source, cfg.Source, overrides)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func ParseProtobuf(cfg *config.Config) (*api.API, error) {
 	return makeAPIForProtobuf(serviceConfig, request)
 }
 
-func newCodeGeneratorRequest(source string, options map[string]string) (_ *pluginpb.CodeGeneratorRequest, err error) {
+func newCodeGeneratorRequest(source string, sourceRoots map[string]string, overrides *ModelOverrides) (_ *pluginpb.CodeGeneratorRequest, err error) {
 	// Create a temporary files to store `protoc`'s output
 	tempFile, err := os.CreateTemp("", "protoc-out-")
 	if err != nil {
@@ -66,13 +66,13 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		}
 	}()
 
-	files, err := protobuf.DetermineInputFiles(source, options)
+	files, err := protobuf.DetermineInputFiles(source, sourceRoots, overrides.IncludeList, overrides.ExcludeList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call protoc with the given arguments.
-	contents, err := protoc(tempFile.Name(), files, options)
+	contents, err := protoc(tempFile.Name(), files, sourceRoots)
 	if err != nil {
 		return nil, err
 	}

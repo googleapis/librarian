@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
@@ -39,11 +40,12 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := libraryToSidekickConfig(library, library.APIs[0], sources)
+	sidekickConfig, api, err := libraryToSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
-	model, err := parser.CreateModel(sidekickConfig)
+	overrides := createModelOverrides(library, api)
+	model, err := parser.CreateModel(sidekickConfig, overrides)
 	if err != nil {
 		return err
 	}
@@ -96,7 +98,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
-		model, err := parser.CreateModel(sidekickConfig)
+		model, err := parser.CreateModel(sidekickConfig, parser.NewModelOverridesFromSource(sidekickConfig.Source))
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
@@ -185,7 +187,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create storage sidekick config: %w", err)
 	}
-	storageModel, err := parser.CreateModel(storageConfig)
+	storageModel, err := parser.CreateModel(storageConfig, parser.NewModelOverridesFromSource(storageConfig.Source))
 	if err != nil {
 		return fmt.Errorf("failed to create storage model: %w", err)
 	}
@@ -199,7 +201,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create control sidekick config: %w", err)
 	}
-	controlModel, err := parser.CreateModel(controlConfig)
+	controlModel, err := parser.CreateModel(controlConfig, parser.NewModelOverridesFromSource(controlConfig.Source))
 	if err != nil {
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
@@ -215,4 +217,16 @@ func findModuleByOutput(library *config.Library, output string) *config.RustModu
 	}
 
 	return nil
+}
+
+func createModelOverrides(library *config.Library, api *serviceconfig.API) *parser.ModelOverrides {
+	overrides := &parser.ModelOverrides{
+		Name:        library.Name,
+		Title:       api.Title,
+		Description: library.DescriptionOverride,
+	}
+	if library.Rust != nil {
+		overrides.SkippedIDs = library.Rust.SkippedIds
+	}
+	return overrides
 }

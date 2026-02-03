@@ -44,7 +44,7 @@ func TestCreateModelDisco(t *testing.T) {
 			SpecificationSource: discoSourceFile,
 		},
 	}
-	got, err := CreateModel(cfg)
+	got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
-	model, err := CreateModel(cfg)
+	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := CreateModel(cfg)
+	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestCreateModelOverrides(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	model, err := CreateModel(cfg)
+	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestCreateModelNone(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	model, err := CreateModel(cfg)
+	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestCreateModelUnknown(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	if got, err := CreateModel(cfg); err == nil {
+	if got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source)); err == nil {
 		t.Errorf("expected error with unknown specification format, got=%v", got)
 	}
 }
@@ -207,7 +207,7 @@ func TestCreateModelBadParse(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	if got, err := CreateModel(cfg); err == nil {
+	if got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source)); err == nil {
 		t.Errorf("expected error with bad specification, got=%v", got)
 	}
 }

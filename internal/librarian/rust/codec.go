@@ -24,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
+func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, *serviceconfig.API, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -34,20 +34,16 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 	}
 
 	src := addLibraryRoots(library, sources)
-	if library.DescriptionOverride != "" {
-		src["description-override"] = library.DescriptionOverride
-	}
+
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
 	api, err := serviceconfig.Find(root, ch.Path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if api.Title != "" {
-		src["title-override"] = api.Title
-	}
+
 	var specSource string
 	switch specFormat {
 	case "disco":
@@ -56,11 +52,6 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 		specSource = api.OpenAPI
 	default:
 		specSource = ch.Path
-	}
-	if library.Rust != nil {
-		if len(library.Rust.SkippedIds) > 0 {
-			src["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
-		}
 	}
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
@@ -105,7 +96,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 			}
 		}
 	}
-	return sidekickCfg, nil
+	return sidekickCfg, api, nil
 }
 
 func buildCodec(library *config.Library) map[string]string {
@@ -238,6 +229,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
+
 		if api != nil && api.Title != "" {
 			src["title-override"] = api.Title
 		}

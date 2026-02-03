@@ -45,7 +45,19 @@ type methodAnnotations struct {
 
 func (codec *codec) annotateModel(model *api.API, cfg *config.Config) error {
 	rootSource := cfg.Source[codec.RootName]
-	files, err := protobuf.DetermineInputFiles(cfg.General.SpecificationSource, cfg.Source)
+	// We do not support `exclude-list` or `include-list` for now in this context,
+	// or we need to extract them from `config.Source`.
+	// The `config` struct here is `sidekickconfig.Config`.
+	// Let's parse them from config.Source for now to maintain behavior.
+	includeList := []string{}
+	if val, ok := cfg.Source["include-list"]; ok {
+		includeList = strings.Split(val, ",")
+	}
+	excludeList := []string{}
+	if val, ok := cfg.Source["exclude-list"]; ok {
+		excludeList = strings.Split(val, ",")
+	}
+	files, err := protobuf.DetermineInputFiles(cfg.General.SpecificationSource, cfg.Source, includeList, excludeList)
 	if err != nil {
 		return err
 	}
