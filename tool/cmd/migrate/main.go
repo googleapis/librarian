@@ -368,15 +368,11 @@ func parseKeep(base string) ([]string, error) {
 	var res []string
 	for _, sub := range []string{"example", "test"} {
 		subDir := filepath.Join(base, sub)
-		if _, err := os.Stat(subDir); err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				continue
-			}
-			return nil, err
-		}
-
 		err := filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil
+				}
 				return err
 			}
 
