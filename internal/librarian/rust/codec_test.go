@@ -850,8 +850,8 @@ func TestModuleToSidekickConfig(t *testing.T) {
 							Source: "conformance",
 						},
 					},
-					Roots: []string{"conformance"},
 				},
+				Roots: []string{"conformance"},
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
