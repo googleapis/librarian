@@ -364,6 +364,8 @@ func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
 }
 
+// parseKeep generate files that should keep before library generation.
+// Only files inside example/ and test/ directories are considered, if existed.
 func parseKeep(base string) ([]string, error) {
 	var res []string
 	for _, sub := range []string{"example", "test"} {
