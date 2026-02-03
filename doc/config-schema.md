@@ -9,7 +9,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `language` | string | Language is the language for this workspace (go, python, rust). |
 | `version` | string | Version is the librarian tool version to use. |
-| `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python". TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
+| `repo` | string | Repo is the repository name, such as "googleapis/google-cloud-python".<br><br>TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
 | `sources` | [Sources](#sources-configuration) (optional) | Sources references external source repositories. |
 | `release` | [Release](#release-configuration) (optional) | Release holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Default contains default settings for all libraries. They apply to all libraries unless overridden. |
@@ -22,7 +22,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `branch` | string | Branch sets the name of the release branch, typically `main` |
 | `ignored_changes` | list of string | IgnoredChanges defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled. This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
+| `preinstalled` | map[string]string | Preinstalled tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
 | `remote` | string | Remote sets the name of the source-of-truth remote for releases, typically `upstream`. |
 | `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
 | `tools` | map[string][]Tool | Tools defines the list of tools to install, indexed by installer. |
