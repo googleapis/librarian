@@ -166,7 +166,7 @@ func processFile(cmdPath *string) error {
 	}
 	year, ok := years[pkgName]
 	if !ok {
-		year = "2026"
+		return fmt.Errorf("cannot find year for command: %s", pkgPath)
 	}
 
 	tmpl := template.Must(template.New("doc").Parse(docTemplate))
@@ -176,12 +176,16 @@ func processFile(cmdPath *string) error {
 		Commands    []CommandDoc
 	}{
 		Year:        year,
-		Description: pkg,
+		Description: sanitize(pkg),
 		Commands:    commands,
 	}); err != nil {
 		return fmt.Errorf("could not execute template: %v", err)
 	}
 	return nil
+}
+
+func sanitize(s string) string {
+	return strings.ReplaceAll(s, "*/", "* /")
 }
 
 func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
@@ -225,8 +229,8 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 		}
 
 		commands = append(commands, CommandDoc{
-			Name:     fullCommandName,
-			HelpText: helpText,
+			Name:     sanitize(fullCommandName),
+			HelpText: sanitize(helpText),
 			Commands: subCommands,
 		})
 	}
