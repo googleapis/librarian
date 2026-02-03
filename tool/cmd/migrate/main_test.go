@@ -264,7 +264,7 @@ API key as an argument when initializing the client.
 			},
 			want: []*config.Library{
 				{
-					Name: "name: google_cloud_protobuf_test_messages_proto3",
+					Name: "google_cloud_protobuf_test_messages_proto3",
 					APIs: []*config.API{
 						{
 							Path: "src/google/protobuf",
