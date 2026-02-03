@@ -374,6 +374,27 @@ API key as an argument when initializing the client.
 				},
 			},
 		},
+		{
+			name: "with library path override",
+			files: []string{
+				"testdata/read-sidekick-files/library-path-override/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_example_v1",
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/example/v1",
+						},
+					},
+					Output:              "testdata/read-sidekick-files/library-path-override",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						LibraryPathOverride: "google_cloud_protobuf_test_messages_proto3.dart",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGAPIC(test.files, test.repoPath)
