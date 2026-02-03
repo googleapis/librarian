@@ -61,7 +61,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildPythonLibraries(test.input, "testdata/googleapis")
+			got, err := buildPythonLibraries(test.input)
 			if err != nil {
 				t.Fatal(err)
 			}
