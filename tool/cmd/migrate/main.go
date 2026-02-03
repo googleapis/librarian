@@ -305,6 +305,11 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		}
 		if roots, ok := sidekick.Source["roots"]; ok && roots != "" {
 			lib.Roots = strings.Split(roots, ",")
+			for i, root := range lib.Roots {
+				if root == "protobuf" {
+					lib.Roots[i] = "protobuf-src"
+				}
+			}
 		}
 
 		lib.SpecificationFormat = specificationFormat
