@@ -80,9 +80,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Name:         "google-cloud-secretmanager",
 				Version:      "0.1.0",
 				ReleaseLevel: "preview",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis"},
-				},
+				Roots:        []string{"googleapis"},
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -111,9 +109,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:          "google-cloud-secretmanager",
 				CopyrightYear: "2024",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis"},
-				},
+				Roots:         []string{"googleapis"},
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -195,10 +191,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with skip publish (not for publication)",
 			library: &config.Library{
 				Name:        "google-cloud-secretmanager",
+				Roots:       []string{"googleapis"},
 				SkipPublish: true,
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis"},
-				},
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -345,10 +339,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with discovery format",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
+				Roots:               []string{"googleapis", "discovery"},
 				SpecificationFormat: "discovery",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis", "discovery"},
-				},
 			},
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
@@ -375,10 +367,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with openapi format",
 			library: &config.Library{
 				Name:                "secretmanager-openapi-v1",
+				Roots:               []string{"googleapis"},
 				SpecificationFormat: "openapi",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis"},
-				},
 			},
 			api: &config.API{
 				Path: "testdata/secretmanager_openapi_v1.json",
@@ -404,10 +394,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with multiple formats",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
+				Roots:               []string{"googleapis", "discovery", "showcase"},
 				SpecificationFormat: "discovery",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis", "discovery", "showcase"},
-				},
 			},
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
@@ -543,6 +531,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
 				SpecificationFormat: "discovery",
+				Roots:               []string{"googleapis", "discovery"},
 				Rust: &config.RustCrate{
 					Discovery: &config.RustDiscovery{
 						OperationID: ".google.cloud.compute.v1.Operation",
@@ -561,7 +550,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 							},
 						},
 					},
-					Roots: []string{"googleapis", "discovery"},
 				},
 			},
 			api: &config.API{
@@ -605,10 +593,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 		{
 			name: "with protobuf and conformance",
 			library: &config.Library{
-				Name: "google-cloud-vision-v1",
-				Rust: &config.RustCrate{
-					Roots: []string{"googleapis", "protobuf-src", "conformance"},
-				},
+				Name:  "google-cloud-vision-v1",
+				Roots: []string{"googleapis", "protobuf-src", "conformance"},
 			},
 			api: &config.API{
 				Path: "google/cloud/vision/v1",
@@ -633,10 +619,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 		{
 			name: "with showcase as source",
 			library: &config.Library{
-				Name: "google-cloud-showcase",
-				Rust: &config.RustCrate{
-					Roots: []string{"showcase", "googleapis"},
-				},
+				Name:  "google-cloud-showcase",
+				Roots: []string{"showcase", "googleapis"},
 			},
 			api: &config.API{
 				Path: "schema/google/showcase/v1beta1",

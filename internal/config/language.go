@@ -79,6 +79,9 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// InternalBuilders indicates whether generated builders should be internal to the crate.
+	InternalBuilders bool `yaml:"internal_builders,omitempty"`
+
 	// Language can be used to select a variation of the Rust generator.
 	// For example, `rust_storage` enables special handling for the storage client.
 	Language string `yaml:"language,omitempty"`
@@ -146,9 +149,6 @@ type RustCrate struct {
 
 	// RootName is the root name for the crate.
 	RootName string `yaml:"root_name,omitempty"`
-
-	// Roots specifies the source roots to use for generation. Defaults to googleapis.
-	Roots []string `yaml:"roots,omitempty"`
 
 	// DefaultFeatures is a list of default features to enable.
 	DefaultFeatures []string `yaml:"default_features,omitempty"`
@@ -298,9 +298,6 @@ type DartPackage struct {
 
 	// NameOverride overrides the package name
 	NameOverride string `yaml:"name_override,omitempty"`
-
-	// NotForPublication indicates whether this package should not be published.
-	NotForPublication string `yaml:"not_for_publication,omitempty"`
 
 	// Packages maps Dart package names to version constraints.
 	// Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0".
