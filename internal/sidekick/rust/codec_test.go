@@ -314,6 +314,15 @@ func TestParseOptions(t *testing.T) {
 				c.generateRpcSamples = true
 			},
 		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"internal-builders": "true",
+			},
+			Update: func(c *codec) {
+				c.internalBuilders = true
+			},
+		},
 	} {
 		want, err := newCodec(test.Format, map[string]string{})
 		if err != nil {
@@ -350,6 +359,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},
+		{Options: map[string]string{"internal-builders": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
 		if got, err := newCodec("disco", test.Options); err == nil {

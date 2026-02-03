@@ -172,6 +172,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `generate-rpc-samples` value %q to boolean: %w", definition, err)
 			}
 			codec.generateRpcSamples = value
+		case key == "internal-builders":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `internal-builders` value %q to boolean: %w", definition, err)
+			}
+			codec.internalBuilders = value
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -318,6 +324,8 @@ type codec struct {
 	generateSetterSamples bool
 	// If true, the generator will produce reference documentation samples for functions that correspond to RPCs.
 	generateRpcSamples bool
+	// If true, the generator will set the internal builder's visibility to public (crate).
+	internalBuilders bool
 }
 
 type systemParameter struct {
