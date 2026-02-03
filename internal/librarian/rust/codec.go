@@ -116,6 +116,12 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.ReleaseLevel != "" {
 		codec["release-level"] = library.ReleaseLevel
 	}
+	if library.SkipPublish {
+		codec["not-for-publication"] = "true"
+	}
+	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
+		codec["extra-modules"] = strings.Join(extraModules, ",")
+	}
 	if library.Rust == nil {
 		return codec
 	}
@@ -123,9 +129,6 @@ func buildCodec(library *config.Library) map[string]string {
 	rust := library.Rust
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
-	}
-	if library.SkipPublish {
-		codec["not-for-publication"] = "true"
 	}
 	if rust.TemplateOverride != "" {
 		codec["template-override"] = rust.TemplateOverride
@@ -144,9 +147,6 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
-	}
-	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
-		codec["extra-modules"] = strings.Join(extraModules, ",")
 	}
 	if rust.RoutingRequired {
 		codec["routing-required"] = "true"
@@ -325,12 +325,12 @@ func addLibraryRoots(library *config.Library, sources *Sources) map[string]strin
 		library.Rust = &config.RustCrate{}
 	}
 
-	if len(library.Rust.Roots) == 0 && sources.Googleapis != "" {
+	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
 		source["googleapis-root"] = sources.Googleapis
 		source["roots"] = "googleapis"
 	} else {
-		source["roots"] = strings.Join(library.Rust.Roots, ",")
+		source["roots"] = strings.Join(library.Roots, ",")
 		rootMap := map[string]struct {
 			path string
 			key  string
@@ -341,7 +341,7 @@ func addLibraryRoots(library *config.Library, sources *Sources) map[string]strin
 			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
 			"conformance":  {path: sources.Conformance, key: "conformance-root"},
 		}
-		for _, root := range library.Rust.Roots {
+		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
 				source[r.key] = r.path
 			}
