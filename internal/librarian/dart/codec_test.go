@@ -331,7 +331,7 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with name-override",
+			name: "with name override",
 			library: &config.Library{
 				Dart: &config.DartPackage{
 					NameOverride: "override-name",

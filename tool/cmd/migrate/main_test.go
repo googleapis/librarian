@@ -235,6 +235,12 @@ API key as an argument when initializing the client.
 					DescriptionOverride: "Additional metadata for operations.",
 					Keep: []string{
 						"example/example-file1.txt",
+						"lib/exceptions.dart",
+						"lib/service_client.dart",
+						"lib/src/exceptions.dart",
+						"lib/src/versions.dart",
+						"lib/src/vm.dart",
+						"lib/src/web.dart",
 						"test/nested/test-nested-file.txt",
 						"test/test-file.txt",
 					},
