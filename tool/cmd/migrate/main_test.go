@@ -291,6 +291,27 @@ API key as an argument when initializing the client.
 			},
 		},
 		{
+			name: "roots update",
+			files: []string{
+				"testdata/read-sidekick-files/roots-update/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_protobuf",
+					APIs: []*config.API{
+						{
+							Path: "google/protobuf",
+						},
+					},
+					Output: "testdata/read-sidekick-files/roots-update",
+					Roots: []string{
+						"protobuf-src",
+					},
+					SpecificationFormat: "protobuf",
+				},
+			},
+		},
+		{
 			name: "additional library keeps",
 			files: []string{
 				"testdata/read-sidekick-files/additional-keeps/.sidekick.toml",
