@@ -79,6 +79,9 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// InternalBuilders indicates whether generated builders should be internal to the crate.
+	InternalBuilders bool `yaml:"internal_builders,omitempty"`
+
 	// Language can be used to select a variation of the Rust generator.
 	// For example, `rust_storage` enables special handling for the storage client.
 	Language string `yaml:"language,omitempty"`

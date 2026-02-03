@@ -136,6 +136,54 @@ func TestClippyWarnings(t *testing.T) {
 	}
 }
 
+func TestInternalBuildersAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		Options        map[string]string
+		Want           bool
+		WantVisibility string
+	}{
+		{
+			Options:        map[string]string{},
+			Want:           false,
+			WantVisibility: "pub",
+		},
+		{
+			Options: map[string]string{
+				"internal-builders": "true",
+			},
+			Want:           true,
+			WantVisibility: "pub(crate)",
+		},
+		{
+			Options: map[string]string{
+				"internal-builders": "false",
+			},
+			Want:           false,
+			WantVisibility: "pub",
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec, err := newCodec("protobuf", test.Options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := annotateModel(model, codec)
+		if got.InternalBuilders != test.Want {
+			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
+		}
+		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		if svcAnn.InternalBuilders != test.Want {
+			t.Errorf("mismatch in service InternalBuilders, want=%v, got=%v", test.Want, svcAnn.InternalBuilders)
+		}
+		if got.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in BuilderVisibility, want=%s, got=%s", test.WantVisibility, got.BuilderVisibility())
+		}
+		if svcAnn.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in service BuilderVisibility, want=%s, got=%s", test.WantVisibility, svcAnn.BuilderVisibility())
+		}
+	}
+}
+
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",
