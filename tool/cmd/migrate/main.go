@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -265,13 +266,19 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			},
 		}
 
+		dir := filepath.Dir(file)
+		keep, err := parseKeep(dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
+		}
+		lib.Keep = keep
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
 		if descriptionOverride, ok := sidekick.Source["description-override"]; ok && descriptionOverride != "" {
 			lib.DescriptionOverride = descriptionOverride
 		}
-		relativePath, err := filepath.Rel(repoPath, filepath.Dir(file))
+		relativePath, err := filepath.Rel(repoPath, dir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
 		}
@@ -303,6 +310,17 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			dartPackage.ExtraImports = extraImports
 		}
 		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
+			// part-file in .sidekick.toml starts with src/, however, the file path is
+			// actually {output}/lib/src/*.
+			path := filepath.Join(dir, "lib", partFile)
+			if _, err := os.Stat(path); err != nil {
+				return nil, fmt.Errorf("failed to stat %s: %w", path, err)
+			}
+			partFileRelPath, err := filepath.Rel(dir, path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate relative path: %w", errUnableToCalculateOutputPath)
+			}
+			lib.Keep = append(lib.Keep, partFileRelPath)
 			dartPackage.PartFile = partFile
 		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
@@ -362,4 +380,35 @@ func parseKeyWithPrefix(codec map[string]string, prefix string) map[string]strin
 
 func isEmptyDartPackage(r *config.DartPackage) bool {
 	return reflect.DeepEqual(r, &config.DartPackage{})
+}
+
+// parseKeep generate files that should keep before library generation.
+// Only files inside example/ and test/ directories are considered, if existed.
+func parseKeep(base string) ([]string, error) {
+	var res []string
+	for _, sub := range []string{"example", "test"} {
+		subDir := filepath.Join(base, sub)
+		err := filepath.WalkDir(subDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					return nil
+				}
+				return err
+			}
+
+			if !d.IsDir() {
+				relativePath, err := filepath.Rel(base, path)
+				if err != nil {
+					return err
+				}
+				res = append(res, relativePath)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
