@@ -337,6 +337,30 @@ func (d *docData) formatType(typeName string) string {
 	return res
 }
 
+// cleanDoc collapses standard word-wrapping into single spaces but preserves
+// paragraph breaks and list items by using <br> tags, which are required
+// for multi-line content within Markdown table cells.
 func cleanDoc(doc string) string {
-	return strings.Join(strings.Fields(doc), " ")
+	lines := strings.Split(strings.TrimSpace(doc), "\n")
+	var out strings.Builder
+	for i, line := range lines {
+		cleanedLine := strings.Join(strings.Fields(line), " ")
+		if cleanedLine == "" {
+			// Convert empty lines to <br> to preserve paragraph breaks.
+			out.WriteString("<br>")
+			continue
+		}
+		if i > 0 {
+			prevLineCleaned := strings.Join(strings.Fields(lines[i-1]), " ")
+			// Use <br> if the current line is a list item or if it follows a blank line.
+			// Otherwise, use a space to collapse wrapped text into a single paragraph.
+			if prevLineCleaned == "" || strings.HasPrefix(cleanedLine, "-") || strings.HasPrefix(cleanedLine, "*") {
+				out.WriteString("<br>")
+			} else {
+				out.WriteString(" ")
+			}
+		}
+		out.WriteString(cleanedLine)
+	}
+	return out.String()
 }

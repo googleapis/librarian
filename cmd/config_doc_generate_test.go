@@ -221,6 +221,26 @@ func TestCleanDoc(t *testing.T) {
 			doc:  " This  is   a    comment. ",
 			want: "This is a comment.",
 		},
+		{
+			name: "doc with paragraph break",
+			doc:  "First paragraph.\n\nSecond paragraph.",
+			want: "First paragraph.<br><br>Second paragraph.",
+		},
+		{
+			name: "doc with list items",
+			doc:  "Supported languages:\n- Python\n- Rust\n- Dart",
+			want: "Supported languages:<br>- Python<br>- Rust<br>- Dart",
+		},
+		{
+			name: "doc with list items and asterisk",
+			doc:  "Reasons:\n* Reason 1\n* Reason 2",
+			want: "Reasons:<br>* Reason 1<br>* Reason 2",
+		},
+		{
+			name: "mixed paragraphs and lists",
+			doc:  "Header.\n\n- Item 1\n- Item 2\n\nFooter.",
+			want: "Header.<br><br>- Item 1<br>- Item 2<br><br>Footer.",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cleanDoc(test.doc)
