@@ -290,6 +290,9 @@ type DartPackage struct {
 	// ExtraImports is additional imports to include in the generated library.
 	ExtraImports string `yaml:"extra_imports,omitempty"`
 
+	// IncludeList is a list of items to include.
+	IncludeList []string `yaml:"include_list,omitempty"`
+
 	// IssueTrackerURL is the URL for the issue tracker.
 	IssueTrackerURL string `yaml:"issue_tracker_url,omitempty"`
 
