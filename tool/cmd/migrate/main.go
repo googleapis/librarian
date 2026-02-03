@@ -57,7 +57,7 @@ var (
 	fetchSource = fetchGoogleapis
 
 	pathToName = map[string]string{
-		"google_cloud_protojson_conformance": "name: google_cloud_protobuf_test_messages_proto3",
+		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
 		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
 	}
 )
