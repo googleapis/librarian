@@ -123,7 +123,6 @@ func buildCodec(library *config.Library) map[string]string {
 	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
 		codec["extra-modules"] = strings.Join(extraModules, ",")
 	}
-
 	if library.Rust == nil {
 		return codec
 	}

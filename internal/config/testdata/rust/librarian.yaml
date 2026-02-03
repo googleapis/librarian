@@ -58,7 +58,6 @@ libraries:
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
-
   - name: google-cloud-storage
     version: 1.4.0
     veneer: true

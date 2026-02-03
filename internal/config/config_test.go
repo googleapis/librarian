@@ -83,7 +83,6 @@ func TestRead(t *testing.T) {
 				},
 				Roots: []string{"googleapis"},
 				Rust: &RustCrate{
-
 					RustDefault: RustDefault{
 						DisabledRustdocWarnings: []string{"rustdoc::bare_urls"},
 					},

@@ -296,9 +296,6 @@ type DartPackage struct {
 	// NameOverride overrides the package name
 	NameOverride string `yaml:"name_override,omitempty"`
 
-	// NotForPublication indicates whether this package should not be published.
-	NotForPublication string `yaml:"not_for_publication,omitempty"`
-
 	// Packages maps Dart package names to version constraints.
 	// Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0".
 	Packages map[string]string `yaml:"packages,omitempty"`

@@ -395,8 +395,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with multiple formats",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
-				SpecificationFormat: "discovery",
 				Roots:               []string{"googleapis", "discovery", "showcase"},
+				SpecificationFormat: "discovery",
 			},
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
