@@ -34,7 +34,11 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *common.S
 		source["title-override"] = library.Dart.TitleOverride
 	}
 
-	api, err := serviceconfig.Find(sources.Googleapis, ch.Path)
+	root := sources.Googleapis
+	if ch.Path == "schema/google/showcase/v1beta1" {
+		root = sources.Showcase
+	}
+	api, err := serviceconfig.Find(root, ch.Path)
 	if err != nil {
 		return nil, err
 	}
