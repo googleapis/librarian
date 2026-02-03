@@ -297,10 +297,10 @@ API key as an argument when initializing the client.
 			},
 			want: []*config.Library{
 				{
-					Name: "google_cloud_protobuf",
+					Name: "google_cloud_appengine_v1",
 					APIs: []*config.API{
 						{
-							Path: "google/protobuf",
+							Path: "google/appengine/v1",
 						},
 					},
 					Output: "testdata/read-sidekick-files/roots-update",
