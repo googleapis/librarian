@@ -249,7 +249,10 @@ API key as an argument when initializing the client.
 					Dart: &config.DartPackage{
 						Dependencies:    "googleapis_auth,http",
 						DevDependencies: "test",
-						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
+						Prefixes: map[string]string{
+							"prefix:google.protobuf": "protobuf",
+						},
+						RepositoryURL: "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
 					},
 				},
 			},
