@@ -13,7 +13,8 @@
 # limitations under the License.
 
 [general]
-specification-source = 'google/protobuf'
+specification-source = 'google/cloud/secretmanager/v1'
+service-config = 'google/cloud/secretmanager/v1/secretmanager_v1.yaml'
 
 [source]
 # Don't generate 'any.proto'; use the hand-written version in protobuf.p.dart.

@@ -350,10 +350,10 @@ API key as an argument when initializing the client.
 			},
 			want: []*config.Library{
 				{
-					Name: "google_cloud_protobuf",
+					Name: "google_cloud_secretmanager_v1",
 					APIs: []*config.API{
 						{
-							Path: "google/protobuf",
+							Path: "google/cloud/secretmanager/v1",
 						},
 					},
 					Output:              "testdata/read-sidekick-files/include-list",
