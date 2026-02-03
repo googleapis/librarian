@@ -95,9 +95,7 @@ func TestBuildCodec(t *testing.T) {
 		{
 			name: "not for publication",
 			library: &config.Library{
-				Dart: &config.DartPackage{
-					NotForPublication: "true",
-				},
+				SkipPublish: true,
 			},
 			want: map[string]string{
 				"not-for-publication": "true",
@@ -197,6 +195,7 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				CopyrightYear: "2025",
 				Version:       "1.0.0",
+				SkipPublish:   true,
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 					Dependencies:                "http: ^1.3.0",
@@ -204,7 +203,6 @@ func TestBuildCodec(t *testing.T) {
 					ExtraImports:                "package:googleapis_auth/auth.dart",
 					IssueTrackerURL:             "https://github.com/googleapis/google-cloud-dart/issues",
 					LibraryPathOverride:         "lib/custom.dart",
-					NotForPublication:           "false",
 					PartFile:                    "part 'src/common.dart';",
 					ReadmeAfterTitleText:        "**Note:** This package is experimental.",
 					ReadmeQuickstartText:        "Run `dart pub add` to install.",
@@ -229,7 +227,7 @@ func TestBuildCodec(t *testing.T) {
 				"extra-imports":                  "package:googleapis_auth/auth.dart",
 				"issue-tracker-url":              "https://github.com/googleapis/google-cloud-dart/issues",
 				"library-path-override":          "lib/custom.dart",
-				"not-for-publication":            "false",
+				"not-for-publication":            "true",
 				"part-file":                      "part 'src/common.dart';",
 				"readme-after-title-text":        "**Note:** This package is experimental.",
 				"readme-quickstart-text":         "Run `dart pub add` to install.",
@@ -361,6 +359,7 @@ func TestToSidekickConfig(t *testing.T) {
 		{
 			name: "with dart package",
 			library: &config.Library{
+				SkipPublish: true,
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 					Dependencies:                "dep-1,dep-2",
@@ -368,7 +367,6 @@ func TestToSidekickConfig(t *testing.T) {
 					ExtraImports:                "extra-imports",
 					IssueTrackerURL:             "https://tracker/issues",
 					LibraryPathOverride:         "library-path-override",
-					NotForPublication:           "false",
 					PartFile:                    "part-file",
 					ReadmeAfterTitleText:        "readme-after-title-text",
 					ReadmeQuickstartText:        "readme-quickstart-text",
@@ -408,7 +406,7 @@ func TestToSidekickConfig(t *testing.T) {
 					"extra-imports":                  "extra-imports",
 					"issue-tracker-url":              "https://tracker/issues",
 					"library-path-override":          "library-path-override",
-					"not-for-publication":            "false",
+					"not-for-publication":            "true",
 					"package:googleapis_auth":        "^2.0.0",
 					"part-file":                      "part-file",
 					"prefix:google.logging.type":     "logging_type",
