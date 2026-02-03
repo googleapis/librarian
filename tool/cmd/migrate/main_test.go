@@ -322,6 +322,37 @@ API key as an argument when initializing the client.
 				},
 			},
 		},
+		{
+			name: "with include list",
+			files: []string{
+				"testdata/read-sidekick-files/include-list/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_protobuf",
+					APIs: []*config.API{
+						{
+							Path: "google/protobuf",
+						},
+					},
+					Output:              "testdata/read-sidekick-files/include-list",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						IncludeList: []string{
+							"api.proto",
+							"duration.proto",
+							"empty.proto",
+							"field_mask.proto",
+							"source_context.proto",
+							"struct.proto",
+							"timestamp.proto",
+							"type.proto",
+							"wrappers.proto",
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGAPIC(test.files, test.repoPath)
