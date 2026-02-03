@@ -24,47 +24,73 @@ import (
 	"testing"
 )
 
-func TestExtractYamlName(t *testing.T) {
+func TestGetFieldName(t *testing.T) {
+	d := &docData{}
 	for _, test := range []struct {
-		name string
-		tag  *ast.BasicLit
-		want string
+		name     string
+		tagName  string
+		fieldTag *ast.BasicLit
+		names    []string
+		want     string
 	}{
 		{
-			name: "valid yaml tag",
-			tag:  &ast.BasicLit{Value: "`yaml:\"name\"`"},
-			want: "name",
+			name:     "valid yaml tag",
+			tagName:  "yaml",
+			fieldTag: &ast.BasicLit{Value: "`yaml:\"name\"`"},
+			want:     "name",
 		},
 		{
-			name: "yaml tag with options",
-			tag:  &ast.BasicLit{Value: "`yaml:\"name,omitempty\"`"},
-			want: "name",
+			name:     "yaml tag with options",
+			tagName:  "yaml",
+			fieldTag: &ast.BasicLit{Value: "`yaml:\"name,omitempty\"`"},
+			want:     "name",
 		},
 		{
-			name: "no yaml tag",
-			tag:  &ast.BasicLit{Value: "`json:\"name\"`"},
-			want: "",
+			name:     "json tag requested",
+			tagName:  "json",
+			fieldTag: &ast.BasicLit{Value: "`json:\"jsonName\"`"},
+			want:     "jsonName",
 		},
 		{
-			name: "empty tag",
-			tag:  &ast.BasicLit{Value: "``"},
-			want: "",
+			name:     "no matching tag - fallback to field name",
+			tagName:  "yaml",
+			fieldTag: &ast.BasicLit{Value: "`json:\"jsonName\"`"},
+			names:    []string{"FieldName"},
+			want:     "FieldName",
 		},
 		{
-			name: "nil tag",
-			tag:  nil,
-			want: "",
+			name:     "empty tag - fallback to field name",
+			tagName:  "yaml",
+			fieldTag: &ast.BasicLit{Value: "``"},
+			names:    []string{"FieldName"},
+			want:     "FieldName",
 		},
 		{
-			name: "ignored field",
-			tag:  &ast.BasicLit{Value: "`yaml:\"-\"`"},
-			want: "-",
+			name:     "nil tag - fallback to field name",
+			tagName:  "yaml",
+			fieldTag: nil,
+			names:    []string{"FieldName"},
+			want:     "FieldName",
+		},
+		{
+			name:     "ignored field",
+			tagName:  "yaml",
+			fieldTag: &ast.BasicLit{Value: "`yaml:\"-\"`"},
+			want:     "-",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := extractYamlName(test.tag)
+			*tagName = test.tagName
+			field := &ast.Field{
+				Tag: test.fieldTag,
+			}
+			for _, name := range test.names {
+				field.Names = append(field.Names, &ast.Ident{Name: name})
+			}
+
+			got := d.getFieldName(field)
 			if got != test.want {
-				t.Errorf("extractYamlName() = %q, want %q", got, test.want)
+				t.Errorf("getFieldName() = %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -121,6 +147,7 @@ func TestFormatType(t *testing.T) {
 	allStructs := map[string]*ast.StructType{
 		"Repo": {},
 	}
+	root := "Config"
 
 	for _, test := range []struct {
 		name     string
@@ -164,7 +191,7 @@ func TestFormatType(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := formatType(test.typeName, allStructs)
+			got := formatType(test.typeName, allStructs, root)
 			if got != test.want {
 				t.Errorf("formatType(%q) = %q, want %q", test.typeName, got, test.want)
 			}
@@ -249,6 +276,12 @@ type Alpha struct {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Reset flags to defaults for test
+	*rootStruct = "Config"
+	*rootTitleBlock = "Root"
+	*pageTitle = "librarian.yaml"
+
 	if err := d.generate(&buf); err != nil {
 		t.Fatal(err)
 	}

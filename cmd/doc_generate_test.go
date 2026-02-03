@@ -36,6 +36,14 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 			name:    "librarian_doc",
 			docFile: "cmd/legacylibrarian/doc.go",
 		},
+		{
+			name:    "config_schema_doc",
+			docFile: "doc/config-schema.md",
+		},
+		{
+			name:    "service_config_schema_doc",
+			docFile: "doc/api-allowlist-schema.md",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
