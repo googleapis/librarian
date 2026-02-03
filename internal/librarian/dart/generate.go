@@ -92,6 +92,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
+	if library.SkipPublish {
+		codec["not-for-publication"] = "true"
+	}
 	if library.Dart == nil {
 		return codec
 	}
@@ -114,9 +117,6 @@ func buildCodec(library *config.Library) map[string]string {
 	}
 	if dart.LibraryPathOverride != "" {
 		codec["library-path-override"] = dart.LibraryPathOverride
-	}
-	if dart.NotForPublication != "" {
-		codec["not-for-publication"] = dart.NotForPublication
 	}
 	if dart.PartFile != "" {
 		codec["part-file"] = dart.PartFile
