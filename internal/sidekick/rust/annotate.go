@@ -79,13 +79,21 @@ type modelAnnotations struct {
 	// requests.
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
-	InternalBuilder bool
+	InternalBuilders bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
 // ad-hoc code.
 func (m *modelAnnotations) IsWktCrate() bool {
 	return m.PackageName == "google-cloud-wkt"
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (m *modelAnnotations) BuilderVisibility() string {
+	if m.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 // HasServices returns true if there are any services in the model.
@@ -137,7 +145,15 @@ type serviceAnnotations struct {
 	// requests.
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
-	InternalBuilder bool
+	InternalBuilders bool
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (s *serviceAnnotations) BuilderVisibility() string {
+	if s.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
@@ -253,7 +269,15 @@ type methodAnnotation struct {
 	DetailedTracingAttributes bool
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
-	InternalBuilder           bool
+	InternalBuilders          bool
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (m *methodAnnotation) BuilderVisibility() string {
+	if m.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 type pathInfoAnnotation struct {
@@ -678,7 +702,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
-		InternalBuilder:           codec.internalBuilder,
+		InternalBuilders:          codec.internalBuilders,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
@@ -938,7 +962,7 @@ func (c *codec) annotateService(s *api.Service) {
 		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
-		InternalBuilder:           c.internalBuilder,
+		InternalBuilders:          c.internalBuilders,
 	}
 	s.Codec = ann
 }
@@ -1032,7 +1056,7 @@ func (c *codec) annotateMethod(m *api.Method) {
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		ResourceNameFields:        resourceNameFields,
 		HasResourceNameFields:     len(resourceNameFields) > 0,
-		InternalBuilder:           c.internalBuilder,
+		InternalBuilders:          c.internalBuilders,
 	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes

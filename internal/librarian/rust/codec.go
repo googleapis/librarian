@@ -316,8 +316,8 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.RootName != "" {
 		codec["root-name"] = module.RootName
 	}
-	if module.InternalBuilder {
-		codec["internal-builder"] = "true"
+	if module.InternalBuilders {
+		codec["internal-builders"] = "true"
 	}
 	return codec
 }

@@ -136,26 +136,30 @@ func TestClippyWarnings(t *testing.T) {
 	}
 }
 
-func TestInternalBuilderAnnotation(t *testing.T) {
+func TestInternalBuildersAnnotation(t *testing.T) {
 	for _, test := range []struct {
-		Options map[string]string
-		Want    bool
+		Options        map[string]string
+		Want           bool
+		WantVisibility string
 	}{
 		{
-			Options: map[string]string{},
-			Want:    false,
+			Options:        map[string]string{},
+			Want:           false,
+			WantVisibility: "pub",
 		},
 		{
 			Options: map[string]string{
-				"internal-builder": "true",
+				"internal-builders": "true",
 			},
-			Want: true,
+			Want:           true,
+			WantVisibility: "pub(crate)",
 		},
 		{
 			Options: map[string]string{
-				"internal-builder": "false",
+				"internal-builders": "false",
 			},
-			Want: false,
+			Want:           false,
+			WantVisibility: "pub",
 		},
 	} {
 		model := newTestAnnotateModelAPI()
@@ -164,12 +168,18 @@ func TestInternalBuilderAnnotation(t *testing.T) {
 			t.Fatal(err)
 		}
 		got := annotateModel(model, codec)
-		if got.InternalBuilder != test.Want {
-			t.Errorf("mismatch in InternalBuilder, want=%v, got=%v", test.Want, got.InternalBuilder)
+		if got.InternalBuilders != test.Want {
+			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
 		}
 		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
-		if svcAnn.InternalBuilder != test.Want {
-			t.Errorf("mismatch in service InternalBuilder, want=%v, got=%v", test.Want, svcAnn.InternalBuilder)
+		if svcAnn.InternalBuilders != test.Want {
+			t.Errorf("mismatch in service InternalBuilders, want=%v, got=%v", test.Want, svcAnn.InternalBuilders)
+		}
+		if got.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in BuilderVisibility, want=%s, got=%s", test.WantVisibility, got.BuilderVisibility())
+		}
+		if svcAnn.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in service BuilderVisibility, want=%s, got=%s", test.WantVisibility, svcAnn.BuilderVisibility())
 		}
 	}
 }

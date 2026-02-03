@@ -27,8 +27,8 @@ pub mod {{Codec.ModuleName}} {
     use crate::Result;
     {{^Codec.HasVeneer}}
 
-    {{^Model.Codec.InternalBuilder}}
     /// A builder for [{{Codec.Name}}][crate::client::{{Codec.Name}}].
+    {{^Codec.InternalBuilders}}
     ///
     /// ```
     /// # async fn sample() -> gax::client_builder::Result<()> {
@@ -41,8 +41,8 @@ pub mod {{Codec.ModuleName}} {
     ///     .build().await?;
     /// # Ok(()) }
     /// ```
-    {{/Model.Codec.InternalBuilder}}
-    {{#Model.Codec.InternalBuilder}}pub(crate){{/Model.Codec.InternalBuilder}}{{^Model.Codec.InternalBuilder}}pub{{/Model.Codec.InternalBuilder}} type ClientBuilder =
+    {{/Codec.InternalBuilders}}
+    {{Codec.BuilderVisibility}} type ClientBuilder =
         gax::client_builder::ClientBuilder<client::Factory, gaxi::options::Credentials>;
 
     pub(crate) mod client {
@@ -79,7 +79,7 @@ pub mod {{Codec.ModuleName}} {
 
     {{#Codec.Methods}}
     /// The request builder for [{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}][crate::client::{{Codec.ServiceNameToPascal}}::{{Codec.NameNoMangling}}] calls.
-    {{^Model.Codec.InternalBuilder}}
+    {{^Codec.InternalBuilders}}
     ///
     /// # Example
     /// ```
@@ -114,9 +114,9 @@ pub mod {{Codec.ModuleName}} {
     ///   // ... details omitted ...
     /// }
     /// ```
-    {{/Model.Codec.InternalBuilder}}
+    {{/Codec.InternalBuilders}}
     #[derive(Clone, Debug)]
-    {{#Model.Codec.InternalBuilder}}pub(crate){{/Model.Codec.InternalBuilder}}{{^Model.Codec.InternalBuilder}}pub{{/Model.Codec.InternalBuilder}} struct {{Codec.BuilderName}}(RequestBuilder<{{InputType.Codec.QualifiedName}}>);
+    {{Codec.BuilderVisibility}} struct {{Codec.BuilderName}}(RequestBuilder<{{InputType.Codec.QualifiedName}}>);
 
     impl {{Codec.BuilderName}} {
         pub(crate) fn new(stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.ServiceNameToPascal}}>) -> Self {

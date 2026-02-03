@@ -157,7 +157,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	}
 }
 
-func TestAnnotateMethodInternalBuilder(t *testing.T) {
+func TestAnnotateMethodInternalBuilders(t *testing.T) {
 	model := annotateMethodModel(t)
 	err := api.CrossReference(model)
 	if err != nil {
@@ -165,7 +165,7 @@ func TestAnnotateMethodInternalBuilder(t *testing.T) {
 	}
 
 	codec, err := newCodec("protobuf", map[string]string{
-		"internal-builder": "true",
+		"internal-builders": "true",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -178,8 +178,11 @@ func TestAnnotateMethodInternalBuilder(t *testing.T) {
 		t.Fatalf("missing method %s", methodID)
 	}
 	got := gotMethod.Codec.(*methodAnnotation)
-	if !got.InternalBuilder {
-		t.Errorf("expected InternalBuilder to be true for method %s", methodID)
+	if !got.InternalBuilders {
+		t.Errorf("expected InternalBuilders to be true for method %s", methodID)
+	}
+	if got.BuilderVisibility() != "pub(crate)" {
+		t.Errorf("mismatch in BuilderVisibility, want=pub(crate), got=%s", got.BuilderVisibility())
 	}
 }
 

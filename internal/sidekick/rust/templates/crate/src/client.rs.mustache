@@ -28,7 +28,7 @@ limitations under the License.
 /// Implements a client for the {{Codec.APITitle}}.
 {{^Codec.HasVeneer}}
 ///
-{{^Codec.InternalBuilder}}
+{{^Model.Codec.InternalBuilders}}
 /// # Example
 /// ```
 /// # async fn sample() -> gax::client_builder::Result<()> {
@@ -37,7 +37,7 @@ limitations under the License.
 /// // use `client` to make requests to the {{Codec.APITitle}}.
 /// # Ok(()) }
 /// ```
-{{/Codec.InternalBuilder}}
+{{/Model.Codec.InternalBuilders}}
 ///
 /// # Service Description
 ///
@@ -93,8 +93,8 @@ pub struct {{Codec.Name}} {
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
     {{^Codec.HasVeneer}}
-    {{^Codec.InternalBuilder}}
     /// Returns a builder for [{{Codec.Name}}].
+    {{^Model.Codec.InternalBuilders}}
     ///
     /// ```
     /// # async fn sample() -> gax::client_builder::Result<()> {
@@ -102,8 +102,8 @@ impl {{Codec.Name}} {
     /// let client = {{Codec.Name}}::builder().build().await?;
     /// # Ok(()) }
     /// ```
-    {{/Codec.InternalBuilder}}
-    {{#Codec.InternalBuilder}}pub(crate){{/Codec.InternalBuilder}}{{^Codec.InternalBuilder}}pub{{/Codec.InternalBuilder}} fn builder() -> super::builder::{{Codec.ModuleName}}::ClientBuilder {
+    {{/Model.Codec.InternalBuilders}}
+    {{Codec.BuilderVisibility}} fn builder() -> super::builder::{{Codec.ModuleName}}::ClientBuilder {
         gax::client_builder::internal::new_builder(super::builder::{{Codec.ModuleName}}::client::Factory)
     }
     {{/Codec.HasVeneer}}
@@ -139,7 +139,7 @@ impl {{Codec.Name}} {
     {{#Codec.Methods}}
 
     {{> /templates/common/client_method_preamble}}
-    {{#Codec.InternalBuilder}}pub(crate){{/Codec.InternalBuilder}}{{^Codec.InternalBuilder}}pub{{/Codec.InternalBuilder}} fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
+    {{Codec.BuilderVisibility}} fn {{Codec.Name}}(&self) -> super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}
     {
         super::builder::{{Codec.ServiceNameToSnake}}::{{Codec.BuilderName}}::new(self.inner.clone())
     }
