@@ -31,7 +31,7 @@ import (
 
 const (
 	librarianDesc = `Librarian CLI runs local workflow that 
-	creates, generates, and releases client libraries..
+	adds, generates, updates and publishes client libraries.
 
 Usage:
 
