@@ -53,7 +53,10 @@ const (
 	rootAnchor   = "root-configuration"
 )
 
-var structTemplate = template.Must(template.New("struct").Parse(`
+var docTemplate = template.Must(template.New("doc").Parse(`# {{.Title}} Schema
+
+This document describes the schema for the {{.Title}}.
+{{range .Structs}}
 ## {{.Title}}
 
 {{if .SourceLink}}[Link to code]({{.SourceLink}})
@@ -61,7 +64,12 @@ var structTemplate = template.Must(template.New("struct").Parse(`
 {{end}}| Field | Type | Description |
 | :--- | :--- | :--- |
 {{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
-{{end}}`))
+{{end}}{{end}}`))
+
+type pageData struct {
+	Title   string
+	Structs []structData
+}
 
 type structData struct {
 	Title      string
@@ -218,21 +226,22 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 
 // generate writes the collected documentation in Markdown format to the provided writer.
 func (d *docData) generate(output io.Writer) error {
-	fmt.Fprintf(output, "# %s Schema\n", d.title)
-	fmt.Fprintln(output)
-	fmt.Fprintf(output, "This document describes the schema for the %s.\n", d.title)
-	// Write Config objects first, then others.
+	pageData := pageData{
+		Title: d.title,
+	}
+	// Collect all struct data first
 	for _, k := range append(d.configKeys, d.otherKeys...) {
-		if err := d.writeStruct(output, k, d.sources[k]); err != nil {
+		sd, err := d.collectStructData(k, d.sources[k])
+		if err != nil {
 			return err
 		}
+		pageData.Structs = append(pageData.Structs, sd)
 	}
-	return nil
+	return docTemplate.Execute(output, pageData)
 }
 
-// writeStruct writes a Markdown representation of a Go struct to the provided writer.
-// It generates a table of fields, including their YAML names, types, and descriptions.
-func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) error {
+// collectStructData prepares the metadata for a single Go struct.
+func (d *docData) collectStructData(name string, sourceLink string) (structData, error) {
 	st := d.structs[name]
 	title := name + titleSuffix
 	if name == d.rootStruct {
@@ -268,7 +277,7 @@ func (d *docData) writeStruct(output io.Writer, name string, sourceLink string) 
 			Description: description,
 		})
 	}
-	return structTemplate.Execute(output, structData)
+	return structData, nil
 }
 
 // getFieldName returns the documentation name for a field. It first attempts to
