@@ -44,6 +44,11 @@ type Sources struct {
 	Showcase    string
 }
 
+// AddLibraryRoots configures the source roots for library generation.
+//
+// It populates a map with the paths to the necessary repositories based on the provided library configuration and
+// available sources.
+// If no specific roots are defined in the library configuration, it defaults to using googleapis.
 func AddLibraryRoots(library *config.Library, sources *Sources) map[string]string {
 	source := make(map[string]string)
 	if len(library.Roots) == 0 && sources.Googleapis != "" {
