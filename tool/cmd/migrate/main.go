@@ -332,13 +332,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if quickStart, ok := sidekick.Codec["readme-quickstart-text"]; ok && quickStart != "" {
 			dartPackage.ReadmeQuickstartText = quickStart
 		}
-		for key, value := range sidekick.Codec {
-			if strings.HasPrefix(key, "prefix:") {
-				if dartPackage.Prefixes == nil {
-					dartPackage.Prefixes = make(map[string]string)
-				}
-				dartPackage.Prefixes[key] = value
-			}
+		prefix := parseKeyWithPrefix(sidekick.Codec, "prefix:")
+		if len(prefix) != 0 {
+			dartPackage.Prefixes = prefix
 		}
 
 		if !isEmptyDartPackage(dartPackage) {
