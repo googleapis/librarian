@@ -357,6 +357,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 			lib.Keep = append(lib.Keep, partFileRelPath)
 			dartPackage.PartFile = partFile
 		}
+		if libraryPathOverride, ok := sidekick.Codec["library-path-override"]; ok && libraryPathOverride != "" {
+			dartPackage.LibraryPathOverride = libraryPathOverride
+		}
 		if repoURL, ok := sidekick.Codec["repository-url"]; ok && repoURL != "" {
 			dartPackage.RepositoryURL = repoURL
 		}
