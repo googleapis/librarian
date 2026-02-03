@@ -95,7 +95,7 @@ func TestCodecError(t *testing.T) {
 			"--invalid--": "--invalid--",
 		},
 	}
-	model, err := parser.CreateModel(errorConfig)
+	model, err := parser.CreateModel(errorConfig, parser.NewModelOverridesFromSource(errorConfig.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestRustFromDiscovery(t *testing.T) {
 			"per-service-features": "true",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestRustFromProtobuf(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func TestRustClient(t *testing.T) {
 				"template-override": path.Join("templates", override),
 			},
 		}
-		model, err := parser.CreateModel(cfg)
+		model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -274,7 +274,7 @@ func TestRustNosvc(t *testing.T) {
 			"template-override": path.Join("templates", "nosvc"),
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestRustModuleRpc(t *testing.T) {
 			"template-override": "templates/mod",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +352,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 			"module-path":       "crate",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
 	if err != nil {
 		t.Fatal(err)
 	}

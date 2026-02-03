@@ -27,11 +27,9 @@ import (
 )
 
 // DetermineInputFiles determines the input files from the source and options.
-func DetermineInputFiles(source string, options map[string]string) ([]string, error) {
-	if _, ok := options["include-list"]; ok {
-		if _, ok := options["exclude-list"]; ok {
-			return nil, fmt.Errorf("cannot use both `exclude-list` and `include-list` in the source options")
-		}
+func DetermineInputFiles(source string, options map[string]string, includeList, excludeList []string) ([]string, error) {
+	if len(includeList) > 0 && len(excludeList) > 0 {
+		return nil, fmt.Errorf("cannot use both `exclude-list` and `include-list`")
 	}
 
 	// `config.Source` is relative to the source root, or `extra-protos-root`,
@@ -54,8 +52,8 @@ func DetermineInputFiles(source string, options map[string]string) ([]string, er
 	if err := findFiles(files, source); err != nil {
 		return nil, err
 	}
-	applyIncludeList(files, source, options)
-	applyExcludeList(files, source, options)
+	applyIncludeList(files, source, includeList)
+	applyExcludeList(files, source, excludeList)
 	var list []string
 	for name, ok := range files {
 		if ok {
@@ -88,24 +86,22 @@ func findFiles(files map[string]bool, source string) error {
 	})
 }
 
-func applyIncludeList(files map[string]bool, sourceDirectory string, options map[string]string) {
-	list, ok := options["include-list"]
-	if !ok {
+func applyIncludeList(files map[string]bool, sourceDirectory string, list []string) {
+	if len(list) == 0 {
 		return
 	}
 	// Ignore any discovered paths, only the paths from the include list apply.
 	clear(files)
-	for _, p := range strings.Split(list, ",") {
+	for _, p := range list {
 		files[filepath.ToSlash(path.Join(sourceDirectory, p))] = true
 	}
 }
 
-func applyExcludeList(files map[string]bool, sourceDirectory string, options map[string]string) {
-	list, ok := options["exclude-list"]
-	if !ok {
+func applyExcludeList(files map[string]bool, sourceDirectory string, list []string) {
+	if len(list) == 0 {
 		return
 	}
-	for _, p := range strings.Split(list, ",") {
+	for _, p := range list {
 		delete(files, filepath.ToSlash(path.Join(sourceDirectory, p)))
 	}
 }

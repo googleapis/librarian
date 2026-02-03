@@ -21,24 +21,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// CreateModel parses the service specification referenced in `config`,
-// cross-references the model, and applies any transformations or overrides
-// required by the configuration.
-func CreateModel(config *config.Config) (*api.API, error) {
-	var err error
+// CreateModel creates a model from the configuration.
+func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, error) {
 	var model *api.API
+	var err error
 	switch config.General.SpecificationFormat {
-	case "disco":
-		model, err = ParseDisco(config)
+	case "protobuf":
+		model, err = ParseProtobuf(config, overrides)
 	case "openapi":
 		model, err = ParseOpenAPI(config)
-	case "protobuf":
-		model, err = ParseProtobuf(config)
+	case "disco", "discovery": // "disco" is legacy
+		model, err = ParseDisco(config)
 	case "none":
 		return nil, nil
 	default:
-		return nil, fmt.Errorf("unknown parser %q", config.General.SpecificationFormat)
+		return nil, fmt.Errorf("unknown specification format: %s", config.General.SpecificationFormat)
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func CreateModel(config *config.Config) (*api.API, error) {
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	if err := api.SkipModelElements(model, config.Source); err != nil {
+	if err := api.SkipModelElements(model, overrides.IncludedIDs, overrides.SkippedIDs); err != nil {
 		return nil, err
 	}
 	if err := api.PatchDocumentation(model, config); err != nil {
@@ -57,14 +56,15 @@ func CreateModel(config *config.Config) (*api.API, error) {
 	if err := api.Validate(model); err != nil {
 		return nil, err
 	}
-	if name, ok := config.Source["name-override"]; ok {
-		model.Name = name
+
+	if overrides.Name != "" {
+		model.Name = overrides.Name
 	}
-	if title, ok := config.Source["title-override"]; ok {
-		model.Title = title
+	if overrides.Title != "" {
+		model.Title = overrides.Title
 	}
-	if description, ok := config.Source["description-override"]; ok {
-		model.Description = description
+	if overrides.Description != "" {
+		model.Description = overrides.Description
 	}
 	return model, nil
 }

@@ -40,9 +40,7 @@ func TestSkipMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Message1", ","))
 	want := []*Message{m0, m2}
 
 	if diff := cmp.Diff(want, model.Messages); diff != "" {
@@ -68,9 +66,7 @@ func TestSkipEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0, e1, e2}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Enum1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Enum1", ","))
 
 	want := []*Enum{e0, e2}
 
@@ -98,9 +94,7 @@ func TestSkipNestedMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message2.Message1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Message2.Message1", ","))
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages); diff != "" {
 		t.Errorf("mismatch in messages (-want, +got)\n:%s", diff)
@@ -131,9 +125,7 @@ func TestSkipNestedEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message.Enum1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Message.Enum1", ","))
 
 	want := []*Enum{e0, e2}
 	if diff := cmp.Diff(want, m.Enums); diff != "" {
@@ -159,9 +151,7 @@ func TestSkipServices(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Service1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Service1", ","))
 
 	want := []*Service{s0, s2}
 
@@ -202,9 +192,7 @@ func TestSkipMethods(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Service1.Method1",
-	})
+	SkipModelElements(model, nil, strings.Split(".test.Service1.Method1", ","))
 
 	wantServices := []*Service{s0, s1, s2}
 	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
@@ -228,9 +216,7 @@ func TestSkipMethods(t *testing.T) {
 
 func TestIncludeUnknownIdError(t *testing.T) {
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{})
-	err := SkipModelElements(model, map[string]string{
-		"included-ids": ".test.UnknownId",
-	})
+	err := SkipModelElements(model, strings.Split(".test.UnknownId", ","), nil)
 	if err == nil {
 		t.Fatal("SkipModelElements should error on unknown IDs")
 	}
@@ -264,9 +250,7 @@ func TestIncludeNestedEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{e0, e1, e2}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Message.Enum0",
-	})
+	SkipModelElements(model, strings.Split(".test.Message.Enum0", ","), nil)
 
 	want := []*Enum{e0}
 	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
@@ -292,9 +276,7 @@ func TestIncludeNestedMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Message2.Message0",
-	})
+	SkipModelElements(model, strings.Split(".test.Message2.Message0", ","), nil)
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
 		t.Errorf("mismatch in messages (-want, +got)\n:%s", diff)
@@ -343,9 +325,7 @@ func TestIncludeMethods(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Service1.Method1,.test.Service1.Method2",
-	})
+	SkipModelElements(model, strings.Split(".test.Service1.Method1,.test.Service1.Method2", ","), nil)
 
 	wantServices := []*Service{s1}
 	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, "Model"), cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {

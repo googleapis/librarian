@@ -35,7 +35,7 @@ func TestBasic(t *testing.T) {
 	options := map[string]string{
 		"googleapis-root": testdataDir,
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, options, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,10 +55,8 @@ func TestTooManyOptions(t *testing.T) {
 	source := sourceDir
 	options := map[string]string{
 		"googleapis-root": testdataDir,
-		"exclude-list":    "d,e,f",
-		"include-list":    "a,b,c",
 	}
-	_, err := DetermineInputFiles(source, options)
+	_, err := DetermineInputFiles(source, options, []string{"a", "b", "c"}, []string{"d", "e", "f"})
 	if err == nil {
 		t.Errorf("expected an error when setting both exclude-list and include-list")
 	}
@@ -68,9 +66,8 @@ func TestIncludeList(t *testing.T) {
 	source := sourceDir
 	options := map[string]string{
 		"googleapis-root": testdataDir,
-		"include-list":    "resources.proto",
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, options, []string{"resources.proto"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,9 +86,8 @@ func TestExcludeList(t *testing.T) {
 	source := sourceDir
 	options := map[string]string{
 		"googleapis-root": testdataDir,
-		"exclude-list":    "resources.proto",
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, options, nil, []string{"resources.proto"})
 	if err != nil {
 		t.Fatal(err)
 	}

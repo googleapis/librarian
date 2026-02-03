@@ -67,7 +67,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -92,7 +91,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -116,7 +114,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -155,7 +152,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -179,7 +175,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -215,7 +210,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -246,7 +240,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
@@ -283,7 +276,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
@@ -314,7 +306,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
-					"title-override":  "Google Compute Engine API",
 				},
 			},
 		},
@@ -338,7 +329,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
 				},
 			},
 		},
@@ -364,7 +354,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"discovery-root":  absPath(t, discoveryRoot),
 					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "googleapis,discovery,showcase",
-					"title-override":  "Google Compute Engine API",
 				},
 			},
 		},
@@ -384,7 +373,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
 				},
 			},
@@ -405,9 +393,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					SpecificationSource: "google/longrunning",
 				},
 				Source: map[string]string{
-					"googleapis-root":      absPath(t, googleapisRoot),
-					"description-override": "Defines types and an abstract service to handle long-running operations.",
-					"roots":                "googleapis",
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -434,7 +421,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
 				},
 			},
@@ -502,7 +488,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
-					"title-override":  "Google Compute Engine API",
 				},
 				Discovery: &sidekickconfig.Discovery{
 					OperationID: ".google.cloud.compute.v1.Operation",
@@ -566,7 +551,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "showcase,googleapis",
-					"title-override":  "Client Libraries Showcase API",
 				},
 			},
 		},
@@ -580,7 +564,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			got, err := libraryToSidekickConfig(test.library, test.api, sources)
+			got, _, err := libraryToSidekickConfig(test.library, test.api, sources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -760,10 +744,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				},
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"included-ids":    "id1,id2",
-					"include-list":    "example-list",
 					"roots":           "googleapis",
-					"skipped-ids":     "id3,id4",
 				},
 			},
 		},
@@ -779,7 +760,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 
 			var commentOverrides []sidekickconfig.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
-				got, err := moduleToSidekickConfig(test.library, module, sources)
+			got, err := moduleToSidekickConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
 				}

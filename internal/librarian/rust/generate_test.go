@@ -241,6 +241,7 @@ func TestGenerate(t *testing.T) {
 						Path: "google/cloud/secretmanager/v1",
 					},
 				},
+				DescriptionOverride: "Custom description for testing",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						PackageDependencies: []*config.RustPackageDependency{
@@ -264,6 +265,7 @@ func TestGenerate(t *testing.T) {
 			}{
 				{filepath.Join(outDir, "Cargo.toml"), "name"},
 				{filepath.Join(outDir, "Cargo.toml"), libName},
+				{filepath.Join(outDir, "README.md"), "Custom description for testing"},
 				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
