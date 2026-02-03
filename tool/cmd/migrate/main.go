@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -60,6 +61,18 @@ var (
 	pathToName = map[string]string{
 		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
 		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
+	}
+
+	libraryToKeep = map[string][]string{
+		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+		"google_cloud_rpc": {
+			"lib/src/exceptions.dart",
+			"lib/src/versions.dart",
+			"lib/src/vm.dart",
+			"lib/src/web.dart",
+			"lib/exceptions.dart",
+			"lib/service_client.dart",
+		},
 	}
 )
 
@@ -271,6 +284,10 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
 		}
+		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
+			lib.Keep = append(lib.Keep, additionalKeeps...)
+		}
+		slices.Sort(keep)
 		lib.Keep = keep
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
@@ -286,7 +303,16 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if _, ok := sidekick.Codec["not-for-publication"]; ok {
 			lib.SkipPublish = true
 		}
-
+		// in Dart .sidekick.toml, the protobuf source root is protobuf, while in Rust is protobuf-src.
+		// Convert protobuf to protobuf-src to reuse parsing logic in sidekick tool.
+		if roots, ok := sidekick.Source["roots"]; ok && roots != "" {
+			lib.Roots = strings.Split(roots, ",")
+			for i, root := range lib.Roots {
+				if root == "protobuf" {
+					lib.Roots[i] = "protobuf-src"
+				}
+			}
+		}
 		lib.SpecificationFormat = specificationFormat
 
 		dartPackage := &config.DartPackage{}
