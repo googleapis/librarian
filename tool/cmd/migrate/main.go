@@ -284,11 +284,11 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse %s: %w", file, err)
 		}
-		lib.Keep = keep
 		if additionalKeeps, ok := libraryToKeep[libraryName]; ok {
-			lib.Keep = append(lib.Keep, additionalKeeps...)
+			keep = append(keep, additionalKeeps...)
 		}
-		slices.Sort(lib.Keep)
+		slices.Sort(keep)
+		lib.Keep = keep
 		if copyrightYear, ok := sidekick.Codec["copyright-year"]; ok && copyrightYear != "" {
 			lib.CopyrightYear = copyrightYear
 		}
