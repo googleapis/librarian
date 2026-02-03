@@ -235,6 +235,12 @@ API key as an argument when initializing the client.
 					DescriptionOverride: "Additional metadata for operations.",
 					Keep: []string{
 						"example/example-file1.txt",
+						"lib/exceptions.dart",
+						"lib/service_client.dart",
+						"lib/src/exceptions.dart",
+						"lib/src/versions.dart",
+						"lib/src/vm.dart",
+						"lib/src/web.dart",
 						"test/nested/test-nested-file.txt",
 						"test/test-file.txt",
 					},
@@ -302,6 +308,38 @@ API key as an argument when initializing the client.
 						"protobuf-src",
 					},
 					SpecificationFormat: "protobuf",
+				},
+			},
+		},
+		{
+			name: "additional library keeps",
+			files: []string{
+				"testdata/read-sidekick-files/additional-keeps/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_rpc",
+					APIs: []*config.API{
+						{
+							Path: "google/rpc",
+						},
+					},
+					CopyrightYear: "2025",
+					Keep: []string{
+						"lib/exceptions.dart",
+						"lib/service_client.dart",
+						"lib/src/exceptions.dart",
+						"lib/src/versions.dart",
+						"lib/src/vm.dart",
+						"lib/src/web.dart",
+					},
+					Output:              "testdata/read-sidekick-files/additional-keeps",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						Dependencies:    "googleapis_auth,http",
+						DevDependencies: "test",
+						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
+					},
 				},
 			},
 		},
