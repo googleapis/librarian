@@ -60,7 +60,6 @@ var (
 
 	pathToName = map[string]string{
 		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
-		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
 	}
 
 	libraryToKeep = map[string][]string{
@@ -302,16 +301,6 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		lib.Output = relativePath
 		if _, ok := sidekick.Codec["not-for-publication"]; ok {
 			lib.SkipPublish = true
-		}
-		// in Dart .sidekick.toml, the protobuf source root is protobuf, while in Rust is protobuf-src.
-		// Convert protobuf to protobuf-src to reuse parsing logic in sidekick tool.
-		if roots, ok := sidekick.Source["roots"]; ok && roots != "" {
-			lib.Roots = strings.Split(roots, ",")
-			for i, root := range lib.Roots {
-				if root == "protobuf" {
-					lib.Roots[i] = "protobuf-src"
-				}
-			}
 		}
 		lib.SpecificationFormat = specificationFormat
 
