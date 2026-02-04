@@ -128,6 +128,7 @@ var APIs = []API{
 	{Path: "google/cloud/assuredworkloads/v1"},
 	{Path: "google/cloud/assuredworkloads/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/audit", Languages: []string{langPython}},
+	{Path: "google/cloud/auditmanager/v1"},
 	{Path: "google/cloud/automl/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/automl/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/backupdr/v1"},

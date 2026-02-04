@@ -33,6 +33,7 @@ library;
 // ignore_for_file: lines_longer_than_80_chars {{! TODO(#25): improve the generated dartdocs }}
 // ignore_for_file: non_constant_identifier_names {{! field names may not follow Dart naming conventions if there are multiple fields that differ only in case }}
 // ignore_for_file: unintended_html_in_doc_comment {{! TODO(#25): improve the generated dartdocs }}
+// ignore_for_file: use_null_aware_elements {{! When serializing `NullValue`, we need to explicitly serialize `null` and it isn't worth special-casing that  }}
 
 {{#Codec.Imports}}
 {{{.}}}
