@@ -43,7 +43,7 @@ type Sources struct {
 	Showcase    string
 }
 
-// AddLibraryRoots configures the source roots for library generation.
+// AddLibraryRoots configures the source roots for dart and rust generation.
 //
 // It populates a map with the paths to the necessary repositories based on the provided library configuration and
 // available sources.
