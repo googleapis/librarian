@@ -113,3 +113,38 @@ func Parse(path string) (*Config, error) {
 	}
 	return cfg, nil
 }
+
+// ParseTransports reads a BUILD.bazel file and extracts transport configuration
+// for all recognized language GAPIC rules.
+func ParseTransports(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
+	}
+	f, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
+	}
+
+	transports := make(map[string]string)
+	for ruleName, lang := range ruleToLang {
+		for _, rule := range f.Rules(ruleName) {
+			tStr := rule.AttrString("transport")
+			if tStr == "" {
+				continue
+			}
+			transports[lang] = tStr
+		}
+	}
+	return transports, nil
+}
+
+var ruleToLang = map[string]string{
+	"csharp_gapic_library":     "csharp",
+	"go_gapic_library":         "go",
+	"java_gapic_library":       "java",
+	"nodejs_gapic_library":     "nodejs",
+	"php_gapic_library":        "php",
+	"py_gapic_library":         "python",
+	"ruby_cloud_gapic_library": "ruby",
+}
