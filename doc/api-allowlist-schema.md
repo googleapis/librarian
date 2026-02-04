@@ -13,3 +13,12 @@ This document describes the schema for the API Allowlist.
 | `OpenAPI` | string | OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata. This is not an official spec yet and exists only for Rust to validate OpenAPI support. |
 | `ServiceConfig` | string | ServiceConfig is the service config file path override. If empty, the service config is discovered in the directory specified by Path. |
 | `Title` | string | Title overrides the API title from the service config. |
+| `Transports` | map[string]Transport | Transports defines the supported transports per language. Map key is the language name (e.g., "python", "rust"). |
+
+## Transport Configuration
+
+[Link to code](../internal/serviceconfig/api.go#L71)
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `GRPC` | bool | GRPC indicates gRPC transport support. |
+| `REST` | bool | REST indicates REST (HTTP/JSON) transport support. |

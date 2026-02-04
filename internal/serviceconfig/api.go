@@ -62,6 +62,19 @@ type API struct {
 
 	// Title overrides the API title from the service config.
 	Title string
+
+	// Transports defines the supported transports per language.
+	// Map key is the language name (e.g., "python", "rust").
+	Transports map[string]Transport
+}
+
+// Transport describes the supported communication protocols for an API.
+type Transport struct {
+	// GRPC indicates gRPC transport support.
+	GRPC bool
+
+	// REST indicates REST (HTTP/JSON) transport support.
+	REST bool
 }
 
 // APIs defines all API paths and their language availability.
