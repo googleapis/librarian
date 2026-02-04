@@ -130,6 +130,12 @@ const (
 	FIELD_BEHAVIOR_IDENTIFIER
 )
 
+const (
+	// This package name is reserved for maps and other "fake" messages that do
+	// not exist in the input specification, but need a place in the data model.
+	ReservedPackageName = "$"
+)
+
 // API represents and API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).

@@ -76,6 +76,11 @@ func TestMapKeyAnnotations(t *testing.T) {
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
 		codec, err := newCodec("protobuf", map[string]string{})
+		codec.packageMapping = map[string]*packagez{
+			"test":            &packagez{name: "google-cloud-test"},
+			"google.protobuf": &packagez{name: "wkt"},
+			"$":               &packagez{name: "internal-detail"},
+		}
 		if err != nil {
 			t.Fatal(err)
 		}
