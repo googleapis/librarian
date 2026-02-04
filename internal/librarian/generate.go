@@ -24,10 +24,10 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/common"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -77,7 +77,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
 	// Fetch sources.
-	sources, err := common.FetchSources(ctx, cfg.Sources)
+	sources, err := source.FetchSources(ctx, cfg.Sources)
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return library, nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, sources *common.Sources) error {
+func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, sources *source.Sources) error {
 	switch language {
 	case languageFake:
 		if err := fakeGenerate(library); err != nil {

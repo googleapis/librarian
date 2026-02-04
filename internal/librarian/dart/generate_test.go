@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/common"
+	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -62,7 +62,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	sources := &common.Sources{
+	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {

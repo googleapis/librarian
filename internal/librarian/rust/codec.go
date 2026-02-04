@@ -19,12 +19,12 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/common"
+	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *common.Sources) (*sidekickconfig.Config, error) {
+func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -33,7 +33,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *c
 		specFormat = "disco"
 	}
 
-	source := common.AddLibraryRoots(library, sources)
+	source := source.AddLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
 		source["description-override"] = library.DescriptionOverride
 	}
@@ -223,8 +223,8 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *common.Sources) (*sidekickconfig.Config, error) {
-	source := common.AddLibraryRoots(library, sources)
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*sidekickconfig.Config, error) {
+	source := source.AddLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		source["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}

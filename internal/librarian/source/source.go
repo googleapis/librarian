@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package common provides common functionalities for generating and releasing
-// clients in all languages.
-package common
+// Package source provides common functionalities for generating and releasing clients in all languages.
+package source
 
 import (
 	"context"

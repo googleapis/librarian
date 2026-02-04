@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/common"
+	"github.com/googleapis/librarian/internal/librarian/source"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
@@ -646,7 +646,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &common.Sources{
+			sources := &source.Sources{
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),
@@ -868,7 +868,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &common.Sources{
+			sources := &source.Sources{
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),

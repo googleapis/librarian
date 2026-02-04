@@ -21,13 +21,13 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/common"
+	"github.com/googleapis/librarian/internal/librarian/source"
 	sidekickdart "github.com/googleapis/librarian/internal/sidekick/dart"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 // Generate generates a Dart client library.
-func Generate(ctx context.Context, library *config.Library, sources *common.Sources) error {
+func Generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
 	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
