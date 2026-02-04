@@ -41,7 +41,7 @@ func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, er
 	if err != nil {
 		return nil, err
 	}
-	updateMethodPagination(config.PaginationOverrides, model)
+	updateMethodPagination(overrides, model)
 	api.LabelRecursiveFields(model)
 	if err := api.CrossReference(model); err != nil {
 		return nil, err

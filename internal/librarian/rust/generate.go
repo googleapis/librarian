@@ -24,8 +24,8 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
@@ -67,6 +67,15 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 					ID:      override.ID,
 					Match:   override.Match,
 					Replace: override.Replace,
+				}
+			}
+		}
+		if len(library.Rust.PaginationOverrides) > 0 {
+			overrides.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+			for i, override := range library.Rust.PaginationOverrides {
+				overrides.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+					ID:        override.ID,
+					ItemField: override.ItemField,
 				}
 			}
 		}

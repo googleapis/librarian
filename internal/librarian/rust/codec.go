@@ -63,15 +63,6 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 	}
 	if library.Rust != nil {
 
-		if len(library.Rust.PaginationOverrides) > 0 {
-			sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
-			for i, override := range library.Rust.PaginationOverrides {
-				sidekickCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
-					ID:        override.ID,
-					ItemField: override.ItemField,
-				}
-			}
-		}
 		if library.Rust.Discovery != nil {
 			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
 			for i, poller := range library.Rust.Discovery.Pollers {

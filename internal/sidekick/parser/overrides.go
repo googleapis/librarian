@@ -29,7 +29,8 @@ type ModelOverrides struct {
 	IncludedIDs      []string
 	IncludeList      []string
 	ExcludeList      []string
-	CommentOverrides []config.DocumentationOverride
+	CommentOverrides    []config.DocumentationOverride
+	PaginationOverrides []config.PaginationOverride
 }
 
 // NewModelOverridesFromSource creates a new ModelOverrides from a source map.

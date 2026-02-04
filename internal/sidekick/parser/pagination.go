@@ -30,7 +30,11 @@ const (
 
 // updateMethodPagination marks all methods that conform to
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
-func updateMethodPagination(overrides []config.PaginationOverride, a *api.API) {
+func updateMethodPagination(overrides *ModelOverrides, a *api.API) {
+	var paginationOverrides []config.PaginationOverride
+	if overrides != nil {
+		paginationOverrides = overrides.PaginationOverrides
+	}
 	for _, m := range a.State.MethodByID {
 		reqMsg := a.State.MessageByID[m.InputTypeID]
 		pageTokenField := paginationRequestInfo(reqMsg)
@@ -39,7 +43,7 @@ func updateMethodPagination(overrides []config.PaginationOverride, a *api.API) {
 		}
 
 		respMsg := a.State.MessageByID[m.OutputTypeID]
-		paginationInfo := paginationResponseInfo(overrides, m.ID, respMsg)
+		paginationInfo := paginationResponseInfo(paginationOverrides, m.ID, respMsg)
 		if paginationInfo == nil {
 			continue
 		}

@@ -262,12 +262,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				PaginationOverrides: []sidekickconfig.PaginationOverride{
-					{
-						ID:        ".google.cloud.secretmanager.v1.Secret.ListSecrets",
-						ItemField: "secrets",
-					},
-				},
 			},
 		},
 		{

@@ -83,7 +83,7 @@ func TestPageSimple(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(nil, model)
+	updateMethodPagination(&ModelOverrides{}, model)
 	if method.Pagination != request.Fields[1] {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
@@ -168,7 +168,7 @@ func TestPageWithOverride(t *testing.T) {
 	overrides := []config.PaginationOverride{
 		{ID: ".package.Service.List", ItemField: "items"},
 	}
-	updateMethodPagination(overrides, model)
+	updateMethodPagination(&ModelOverrides{PaginationOverrides: overrides}, model)
 	if method.Pagination != request.Fields[1] {
 		t.Errorf("mismatch, want=%v, got=%v", request.Fields[1], method.Pagination)
 	}
@@ -218,7 +218,7 @@ func TestPageMissingInputType(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(nil, model)
+	updateMethodPagination(&ModelOverrides{}, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -265,7 +265,7 @@ func TestPageMissingOutputType(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(nil, model)
+	updateMethodPagination(&ModelOverrides{}, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -313,7 +313,7 @@ func TestPageBadRequest(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(nil, model)
+	updateMethodPagination(&ModelOverrides{}, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
@@ -365,7 +365,7 @@ func TestPageBadResponse(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{request, response, resource}, []*api.Enum{}, []*api.Service{service})
-	updateMethodPagination(nil, model)
+	updateMethodPagination(&ModelOverrides{}, model)
 	if method.Pagination != nil {
 		t.Errorf("mismatch, want=nil, got=%v", method.Pagination)
 	}
