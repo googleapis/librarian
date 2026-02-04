@@ -233,6 +233,7 @@ var APIs = []API{
 	{Path: "google/cloud/gkehub/v1"},
 	{Path: "google/cloud/gkehub/v1/configmanagement", Title: titleGKEHubTypes},
 	{Path: "google/cloud/gkehub/v1/multiclusteringress", Title: titleGKEHubTypes},
+	{Path: "google/cloud/gkehub/v1/rbacrolebindingactuation", Title: titleGKEHubTypes},
 	{Path: "google/cloud/gkehub/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/gkemulticloud/v1"},
 	{Path: "google/cloud/gkerecommender/v1"},
