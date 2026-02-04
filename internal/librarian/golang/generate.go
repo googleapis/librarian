@@ -162,8 +162,8 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-// fixVersioning moves {id}/{version}/* up to {id}/ for versioned modules.
-func fixVersioning(outputDir, libraryID, modPath string) error {
+// fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
+func fixVersioning(outputDir, library, modPath string) error {
 	// parts is the module path split by "/".
 	// For example, "cloud.google.com/go/bigquery/v2" becomes:
 	// parts[0]: "cloud.google.com"
@@ -178,12 +178,12 @@ func fixVersioning(outputDir, libraryID, modPath string) error {
 		return fmt.Errorf("unexpected module path: %s", modPath)
 	}
 
-	id, version := parts[2], parts[3]
-	if libraryID == id+"/"+version {
+	name, version := parts[2], parts[3]
+	if library == name+"/"+version {
 		return nil
 	}
 
-	srcDir := filepath.Join(outputDir, id)
+	srcDir := filepath.Join(outputDir, name)
 	if err := move(filepath.Join(srcDir, version), srcDir); err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func fixVersioning(outputDir, libraryID, modPath string) error {
 		return err
 	}
 
-	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", id)
+	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
 		if err := move(snippetVersionDir, snippetDir); err != nil {
