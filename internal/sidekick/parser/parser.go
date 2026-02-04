@@ -21,17 +21,19 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// CreateModel creates a model from the configuration.
+// CreateModel parses the service specification referenced in `config`,
+// cross-references the model, and applies any transformations or overrides
+// required by the configuration.
 func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, error) {
-	var model *api.API
 	var err error
+	var model *api.API
 	switch config.General.SpecificationFormat {
+	case "disco":
+		model, err = ParseDisco(config)
 	case "protobuf":
-		model, err = ParseProtobuf(config, overrides)
+		model, err = ParseProtobuf(config)
 	case "openapi":
 		model, err = ParseOpenAPI(config)
-	case "disco", "discovery": // "disco" is legacy
-		model, err = ParseDisco(config)
 	case "none":
 		return nil, nil
 	default:

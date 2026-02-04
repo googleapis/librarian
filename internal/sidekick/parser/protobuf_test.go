@@ -2136,7 +2136,7 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 		cfg := &config.Config{
 			General: general,
 		}
-		if got, err := ParseProtobuf(cfg, NewModelOverridesFromSource(cfg.Source)); err == nil {
+		if got, err := ParseProtobuf(cfg); err == nil {
 			t.Fatalf("expected error with missing source file, got=%v", got)
 		}
 	}
@@ -2149,7 +2149,7 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 		"extra-protos-root": "testdata",
 		"include-list":      filename,
 	}
-	request, err := newCodeGeneratorRequest("testdata", options, NewModelOverridesFromSource(options))
+	request, err := newCodeGeneratorRequest("testdata", options)
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}

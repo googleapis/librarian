@@ -20,13 +20,16 @@ import (
 
 // ModelOverrides contains overrides for the API model.
 type ModelOverrides struct {
-	Name        string
-	Title       string
+	// Name overrides the package name.
+	Name string
+	// Title overrides the API title.
+	Title string
+	// Description overrides the API description.
 	Description string
-	SkippedIDs  []string
+	// SkippedIDs is a list of element IDs to skip.
+	SkippedIDs []string
+	// IncludedIDs is a list of element IDs to include.
 	IncludedIDs []string
-	IncludeList []string
-	ExcludeList []string
 }
 
 // NewModelOverridesFromSource creates a new ModelOverrides from a source map.
@@ -49,11 +52,6 @@ func NewModelOverridesFromSource(source map[string]string) *ModelOverrides {
 	if val, ok := source["included-ids"]; ok {
 		m.IncludedIDs = strings.Split(val, ",")
 	}
-	if val, ok := source["include-list"]; ok {
-		m.IncludeList = strings.Split(val, ",")
-	}
-	if val, ok := source["exclude-list"]; ok {
-		m.ExcludeList = strings.Split(val, ",")
-	}
+
 	return m
 }

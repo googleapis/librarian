@@ -49,15 +49,7 @@ func (codec *codec) annotateModel(model *api.API, cfg *config.Config) error {
 	// or we need to extract them from `config.Source`.
 	// The `config` struct here is `sidekickconfig.Config`.
 	// Let's parse them from config.Source for now to maintain behavior.
-	includeList := []string{}
-	if val, ok := cfg.Source["include-list"]; ok {
-		includeList = strings.Split(val, ",")
-	}
-	excludeList := []string{}
-	if val, ok := cfg.Source["exclude-list"]; ok {
-		excludeList = strings.Split(val, ",")
-	}
-	files, err := protobuf.DetermineInputFiles(cfg.General.SpecificationSource, cfg.Source, includeList, excludeList)
+	files, err := protobuf.DetermineInputFiles(cfg.General.SpecificationSource, cfg.Source)
 	if err != nil {
 		return err
 	}

@@ -44,7 +44,7 @@ func TestCreateModelDisco(t *testing.T) {
 			SpecificationSource: discoSourceFile,
 		},
 	}
-	got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
+	got, err := CreateModel(cfg, &ModelOverrides{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
 	}
-	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
+	model, err := CreateModel(cfg, &ModelOverrides{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
+	model, err := CreateModel(cfg, &ModelOverrides{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,13 +123,15 @@ func TestCreateModelOverrides(t *testing.T) {
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
+	overrides := &ModelOverrides{
+		Name:        "Name Override",
+		Title:       "Title Override",
+		Description: "Description Override",
+	}
+	model, err := CreateModel(cfg, overrides)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,13 +160,15 @@ func TestCreateModelNone(t *testing.T) {
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source))
+	overrides := &ModelOverrides{
+		Name:        "Name Override",
+		Title:       "Title Override",
+		Description: "Description Override",
+	}
+	model, err := CreateModel(cfg, overrides)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,13 +185,15 @@ func TestCreateModelUnknown(t *testing.T) {
 			SpecificationSource: "none",
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	if got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source)); err == nil {
+	overrides := &ModelOverrides{
+		Name:        "Name Override",
+		Title:       "Title Override",
+		Description: "Description Override",
+	}
+	if got, err := CreateModel(cfg, overrides); err == nil {
 		t.Errorf("expected error with unknown specification format, got=%v", got)
 	}
 }
@@ -201,13 +207,15 @@ func TestCreateModelBadParse(t *testing.T) {
 			SpecificationSource: discoSourceFile,
 		},
 		Source: map[string]string{
-			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	if got, err := CreateModel(cfg, NewModelOverridesFromSource(cfg.Source)); err == nil {
+	overrides := &ModelOverrides{
+		Name:        "Name Override",
+		Title:       "Title Override",
+		Description: "Description Override",
+	}
+	if got, err := CreateModel(cfg, overrides); err == nil {
 		t.Errorf("expected error with bad specification, got=%v", got)
 	}
 }

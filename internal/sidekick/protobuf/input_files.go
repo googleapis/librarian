@@ -27,8 +27,10 @@ import (
 )
 
 // DetermineInputFiles determines the input files from the source and options.
-func DetermineInputFiles(source string, options map[string]string, includeList, excludeList []string) ([]string, error) {
-	if len(includeList) > 0 && len(excludeList) > 0 {
+func DetermineInputFiles(source string, options map[string]string) ([]string, error) {
+	includeList, okInclude := options["include-list"]
+	excludeList, okExclude := options["exclude-list"]
+	if okInclude && okExclude {
 		return nil, fmt.Errorf("cannot use both `exclude-list` and `include-list`")
 	}
 
@@ -86,22 +88,22 @@ func findFiles(files map[string]bool, source string) error {
 	})
 }
 
-func applyIncludeList(files map[string]bool, sourceDirectory string, list []string) {
-	if len(list) == 0 {
+func applyIncludeList(files map[string]bool, sourceDirectory string, list string) {
+	if list == "" {
 		return
 	}
 	// Ignore any discovered paths, only the paths from the include list apply.
 	clear(files)
-	for _, p := range list {
+	for _, p := range strings.Split(list, ",") {
 		files[filepath.ToSlash(path.Join(sourceDirectory, p))] = true
 	}
 }
 
-func applyExcludeList(files map[string]bool, sourceDirectory string, list []string) {
-	if len(list) == 0 {
+func applyExcludeList(files map[string]bool, sourceDirectory string, list string) {
+	if list == "" {
 		return
 	}
-	for _, p := range list {
+	for _, p := range strings.Split(list, ",") {
 		delete(files, filepath.ToSlash(path.Join(sourceDirectory, p)))
 	}
 }
