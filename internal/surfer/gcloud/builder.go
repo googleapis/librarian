@@ -65,7 +65,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 		return nil, err
 	}
 	cmd.Arguments = args
-	cmd.Request = newRequest(method, overrides, model)
+	cmd.Request = newRequest(method, overrides, model, service)
 
 	if utils.IsList(method) {
 		// List commands should have an id_field to enable the --uri flag.
@@ -410,16 +410,26 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 }
 
 // newRequest creates the `Request` part of the command definition.
-func newRequest(method *api.Method, overrides *Config, model *api.API) *Request {
+func newRequest(method *api.Method, overrides *Config, model *api.API, service *api.Service) *Request {
+	// Extract the short service name (e.g. "parallelstore" from "parallelstore.googleapis.com")
+	hostParts := strings.Split(service.DefaultHost, ".")
+	shortServiceName := hostParts[0]
+
+	collectionPath := fmt.Sprintf("%s.projects.locations.%s", shortServiceName, utils.GetPluralResourceNameForMethod(method, model))
+	// TODO(https://github.com/googleapis/librarian/issues/3290): The "projects.locations" part is still assumed.
+	// We should infer the full hierarchy from the resource pattern.
+
 	req := &Request{
 		APIVersion: apiVersion(overrides),
-		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
-		Collection: []string{fmt.Sprintf("parallelstore.projects.locations.%s", utils.GetPluralResourceNameForMethod(method, model))},
+		Collection: []string{collectionPath},
 	}
 
-	// For custom methods (AIP-136), we explicitly set the method name in the request configuration.
+	// For custom methods (AIP-136), the `method` field in the request configuration
+	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
 	if utils.IsCustomMethod(method) {
-		req.Method = strcase.ToLowerCamel(method.Name)
+		commandName, _ := utils.GetCommandName(method)
+		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
+		req.Method = strcase.ToLowerCamel(commandName)
 	}
 
 	return req
