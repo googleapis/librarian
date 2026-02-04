@@ -23,7 +23,7 @@ import (
 
 func TestFetchSource(t *testing.T) {
 	ctx := t.Context()
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name    string
 		source  *config.Source
 		wantDir string
@@ -40,13 +40,13 @@ func TestFetchSource(t *testing.T) {
 			wantDir: "local/dir",
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			gotDir, err := fetchSource(ctx, tt.source, "some-repo")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("fetchSource() error = %v, wantErr %v", err, tt.wantErr)
+		t.Run(test.name, func(t *testing.T) {
+			gotDir, err := fetchSource(ctx, test.source, "some-repo")
+			if (err != nil) != test.wantErr {
+				t.Errorf("fetchSource() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if diff := cmp.Diff(tt.wantDir, gotDir); diff != "" {
+			if diff := cmp.Diff(test.wantDir, gotDir); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

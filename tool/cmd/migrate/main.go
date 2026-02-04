@@ -64,7 +64,7 @@ var (
 	}
 
 	libraryToKeep = map[string][]string{
-		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
+		"google_cloud_protobuf": {"lib/src/encoding.dart"},
 		"google_cloud_rpc": {
 			"lib/src/exceptions.dart",
 			"lib/src/versions.dart",
@@ -73,6 +73,7 @@ var (
 			"lib/exceptions.dart",
 			"lib/service_client.dart",
 		},
+		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
 	}
 )
 
@@ -325,6 +326,9 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		if nameOverride, ok := sidekick.Source["name-override"]; ok && nameOverride != "" {
 			dartPackage.NameOverride = nameOverride
 		}
+		if includeList, ok := sidekick.Source["include-list"]; ok && includeList != "" {
+			dartPackage.IncludeList = strings.Split(includeList, ",")
+		}
 
 		if apiKeys, ok := sidekick.Codec["api-keys-environment-variables"]; ok && apiKeys != "" {
 			dartPackage.APIKeysEnvironmentVariables = apiKeys
@@ -337,9 +341,6 @@ func buildGAPIC(files []string, repoPath string) ([]*config.Library, error) {
 		}
 		if extraImports, ok := sidekick.Codec["extra-imports"]; ok && extraImports != "" {
 			dartPackage.ExtraImports = extraImports
-		}
-		if includeList, ok := sidekick.Source["include-list"]; ok && includeList != "" {
-			dartPackage.IncludeList = strings.Split(includeList, ",")
 		}
 		if partFile, ok := sidekick.Codec["part-file"]; ok && partFile != "" {
 			// part-file in .sidekick.toml starts with src/, however, the file path is

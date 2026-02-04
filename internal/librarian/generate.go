@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -88,8 +89,8 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	if err != nil {
 		return err
 	}
-	var rustSources *rust.Sources
-	if cfg.Language == languageRust {
+	var rustSources *source.Sources
+	if cfg.Language == languageRust || cfg.Language == languageDart {
 		rustSources, err = fetchRustSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
@@ -208,14 +209,14 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	return library, nil
 }
 
-func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, rustSources *rust.Sources) error {
+func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, src *source.Sources) error {
 	switch language {
 	case languageFake:
 		if err := fakeGenerate(library); err != nil {
 			return err
 		}
 	case languageDart:
-		if err := dart.Generate(ctx, library, googleapisDir); err != nil {
+		if err := dart.Generate(ctx, library, src); err != nil {
 			return err
 		}
 	case languagePython:
@@ -227,7 +228,7 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 			return err
 		}
 	case languageRust:
-		if err := rust.Generate(ctx, library, rustSources); err != nil {
+		if err := rust.Generate(ctx, library, src); err != nil {
 			return err
 		}
 	default:
@@ -238,8 +239,8 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 
 // fetchRustSources fetches all source repositories needed for Rust generation
 // in parallel. It returns a rust.Sources struct with all directories populated.
-func fetchRustSources(ctx context.Context, cfgSources *config.Sources) (*rust.Sources, error) {
-	sources := &rust.Sources{}
+func fetchRustSources(ctx context.Context, cfgSources *config.Sources) (*source.Sources, error) {
+	sources := &source.Sources{}
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {

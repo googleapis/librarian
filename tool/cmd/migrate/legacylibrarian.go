@@ -126,6 +126,10 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
 
+	// The directory name in Googleapis is present for migration code to look
+	// up API details. It shouldn't be persisted.
+	cfg.Sources.Googleapis.Dir = ""
+
 	return cfg, nil
 }
 

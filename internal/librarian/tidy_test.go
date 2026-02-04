@@ -351,6 +351,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: "generated/cloud/secretmanager/v1",
+				Roots:  []string{"googleapis"},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",

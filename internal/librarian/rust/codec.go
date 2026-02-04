@@ -21,9 +21,10 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, error) {
+func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -32,9 +33,9 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 		specFormat = "disco"
 	}
 
-	source := addLibraryRoots(library, sources)
+	src := addLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
-		source["description-override"] = library.DescriptionOverride
+		src["description-override"] = library.DescriptionOverride
 	}
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
@@ -45,7 +46,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 		return nil, err
 	}
 	if api.Title != "" {
-		source["title-override"] = api.Title
+		src["title-override"] = api.Title
 	}
 	var specSource string
 	switch specFormat {
@@ -58,7 +59,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 	}
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
-			source["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
+			src["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
 		}
 	}
 	sidekickCfg := &sidekickconfig.Config{
@@ -68,7 +69,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: specSource,
 		},
-		Source: source,
+		Source: src,
 	}
 	if library.Rust != nil {
 		if len(library.Rust.DocumentationOverrides) > 0 {
@@ -124,7 +125,6 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.Rust == nil {
 		return codec
 	}
-
 	rust := library.Rust
 	if rust.ModulePath != "" {
 		codec["module-path"] = rust.ModulePath
@@ -222,24 +222,24 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *Sources) (*sidekickconfig.Config, error) {
-	source := addLibraryRoots(library, sources)
+func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*sidekickconfig.Config, error) {
+	src := addLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
-		source["included-ids"] = strings.Join(module.IncludedIds, ",")
+		src["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}
 	if len(module.SkippedIds) > 0 {
-		source["skipped-ids"] = strings.Join(module.SkippedIds, ",")
+		src["skipped-ids"] = strings.Join(module.SkippedIds, ",")
 	}
 	if module.IncludeList != "" {
-		source["include-list"] = module.IncludeList
+		src["include-list"] = module.IncludeList
 	}
-	if module.Source != "" && source["roots"] == "googleapis" {
+	if module.Source != "" && src["roots"] == "googleapis" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
 		if api != nil && api.Title != "" {
-			source["title-override"] = api.Title
+			src["title-override"] = api.Title
 		}
 	}
 
@@ -261,7 +261,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 			ServiceConfig:       module.ServiceConfig,
 			SpecificationSource: module.Source,
 		},
-		Source: source,
+		Source: src,
 		Codec:  buildModuleCodec(library, module),
 	}
 	if len(module.DocumentationOverrides) > 0 {
@@ -321,18 +321,19 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	return codec
 }
 
-func addLibraryRoots(library *config.Library, sources *Sources) map[string]string {
-	source := make(map[string]string)
+// TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
+func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
+	src := make(map[string]string)
 	if library.Rust == nil {
 		library.Rust = &config.RustCrate{}
 	}
 
 	if len(library.Roots) == 0 && sources.Googleapis != "" {
 		// Default to googleapis if no roots are specified.
-		source["googleapis-root"] = sources.Googleapis
-		source["roots"] = "googleapis"
+		src["googleapis-root"] = sources.Googleapis
+		src["roots"] = "googleapis"
 	} else {
-		source["roots"] = strings.Join(library.Roots, ",")
+		src["roots"] = strings.Join(library.Roots, ",")
 		rootMap := map[string]struct {
 			path string
 			key  string
@@ -345,10 +346,10 @@ func addLibraryRoots(library *config.Library, sources *Sources) map[string]strin
 		}
 		for _, root := range library.Roots {
 			if r, ok := rootMap[root]; ok && r.path != "" {
-				source[r.key] = r.path
+				src[r.key] = r.path
 			}
 		}
 	}
 
-	return source
+	return src
 }

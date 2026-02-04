@@ -17,6 +17,7 @@
 package serviceconfig
 
 const (
+	langDart   = "dart"
 	langPython = "python"
 	langRust   = "rust"
 
@@ -471,4 +472,5 @@ var APIs = []API{
 	{Path: "google/type"},
 	{Path: "grafeas/v1"},
 	{Path: "schema/google/showcase/v1beta1", ServiceConfig: "schema/google/showcase/v1beta1/showcase_v1beta1.yaml"},
+	{Path: "src/google/protobuf", Languages: []string{langDart}},
 }

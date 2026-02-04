@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -64,7 +65,7 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &Sources{
+	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {
@@ -107,7 +108,7 @@ func TestSkipGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &Sources{
+	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {
@@ -251,7 +252,7 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 			}
-			sources := &Sources{
+			sources := &source.Sources{
 				Googleapis: googleapisDir,
 			}
 			if err := Generate(t.Context(), library, sources); err != nil {

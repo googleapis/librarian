@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 const (
@@ -466,8 +467,8 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			name: "with discovery LRO polling config",
 			library: &config.Library{
 				Name:                "google-cloud-compute-v1",
-				SpecificationFormat: "discovery",
 				Roots:               []string{"googleapis", "discovery"},
+				SpecificationFormat: "discovery",
 				Rust: &config.RustCrate{
 					Discovery: &config.RustDiscovery{
 						OperationID: ".google.cloud.compute.v1.Operation",
@@ -572,7 +573,7 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &Sources{
+			sources := &source.Sources{
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),
@@ -794,7 +795,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &Sources{
+			sources := &source.Sources{
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),
