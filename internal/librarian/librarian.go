@@ -34,6 +34,7 @@ const (
 	librarianConfigPath = "librarian.yaml"
 	languageDart        = "dart"
 	languageFake        = "fake"
+	languageGo          = "go"
 	languageRust        = "rust"
 	languagePython      = "python"
 )

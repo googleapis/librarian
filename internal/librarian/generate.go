@@ -25,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/urfave/cli/v3"
@@ -191,7 +192,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	switch language {
 	case languageFake:
 		// No cleaning needed.
-	case languageDart, languagePython:
+	case languageDart, languageGo, languagePython:
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
 			return nil, err
 		}
@@ -219,6 +220,10 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 		}
 	case languagePython:
 		if err := python.Generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	case languageGo:
+		if err := golang.Generate(ctx, library, googleapisDir); err != nil {
 			return err
 		}
 	case languageRust:
@@ -286,8 +291,8 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return dart.Format(ctx, library)
 	case languageRust:
 		return rust.Format(ctx, library)
-	case languagePython:
-		// Python formatting is currently performed in the generate phase.
+	case languageGo, languagePython:
+		// Go and Python formatting is currently performed in the generate phase.
 		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 		// generation and formatting for Python.
 		return nil
