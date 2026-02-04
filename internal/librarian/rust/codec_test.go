@@ -59,7 +59,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -83,7 +82,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -106,7 +104,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -144,7 +141,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -167,7 +163,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -202,7 +197,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -232,7 +226,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -268,7 +261,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/secretmanager/v1",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -297,7 +289,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -321,7 +312,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "openapi",
 					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -344,7 +334,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -367,7 +356,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/apps/script/type/gmail",
 				},
@@ -388,7 +376,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/longrunning",
 				},
@@ -415,7 +402,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/spanner/admin/database/v1",
 				},
@@ -438,7 +424,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/storageinsights/v1",
 				},
@@ -479,7 +464,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "disco",
 					SpecificationSource: "discoveries/compute.v1.json",
 					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -519,7 +503,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "google/cloud/vision/v1",
 				},
@@ -542,7 +525,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "protobuf",
 					SpecificationSource: "schema/google/showcase/v1beta1",
 					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
@@ -664,7 +646,6 @@ func TestModuleToSidekickConfig(t *testing.T) {
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
 					SpecificationFormat: "none",
 				},
 				Source: map[string]string{

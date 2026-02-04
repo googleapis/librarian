@@ -55,7 +55,6 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 
 	sidekickCfg := &sidekickconfig.Config{
 		General: sidekickconfig.GeneralConfig{
-			Language:            "rust",
 			SpecificationFormat: specFormat,
 			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: specSource,
