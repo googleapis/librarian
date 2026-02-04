@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package internalsidekick provides functionalities for Dart and Rust generation and releasing.
 package internalsidekick
 
 import (
