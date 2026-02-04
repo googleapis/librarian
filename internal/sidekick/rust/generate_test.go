@@ -84,6 +84,9 @@ func TestCodecError(t *testing.T) {
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
+		Codec: map[string]string{
+			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
+		},
 	}
 	errorConfig := &config.Config{
 		General: config.GeneralConfig{
@@ -121,6 +124,9 @@ func TestRustFromOpenAPI(t *testing.T) {
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
 		},
+		Codec: map[string]string{
+			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
+		},
 	}
 	model, err := parser.CreateModel(cfg)
 	if err != nil {
@@ -152,6 +158,7 @@ func TestRustFromDiscovery(t *testing.T) {
 			SpecificationSource: path.Join(testdataDir, "disco/compute.v1.json"),
 		},
 		Codec: map[string]string{
+			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
 		},
 	}
@@ -189,6 +196,13 @@ func TestRustFromProtobuf(t *testing.T) {
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
+		Codec: map[string]string{
+			"package:wkt":                   "source=google.protobuf,package=google-cloud-wkt",
+			"package:google-cloud-api":      "source=google.api,package=google-cloud-api",
+			"package:google-cloud-location": "source=google.cloud.location,package=google-cloud-location",
+			"package:google-cloud-iam-v1":   "source=google.iam.v1,package=google-cloud-iam-v1",
+			"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
+		},
 	}
 	model, err := parser.CreateModel(cfg)
 	if err != nil {
@@ -225,8 +239,13 @@ func TestRustClient(t *testing.T) {
 				"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 			},
 			Codec: map[string]string{
-				"copyright-year":    "2025",
-				"template-override": path.Join("templates", override),
+				"copyright-year":                "2025",
+				"template-override":             path.Join("templates", override),
+				"package:wkt":                   "source=google.protobuf,package=google-cloud-wkt",
+				"package:google-cloud-api":      "source=google.api,package=google-cloud-api",
+				"package:google-cloud-location": "source=google.cloud.location,package=google-cloud-location",
+				"package:google-cloud-iam-v1":   "source=google.iam.v1,package=google-cloud-iam-v1",
+				"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
 			},
 		}
 		model, err := parser.CreateModel(cfg)
@@ -270,8 +289,13 @@ func TestRustNosvc(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 		Codec: map[string]string{
-			"copyright-year":    "2025",
-			"template-override": path.Join("templates", "nosvc"),
+			"copyright-year":                "2025",
+			"template-override":             path.Join("templates", "nosvc"),
+			"package:wkt":                   "source=google.protobuf,package=google-cloud-wkt",
+			"package:google-cloud-api":      "source=google.api,package=google-cloud-api",
+			"package:google-cloud-location": "source=google.cloud.location,package=google-cloud-location",
+			"package:google-cloud-iam-v1":   "source=google.iam.v1,package=google-cloud-iam-v1",
+			"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
 		},
 	}
 	model, err := parser.CreateModel(cfg)
@@ -310,6 +334,7 @@ func TestRustModuleRpc(t *testing.T) {
 		Codec: map[string]string{
 			"copyright-year":    "2025",
 			"template-override": "templates/mod",
+			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
 		},
 	}
 	model, err := parser.CreateModel(cfg)

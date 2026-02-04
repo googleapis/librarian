@@ -49,6 +49,8 @@ func TestGenerateVeneer(t *testing.T) {
 					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
 					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+					{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+					{Name: "google-cloud-type", Package: "google-cloud-type", Source: "google.type"},
 				},
 			},
 			Modules: []*config.RustModule{
@@ -248,6 +250,8 @@ func TestGenerate(t *testing.T) {
 							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 							{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+							{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+							{Name: "google-cloud-type", Package: "google-cloud-type", Source: "google.type"},
 						},
 					},
 				},

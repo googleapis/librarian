@@ -23,6 +23,21 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+func newTestCodec(t *testing.T, specificationFormat, packageName string, options map[string]string) *codec {
+	t.Helper()
+	codec, err := newCodec(specificationFormat, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codec.packageMapping = map[string]*packagez{
+		"google.protobuf": &packagez{name: "wkt"},
+	}
+	if packageName != "" {
+		codec.packageMapping[packageName] = &packagez{name: "external-rust-pkg"}
+	}
+	return codec
+}
+
 func TestFieldAnnotations(t *testing.T) {
 	key_field := &api.Field{Name: "key", Typez: api.INT32_TYPE}
 	value_field := &api.Field{Name: "value", Typez: api.INT64_TYPE}
@@ -74,10 +89,7 @@ func TestFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
 		Name:              "TestMessage",
@@ -247,10 +259,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
 		Name:              "TestMessage",
@@ -440,10 +449,8 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[inner_message.ID] = inner_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	codec.packageMapping["test.v1.inner"] = &packagez{name: "rusty-test-inner-v1"}
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
 		Name:              "TestMessage",
@@ -469,12 +476,12 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SetterName:         "map_field",
 		BranchName:         "MapField",
 		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::collections::HashMap<i32,test.v1.inner::TestMessage>",
-		PrimitiveFieldType: "std::collections::HashMap<i32,test.v1.inner::TestMessage>",
+		FieldType:          "std::collections::HashMap<i32,rusty_test_inner_v1::model::TestMessage>",
+		PrimitiveFieldType: "std::collections::HashMap<i32,rusty_test_inner_v1::model::TestMessage>",
 		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.map_field).map_err(Error::ser)?.add(builder, "mapField") };`,
 		KeyType:            "i32",
 		KeyField:           key_field,
-		ValueType:          "test.v1.inner::TestMessage",
+		ValueType:          "rusty_test_inner_v1::model::TestMessage",
 		ValueField:         value_field,
 		SerdeAs:            "std::collections::HashMap<wkt::internal::I32, serde_with::Same>",
 		SkipIfIsDefault:    true,
@@ -495,9 +502,9 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SetterName:         "oneof_field",
 		BranchName:         "OneofField",
 		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::boxed::Box<test.v1.inner::TestMessage>",
+		FieldType:          "std::boxed::Box<rusty_test_inner_v1::model::TestMessage>",
 		MessageType:        inner_message,
-		PrimitiveFieldType: "test.v1.inner::TestMessage",
+		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
 		AddQueryParameter:  `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:            true,
 		SkipIfIsDefault:    true,
@@ -519,9 +526,9 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SetterName:         "repeated_field",
 		BranchName:         "RepeatedField",
 		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "std::vec::Vec<test.v1.inner::TestMessage>",
+		FieldType:          "std::vec::Vec<rusty_test_inner_v1::model::TestMessage>",
 		MessageType:        inner_message,
-		PrimitiveFieldType: "test.v1.inner::TestMessage",
+		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
 		AddQueryParameter:  `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "RepeatedField",
@@ -541,9 +548,9 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		SetterName:         "message_field",
 		BranchName:         "MessageField",
 		FQMessageName:      "crate::model::TestMessage",
-		FieldType:          "test.v1.inner::TestMessage",
+		FieldType:          "rusty_test_inner_v1::model::TestMessage",
 		MessageType:        inner_message,
-		PrimitiveFieldType: "test.v1.inner::TestMessage",
+		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
 		AddQueryParameter:  `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		SkipIfIsDefault:    true,
 		AliasInExamples:    "MessageField",
@@ -594,10 +601,7 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec("protobuf", map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		codec := newTestCodec(t, "protobuf", "test", map[string]string{})
 		annotateModel(model, codec)
 
 		wantField := &fieldAnnotations{
@@ -645,10 +649,7 @@ func TestBytesAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec(test.sourceSpecification, map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		codec := newTestCodec(t, test.sourceSpecification, "test", map[string]string{})
 		annotateModel(model, codec)
 
 		wantField := &fieldAnnotations{

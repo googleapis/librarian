@@ -48,6 +48,9 @@ func TestPackageNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	codec.packageMapping = map[string]*packagez{
+		"google.protobuf": {name: "wkt"},
+	}
 	got := annotateModel(model, codec)
 	want := &modelAnnotations{
 		PackageName:               "google-cloud-workflows-v1",
@@ -171,10 +174,7 @@ func TestServiceAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.DeleteResource")
 	}
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "", map[string]string{})
 	annotateModel(model, codec)
 	wantService := &serviceAnnotations{
 		Name:              "ResourceService",
@@ -237,12 +237,9 @@ func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"extend-grpc-transport": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	serviceAnn := service.Codec.(*serviceAnnotations)
 
@@ -257,12 +254,9 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	got := service.Codec.(*serviceAnnotations)
 	if !got.DetailedTracingAttributes {
@@ -276,12 +270,9 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"has-veneer": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	serviceAnn := service.Codec.(*serviceAnnotations)
 
@@ -296,12 +287,9 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	got := method.Codec.(*methodAnnotation)
 	if !got.DetailedTracingAttributes {
@@ -315,12 +303,9 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"per-service-features": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	wantService := &serviceAnnotations{
 		Name:               "ResourceService",
@@ -391,10 +376,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			if !ok {
 				t.Fatalf("cannot find service %s", id)
 			}
-			codec, err := newCodec("protobuf", map[string]string{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			codec := newTestCodec(t, "protobuf", "", map[string]string{})
 			_ = annotateModel(model, codec)
 			got := service.Codec.(*serviceAnnotations)
 			if got == nil {
@@ -470,12 +452,10 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec.packageMapping["google.longrunning"] = &packagez{name: "google-cloud-longrunning"}
 	annotateModel(model, codec)
 	empty := model.State.MessageByID[".google.protobuf.Empty"]
 	wantService := &serviceAnnotations{
@@ -507,12 +487,9 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"name-overrides": ".test.v1.ResourceService=Renamed",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	serviceFilter := cmpopts.IgnoreFields(serviceAnnotations{}, "PackageModuleName", "Methods")
@@ -746,12 +723,9 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"name-overrides": ".test.Message.nested_thing=NestedThingOneOf",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	// Stops the recursion when comparing fields.
@@ -863,10 +837,7 @@ func TestEnumAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "", map[string]string{})
 	annotateModel(model, codec)
 
 	wantEnumCodec := &enumAnnotation{
@@ -969,10 +940,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "", map[string]string{})
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
@@ -1035,10 +1003,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "", map[string]string{})
 	annotateModel(model, codec)
 
 	want := &fieldAnnotations{
@@ -1140,10 +1105,7 @@ func TestMessageAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "test.v1", map[string]string{})
 	annotateModel(model, codec)
 	want := &messageAnnotation{
 		Name:              "TestMessage",
@@ -1235,12 +1197,9 @@ func TestPathInfoAnnotations(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec, err := newCodec("protobuf", map[string]string{
+		codec := newTestCodec(t, "protobuf", "test.v1", map[string]string{
 			"include-grpc-only-methods": "true",
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
 		annotateModel(model, codec)
 
 		pathInfoAnn := method.PathInfo.Codec.(*pathInfoAnnotation)
@@ -1442,10 +1401,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "", map[string]string{})
 	annotateModel(model, codec)
 
 	if diff := cmp.Diff(want_b0, b0.Codec); diff != "" {
@@ -1511,12 +1467,9 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	got := binding.Codec.(*pathBindingAnnotation)
@@ -1594,10 +1547,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec, err := newCodec("protobuf", map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		codec := newTestCodec(t, "protobuf", "", map[string]string{})
 		annotateModel(model, codec)
 		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
 			t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
@@ -1766,12 +1716,9 @@ func TestInternalMessageOverrides(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{public, private1, private2},
 		[]*api.Enum{},
 		[]*api.Service{})
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	if public.Codec.(*messageAnnotation).Internal {
@@ -1787,8 +1734,9 @@ func TestInternalMessageOverrides(t *testing.T) {
 
 func TestRoutingRequired(t *testing.T) {
 	message := &api.Message{
-		Name: "Message",
-		ID:   ".test.Message",
+		Name:    "Message",
+		ID:      ".test.Message",
+		Package: "test",
 	}
 	method := &api.Method{
 		Name:         "DoFoo",
@@ -1809,13 +1757,10 @@ func TestRoutingRequired(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	if !method.Codec.(*methodAnnotation).RoutingRequired {
@@ -1825,12 +1770,9 @@ func TestRoutingRequired(t *testing.T) {
 
 func TestGenerateSetterSamples(t *testing.T) {
 	model := serviceAnnotationsModel()
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"generate-setter-samples": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
 		t.Errorf("GenerateSetterSamples should be true")
@@ -1839,12 +1781,9 @@ func TestGenerateSetterSamples(t *testing.T) {
 
 func TestGenerateRpcSamples(t *testing.T) {
 	model := serviceAnnotationsModel()
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"generate-rpc-samples": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 	if !model.Codec.(*modelAnnotations).GenerateRpcSamples {
 		t.Errorf("GenerateRpcSamples should be true")
@@ -1877,10 +1816,7 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-			codec, err := newCodec("protobuf", test.options)
-			if err != nil {
-				t.Fatal(err)
-			}
+			codec := newTestCodec(t, "protobuf", "", test.options)
 			got := annotateModel(model, codec)
 			if got.DetailedTracingAttributes != test.want {
 				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, test.want)
@@ -1917,12 +1853,9 @@ func TestSetterSampleAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
 	api.CrossReference(model)
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"generate-setter-samples": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	annotateModel(model, codec)
 
 	if message.Codec.(*messageAnnotation).NameInExamples != "google_cloud_test_v1::model::TestMessage" {
@@ -2014,10 +1947,7 @@ func TestEnumAnnotationsValuesForExamples(t *testing.T) {
 			if err := api.CrossReference(model); err != nil {
 				t.Fatalf("CrossReference() failed: %v", err)
 			}
-			codec, err := newCodec("protobuf", map[string]string{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			codec := newTestCodec(t, "protobuf", "", map[string]string{})
 			annotateModel(model, codec)
 
 			got := enum.Codec.(*enumAnnotation).ValuesForExamples
@@ -2165,19 +2095,29 @@ func TestFindResourceNameFields(t *testing.T) {
 	}
 
 	// Common Messages
-	nestedMsg := &api.Message{Name: "Nested", ID: ".test.Nested", Fields: []*api.Field{
-		makeField("nested_name", true, nil),
-		makeField("another_nested", true, nil),
-	}}
-	nestedCamelMsg := &api.Message{Name: "NestedCamel", ID: ".test.NestedCamel", Fields: []*api.Field{
-		makeField("nestedName", true, nil),
-		makeField("anotherNested", true, nil),
-	}}
+	nestedMsg := &api.Message{
+		Name:    "Nested",
+		ID:      ".test.Nested",
+		Package: "test",
+		Fields: []*api.Field{
+			makeField("nested_name", true, nil),
+			makeField("another_nested", true, nil),
+		},
+	}
+	nestedCamelMsg := &api.Message{
+		Name:    "NestedCamel",
+		ID:      ".test.NestedCamel",
+		Package: "test",
+		Fields: []*api.Field{
+			makeField("nestedName", true, nil),
+			makeField("anotherNested", true, nil),
+		},
+	}
 	api.CrossReference(api.NewTestAPI([]*api.Message{nestedMsg, nestedCamelMsg}, nil, nil))
 
 	// Helper to create a method
 	makeMethod := func(req *api.Message) *api.Method {
-		resp := &api.Message{Name: "Response", ID: ".test.Response"}
+		resp := &api.Message{Name: "Response", ID: ".test.Response", Package: "test"}
 		m := &api.Method{
 			Name:         "TestMethod",
 			ID:           ".test.Service.TestMethod",
@@ -2236,26 +2176,37 @@ func TestFindResourceNameFields(t *testing.T) {
 		wantAccessors []string
 	}{
 		{
-			name:          "No annotated fields",
-			method:        makeMethod(&api.Message{ID: ".test.NoAnnotated", Fields: []*api.Field{makeField("field", false, nil)}}),
+			name: "No annotated fields",
+			method: makeMethod(&api.Message{
+				ID:      ".test.NoAnnotated",
+				Package: "test",
+				Fields:  []*api.Field{makeField("field", false, nil)}}),
 			wantPaths:     nil,
 			wantAccessors: nil,
 		},
 		{
-			name:          "One top-level",
-			method:        makeMethod(&api.Message{ID: ".test.OneTop", Fields: []*api.Field{makeField("name", true, nil)}}),
+			name: "One top-level",
+			method: makeMethod(&api.Message{
+				ID: ".test.OneTop", Package: "test",
+				Fields: []*api.Field{makeField("name", true, nil)}}),
 			wantPaths:     [][]string{{"name"}},
 			wantAccessors: []string{"Some(&req.name)"},
 		},
 		{
-			name:          "One nested",
-			method:        makeMethod(&api.Message{ID: ".test.OneNested", Fields: []*api.Field{makeField("nested_field", false, nestedMsg)}}),
+			name: "One nested",
+			method: makeMethod(&api.Message{
+				ID:      ".test.OneNested",
+				Package: "test",
+				Fields:  []*api.Field{makeField("nested_field", false, nestedMsg)}}),
 			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}},
 			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
-			name:   "Multiple top-level, name1 in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiTop1", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			name: "Multiple top-level, name1 in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiTop1",
+				Package: "test",
+				Fields:  []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "name1")
 			},
@@ -2263,8 +2214,11 @@ func TestFindResourceNameFields(t *testing.T) {
 			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
 		},
 		{
-			name:   "Multiple top-level, name2 in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiTop2", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			name: "Multiple top-level, name2 in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiTop2",
+				Package: "test",
+				Fields:  []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "name2")
 			},
@@ -2272,15 +2226,21 @@ func TestFindResourceNameFields(t *testing.T) {
 			wantAccessors: []string{"Some(&req.name2)", "Some(&req.name1)"},
 		},
 		{
-			name:          "Multiple top-level, none in path",
-			method:        makeMethod(&api.Message{ID: ".test.MultiTopNone", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			name: "Multiple top-level, none in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiTopNone",
+				Package: "test",
+				Fields:  []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
 			setup:         func(m *api.Method) { addPathInfoCodec(m) },
 			wantPaths:     [][]string{{"name1"}, {"name2"}}, // Proto order
 			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
 		},
 		{
-			name:   "Multiple top-level, both in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiTopBoth", Fields: []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
+			name: "Multiple top-level, both in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiTopBoth",
+				Package: "test",
+				Fields:  []*api.Field{makeField("name1", true, nil), makeField("name2", true, nil)}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "name1", "name2")
 			},
@@ -2288,8 +2248,11 @@ func TestFindResourceNameFields(t *testing.T) {
 			wantAccessors: []string{"Some(&req.name1)", "Some(&req.name2)"},
 		},
 		{
-			name:   "Mixed, top-level in path",
-			method: makeMethod(&api.Message{ID: ".test.MixedTopPath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			name: "Mixed, top-level in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MixedTopPath",
+				Package: "test",
+				Fields:  []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "top_name")
 			},
@@ -2297,8 +2260,11 @@ func TestFindResourceNameFields(t *testing.T) {
 			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
-			name:   "Mixed, nested in path",
-			method: makeMethod(&api.Message{ID: ".test.MixedNestedPath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			name: "Mixed, nested in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MixedNestedPath",
+				Package: "test",
+				Fields:  []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "nested_field.nested_name")
 			},
@@ -2306,17 +2272,23 @@ func TestFindResourceNameFields(t *testing.T) {
 			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
-			name:          "Mixed, none in path",
-			method:        makeMethod(&api.Message{ID: ".test.MixedNonePath", Fields: []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
+			name: "Mixed, none in path",
+			method: makeMethod(&api.Message{
+				ID:      ".test.MixedNonePath",
+				Package: "test",
+				Fields:  []*api.Field{makeField("top_name", true, nil), makeField("nested_field", false, nestedMsg)}}),
 			setup:         func(m *api.Method) { addPathInfoCodec(m) },
 			wantPaths:     [][]string{{"top_name"}, {"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Top-level preferred
 			wantAccessors: []string{"Some(&req.top_name)", "Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name: "Multiple nested, one in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiNestedPath", Fields: []*api.Field{
-				makeField("nested_field", false, nestedMsg),
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiNestedPath",
+				Package: "test",
+				Fields: []*api.Field{
+					makeField("nested_field", false, nestedMsg),
+				}}),
 			setup: func(m *api.Method) {
 				addPathInfoCodec(m, "nested_field.another_nested")
 			},
@@ -2325,9 +2297,12 @@ func TestFindResourceNameFields(t *testing.T) {
 		},
 		{
 			name: "Multiple nested, camelCase, one in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiNestedPathCamel", Fields: []*api.Field{
-				makeField("nestedField", false, nestedCamelMsg),
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiNestedPathCamel",
+				Package: "test",
+				Fields: []*api.Field{
+					makeField("nestedField", false, nestedCamelMsg),
+				}}),
 			setup: func(m *api.Method) {
 				// The map key in httpParams comes from UniqueParameters.
 				// In the real code, this is constructed by joining snake_cased names with dots.
@@ -2339,90 +2314,122 @@ func TestFindResourceNameFields(t *testing.T) {
 		},
 		{
 			name: "Multiple nested, none in path",
-			method: makeMethod(&api.Message{ID: ".test.MultiNestedNonePath", Fields: []*api.Field{
-				makeField("nested_field", false, nestedMsg),
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.MultiNestedNonePath",
+				Package: "test",
+				Fields: []*api.Field{
+					makeField("nested_field", false, nestedMsg),
+				}}),
 			setup:         func(m *api.Method) { addPathInfoCodec(m) },
 			wantPaths:     [][]string{{"nested_field", "nested_name"}, {"nested_field", "another_nested"}}, // Proto order
 			wantAccessors: []string{"Some(&req.nested_field).map(|s| &s.nested_name)", "Some(&req.nested_field).map(|s| &s.another_nested)"},
 		},
 		{
 			name: "Non-string field ignored",
-			method: makeMethod(&api.Message{ID: ".test.NonString", Fields: []*api.Field{
-				{Name: "int_ref", ID: ".test.NonString.int_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.INT64_TYPE},
-				{Name: "valid_ref", ID: ".test.NonString.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.NonString",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "int_ref", ID: ".test.NonString.int_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.INT64_TYPE},
+					{Name: "valid_ref", ID: ".test.NonString.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
+				}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
 		},
 		{
 			name: "Repeated and Map fields ignored",
-			method: makeMethod(&api.Message{ID: ".test.RepeatedMap", Fields: []*api.Field{
-				{Name: "repeated_ref", ID: ".test.RepeatedMap.repeated_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Repeated: true, Typez: api.STRING_TYPE},
-				{Name: "map_ref", ID: ".test.RepeatedMap.map_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Map: true, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID, MessageType: nestedMsg},
-				{Name: "valid_ref", ID: ".test.RepeatedMap.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.RepeatedMap",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "repeated_ref", ID: ".test.RepeatedMap.repeated_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Repeated: true, Typez: api.STRING_TYPE},
+					{Name: "map_ref", ID: ".test.RepeatedMap.map_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Map: true, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID, MessageType: nestedMsg},
+					{Name: "valid_ref", ID: ".test.RepeatedMap.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
+				}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
 		},
 		{
 			name: "Nested in repeated parent ignored",
-			method: makeMethod(&api.Message{ID: ".test.NestedRepeated", Fields: []*api.Field{
-				{Name: "repeated_parent", ID: ".test.NestedRepeated.repeated_parent", Repeated: true, MessageType: nestedMsg, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID},
-				{Name: "valid_ref", ID: ".test.NestedRepeated.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.NestedRepeated",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "repeated_parent", ID: ".test.NestedRepeated.repeated_parent", Repeated: true, MessageType: nestedMsg, Typez: api.MESSAGE_TYPE, TypezID: nestedMsg.ID},
+					{Name: "valid_ref", ID: ".test.NestedRepeated.valid_ref", ResourceReference: &api.ResourceReference{Type: "placeholder"}, Typez: api.STRING_TYPE},
+				}}),
 			wantPaths:     [][]string{{"valid_ref"}},
 			wantAccessors: []string{"Some(&req.valid_ref)"},
 		},
 		{
 			name: "Optional field",
-			method: makeMethod(&api.Message{ID: ".test.Optional", Fields: []*api.Field{
-				func() *api.Field {
-					f := makeField("opt", true, nil)
-					f.Optional = true
-					return f
-				}(),
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.Optional",
+				Package: "test",
+				Fields: []*api.Field{
+					func() *api.Field {
+						f := makeField("opt", true, nil)
+						f.Optional = true
+						return f
+					}(),
+				}}),
 			wantPaths:     [][]string{{"opt"}},
 			wantAccessors: []string{"req.opt.as_ref()"},
 		},
 		{
 			name: "OneOf field",
-			method: makeMethod(&api.Message{ID: ".test.OneOf", Fields: []*api.Field{
-				func() *api.Field {
-					f := makeField("one", true, nil)
-					f.IsOneOf = true
-					return f
-				}(),
-			}}),
+			method: makeMethod(&api.Message{
+				ID:      ".test.OneOf",
+				Package: "test",
+				Fields: []*api.Field{
+					func() *api.Field {
+						f := makeField("one", true, nil)
+						f.IsOneOf = true
+						return f
+					}(),
+				}}),
 			wantPaths:     [][]string{{"one"}},
 			wantAccessors: []string{"req.one()"},
 		},
 		{
 			name: "Nested Optional field",
-			method: makeMethod(&api.Message{ID: ".test.NestedOptional", Fields: []*api.Field{
-				makeField("nested_field", false, &api.Message{Name: "NestedOpt", ID: ".test.NestedOpt", Fields: []*api.Field{
-					func() *api.Field {
-						f := makeField("opt_child", true, nil)
-						f.Optional = true
-						return f
-					}(),
+			method: makeMethod(&api.Message{
+				ID:      ".test.NestedOptional",
+				Package: "test",
+				Fields: []*api.Field{
+					makeField("nested_field", false, &api.Message{
+						Name:    "NestedOpt",
+						ID:      ".test.NestedOpt",
+						Package: "test",
+						Fields: []*api.Field{
+							func() *api.Field {
+								f := makeField("opt_child", true, nil)
+								f.Optional = true
+								return f
+							}(),
+						}}),
 				}}),
-			}}),
 			wantPaths:     [][]string{{"nested_field", "opt_child"}},
 			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| s.opt_child.as_ref())"},
 		},
 		{
 			name: "Nested OneOf field",
-			method: makeMethod(&api.Message{ID: ".test.NestedOneOf", Fields: []*api.Field{
-				makeField("nested_field", false, &api.Message{Name: "NestedOneOfMsg", ID: ".test.NestedOneOfMsg", Fields: []*api.Field{
-					func() *api.Field {
-						f := makeField("one_child", true, nil)
-						f.IsOneOf = true
-						return f
-					}(),
+			method: makeMethod(&api.Message{
+				ID:      ".test.NestedOneOf",
+				Package: "test",
+				Fields: []*api.Field{
+					makeField("nested_field", false, &api.Message{
+						Name:    "NestedOneOfMsg",
+						ID:      ".test.NestedOneOfMsg",
+						Package: "test",
+						Fields: []*api.Field{
+							func() *api.Field {
+								f := makeField("one_child", true, nil)
+								f.IsOneOf = true
+								return f
+							}(),
+						}}),
 				}}),
-			}}),
 			wantPaths:     [][]string{{"nested_field", "one_child"}},
 			wantAccessors: []string{"Some(&req.nested_field).and_then(|s| s.one_child())"},
 		},
@@ -2436,10 +2443,7 @@ func TestFindResourceNameFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			codec, err := newCodec("protobuf", map[string]string{})
-			if err != nil {
-				t.Fatal(err)
-			}
+			codec := newTestCodec(t, "protobuf", "", map[string]string{})
 
 			if tt.setup != nil {
 				tt.setup(tt.method)

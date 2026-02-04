@@ -155,10 +155,7 @@ func TestMapValueAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec(test.spec, map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		codec := newTestCodec(t, test.spec, "test", map[string]string{})
 		annotateModel(model, codec)
 
 		got := field.Codec.(*fieldAnnotations).SerdeAs
@@ -207,10 +204,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
 	annotateModel(model, codec)
 
 	got := field.Codec.(*fieldAnnotations).SerdeAs
