@@ -731,7 +731,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got := c.fieldType(field, model.State, false, model.PackageName)
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -740,7 +740,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got = fieldType(field, model.State, true, c.modulePath, model.PackageName, c.packageMapping)
+		got = c.fieldType(field, model.State, true, model.PackageName)
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -775,7 +775,7 @@ func TestOneOfFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got := oneOfFieldType(field, model.State, c.modulePath, model.PackageName, c.packageMapping)
+		got := c.oneOfFieldType(field, model.State, model.PackageName)
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -845,7 +845,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, other_message, map_thing}, []*api.Enum{}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got := c.fieldType(field, model.State, false, model.PackageName)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
 		}
@@ -905,7 +905,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, map_thing}, []*api.Enum{enum}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got := c.fieldType(field, model.State, false, model.PackageName)
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
 		}
@@ -1885,7 +1885,7 @@ func TestRustPackageName(t *testing.T) {
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			// Use "google.test.v7" as the
-			got := modelModule(test.input, c.modulePath, "google.test.v7", c.packageMapping)
+			got := c.modelModule(test.input, "google.test.v7")
 			if got != test.want {
 				t.Errorf("modelModule() = %q, want =%q", got, test.want)
 			}
@@ -1914,7 +1914,7 @@ func TestMessageNames(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			if got := fullyQualifiedMessageName(test.m, c.modulePath, model.PackageName, c.packageMapping); got != test.want {
+			if got := c.fullyQualifiedMessageName(test.m, model.PackageName); got != test.want {
 				t.Errorf("mismatched message name, got=%q, want=%q", got, test.want)
 			}
 		})
@@ -1961,7 +1961,7 @@ func TestEnumNames(t *testing.T) {
 		if got := enumName(test.enum); got != test.wantEnum {
 			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name, got, test.wantEnum)
 		}
-		if got := fullyQualifiedEnumName(test.enum, c.modulePath, model.PackageName, c.packageMapping); got != test.wantFQEnum {
+		if got := c.fullyQualifiedEnumName(test.enum, model.PackageName); got != test.wantFQEnum {
 			t.Errorf("fullyQualifiedEnumName(%q) = %q; want = %s", test.enum.Name, got, test.wantFQEnum)
 		}
 	}

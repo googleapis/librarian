@@ -433,8 +433,8 @@ func scalarFieldType(f *api.Field) string {
 	return out
 }
 
-func oneOfFieldType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	baseType := baseFieldType(f, state, modulePath, sourceSpecificationPackageName, packageMapping)
+func (c *codec) oneOfFieldType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) string {
+	baseType := c.baseFieldType(f, state, sourceSpecificationPackageName)
 	return oneOfFieldTypeFormatter(f, language.FieldIsMap(f, state), baseType)
 }
 
@@ -454,13 +454,13 @@ func oneOfFieldTypeFormatter(f *api.Field, fieldIsMap bool, baseType string) str
 	}
 }
 
-func fieldType(f *api.Field, state *api.APIState, primitive bool, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	baseType := baseFieldType(f, state, modulePath, sourceSpecificationPackageName, packageMapping)
+func (c *codec) fieldType(f *api.Field, state *api.APIState, primitive bool, sourceSpecificationPackageName string) string {
+	baseType := c.baseFieldType(f, state, sourceSpecificationPackageName)
 	switch {
 	case primitive:
 		return baseType
 	case f.IsOneOf:
-		return oneOfFieldType(f, state, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.oneOfFieldType(f, state, sourceSpecificationPackageName)
 	case f.Repeated:
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
 	case f.Recursive:
@@ -479,7 +479,7 @@ func fieldType(f *api.Field, state *api.APIState, primitive bool, modulePath, so
 	}
 }
 
-func mapType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
+func (c *codec) mapType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) string {
 	switch f.Typez {
 	case api.MESSAGE_TYPE:
 		m, ok := state.MessageByID[f.TypezID]
@@ -487,7 +487,7 @@ func mapType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationP
 			slog.Error("unable to lookup type", "id", f.TypezID, "field", f.ID)
 			return ""
 		}
-		return fullyQualifiedMessageName(m, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 
 	case api.ENUM_TYPE:
 		e, ok := state.EnumByID[f.TypezID]
@@ -495,7 +495,7 @@ func mapType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationP
 			slog.Error("unable to lookup type", "id", f.TypezID, "field", f.ID)
 			return ""
 		}
-		return fullyQualifiedEnumName(e, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
 	default:
 		return scalarFieldType(f)
 	}
@@ -503,7 +503,7 @@ func mapType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationP
 
 // baseFieldType returns the field type, ignoring any repeated or optional
 // attributes.
-func baseFieldType(f *api.Field, state *api.APIState, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
+func (c *codec) baseFieldType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) string {
 	switch f.Typez {
 	case api.MESSAGE_TYPE:
 		m, ok := state.MessageByID[f.TypezID]
@@ -512,18 +512,18 @@ func baseFieldType(f *api.Field, state *api.APIState, modulePath, sourceSpecific
 			return ""
 		}
 		if m.IsMap {
-			key := mapType(m.Fields[0], state, modulePath, sourceSpecificationPackageName, packageMapping)
-			val := mapType(m.Fields[1], state, modulePath, sourceSpecificationPackageName, packageMapping)
+			key := c.mapType(m.Fields[0], state, sourceSpecificationPackageName)
+			val := c.mapType(m.Fields[1], state, sourceSpecificationPackageName)
 			return "std::collections::HashMap<" + key + "," + val + ">"
 		}
-		return fullyQualifiedMessageName(m, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 	case api.ENUM_TYPE:
 		e, ok := state.EnumByID[f.TypezID]
 		if !ok {
 			slog.Error("unable to lookup type", "id", f.TypezID, "field", f.ID)
 			return ""
 		}
-		return fullyQualifiedEnumName(e, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
 	case api.GROUP_TYPE:
 		return ""
 	default:
@@ -586,16 +586,16 @@ func (c *codec) methodInOutTypeName(id string, state *api.APIState, sourceSpecif
 		slog.Error("unable to lookup type", "id", id)
 		return ""
 	}
-	return fullyQualifiedMessageName(m, c.modulePath, sourceSpecificationPackageName, c.packageMapping)
+	return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 }
 
 // modelModule maps a package name in the model format (e.g. "google.cloud.longrunning") to the
 // module name containing the model (e.g. "google_cloud_longrunning::model").
-func modelModule(packageName string, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
+func (c *codec) modelModule(packageName, sourceSpecificationPackageName string) string {
 	if packageName == sourceSpecificationPackageName {
-		return modulePath
+		return c.modulePath
 	}
-	mapped, ok := packageMapping[packageName]
+	mapped, ok := c.packageMapping[packageName]
 	if !ok {
 		return packageNameToRootModule(packageName)
 	}
@@ -606,9 +606,9 @@ func modelModule(packageName string, modulePath, sourceSpecificationPackageName 
 	return packageNameToRootModule(mapped.name) + "::model"
 }
 
-func messageScopeName(m *api.Message, childPackageName, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
+func (c *codec) messageScopeName(m *api.Message, childPackageName, sourceSpecificationPackageName string) string {
 	rustPkg := func(packageName string) string {
-		return modelModule(packageName, modulePath, sourceSpecificationPackageName, packageMapping)
+		return c.modelModule(packageName, sourceSpecificationPackageName)
 	}
 
 	if m == nil {
@@ -617,23 +617,23 @@ func messageScopeName(m *api.Message, childPackageName, modulePath, sourceSpecif
 	if m.Parent == nil {
 		return rustPkg(m.Package) + "::" + toSnake(m.Name)
 	}
-	return messageScopeName(m.Parent, m.Package, modulePath, sourceSpecificationPackageName, packageMapping) + "::" + toSnake(m.Name)
+	return c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName) + "::" + toSnake(m.Name)
 }
 
-func enumScopeName(e *api.Enum, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	return messageScopeName(e.Parent, e.Package, modulePath, sourceSpecificationPackageName, packageMapping)
+func (c *codec) enumScopeName(e *api.Enum, sourceSpecificationPackageName string) string {
+	return c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName)
 }
 
-func fullyQualifiedMessageName(m *api.Message, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	return messageScopeName(m.Parent, m.Package, modulePath, sourceSpecificationPackageName, packageMapping) + "::" + toPascal(m.Name)
+func (c *codec) fullyQualifiedMessageName(m *api.Message, sourceSpecificationPackageName string) string {
+	return c.messageScopeName(m.Parent, m.Package, sourceSpecificationPackageName) + "::" + toPascal(m.Name)
 }
 
 func enumName(e *api.Enum) string {
 	return toPascal(e.Name)
 }
 
-func fullyQualifiedEnumName(e *api.Enum, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	return messageScopeName(e.Parent, e.Package, modulePath, sourceSpecificationPackageName, packageMapping) + "::" + toPascal(e.Name)
+func (c *codec) fullyQualifiedEnumName(e *api.Enum, sourceSpecificationPackageName string) string {
+	return c.messageScopeName(e.Parent, e.Package, sourceSpecificationPackageName) + "::" + toPascal(e.Name)
 }
 
 func enumValueName(e *api.EnumValue) string {
@@ -698,8 +698,8 @@ func enumValueVariantName(e *api.EnumValue) string {
 	return toPascal(e.Name)
 }
 
-func fullyQualifiedEnumValueName(v *api.EnumValue, modulePath, sourceSpecificationPackageName string, packageMapping map[string]*packagez) string {
-	return fmt.Sprintf("%s::%s::%s", enumScopeName(v.Parent, modulePath, sourceSpecificationPackageName, packageMapping), enumName(v.Parent), enumValueVariantName(v))
+func (c *codec) fullyQualifiedEnumValueName(v *api.EnumValue, sourceSpecificationPackageName string) string {
+	return fmt.Sprintf("%s::%s::%s", c.enumScopeName(v.Parent, sourceSpecificationPackageName), enumName(v.Parent), enumValueVariantName(v))
 }
 
 func bodyAccessor(m *api.Method) string {
@@ -1234,11 +1234,11 @@ func (c *codec) docLink(link string, state *api.APIState, scopes []string) strin
 func (c *codec) tryDocLinkWithId(id string, state *api.APIState, scope string) string {
 	m, ok := state.MessageByID[id]
 	if ok {
-		return fullyQualifiedMessageName(m, c.modulePath, scope, c.packageMapping)
+		return c.fullyQualifiedMessageName(m, scope)
 	}
 	e, ok := state.EnumByID[id]
 	if ok {
-		return fullyQualifiedEnumName(e, c.modulePath, scope, c.packageMapping)
+		return c.fullyQualifiedEnumName(e, scope)
 	}
 	me, ok := state.MethodByID[id]
 	if ok {
@@ -1273,7 +1273,7 @@ func (c *codec) tryFieldRustdocLink(id string, state *api.APIState, scope string
 	for _, f := range m.Fields {
 		if f.Name == fieldName {
 			if !f.IsOneOf {
-				return fmt.Sprintf("%s::%s", fullyQualifiedMessageName(m, c.modulePath, scope, c.packageMapping), toSnakeNoMangling(f.Name))
+				return fmt.Sprintf("%s::%s", c.fullyQualifiedMessageName(m, scope), toSnakeNoMangling(f.Name))
 			} else {
 				return c.tryOneOfRustdocLink(f, m, scope)
 			}
@@ -1281,7 +1281,7 @@ func (c *codec) tryFieldRustdocLink(id string, state *api.APIState, scope string
 	}
 	for _, o := range m.OneOfs {
 		if o.Name == fieldName {
-			return fmt.Sprintf("%s::%s", fullyQualifiedMessageName(m, c.modulePath, scope, c.packageMapping), toSnakeNoMangling(o.Name))
+			return fmt.Sprintf("%s::%s", c.fullyQualifiedMessageName(m, scope), toSnakeNoMangling(o.Name))
 		}
 	}
 	return ""
@@ -1291,7 +1291,7 @@ func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scop
 	for _, o := range message.OneOfs {
 		for _, f := range o.Fields {
 			if f.ID == field.ID {
-				return fmt.Sprintf("%s::%s", fullyQualifiedMessageName(message, c.modulePath, scope, c.packageMapping), toSnakeNoMangling(o.Name))
+				return fmt.Sprintf("%s::%s", c.fullyQualifiedMessageName(message, scope), toSnakeNoMangling(o.Name))
 			}
 		}
 	}
@@ -1311,7 +1311,7 @@ func (c *codec) tryEnumValueRustdocLink(id string, state *api.APIState, scope st
 	}
 	for _, v := range e.Values {
 		if v.Name == valueName {
-			return fullyQualifiedEnumValueName(v, c.modulePath, scope, c.packageMapping)
+			return c.fullyQualifiedEnumValueName(v, scope)
 		}
 	}
 	return ""

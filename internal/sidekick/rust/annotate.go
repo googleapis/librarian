@@ -972,7 +972,7 @@ func (c *codec) annotateService(s *api.Service) {
 // are also annotated.
 // Basic annotations are useful for annotating external messages with information used in samples.
 func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
-	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
+	qualifiedName := c.fullyQualifiedMessageName(m, model.PackageName)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
@@ -1229,11 +1229,11 @@ func (c *codec) annotatePathInfo(m *api.Method) {
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) {
-	scope := messageScopeName(message, "", c.modulePath, model.PackageName, c.packageMapping)
+	scope := c.messageScopeName(message, "", model.PackageName)
 	enumName := c.OneOfEnumName(oneof)
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
+	structQualifiedName := c.fullyQualifiedMessageName(message, model.PackageName)
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
 	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
@@ -1361,11 +1361,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	ann := &fieldAnnotations{
 		FieldName:          toSnake(field.Name),
 		SetterName:         toSnakeNoMangling(field.Name),
-		FQMessageName:      fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping),
+		FQMessageName:      c.fullyQualifiedMessageName(message, model.PackageName),
 		BranchName:         toPascal(field.Name),
 		DocLines:           c.formatDocComments(field.Documentation, field.ID, model.State, message.Scopes()),
-		FieldType:          fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping),
-		PrimitiveFieldType: fieldType(field, model.State, true, c.modulePath, model.PackageName, c.packageMapping),
+		FieldType:          c.fieldType(field, model.State, false, model.PackageName),
+		PrimitiveFieldType: c.fieldType(field, model.State, true, model.PackageName),
 		AddQueryParameter:  addQueryParameter(field),
 		SerdeAs:            c.primitiveSerdeAs(field),
 		SkipIfIsDefault:    field.Typez != api.STRING_TYPE && field.Typez != api.BYTES_TYPE,
@@ -1382,9 +1382,9 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 				slog.Error("expected exactly two fields for map message", "field ID", field.ID, "map ID", field.TypezID)
 			}
 			ann.KeyField = msg.Fields[0]
-			ann.KeyType = mapType(msg.Fields[0], model.State, c.modulePath, model.PackageName, c.packageMapping)
+			ann.KeyType = c.mapType(msg.Fields[0], model.State, model.PackageName)
 			ann.ValueField = msg.Fields[1]
-			ann.ValueType = mapType(msg.Fields[1], model.State, c.modulePath, model.PackageName, c.packageMapping)
+			ann.ValueType = c.mapType(msg.Fields[1], model.State, model.PackageName)
 			key := c.mapKeySerdeAs(msg.Fields[0])
 			value := c.mapValueSerdeAs(msg.Fields[1])
 			if key != "" || value != "" {
@@ -1425,7 +1425,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 		c.annotateEnumValue(ev, model, full)
 	}
 
-	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
+	qualifiedName := c.fullyQualifiedEnumName(e, model.PackageName)
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 

@@ -31,22 +31,19 @@ NAME:
 
 USAGE:
 
-	librarianops generate [<repo> | --all]
+	librarianops generate [<repo> | -C <dir>]
 
 DESCRIPTION:
 
 	Examples:
 	  librarianops generate google-cloud-rust
-	  librarianops generate --all
-	  librarianops generate -C ~/workspace/google-cloud-rust google-cloud-rust
+	  librarianops generate -C ~/workspace/google-cloud-rust
 
-	Specify a repository name (e.g., google-cloud-rust) to process a single repository,
-	or use --all to process all repositories.
-
-	Use -C to work in a specific directory (assumes repository already exists there).
+	Specify a repository name to clone and process, or use -C to work in a specific
+	directory (repo name is inferred from the directory basename).
 
 	For each repository, librarianops will:
-	  1. Clone the repository to a temporary directory
+	  1. Clone the repository to a temporary directory (or use existing directory with -C)
 	  2. Create a branch: librarianops-generateall-YYYY-MM-DD
 	  3. Resolve librarian version from @main and update version field in librarian.yaml
 	  4. Run librarian tidy
@@ -58,8 +55,7 @@ DESCRIPTION:
 
 OPTIONS:
 
-	--all         process all repositories
-	-C directory  work in directory (assumes repo exists)
+	-C directory  work in directory (repo name inferred from basename)
 	-v            run librarian with verbose output
 	--help, -h    show help
 */
