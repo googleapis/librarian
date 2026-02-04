@@ -61,7 +61,7 @@ func TestFromProtobuf(t *testing.T) {
 			"proto:google.cloud.location":    "package:google_cloud_location/location.dart",
 		},
 	}
-	model, err := parser.CreateModel(cfg, parser.NewModelOverridesFromSource(cfg.Source))
+	model, err := parser.CreateModel(cfg, &parser.ModelOverrides{})
 	if err != nil {
 		t.Fatal(err)
 	}
