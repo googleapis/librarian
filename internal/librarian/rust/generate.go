@@ -86,37 +86,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		Source:              source,
 	}
 
-	overrides := &parser.ModelOverrides{
-		Name:        library.Name,
-		Title:       api.Title,
-		Description: library.DescriptionOverride,
-	}
-	if library.Rust != nil {
-		overrides.SkippedIDs = library.Rust.SkippedIds
-		if len(library.Rust.DocumentationOverrides) > 0 {
-			overrides.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
-			for i, override := range library.Rust.DocumentationOverrides {
-				overrides.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
-					ID:      override.ID,
-					Match:   override.Match,
-					Replace: override.Replace,
-				}
-			}
-		}
-		if library.Rust.Discovery != nil {
-			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
-			for i, poller := range library.Rust.Discovery.Pollers {
-				pollers[i] = &sidekickconfig.Poller{
-					Prefix:   poller.Prefix,
-					MethodID: poller.MethodID,
-				}
-			}
-			overrides.Discovery = &sidekickconfig.Discovery{
-				OperationID: library.Rust.Discovery.OperationID,
-				Pollers:     pollers,
-			}
-		}
-	}
+	overrides := createModelOverrides(library, api.Title)
 	model, err := parser.CreateModel(parserConfig, overrides)
 	if err != nil {
 		return err
@@ -318,4 +288,39 @@ func findModuleByOutput(library *config.Library, output string) *config.RustModu
 	}
 
 	return nil
+}
+
+func createModelOverrides(library *config.Library, apiTitle string) *parser.ModelOverrides {
+	overrides := &parser.ModelOverrides{
+		Name:        library.Name,
+		Title:       apiTitle,
+		Description: library.DescriptionOverride,
+	}
+	if library.Rust != nil {
+		overrides.SkippedIDs = library.Rust.SkippedIds
+		if len(library.Rust.DocumentationOverrides) > 0 {
+			overrides.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			for i, override := range library.Rust.DocumentationOverrides {
+				overrides.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+					ID:      override.ID,
+					Match:   override.Match,
+					Replace: override.Replace,
+				}
+			}
+		}
+		if library.Rust.Discovery != nil {
+			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
+			for i, poller := range library.Rust.Discovery.Pollers {
+				pollers[i] = &sidekickconfig.Poller{
+					Prefix:   poller.Prefix,
+					MethodID: poller.MethodID,
+				}
+			}
+			overrides.Discovery = &sidekickconfig.Discovery{
+				OperationID: library.Rust.Discovery.OperationID,
+				Pollers:     pollers,
+			}
+		}
+	}
+	return overrides
 }
