@@ -152,17 +152,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 func createProtocOptions(ch *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
 	// GAPIC library: generate full client library
-	var opts []string
-
-	// Add transport option
-	if library.Transport != "" {
-		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
-	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/3161):
-	// Make these conditional on configuration.
-	opts = append(opts, "rest-numeric-enums")
-	opts = append(opts, "metadata")
+	opts := []string{"metadata"}
 
 	// Add Python-specific options
 	// First common options that apply to all apis
@@ -176,6 +166,26 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 			opts = append(opts, apiOptArgs...)
 		}
 	}
+	restNumericEnums := true
+	addTransport := library.Transport != ""
+	for _, opt := range opts {
+		if strings.HasPrefix(opt, "rest-numeric-enums") {
+			restNumericEnums = false
+		}
+		if strings.HasPrefix(opt, "transport=") {
+			addTransport = false
+		}
+	}
+
+	// Add rest-numeric-enums, if we haven't already got it.
+	if restNumericEnums {
+		opts = append(opts, "rest-numeric-enums")
+	}
+
+	// Add transport option, if we haven't already got it.
+	if addTransport {
+		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
+	}
 
 	// Add gapic-version from library version
 	if library.Version != "" {
@@ -186,6 +196,11 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/3827): remove this
+	// hardcoding once we can use the gRPC service config for Compute.
+	if strings.HasPrefix(library.Name, "google-cloud-compute") {
+		grpcConfigPath = ""
 	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
