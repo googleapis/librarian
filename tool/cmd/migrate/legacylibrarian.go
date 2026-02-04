@@ -114,6 +114,9 @@ func buildConfigFromLibrarian(
 	}
 
 	cfg.Libraries = buildLibraries(input)
+	// The directory name in Googleapis is present for migration code to look
+	// up API details. It shouldn't be persisted.
+	cfg.Sources.Googleapis.Dir = ""
 
 	return cfg, nil
 }

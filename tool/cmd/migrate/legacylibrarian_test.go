@@ -110,7 +110,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Googleapis: &config.Source{
 						Commit: "abcd123",
 						SHA256: "sha123",
-						Dir:    "path/to/repo",
 					},
 				},
 				Default: &config.Default{
@@ -131,7 +130,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Googleapis: &config.Source{
 						Commit: "abcd123",
 						SHA256: "sha123",
-						Dir:    "path/to/repo",
 					},
 				},
 				Default: &config.Default{
@@ -172,7 +170,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Googleapis: &config.Source{
 						Commit: "abcd123",
 						SHA256: "sha123",
-						Dir:    "path/to/repo",
 					},
 				},
 				Default: &config.Default{
@@ -230,7 +227,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Googleapis: &config.Source{
 						Commit: "abcd123",
 						SHA256: "sha123",
-						Dir:    "path/to/repo",
 					},
 				},
 				Default: &config.Default{
