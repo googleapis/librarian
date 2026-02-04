@@ -166,7 +166,9 @@ func defaultOutput(language, name, api, defaultOut string) string {
 	}
 }
 
-func deriveAPIPath(language, name string) string {
+// DeriveAPIPath derives an API path from a library name.
+// For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
+func DeriveAPIPath(language, name string) string {
 	switch language {
 	case languageRust:
 		return rust.DeriveAPIPath(name)

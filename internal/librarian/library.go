@@ -147,7 +147,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 		// Veneers require explicit output, so return empty if not set.
 		return ""
 	}
-	apiPath := deriveAPIPath(language, lib.Name)
+	apiPath := DeriveAPIPath(language, lib.Name)
 	if len(lib.APIs) > 0 && lib.APIs[0].Path != "" {
 		apiPath = lib.APIs[0].Path
 	}
@@ -166,7 +166,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	if !lib.Veneer {
 		for _, api := range lib.APIs {
 			if api.Path == "" {
-				api.Path = deriveAPIPath(language, lib.Name)
+				api.Path = DeriveAPIPath(language, lib.Name)
 			}
 		}
 	}

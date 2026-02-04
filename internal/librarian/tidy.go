@@ -94,7 +94,7 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 }
 
 func isDerivableAPIPath(language string, name, api string) bool {
-	return api == deriveAPIPath(language, name)
+	return api == DeriveAPIPath(language, name)
 }
 
 func validateLibraries(cfg *config.Config) error {

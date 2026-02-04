@@ -158,16 +158,16 @@ func TestGenerateCommand_Errors(t *testing.T) {
 func TestUpdateLibrarianVersion(t *testing.T) {
 	repoDir := t.TempDir()
 	configPath := filepath.Join(repoDir, "librarian.yaml")
-	initialConfig := &config.Config{
+	cfg := &config.Config{
 		Language: "rust",
 		Version:  sample.LibrarianVersion,
 	}
-	if err := yaml.Write(configPath, initialConfig); err != nil {
+	if err := yaml.Write(configPath, cfg); err != nil {
 		t.Fatal(err)
 	}
 
 	newVersion := "v0.2.0"
-	if err := updateLibrarianVersion(newVersion, repoDir); err != nil {
+	if err := updateLibrarianVersion(cfg, configPath, newVersion); err != nil {
 		t.Fatal(err)
 	}
 
