@@ -26,6 +26,7 @@ import (
 const googleapisDir = "../../testdata/googleapis"
 
 func TestGenerate(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	for _, test := range []struct {
 		name         string
