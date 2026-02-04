@@ -23,11 +23,8 @@ import (
 )
 
 const (
-	branchPrefix = "librarianops-generateall-"
-	commitTitle  = "chore: run librarian update and generate --all"
-
-	repoFake = "fake-repo" // used for testing
 	repoRust = "google-cloud-rust"
+	repoFake = "fake-repo" // used for testing
 )
 
 var supportedRepositories = map[string]bool{

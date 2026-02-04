@@ -70,35 +70,40 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
-			name:    "with transport",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{Transport: "grpc"},
+			name: "with transport",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name:      "google-cloud-secret-manager",
+				Transport: "grpc",
+			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=transport=grpc,rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
 			name: "with python opts",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
+				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
 					OptArgs: []string{"opt1", "opt2"},
 				},
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
 			name: "with python opts by api",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
+				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
 					OptArgsByAPI: map[string][]string{
 						"google/cloud/secretmanager/v1": {"opt1", "opt2"},
@@ -108,16 +113,19 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,opt1,opt2,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
-			name:    "with version",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{Version: "1.2.3"},
+			name: "with version",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name:    "google-cloud-secret-manager",
+				Version: "1.2.3",
+			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -125,10 +133,59 @@ func TestCreateProtocOptions(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			library: &config.Library{},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=rest-numeric-enums,metadata,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		{
+			name: "library starting google-cloud-compute does not use gRPC service config",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				// It's odd to use a Compute name for a path that's using secretmanager,
+				// but it's simpler than making the test realistic by importing the
+				// (huge) Compute protos etc.
+				Name: "google-cloud-compute-beta",
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,rest-numeric-enums,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		{
+			name: "rest-enumeric-enums is specified in OptArgs",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgs: []string{"rest-numeric-enums=False"},
+				},
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,rest-numeric-enums=False,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		{
+			name: "transport overridden in OptOptArgsByAPIArgs",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"transport=rest"},
+					},
+				},
+				Transport: "grpc",
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 	} {
