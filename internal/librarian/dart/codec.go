@@ -18,14 +18,13 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	internalsidekick "github.com/googleapis/librarian/internal/librarian/sidekick"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 func toSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
-	src := internalsidekick.AddLibraryRoots(library, sources)
+	src := addLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
 		src["description-override"] = library.DescriptionOverride
@@ -118,4 +117,36 @@ func buildCodec(library *config.Library) map[string]string {
 		codec[key] = value
 	}
 	return codec
+}
+
+func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
+	src := make(map[string]string)
+	if library.Rust == nil {
+		library.Rust = &config.RustCrate{}
+	}
+
+	if len(library.Roots) == 0 && sources.Googleapis != "" {
+		// Default to googleapis if no roots are specified.
+		src["googleapis-root"] = sources.Googleapis
+		src["roots"] = "googleapis"
+	} else {
+		src["roots"] = strings.Join(library.Roots, ",")
+		rootMap := map[string]struct {
+			path string
+			key  string
+		}{
+			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
+			"discovery":    {path: sources.Discovery, key: "discovery-root"},
+			"showcase":     {path: sources.Showcase, key: "showcase-root"},
+			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
+			"conformance":  {path: sources.Conformance, key: "conformance-root"},
+		}
+		for _, root := range library.Roots {
+			if r, ok := rootMap[root]; ok && r.path != "" {
+				src[r.key] = r.path
+			}
+		}
+	}
+
+	return src
 }
