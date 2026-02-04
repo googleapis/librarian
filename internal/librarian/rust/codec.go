@@ -322,6 +322,7 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	return codec
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
 func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
 	src := make(map[string]string)
 	if library.Rust == nil {
