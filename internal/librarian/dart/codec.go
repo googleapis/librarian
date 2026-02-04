@@ -19,9 +19,9 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	internalsidekick "github.com/googleapis/librarian/internal/librarian/sidekick"
-	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 func toSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {

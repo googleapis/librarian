@@ -21,9 +21,9 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/source"
 	sidekickdart "github.com/googleapis/librarian/internal/sidekick/dart"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 // Generate generates a Dart client library.

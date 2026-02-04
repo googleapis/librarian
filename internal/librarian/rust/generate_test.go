@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/source"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/source"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 // AddLibraryRoots configures the source roots for dart and rust generation.

@@ -24,10 +24,10 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 // Generate generates a Rust client library.
