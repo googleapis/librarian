@@ -39,8 +39,8 @@ import (
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
-func ParseProtobuf(cfg *config.Config, overrides *ModelOverrides) (*api.API, error) {
-	source := cfg.General.SpecificationSource
+func ParseProtobuf(cfg *Config, overrides *ModelOverrides) (*api.API, error) {
+	source := cfg.SpecificationSource
 	request, err := newCodeGeneratorRequest(source, cfg.Source, overrides)
 	if err != nil {
 		return nil, err

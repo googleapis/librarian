@@ -60,7 +60,13 @@ func loadDir(rootConfig *config.Config, output string) (*api.API, *config.Config
 	if config.General.SpecificationSource == "" {
 		return nil, nil, fmt.Errorf("must provide general.specification-source")
 	}
-	model, err := parser.CreateModel(config, parser.NewModelOverridesFromSource(config.Source))
+	parserConfig := &parser.Config{
+		SpecificationFormat: config.General.SpecificationFormat,
+		SpecificationSource: config.General.SpecificationSource,
+		ServiceConfig:       config.General.ServiceConfig,
+		Source:              config.Source,
+	}
+	model, err := parser.CreateModel(parserConfig, parser.NewModelOverridesFromSource(config.Source))
 	if err != nil {
 		return nil, nil, err
 	}

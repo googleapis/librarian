@@ -22,8 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func loadServiceConfig(cfg *config.Config) (*serviceconfig.Service, error) {
-	if name := cfg.General.ServiceConfig; name != "" {
+func loadServiceConfig(cfg *Config) (*serviceconfig.Service, error) {
+	if name := cfg.ServiceConfig; name != "" {
 		return serviceconfig.Read(findServiceConfigPath(name, cfg.Source))
 	}
 	return nil, nil

@@ -33,7 +33,13 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err != nil {
 		return err
 	}
-	model, err := parser.CreateModel(sidekickConfig, parser.NewModelOverridesFromSource(sidekickConfig.Source))
+	parserConfig := &parser.Config{
+		SpecificationFormat: sidekickConfig.General.SpecificationFormat,
+		SpecificationSource: sidekickConfig.General.SpecificationSource,
+		ServiceConfig:       sidekickConfig.General.ServiceConfig,
+		Source:              sidekickConfig.Source,
+	}
+	model, err := parser.CreateModel(parserConfig, parser.NewModelOverridesFromSource(sidekickConfig.Source))
 	if err != nil {
 		return err
 	}

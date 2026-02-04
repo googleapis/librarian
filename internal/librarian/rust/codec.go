@@ -23,47 +23,6 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *Sources) (*sidekickconfig.Config, *serviceconfig.API, error) {
-	specFormat := "protobuf"
-	if library.SpecificationFormat != "" {
-		specFormat = library.SpecificationFormat
-	}
-	if specFormat == "discovery" {
-		specFormat = "disco"
-	}
-
-	source := addLibraryRoots(library, sources)
-
-	root := sources.Googleapis
-	if ch.Path == "schema/google/showcase/v1beta1" {
-		root = sources.Showcase
-	}
-	api, err := serviceconfig.Find(root, ch.Path)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var specSource string
-	switch specFormat {
-	case "disco":
-		specSource = api.Discovery
-	case "openapi":
-		specSource = api.OpenAPI
-	default:
-		specSource = ch.Path
-	}
-
-	sidekickCfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			SpecificationFormat: specFormat,
-			ServiceConfig:       api.ServiceConfig,
-			SpecificationSource: specSource,
-		},
-		Source: source,
-	}
-	return sidekickCfg, api, nil
-}
-
 func buildCodec(library *config.Library) map[string]string {
 	codec := newLibraryCodec(library)
 	if library.Version != "" {

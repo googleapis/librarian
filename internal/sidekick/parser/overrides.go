@@ -22,13 +22,13 @@ import (
 
 // ModelOverrides contains overrides for the API model.
 type ModelOverrides struct {
-	Name             string
-	Title            string
-	Description      string
-	SkippedIDs       []string
-	IncludedIDs      []string
-	IncludeList      []string
-	ExcludeList      []string
+	Name                string
+	Title               string
+	Description         string
+	SkippedIDs          []string
+	IncludedIDs         []string
+	IncludeList         []string
+	ExcludeList         []string
 	CommentOverrides    []config.DocumentationOverride
 	PaginationOverrides []config.PaginationOverride
 	Discovery           *config.Discovery

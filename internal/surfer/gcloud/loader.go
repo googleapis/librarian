@@ -19,17 +19,14 @@ import (
 	"os"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"gopkg.in/yaml.v3"
 )
 
 // createAPIModel parses the service specification and creates the API model.
 func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
-	parserConfig := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-		},
+	parserConfig := &parser.Config{
+		SpecificationFormat: "protobuf",
 		Source: map[string]string{
 			"local-root":   googleapisPath,
 			"include-list": includeList,

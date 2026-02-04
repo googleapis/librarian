@@ -25,8 +25,8 @@ import (
 
 // ParseDisco reads discovery docs specifications and converts them into
 // the `api.API` model.
-func ParseDisco(cfg *config.Config, overrides *ModelOverrides) (*api.API, error) {
-	source := cfg.General.SpecificationSource
+func ParseDisco(cfg *Config, overrides *ModelOverrides) (*api.API, error) {
+	source := cfg.SpecificationSource
 	for _, opt := range config.SourceRoots(cfg.Source) {
 		location, ok := cfg.Source[opt]
 		if !ok {

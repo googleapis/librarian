@@ -18,14 +18,21 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
+// Config contains the configuration for the parser.
+type Config struct {
+	SpecificationFormat string
+	SpecificationSource string
+	ServiceConfig       string
+	Source              map[string]string
+}
+
 // CreateModel creates a model from the configuration.
-func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, error) {
+func CreateModel(config *Config, overrides *ModelOverrides) (*api.API, error) {
 	var model *api.API
 	var err error
-	switch config.General.SpecificationFormat {
+	switch config.SpecificationFormat {
 	case "protobuf":
 		model, err = ParseProtobuf(config, overrides)
 	case "openapi":
@@ -35,7 +42,7 @@ func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, er
 	case "none":
 		return nil, nil
 	default:
-		return nil, fmt.Errorf("unknown specification format: %s", config.General.SpecificationFormat)
+		return nil, fmt.Errorf("unknown specification format: %s", config.SpecificationFormat)
 	}
 
 	if err != nil {

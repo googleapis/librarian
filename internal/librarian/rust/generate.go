@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
@@ -49,10 +50,42 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, api, err := libraryToSidekickConfig(library, library.APIs[0], sources)
+	specFormat := "protobuf"
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
+	if specFormat == "discovery" {
+		specFormat = "disco"
+	}
+
+	source := addLibraryRoots(library, sources)
+
+	root := sources.Googleapis
+	if library.APIs[0].Path == "schema/google/showcase/v1beta1" {
+		root = sources.Showcase
+	}
+	api, err := serviceconfig.Find(root, library.APIs[0].Path)
 	if err != nil {
 		return err
 	}
+
+	var specSource string
+	switch specFormat {
+	case "disco":
+		specSource = api.Discovery
+	case "openapi":
+		specSource = api.OpenAPI
+	default:
+		specSource = library.APIs[0].Path
+	}
+
+	parserConfig := &parser.Config{
+		SpecificationFormat: specFormat,
+		ServiceConfig:       api.ServiceConfig,
+		SpecificationSource: specSource,
+		Source:              source,
+	}
+
 	overrides := &parser.ModelOverrides{
 		Name:        library.Name,
 		Title:       api.Title,
@@ -84,7 +117,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 			}
 		}
 	}
-	model, err := parser.CreateModel(sidekickConfig, overrides)
+	model, err := parser.CreateModel(parserConfig, overrides)
 	if err != nil {
 		return err
 	}
@@ -101,7 +134,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		}
 	}
 	codec := buildCodec(library)
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, codec); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, specFormat, codec); err != nil {
 		return err
 	}
 	if !exists {
@@ -148,7 +181,13 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 				}
 			}
 		}
-		model, err := parser.CreateModel(sidekickConfig, overrides)
+		parserConfig := &parser.Config{
+			SpecificationFormat: sidekickConfig.General.SpecificationFormat,
+			SpecificationSource: sidekickConfig.General.SpecificationSource,
+			ServiceConfig:       sidekickConfig.General.ServiceConfig,
+			Source:              sidekickConfig.Source,
+		}
+		model, err := parser.CreateModel(parserConfig, overrides)
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
@@ -237,7 +276,13 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create storage sidekick config: %w", err)
 	}
-	storageModel, err := parser.CreateModel(storageConfig, parser.NewModelOverridesFromSource(storageConfig.Source))
+	storageParserConfig := &parser.Config{
+		SpecificationFormat: storageConfig.General.SpecificationFormat,
+		SpecificationSource: storageConfig.General.SpecificationSource,
+		ServiceConfig:       storageConfig.General.ServiceConfig,
+		Source:              storageConfig.Source,
+	}
+	storageModel, err := parser.CreateModel(storageParserConfig, parser.NewModelOverridesFromSource(storageConfig.Source))
 	if err != nil {
 		return fmt.Errorf("failed to create storage model: %w", err)
 	}
@@ -251,7 +296,13 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create control sidekick config: %w", err)
 	}
-	controlModel, err := parser.CreateModel(controlConfig, parser.NewModelOverridesFromSource(controlConfig.Source))
+	controlParserConfig := &parser.Config{
+		SpecificationFormat: controlConfig.General.SpecificationFormat,
+		SpecificationSource: controlConfig.General.SpecificationSource,
+		ServiceConfig:       controlConfig.General.ServiceConfig,
+		Source:              controlConfig.Source,
+	}
+	controlModel, err := parser.CreateModel(controlParserConfig, parser.NewModelOverridesFromSource(controlConfig.Source))
 	if err != nil {
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
