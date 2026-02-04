@@ -57,7 +57,6 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			cmd := exec.Command("go", "generate", "./...")
 			var stderr, stdout bytes.Buffer
 			cmd.Stderr = &stderr

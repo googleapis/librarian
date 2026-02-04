@@ -29,6 +29,14 @@ jobs:
         run: go version
       - name: Install Go tools
         run: go install tool
+      - name: Check go generate
+        run: |
+          go generate ./...
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "go generate produced diffs:"
+            git diff
+            exit 1
+          fi
       - name: Run tests
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic \

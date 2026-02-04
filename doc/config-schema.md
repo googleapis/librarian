@@ -110,6 +110,7 @@ This document describes the schema for the librarian.yaml.
 | `dependencies` | string | Dependencies is a comma-separated list of dependencies. |
 | `dev_dependencies` | string | DevDependencies is a comma-separated list of development dependencies. |
 | `extra_imports` | string | ExtraImports is additional imports to include in the generated library. |
+| `include_list` | list of string | IncludeList is a list of items to include. |
 | `issue_tracker_url` | string | IssueTrackerURL is the URL for the issue tracker. |
 | `library_path_override` | string | LibraryPathOverride overrides the library path. |
 | `name_override` | string | NameOverride overrides the package name |
