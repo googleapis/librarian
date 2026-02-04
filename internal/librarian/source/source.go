@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -41,39 +40,6 @@ type Sources struct {
 	Googleapis  string
 	ProtobufSrc string
 	Showcase    string
-}
-
-// AddLibraryRoots configures the source roots for dart and rust generation.
-//
-// It populates a map with the paths to the necessary repositories based on the provided library configuration and
-// available sources.
-// If no specific roots are defined in the library configuration, it defaults to using googleapis.
-func AddLibraryRoots(library *config.Library, sources *Sources) map[string]string {
-	source := make(map[string]string)
-	if len(library.Roots) == 0 && sources.Googleapis != "" {
-		// Default to googleapis if no roots are specified.
-		source["googleapis-root"] = sources.Googleapis
-		source["roots"] = "googleapis"
-	} else {
-		source["roots"] = strings.Join(library.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
-		for _, root := range library.Roots {
-			if r, ok := rootMap[root]; ok && r.path != "" {
-				source[r.key] = r.path
-			}
-		}
-	}
-
-	return source
 }
 
 // FetchSources fetches all source repositories needed for library generation in parallel.

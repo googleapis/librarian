@@ -18,25 +18,26 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	internalsidekick "github.com/googleapis/librarian/internal/librarian/sidekick"
 	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func toSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
-	source := source.AddLibraryRoots(library, sources)
+	src := internalsidekick.AddLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
-		source["description-override"] = library.DescriptionOverride
+		src["description-override"] = library.DescriptionOverride
 	}
 	if library.Dart != nil && library.Dart.NameOverride != "" {
-		source["name-override"] = library.Dart.NameOverride
+		src["name-override"] = library.Dart.NameOverride
 	}
 	if library.Dart != nil && library.Dart.TitleOverride != "" {
-		source["title-override"] = library.Dart.TitleOverride
+		src["title-override"] = library.Dart.TitleOverride
 	}
 	if library.Dart != nil && library.Dart.IncludeList != nil {
-		source["include-list"] = strings.Join(library.Dart.IncludeList, ",")
+		src["include-list"] = strings.Join(library.Dart.IncludeList, ",")
 	}
 
 	root := sources.Googleapis
@@ -55,7 +56,7 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *source.S
 			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: ch.Path,
 		},
-		Source: source,
+		Source: src,
 		Codec:  buildCodec(library),
 	}
 	return sidekickCfg, nil

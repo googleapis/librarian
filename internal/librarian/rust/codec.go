@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	internalsidekick "github.com/googleapis/librarian/internal/librarian/sidekick"
 	"github.com/googleapis/librarian/internal/librarian/source"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
@@ -33,9 +34,9 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 		specFormat = "disco"
 	}
 
-	source := source.AddLibraryRoots(library, sources)
+	src := internalsidekick.AddLibraryRoots(library, sources)
 	if library.DescriptionOverride != "" {
-		source["description-override"] = library.DescriptionOverride
+		src["description-override"] = library.DescriptionOverride
 	}
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
@@ -46,7 +47,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 		return nil, err
 	}
 	if api.Title != "" {
-		source["title-override"] = api.Title
+		src["title-override"] = api.Title
 	}
 	var specSource string
 	switch specFormat {
@@ -59,7 +60,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 	}
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
-			source["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
+			src["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
 		}
 	}
 	sidekickCfg := &sidekickconfig.Config{
@@ -69,7 +70,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 			ServiceConfig:       api.ServiceConfig,
 			SpecificationSource: specSource,
 		},
-		Source: source,
+		Source: src,
 		Codec:  buildCodec(library),
 	}
 	if library.Rust != nil {
@@ -224,23 +225,23 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 }
 
 func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*sidekickconfig.Config, error) {
-	source := source.AddLibraryRoots(library, sources)
+	src := internalsidekick.AddLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
-		source["included-ids"] = strings.Join(module.IncludedIds, ",")
+		src["included-ids"] = strings.Join(module.IncludedIds, ",")
 	}
 	if len(module.SkippedIds) > 0 {
-		source["skipped-ids"] = strings.Join(module.SkippedIds, ",")
+		src["skipped-ids"] = strings.Join(module.SkippedIds, ",")
 	}
 	if module.IncludeList != "" {
-		source["include-list"] = module.IncludeList
+		src["include-list"] = module.IncludeList
 	}
-	if module.Source != "" && source["roots"] == "googleapis" {
+	if module.Source != "" && src["roots"] == "googleapis" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
 		if api != nil && api.Title != "" {
-			source["title-override"] = api.Title
+			src["title-override"] = api.Title
 		}
 	}
 
@@ -262,7 +263,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 			ServiceConfig:       module.ServiceConfig,
 			SpecificationSource: module.Source,
 		},
-		Source: source,
+		Source: src,
 		Codec:  buildModuleCodec(library, module),
 	}
 	if len(module.DocumentationOverrides) > 0 {
