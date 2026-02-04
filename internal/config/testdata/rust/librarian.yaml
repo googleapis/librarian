@@ -52,9 +52,9 @@ libraries:
   - name: google-cloud-storage-v2
     apis:
       - path: google/cloud/storage/v2
+    version: 2.3.4
     roots:
       - googleapis
-    version: 2.3.4
     rust:
       disabled_rustdoc_warnings:
         - rustdoc::bare_urls
