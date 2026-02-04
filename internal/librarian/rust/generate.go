@@ -70,13 +70,17 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 				}
 			}
 		}
-		if len(library.Rust.PaginationOverrides) > 0 {
-			overrides.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
-			for i, override := range library.Rust.PaginationOverrides {
-				overrides.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
-					ID:        override.ID,
-					ItemField: override.ItemField,
+		if library.Rust.Discovery != nil {
+			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
+			for i, poller := range library.Rust.Discovery.Pollers {
+				pollers[i] = &sidekickconfig.Poller{
+					Prefix:   poller.Prefix,
+					MethodID: poller.MethodID,
 				}
+			}
+			overrides.Discovery = &sidekickconfig.Discovery{
+				OperationID: library.Rust.Discovery.OperationID,
+				Pollers:     pollers,
 			}
 		}
 	}

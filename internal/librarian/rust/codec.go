@@ -61,22 +61,6 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 		},
 		Source: source,
 	}
-	if library.Rust != nil {
-
-		if library.Rust.Discovery != nil {
-			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
-			for i, poller := range library.Rust.Discovery.Pollers {
-				pollers[i] = &sidekickconfig.Poller{
-					Prefix:   poller.Prefix,
-					MethodID: poller.MethodID,
-				}
-			}
-			sidekickCfg.Discovery = &sidekickconfig.Discovery{
-				OperationID: library.Rust.Discovery.OperationID,
-				Pollers:     pollers,
-			}
-		}
-	}
 	return sidekickCfg, api, nil
 }
 

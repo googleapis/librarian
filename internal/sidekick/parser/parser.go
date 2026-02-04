@@ -31,7 +31,7 @@ func CreateModel(config *config.Config, overrides *ModelOverrides) (*api.API, er
 	case "openapi":
 		model, err = ParseOpenAPI(config)
 	case "disco", "discovery": // "disco" is legacy
-		model, err = ParseDisco(config)
+		model, err = ParseDisco(config, overrides)
 	case "none":
 		return nil, nil
 	default:

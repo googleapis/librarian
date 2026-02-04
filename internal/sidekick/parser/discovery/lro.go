@@ -22,21 +22,21 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func lroAnnotations(model *api.API, cfg *config.Config) error {
-	if cfg == nil || cfg.Discovery == nil {
+func lroAnnotations(model *api.API, discoveryConfig *config.Discovery) error {
+	if discoveryConfig == nil {
 		return nil
 	}
-	lroServices := cfg.Discovery.LroServices()
+	lroServices := discoveryConfig.LroServices()
 	for _, svc := range model.Services {
 		if _, ok := lroServices[svc.ID]; ok {
 			continue
 		}
 		var svcMixin *api.Method
 		for _, method := range svc.Methods {
-			if method.OutputTypeID != cfg.Discovery.OperationID {
+			if method.OutputTypeID != discoveryConfig.OperationID {
 				continue
 			}
-			mixin, pathParams := lroFindPoller(method, model, cfg.Discovery)
+			mixin, pathParams := lroFindPoller(method, model, discoveryConfig)
 			if mixin == nil {
 				continue
 			}

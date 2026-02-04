@@ -240,5 +240,5 @@ func ComputeDiscoWithLros(t *testing.T, cfg *config.Config) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewAPI(nil, contents, cfg)
+	return NewAPI(nil, contents, cfg.Discovery)
 }

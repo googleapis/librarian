@@ -31,6 +31,7 @@ type ModelOverrides struct {
 	ExcludeList      []string
 	CommentOverrides    []config.DocumentationOverride
 	PaginationOverrides []config.PaginationOverride
+	Discovery           *config.Discovery
 }
 
 // NewModelOverridesFromSource creates a new ModelOverrides from a source map.

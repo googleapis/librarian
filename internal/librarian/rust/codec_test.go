@@ -460,23 +460,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
 				},
-				Discovery: &sidekickconfig.Discovery{
-					OperationID: ".google.cloud.compute.v1.Operation",
-					Pollers: []*sidekickconfig.Poller{
-						{
-							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
-							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}/regions/{region}",
-							MethodID: ".google.cloud.compute.v1.regionOperations.get",
-						},
-						{
-							Prefix:   "compute/v1/projects/{project}",
-							MethodID: ".google.cloud.compute.v1.globalOperations.get",
-						},
-					},
-				},
 			},
 		},
 		{
