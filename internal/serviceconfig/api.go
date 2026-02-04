@@ -108,7 +108,7 @@ var APIs = []API{
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema},
-	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1},
+	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1"},
 	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{langPython}},

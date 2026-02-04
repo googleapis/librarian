@@ -59,7 +59,8 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 			return err
 		}
 	}
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec); err != nil {
+	codec := buildCodec(library)
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, codec); err != nil {
 		return err
 	}
 	if !exists {
