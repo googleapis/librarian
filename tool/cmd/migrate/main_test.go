@@ -235,6 +235,12 @@ API key as an argument when initializing the client.
 					DescriptionOverride: "Additional metadata for operations.",
 					Keep: []string{
 						"example/example-file1.txt",
+						"lib/exceptions.dart",
+						"lib/service_client.dart",
+						"lib/src/exceptions.dart",
+						"lib/src/versions.dart",
+						"lib/src/vm.dart",
+						"lib/src/web.dart",
 						"test/nested/test-nested-file.txt",
 						"test/test-file.txt",
 					},
@@ -265,6 +271,129 @@ API key as an argument when initializing the client.
 				"testdata/read-sidekick-files/no-api-path/.sidekick.toml",
 			},
 			want: nil,
+		},
+		{
+			name: "special library dir",
+			files: []string{
+				"testdata/read-sidekick-files/special-dir/google_cloud_protojson_conformance/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_protobuf_test_messages_proto3",
+					APIs: []*config.API{
+						{
+							Path: "src/google/protobuf",
+						},
+					},
+					Output:              "testdata/read-sidekick-files/special-dir/google_cloud_protojson_conformance",
+					SpecificationFormat: "protobuf",
+				},
+			},
+		},
+		{
+			name: "roots update",
+			files: []string{
+				"testdata/read-sidekick-files/roots-update/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_appengine_v1",
+					APIs: []*config.API{
+						{
+							Path: "google/appengine/v1",
+						},
+					},
+					Output: "testdata/read-sidekick-files/roots-update",
+					Roots: []string{
+						"protobuf-src",
+					},
+					SpecificationFormat: "protobuf",
+				},
+			},
+		},
+		{
+			name: "additional library keeps",
+			files: []string{
+				"testdata/read-sidekick-files/additional-keeps/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_rpc",
+					APIs: []*config.API{
+						{
+							Path: "google/rpc",
+						},
+					},
+					CopyrightYear: "2025",
+					Keep: []string{
+						"lib/exceptions.dart",
+						"lib/service_client.dart",
+						"lib/src/exceptions.dart",
+						"lib/src/versions.dart",
+						"lib/src/vm.dart",
+						"lib/src/web.dart",
+					},
+					Output:              "testdata/read-sidekick-files/additional-keeps",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						Dependencies:    "googleapis_auth,http",
+						DevDependencies: "test",
+						RepositoryURL:   "https://github.com/googleapis/google-cloud-dart/tree/main/generated/google_cloud_rpc",
+					},
+				},
+			},
+		},
+		{
+			name: "with include list",
+			files: []string{
+				"testdata/read-sidekick-files/include-list/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_protobuf",
+					APIs: []*config.API{
+						{
+							Path: "google/protobuf",
+						},
+					},
+					Output:              "testdata/read-sidekick-files/include-list",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						IncludeList: []string{
+							"api.proto",
+							"duration.proto",
+							"empty.proto",
+							"field_mask.proto",
+							"source_context.proto",
+							"struct.proto",
+							"timestamp.proto",
+							"type.proto",
+							"wrappers.proto",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "with library path override",
+			files: []string{
+				"testdata/read-sidekick-files/library-path-override/.sidekick.toml",
+			},
+			want: []*config.Library{
+				{
+					Name: "google_cloud_example_v1",
+					APIs: []*config.API{
+						{
+							Path: "google/cloud/example/v1",
+						},
+					},
+					Output:              "testdata/read-sidekick-files/library-path-override",
+					SpecificationFormat: "protobuf",
+					Dart: &config.DartPackage{
+						LibraryPathOverride: "google_cloud_protobuf_test_messages_proto3.dart",
+					},
+				},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

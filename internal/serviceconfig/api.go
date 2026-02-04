@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/api-allowlist-schema.md -root API -root-title API -title "API Allowlist"
+
 package serviceconfig
 
 const (
@@ -126,6 +128,7 @@ var APIs = []API{
 	{Path: "google/cloud/assuredworkloads/v1"},
 	{Path: "google/cloud/assuredworkloads/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/audit", Languages: []string{langPython}},
+	{Path: "google/cloud/auditmanager/v1"},
 	{Path: "google/cloud/automl/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/automl/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/backupdr/v1"},

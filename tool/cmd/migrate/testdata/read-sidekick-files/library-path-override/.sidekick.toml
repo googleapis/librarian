@@ -13,3 +13,7 @@
 # limitations under the License.
 
 [general]
+specification-source = 'google/cloud/example/v1'
+
+[codec]
+library-path-override = 'google_cloud_protobuf_test_messages_proto3.dart'

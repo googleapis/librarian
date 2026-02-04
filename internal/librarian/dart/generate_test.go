@@ -441,6 +441,36 @@ func TestToSidekickConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with include list",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					IncludeList: []string{
+						"api.proto",
+						"duration.proto",
+						"empty.proto",
+						"field_mask.proto",
+					},
+				},
+			},
+			channel: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: &sidekickconfig.Config{
+				General: sidekickconfig.GeneralConfig{
+					Language:            "dart",
+					SpecificationFormat: "protobuf",
+					ServiceConfig:       "",
+					SpecificationSource: "google/cloud/secretmanager/v1",
+				},
+				Source: map[string]string{
+					"googleapis-root": googleapisDir,
+					"include-list":    "api.proto,duration.proto,empty.proto,field_mask.proto",
+				},
+				Codec: map[string]string{},
+			},
+		},
+		{
 			name: "with dart package",
 			library: &config.Library{
 				SkipPublish: true,

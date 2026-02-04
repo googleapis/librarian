@@ -18,6 +18,7 @@ package dart
 
 import (
 	"context"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -64,6 +65,9 @@ func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir str
 	}
 	if library.Dart != nil && library.Dart.TitleOverride != "" {
 		source["title-override"] = library.Dart.TitleOverride
+	}
+	if library.Dart != nil && len(library.Dart.IncludeList) > 0 {
+		source["include-list"] = strings.Join(library.Dart.IncludeList, ",")
 	}
 
 	api, err := serviceconfig.Find(googleapisDir, ch.Path)
