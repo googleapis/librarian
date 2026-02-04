@@ -80,7 +80,7 @@ func TestPatchCommentsMessage(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -152,7 +152,7 @@ func TestPatchCommentsMessageNotFound(t *testing.T) {
 				},
 			},
 		}
-		if err := PatchDocumentation(model, &cfg); err == nil {
+		if err := PatchDocumentation(model, cfg.CommentOverrides); err == nil {
 			t.Errorf("expected an error searching for missing entity %q", id)
 		}
 	}
@@ -179,7 +179,7 @@ func TestPatchCommentsNoMatch(t *testing.T) {
 				},
 			},
 		}
-		if err := PatchDocumentation(model, &cfg); err == nil {
+		if err := PatchDocumentation(model, cfg.CommentOverrides); err == nil {
 			t.Errorf("expected an error replacing comments for entity %q", id)
 		}
 	}
@@ -207,7 +207,7 @@ func TestPatchCommentsField(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -233,7 +233,7 @@ func TestPatchCommentsEnum(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -265,7 +265,7 @@ func TestPatchCommentsEnumValue(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -291,7 +291,7 @@ func TestPatchCommentsService(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -322,7 +322,7 @@ func TestPatchCommentsMethod(t *testing.T) {
 			},
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, cfg.CommentOverrides); err != nil {
 		t.Fatal(err)
 	}
 

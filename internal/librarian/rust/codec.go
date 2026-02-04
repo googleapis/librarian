@@ -62,16 +62,7 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *S
 		Source: source,
 	}
 	if library.Rust != nil {
-		if len(library.Rust.DocumentationOverrides) > 0 {
-			sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
-			for i, override := range library.Rust.DocumentationOverrides {
-				sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
-					ID:      override.ID,
-					Match:   override.Match,
-					Replace: override.Replace,
-				}
-			}
-		}
+
 		if len(library.Rust.PaginationOverrides) > 0 {
 			sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
 			for i, override := range library.Rust.PaginationOverrides {
@@ -249,16 +240,6 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		},
 		Source: source,
 		Codec:  buildModuleCodec(library, module),
-	}
-	if len(module.DocumentationOverrides) > 0 {
-		sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
-		for i, override := range module.DocumentationOverrides {
-			sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
-				ID:      override.ID,
-				Match:   override.Match,
-				Replace: override.Replace,
-			}
-		}
 	}
 	return sidekickCfg, nil
 }

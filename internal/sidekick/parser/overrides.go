@@ -16,17 +16,20 @@ package parser
 
 import (
 	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // ModelOverrides contains overrides for the API model.
 type ModelOverrides struct {
-	Name        string
-	Title       string
-	Description string
-	SkippedIDs  []string
-	IncludedIDs []string
-	IncludeList []string
-	ExcludeList []string
+	Name             string
+	Title            string
+	Description      string
+	SkippedIDs       []string
+	IncludedIDs      []string
+	IncludeList      []string
+	ExcludeList      []string
+	CommentOverrides []config.DocumentationOverride
 }
 
 // NewModelOverridesFromSource creates a new ModelOverrides from a source map.

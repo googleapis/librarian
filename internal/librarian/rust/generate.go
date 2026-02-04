@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 )
@@ -59,6 +60,16 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 	}
 	if library.Rust != nil {
 		overrides.SkippedIDs = library.Rust.SkippedIds
+		if len(library.Rust.DocumentationOverrides) > 0 {
+			overrides.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			for i, override := range library.Rust.DocumentationOverrides {
+				overrides.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+					ID:      override.ID,
+					Match:   override.Match,
+					Replace: override.Replace,
+				}
+			}
+		}
 	}
 	model, err := parser.CreateModel(sidekickConfig, overrides)
 	if err != nil {
@@ -113,7 +124,18 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
-		model, err := parser.CreateModel(sidekickConfig, parser.NewModelOverridesFromSource(sidekickConfig.Source))
+		overrides := parser.NewModelOverridesFromSource(sidekickConfig.Source)
+		if len(module.DocumentationOverrides) > 0 {
+			overrides.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
+			for i, override := range module.DocumentationOverrides {
+				overrides.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+					ID:      override.ID,
+					Match:   override.Match,
+					Replace: override.Replace,
+				}
+			}
+		}
+		model, err := parser.CreateModel(sidekickConfig, overrides)
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}

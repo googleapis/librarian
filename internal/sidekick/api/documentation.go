@@ -23,8 +23,8 @@ import (
 )
 
 // PatchDocumentation overrides the documentation of the API model with the provided configuration.
-func PatchDocumentation(model *API, config *config.Config) error {
-	for _, override := range config.CommentOverrides {
+func PatchDocumentation(model *API, overrides []config.DocumentationOverride) error {
+	for _, override := range overrides {
 		id := override.ID
 		if msg, ok := model.State.MessageByID[id]; ok {
 			if err := patchElementDocs(&msg.Documentation, &override); err != nil {

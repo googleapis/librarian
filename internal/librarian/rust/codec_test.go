@@ -234,13 +234,6 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				CommentOverrides: []sidekickconfig.DocumentationOverride{
-					{
-						ID:      ".google.cloud.secretmanager.v1.Secret.name",
-						Match:   "secret name",
-						Replace: "the name of the Secret",
-					},
-				},
 			},
 		},
 		{
@@ -595,18 +588,6 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				CommentOverrides: []sidekickconfig.DocumentationOverride{
-					{
-						ID:      ".google.cloud.storage.v1.Bucket.name",
-						Match:   "bucket name",
-						Replace: "the name of the bucket",
-					},
-					{
-						ID:      ".google.cloud.storage.v1.Bucket.id",
-						Match:   "bucket id",
-						Replace: "the id of the bucket",
-					},
-				},
 			},
 		},
 		{
@@ -739,9 +720,8 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			var commentOverrides []sidekickconfig.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
-			got, err := moduleToSidekickConfig(test.library, module, sources)
+				got, err := moduleToSidekickConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -753,10 +733,6 @@ func TestModuleToSidekickConfig(t *testing.T) {
 						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
 				}
-				commentOverrides = append(commentOverrides, got.CommentOverrides...)
-			}
-			if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
