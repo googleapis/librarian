@@ -18,7 +18,14 @@ package serviceconfig
 
 const (
 	langDart   = "dart"
+	langAll    = "all"
+	langCsharp = "csharp"
+	langGo     = "go"
+	langJava   = "java"
+	langNodejs = "nodejs"
+	langPhp    = "php"
 	langPython = "python"
+	langRuby   = "ruby"
 	langRust   = "rust"
 
 	titleAppsScriptTypes           = "Google Apps Script Types"
@@ -30,6 +37,18 @@ const (
 
 	serviceConfigAIPlatformSchema  = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
 	serviceConfigAIPlatformV1Beta1 = "google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml"
+)
+
+// Transport defines the supported transport protocol.
+type Transport string
+
+const (
+	// GRPC indicates gRPC transport.
+	GRPC Transport = "grpc"
+	// Rest indicates REST transport.
+	Rest Transport = "rest"
+	// GRPCRest indicates both gRPC and REST transports.
+	GRPCRest Transport = "grpc+rest"
 )
 
 // API describes an API path and its availability across languages.
@@ -62,6 +81,11 @@ type API struct {
 
 	// Title overrides the API title from the service config.
 	Title string
+
+	// Transports defines the supported transports per language.
+	// Map key is the language name (e.g., "python", "rust").
+	// Optional. If omitted, all languages use GRPCRest by default.
+	Transports map[string]Transport
 }
 
 // APIs defines all API paths and their language availability.
