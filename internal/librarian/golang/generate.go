@@ -164,6 +164,12 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 
 // fixVersioning moves {id}/{version}/* up to {id}/ for versioned modules.
 func fixVersioning(outputDir, libraryID, modPath string) error {
+	// parts is the module path split by "/".
+	// For example, "cloud.google.com/go/bigquery/v2" becomes:
+	// parts[0]: "cloud.google.com"
+	// parts[1]: "go"
+	// parts[2]: library ID (e.g., "bigquery")
+	// parts[3]: version (e.g., "v2")
 	parts := strings.Split(modPath, "/")
 	if len(parts) == 3 {
 		return nil
