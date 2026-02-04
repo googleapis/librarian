@@ -36,7 +36,7 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 			docFile: "cmd/legacyautomation/doc.go",
 		},
 		{
-			name:    "librarian_doc",
+			name:    "legacylibrarian_doc",
 			docFile: "cmd/legacylibrarian/doc.go",
 		},
 		{
@@ -46,6 +46,14 @@ func TestGoGenerateLibrarianDoc(t *testing.T) {
 		{
 			name:    "service_config_schema_doc",
 			docFile: "doc/api-allowlist-schema.md",
+		},
+		{
+			name:    "librarian_doc",
+			docFile: "cmd/librarian/doc.go",
+		},
+		{
+			name:    "librarianops_doc",
+			docFile: "cmd/librarianops/doc.go",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

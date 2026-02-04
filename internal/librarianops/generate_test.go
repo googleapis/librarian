@@ -69,7 +69,15 @@ func TestGenerateCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			args := []string{"librarianops", "generate", "-C", repoDir, "fake-repo"}
+			// Rename temp dir to fake-repo so basename matches expected repo
+			// name.
+			fakeRepoDir := filepath.Join(filepath.Dir(repoDir), "fake-repo")
+			if err := os.Rename(repoDir, fakeRepoDir); err != nil {
+				t.Fatal(err)
+			}
+			repoDir = fakeRepoDir
+
+			args := []string{"librarianops", "generate", "-C", repoDir}
 			if test.verbose {
 				args = append(args, "-v")
 				command.Verbose = true
@@ -126,20 +134,16 @@ func TestGenerateCommand_Errors(t *testing.T) {
 		args []string
 	}{
 		{
-			name: "both repo and all flag",
-			args: []string{"librarianops", "generate", "--all", "fake-repo"},
-		},
-		{
-			name: "neither repo nor all flag",
+			name: "no repo argument",
 			args: []string{"librarianops", "generate"},
-		},
-		{
-			name: "all flag with C flag",
-			args: []string{"librarianops", "generate", "--all", "-C", "/tmp/foo"},
 		},
 		{
 			name: "unsupported repo",
 			args: []string{"librarianops", "generate", "unsupported-repo"},
+		},
+		{
+			name: "unsupported repo via C flag",
+			args: []string{"librarianops", "generate", "-C", "/tmp/unsupported-repo"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

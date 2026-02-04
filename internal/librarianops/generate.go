@@ -28,23 +28,25 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+const (
+	branchPrefix = "librarianops-generateall-"
+	commitTitle  = "chore: run librarian update and generate --all"
+)
+
 func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
 		Usage:     "generate libraries across repositories",
-		UsageText: "librarianops generate [<repo> | --all]",
+		UsageText: "librarianops generate [<repo> | -C <dir>]",
 		Description: `Examples:
   librarianops generate google-cloud-rust
-  librarianops generate --all
-  librarianops generate -C ~/workspace/google-cloud-rust google-cloud-rust
+  librarianops generate -C ~/workspace/google-cloud-rust
 
-Specify a repository name (e.g., google-cloud-rust) to process a single repository,
-or use --all to process all repositories.
-
-Use -C to work in a specific directory (assumes repository already exists there).
+Specify a repository name to clone and process, or use -C to work in a specific
+directory (repo name is inferred from the directory basename).
 
 For each repository, librarianops will:
-  1. Clone the repository to a temporary directory
+  1. Clone the repository to a temporary directory (or use existing directory with -C)
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
   3. Resolve librarian version from @main and update version field in librarian.yaml
   4. Run librarian tidy
@@ -54,13 +56,9 @@ For each repository, librarianops will:
   8. Commit changes
   9. Create a pull request`,
 		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "all",
-				Usage: "process all repositories",
-			},
 			&cli.StringFlag{
 				Name:  "C",
-				Usage: "work in `directory` (assumes repo exists)",
+				Usage: "work in `directory` (repo name inferred from basename)",
 			},
 			&cli.BoolFlag{
 				Name:  "v",
@@ -68,41 +66,37 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			all := cmd.Bool("all")
-			workDir := cmd.String("C")
-			command.Verbose = cmd.Bool("v")
-			repoName := ""
-			if cmd.Args().Len() > 0 {
-				repoName = cmd.Args().Get(0)
+			repoName, workDir, err := parseRepoFlags(cmd)
+			if err != nil {
+				return err
 			}
-			if all && repoName != "" {
-				return fmt.Errorf("cannot specify both <repo> and --all")
-			}
-			if !all && repoName == "" {
-				return fmt.Errorf("usage: librarianops generate [<repo> | --all]")
-			}
-			if all && workDir != "" {
-				return fmt.Errorf("cannot use -C with --all")
-			}
-			return runGenerate(ctx, all, repoName, workDir, command.Verbose)
+			return runGenerate(ctx, repoName, workDir)
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, all bool, repoName, repoDir string, verbose bool) error {
-	if all {
-		for name := range supportedRepositories {
-			if err := processRepo(ctx, name, "", verbose); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
+func parseRepoFlags(cmd *cli.Command) (repoName, workDir string, err error) {
+	workDir = cmd.String("C")
+	command.Verbose = cmd.Bool("v")
 
+	if workDir != "" {
+		// When -C is provided, infer repo name from directory basename.
+		repoName = filepath.Base(workDir)
+	} else {
+		// When -C is not provided, require positional repo argument.
+		if cmd.Args().Len() == 0 {
+			return "", "", fmt.Errorf("usage: librarianops <command> <repo> or librarianops <command> -C <dir>")
+		}
+		repoName = cmd.Args().Get(0)
+	}
+	return repoName, workDir, nil
+}
+
+func runGenerate(ctx context.Context, repoName, repoDir string) error {
 	if !supportedRepositories[repoName] {
 		return fmt.Errorf("repository %q not found in supported repositories list", repoName)
 	}
-	return processRepo(ctx, repoName, repoDir, verbose)
+	return processRepo(ctx, repoName, repoDir, command.Verbose)
 }
 
 func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (err error) {

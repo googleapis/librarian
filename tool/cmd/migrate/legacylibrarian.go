@@ -56,6 +56,7 @@ type MigrationInput struct {
 	librarianConfig *legacyconfig.LibrarianConfig
 	repoConfig      *RepoConfig
 	lang            string
+	repoPath        string
 }
 
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
@@ -79,6 +80,7 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 		librarianConfig: librarianConfig,
 		repoConfig:      repoConfig,
 		lang:            language,
+		repoPath:        repoPath,
 	})
 	if err != nil {
 		return err
@@ -89,9 +91,7 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 	return nil
 }
 
-func buildConfigFromLibrarian(
-	ctx context.Context,
-	input *MigrationInput) (*config.Config, error) {
+func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"
 	if input.lang == "python" {
 		repo = "googleapis/google-cloud-python"
@@ -113,7 +113,19 @@ func buildConfigFromLibrarian(
 		},
 	}
 
-	cfg.Libraries = buildLibraries(input)
+	if input.lang == "python" {
+		cfg.Libraries = buildPythonLibraries(input)
+		cfg.Default.Output = "packages"
+		cfg.Default.ReleaseLevel = "stable"
+		cfg.Default.Transport = "grpc+rest"
+	} else {
+		cfg.Libraries = buildGoLibraries(input)
+	}
+
+	sort.Slice(cfg.Libraries, func(i, j int) bool {
+		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
+	})
+
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -148,7 +160,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	}, nil
 }
 
-func buildLibraries(input *MigrationInput) []*config.Library {
+func buildGoLibraries(input *MigrationInput) []*config.Library {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
 		input.librarianState.Libraries,
@@ -214,10 +226,6 @@ func buildLibraries(input *MigrationInput) []*config.Library {
 
 		libraries = append(libraries, library)
 	}
-
-	sort.Slice(libraries, func(i, j int) bool {
-		return libraries[i].Name < libraries[j].Name
-	})
 
 	return libraries
 }
