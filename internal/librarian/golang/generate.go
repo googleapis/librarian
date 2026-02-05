@@ -68,6 +68,16 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			}
 		}
 	}
+
+	moduleRoot := filepath.Join(outdir, library.Name)
+	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
+		return err
+	}
+	for _, api := range library.APIs {
+		if err := generateClientVersionFile(library, api.Path); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

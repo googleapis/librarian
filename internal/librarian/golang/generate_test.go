@@ -45,6 +45,8 @@ func TestGenerate(t *testing.T) {
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/internal/version.go",
+				"secretmanager/secretmanager/apiv1/version.go",
 			},
 			removed: []string{
 				"cloud.google.com",
