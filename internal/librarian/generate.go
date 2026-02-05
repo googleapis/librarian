@@ -99,10 +99,11 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 
 	var rustSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
-		rustSources, err := source.FetchRustSources(ctx, cfg.Sources)
+		sources, err := source.FetchRustSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
 		}
+		rustSources = sources
 		rustSources.Googleapis = googleapisDir
 	}
 
