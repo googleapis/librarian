@@ -1051,11 +1051,17 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 }
 
 func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
-	c.annotatePathInfo(m)
+	if err := c.annotatePathInfo(m); err != nil {
+		return nil, err
+	}
 	for _, routing := range m.Routing {
 		for _, variant := range routing.Variants {
+			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
+			if err != nil {
+				return nil, err
+			}
 			routingVariantAnnotations := &routingVariantAnnotations{
-				FieldAccessors:   c.annotateRoutingAccessors(variant, m),
+				FieldAccessors:   fieldAccessors,
 				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
 				MatchingSegments: annotateSegments(variant.Matching.Segments),
 				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
@@ -1140,11 +1146,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	return annotation, nil
 }
 
-func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) []string {
+func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
 	return makeAccessors(variant.FieldPath, m)
 }
 
-func makeAccessors(fields []string, m *api.Method) []string {
+func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
 		for _, f := range message.Fields {
 			if f.Name == name {
@@ -1159,8 +1165,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			slog.Error("invalid routing/path field for request message", "field", rustFieldName, "message ID", message.ID)
-			continue
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
 		if field.Optional {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
@@ -1176,7 +1181,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 			}
 		}
 	}
-	return accessors
+	return accessors, nil
 }
 
 func annotateSegments(segments []string) []string {
@@ -1218,45 +1223,57 @@ func annotateSegments(segments []string) []string {
 	return ann
 }
 
-func makeBindingSubstitution(v *api.PathVariable, m *api.Method) bindingSubstitution {
+func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
+	accessors, err := makeAccessors(v.FieldPath, m)
+	if err != nil {
+		return nil, err
+	}
 	fieldAccessor := "Some(&req)"
-	for _, a := range makeAccessors(v.FieldPath, m) {
+	for _, a := range accessors {
 		fieldAccessor += a
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnake(n))
 	}
-	return bindingSubstitution{
+	binding := &bindingSubstitution{
 		FieldAccessor: fieldAccessor,
 		FieldName:     strings.Join(rustNames, "."),
 		Template:      v.Segments,
 	}
+	return binding, nil
 }
 
-func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotation {
+func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
 	for _, s := range b.PathTemplate.Segments {
 		if s.Variable != nil {
-			sub := makeBindingSubstitution(s.Variable, m)
-			subs = append(subs, &sub)
+			sub, err := makeBindingSubstitution(s.Variable, m)
+			if err != nil {
+				return nil, err
+			}
+			subs = append(subs, sub)
 		}
 	}
-	return &pathBindingAnnotation{
+	binding := &pathBindingAnnotation{
 		PathFmt:                   httpPathFmt(b.PathTemplate),
 		QueryParams:               language.QueryParams(m, b),
 		Substitutions:             subs,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
+	return binding, nil
 }
 
 // annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
-func (c *codec) annotatePathInfo(m *api.Method) {
+func (c *codec) annotatePathInfo(m *api.Method) error {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
-		ann := c.annotatePathBinding(b, m)
+		ann, err := c.annotatePathBinding(b, m)
+		if err != nil {
+			return err
+		}
 
 		// We need to keep track of unique path parameters to support
 		// implicit routing over gRPC. This is go/aip/4222.
@@ -1277,6 +1294,42 @@ func (c *codec) annotatePathInfo(m *api.Method) {
 		UniqueParameters: uniqueParameters,
 		IsIdempotent:     isIdempotent(m.PathInfo),
 	}
+	return nil
+}
+
+// sortOneOfFieldForExamples is used to select the "best" field for an example.
+//
+// Fields are lexicographically sorted by the tuple:
+//
+//	(f.Deprecated, f.Map, f.Repeated, f.Message != nil)
+//
+// Where `false` values are preferred over `true` values. That is, we prefer
+// fields that are **not** deprecated, but if both fields have the same
+// `Deprecated` value then we prefer the field that is **not** a map, and so on.
+//
+// The return value is either -1, 0, or 1 to use in the standard library sorting
+// functions.
+func sortOneOfFieldForExamples(f1, f2 *api.Field) int {
+	compare := func(a, b bool) int {
+		switch {
+		case a == b:
+			return 0
+		case a:
+			return -1
+		default:
+			return 1
+		}
+	}
+	if v := compare(f1.Deprecated, f2.Deprecated); v != 0 {
+		return v
+	}
+	if v := compare(f1.Map, f2.Map); v != 0 {
+		return v
+	}
+	if v := compare(f1.Repeated, f2.Repeated); v != 0 {
+		return v
+	}
+	return compare(f1.MessageType != nil, f2.MessageType != nil)
 }
 
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
@@ -1292,35 +1345,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-
-	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
-		if f1.Deprecated == f2.Deprecated {
-			if f1.Map == f2.Map {
-				if f1.Repeated == f2.Repeated {
-					if f1.MessageType != nil && f2.MessageType == nil {
-						return -1
-					} else if f1.MessageType == nil && f2.MessageType != nil {
-						return 1
-					} else {
-						return 0
-					}
-				} else if f1.Repeated {
-					return -1
-				} else {
-					return 1
-				}
-			} else if f1.Map {
-				return -1
-			} else {
-				return 1
-			}
-		} else if f1.Deprecated {
-			return -1
-		} else {
-			return 1
-		}
-	})
-
+	bestField := slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
 	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
 	if err != nil {
 		return nil, err

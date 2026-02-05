@@ -68,7 +68,31 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			}
 		}
 	}
+
+	moduleRoot := filepath.Join(outdir, library.Name)
+	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
+		return err
+	}
+	for _, api := range library.APIs {
+		if err := generateClientVersionFile(library, api.Path); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// Format formats a generated Go library.
+func Format(ctx context.Context, library *config.Library) error {
+	outDir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return err
+	}
+	args := []string{"-w", filepath.Join(outDir, library.Name)}
+	snippetDir := filepath.Join(outDir, "internal", "generated", "snippets", library.Name)
+	if _, err := os.Stat(snippetDir); err == nil {
+		args = append(args, snippetDir)
+	}
+	return command.Run(ctx, "gofmt", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {

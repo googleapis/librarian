@@ -298,7 +298,7 @@ func cleanUpFilesAfterPostProcessing(repoRoot string) error {
 }
 
 // DefaultOutputByName derives an output path from a library name and a default
-// output directory. Currently this just assumes each library is a directory
+// output directory. Currently, this just assumes each library is a directory
 // directly underneath the default output directory.
 func DefaultOutputByName(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)

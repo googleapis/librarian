@@ -255,10 +255,11 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return fakeFormat(library)
 	case languageDart:
 		return dart.Format(ctx, library)
+	case languageGo:
+		return golang.Format(ctx, library)
 	case languageRust:
 		return rust.Format(ctx, library)
-	case languageGo, languagePython:
-		// Go and Python formatting is currently performed in the generate phase.
+	case languagePython:
 		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 		// generation and formatting for Python.
 		return nil

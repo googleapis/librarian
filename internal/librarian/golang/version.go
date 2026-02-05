@@ -1,0 +1,84 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package golang
+
+import (
+	_ "embed"
+	"os"
+	"path/filepath"
+	"text/template"
+	"time"
+
+	"github.com/googleapis/librarian/internal/config"
+)
+
+var (
+	//go:embed template/_version.go.txt
+	clientVersionTmpl string
+
+	//go:embed template/_internal_version.go.txt
+	internalVersionTmpl string
+)
+
+func generateInternalVersionFile(moduleDir, version string) error {
+	if version == "" {
+		version = "0.0.0"
+	}
+	internalDir := filepath.Join(moduleDir, "internal")
+	if err := os.MkdirAll(internalDir, 0755); err != nil {
+		return err
+	}
+	f, err := os.Create(filepath.Join(internalDir, "version.go"))
+	if err != nil {
+		return err
+	}
+	t := template.Must(template.New("version").Parse(internalVersionTmpl))
+	err = t.Execute(f, map[string]any{
+		"Year":    time.Now().Year(),
+		"Version": version,
+	})
+	if cerr := f.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
+	return err
+}
+
+func generateClientVersionFile(library *config.Library, apiPath string) error {
+	version := filepath.Base(apiPath)
+	clientDir := library.Name
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI != nil && goAPI.ClientDirectory != "" {
+		clientDir = goAPI.ClientDirectory
+	}
+
+	dir := filepath.Join(library.Output, clientDir, "api"+version)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	f, err := os.Create(filepath.Join(dir, "version.go"))
+	if err != nil {
+		return err
+	}
+	t := template.Must(template.New("version").Parse(clientVersionTmpl))
+	err = t.Execute(f, map[string]any{
+		"Year":       time.Now().Year(),
+		"Package":    clientDir,
+		"ModulePath": modulePath(library),
+	})
+	if cerr := f.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
+	return err
+}
