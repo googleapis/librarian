@@ -131,8 +131,11 @@ const (
 )
 
 const (
-	// This package name is reserved for maps and other "fake" messages that do
-	// not exist in the input specification, but need a place in the data model.
+	// ReservedPackageName is a package name reserved maps and other synthetic
+	// messages that do not exist in the input specification.
+	//
+	// We need a plate to put these in the data model without conflicts with the
+	// input data model. This symbol is unused in all the IDLs we support.
 	ReservedPackageName = "$"
 )
 
