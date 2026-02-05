@@ -381,6 +381,47 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	}
 }
 
+func TestTidy_DerivableAPIPath(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	cfg := &config.Config{
+		Language: "dart",
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:  "google_cloud_secretmanager_v1",
+				Roots: []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+	}
+	if got.Libraries[0].APIs != nil {
+		t.Fatalf("expected 0 API, got %d", len(got.Libraries[0].APIs))
+	}
+}
+
 func TestTidy_DerivableRoots(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
