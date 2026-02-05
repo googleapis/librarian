@@ -601,7 +601,7 @@ func (c *codec) modelModule(packageName, sourceSpecificationPackageName string) 
 	if !ok {
 		available := slices.Collect(maps.Keys(c.packageMapping))
 		slices.Sort(available)
-		panic(fmt.Errorf("missing package %q while generating %q, available packages are: %v", packageName, sourceSpecificationPackageName, available))
+		panic(fmt.Errorf("missing package %q while generating %q, available packages:\n%v", packageName, sourceSpecificationPackageName, available))
 	}
 	// TODO(#158) - maybe google.protobuf should not be this special?
 	if packageName == "google.protobuf" {
