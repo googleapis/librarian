@@ -89,15 +89,17 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	}
 	if cfg.Sources.Googleapis.Dir != "" {
 		googleapisDir = cfg.Sources.Googleapis.Dir
+	} else {
+		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
+		if err != nil {
+			return fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
+		}
+		googleapisDir = dir
 	}
 
-	googleapisDir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
-	if err != nil {
-		return fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
-	}
 	var rustSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
-		rustSources, err = source.FetchRustSources(ctx, cfg.Sources)
+		rustSources, err := source.FetchRustSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
 		}
