@@ -172,6 +172,8 @@ func defaultOutput(language, name, api, defaultOut string) string {
 
 func deriveAPIPath(language, name string) string {
 	switch language {
+	case languageDart:
+		return dart.DeriveAPIPath(name)
 	case languageRust:
 		return rust.DeriveAPIPath(name)
 	default:
