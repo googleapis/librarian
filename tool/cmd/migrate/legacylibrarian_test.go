@@ -86,7 +86,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "path/to/repo",
+			Dir:    "testdata/googleapis",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -148,22 +148,19 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
-						ID:      "example-library",
+						ID:      "google-cloud-secret-manager",
 						Version: "1.0.0",
 						APIs: []*legacyconfig.API{
 							{
-								Path: "google/example/api/v1",
+								Path: "google/cloud/secretmanager/v1",
 							},
 						},
-					},
-					{
-						ID:                  "another-library",
-						LastGeneratedCommit: "abcd123",
 					},
 				},
 			},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
+			repoPath:    "testdata/google-cloud-python",
 			want: &config.Config{
 				Language: "python",
 				Repo:     "googleapis/google-cloud-python",
@@ -181,14 +178,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name: "another-library",
-					},
-					{
-						Name:    "example-library",
-						Version: "1.0.0",
+						Name:                "google-cloud-secret-manager",
+						Version:             "1.0.0",
+						DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 						APIs: []*config.API{
 							{
-								Path: "google/example/api/v1",
+								Path: "google/cloud/secretmanager/v1",
 							},
 						},
 					},

@@ -114,7 +114,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	}
 
 	if input.lang == "python" {
-		cfg.Libraries, err = buildPythonLibraries(input)
+		cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
 		if err != nil {
 			return nil, err
 		}
