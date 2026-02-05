@@ -211,11 +211,12 @@ func TestTidy_DerivableFields(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name         string
-		config       *config.Config
-		wantPath     string
-		wantNumLibs  int
-		wantNumChnls int
+		name                    string
+		config                  *config.Config
+		wantPath                string
+		wantNumLibs             int
+		wantNumChnls            int
+		wantSpecificationFormat string
 	}{
 		{
 			name: "derivable fields removed",
@@ -223,7 +224,8 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Sources: googleapisSource,
 				Libraries: []*config.Library{
 					{
-						Name: "google-cloud-accessapproval-v1",
+						Name:                "google-cloud-accessapproval-v1",
+						SpecificationFormat: "protobuf",
 						APIs: []*config.API{
 							{
 								Path: "google/cloud/accessapproval/v1",
@@ -232,9 +234,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "",
-			wantNumLibs:  1,
-			wantNumChnls: 0,
+			wantPath:                "",
+			wantNumLibs:             1,
+			wantNumChnls:            0,
+			wantSpecificationFormat: "",
 		},
 		{
 			name: "non-derivable path not removed",
@@ -298,6 +301,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 				if ch.Path != test.wantPath {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
 				}
+			}
+			if lib.SpecificationFormat != test.wantSpecificationFormat {
+				t.Errorf("specification_format = %q, want %q", lib.SpecificationFormat, test.wantSpecificationFormat)
 			}
 		})
 	}
