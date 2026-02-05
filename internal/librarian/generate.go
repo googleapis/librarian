@@ -99,7 +99,7 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 
 	var rustSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
-		sources, err := source.FetchRustSources(ctx, cfg.Sources)
+		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
 		}

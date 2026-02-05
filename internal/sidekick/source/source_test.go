@@ -47,7 +47,7 @@ func TestFetchRustSources(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := FetchRustSources(t.Context(), test.cfgSources)
+			got, err := FetchRustDartSources(t.Context(), test.cfgSources)
 			if test.wantErr != nil {
 				if err == nil || !errors.Is(err, test.wantErr) {
 					t.Errorf("FetchRustSources() got error = %v, wantErr %v", err, test.wantErr)

@@ -42,9 +42,9 @@ type Sources struct {
 	Showcase    string
 }
 
-// FetchRustSources fetches all source repositories needed for Rust generation
-// in parallel. It returns a rust.Sources struct with all directories populated.
-func FetchRustSources(ctx context.Context, cfgSources *config.Sources) (*Sources, error) {
+// FetchRustDartSources fetches all source repositories needed for Rust and Dart generation in parallel.
+// It returns a Sources struct with all directories populated.
+func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*Sources, error) {
 	sources := &Sources{}
 	// fetchSource fetches a repository source.
 	fetchSource := func(ctx context.Context, source *config.Source, repo string) (string, error) {
