@@ -19,6 +19,7 @@ package dart
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -54,4 +55,12 @@ func Format(ctx context.Context, library *config.Library) error {
 // DefaultOutput returns the default output directory for a Dart library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// DefaultLibraryName derives a library name from an api path.
+// For example: google/cloud/secretmanager/v1 -> google_cloud_secretmanager_v1.
+func DefaultLibraryName(api string) string {
+	api = strings.TrimPrefix(api, "google/cloud/")
+	api = strings.TrimPrefix(api, "google/")
+	return "google_cloud_" + strings.ReplaceAll(api, "/", "_")
 }

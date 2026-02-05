@@ -152,19 +152,19 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// DefaultLibraryName derives a library name from a api path.
+// DefaultLibraryName derives a library name from an api path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
 func DefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
 
-// DeriveAPIPath derives a api path from a library name.
+// DeriveAPIPath derives an api path from a library name.
 // For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
 func DeriveAPIPath(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
 
-// DefaultOutput derives an output path from a api path and default output.
+// DefaultOutput derives an output path from an api path and default output.
 // For example: google/cloud/secretmanager/v1 with default src/generated/
 // returns src/generated/cloud/secretmanager/v1.
 func DefaultOutput(api, defaultOutput string) string {
