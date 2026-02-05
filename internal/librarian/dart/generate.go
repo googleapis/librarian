@@ -19,6 +19,7 @@ package dart
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -49,6 +50,12 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	return nil
+}
+
+// DeriveAPIPath derives an api path from a library name.
+// For example: google_cloud_secretmanager_v1 -> google/cloud/secretmanager/v1.
+func DeriveAPIPath(name string) string {
+	return strings.ReplaceAll(name, "_", "/")
 }
 
 // DefaultOutput returns the default output directory for a Dart library.
