@@ -171,8 +171,6 @@ func defaultOutput(language, name, api, defaultOut string) string {
 		return dart.DefaultOutput(name, defaultOut)
 	case languageRust:
 		return rust.DefaultOutput(api, defaultOut)
-	case languageGo:
-		return golang.DefaultOutputByName(name, defaultOut)
 	case languagePython:
 		return python.DefaultOutputByName(name, defaultOut)
 	default:

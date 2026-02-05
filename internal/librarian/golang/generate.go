@@ -71,15 +71,10 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	return nil
 }
 
-// DefaultOutputByName derives an output path from a library name and a default
-// output directory.
-func DefaultOutputByName(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, name)
-}
-
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
-	return command.Run(ctx, "gofmt", "-w", library.Output)
+	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	return command.Run(ctx, "gofmt", "-w", filepath.Join(library.Output, library.Name), snippetDir)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
