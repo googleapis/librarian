@@ -17,15 +17,20 @@ package golang
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
+
+//go:embed template/_README.md.txt
+var readmeTmpl string
 
 // Generate generates a Go client library.
 func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
@@ -67,6 +72,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 				return err
 			}
 		}
+	}
+
+	moduleRoot := filepath.Join(outdir, library.Name)
+	if err := generateREADME(library, googleapisDir, moduleRoot); err != nil {
+		return err
 	}
 	return nil
 }
@@ -263,4 +273,32 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}
 	return files, nil
+}
+
+func generateREADME(library *config.Library, googleapisDir, moduleRoot string) error {
+	if len(library.APIs) == 0 {
+		return fmt.Errorf("no APIs configured")
+	}
+	sc, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		return err
+	}
+	title := library.Name
+	if sc != nil && sc.Title != "" {
+		title = sc.Title
+	}
+
+	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	if err != nil {
+		return err
+	}
+	t := template.Must(template.New("readme").Parse(readmeTmpl))
+	err = t.Execute(f, map[string]string{
+		"Name":       title,
+		"ModulePath": modulePath(library),
+	})
+	if cerr := f.Close(); cerr != nil && err == nil {
+		err = cerr
+	}
+	return err
 }
