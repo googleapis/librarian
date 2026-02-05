@@ -135,7 +135,7 @@ const (
 	// synthetic messages that do not exist in the input specification.
 	//
 	// We need a place to put these in the data model without conflicts with the
-	// input data model. This symbol is unused in all the IDLs we support
+	// input data model. This symbol is unused in all the IDLs we support.
 	ReservedPackageName = "$"
 )
 
