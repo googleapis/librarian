@@ -52,6 +52,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
+// DeriveAPIPath derives an api path from a library name.
+// For example: google_cloud_secretmanager_v1 -> google/cloud/secretmanager/v1.
+func DeriveAPIPath(name string) string {
+	return strings.ReplaceAll(name, "_", "/")
+}
+
 // DefaultLibraryName derives a library name from an api path.
 // For example: google/cloud/secretmanager/v1 -> google_cloud_secretmanager_v1.
 func DefaultLibraryName(api string) string {

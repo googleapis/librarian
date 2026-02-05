@@ -126,7 +126,6 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
-		lib := lib
 		g.Go(func() error {
 			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
 		})
@@ -172,6 +171,8 @@ func defaultOutput(language, name, api, defaultOut string) string {
 
 func deriveAPIPath(language, name string) string {
 	switch language {
+	case languageDart:
+		return dart.DeriveAPIPath(name)
 	case languageRust:
 		return rust.DeriveAPIPath(name)
 	default:
