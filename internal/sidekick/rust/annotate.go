@@ -1279,6 +1279,41 @@ func (c *codec) annotatePathInfo(m *api.Method) {
 	}
 }
 
+// sortOneOfFieldForExamples is used to select the "best" field for an example.
+//
+// Fields are lexicographically sorted by the tuple:
+//
+//	(f.Deprecated, f.Map, f.Repeated, f.Message != nil)
+//
+// Where `false` values are preferred over `true` values. That is, we prefer
+// fields that are **not** deprecated, but if both fields have the same
+// `Deprecated` value then we prefer the field that is **not** a map, and so on.
+//
+// The return value is either -1, 0, or 1 to use in the standard library sorting
+// functions.
+func sortOneOfFieldForExamples(f1, f2 *api.Field) int {
+	compare := func(a, b bool) int {
+		switch {
+		case a == b:
+			return 0
+		case a:
+			return -1
+		default:
+			return 1
+		}
+	}
+	if v := compare(f1.Deprecated, f2.Deprecated); v != 0 {
+		return v
+	}
+	if v := compare(f1.Map, f2.Map); v != 0 {
+		return v
+	}
+	if v := compare(f1.Repeated, f2.Repeated); v != 0 {
+		return v
+	}
+	return compare(f1.MessageType != nil, f2.MessageType != nil)
+}
+
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
 	scope, err := c.messageScopeName(message, "", model.PackageName)
 	if err != nil {
@@ -1292,35 +1327,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-
-	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
-		if f1.Deprecated == f2.Deprecated {
-			if f1.Map == f2.Map {
-				if f1.Repeated == f2.Repeated {
-					if f1.MessageType != nil && f2.MessageType == nil {
-						return -1
-					} else if f1.MessageType == nil && f2.MessageType != nil {
-						return 1
-					} else {
-						return 0
-					}
-				} else if f1.Repeated {
-					return -1
-				} else {
-					return 1
-				}
-			} else if f1.Map {
-				return -1
-			} else {
-				return 1
-			}
-		} else if f1.Deprecated {
-			return -1
-		} else {
-			return 1
-		}
-	})
-
+	bestField := slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
 	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
 	if err != nil {
 		return nil, err
