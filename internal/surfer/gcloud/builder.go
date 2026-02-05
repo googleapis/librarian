@@ -84,7 +84,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	}
 
 	if method.OperationInfo != nil {
-		cmd.Async = newAsync(method, model, overrides)
+		cmd.Async = newAsync(method, model, overrides, service)
 	}
 
 	return cmd, nil
@@ -411,22 +411,16 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 // newRequest creates the `Request` part of the command definition.
 func newRequest(method *api.Method, overrides *Config, model *api.API, service *api.Service) *Request {
-	// Extract the short service name (e.g. "parallelstore" from "parallelstore.googleapis.com")
-	hostParts := strings.Split(service.DefaultHost, ".")
-	shortServiceName := hostParts[0]
-
-	collectionPath := fmt.Sprintf("%s.projects.locations.%s", shortServiceName, utils.GetPluralResourceNameForMethod(method, model))
-	// TODO(https://github.com/googleapis/librarian/issues/3290): The "projects.locations" part is still assumed.
-	// We should infer the full hierarchy from the resource pattern.
-
 	req := &Request{
 		APIVersion: apiVersion(overrides),
-		Collection: []string{collectionPath},
+		Collection: newCollectionPath(method, service, false),
 	}
 
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if utils.IsCustomMethod(method) {
+	if len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		req.Method = *method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if utils.IsCustomMethod(method) {
 		commandName, _ := utils.GetCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		req.Method = strcase.ToLowerCamel(commandName)
@@ -436,20 +430,27 @@ func newRequest(method *api.Method, overrides *Config, model *api.API, service *
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(method *api.Method, model *api.API, _ *Config) *Async {
+func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Service) *Async {
 	async := &Async{
-		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
-		Collection: []string{"parallelstore.projects.locations.operations"},
+		Collection: newCollectionPath(method, service, true),
 	}
 
 	// Determine if the operation result should be extracted as the resource.
 	// This is true if the operation response type matches the method's resource type.
+	// We reuse the 'resource' variable looked up earlier.
 	resource := utils.GetResourceForMethod(method, model)
 	if resource != nil {
-		// Heuristic: Check if response type ID (e.g. "Instance") matches the resource singular name.
-		responseType := method.OperationInfo.ResponseTypeID
+		// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
+		// matches the resource singular name or type.
+		responseTypeID := method.OperationInfo.ResponseTypeID
+		// Extract short name from FQN (last element after dot)
+		responseTypeName := responseTypeID
+		if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
+			responseTypeName = responseTypeID[idx+1:]
+		}
+
 		singular := utils.GetSingularResourceNameForMethod(method, model)
-		if strings.EqualFold(responseType, singular) || strings.HasSuffix(resource.Type, "/"+responseType) {
+		if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 			async.ExtractResourceResult = true
 		} else {
 			async.ExtractResourceResult = false
@@ -457,6 +458,93 @@ func newAsync(method *api.Method, model *api.API, _ *Config) *Async {
 	}
 
 	return async
+}
+
+// newCollectionPath constructs the gcloud collection path(s) for a request or async operation.
+// It follows AIP-127 and AIP-132 by extracting the collection structure directly from
+// the method's HTTP annotation (PathInfo).
+func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) []string {
+	var collections []string
+	hostParts := strings.Split(service.DefaultHost, ".")
+	shortServiceName := hostParts[0]
+
+	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
+	for _, binding := range method.PathInfo.Bindings {
+		if binding.PathTemplate == nil {
+			continue
+		}
+
+		// Extract the base collection path.
+		// We first check if there is a complex variable segment (e.g. {name=projects/*/locations/*/instances/*})
+		// which contains the full path structure.
+		basePath := extractCollectionPathFromComplexVariable(binding.PathTemplate.Segments)
+		if basePath == "" {
+			// Fallback to standard top-level segment extraction (e.g. /v1/projects/{project}/...)
+			basePath = utils.GetCollectionPathFromSegments(binding.PathTemplate.Segments)
+		}
+
+		// Heuristic: If the path starts with a version (v1, v1beta1), strip it.
+		// gcloud collections typically do not include the version.
+		// utils.GetCollectionPathFromSegments might capture "v1" if followed by {var}.
+		if parts := strings.Split(basePath, "."); len(parts) > 0 && strings.HasPrefix(parts[0], "v") && len(parts[0]) > 1 {
+			if len(parts) > 1 {
+				basePath = strings.Join(parts[1:], ".")
+			} else {
+				basePath = ""
+			}
+		}
+
+		if basePath == "" {
+			continue
+		}
+
+		if isAsync {
+			// For Async operations (AIP-151), the operations resource usually resides in the
+			// parent collection of the primary resource. We replace the last segment (the resource collection)
+			// with "operations".
+			// Example: projects.locations.instances -> projects.locations.operations
+			if idx := strings.LastIndex(basePath, "."); idx != -1 {
+				basePath = basePath[:idx] + ".operations"
+			} else {
+				basePath = "operations"
+			}
+		}
+
+		fullPath := fmt.Sprintf("%s.%s", shortServiceName, basePath)
+		collections = append(collections, fullPath)
+	}
+
+	// Remove duplicates if any.
+	slices.Sort(collections)
+	return slices.Compact(collections)
+}
+
+// extractCollectionPathFromComplexVariable looks for a path variable that contains
+// sub-segments (e.g. {name=projects/*/locations/*}) and extracts the collection path from it.
+func extractCollectionPathFromComplexVariable(segments []api.PathSegment) string {
+	for _, seg := range segments {
+		if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
+			return extractCollectionFromStrings(seg.Variable.Segments)
+		}
+	}
+	return ""
+}
+
+// extractCollectionFromStrings constructs a collection path from a list of string segments
+// (literals and wildcards), following AIP-122 conventions (literal followed by variable/wildcard).
+func extractCollectionFromStrings(parts []string) string {
+	var collectionParts []string
+	for i := 0; i < len(parts)-1; i++ {
+		// A collection identifier is a literal segment followed by a wildcard segment (* or **).
+		// We assume standard patterns like "projects", "*", "locations", "*".
+		isLiteral := parts[i] != "*" && parts[i] != "**"
+		isWildcard := parts[i+1] == "*" || parts[i+1] == "**"
+
+		if isLiteral && isWildcard {
+			collectionParts = append(collectionParts, parts[i])
+		}
+	}
+	return strings.Join(collectionParts, ".")
 }
 
 // newOutputConfig generates the output configuration for List commands.
