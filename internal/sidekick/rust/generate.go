@@ -32,7 +32,10 @@ func Generate(ctx context.Context, model *api.API, outdir, specFormat string, co
 	if err != nil {
 		return err
 	}
-	annotations := annotateModel(model, c)
+	annotations, err := annotateModel(model, c)
+	if err != nil {
+		return err
+	}
 	provider := templatesProvider()
 	generatedFiles := c.generatedFiles(annotations.HasServices())
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)

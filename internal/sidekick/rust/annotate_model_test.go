@@ -55,7 +55,10 @@ func TestDefaultFeatures(t *testing.T) {
 	} {
 		model := newTestAnnotateModelAPI()
 		codec := newTestCodec(t, "protobuf", "", test.Options)
-		got := annotateModel(model, codec)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DefaultFeatures); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -87,7 +90,10 @@ func TestRustdocWarnings(t *testing.T) {
 	} {
 		model := newTestAnnotateModelAPI()
 		codec := newTestCodec(t, "protobuf", "", test.Options)
-		got := annotateModel(model, codec)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledRustdocWarnings); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -119,7 +125,10 @@ func TestClippyWarnings(t *testing.T) {
 	} {
 		model := newTestAnnotateModelAPI()
 		codec := newTestCodec(t, "protobuf", "", test.Options)
-		got := annotateModel(model, codec)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledClippyWarnings); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -155,7 +164,10 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	} {
 		model := newTestAnnotateModelAPI()
 		codec := newTestCodec(t, "protobuf", "", test.Options)
-		got := annotateModel(model, codec)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got.InternalBuilders != test.Want {
 			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
 		}

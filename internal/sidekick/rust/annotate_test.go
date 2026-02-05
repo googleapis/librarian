@@ -51,7 +51,10 @@ func TestPackageNames(t *testing.T) {
 	codec.packageMapping = map[string]*packagez{
 		"google.protobuf": {name: "wkt"},
 	}
-	got := annotateModel(model, codec)
+	got, err := annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := &modelAnnotations{
 		PackageName:               "google-cloud-workflows-v1",
 		PackageVersion:            "1.2.3",
@@ -377,7 +380,10 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 				t.Fatalf("cannot find service %s", id)
 			}
 			codec := newTestCodec(t, "protobuf", "", map[string]string{})
-			_ = annotateModel(model, codec)
+			_, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
 			got := service.Codec.(*serviceAnnotations)
 			if got == nil {
 				t.Fatalf("no annotations for service %s", service.ID)
@@ -1817,7 +1823,10 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, "protobuf", "", test.options)
-			got := annotateModel(model, codec)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got.DetailedTracingAttributes != test.want {
 				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, test.want)
 			}
@@ -1966,11 +1975,20 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 		IsOneOf:    true,
 		Deprecated: true,
 	}
-	map_field := &api.Field{
+	mapMessage := &api.Message{
+		Name:  "$map<string, string>",
+		ID:    "$map<string, string>",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", ID: "$map<string, string>.key", Typez: api.STRING_TYPE},
+			{Name: "value", ID: "$map<string, string>.value", Typez: api.STRING_TYPE},
+		},
+	}
+	mapField := &api.Field{
 		Name:    "map_field",
 		ID:      ".test.Message.map_field",
 		Typez:   api.MESSAGE_TYPE,
-		TypezID: ".test.$Map",
+		TypezID: "$map<string, string>",
 		IsOneOf: true,
 		Map:     true,
 	}
@@ -1987,14 +2005,14 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 		Typez:   api.INT32_TYPE,
 		IsOneOf: true,
 	}
-	message_field := &api.Field{
+	messageField := &api.Field{
 		Name:    "message_field",
 		ID:      ".test.Message.message_field",
 		Typez:   api.MESSAGE_TYPE,
 		TypezID: ".test.OneMessage",
 		IsOneOf: true,
 	}
-	another_message_field := &api.Field{
+	anotherMessageField := &api.Field{
 		Name:    "another_message_field",
 		ID:      ".test.Message.another_message_field",
 		Typez:   api.MESSAGE_TYPE,
@@ -2009,28 +2027,28 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 	}{
 		{
 			name:   "all types",
-			fields: []*api.Field{deprecated, map_field, repeated, scalar, message_field},
+			fields: []*api.Field{deprecated, mapField, repeated, scalar, messageField},
 			want:   scalar,
 		},
 		{
 			name:   "no primitives",
-			fields: []*api.Field{deprecated, map_field, repeated, message_field},
-			want:   message_field,
+			fields: []*api.Field{deprecated, mapField, repeated, messageField},
+			want:   messageField,
 		},
 		{
 			name:   "only scalars and messages",
-			fields: []*api.Field{message_field, scalar, another_message_field},
+			fields: []*api.Field{messageField, scalar, anotherMessageField},
 			want:   scalar,
 		},
 		{
 			name:   "no scalars",
-			fields: []*api.Field{deprecated, map_field, repeated},
+			fields: []*api.Field{deprecated, mapField, repeated},
 			want:   repeated,
 		},
 		{
 			name:   "only map and deprecated",
-			fields: []*api.Field{deprecated, map_field},
-			want:   map_field,
+			fields: []*api.Field{deprecated, mapField},
+			want:   mapField,
 		},
 		{
 			name:   "only deprecated",
@@ -2063,10 +2081,12 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 				ID:      ".test.AnotherMessage",
 				Package: "test",
 			}
-			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage}, []*api.Enum{}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage, mapMessage}, []*api.Enum{}, []*api.Service{})
 			api.CrossReference(model)
-			codec := createRustCodec()
-			annotateModel(model, codec)
+			codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+			if _, err := annotateModel(model, codec); err != nil {
+				t.Fatal(err)
+			}
 
 			got := group.Codec.(*oneOfAnnotation).ExampleField
 			if diff := cmp.Diff(tc.want, got); diff != "" {

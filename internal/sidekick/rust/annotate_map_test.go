@@ -197,7 +197,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 		JSONName: "field",
 		ID:       ".test.Message.field",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  "$map<unused, unused>",
+		TypezID:  "$map<string, string>",
 	}
 	message := &api.Message{
 		Name:          "Message",
@@ -210,7 +210,10 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
-	annotateModel(model, codec)
+	_, err := annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got := field.Codec.(*fieldAnnotations).SerdeAs
 	if got != "" {

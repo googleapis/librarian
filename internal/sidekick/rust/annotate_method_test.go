@@ -31,7 +31,10 @@ func TestAnnotateMethodNames(t *testing.T) {
 	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
-	_ = annotateModel(model, codec)
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	for _, test := range []struct {
 		MethodID string
@@ -101,7 +104,10 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = annotateModel(model, codec)
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	methodID := ".test.v1.ResourceService.Delete"
 	gotMethod, ok := model.State.MethodByID[methodID]
@@ -139,7 +145,10 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	gotMethod.APIVersion = "v1_20260205"
 
 	codec := newTestCodec(t, "disco", "", map[string]string{})
-	_ = annotateModel(model, codec)
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got := gotMethod.Codec.(*methodAnnotation)
 	want := []systemParameter{
@@ -161,7 +170,10 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"internal-builders": "true",
 	})
-	_ = annotateModel(model, codec)
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	methodID := ".test.v1.ResourceService.Delete"
 	gotMethod, ok := model.State.MethodByID[methodID]
