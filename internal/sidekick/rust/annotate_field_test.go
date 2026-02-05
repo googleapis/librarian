@@ -30,7 +30,7 @@ func newTestCodec(t *testing.T, specificationFormat, packageName string, options
 		t.Fatal(err)
 	}
 	codec.packageMapping = map[string]*packagez{
-		"google.protobuf": &packagez{name: "wkt"},
+		"google.protobuf": {name: "wkt"},
 	}
 	if packageName != "" {
 		codec.packageMapping[packageName] = &packagez{name: "external-rust-pkg"}
