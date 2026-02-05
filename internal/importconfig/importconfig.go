@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package librarianops provides orchestration for running librarian across
-// multiple repositories.
-package librarianops
+// Package importconfig provides orchestration for importing configurations.
+package importconfig
 
 import (
 	"context"
@@ -22,24 +21,14 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-const (
-	repoRust = "google-cloud-rust"
-	repoFake = "fake-repo" // used for testing
-)
-
-var supportedRepositories = map[string]bool{
-	repoFake: true, // used for testing
-	repoRust: true,
-}
-
-// Run executes the librarianops command with the given arguments.
+// Run executes the importconfig command with the given arguments.
 func Run(ctx context.Context, args ...string) error {
 	cmd := &cli.Command{
-		Name:      "librarianops",
-		Usage:     "orchestrate librarian operations across multiple repositories",
-		UsageText: "librarianops [command]",
+		Name:      "import-configs",
+		Usage:     "orchestrate import-config operations",
+		UsageText: "import-configs [command]",
 		Commands: []*cli.Command{
-			generateCommand(),
+			updateTransportsCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
