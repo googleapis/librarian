@@ -254,7 +254,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			wantErr: errFetchSource,
 		},
 		{
-			// This is just one example of how python migration can file,
+			// This is just one example of how python migration can fail,
 			// used to check that when it does, the error is propagated.
 			name: "python migration fails - source root doesn't exist",
 			lang: "python",
