@@ -113,6 +113,32 @@ func TestFormat(t *testing.T) {
 	}
 }
 
+func TestDeriveAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  string
+		want string
+	}{
+		{
+			name: "simple",
+			lib:  "google_cloud_secretmanager_v1",
+			want: "google/cloud/secretmanager/v1",
+		},
+		{
+			name: "no underscore",
+			lib:  "name",
+			want: "name",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DeriveAPIPath(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestDefaultOutput(t *testing.T) {
 	for _, test := range []struct {
 		name          string
