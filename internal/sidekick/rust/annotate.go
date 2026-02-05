@@ -1054,8 +1054,12 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	c.annotatePathInfo(m)
 	for _, routing := range m.Routing {
 		for _, variant := range routing.Variants {
+			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
+			if err != nil {
+				return nil, err
+			}
 			routingVariantAnnotations := &routingVariantAnnotations{
-				FieldAccessors:   c.annotateRoutingAccessors(variant, m),
+				FieldAccessors:   fieldAccessors,
 				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
 				MatchingSegments: annotateSegments(variant.Matching.Segments),
 				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
@@ -1140,11 +1144,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	return annotation, nil
 }
 
-func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) []string {
+func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
 	return makeAccessors(variant.FieldPath, m)
 }
 
-func makeAccessors(fields []string, m *api.Method) []string {
+func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
 		for _, f := range message.Fields {
 			if f.Name == name {
@@ -1159,8 +1163,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			slog.Error("invalid routing/path field for request message", "field", rustFieldName, "message ID", message.ID)
-			continue
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
 		if field.Optional {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
@@ -1176,7 +1179,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 			}
 		}
 	}
-	return accessors
+	return accessors, nil
 }
 
 func annotateSegments(segments []string) []string {
@@ -1218,45 +1221,57 @@ func annotateSegments(segments []string) []string {
 	return ann
 }
 
-func makeBindingSubstitution(v *api.PathVariable, m *api.Method) bindingSubstitution {
+func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
+	accessors, err := makeAccessors(v.FieldPath, m)
+	if err != nil {
+		return nil, err
+	}
 	fieldAccessor := "Some(&req)"
-	for _, a := range makeAccessors(v.FieldPath, m) {
+	for _, a := range accessors {
 		fieldAccessor += a
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnake(n))
 	}
-	return bindingSubstitution{
+	binding := &bindingSubstitution{
 		FieldAccessor: fieldAccessor,
 		FieldName:     strings.Join(rustNames, "."),
 		Template:      v.Segments,
 	}
+	return binding, nil
 }
 
-func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotation {
+func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
 	for _, s := range b.PathTemplate.Segments {
 		if s.Variable != nil {
-			sub := makeBindingSubstitution(s.Variable, m)
-			subs = append(subs, &sub)
+			sub, err := makeBindingSubstitution(s.Variable, m)
+			if err != nil {
+				return nil, err
+			}
+			subs = append(subs, sub)
 		}
 	}
-	return &pathBindingAnnotation{
+	binding := &pathBindingAnnotation{
 		PathFmt:                   httpPathFmt(b.PathTemplate),
 		QueryParams:               language.QueryParams(m, b),
 		Substitutions:             subs,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
+	return binding, nil
 }
 
 // annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
-func (c *codec) annotatePathInfo(m *api.Method) {
+func (c *codec) annotatePathInfo(m *api.Method) error {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
-		ann := c.annotatePathBinding(b, m)
+		ann, err := c.annotatePathBinding(b, m)
+		if err != nil {
+			return err
+		}
 
 		// We need to keep track of unique path parameters to support
 		// implicit routing over gRPC. This is go/aip/4222.
@@ -1277,6 +1292,7 @@ func (c *codec) annotatePathInfo(m *api.Method) {
 		UniqueParameters: uniqueParameters,
 		IsIdempotent:     isIdempotent(m.PathInfo),
 	}
+	return nil
 }
 
 // sortOneOfFieldForExamples is used to select the "best" field for an example.

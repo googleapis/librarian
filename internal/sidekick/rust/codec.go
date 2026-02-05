@@ -394,7 +394,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 	}
 }
 
-func scalarFieldType(f *api.Field) string {
+func scalarFieldType(f *api.Field) (string, error) {
 	var out string
 	switch f.Typez {
 	case api.DOUBLE_TYPE:
@@ -429,10 +429,9 @@ func scalarFieldType(f *api.Field) string {
 		out = "i64"
 
 	default:
-		slog.Error("unexpected field type", "field", *f)
-		return ""
+		return "", fmt.Errorf("unexpected type for field %q", f.ID)
 	}
-	return out
+	return out, nil
 }
 
 func (c *codec) oneOfFieldType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) (string, error) {
@@ -503,7 +502,7 @@ func (c *codec) mapType(f *api.Field, state *api.APIState, sourceSpecificationPa
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
 	default:
-		return scalarFieldType(f), nil
+		return scalarFieldType(f)
 	}
 }
 
@@ -537,7 +536,7 @@ func (c *codec) baseFieldType(f *api.Field, state *api.APIState, sourceSpecifica
 	case api.GROUP_TYPE:
 		return "", nil
 	default:
-		return scalarFieldType(f), nil
+		return scalarFieldType(f)
 	}
 }
 

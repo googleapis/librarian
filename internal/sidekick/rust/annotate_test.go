@@ -1582,10 +1582,8 @@ func TestPathBindingAnnotationsErrors(t *testing.T) {
 		InputTypeID:  ".test.Request",
 		OutputTypeID: ".test.Response",
 	}
-	got := makeAccessors([]string{"not-a-field-name"}, method)
-	var want []string
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	if got, err := makeAccessors([]string{"not-a-field-name"}, method); err == nil {
+		t.Errorf("expected an error in makeAccessors() for an invalid field name, got=%v", got)
 	}
 }
 
