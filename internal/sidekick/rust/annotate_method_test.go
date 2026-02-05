@@ -197,8 +197,8 @@ func annotateMethodModel(t *testing.T) *api.API {
 		ID:      ".test.v1.Request",
 		Fields: []*api.Field{
 			{Name: "project", ID: ".test.v1.Request.project", Typez: api.STRING_TYPE},
-			{Name: "zone", ID: ".test.v1.Request.project", Typez: api.STRING_TYPE},
-			{Name: "type", ID: ".test.v1.Request.project", Typez: api.STRING_TYPE},
+			{Name: "zone", ID: ".test.v1.Request.zone", Typez: api.STRING_TYPE},
+			{Name: "type", ID: ".test.v1.Request.type", Typez: api.STRING_TYPE},
 		},
 	}
 	response := &api.Message{
