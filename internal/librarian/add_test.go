@@ -284,6 +284,7 @@ func TestDeriveLibraryName(t *testing.T) {
 		apiPath  string
 		want     string
 	}{
+		{"dart", "google/cloud/secretmanager/v1", "google_cloud_secretmanager_v1"},
 		{"python", "google/cloud/secretmanager/v1", "google-cloud-secretmanager"},
 		{"python", "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
 		{"python", "google/cloud/storage/v2alpha", "google-cloud-storage"},

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/urfave/cli/v3"
@@ -70,6 +71,8 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 // The derivation is language-specific.
 func deriveLibraryName(language, api string) string {
 	switch language {
+	case languageDart:
+		return dart.DefaultLibraryName(api)
 	case languageFake:
 		return fakeDefaultLibraryName(api)
 	case languagePython:
