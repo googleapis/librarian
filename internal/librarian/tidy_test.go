@@ -417,8 +417,8 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	if len(got.Libraries) != 1 {
 		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
 	}
-	if got.Libraries[0].APIs != nil {
-		t.Fatalf("expected 0 API, got %d", len(got.Libraries[0].APIs))
+	if len(got.Libraries[0].APIs) != 0 {
+		t.Fatalf("expected 0 APIs, got %d", len(got.Libraries[0].APIs))
 	}
 }
 
