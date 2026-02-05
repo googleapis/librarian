@@ -100,9 +100,7 @@ func run(ctx context.Context, args []string) error {
 	}
 	base := filepath.Base(abs)
 	switch base {
-	case "google-cloud-dart":
-		return runSidekickMigration(ctx, abs)
-	case "google-cloud-rust":
+	case "google-cloud-dart", "google-cloud-rust":
 		return fmt.Errorf(".sidekick.toml files have been deleted in %q", base)
 	case "google-cloud-python", "google-cloud-go":
 		parts := strings.SplitN(base, "-", 3)
