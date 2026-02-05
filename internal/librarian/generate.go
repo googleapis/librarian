@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
@@ -34,10 +35,7 @@ import (
 )
 
 const (
-	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
 	googleapisRepo = "github.com/googleapis/googleapis"
-	protobufRepo   = "github.com/protocolbuffers/protobuf"
-	showcaseRepo   = "github.com/googleapis/gapic-showcase"
 )
 
 var (
@@ -85,13 +83,21 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
 	// Fetch sources.
-	googleapisDir, err := fetchSource(ctx, cfg.Sources.Googleapis, googleapisRepo)
+	var googleapisDir string
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return errors.New("must specify --googleapis flag")
+	}
+	if cfg.Sources.Googleapis.Dir != "" {
+		googleapisDir = cfg.Sources.Googleapis.Dir
+	}
+
+	googleapisDir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
 	}
 	var rustSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
-		rustSources, err = fetchRustSources(ctx, cfg.Sources)
+		rustSources, err = source.FetchRustSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
 		}
@@ -235,53 +241,6 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 		return fmt.Errorf("language %q does not support generation", language)
 	}
 	return nil
-}
-
-// fetchRustSources fetches all source repositories needed for Rust generation
-// in parallel. It returns a rust.Sources struct with all directories populated.
-func fetchRustSources(ctx context.Context, cfgSources *config.Sources) (*source.Sources, error) {
-	sources := &source.Sources{}
-
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
-		if err != nil {
-			return err
-		}
-		sources.Discovery = dir
-		return nil
-	})
-	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Conformance, protobufRepo)
-		if err != nil {
-			return err
-		}
-		sources.Conformance = dir
-		return nil
-	})
-	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
-		if err != nil {
-			return err
-		}
-		sources.Showcase = dir
-		return nil
-	})
-
-	if cfgSources.ProtobufSrc != nil {
-		g.Go(func() error {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
-			if err != nil {
-				return err
-			}
-			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-	return sources, nil
 }
 
 func formatLibrary(ctx context.Context, language string, library *config.Library) error {
