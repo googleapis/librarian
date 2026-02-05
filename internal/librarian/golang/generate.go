@@ -71,6 +71,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	return nil
 }
 
+// Format formats a generated Go library.
+func Format(ctx context.Context) error {
+	return command.Run(ctx, "gofmt", "-w", ".")
+}
+
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	goAPI := findGoAPI(library, api.Path)
 	var nestedProtos []string
