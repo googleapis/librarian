@@ -114,7 +114,10 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	}
 
 	if input.lang == "python" {
-		cfg.Libraries = buildPythonLibraries(input)
+		cfg.Libraries, err = buildPythonLibraries(input)
+		if err != nil {
+			return nil, err
+		}
 		cfg.Default.Output = "packages"
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
