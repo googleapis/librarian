@@ -322,10 +322,6 @@ parallelize lightweight, millisecond-level tests.
 mutates the process as a whole e.g. by invoking `t.Chdir()`, or is dependent on
 execution order.
 
-When using `t.Parallel()` in table-driven tests, you must capture the range
-variable to avoid race conditions. This ensures each subtest gets the correct
-data from its corresponding test case.
-
 ```go
 func TestTransform(t *testing.T) {
 	for _, test := range []struct {
@@ -336,7 +332,6 @@ func TestTransform(t *testing.T) {
 		{"uppercase", "hello", "HELLO"},
 		{"empty", "", ""},
 	} {
-		test := test // capture range variable
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel() // Mark subtest for parallel execution.
 			got := Transform(test.input)
