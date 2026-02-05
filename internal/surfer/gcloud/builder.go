@@ -584,7 +584,6 @@ func findResourceMessage(outputType *api.Message) *api.Message {
 // newFormat generates a gcloud table format string from a message definition.
 func newFormat(message *api.Message) string {
 	var columns []string
-	// TODO(santiquiroga): Look at AIP-157 for guidance on which fields to exclude,
 	// especially focusing on costly status fields.
 	for _, f := range message.Fields {
 		// Include scalars and enums.
