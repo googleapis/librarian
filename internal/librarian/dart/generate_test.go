@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -109,5 +110,40 @@ func TestFormat(t *testing.T) {
 	}
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "simple case",
+			libName:       "google-cloud-secretmanager-v1",
+			defaultOutput: "packages/",
+			want:          "packages/google-cloud-secretmanager-v1",
+		},
+		{
+			name:          "empty default output",
+			libName:       "my-lib",
+			defaultOutput: "",
+			want:          "my-lib",
+		},
+		{
+			name:          "empty lib name",
+			libName:       "",
+			defaultOutput: "packages/",
+			want:          "packages",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

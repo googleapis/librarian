@@ -295,6 +295,57 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 	return googleapisDir
 }
 
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		language   string
+		libName    string
+		api        string
+		defaultOut string
+		want       string
+	}{
+		{
+			name:       "dart",
+			language:   "dart",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "packages",
+			want:       "packages/google-cloud-secretmanager-v1",
+		},
+		{
+			name:       "rust",
+			language:   "rust",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "generated",
+			want:       "generated/cloud/secretmanager/v1",
+		},
+		{
+			name:       "python",
+			language:   "python",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "packages",
+			want:       "packages/google-cloud-secretmanager-v1",
+		},
+		{
+			name:       "unknown language",
+			language:   "unknown",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "output",
+			want:       "output",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := defaultOutput(test.language, test.libName, test.api, test.defaultOut)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCleanOutput(t *testing.T) {
 	for _, test := range []struct {
 		name    string

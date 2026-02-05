@@ -59,11 +59,128 @@ func TestBuildPythonLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "keep paths",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-secret-manager",
+							SourceRoots: []string{"packages/google-cloud-secret-manager"},
+							PreserveRegex: []string{
+								"packages/google-cloud-secret-manager/CHANGELOG.md",
+								"docs/CHANGELOG.md",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-secret-manager",
+					Keep: []string{
+						"CHANGELOG.md",
+						"docs/CHANGELOG.md",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildPythonLibraries(test.input)
+			got, err := buildPythonLibraries(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestBuildPythonLibraries_Error(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input *MigrationInput
+	}{
+		{
+			name: "preserve regex but no source roots",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-secret-manager",
+							PreserveRegex: []string{
+								"packages/google-cloud-secret-manager/CHANGELOG.md",
+								"docs/CHANGELOG.md",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
+			name: "invalid preserve regex",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-secret-manager",
+							SourceRoots: []string{"packages/google-cloud-secret-manager"},
+							PreserveRegex: []string{
+								"*",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
+			name: "source root doesn't exist",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-secret-manager",
+							SourceRoots: []string{"packages/missing"},
+							PreserveRegex: []string{
+								"*",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
+			name: "source root isn't in root",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-secret-manager",
+							SourceRoots: []string{"../get-git-commit"},
+							PreserveRegex: []string{
+								"*",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := buildPythonLibraries(test.input)
+			if err == nil {
+				t.Errorf("expected error; got none")
 			}
 		})
 	}

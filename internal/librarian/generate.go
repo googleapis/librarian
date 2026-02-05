@@ -167,6 +167,8 @@ func postGenerate(ctx context.Context, language string) error {
 
 func defaultOutput(language, name, api, defaultOut string) string {
 	switch language {
+	case languageDart:
+		return dart.DefaultOutput(name, defaultOut)
 	case languageRust:
 		return rust.DefaultOutput(api, defaultOut)
 	case languagePython:

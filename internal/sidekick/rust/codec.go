@@ -18,7 +18,9 @@ import (
 	"bytes"
 	"fmt"
 	"log/slog"
+	"maps"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -592,12 +594,14 @@ func (c *codec) methodInOutTypeName(id string, state *api.APIState, sourceSpecif
 // modelModule maps a package name in the model format (e.g. "google.cloud.longrunning") to the
 // module name containing the model (e.g. "google_cloud_longrunning::model").
 func (c *codec) modelModule(packageName, sourceSpecificationPackageName string) string {
-	if packageName == sourceSpecificationPackageName {
+	if packageName == sourceSpecificationPackageName || packageName == api.ReservedPackageName {
 		return c.modulePath
 	}
 	mapped, ok := c.packageMapping[packageName]
 	if !ok {
-		return packageNameToRootModule(packageName)
+		available := slices.Collect(maps.Keys(c.packageMapping))
+		slices.Sort(available)
+		panic(fmt.Errorf("missing package %q while generating %q, available packages:\n%v", packageName, sourceSpecificationPackageName, available))
 	}
 	// TODO(#158) - maybe google.protobuf should not be this special?
 	if packageName == "google.protobuf" {

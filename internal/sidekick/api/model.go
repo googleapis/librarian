@@ -130,6 +130,15 @@ const (
 	FIELD_BEHAVIOR_IDENTIFIER
 )
 
+const (
+	// ReservedPackageName is a package name reserved for maps and other
+	// synthetic messages that do not exist in the input specification.
+	//
+	// We need a place to put these in the data model without conflicts with the
+	// input data model. This symbol is unused in all the IDLs we support.
+	ReservedPackageName = "$"
+)
+
 // API represents and API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).

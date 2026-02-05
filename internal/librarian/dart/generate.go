@@ -18,6 +18,7 @@ package dart
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -48,4 +49,9 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	return nil
+}
+
+// DefaultOutput returns the default output directory for a Dart library.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
 }

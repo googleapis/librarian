@@ -92,6 +92,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		lang        string
+		repoPath    string
 		state       *legacyconfig.LibrarianState
 		cfg         *legacyconfig.LibrarianConfig
 		fetchSource func(ctx context.Context) (*config.Source, error)
@@ -252,6 +253,25 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 			wantErr: errFetchSource,
 		},
+		{
+			// This is just one example of how python migration can fail,
+			// used to check that when it does, the error is propagated.
+			name: "python migration fails - source root doesn't exist",
+			lang: "python",
+			state: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "example-library",
+						Version:       "1.0.0",
+						SourceRoots:   []string{"packages/non-existent"},
+						PreserveRegex: []string{"docs/CHANGELOG.md"},
+					},
+				},
+			},
+			cfg:         &legacyconfig.LibrarianConfig{},
+			fetchSource: defaultFetchSource,
+			wantErr:     os.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			fetchSource = test.fetchSource
@@ -259,6 +279,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				librarianState:  test.state,
 				librarianConfig: test.cfg,
 				lang:            test.lang,
+				repoPath:        test.repoPath,
 			}
 			got, err := buildConfigFromLibrarian(t.Context(), input)
 			if test.wantErr != nil {
