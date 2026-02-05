@@ -47,12 +47,16 @@ func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, 
 	if err != nil {
 		return err
 	}
-	annotateModel(storageModel, storageCodec)
+	if _, err := annotateModel(storageModel, storageCodec); err != nil {
+		return err
+	}
 	controlCodec, err := newCodec(controlSpecFormat, controlCodecOpts)
 	if err != nil {
 		return err
 	}
-	annotateModel(controlModel, controlCodec)
+	if _, err := annotateModel(controlModel, controlCodec); err != nil {
+		return err
+	}
 
 	model := &api.API{
 		Codec: &storageAnnotations{

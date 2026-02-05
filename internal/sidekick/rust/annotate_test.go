@@ -380,8 +380,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 				t.Fatalf("cannot find service %s", id)
 			}
 			codec := newTestCodec(t, "protobuf", "", map[string]string{})
-			_, err := annotateModel(model, codec)
-			if err != nil {
+			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
 			got := service.Codec.(*serviceAnnotations)
