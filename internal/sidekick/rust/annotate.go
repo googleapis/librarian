@@ -1051,7 +1051,9 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 }
 
 func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
-	c.annotatePathInfo(m)
+	if err := c.annotatePathInfo(m); err != nil {
+		return nil, err
+	}
 	for _, routing := range m.Routing {
 		for _, variant := range routing.Variants {
 			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
