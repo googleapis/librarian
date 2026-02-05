@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command librarian creates, generates, and releases client libraries.
 package main
 
 import (
@@ -26,6 +25,6 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := librarian.Run(ctx, os.Args...); err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("librarian: %v", err)
 	}
 }

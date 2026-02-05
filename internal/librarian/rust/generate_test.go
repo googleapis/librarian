@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -48,6 +49,8 @@ func TestGenerateVeneer(t *testing.T) {
 					{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
 					{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 					{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+					{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+					{Name: "google-cloud-type", Package: "google-cloud-type", Source: "google.type"},
 				},
 			},
 			Modules: []*config.RustModule{
@@ -64,7 +67,7 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &Sources{
+	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {
@@ -107,7 +110,7 @@ func TestSkipGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &Sources{
+	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), library, sources); err != nil {
@@ -247,11 +250,13 @@ func TestGenerate(t *testing.T) {
 							{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
 							{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
 							{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+							{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+							{Name: "google-cloud-type", Package: "google-cloud-type", Source: "google.type"},
 						},
 					},
 				},
 			}
-			sources := &Sources{
+			sources := &source.Sources{
 				Googleapis: googleapisDir,
 			}
 			if err := Generate(t.Context(), library, sources); err != nil {
@@ -303,7 +308,7 @@ func TestDefaultLibraryName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := defaultLibraryName(test.api)
+			got := DefaultLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

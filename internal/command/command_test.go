@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -38,6 +39,16 @@ func TestRunError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid-subcommand-bad-bad-bad") {
 		t.Errorf("error should mention the invalid subcommand, got: %v", err)
+	}
+}
+
+func TestRunInDir(t *testing.T) {
+	dir := t.TempDir()
+	if err := RunInDir(t.Context(), dir, "go", "mod", "init", "example.com/foo"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
+		t.Errorf("go.mod was not created in the specified directory: %v", err)
 	}
 }
 

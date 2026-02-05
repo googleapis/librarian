@@ -71,16 +71,14 @@ func TestPatchCommentsMessage(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Message0",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Message0",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -143,16 +141,14 @@ func TestPatchCommentsMessageNotFound(t *testing.T) {
 		"NotAThing",
 	}
 	for _, id := range missing {
-		cfg := config.Config{
-			CommentOverrides: []config.DocumentationOverride{
-				{
-					ID:      id,
-					Match:   Match,
-					Replace: Replace,
-				},
+		overrides := []config.DocumentationOverride{
+			{
+				ID:      id,
+				Match:   Match,
+				Replace: Replace,
 			},
 		}
-		if err := PatchDocumentation(model, &cfg); err == nil {
+		if err := PatchDocumentation(model, overrides); err == nil {
 			t.Errorf("expected an error searching for missing entity %q", id)
 		}
 	}
@@ -170,16 +166,14 @@ func TestPatchCommentsNoMatch(t *testing.T) {
 		".test.Service0.Method0",
 	}
 	for _, id := range missing {
-		cfg := config.Config{
-			CommentOverrides: []config.DocumentationOverride{
-				{
-					ID:      id,
-					Match:   "NOT A STRING WE WILL FIND",
-					Replace: Replace,
-				},
+		overrides := []config.DocumentationOverride{
+			{
+				ID:      id,
+				Match:   "NOT A STRING WE WILL FIND",
+				Replace: Replace,
 			},
 		}
-		if err := PatchDocumentation(model, &cfg); err == nil {
+		if err := PatchDocumentation(model, overrides); err == nil {
 			t.Errorf("expected an error replacing comments for entity %q", id)
 		}
 	}
@@ -198,16 +192,14 @@ func TestPatchCommentsField(t *testing.T) {
 		Fields:  []*Field{f0},
 	}
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Message0.field_name",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Message0.field_name",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -224,16 +216,14 @@ func TestPatchCommentsEnum(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Enum0",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Enum0",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -256,16 +246,14 @@ func TestPatchCommentsEnumValue(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Enum0.ENUM_VALUE",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Enum0.ENUM_VALUE",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -282,16 +270,14 @@ func TestPatchCommentsService(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Service0",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Service0",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 
@@ -313,16 +299,14 @@ func TestPatchCommentsMethod(t *testing.T) {
 		Methods: []*Method{m0},
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
-	cfg := config.Config{
-		CommentOverrides: []config.DocumentationOverride{
-			{
-				ID:      ".test.Service0.Method",
-				Match:   Match,
-				Replace: Replace,
-			},
+	overrides := []config.DocumentationOverride{
+		{
+			ID:      ".test.Service0.Method",
+			Match:   Match,
+			Replace: Replace,
 		},
 	}
-	if err := PatchDocumentation(model, &cfg); err != nil {
+	if err := PatchDocumentation(model, overrides); err != nil {
 		t.Fatal(err)
 	}
 

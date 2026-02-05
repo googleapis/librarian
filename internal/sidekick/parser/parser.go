@@ -50,7 +50,7 @@ func CreateModel(config *config.Config) (*api.API, error) {
 	if err := api.SkipModelElements(model, config.Source); err != nil {
 		return nil, err
 	}
-	if err := api.PatchDocumentation(model, config); err != nil {
+	if err := api.PatchDocumentation(model, config.CommentOverrides); err != nil {
 		return nil, err
 	}
 	// Verify all the services, messages and enums are in the same package.

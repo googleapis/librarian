@@ -54,7 +54,7 @@ func publishCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := loadConfig(ctx)
 			if err != nil {
 				return err
 			}

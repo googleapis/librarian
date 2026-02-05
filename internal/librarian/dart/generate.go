@@ -18,18 +18,19 @@ package dart
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	sidekickdart "github.com/googleapis/librarian/internal/sidekick/dart"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 // Generate generates a Dart client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], googleapisDir)
+func Generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
+	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
@@ -51,83 +52,23 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func toSidekickConfig(library *config.Library, ch *config.API, googleapisDir string) (*sidekickconfig.Config, error) {
-	source := map[string]string{
-		"googleapis-root": googleapisDir,
-	}
-
-	api, err := serviceconfig.Find(googleapisDir, ch.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	sidekickCfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			Language:            "dart",
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       api.ServiceConfig,
-			SpecificationSource: ch.Path,
-		},
-		Source: source,
-		Codec:  buildCodec(library),
-	}
-	return sidekickCfg, nil
+// DeriveAPIPath derives an api path from a library name.
+// For example: google_cloud_secretmanager_v1 -> google/cloud/secretmanager/v1.
+func DeriveAPIPath(name string) string {
+	return strings.ReplaceAll(name, "_", "/")
 }
 
-func buildCodec(library *config.Library) map[string]string {
-	codec := make(map[string]string)
-	if library.CopyrightYear != "" {
-		codec["copyright-year"] = library.CopyrightYear
+// DefaultLibraryName derives a library name from an api path.
+// For example: google/cloud/secretmanager/v1 -> google_cloud_secretmanager_v1.
+func DefaultLibraryName(api string) string {
+	name := strings.TrimPrefix(api, "google/cloud/")
+	if name == api {
+		name = strings.TrimPrefix(api, "google/")
 	}
-	if library.Version != "" {
-		codec["version"] = library.Version
-	}
-	if library.Dart == nil {
-		return codec
-	}
+	return "google_cloud_" + strings.ReplaceAll(name, "/", "_")
+}
 
-	dart := library.Dart
-	if dart.APIKeysEnvironmentVariables != "" {
-		codec["api-keys-environment-variables"] = dart.APIKeysEnvironmentVariables
-	}
-	if dart.Dependencies != "" {
-		codec["dependencies"] = dart.Dependencies
-	}
-	if dart.DevDependencies != "" {
-		codec["dev-dependencies"] = dart.DevDependencies
-	}
-	if dart.ExtraImports != "" {
-		codec["extra-imports"] = dart.ExtraImports
-	}
-	if dart.IssueTrackerURL != "" {
-		codec["issue-tracker-url"] = dart.IssueTrackerURL
-	}
-	if dart.LibraryPathOverride != "" {
-		codec["library-path-override"] = dart.LibraryPathOverride
-	}
-	if dart.NotForPublication != "" {
-		codec["not-for-publication"] = dart.NotForPublication
-	}
-	if dart.PartFile != "" {
-		codec["part-file"] = dart.PartFile
-	}
-	if dart.ReadmeAfterTitleText != "" {
-		codec["readme-after-title-text"] = dart.ReadmeAfterTitleText
-	}
-	if dart.ReadmeQuickstartText != "" {
-		codec["readme-quickstart-text"] = dart.ReadmeQuickstartText
-	}
-	if dart.RepositoryURL != "" {
-		codec["repository-url"] = dart.RepositoryURL
-	}
-	for key, value := range dart.Packages {
-		codec["package:"+key] = value
-	}
-	for key, value := range dart.Prefixes {
-		codec["prefix:"+key] = value
-	}
-	for key, value := range dart.Protos {
-		codec["proto:"+key] = value
-	}
-	return codec
+// DefaultOutput returns the default output directory for a Dart library.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
 }

@@ -15,14 +15,29 @@
 package librarian
 
 import (
+	"context"
 	_ "embed"
+	"errors"
+	"fmt"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
+)
+
+var (
+	errNoConfigVersion = errors.New("librarian.yaml does not specify a version")
+	errVersionMismatch = errors.New("version mismatch")
 )
 
 //go:embed version.txt
 var versionString string
+
+// versionNotAvailable is returned by Version when no VCS info is present,
+// which occurs during local development builds.
+const versionNotAvailable = "not available"
 
 // retractedVersions is a list of Go module versions that have been officially retracted
 // via the go.mod 'retract' directive. v1.0.2 added to account for local dev builds
@@ -40,20 +55,55 @@ func Version() string {
 }
 
 func version(info *debug.BuildInfo) string {
-	isRetracted := false
+	// Local development builds have no proper version tag, or have
+	// uncommitted changes indicated by the +dirty suffix.
+	if info.Main.Version == "" || info.Main.Version == "(devel)" ||
+		strings.HasSuffix(info.Main.Version, "+dirty") {
+		return versionNotAvailable
+	}
+	// Retracted versions should use a pseudo-version so users know
+	// they're running a retracted release.
 	for _, v := range retractedVersions {
 		if strings.HasPrefix(info.Main.Version, v) {
-			isRetracted = true
-			break
+			return newPseudoVersion(info)
 		}
 	}
-	// A pseudo-version should be used for retracted versions or for
-	// development builds that don't have a proper version tag.
-	isDevelBuild := info.Main.Version == "" || info.Main.Version == "(devel)"
-	if isRetracted || isDevelBuild {
-		return newPseudoVersion(info)
-	}
 	return info.Main.Version
+}
+
+// loadConfig reads librarian.yaml and verifies that the librarian binary
+// version matches the version specified in the configuration file. It returns
+// the config and an error if the versions do not match. The check is skipped
+// if the -f flag is set or if the binary version is "not available", which
+// occurs during local development without VCS info.
+func loadConfig(ctx context.Context) (*config.Config, error) {
+	cfg, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errConfigNotFound, err)
+	}
+	if !skipVersionCheck(ctx) {
+		if err := compareVersions(cfg.Version, Version()); err != nil {
+			return nil, err
+		}
+	}
+	return cfg, nil
+}
+
+func compareVersions(configVersion, binaryVersion string) error {
+	if configVersion == "" {
+		return errNoConfigVersion
+	}
+	// Skip check for local builds, which have no version info.
+	if binaryVersion == versionNotAvailable {
+		return nil
+	}
+	if configVersion != binaryVersion {
+		return fmt.Errorf(`%w: binary version %s does not match librarian.yaml version %s
+	go run github.com/googleapis/librarian/cmd/librarian@%s
+    or use -f to skip this check`,
+			errVersionMismatch, binaryVersion, configVersion, configVersion)
+	}
+	return nil
 }
 
 // newPseudoVersion constructs a pseudo-version string from the build info.
@@ -69,7 +119,7 @@ func newPseudoVersion(info *debug.BuildInfo) string {
 	}
 
 	if revision == "" && at == "" {
-		return "not available"
+		return versionNotAvailable
 	}
 	// Construct the pseudo-version string per
 	// https://go.dev/ref/mod#pseudo-versions.
@@ -93,4 +143,10 @@ func newPseudoVersion(info *debug.BuildInfo) string {
 		}
 	}
 	return buf.String()
+}
+
+// skipVersionCheck returns true if the -f flag was set to skip version checking.
+func skipVersionCheck(ctx context.Context) bool {
+	v, _ := ctx.Value(skipVersionCheckKey{}).(bool)
+	return v
 }

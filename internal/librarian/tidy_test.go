@@ -23,10 +23,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
-
-const testLibrarianVersion = "v0.1.0"
 
 func TestValidateLibraries(t *testing.T) {
 	for _, test := range []struct {
@@ -175,7 +174,7 @@ libraries:
     version: "1.0.0"
   - name: google-cloud-bigquery-v1
     version: "2.0.0"
-`, testLibrarianVersion)
+`, sample.LibrarianVersion)
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -187,8 +186,8 @@ libraries:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Version != testLibrarianVersion {
-		t.Errorf("version = %q, want %q", cfg.Version, testLibrarianVersion)
+	if cfg.Version != sample.LibrarianVersion {
+		t.Errorf("version = %q, want %q", cfg.Version, sample.LibrarianVersion)
 	}
 
 	var got []string
@@ -212,11 +211,12 @@ func TestTidy_DerivableFields(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name         string
-		config       *config.Config
-		wantPath     string
-		wantNumLibs  int
-		wantNumChnls int
+		name                    string
+		config                  *config.Config
+		wantPath                string
+		wantNumLibs             int
+		wantNumChnls            int
+		wantSpecificationFormat string
 	}{
 		{
 			name: "derivable fields removed",
@@ -224,7 +224,8 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Sources: googleapisSource,
 				Libraries: []*config.Library{
 					{
-						Name: "google-cloud-accessapproval-v1",
+						Name:                "google-cloud-accessapproval-v1",
+						SpecificationFormat: "protobuf",
 						APIs: []*config.API{
 							{
 								Path: "google/cloud/accessapproval/v1",
@@ -233,9 +234,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "",
-			wantNumLibs:  1,
-			wantNumChnls: 0,
+			wantPath:                "",
+			wantNumLibs:             1,
+			wantNumChnls:            0,
+			wantSpecificationFormat: "",
 		},
 		{
 			name: "non-derivable path not removed",
@@ -300,6 +302,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
 				}
 			}
+			if lib.SpecificationFormat != test.wantSpecificationFormat {
+				t.Errorf("specification_format = %q, want %q", lib.SpecificationFormat, test.wantSpecificationFormat)
+			}
 		})
 	}
 }
@@ -352,6 +357,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: "generated/cloud/secretmanager/v1",
+				Roots:  []string{"googleapis"},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -372,6 +378,88 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	}
 	if got.Libraries[0].Output != "" {
 		t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
+	}
+}
+
+func TestTidy_DerivableAPIPath(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	cfg := &config.Config{
+		Language: "dart",
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:  "google_cloud_secretmanager_v1",
+				Roots: []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+	}
+	if len(got.Libraries[0].APIs) != 0 {
+		t.Fatalf("expected 0 APIs, got %d", len(got.Libraries[0].APIs))
+	}
+}
+
+func TestTidy_DerivableRoots(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	cfg := &config.Config{
+		Language: "rust",
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:  "google-cloud-secretmanager-v1",
+				Roots: []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := yaml.Read[config.Config](librarianConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+	}
+	if got.Libraries[0].Roots != nil {
+		t.Errorf("expected roots to be nil, got %q", got.Libraries[0].Roots)
 	}
 }
 

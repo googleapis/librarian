@@ -79,6 +79,10 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
 // ServiceConfig and Title may be empty strings if not found or not configured.
+//
+// The Showcase API ("schema/google/showcase/v1beta1") is a special case:
+// it does not live under https://github.com/googleapis/googleapis.
+// For this API only, googleapisDir should point to showcase source dir instead.
 func Find(googleapisDir, path string) (*API, error) {
 	var result *API
 	for _, api := range APIs {
@@ -95,15 +99,13 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3627): all APIs
-	// should be listed in the allowlist
 	if result == nil {
-		return &API{Path: path}, nil
+		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
 
 	// If service config is overridden in allowlist, use it
 	if result.ServiceConfig != "" {
-		return result, nil
+		return populateTitle(googleapisDir, result)
 	}
 
 	// Search filesystem for service config
@@ -138,10 +140,22 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 		if isServiceConfig {
 			result.ServiceConfig = filepath.Join(result.Path, name)
-			return result, nil
+			return populateTitle(googleapisDir, result)
 		}
 	}
 	return result, nil
+}
+
+func populateTitle(googleapisDir string, api *API) (*API, error) {
+	if api.Title != "" || api.ServiceConfig == "" {
+		return api, nil
+	}
+	cfg, err := Read(filepath.Join(googleapisDir, api.ServiceConfig))
+	if err != nil {
+		return nil, err
+	}
+	api.Title = cfg.GetTitle()
+	return api, nil
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
@@ -159,4 +173,23 @@ func isServiceConfigFile(path string) (bool, error) {
 		}
 	}
 	return false, scanner.Err()
+}
+
+// FindGRPCServiceConfig searches for gRPC service config files in the given
+// API directory. It returns the path relative to googleapisDir for use with
+// protoc's retry-config option. Returns empty string if no config is found.
+// Returns an error if multiple matching files exist.
+func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
+	pattern := filepath.Join(googleapisDir, path, "*_grpc_service_config.json")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", err
+	}
+	if len(matches) == 0 {
+		return "", nil
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("multiple gRPC service config files found in %q", path)
+	}
+	return filepath.Rel(googleapisDir, matches[0])
 }

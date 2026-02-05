@@ -27,20 +27,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-// Sources contains the directory paths for source repositories used by
-// sidekick.
-type Sources struct {
-	Conformance string
-	Discovery   string
-	Googleapis  string
-	ProtobufSrc string
-	Showcase    string
-}
-
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, sources *Sources) error {
+func Generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -48,7 +39,7 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
+	sidekickConfig, err := libraryToSidekickConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
@@ -68,7 +59,8 @@ func Generate(ctx context.Context, library *config.Library, sources *Sources) er
 			return err
 		}
 	}
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
+	codec := buildCodec(library)
+	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, codec); err != nil {
 		return err
 	}
 	if !exists {
@@ -95,7 +87,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *Sources) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *source.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
@@ -110,7 +102,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *Sourc
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
-			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig)
+			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec)
 		case "rust_storage":
 			return generateRustStorage(ctx, library, module.Output, sources)
 		case "rust+prost":
@@ -160,19 +152,19 @@ func Keep(library *config.Library) ([]string, error) {
 	return keep, nil
 }
 
-// defaultLibraryName derives a library name from a api path.
+// DefaultLibraryName derives a library name from an api path.
 // For example: google/cloud/secretmanager/v1 -> google-cloud-secretmanager-v1.
-func defaultLibraryName(api string) string {
+func DefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
 
-// DeriveAPIPath derives a api path from a library name.
+// DeriveAPIPath derives an api path from a library name.
 // For example: google-cloud-secretmanager-v1 -> google/cloud/secretmanager/v1.
 func DeriveAPIPath(name string) string {
 	return strings.ReplaceAll(name, "-", "/")
 }
 
-// DefaultOutput derives an output path from a api path and default output.
+// DefaultOutput derives an output path from an api path and default output.
 // For example: google/cloud/secretmanager/v1 with default src/generated/
 // returns src/generated/cloud/secretmanager/v1.
 func DefaultOutput(api, defaultOutput string) string {
@@ -183,7 +175,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *Sources) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *source.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {
@@ -212,7 +204,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
 
-	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig, controlModel, controlConfig)
+	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig.General.SpecificationFormat, storageConfig.Codec, controlModel, controlConfig.General.SpecificationFormat, controlConfig.Codec)
 }
 
 func findModuleByOutput(library *config.Library, output string) *config.RustModule {

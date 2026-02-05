@@ -284,6 +284,121 @@ func TestIsSimpleMethod(t *testing.T) {
 	}
 }
 
+func TestIsLRO(t *testing.T) {
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "simple method is not LRO",
+			method: &Method{},
+			want:   false,
+		},
+		{
+			name:   "LRO method is LRO",
+			method: &Method{OperationInfo: &OperationInfo{}},
+			want:   true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsLRO(); got != tc.want {
+				t.Errorf("IsLRO() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsSimpleOrLRO(t *testing.T) {
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "simple method",
+			method: &Method{},
+			want:   true,
+		},
+		{
+			name:   "LRO method",
+			method: &Method{OperationInfo: &OperationInfo{}},
+			want:   true,
+		},
+		{
+			name:   "streaming method",
+			method: &Method{ClientSideStreaming: true},
+			want:   false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsSimpleOrLRO(); got != tc.want {
+				t.Errorf("IsSimpleOrLRO() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLongRunningHelpers(t *testing.T) {
+	emptyMsg := &Message{ID: ".google.protobuf.Empty"}
+	responseMsg := &Message{ID: "some.response.Message"}
+	model := &API{
+		State: &APIState{
+			MessageByID: map[string]*Message{
+				emptyMsg.ID:    emptyMsg,
+				responseMsg.ID: responseMsg,
+			},
+		},
+	}
+
+	testCases := []struct {
+		name         string
+		method       *Method
+		wantResponse *Message
+		wantEmpty    bool
+	}{
+		{
+			name: "LRO with empty response",
+			method: &Method{
+				OperationInfo: &OperationInfo{ResponseTypeID: emptyMsg.ID},
+				Model:         model,
+			},
+			wantResponse: emptyMsg,
+			wantEmpty:    true,
+		},
+		{
+			name: "LRO with non-empty response",
+			method: &Method{
+				OperationInfo: &OperationInfo{ResponseTypeID: responseMsg.ID},
+				Model:         model,
+			},
+			wantResponse: responseMsg,
+			wantEmpty:    false,
+		},
+		{
+			name: "non-LRO method",
+			method: &Method{
+				Model: model,
+			},
+			wantResponse: nil,
+			wantEmpty:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.LongRunningResponseType(); got != tc.wantResponse {
+				t.Errorf("LongRunningResponseType() = %v, want %v", got, tc.wantResponse)
+			}
+			if got := tc.method.LongRunningReturnsEmpty(); got != tc.wantEmpty {
+				t.Errorf("LongRunningReturnsEmpty() = %v, want %v", got, tc.wantEmpty)
+			}
+		})
+	}
+}
+
 type aipTestFixture struct {
 	resource                         *Resource
 	resourceWithoutSingular          *Resource

@@ -28,13 +28,13 @@ func TestAnnotateMethodNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
+	_, err = annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = annotateModel(model, codec)
 
 	for _, test := range []struct {
 		MethodID string
@@ -98,13 +98,16 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	codec, err := newCodec("protobuf", map[string]string{
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = annotateModel(model, codec)
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	methodID := ".test.v1.ResourceService.Delete"
 	gotMethod, ok := model.State.MethodByID[methodID]
@@ -126,12 +129,77 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	}
 }
 
+func TestAnnotateMethodAPIVersion(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Inject an APIVersion to the existing model.
+	methodID := ".test.v1.ResourceService.Delete"
+	gotMethod, ok := model.State.MethodByID[methodID]
+	if !ok {
+		t.Fatalf("missing method %s", methodID)
+	}
+	gotMethod.APIVersion = "v1_20260205"
+
+	codec := newTestCodec(t, "disco", "", map[string]string{})
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := gotMethod.Codec.(*methodAnnotation)
+	want := []systemParameter{
+		{Name: "$alt", Value: "json"},
+		{Name: "$apiVersion", Value: "v1_20260205"},
+	}
+	if diff := cmp.Diff(want, got.SystemParameters); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMethodInternalBuilders(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, "protobuf", "", map[string]string{
+		"internal-builders": "true",
+	})
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	methodID := ".test.v1.ResourceService.Delete"
+	gotMethod, ok := model.State.MethodByID[methodID]
+	if !ok {
+		t.Fatalf("missing method %s", methodID)
+	}
+	got := gotMethod.Codec.(*methodAnnotation)
+	if !got.InternalBuilders {
+		t.Errorf("expected InternalBuilders to be true for method %s", methodID)
+	}
+	if got.BuilderVisibility() != "pub(crate)" {
+		t.Errorf("mismatch in BuilderVisibility, want=pub(crate), got=%s", got.BuilderVisibility())
+	}
+}
+
 func annotateMethodModel(t *testing.T) *api.API {
 	t.Helper()
 	request := &api.Message{
 		Name:    "Request",
 		Package: "test.v1",
 		ID:      ".test.v1.Request",
+		Fields: []*api.Field{
+			{Name: "project", ID: ".test.v1.Request.project", Typez: api.STRING_TYPE},
+			{Name: "zone", ID: ".test.v1.Request.zone", Typez: api.STRING_TYPE},
+			{Name: "type", ID: ".test.v1.Request.type", Typez: api.STRING_TYPE},
+		},
 	}
 	response := &api.Message{
 		Name:    "Response",

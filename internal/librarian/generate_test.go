@@ -23,6 +23,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestGenerateCommand(t *testing.T) {
@@ -84,27 +87,34 @@ func TestGenerateCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-			configContent := fmt.Sprintf(`language: fake
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: %s
-    output: %s
-    apis:
-      - path: google/cloud/speech/v1
-      - path: grafeas/v1
-  - name: %s
-    output: %s
-    apis:
-      - path: google/cloud/texttospeech/v1
-  - name: %s
-    output: %s
-    skip_generate: true
-    apis:
-      - path: google/cloud/speech/v1
-`, googleapisDir, lib1, lib1Output, lib2, lib2Output, lib3, lib3Output)
-			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+			cfg := sample.Config()
+			cfg.Sources.Googleapis = &config.Source{Dir: googleapisDir}
+			cfg.Libraries = []*config.Library{
+				{
+					Name:   lib1,
+					Output: lib1Output,
+					APIs: []*config.API{
+						{Path: "google/cloud/speech/v1"},
+						{Path: "grafeas/v1"},
+					},
+				},
+				{
+					Name:   lib2,
+					Output: lib2Output,
+					APIs: []*config.API{
+						{Path: "google/cloud/texttospeech/v1"},
+					},
+				},
+				{
+					Name:         lib3,
+					Output:       lib3Output,
+					SkipGenerate: true,
+					APIs: []*config.API{
+						{Path: "google/cloud/speech/v1"},
+					},
+				},
+			}
+			if err := yaml.Write(filepath.Join(tempDir, librarianConfigPath), cfg); err != nil {
 				t.Fatal(err)
 			}
 
@@ -214,6 +224,7 @@ func TestGenerateSkip(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
 			configContent := fmt.Sprintf(`language: fake
+version: v0.1.0
 sources:
   googleapis:
     dir: %s
@@ -282,6 +293,57 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 		}
 	}
 	return googleapisDir
+}
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		language   string
+		libName    string
+		api        string
+		defaultOut string
+		want       string
+	}{
+		{
+			name:       "dart",
+			language:   "dart",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "packages",
+			want:       "packages/google-cloud-secretmanager-v1",
+		},
+		{
+			name:       "rust",
+			language:   "rust",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "generated",
+			want:       "generated/cloud/secretmanager/v1",
+		},
+		{
+			name:       "python",
+			language:   "python",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "packages",
+			want:       "packages/google-cloud-secretmanager-v1",
+		},
+		{
+			name:       "unknown language",
+			language:   "unknown",
+			libName:    "google-cloud-secretmanager-v1",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "output",
+			want:       "output",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := defaultOutput(test.language, test.libName, test.api, test.defaultOut)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestCleanOutput(t *testing.T) {

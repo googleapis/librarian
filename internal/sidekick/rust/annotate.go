@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"cmp"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -77,12 +78,22 @@ type modelAnnotations struct {
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
+	// If true, the generated builders's visibility should be restricted to the crate.
+	InternalBuilders bool
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
 // ad-hoc code.
 func (m *modelAnnotations) IsWktCrate() bool {
 	return m.PackageName == "google-cloud-wkt"
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (m *modelAnnotations) BuilderVisibility() string {
+	if m.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 // HasServices returns true if there are any services in the model.
@@ -133,6 +144,16 @@ type serviceAnnotations struct {
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
+	// If true, the generated builders's visibility should be restricted to the crate.
+	InternalBuilders bool
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (s *serviceAnnotations) BuilderVisibility() string {
+	if s.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 // HasBindingSubstitutions returns true if the method has binding substitutions.
@@ -153,6 +174,16 @@ func (s *serviceAnnotations) HasLROs() bool {
 		return true
 	}
 	return slices.IndexFunc(s.Methods, func(m *api.Method) bool { return m.DiscoveryLro != nil }) != -1
+}
+
+// MaximumAPIVersion returns the highest (in alphanumeric order) APIVersion of
+// all the methods in the service.
+func (s *serviceAnnotations) MaximumAPIVersion() string {
+	if len(s.Methods) == 0 {
+		return ""
+	}
+	max := slices.MaxFunc(s.Methods, func(a, b *api.Method) int { return cmp.Compare(a.APIVersion, b.APIVersion) })
+	return max.APIVersion
 }
 
 // FeatureName returns the feature name for the service.
@@ -238,6 +269,15 @@ type methodAnnotation struct {
 	DetailedTracingAttributes bool
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
+	InternalBuilders          bool
+}
+
+// BuilderVisibility returns the visibility for client and request builders.
+func (m *methodAnnotation) BuilderVisibility() string {
+	if m.InternalBuilders {
+		return "pub(crate)"
+	}
+	return "pub"
 }
 
 type pathInfoAnnotation struct {
@@ -562,7 +602,7 @@ type enumValueForExamples struct {
 // Fields and methods defined in this struct directly correspond to Mustache
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
-func annotateModel(model *api.API, codec *codec) *modelAnnotations {
+func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	codec.hasServices = len(model.State.ServiceByID) > 0
 
 	resolveUsedPackages(model, codec.extraPackages)
@@ -571,10 +611,14 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	// packages used by this API.
 	// This API's enums and messages get full annotations.
 	for _, e := range model.Enums {
-		codec.annotateEnum(e, model, true)
+		if err := codec.annotateEnum(e, model, true); err != nil {
+			return nil, err
+		}
 	}
 	for _, m := range model.Messages {
-		codec.annotateMessage(m, model, true)
+		if err := codec.annotateMessage(m, model, true); err != nil {
+			return nil, err
+		}
 	}
 	// External enums and messages get only basic annotations
 	// used for sample generation.
@@ -582,12 +626,16 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	// to be annotated.
 	for _, e := range model.State.EnumByID {
 		if e.Codec == nil {
-			codec.annotateEnum(e, model, false)
+			if err := codec.annotateEnum(e, model, false); err != nil {
+				return nil, err
+			}
 		}
 	}
 	for _, m := range model.State.MessageByID {
 		if m.Codec == nil {
-			codec.annotateMessage(m, model, false)
+			if err := codec.annotateMessage(m, model, false); err != nil {
+				return nil, err
+			}
 		}
 	}
 	hasLROs := false
@@ -599,15 +647,23 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 			if !codec.generateMethod(m) {
 				continue
 			}
-			codec.annotateMethod(m)
+			if _, err := codec.annotateMethod(m); err != nil {
+				return nil, err
+			}
 			if m := m.InputType; m != nil {
-				codec.annotateMessage(m, model, true)
+				if err := codec.annotateMessage(m, model, true); err != nil {
+					return nil, err
+				}
 			}
 			if m := m.OutputType; m != nil {
-				codec.annotateMessage(m, model, true)
+				if err := codec.annotateMessage(m, model, true); err != nil {
+					return nil, err
+				}
 			}
 		}
-		codec.annotateService(s)
+		if _, err := codec.annotateService(s); err != nil {
+			return nil, err
+		}
 	}
 
 	servicesSubset := language.FilterSlice(model.Services, func(s *api.Service) bool {
@@ -637,7 +693,7 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 	}()
 	ann := &modelAnnotations{
 		PackageName:      codec.packageName(model),
-		PackageNamespace: codec.packageNamespace(model),
+		PackageNamespace: codec.rootModuleName(model),
 		PackageVersion:   codec.version,
 		ReleaseLevel:     codec.releaseLevel,
 		RequiredPackages: requiredPackages(codec.extraPackages),
@@ -662,12 +718,13 @@ func annotateModel(model *api.API, codec *codec) *modelAnnotations {
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
+		InternalBuilders:          codec.internalBuilders,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
 
 	model.Codec = ann
-	return ann
+	return ann, nil
 }
 
 func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
@@ -885,7 +942,7 @@ func packageToModuleName(p string) string {
 	return strings.Join(components, "::")
 }
 
-func (c *codec) annotateService(s *api.Service) {
+func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	// Some codecs skip some methods.
 	methods := language.FilterSlice(s.Methods, func(m *api.Method) bool {
 		return c.generateMethod(m)
@@ -906,12 +963,16 @@ func (c *codec) annotateService(s *api.Service) {
 	}
 	serviceName := c.ServiceName(s)
 	moduleName := toSnake(serviceName)
+	docLines, err := c.formatDocComments(
+		s.Documentation, s.ID, s.Model.State, []string{s.ID, s.Package})
+	if err != nil {
+		return nil, err
+	}
 	ann := &serviceAnnotations{
-		Name:              toPascal(serviceName),
-		PackageModuleName: packageToModuleName(s.Package),
-		ModuleName:        moduleName,
-		DocLines: c.formatDocComments(
-			s.Documentation, s.ID, s.Model.State, []string{s.ID, s.Package}),
+		Name:                      toPascal(serviceName),
+		PackageModuleName:         packageToModuleName(s.Package),
+		ModuleName:                moduleName,
+		DocLines:                  docLines,
 		Methods:                   methods,
 		DefaultHost:               s.DefaultHost,
 		LROTypes:                  lroTypes,
@@ -921,16 +982,21 @@ func (c *codec) annotateService(s *api.Service) {
 		ExtendGrpcTransport:       c.extendGrpcTransport,
 		Incomplete:                slices.ContainsFunc(s.Methods, func(m *api.Method) bool { return !c.generateMethod(m) }),
 		DetailedTracingAttributes: c.detailedTracingAttributes,
+		InternalBuilders:          c.internalBuilders,
 	}
 	s.Codec = ann
+	return ann, nil
 }
 
 // annotateMessage annotates the message with basic or full annotations.
 // When fully annotating a message, its fields, its nested messages, and its nested enums
 // are also annotated.
 // Basic annotations are useful for annotating external messages with information used in samples.
-func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
-	qualifiedName := fullyQualifiedMessageName(m, c.modulePath, model.PackageName, c.packageMapping)
+func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error {
+	qualifiedName, err := c.fullyQualifiedMessageName(m, model.PackageName)
+	if err != nil {
+		return err
+	}
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 	annotations := &messageAnnotation{
@@ -946,37 +1012,56 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) {
 
 	if !full {
 		// We have basic annotations, we are done.
-		return
+		return nil
 	}
 
 	for _, f := range m.Fields {
-		c.annotateField(f, m, model)
+		if _, err := c.annotateField(f, m, model); err != nil {
+			return err
+		}
 	}
 	for _, o := range m.OneOfs {
-		c.annotateOneOf(o, m, model)
+		if _, err := c.annotateOneOf(o, m, model); err != nil {
+			return err
+		}
 	}
 	for _, e := range m.Enums {
-		c.annotateEnum(e, model, true)
+		if err := c.annotateEnum(e, model, true); err != nil {
+			return err
+		}
 	}
 	for _, child := range m.Messages {
-		c.annotateMessage(child, model, true)
+		if err := c.annotateMessage(child, model, true); err != nil {
+			return err
+		}
 	}
 	basicFields := language.FilterSlice(m.Fields, func(f *api.Field) bool {
 		return !f.IsOneOf
 	})
 
-	annotations.DocLines = c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+	if err != nil {
+		return err
+	}
+	annotations.DocLines = docLines
 	annotations.HasNestedTypes = language.HasNestedTypes(m)
 	annotations.BasicFields = basicFields
 	annotations.Internal = slices.Contains(c.internalTypes, m.ID)
+	return nil
 }
 
-func (c *codec) annotateMethod(m *api.Method) {
-	c.annotatePathInfo(m)
+func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
+	if err := c.annotatePathInfo(m); err != nil {
+		return nil, err
+	}
 	for _, routing := range m.Routing {
 		for _, variant := range routing.Variants {
+			fieldAccessors, err := c.annotateRoutingAccessors(variant, m)
+			if err != nil {
+				return nil, err
+			}
 			routingVariantAnnotations := &routingVariantAnnotations{
-				FieldAccessors:   c.annotateRoutingAccessors(variant, m),
+				FieldAccessors:   fieldAccessors,
 				PrefixSegments:   annotateSegments(variant.Prefix.Segments),
 				MatchingSegments: annotateSegments(variant.Matching.Segments),
 				SuffixSegments:   annotateSegments(variant.Suffix.Segments),
@@ -984,29 +1069,44 @@ func (c *codec) annotateMethod(m *api.Method) {
 			variant.Codec = routingVariantAnnotations
 		}
 	}
-	returnType := c.methodInOutTypeName(m.OutputTypeID, m.Model.State, m.Model.PackageName)
+	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model.State, m.Model.PackageName)
+	if err != nil {
+		return nil, err
+	}
 	if m.ReturnsEmpty {
 		returnType = "()"
 	}
 	serviceName := c.ServiceName(m.Service)
 	resourceNameFields := c.findResourceNameFields(m)
+	systemParameters := slices.Clone(c.systemParameters)
+	if m.APIVersion != "" {
+		systemParameters = append(systemParameters, systemParameter{
+			Name:  "$apiVersion",
+			Value: m.APIVersion,
+		})
+	}
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes())
+	if err != nil {
+		return nil, err
+	}
 	annotation := &methodAnnotation{
 		Name:                      toSnake(m.Name),
 		NameNoMangling:            toSnakeNoMangling(m.Name),
 		BuilderName:               toPascal(m.Name),
 		Body:                      bodyAccessor(m),
-		DocLines:                  c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes()),
+		DocLines:                  docLines,
 		PathInfo:                  m.PathInfo,
 		ServiceNameToPascal:       toPascal(serviceName),
 		ServiceNameToCamel:        toCamel(serviceName),
 		ServiceNameToSnake:        toSnake(serviceName),
-		SystemParameters:          c.systemParameters,
+		SystemParameters:          systemParameters,
 		ReturnType:                returnType,
 		HasVeneer:                 c.hasVeneer,
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		ResourceNameFields:        resourceNameFields,
 		HasResourceNameFields:     len(resourceNameFields) > 0,
+		InternalBuilders:          c.internalBuilders,
 	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes
@@ -1014,12 +1114,18 @@ func (c *codec) annotateMethod(m *api.Method) {
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
 	if m.OperationInfo != nil {
-		metadataType := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model.State, m.Model.PackageName)
-		responseType := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model.State, m.Model.PackageName)
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model.State, m.Model.PackageName)
+		if err != nil {
+			return nil, err
+		}
+		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model.State, m.Model.PackageName)
+		if err != nil {
+			return nil, err
+		}
 		m.OperationInfo.Codec = &operationInfo{
 			MetadataType:     metadataType,
 			ResponseType:     responseType,
-			PackageNamespace: c.packageNamespace(m.Model),
+			PackageNamespace: c.rootModuleName(m.Model),
 		}
 	}
 	if m.DiscoveryLro != nil {
@@ -1037,13 +1143,14 @@ func (c *codec) annotateMethod(m *api.Method) {
 		m.DiscoveryLro.Codec = lroAnnotation
 	}
 	m.Codec = annotation
+	return annotation, nil
 }
 
-func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) []string {
+func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
 	return makeAccessors(variant.FieldPath, m)
 }
 
-func makeAccessors(fields []string, m *api.Method) []string {
+func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 	findField := func(name string, message *api.Message) *api.Field {
 		for _, f := range message.Fields {
 			if f.Name == name {
@@ -1058,8 +1165,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 		field := findField(name, message)
 		rustFieldName := toSnake(name)
 		if field == nil {
-			slog.Error("invalid routing/path field for request message", "field", rustFieldName, "message ID", message.ID)
-			continue
+			return nil, fmt.Errorf("invalid routing/path field (%q) for request message %s", rustFieldName, message.ID)
 		}
 		if field.Optional {
 			accessors = append(accessors, fmt.Sprintf(".and_then(|m| m.%s.as_ref())", rustFieldName))
@@ -1075,7 +1181,7 @@ func makeAccessors(fields []string, m *api.Method) []string {
 			}
 		}
 	}
-	return accessors
+	return accessors, nil
 }
 
 func annotateSegments(segments []string) []string {
@@ -1117,45 +1223,57 @@ func annotateSegments(segments []string) []string {
 	return ann
 }
 
-func makeBindingSubstitution(v *api.PathVariable, m *api.Method) bindingSubstitution {
+func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubstitution, error) {
+	accessors, err := makeAccessors(v.FieldPath, m)
+	if err != nil {
+		return nil, err
+	}
 	fieldAccessor := "Some(&req)"
-	for _, a := range makeAccessors(v.FieldPath, m) {
+	for _, a := range accessors {
 		fieldAccessor += a
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnake(n))
 	}
-	return bindingSubstitution{
+	binding := &bindingSubstitution{
 		FieldAccessor: fieldAccessor,
 		FieldName:     strings.Join(rustNames, "."),
 		Template:      v.Segments,
 	}
+	return binding, nil
 }
 
-func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) *pathBindingAnnotation {
+func (c *codec) annotatePathBinding(b *api.PathBinding, m *api.Method) (*pathBindingAnnotation, error) {
 	var subs []*bindingSubstitution
 	for _, s := range b.PathTemplate.Segments {
 		if s.Variable != nil {
-			sub := makeBindingSubstitution(s.Variable, m)
-			subs = append(subs, &sub)
+			sub, err := makeBindingSubstitution(s.Variable, m)
+			if err != nil {
+				return nil, err
+			}
+			subs = append(subs, sub)
 		}
 	}
-	return &pathBindingAnnotation{
+	binding := &pathBindingAnnotation{
 		PathFmt:                   httpPathFmt(b.PathTemplate),
 		QueryParams:               language.QueryParams(m, b),
 		Substitutions:             subs,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 	}
+	return binding, nil
 }
 
 // annotatePathInfo annotates the `PathInfo` and all of its `PathBinding`s.
-func (c *codec) annotatePathInfo(m *api.Method) {
+func (c *codec) annotatePathInfo(m *api.Method) error {
 	seen := make(map[string]bool)
 	var uniqueParameters []*bindingSubstitution
 
 	for _, b := range m.PathInfo.Bindings {
-		ann := c.annotatePathBinding(b, m)
+		ann, err := c.annotatePathBinding(b, m)
+		if err != nil {
+			return err
+		}
 
 		// We need to keep track of unique path parameters to support
 		// implicit routing over gRPC. This is go/aip/4222.
@@ -1176,43 +1294,62 @@ func (c *codec) annotatePathInfo(m *api.Method) {
 		UniqueParameters: uniqueParameters,
 		IsIdempotent:     isIdempotent(m.PathInfo),
 	}
+	return nil
 }
 
-func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) {
-	scope := messageScopeName(message, "", c.modulePath, model.PackageName, c.packageMapping)
+// sortOneOfFieldForExamples is used to select the "best" field for an example.
+//
+// Fields are lexicographically sorted by the tuple:
+//
+//	(f.Deprecated, f.Map, f.Repeated, f.Message != nil)
+//
+// Where `false` values are preferred over `true` values. That is, we prefer
+// fields that are **not** deprecated, but if both fields have the same
+// `Deprecated` value then we prefer the field that is **not** a map, and so on.
+//
+// The return value is either -1, 0, or 1 to use in the standard library sorting
+// functions.
+func sortOneOfFieldForExamples(f1, f2 *api.Field) int {
+	compare := func(a, b bool) int {
+		switch {
+		case a == b:
+			return 0
+		case a:
+			return -1
+		default:
+			return 1
+		}
+	}
+	if v := compare(f1.Deprecated, f2.Deprecated); v != 0 {
+		return v
+	}
+	if v := compare(f1.Map, f2.Map); v != 0 {
+		return v
+	}
+	if v := compare(f1.Repeated, f2.Repeated); v != 0 {
+		return v
+	}
+	return compare(f1.MessageType != nil, f2.MessageType != nil)
+}
+
+func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
+	scope, err := c.messageScopeName(message, "", model.PackageName)
+	if err != nil {
+		return nil, err
+	}
 	enumName := c.OneOfEnumName(oneof)
 	qualifiedName := fmt.Sprintf("%s::%s", scope, enumName)
 	relativeEnumName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
-	structQualifiedName := fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping)
+	structQualifiedName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	if err != nil {
+		return nil, err
+	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-
-	bestField := slices.MaxFunc(oneof.Fields, func(f1 *api.Field, f2 *api.Field) int {
-		if f1.Deprecated == f2.Deprecated {
-			if f1.Map == f2.Map {
-				if f1.Repeated == f2.Repeated {
-					if f1.MessageType != nil && f2.MessageType == nil {
-						return -1
-					} else if f1.MessageType == nil && f2.MessageType != nil {
-						return 1
-					} else {
-						return 0
-					}
-				} else if f1.Repeated {
-					return -1
-				} else {
-					return 1
-				}
-			} else if f1.Map {
-				return -1
-			} else {
-				return 1
-			}
-		} else if f1.Deprecated {
-			return -1
-		} else {
-			return 1
-		}
-	})
+	bestField := slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
+	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
+	if err != nil {
+		return nil, err
+	}
 
 	ann := &oneOfAnnotation{
 		FieldName:           toSnake(oneof.Name),
@@ -1223,7 +1360,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		StructQualifiedName: structQualifiedName,
 		NameInExamples:      nameInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
-		DocLines:            c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes()),
+		DocLines:            docLines,
 		ExampleField:        bestField,
 	}
 	// Note that this is different from OneOf name-overrides
@@ -1241,6 +1378,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 	}
 
 	oneof.Codec = ann
+	return ann, nil
 }
 
 func (c *codec) primitiveSerdeAs(field *api.Field) string {
@@ -1307,15 +1445,31 @@ func (c *codec) messageFieldSerdeAs(field *api.Field) string {
 	}
 }
 
-func (c *codec) annotateField(field *api.Field, message *api.Message, model *api.API) {
+func (c *codec) annotateField(field *api.Field, message *api.Message, model *api.API) (*fieldAnnotations, error) {
+	fqMessageName, err := c.fullyQualifiedMessageName(message, model.PackageName)
+	if err != nil {
+		return nil, err
+	}
+	docLines, err := c.formatDocComments(field.Documentation, field.ID, model.State, message.Scopes())
+	if err != nil {
+		return nil, err
+	}
+	fieldType, err := c.fieldType(field, model.State, false, model.PackageName)
+	if err != nil {
+		return nil, err
+	}
+	primitiveFieldType, err := c.fieldType(field, model.State, true, model.PackageName)
+	if err != nil {
+		return nil, err
+	}
 	ann := &fieldAnnotations{
 		FieldName:          toSnake(field.Name),
 		SetterName:         toSnakeNoMangling(field.Name),
-		FQMessageName:      fullyQualifiedMessageName(message, c.modulePath, model.PackageName, c.packageMapping),
+		FQMessageName:      fqMessageName,
 		BranchName:         toPascal(field.Name),
-		DocLines:           c.formatDocComments(field.Documentation, field.ID, model.State, message.Scopes()),
-		FieldType:          fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping),
-		PrimitiveFieldType: fieldType(field, model.State, true, c.modulePath, model.PackageName, c.packageMapping),
+		DocLines:           docLines,
+		FieldType:          fieldType,
+		PrimitiveFieldType: primitiveFieldType,
 		AddQueryParameter:  addQueryParameter(field),
 		SerdeAs:            c.primitiveSerdeAs(field),
 		SkipIfIsDefault:    field.Typez != api.STRING_TYPE && field.Typez != api.BYTES_TYPE,
@@ -1329,12 +1483,20 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if field.Typez == api.MESSAGE_TYPE {
 		if msg, ok := model.State.MessageByID[field.TypezID]; ok && msg.IsMap {
 			if len(msg.Fields) != 2 {
-				slog.Error("expected exactly two fields for map message", "field ID", field.ID, "map ID", field.TypezID)
+				return nil, fmt.Errorf("expected exactly two fields for field's map message (%q), fieldId=%s", field.TypezID, field.ID)
+			}
+			keyType, err := c.mapType(msg.Fields[0], model.State, model.PackageName)
+			if err != nil {
+				return nil, err
+			}
+			valueType, err := c.mapType(msg.Fields[1], model.State, model.PackageName)
+			if err != nil {
+				return nil, err
 			}
 			ann.KeyField = msg.Fields[0]
-			ann.KeyType = mapType(msg.Fields[0], model.State, c.modulePath, model.PackageName, c.packageMapping)
+			ann.KeyType = keyType
 			ann.ValueField = msg.Fields[1]
-			ann.ValueType = mapType(msg.Fields[1], model.State, c.modulePath, model.PackageName, c.packageMapping)
+			ann.ValueType = valueType
 			key := c.mapKeySerdeAs(msg.Fields[0])
 			value := c.mapValueSerdeAs(msg.Fields[1])
 			if key != "" || value != "" {
@@ -1368,14 +1530,20 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
 		}
 	}
+	return ann, nil
 }
 
-func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
+func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 	for _, ev := range e.Values {
-		c.annotateEnumValue(ev, model, full)
+		if err := c.annotateEnumValue(ev, model, full); err != nil {
+			return err
+		}
 	}
 
-	qualifiedName := fullyQualifiedEnumName(e, c.modulePath, model.PackageName, c.packageMapping)
+	qualifiedName, err := c.fullyQualifiedEnumName(e, model.PackageName)
+	if err != nil {
+		return err
+	}
 	relativeName := strings.TrimPrefix(qualifiedName, c.modulePath+"::")
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
 
@@ -1438,14 +1606,19 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) {
 
 	if !full {
 		// We have basic annotations, we are done.
-		return
+		return nil
 	}
 
-	annotations.DocLines = c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+	lines, err := c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+	if err != nil {
+		return err
+	}
+	annotations.DocLines = lines
 	annotations.UniqueNames = unique
+	return nil
 }
 
-func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) {
+func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) error {
 	annotations := &enumValueAnnotation{
 		Name:              enumValueName(ev),
 		EnumType:          enumName(ev.Parent),
@@ -1456,10 +1629,14 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 
 	if !full {
 		// We have basic annotations, we are done.
-		return
+		return nil
 	}
-
-	annotations.DocLines = c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
+	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
+	if err != nil {
+		return err
+	}
+	annotations.DocLines = lines
+	return nil
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

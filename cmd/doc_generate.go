@@ -30,7 +30,20 @@ import (
 )
 
 const (
-	librarianDescription = `Librarian manages Google API client libraries by automating onboarding,
+	librarianDesc = `Librarian CLI runs local workflow that 
+	adds, generates, updates and publishes client libraries.
+
+Usage:
+
+	librarian <command> [arguments]
+`
+	librarianopsDesc = `Librarianops orchestrates librarian operations across multiple repositories.
+
+Usage:
+
+	librarianops <command> [arguments]
+`
+	legacyLibrarianDesc = `Librarian manages Google API client libraries by automating onboarding,
 regeneration, and release. It runs language-agnostic workflows while
 delegating language-specific tasks—such as code generation, building, and
 testing—to Docker images.
@@ -39,7 +52,7 @@ Usage:
 
 	librarian <command> [arguments]
 `
-	automationDescription = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
+	automationDesc = `Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
 any repository listed in internal/legacylibrarian/legacyautomation/prod/repositories.yaml.
 
 Usage:
@@ -47,7 +60,7 @@ Usage:
 	automation <command> [arguments]
 `
 
-	docTemplate = `// Copyright 2025 Google LLC
+	docTemplate = `// Copyright {{.Year}} Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,7 +103,23 @@ type CommandDoc struct {
 	Commands []CommandDoc
 }
 
-var cmdPath = flag.String("cmd", "", "Path to the command to generate docs for (e.g., ../../cmd/librarian)")
+var (
+	descriptions = map[string]string{
+		"legacyautomation": automationDesc,
+		"legacylibrarian":  legacyLibrarianDesc,
+		"librarian":        librarianDesc,
+		"librarianops":     librarianopsDesc,
+	}
+
+	years = map[string]string{
+		"legacyautomation": "2025",
+		"legacylibrarian":  "2025",
+		"librarian":        "2026",
+		"librarianops":     "2026",
+	}
+
+	cmdPath = flag.String("cmd", "", "Path to the command to generate docs for (e.g., ../../cmd/librarian)")
+)
 
 func main() {
 	flag.Parse()
@@ -130,24 +159,33 @@ func processFile(cmdPath *string) error {
 		return fmt.Errorf("could not find path: %v", err)
 	}
 
-	var pkg string
-	if filepath.Base(pkgPath) == "legacyautomation" {
-		pkg = automationDescription
-	} else {
-		pkg = librarianDescription
+	pkgName := filepath.Base(pkgPath)
+	pkg, ok := descriptions[pkgName]
+	if !ok {
+		return fmt.Errorf("cannot find description for command: %s", pkgPath)
+	}
+	year, ok := years[pkgName]
+	if !ok {
+		return fmt.Errorf("cannot find year for command: %s", pkgPath)
 	}
 
 	tmpl := template.Must(template.New("doc").Parse(docTemplate))
 	if err := tmpl.Execute(docFile, struct {
+		Year        string
 		Description string
 		Commands    []CommandDoc
 	}{
-		Description: pkg,
+		Year:        year,
+		Description: sanitize(pkg),
 		Commands:    commands,
 	}); err != nil {
 		return fmt.Errorf("could not execute template: %v", err)
 	}
 	return nil
+}
+
+func sanitize(s string) string {
+	return strings.ReplaceAll(s, "*/", "* /")
 }
 
 func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
@@ -191,8 +229,8 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 		}
 
 		commands = append(commands, CommandDoc{
-			Name:     fullCommandName,
-			HelpText: helpText,
+			Name:     sanitize(fullCommandName),
+			HelpText: sanitize(helpText),
 			Commands: subCommands,
 		})
 	}
@@ -220,15 +258,20 @@ func getCommandHelpText(command string) (string, error) {
 }
 
 func extractCommandNames(helpText []byte) ([]string, error) {
-	const (
-		commandsHeader = "Commands:\n\n"
-	)
 	ss := string(helpText)
-	start := strings.Index(ss, commandsHeader)
+	var start int
+	// handle both legacy tool and urfave/cli/v3 style
+	headers := []string{"Commands:\n\n", "COMMANDS:\n"}
+	for _, header := range headers {
+		start = strings.Index(ss, header)
+		if start != -1 {
+			start += len(header)
+			break
+		}
+	}
 	if start == -1 {
 		return nil, errors.New("could not find commands header")
 	}
-	start += len(commandsHeader)
 
 	commandsBlock := ss[start:]
 	if end := strings.Index(commandsBlock, "\n\n"); end != -1 {
@@ -244,7 +287,13 @@ func extractCommandNames(helpText []byte) ([]string, error) {
 		}
 		fields := strings.Fields(line)
 		if len(fields) > 0 {
-			commandNames = append(commandNames, fields[0])
+			name := fields[0]
+			// Handle urfave/cli "help, h" style and filter out help command.
+			name = strings.TrimSuffix(name, ",")
+			if name == "help" || name == "h" {
+				continue
+			}
+			commandNames = append(commandNames, name)
 		}
 	}
 	return commandNames, nil

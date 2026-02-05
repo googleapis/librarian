@@ -34,11 +34,17 @@ func Run(ctx context.Context, command string, arg ...string) error {
 	return RunWithEnv(ctx, nil, command, arg...)
 }
 
+// RunInDir executes a program in a specific directory.
+func RunInDir(ctx context.Context, dir, command string, arg ...string) error {
+	_, err := runCmd(ctx, dir, nil, command, arg...)
+	return err
+}
+
 // RunWithEnv executes a program (with arguments) and optional environment
 // variables and captures any error output. If env is nil or empty, the command
 // inherits the environment of the calling process.
 func RunWithEnv(ctx context.Context, env map[string]string, command string, arg ...string) error {
-	_, err := runCmd(ctx, env, command, arg...)
+	_, err := runCmd(ctx, "", env, command, arg...)
 	return err
 }
 
@@ -53,11 +59,14 @@ func Output(ctx context.Context, command string, arg ...string) (string, error) 
 // the environment of the calling process. On error, stderr is included in the
 // error message.
 func OutputWithEnv(ctx context.Context, env map[string]string, command string, arg ...string) (string, error) {
-	return runCmd(ctx, env, command, arg...)
+	return runCmd(ctx, "", env, command, arg...)
 }
 
-func runCmd(ctx context.Context, env map[string]string, command string, arg ...string) (string, error) {
+func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, command, arg...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
 	if len(env) > 0 {
 		cmd.Env = os.Environ()
 		for k, v := range env {

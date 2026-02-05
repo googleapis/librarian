@@ -73,6 +73,108 @@ func TestFillDefaults(t *testing.T) {
 			lib:      &config.Library{Output: "foo/"},
 			want:     &config.Library{Output: "foo/"},
 		},
+		{
+			name: "dart defaults",
+			defaults: &config.Default{
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
+					Packages: map[string]string{
+						"package:one": "^1.2.3",
+						"package:two": "^2.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
+					Version: "0.4.0",
+				},
+			},
+			lib: &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "0.4.0",
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
+					Packages:                    map[string]string{"package:one": "^1.2.3", "package:two": "^2.0.0"},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
+				},
+			},
+		},
+		{
+			name: "dart defaults do not override library params",
+			defaults: &config.Default{
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
+					Dependencies:                "dep-1,dep-2",
+					IssueTrackerURL:             "https://issue-tracker-example/dart",
+					Packages: map[string]string{
+						"package:one": "^1.2.3",
+						"package:two": "^2.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type",
+					},
+					Protos: map[string]string{
+						"proto:google.api":          "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common": "package:google_cloud_common/common.dart",
+					},
+					Version: "0.4.0",
+				},
+			},
+			lib: &config.Library{
+				Output:  "foo/",
+				Version: "0.5.0",
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
+					Dependencies:                "dep-1,dep-3,dep-4",
+					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
+					Packages: map[string]string{
+						"package:three": "^1.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type_v2",
+					},
+					Protos: map[string]string{
+						"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+					},
+				},
+			},
+			want: &config.Library{
+				Output:  "foo/",
+				Version: "0.5.0",
+				Dart: &config.DartPackage{
+					APIKeysEnvironmentVariables: "apiKey-3,apiKey-4",
+					Dependencies:                "dep-1,dep-3,dep-4,dep-2",
+					IssueTrackerURL:             "https://another-issue-tracker-example/dart",
+					Packages: map[string]string{
+						"package:one":   "^1.2.3",
+						"package:two":   "^2.0.0",
+						"package:three": "^1.0.0",
+					},
+					Prefixes: map[string]string{
+						"prefix:google.logging.type": "logging_type_v2",
+					},
+					Protos: map[string]string{
+						"proto:google.cloud.location": "package:google_cloud_location/location.dart",
+						"proto:google.api":            "package:google_cloud_api/api.dart",
+						"proto:google.cloud.common":   "package:google_cloud_common/common.dart",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)

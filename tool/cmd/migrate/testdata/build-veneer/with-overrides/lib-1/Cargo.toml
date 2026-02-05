@@ -1,4 +1,0 @@
-[package]
-name = "google-cloud-storage-overridden"
-version = "1.5.0"
-publish = true

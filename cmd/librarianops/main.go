@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command librarianops orchestrates librarian operations across multiple repositories.
 package main
 
 import (

@@ -152,17 +152,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 func createProtocOptions(ch *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
 	// GAPIC library: generate full client library
-	var opts []string
-
-	// Add transport option
-	if library.Transport != "" {
-		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
-	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/3161):
-	// Make these conditional on configuration.
-	opts = append(opts, "rest-numeric-enums")
-	opts = append(opts, "metadata")
+	opts := []string{"metadata"}
 
 	// Add Python-specific options
 	// First common options that apply to all apis
@@ -176,6 +166,26 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 			opts = append(opts, apiOptArgs...)
 		}
 	}
+	restNumericEnums := true
+	addTransport := library.Transport != ""
+	for _, opt := range opts {
+		if strings.HasPrefix(opt, "rest-numeric-enums") {
+			restNumericEnums = false
+		}
+		if strings.HasPrefix(opt, "transport=") {
+			addTransport = false
+		}
+	}
+
+	// Add rest-numeric-enums, if we haven't already got it.
+	if restNumericEnums {
+		opts = append(opts, "rest-numeric-enums")
+	}
+
+	// Add transport option, if we haven't already got it.
+	if addTransport {
+		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
+	}
 
 	// Add gapic-version from library version
 	if library.Version != "" {
@@ -183,23 +193,19 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	}
 
 	// Add gRPC service config (retry/timeout settings)
-	// Auto-discover: look for *_grpc_service_config.json in the API directory
-	apiDir := filepath.Join(googleapisDir, ch.Path)
-	grpcConfigPath := ""
-	matches, err := filepath.Glob(filepath.Join(apiDir, "*_grpc_service_config.json"))
-	if err == nil && len(matches) > 0 {
-		if len(matches) > 1 {
-			return nil, fmt.Errorf("multiple grpc service config files found in %q", apiDir)
-		}
-		rel, err := filepath.Rel(googleapisDir, matches[0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to compute relative path for %q: %w", matches[0], err)
-		}
-		grpcConfigPath = rel
+	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, ch.Path)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/3827): remove this
+	// hardcoding once we can use the gRPC service config for Compute.
+	if strings.HasPrefix(library.Name, "google-cloud-compute") {
+		grpcConfigPath = ""
 	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
+
 	api, err := serviceconfig.Find(googleapisDir, ch.Path)
 	if err != nil {
 		return nil, err
@@ -292,8 +298,21 @@ func cleanUpFilesAfterPostProcessing(repoRoot string) error {
 }
 
 // DefaultOutputByName derives an output path from a library name and a default
-// output directory. Currently this just assumes each library is a directory
+// output directory. Currently, this just assumes each library is a directory
 // directly underneath the default output directory.
 func DefaultOutputByName(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// DefaultLibraryName derives a library name from an API path by stripping
+// the version suffix and replacing "/" with "-".
+// For example: "google/cloud/secretmanager/v1" ->
+// "google-cloud-secretmanager".
+func DefaultLibraryName(api string) string {
+	path := api
+	if v := filepath.Base(api); len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
+		path = filepath.Dir(api)
+	}
+	return strings.ReplaceAll(path, "/", "-")
 }

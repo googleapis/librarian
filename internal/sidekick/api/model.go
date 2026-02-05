@@ -130,6 +130,15 @@ const (
 	FIELD_BEHAVIOR_IDENTIFIER
 )
 
+const (
+	// ReservedPackageName is a package name reserved for maps and other
+	// synthetic messages that do not exist in the input specification.
+	//
+	// We need a place to put these in the data model without conflicts with the
+	// input data model. This symbol is unused in all the IDLs we support.
+	ReservedPackageName = "$"
+)
+
 // API represents and API surface.
 type API struct {
 	// Name of the API (e.g. secretmanager).
@@ -264,6 +273,10 @@ type Method struct {
 	// `google.api.MethodSettings.auto_populated_fields` entry in
 	// `google.api.Publishing.method_settings` in the service config file.
 	AutoPopulated []*Field
+	// APIVersion contains the interface-based-versioning version.
+	//
+	// If this is empty, then the method does not have a version annotation.
+	APIVersion string
 	// Model is the model this method belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
@@ -370,6 +383,30 @@ func (m *Method) IsSimple() bool {
 	return m.Pagination == nil &&
 		!m.ClientSideStreaming && !m.ServerSideStreaming &&
 		m.OperationInfo == nil && m.DiscoveryLro == nil
+}
+
+// IsLRO returns true if the method is a long-running operation.
+func (m *Method) IsLRO() bool {
+	return m.OperationInfo != nil
+}
+
+// IsSimpleOrLRO returns true if the method is simple or a long-running operation.
+func (m *Method) IsSimpleOrLRO() bool {
+	return m.IsSimple() || m.IsLRO()
+}
+
+// LongRunningResponseType returns the response type of the long-running operation.
+func (m *Method) LongRunningResponseType() *Message {
+	if m.OperationInfo == nil {
+		return nil
+	}
+	return m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+}
+
+// LongRunningReturnsEmpty returns true if the long-running operation returns an empty response.
+func (m *Method) LongRunningReturnsEmpty() bool {
+	responseType := m.LongRunningResponseType()
+	return responseType != nil && responseType.ID == ".google.protobuf.Empty"
 }
 
 // IsAIPStandard returns true if the method is one of the AIP standard methods.

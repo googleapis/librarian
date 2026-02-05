@@ -1,0 +1,366 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:build configdocgen
+
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"go/ast"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"strings"
+	"text/template"
+
+	"golang.org/x/tools/go/packages"
+)
+
+var (
+	inputDir   = flag.String("input", "internal/config", "Input directory containing config structs")
+	outputFile = flag.String("output", "doc/config-schema.md", "Output file for documentation")
+	rootStruct = flag.String("root", "Config", "The name of the root struct to start documentation from")
+	rootTitle  = flag.String("root-title", "Root", "The title to use for the root struct block")
+	tag        = flag.String("tag", "yaml", "The struct tag to use for field names (e.g., yaml, json)")
+	title      = flag.String("title", "librarian.yaml", "The title of the generated Markdown page")
+)
+
+const (
+	primaryConfigFile = "config.go"
+
+	// Markdown title components
+	titleSuffix = " Configuration"
+
+	// Markdown anchor components
+	anchorSuffix = "-configuration"
+	rootAnchor   = "root-configuration"
+)
+
+var docTemplate = template.Must(template.New("doc").Parse(`# {{.Title}} Schema
+
+This document describes the schema for the {{.Title}}.
+{{range .Structs}}
+## {{.Title}}
+
+{{if .SourceLink}}[Link to code]({{.SourceLink}})
+{{end}}{{if .Doc}}{{.Doc}}
+{{end}}| Field | Type | Description |
+| :--- | :--- | :--- |
+{{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
+{{end}}{{end}}`))
+
+type pageData struct {
+	Title   string
+	Structs []structData
+}
+
+type structData struct {
+	Title      string
+	SourceLink string
+	Doc        string
+	Fields     []fieldData
+}
+
+type fieldData struct {
+	Name        string
+	Type        string
+	Description string
+}
+
+// main is the entry point for the config doc generator tool.
+// It scans Go source files for struct definitions and extracts YAML tags, types,
+// and doc comments to produce a schema document for librarian.yaml.
+func main() {
+	flag.Parse()
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() (err error) {
+	output, err := os.Create(*outputFile)
+	if err != nil {
+		return fmt.Errorf("creating output file: %w", err)
+	}
+	defer func() {
+		cerr := output.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	pkg, err := loadPackage(*inputDir)
+	if err != nil {
+		return fmt.Errorf("loading package: %w", err)
+	}
+	d, err := newDocData(pkg, *rootStruct, *rootTitle, *tag, *title)
+	if err != nil {
+		return fmt.Errorf("inspecting package syntax: %w", err)
+	}
+	if err := d.generate(output); err != nil {
+		return fmt.Errorf("generating documentation: %w", err)
+	}
+	return nil
+}
+
+// loadPackage loads the Go package from the specified directory and returns
+// its type and syntax information. It returns an error if no packages are
+// found or if there are any parsing/type errors.
+func loadPackage(inputDir string) (*packages.Package, error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedName | packages.NeedFiles | packages.NeedModule,
+		Dir:  inputDir,
+	}
+	pkgs, err := packages.Load(cfg, ".")
+	if err != nil {
+		return nil, err
+	}
+	if len(pkgs) == 0 {
+		return nil, fmt.Errorf("no packages found in %s", inputDir)
+	}
+	pkg := pkgs[0]
+	if len(pkg.Errors) > 0 {
+		errs := make([]error, 0, len(pkg.Errors))
+		for _, e := range pkg.Errors {
+			errs = append(errs, e)
+		}
+		return nil, errors.Join(errs...)
+	}
+	return pkg, nil
+}
+
+// docData holds the collected metadata for generating documentation from the Go package.
+type docData struct {
+	pkg         *packages.Package
+	structs     map[string]*ast.StructType
+	docs        map[string]string
+	sources     map[string]string
+	configKeys  []string
+	otherKeys   []string
+	rootStruct  string
+	rootHeading string
+	tag         string
+	title       string
+}
+
+// newDocData constructs a docData by inspecting all files in the provided package.
+func newDocData(pkg *packages.Package, rootStruct, rootHeading, tag, title string) (*docData, error) {
+	d := &docData{
+		pkg:         pkg,
+		structs:     make(map[string]*ast.StructType),
+		docs:        make(map[string]string),
+		sources:     make(map[string]string),
+		rootStruct:  rootStruct,
+		rootHeading: rootHeading,
+		tag:         tag,
+		title:       title,
+	}
+
+	moduleRoot := "."
+	if pkg.Module != nil {
+		moduleRoot = pkg.Module.Dir
+	}
+
+	for _, file := range pkg.Syntax {
+		fileName := pkg.Fset.File(file.Pos()).Name()
+		relPath, err := filepath.Rel(moduleRoot, fileName)
+		if err != nil {
+			return nil, err
+		}
+		isConfig := filepath.Base(fileName) == primaryConfigFile
+		ast.Inspect(file, func(n ast.Node) bool {
+			var cont bool
+			d, cont = d.collectStructs(n, relPath, isConfig)
+			return cont
+		})
+	}
+
+	sort.Strings(d.otherKeys)
+	return d, nil
+}
+
+// collectStructs is the visitor function used by ast.Inspect to identify and extract
+// struct type definitions and their associated documentation.
+func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*docData, bool) {
+	ts, ok := n.(*ast.TypeSpec)
+	if !ok {
+		return d, true
+	}
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok {
+		return d, true
+	}
+	name := ts.Name.Name
+	if d.structs[name] != nil {
+		return d, true // Already seen
+	}
+	d.structs[name] = st
+	if ts.Doc != nil {
+		d.docs[name] = cleanDoc(ts.Doc.Text())
+	}
+	line := d.pkg.Fset.Position(ts.Pos()).Line
+	d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
+	if isConfig {
+		d.configKeys = append(d.configKeys, name)
+	} else {
+		d.otherKeys = append(d.otherKeys, name)
+	}
+	return d, true
+}
+
+// generate writes the collected documentation in Markdown format to the provided writer.
+func (d *docData) generate(output io.Writer) error {
+	pageData := pageData{
+		Title: d.title,
+	}
+	// Collect all struct data first
+	for _, k := range append(d.configKeys, d.otherKeys...) {
+		sd, err := d.collectStructData(k, d.sources[k])
+		if err != nil {
+			return err
+		}
+		pageData.Structs = append(pageData.Structs, sd)
+	}
+	return docTemplate.Execute(output, pageData)
+}
+
+// collectStructData prepares the metadata for a single Go struct.
+func (d *docData) collectStructData(name string, sourceLink string) (structData, error) {
+	st := d.structs[name]
+	title := name + titleSuffix
+	if name == d.rootStruct {
+		title = d.rootHeading + titleSuffix
+	}
+	structData := structData{
+		Title:      title,
+		SourceLink: sourceLink,
+		Doc:        d.docs[name],
+	}
+	for _, field := range st.Fields.List {
+		if len(field.Names) == 0 {
+			// Embedded struct
+			typeName := getTypeName(field.Type)
+			structData.Fields = append(structData.Fields, fieldData{
+				Name: "(embedded)",
+				Type: d.formatType(typeName),
+			})
+			continue
+		}
+		fieldName := d.getFieldName(field)
+		if fieldName == "" || fieldName == "-" {
+			continue
+		}
+		typeName := getTypeName(field.Type)
+		description := ""
+		if field.Doc != nil {
+			description = cleanDoc(field.Doc.Text())
+		}
+		structData.Fields = append(structData.Fields, fieldData{
+			Name:        fmt.Sprintf("`%s`", fieldName),
+			Type:        d.formatType(typeName),
+			Description: description,
+		})
+	}
+	return structData, nil
+}
+
+// getFieldName returns the documentation name for a field. It first attempts to
+// extract the name from the struct tag specified by the tagName field. If the
+// tag is missing or empty, it falls back to the Go field name.
+func (d *docData) getFieldName(field *ast.Field) string {
+	if field.Tag != nil {
+		tagValue := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+		val := tagValue.Get(d.tag)
+		if val != "" {
+			return strings.Split(val, ",")[0]
+		}
+	}
+	if len(field.Names) > 0 {
+		return field.Names[0].Name
+	}
+	return ""
+}
+
+func getTypeName(expr ast.Expr) string {
+	switch t := expr.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		return "*" + getTypeName(t.X)
+	case *ast.ArrayType:
+		return "[]" + getTypeName(t.Elt)
+	case *ast.MapType:
+		return fmt.Sprintf("map[%s]%s", getTypeName(t.Key), getTypeName(t.Value))
+	case *ast.SelectorExpr:
+		return fmt.Sprintf("%s.%s", getTypeName(t.X), t.Sel.Name)
+	default:
+		return fmt.Sprintf("%T", expr)
+	}
+}
+
+func (d *docData) formatType(typeName string) string {
+	isSlice := strings.HasPrefix(typeName, "[]")
+	cleanType := strings.TrimPrefix(typeName, "[]")
+	isPointer := strings.HasPrefix(cleanType, "*")
+	cleanType = strings.TrimPrefix(cleanType, "*")
+	res := cleanType
+	// If it's one of our structs, link it
+	if _, ok := d.structs[cleanType]; ok {
+		anchor := strings.ToLower(cleanType) + anchorSuffix
+		if cleanType == d.rootStruct {
+			anchor = rootAnchor
+		}
+		res = fmt.Sprintf("[%s](#%s)", cleanType, anchor)
+	}
+	if isPointer {
+		res = res + " (optional)"
+	}
+	if isSlice {
+		res = "list of " + res
+	}
+	return res
+}
+
+// cleanDoc collapses standard word-wrapping into single spaces but preserves
+// paragraph breaks and list items by using <br> tags, which are required
+// for multi-line content within Markdown table cells.
+func cleanDoc(doc string) string {
+	lines := strings.Split(strings.TrimSpace(doc), "\n")
+	var out strings.Builder
+	for i, line := range lines {
+		cleanedLine := strings.Join(strings.Fields(line), " ")
+		if cleanedLine == "" {
+			// Convert empty lines to <br> to preserve paragraph breaks.
+			out.WriteString("<br>")
+			continue
+		}
+		if i > 0 {
+			prevLineCleaned := strings.Join(strings.Fields(lines[i-1]), " ")
+			// Use <br> if the current line is a list item or if it follows a blank line.
+			// Otherwise, use a space to collapse wrapped text into a single paragraph.
+			if prevLineCleaned == "" || strings.HasPrefix(cleanedLine, "-") || strings.HasPrefix(cleanedLine, "*") {
+				out.WriteString("<br>")
+			} else {
+				out.WriteString(" ")
+			}
+		}
+		out.WriteString(cleanedLine)
+	}
+	return out.String()
+}

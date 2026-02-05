@@ -314,6 +314,15 @@ func TestParseOptions(t *testing.T) {
 				c.generateRpcSamples = true
 			},
 		},
+		{
+			Format: "protobuf",
+			Options: map[string]string{
+				"internal-builders": "true",
+			},
+			Update: func(c *codec) {
+				c.internalBuilders = true
+			},
+		},
 	} {
 		want, err := newCodec(test.Format, map[string]string{})
 		if err != nil {
@@ -350,6 +359,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"routing-required": ""}},
 		{Options: map[string]string{"generate-setter-samples": ""}},
 		{Options: map[string]string{"generate-rpc-samples": ""}},
+		{Options: map[string]string{"internal-builders": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
 		if got, err := newCodec("disco", test.Options); err == nil {
@@ -480,7 +490,10 @@ func TestWellKnownTypesAsMethod(t *testing.T) {
 	c := createRustCodec()
 
 	want := "wkt::Empty"
-	got := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if want != got {
 		t.Errorf("mismatched well-known type name as method argument or response, want=%s, got=%s", want, got)
 	}
@@ -556,13 +569,19 @@ func TestMethodInOut(t *testing.T) {
 	c := createRustCodec()
 
 	want := "crate::model::Target"
-	got := c.methodInOutTypeName("..Target", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName("..Target", model.State, model.PackageName)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if want != got {
 		t.Errorf("mismatched well-known type name as method argument or response, want=%s, got=%s", want, got)
 	}
 
 	want = "crate::model::target::Nested"
-	got = c.methodInOutTypeName("..Target.Nested", model.State, model.PackageName)
+	got, err = c.methodInOutTypeName("..Target.Nested", model.State, model.PackageName)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if want != got {
 		t.Errorf("mismatched well-known type name as method argument or response, want=%s, got=%s", want, got)
 	}
@@ -721,7 +740,10 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -730,7 +752,10 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got = fieldType(field, model.State, true, c.modulePath, model.PackageName, c.packageMapping)
+		got, err = c.fieldType(field, model.State, true, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -765,7 +790,10 @@ func TestOneOfFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got := oneOfFieldType(field, model.State, c.modulePath, model.PackageName, c.packageMapping)
+		got, err := c.oneOfFieldType(field, model.State, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got != want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, want)
 		}
@@ -835,7 +863,10 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, other_message, map_thing}, []*api.Enum{}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
 		}
@@ -895,7 +926,10 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, map_thing}, []*api.Enum{enum}, []*api.Service{})
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got := fieldType(field, model.State, false, c.modulePath, model.PackageName, c.packageMapping)
+		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got != test.want {
 			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
 		}
@@ -1079,6 +1113,24 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	}
 }
 
+func TestPackageNameToRootModule(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"lro", "lro"},
+		{"google-cloud-lro", "google_cloud_lro"},
+		{"google-cloud-secretmanager-v1", "google_cloud_secretmanager_v1"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := packageNameToRootModule(test.input)
+			if got != test.want {
+				t.Errorf("packageNameToRootModule() = %q, want = %q", test.input, test.want)
+			}
+		})
+	}
+}
+
 type rustCaseConvertTest struct {
 	Input    string
 	Expected string
@@ -1179,7 +1231,10 @@ Maybe they wanted to show some JSON:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1205,7 +1260,10 @@ func TestFormatDocCommentsBullets(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1258,7 +1316,10 @@ func TestFormatDocCommentsNumbers(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1334,7 +1395,10 @@ block:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1355,7 +1419,10 @@ func TestFormatDocCommentsImplicitBlockQuoteClosing(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1382,7 +1449,10 @@ Second [example][].
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1473,7 +1543,10 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1532,7 +1605,10 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1591,7 +1667,10 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1626,7 +1705,10 @@ func TestFormatDocCommentsHTMLTags(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -1818,9 +1900,56 @@ Truncated link: [text](https://example11.com`
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestRustPackageName(t *testing.T) {
+	wkt := &packagez{
+		name:        "wkt",
+		packageName: "google-cloud-wkt",
+	}
+	iam := &packagez{
+		name:        "iam_v1",
+		packageName: "google-cloud-iam-v1",
+	}
+	longRunning := &packagez{
+		name:        "google-cloud-longrunning",
+		packageName: "google-cloud-longrunning",
+	}
+	c := &codec{
+		modulePath: "crate::model",
+		packageMapping: map[string]*packagez{
+			"google.protobuf":          wkt,
+			"google.cloud.iam.v1":      iam,
+			"google.cloud.longrunning": longRunning,
+		},
+	}
+
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"google.protobuf", "wkt"},
+		{"google.cloud.iam.v1", "iam_v1::model"},
+		{"google.cloud.longrunning", "google_cloud_longrunning::model"},
+		{"google.test.v7", "crate::model"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			// Use "google.test.v7" as an external package.
+			got, err := c.modelModule(test.input, "google.test.v7")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("modelModule() = %q, want =%q", got, test.want)
+			}
+		})
 	}
 }
 
@@ -1845,7 +1974,11 @@ func TestMessageNames(t *testing.T) {
 		},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			if got := fullyQualifiedMessageName(test.m, c.modulePath, model.PackageName, c.packageMapping); got != test.want {
+			got, err := c.fullyQualifiedMessageName(test.m, model.PackageName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
 				t.Errorf("mismatched message name, got=%q, want=%q", got, test.want)
 			}
 		})
@@ -1892,7 +2025,11 @@ func TestEnumNames(t *testing.T) {
 		if got := enumName(test.enum); got != test.wantEnum {
 			t.Errorf("enumName(%q) = %q; want = %s", test.enum.Name, got, test.wantEnum)
 		}
-		if got := fullyQualifiedEnumName(test.enum, c.modulePath, model.PackageName, c.packageMapping); got != test.wantFQEnum {
+		got, err := c.fullyQualifiedEnumName(test.enum, model.PackageName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != test.wantFQEnum {
 			t.Errorf("fullyQualifiedEnumName(%q) = %q; want = %s", test.enum.Name, got, test.wantFQEnum)
 		}
 	}

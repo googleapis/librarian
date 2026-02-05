@@ -111,7 +111,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         req: {{InputType.Codec.QualifiedName}},
         options: gax::options::RequestOptions,
     ) -> Result<gax::response::Response<{{Codec.ReturnType}}>> {
-        use gaxi::prost::ToProto;
+        use gaxi::{prost::ToProto, grpc::tonic::{GrpcMethod, Extensions}};
         let options = gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - resolve this in the model }}
@@ -123,8 +123,8 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/HasAutoPopulatedFields}}
         );
         let extensions = {
-            let mut e = tonic::Extensions::new();
-            e.insert(tonic::GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));
+            let mut e = Extensions::new();
+            e.insert(GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));
             e
         };
         let path = http::uri::PathAndQuery::from_static(

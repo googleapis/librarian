@@ -76,6 +76,11 @@ func TestMapKeyAnnotations(t *testing.T) {
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
 		codec, err := newCodec("protobuf", map[string]string{})
+		codec.packageMapping = map[string]*packagez{
+			"test":            {name: "google-cloud-test"},
+			"google.protobuf": {name: "wkt"},
+			"$":               {name: "internal-detail"},
+		}
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -155,10 +160,7 @@ func TestMapValueAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec(test.spec, map[string]string{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		codec := newTestCodec(t, test.spec, "test", map[string]string{})
 		annotateModel(model, codec)
 
 		got := field.Codec.(*fieldAnnotations).SerdeAs
@@ -195,7 +197,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 		JSONName: "field",
 		ID:       ".test.Message.field",
 		Typez:    api.MESSAGE_TYPE,
-		TypezID:  "$map<unused, unused>",
+		TypezID:  "$map<string, string>",
 	}
 	message := &api.Message{
 		Name:          "Message",
@@ -207,11 +209,11 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{})
+	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	_, err := annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	annotateModel(model, codec)
 
 	got := field.Codec.(*fieldAnnotations).SerdeAs
 	if got != "" {

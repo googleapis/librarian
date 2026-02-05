@@ -88,12 +88,13 @@ func TestFind(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "found",
+			name: "found with title",
 			api:  "google/cloud/secretmanager/v1",
 			want: &API{
 				Path:          "google/cloud/secretmanager/v1",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
+				Title:         "Secret Manager API",
 			},
 		},
 		{
@@ -118,6 +119,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+				Title:         "Vertex AI API",
 			},
 		},
 		{
@@ -127,6 +129,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/secretmanager/v1",
 				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Title:         "Secret Manager API",
 			},
 		},
 		{
@@ -136,6 +139,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/compute/v1",
 				Discovery:     "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				Title:         "Google Compute Engine API",
 			},
 		},
 	} {
@@ -151,5 +155,58 @@ func TestFind(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFindGRPCServiceConfig(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "found",
+			path: "google/cloud/secretmanager/v1",
+			want: "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+		},
+		{
+			name: "not found",
+			path: "google/cloud/orgpolicy/v1",
+			want: "",
+		},
+		{
+			name: "directory does not exist",
+			path: "google/cloud/nonexistent/v1",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindGRPCServiceConfig(googleapisDir, test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
+	dir := t.TempDir()
+	apiPath := "google/example/v1"
+	apiDir := filepath.Join(dir, apiPath)
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"foo_grpc_service_config.json", "bar_grpc_service_config.json"} {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte("{}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err := FindGRPCServiceConfig(dir, apiPath)
+	if err == nil {
+		t.Fatal("expected error for multiple gRPC service config files")
 	}
 }

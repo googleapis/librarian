@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/api-allowlist-schema.md -root API -root-title API -title "API Allowlist"
+
 package serviceconfig
 
 const (
+	langDart   = "dart"
 	langPython = "python"
 	langRust   = "rust"
 
@@ -25,7 +28,8 @@ const (
 	titleGKEHubTypes               = "GKE Hub Types"
 	titleLoggingTypes              = "Logging types"
 
-	serviceConfigAIPlatformSchema = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+	serviceConfigAIPlatformSchema  = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
+	serviceConfigAIPlatformV1Beta1 = "google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml"
 )
 
 // API describes an API path and its availability across languages.
@@ -105,6 +109,7 @@ var APIs = []API{
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema},
+	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1"},
 	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{langPython}},
@@ -124,6 +129,7 @@ var APIs = []API{
 	{Path: "google/cloud/assuredworkloads/v1"},
 	{Path: "google/cloud/assuredworkloads/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/audit", Languages: []string{langPython}},
+	{Path: "google/cloud/auditmanager/v1"},
 	{Path: "google/cloud/automl/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/automl/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/backupdr/v1"},
@@ -228,6 +234,7 @@ var APIs = []API{
 	{Path: "google/cloud/gkehub/v1"},
 	{Path: "google/cloud/gkehub/v1/configmanagement", Title: titleGKEHubTypes},
 	{Path: "google/cloud/gkehub/v1/multiclusteringress", Title: titleGKEHubTypes},
+	{Path: "google/cloud/gkehub/v1/rbacrolebindingactuation", Title: titleGKEHubTypes},
 	{Path: "google/cloud/gkehub/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/gkemulticloud/v1"},
 	{Path: "google/cloud/gkerecommender/v1"},
@@ -428,20 +435,33 @@ var APIs = []API{
 	{Path: "google/rpc"},
 	{Path: "google/rpc/context", Title: "RPC Audit and Logging Attributes"},
 	{Path: "google/shopping/css/v1", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/accounts/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/accounts/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/conversions/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/conversions/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/datasources/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/datasources/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/inventories/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/inventories/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/issueresolution/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/issueresolution/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/lfp/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/lfp/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/notifications/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/notifications/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/ordertracking/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/ordertracking/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/products/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/products/v1beta", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/productstudio/v1alpha", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/promotions/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/promotions/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/quota/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/quota/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/reports/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reports/v1alpha", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reports/v1beta", Languages: []string{langPython}},
+	{Path: "google/shopping/merchant/reviews/v1", Languages: []string{langPython}},
 	{Path: "google/shopping/merchant/reviews/v1beta", Languages: []string{langPython}},
 	{Path: "google/shopping/type", Languages: []string{langPython}},
 	{Path: "google/spanner/admin/database/v1"},
@@ -452,4 +472,5 @@ var APIs = []API{
 	{Path: "google/type"},
 	{Path: "grafeas/v1"},
 	{Path: "schema/google/showcase/v1beta1", ServiceConfig: "schema/google/showcase/v1beta1/showcase_v1beta1.yaml"},
+	{Path: "src/google/protobuf", Languages: []string{langDart}},
 }

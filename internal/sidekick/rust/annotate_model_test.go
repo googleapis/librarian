@@ -54,11 +54,11 @@ func TestDefaultFeatures(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec, err := newCodec("protobuf", test.Options)
+		codec := newTestCodec(t, "protobuf", "", test.Options)
+		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got := annotateModel(model, codec)
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DefaultFeatures); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -89,11 +89,11 @@ func TestRustdocWarnings(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec, err := newCodec("protobuf", test.Options)
+		codec := newTestCodec(t, "protobuf", "", test.Options)
+		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got := annotateModel(model, codec)
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledRustdocWarnings); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -124,14 +124,62 @@ func TestClippyWarnings(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec, err := newCodec("protobuf", test.Options)
+		codec := newTestCodec(t, "protobuf", "", test.Options)
+		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
 		}
-		got := annotateModel(model, codec)
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledClippyWarnings); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestInternalBuildersAnnotation(t *testing.T) {
+	for _, test := range []struct {
+		Options        map[string]string
+		Want           bool
+		WantVisibility string
+	}{
+		{
+			Options:        map[string]string{},
+			Want:           false,
+			WantVisibility: "pub",
+		},
+		{
+			Options: map[string]string{
+				"internal-builders": "true",
+			},
+			Want:           true,
+			WantVisibility: "pub(crate)",
+		},
+		{
+			Options: map[string]string{
+				"internal-builders": "false",
+			},
+			Want:           false,
+			WantVisibility: "pub",
+		},
+	} {
+		model := newTestAnnotateModelAPI()
+		codec := newTestCodec(t, "protobuf", "", test.Options)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.InternalBuilders != test.Want {
+			t.Errorf("mismatch in InternalBuilders, want=%v, got=%v", test.Want, got.InternalBuilders)
+		}
+		svcAnn := model.Services[0].Codec.(*serviceAnnotations)
+		if svcAnn.InternalBuilders != test.Want {
+			t.Errorf("mismatch in service InternalBuilders, want=%v, got=%v", test.Want, svcAnn.InternalBuilders)
+		}
+		if got.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in BuilderVisibility, want=%s, got=%s", test.WantVisibility, got.BuilderVisibility())
+		}
+		if svcAnn.BuilderVisibility() != test.WantVisibility {
+			t.Errorf("mismatch in service BuilderVisibility, want=%s, got=%s", test.WantVisibility, svcAnn.BuilderVisibility())
 		}
 	}
 }
