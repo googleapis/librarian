@@ -29,44 +29,14 @@ func TestBuildPythonLibraries(t *testing.T) {
 		want  []*config.Library
 	}{
 		{
-			name: "basic",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID:      "example-library",
-							Version: "1.2.3",
-							APIs: []*legacyconfig.API{
-								{
-									Path:          "google/example/api/v1",
-									ServiceConfig: "path/to/config.yaml",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-			},
-			want: []*config.Library{
-				{
-					Name:    "example-library",
-					Version: "1.2.3",
-					APIs: []*config.API{
-						{
-							Path: "google/example/api/v1",
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "keep paths",
+			name: "secret manager (keep paths, description override)",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
 							ID:          "google-cloud-secret-manager",
+							APIs:        []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
 							SourceRoots: []string{"packages/google-cloud-secret-manager"},
 							PreserveRegex: []string{
 								"packages/google-cloud-secret-manager/CHANGELOG.md",
@@ -79,7 +49,9 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name: "google-cloud-secret-manager",
+					Name:                "google-cloud-secret-manager",
+					DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+					APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 					Keep: []string{
 						"CHANGELOG.md",
 						"docs/CHANGELOG.md",
@@ -87,9 +59,31 @@ func TestBuildPythonLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "workstations (preview release level)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:   "google-cloud-workstations",
+							APIs: []*legacyconfig.API{{Path: "google/cloud/workstations/v1"}},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name:         "google-cloud-workstations",
+					ReleaseLevel: "preview",
+					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildPythonLibraries(test.input)
+			got, err := buildPythonLibraries(test.input, "testdata/googleapis")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -159,6 +153,49 @@ func TestBuildPythonLibraries_Error(t *testing.T) {
 			},
 		},
 		{
+			name: "repo metadata missing",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-missing-metadata",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
+			name: "repo metadata invalid",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-bad-metadata",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
+			name: "api not allow-listed",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:   "google-example-api-v1",
+							APIs: []*legacyconfig.API{{Path: "google/example/api/v1"}},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+		},
+		{
 			name: "source root isn't in root",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
@@ -178,7 +215,7 @@ func TestBuildPythonLibraries_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := buildPythonLibraries(test.input)
+			_, err := buildPythonLibraries(test.input, "testdata/googleapis")
 			if err == nil {
 				t.Errorf("expected error; got none")
 			}

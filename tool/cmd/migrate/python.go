@@ -15,8 +15,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -24,12 +26,14 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // buildPythonLibraries builds a set of librarian libraries from legacylibrarian
 // libraries and the googleapis directory used to find settings in service
 // config files, BUILD.bazel files etc.
-func buildPythonLibraries(input *MigrationInput) ([]*config.Library, error) {
+func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*config.Library, error) {
 	var libraries []*config.Library
 	// No need to use legacyconfig.LibraryConfig - the only thing in
 	// the python config is a single global file entry.
@@ -50,6 +54,14 @@ func buildPythonLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		slices.Sort(keep)
 		library.Keep = keep
+
+		// Apply any information from the .repo-metadata JSON file, e.g.
+		// overriding the description or library stability.
+		repoMetadataPath := filepath.Join(input.repoPath, "packages", libState.ID, ".repo-metadata.json")
+		library, err = applyRepoMetadata(repoMetadataPath, googleapisDir, library)
+		if err != nil {
+			return nil, err
+		}
 
 		libraries = append(libraries, library)
 	}
@@ -165,4 +177,37 @@ func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 		}
 	}
 	return filtered
+}
+
+// applyRepoMetadata loads the existing .repo-metadata.json file for a library
+// and applies the information within it to the specified library.
+func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Library) (*config.Library, error) {
+	defaultTitle := ""
+	// Load the service config file for the first API if there is one, and
+	// use that
+	if len(library.APIs) > 0 {
+		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+		if err != nil {
+			return nil, err
+		}
+		defaultTitle = apiInfo.Title
+	}
+
+	// Load the current repo metadata and apply overrides for anything that
+	// isn't going to get the right value by default.
+	generatorInputRepoMetadata, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return nil, err
+	}
+	repoMetadata := &repometadata.RepoMetadata{}
+	if err := json.Unmarshal(generatorInputRepoMetadata, repoMetadata); err != nil {
+		return nil, err
+	}
+	if repoMetadata.ReleaseLevel != "stable" {
+		library.ReleaseLevel = repoMetadata.ReleaseLevel
+	}
+	if repoMetadata.APIDescription != defaultTitle {
+		library.DescriptionOverride = repoMetadata.APIDescription
+	}
+	return library, nil
 }
