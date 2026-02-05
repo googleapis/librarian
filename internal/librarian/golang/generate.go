@@ -73,8 +73,12 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
-	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	return command.Run(ctx, "gofmt", "-w", filepath.Join(library.Output, library.Name), snippetDir)
+	outDir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return err
+	}
+	snippetDir := filepath.Join(outDir, "internal", "generated", "snippets", library.Name)
+	return command.Run(ctx, "gofmt", "-w", filepath.Join(outDir, library.Name), snippetDir)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
