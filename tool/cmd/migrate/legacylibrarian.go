@@ -165,13 +165,13 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 
 func buildGoLibraries(input *MigrationInput) []*config.Library {
 	var libraries []*config.Library
-	idToLibraryState := sliceToMap[legacyconfig.LibraryState](
+	idToLibraryState := sliceToMap(
 		input.librarianState.Libraries,
 		func(lib *legacyconfig.LibraryState) string {
 			return lib.ID
 		})
 
-	idToLibraryConfig := sliceToMap[legacyconfig.LibraryConfig](
+	idToLibraryConfig := sliceToMap(
 		input.librarianConfig.Libraries,
 		func(lib *legacyconfig.LibraryConfig) string {
 			return lib.LibraryID
@@ -179,7 +179,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 
 	idToGoModule := make(map[string]*RepoConfigModule)
 	if input.repoConfig != nil {
-		idToGoModule = sliceToMap[RepoConfigModule](
+		idToGoModule = sliceToMap(
 			input.repoConfig.Modules,
 			func(mod *RepoConfigModule) string {
 				return mod.Name
