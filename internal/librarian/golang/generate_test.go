@@ -155,6 +155,9 @@ func TestGenerate(t *testing.T) {
 			if err := Generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
+			if err := Format(t.Context(), library); err != nil {
+				t.Fatal(err)
+			}
 
 			for _, path := range test.want {
 				if _, err := os.Stat(filepath.Join(outdir, path)); err != nil {
@@ -167,5 +170,21 @@ func TestGenerate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFormat(t *testing.T) {
+	testhelper.RequireCommand(t, "gofmt")
+	outDir := t.TempDir()
+	goFile := filepath.Join(outDir, "test.go")
+	if err := os.WriteFile(goFile, []byte("package main\n\nfunc main() { fmt.Print(\"hello world\") }"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Output: outDir,
+	}
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
 	}
 }

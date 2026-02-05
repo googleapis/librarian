@@ -171,6 +171,8 @@ func defaultOutput(language, name, api, defaultOut string) string {
 		return dart.DefaultOutput(name, defaultOut)
 	case languageRust:
 		return rust.DefaultOutput(api, defaultOut)
+	case languageGo:
+		return golang.DefaultOutputByName(name, defaultOut)
 	case languagePython:
 		return python.DefaultOutputByName(name, defaultOut)
 	default:
@@ -256,7 +258,7 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 	case languageDart:
 		return dart.Format(ctx, library)
 	case languageGo:
-		return golang.Format(ctx)
+		return golang.Format(ctx, library)
 	case languageRust:
 		return rust.Format(ctx, library)
 	case languagePython:
