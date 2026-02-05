@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -177,7 +178,7 @@ func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "gofmt")
 	outDir := t.TempDir()
 	goFile := filepath.Join(outDir, "test.go")
-	if err := os.WriteFile(goFile, []byte("package main\n\nfunc main() { fmt.Print(\"hello world\") }"), 0644); err != nil {
+	if err := os.WriteFile(goFile, []byte("package main\n\n\n\nfunc main() { \n\nfmt.Print(\"hello world\") \n\n}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -186,5 +187,22 @@ func TestFormat(t *testing.T) {
 	}
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+
+	gotBytes, err := os.ReadFile(goFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(gotBytes)
+	want := `package main
+
+func main() {
+
+	fmt.Print("hello world")
+
+}
+`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

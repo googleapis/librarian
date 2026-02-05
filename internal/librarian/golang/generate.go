@@ -77,8 +77,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return err
 	}
+	args := []string{"-w", filepath.Join(outDir, library.Name)}
 	snippetDir := filepath.Join(outDir, "internal", "generated", "snippets", library.Name)
-	return command.Run(ctx, "gofmt", "-w", filepath.Join(outDir, library.Name), snippetDir)
+	if _, err := os.Stat(snippetDir); err == nil {
+		args = append(args, snippetDir)
+	}
+	return command.Run(ctx, "gofmt", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
