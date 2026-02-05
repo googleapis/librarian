@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -45,56 +46,53 @@ type Sources struct {
 // in parallel. It returns a rust.Sources struct with all directories populated.
 func FetchRustSources(ctx context.Context, cfgSources *config.Sources) (*Sources, error) {
 	sources := &Sources{}
+	// fetchSource fetches a repository source.
+	fetchSource := func(ctx context.Context, source *config.Source, repo string) (string, error) {
+		if source == nil {
+			return "", nil
+		}
+		if source.Dir != "" {
+			return source.Dir, nil
+		}
 
+		dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+		if err != nil {
+			return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
+		}
+		return dir, nil
+	}
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		if cfgSources.Discovery.Dir != "" {
-			sources.Discovery = cfgSources.Discovery.Dir
-			return nil
-		}
-		dir, err := fetch.RepoDir(ctx, discoveryRepo, cfgSources.Discovery.Commit, cfgSources.Discovery.SHA256)
+		dir, err := fetchSource(ctx, cfgSources.Conformance, protobufRepo)
 		if err != nil {
-			return fmt.Errorf("failed to fetch %s: %w", discoveryRepo, err)
-		}
-		sources.Discovery = dir
-		return nil
-	})
-	g.Go(func() error {
-		if cfgSources.Conformance.Dir != "" {
-			sources.Conformance = cfgSources.Conformance.Dir
-			return nil
-		}
-		dir, err := fetch.RepoDir(ctx, protobufRepo, cfgSources.Conformance.Commit, cfgSources.Conformance.SHA256)
-		if err != nil {
-			return fmt.Errorf("failed to fetch %s: %w", protobufRepo, err)
+			return err
 		}
 		sources.Conformance = dir
 		return nil
 	})
 	g.Go(func() error {
-		if cfgSources.Showcase.Dir != "" {
-			sources.Showcase = cfgSources.Showcase.Dir
-			return nil
-		}
-		dir, err := fetch.RepoDir(ctx, showcaseRepo, cfgSources.Showcase.Commit, cfgSources.Showcase.SHA256)
+		dir, err := fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
 		if err != nil {
-			return fmt.Errorf("failed to fetch %s: %w", showcaseRepo, err)
+			return err
+		}
+		sources.Discovery = dir
+		return nil
+	})
+	g.Go(func() error {
+		dir, err := fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		if err != nil {
+			return err
 		}
 		sources.Showcase = dir
 		return nil
 	})
-
 	if cfgSources.ProtobufSrc != nil {
 		g.Go(func() error {
-			if cfgSources.ProtobufSrc.Dir != "" {
-				sources.ProtobufSrc = cfgSources.ProtobufSrc.Dir
-				return nil
-			}
-			dir, err := fetch.RepoDir(ctx, protobufRepo, cfgSources.ProtobufSrc.Commit, cfgSources.ProtobufSrc.SHA256)
+			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
 			if err != nil {
-				return fmt.Errorf("failed to fetch %s: %w", protobufRepo, err)
+				return err
 			}
-			sources.ProtobufSrc = dir
+			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
 			return nil
 		})
 	}
