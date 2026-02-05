@@ -31,7 +31,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "path/to/repo",
+			Dir:    "testdata/googleapis",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -184,6 +184,11 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						APIs: []*config.API{
 							{
 								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+						Python: &config.PythonPackage{
+							OptArgsByAPI: map[string][]string{
+								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 							},
 						},
 					},

@@ -15,6 +15,8 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -56,6 +58,11 @@ func TestBuildPythonLibraries(t *testing.T) {
 						"CHANGELOG.md",
 						"docs/CHANGELOG.md",
 					},
+					Python: &config.PythonPackage{
+						OptArgsByAPI: map[string][]string{
+							"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
+						},
+					},
 				},
 			},
 		},
@@ -78,6 +85,101 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+				},
+			},
+		},
+		{
+			name: "audit (no gapic libraries) and one regular library",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:   "google-cloud-audit-log",
+							APIs: []*legacyconfig.API{{Path: "google/cloud/audit"}},
+						},
+						{
+							ID:   "google-cloud-workstations",
+							APIs: []*legacyconfig.API{{Path: "google/cloud/workstations/v1"}},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name:         "google-cloud-workstations",
+					ReleaseLevel: "preview",
+					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+				},
+			},
+		},
+		{
+			name: "billing budgets (transport varies by API)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-billing-budgets",
+							APIs: []*legacyconfig.API{
+								{Path: "google/cloud/billing/budgets/v1"},
+								{Path: "google/cloud/billing/budgets/v1beta1"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-billing-budgets",
+					APIs: []*config.API{
+						{Path: "google/cloud/billing/budgets/v1"},
+						{Path: "google/cloud/billing/budgets/v1beta1"},
+					},
+					DescriptionOverride: "The Cloud Billing Budget API stores Cloud Billing budgets, which define a budget plan and the rules to execute as spend is tracked against that plan.",
+					Python: &config.PythonPackage{
+						OptArgsByAPI: map[string][]string{
+							"google/cloud/billing/budgets/v1":      {"transport=grpc+rest"},
+							"google/cloud/billing/budgets/v1beta1": {"transport=grpc"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "bigquery connection (no transport, rest_numeric_enums=False)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-bigquery-connection",
+							APIs: []*legacyconfig.API{
+								{Path: "google/cloud/bigquery/connection/v1"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-bigquery-connection",
+					APIs: []*config.API{
+						{Path: "google/cloud/bigquery/connection/v1"},
+					},
+					DescriptionOverride: "Manage BigQuery connections to external data sources.",
+					Python: &config.PythonPackage{
+						OptArgsByAPI: map[string][]string{
+							"google/cloud/bigquery/connection/v1": {
+								"python-gapic-namespace=google.cloud",
+								"python-gapic-name=bigquery_connection",
+								"rest-numeric-enums=False",
+							},
+						},
+					},
 				},
 			},
 		},
@@ -218,6 +320,41 @@ func TestBuildPythonLibraries_Error(t *testing.T) {
 			_, err := buildPythonLibraries(test.input, "testdata/googleapis")
 			if err == nil {
 				t.Errorf("expected error; got none")
+			}
+		})
+	}
+}
+
+// TestParseBazelPythonInfo_Error tests code paths for errors which are hard
+// to test via higher-level tests.
+func TestParseBazelPythonInfo_Error(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  string
+		// Where we can easily specify the error, we do so. Otherwise, we
+		// just validate that an error occurred.
+		wantErr error
+	}{
+		{
+			name:    "missing BUILD.bazel file",
+			api:     "google/cloud/nobazel",
+			wantErr: os.ErrNotExist,
+		},
+		{
+			name: "invalid BUILD.bazel file",
+			api:  "google/cloud/badbazel",
+		},
+		{
+			name: "multiple py_gapic_library rules",
+			api:  "google/cloud/multipygapic",
+		}} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parseBazelPythonInfo("testdata/googleapis", test.api)
+			if err == nil {
+				t.Fatal("expected an error; got none")
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
 			}
 		})
 	}

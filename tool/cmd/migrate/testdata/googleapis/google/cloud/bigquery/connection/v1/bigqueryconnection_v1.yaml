@@ -1,0 +1,13 @@
+type: google.api.Service
+config_version: 3
+name: bigqueryconnection.googleapis.com
+title: BigQuery Connection API
+apis:
+  - name: google.cloud.bigquery.connection.v1.ConnectionService
+documentation:
+  summary: Allows users to manage BigQuery connections to external data sources.
+publishing:
+  library_settings:
+    - version: google.cloud.bigquery.connection.v1
+      java_settings:
+        library_package: com.google.cloud.bigqueryconnection.v1
