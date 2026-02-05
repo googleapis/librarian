@@ -147,3 +147,29 @@ func TestDefaultOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "google/ as prefix",
+			path: "google/ai/generativelanguage/v1beta",
+			want: "google_cloud_ai_generativelanguage_v1beta",
+		},
+		{
+			name: "google/cloud/ as prefix",
+			path: "google/cloud/example/nested/v1",
+			want: "google_cloud_example_nested_v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultLibraryName(test.path)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
