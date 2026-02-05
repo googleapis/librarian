@@ -245,3 +245,186 @@ func TestNewOutputConfig_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestNewCollectionPath(t *testing.T) {
+	service := &api.Service{
+		DefaultHost: "test.googleapis.com",
+	}
+
+	stringPtr := func(s string) *string { return &s }
+
+	for _, test := range []struct {
+		name    string
+		method  *api.Method
+		isAsync bool
+		want    []string
+	}{
+		{
+			name: "Standard Regional Request",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{Literal: stringPtr("projects")},
+									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+									{Literal: stringPtr("locations")},
+									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
+									{Literal: stringPtr("instances")},
+									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: false,
+			want:    []string{"test.projects.locations.instances"},
+		},
+		{
+			name: "Standard Regional Async",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{Literal: stringPtr("projects")},
+									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+									{Literal: stringPtr("locations")},
+									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
+									{Literal: stringPtr("instances")},
+									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: true,
+			want:    []string{"test.projects.locations.operations"},
+		},
+		{
+			name: "Complex Variable Request (Action)",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{
+										Variable: &api.PathVariable{
+											FieldPath: []string{"name"},
+											Segments:  []string{"projects", "*", "locations", "*", "instances", "*"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: false,
+			want:    []string{"test.projects.locations.instances"},
+		},
+		{
+			name: "Complex Variable Async (Action)",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{
+										Variable: &api.PathVariable{
+											FieldPath: []string{"name"},
+											Segments:  []string{"projects", "*", "locations", "*", "instances", "*"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: true,
+			want:    []string{"test.projects.locations.operations"},
+		},
+		{
+			name: "List Method Request (Collection Parent)",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{
+										Variable: &api.PathVariable{
+											FieldPath: []string{"parent"},
+											Segments:  []string{"projects", "*", "locations", "*"},
+										},
+									},
+									{Literal: stringPtr("instances")},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: false,
+			want:    []string{"test.projects.locations.instances"},
+		},
+		{
+			name: "Multitype Binding",
+			method: &api.Method{
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{Literal: stringPtr("projects")},
+									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+									{Literal: stringPtr("locations")},
+									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
+									{Literal: stringPtr("instances")},
+									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
+								},
+							},
+						},
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: stringPtr("v1")},
+									{Literal: stringPtr("folders")},
+									{Variable: &api.PathVariable{FieldPath: []string{"folder"}}},
+									{Literal: stringPtr("locations")},
+									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
+									{Literal: stringPtr("instances")},
+									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+			isAsync: false,
+			want:    []string{"test.folders.locations.instances", "test.projects.locations.instances"},
+		},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := newCollectionPath(test.method, service, test.isAsync)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -474,25 +474,7 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 			continue
 		}
 
-		// Extract the base collection path.
-		// We first check if there is a complex variable segment (e.g. {name=projects/*/locations/*/instances/*})
-		// which contains the full path structure.
-		basePath := extractCollectionPathFromComplexVariable(binding.PathTemplate.Segments)
-		if basePath == "" {
-			// Fallback to standard top-level segment extraction (e.g. /v1/projects/{project}/...)
-			basePath = utils.GetCollectionPathFromSegments(binding.PathTemplate.Segments)
-		}
-
-		// Heuristic: If the path starts with a version (v1, v1beta1), strip it.
-		// gcloud collections typically do not include the version.
-		// utils.GetCollectionPathFromSegments might capture "v1" if followed by {var}.
-		if parts := strings.Split(basePath, "."); len(parts) > 0 && strings.HasPrefix(parts[0], "v") && len(parts[0]) > 1 {
-			if len(parts) > 1 {
-				basePath = strings.Join(parts[1:], ".")
-			} else {
-				basePath = ""
-			}
-		}
+		basePath := extractPathFromSegments(binding.PathTemplate.Segments)
 
 		if basePath == "" {
 			continue
@@ -519,16 +501,32 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 	return slices.Compact(collections)
 }
 
-// extractCollectionPathFromComplexVariable looks for a path variable that contains
-// sub-segments (e.g. {name=projects/*/locations/*}) and extracts the collection path from it.
-func extractCollectionPathFromComplexVariable(segments []api.PathSegment) string {
-	for _, seg := range segments {
-		if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
-			return extractCollectionFromStrings(seg.Variable.Segments)
+// extractPathFromSegments extracts the dot-separated collection path from path segments.
+// It handles:
+// 1. Skipping API version prefixes (e.g., v1).
+// 2. Extracting internal structure from complex variables (e.g., {name=projects/*/locations/*}).
+// 3. Including all literal segments (e.g., instances in .../instances).
+func extractPathFromSegments(segments []api.PathSegment) string {
+	var parts []string
+	for i, seg := range segments {
+		if seg.Literal != nil {
+			val := *seg.Literal
+			// Heuristic: Skip API version at the start.
+			if i == 0 && strings.HasPrefix(val, "v") && len(val) > 1 && (val[1] >= '0' && val[1] <= '9') {
+				continue
+			}
+			parts = append(parts, val)
+		} else if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
+			internal := extractCollectionFromStrings(seg.Variable.Segments)
+			if internal != "" {
+				parts = append(parts, internal)
+			}
 		}
 	}
-	return ""
+	return strings.Join(parts, ".")
 }
+
+// extractCollectionFromStrings constructs a collection path from a list of string segments
 
 // extractCollectionFromStrings constructs a collection path from a list of string segments
 // (literals and wildcards), following AIP-122 conventions (literal followed by variable/wildcard).
