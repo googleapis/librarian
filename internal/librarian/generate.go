@@ -260,7 +260,6 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 	case languageRust:
 		return rust.Format(ctx, library)
 	case languagePython:
-		// Go and Python formatting is currently performed in the generate phase.
 		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 		// generation and formatting for Python.
 		return nil
