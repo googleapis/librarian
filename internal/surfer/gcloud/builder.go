@@ -410,7 +410,7 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 }
 
 // newRequest creates the `Request` part of the command definition.
-func newRequest(method *api.Method, overrides *Config, model *api.API, service *api.Service) *Request {
+func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.Service) *Request {
 	req := &Request{
 		APIVersion: apiVersion(overrides),
 		Collection: newCollectionPath(method, service, false),
@@ -546,7 +546,7 @@ func extractCollectionFromStrings(parts []string) string {
 }
 
 // newOutputConfig generates the output configuration for List commands.
-func newOutputConfig(method *api.Method, model *api.API) *OutputConfig {
+func newOutputConfig(method *api.Method, _ *api.API) *OutputConfig {
 	// We only generate output config for list methods.
 	if !utils.IsList(method) {
 		return nil
