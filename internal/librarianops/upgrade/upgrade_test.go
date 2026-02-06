@@ -121,7 +121,7 @@ func TestUpgradeCommand_RunUpgradeError(t *testing.T) {
 
 	repoDir := t.TempDir()
 	cmd := upgradeCommand()
-	if err := cmd.Run(context.Background(), []string{"-C", repoDir}); err == nil {
+if err := cmd.Run(t.Context(), []string{"-C", repoDir}); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
