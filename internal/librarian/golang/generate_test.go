@@ -245,3 +245,24 @@ func TestGenerateREADME(t *testing.T) {
 		t.Errorf("want module path in README, got:\n%s", s)
 	}
 }
+
+func TestUpdateSnippetMetadata(t *testing.T) {
+	library := &config.Library{
+		Name:    "accessapproval",
+		Version: "1.2.3",
+	}
+
+	output := filepath.Join("testdata", "update-snippet-metadata", "success")
+	if err := updateSnippetMetadata(library, output); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(output, "internal/generated/snippets/accessapproval/apiv1/snippet_metadata.google.cloud.accessapproval.v1.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(content)
+	if !strings.Contains(s, "1.2.3") {
+		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	}
+}
