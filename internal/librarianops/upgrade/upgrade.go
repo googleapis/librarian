@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/librarianops/flags_parser"
+	"github.com/googleapis/librarian/internal/librarianops/flagsparser"
 	"github.com/urfave/cli/v3"
 )
 
@@ -57,11 +57,11 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			_, workDir, err := flags_parser.ParseRepoFlags(cmd)
+			_, workDir, err := flagsparser.ParseRepoFlags(cmd)
 			if err != nil {
 				return err
 			}
-version, err := runUpgrade(ctx, workDir)
+			version, err := runUpgrade(ctx, workDir)
 			if err != nil {
 				return err
 			}

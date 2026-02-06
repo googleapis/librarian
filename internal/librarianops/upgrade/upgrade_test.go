@@ -15,7 +15,6 @@
 package upgrade
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -35,7 +34,7 @@ func TestRunUpgrade(t *testing.T) {
 		t.Fatalf("Failed to write initial librarian.yaml: %v", err)
 	}
 
-	updatedVersion, err := runUpgrade(repoDir)
+	updatedVersion, err := runUpgrade(t.Context(), repoDir)
 	if err != nil {
 		t.Fatalf("runUpgrade failed: %v", err)
 	}
@@ -60,11 +59,10 @@ func TestRunUpgrade(t *testing.T) {
 
 func TestRunUpgrade_GetLatestLibrarianVersionError(t *testing.T) {
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", t.TempDir())
-	t.Cleanup(func() { os.Setenv("PATH", oldPath) })
-
+	t.Setenv("PATH", t.TempDir())
+	t.Cleanup(func() { t.Setenv("PATH", oldPath) })
 	repoDir := t.TempDir()
-	if _, err := runUpgrade(repoDir); err == nil {
+	if _, err := runUpgrade(t.Context(), repoDir); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
@@ -76,21 +74,14 @@ func TestRunUpgrade_UpdateLibrarianVersionError(t *testing.T) {
 		t.Fatalf("Failed to create directory at config path: %v", err)
 	}
 
-	if _, err := runUpgrade(repoDir); err == nil {
+	if _, err := runUpgrade(t.Context(), repoDir); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
 
 func TestUpgradeCommand(t *testing.T) {
-	tmpDir := t.TempDir()
-	originalWD, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { os.Chdir(originalWD) })
+	repoDir := t.TempDir()
+	t.Chdir(repoDir)
 
 	configPath := "librarian.yaml"
 	initialConfig := &config.Config{
@@ -102,26 +93,26 @@ func TestUpgradeCommand(t *testing.T) {
 	}
 
 	cmd := upgradeCommand()
-if err := cmd.Run(t.Context(), []string{"-C", "."}); err != nil {
+	if err := cmd.Run(t.Context(), []string{"-C", "."}); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
 func TestUpgradeCommand_NoRepo(t *testing.T) {
 	cmd := upgradeCommand()
-if err := cmd.Run(t.Context(), []string{}); err == nil {
+	if err := cmd.Run(t.Context(), []string{}); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
 
 func TestUpgradeCommand_RunUpgradeError(t *testing.T) {
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", t.TempDir())
-	t.Cleanup(func() { os.Setenv("PATH", oldPath) })
+	t.Setenv("PATH", t.TempDir())
+	t.Cleanup(func() { t.Setenv("PATH", oldPath) })
 
 	repoDir := t.TempDir()
 	cmd := upgradeCommand()
-if err := cmd.Run(t.Context(), []string{"-C", repoDir}); err == nil {
+	if err := cmd.Run(t.Context(), []string{"-C", repoDir}); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
