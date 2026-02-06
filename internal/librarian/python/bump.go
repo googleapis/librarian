@@ -23,8 +23,10 @@ import (
 	"strings"
 )
 
-const gapicVersionLinePrefix = "__version__ = "
-const gapicVersionFile = "gapic_version.py"
+const (
+	gapicVersionLinePrefix = "__version__ = "
+	gapicVersionFile       = "gapic_version.py"
+)
 
 var (
 	errMultipleVersions   = errors.New("multiple versions found")
