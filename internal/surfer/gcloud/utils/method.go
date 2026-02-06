@@ -184,3 +184,17 @@ func IsCollectionMethod(m *api.Method) bool {
 		return lastSegment.Literal != nil
 	}
 }
+
+// FindResourceMessage identifies the primary resource message within a List response.
+// Per AIP-132, this is usually the repeated field in the response message.
+func FindResourceMessage(outputType *api.Message) *api.Message {
+	if outputType == nil {
+		return nil
+	}
+	for _, f := range outputType.Fields {
+		if f.Repeated && f.MessageType != nil {
+			return f.MessageType
+		}
+	}
+	return nil
+}

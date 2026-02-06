@@ -237,3 +237,45 @@ func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string
 	}
 	return ""
 }
+
+// ExtractPathFromSegments extracts the dot-separated collection path from path segments.
+// It handles:
+// 1. Skipping API version prefixes (e.g., v1).
+// 2. Extracting internal structure from complex variables (e.g., {name=projects/*/locations/*}).
+// 3. Including all literal segments (e.g., instances in .../instances).
+func ExtractPathFromSegments(segments []api.PathSegment) string {
+	var parts []string
+	for i, seg := range segments {
+		if seg.Literal != nil {
+			val := *seg.Literal
+			// Heuristic: Skip API version at the start.
+			if i == 0 && strings.HasPrefix(val, "v") && len(val) > 1 && (val[1] >= '0' && val[1] <= '9') {
+				continue
+			}
+			parts = append(parts, val)
+		} else if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
+			internal := extractCollectionFromStrings(seg.Variable.Segments)
+			if internal != "" {
+				parts = append(parts, internal)
+			}
+		}
+	}
+	return strings.Join(parts, ".")
+}
+
+// extractCollectionFromStrings constructs a collection path from a list of string segments
+// (literals and wildcards), following AIP-122 conventions (literal followed by variable/wildcard).
+func extractCollectionFromStrings(parts []string) string {
+	var collectionParts []string
+	for i := 0; i < len(parts)-1; i++ {
+		// A collection identifier is a literal segment followed by a wildcard segment (* or **).
+		// We assume standard patterns like "projects", "*", "locations", "*".
+		isLiteral := parts[i] != "*" && parts[i] != "**"
+		isWildcard := parts[i+1] == "*" || parts[i+1] == "**"
+
+		if isLiteral && isWildcard {
+			collectionParts = append(collectionParts, parts[i])
+		}
+	}
+	return strings.Join(collectionParts, ".")
+}
