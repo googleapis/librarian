@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package upgrade provides functionality for upgrading librarian.yaml.
 package upgrade
 
 import (
@@ -22,12 +23,13 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Run `go list -m -f '{{.Version}}' github.com/googleapis/librarian@main` to get librarian version.
-// The command is essentially a "deep dive" request for information about a specific Go module version.
+// GetLatestLibrarianVersion run `go list -m -f '{{.Version}}' github.com/googleapis/librarian@main` to
+// get librarian version. The command is essentially a "deep dive" request for information about a
+// specific Go module version.
 func GetLatestLibrarianVersion(ctx context.Context) (string, error) {
 	version, err := command.Output(ctx, "go", "list", "-m", "-f", "{{.Version}}", "github.com/googleapis/librarian@main")
 	if err != nil {
 		return "", fmt.Errorf("getting librarian version failed: %w", err)
 	}
-return strings.TrimSpace(version), nil
+	return strings.TrimSpace(version), nil
 }
