@@ -95,7 +95,7 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 // writeLicenseHeader writes the license header as Go comments to the given file.
 func writeLicenseHeader(f *os.File) error {
 	year := time.Now().Format("2006")
-	for _, line := range license.LicenseHeader(year) {
+	for _, line := range license.Header(year) {
 		if _, err := f.WriteString("//" + line + "\n"); err != nil {
 			return err
 		}

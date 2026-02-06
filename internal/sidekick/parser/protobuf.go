@@ -346,7 +346,9 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 					if err != nil {
 						return nil, err
 					}
-					applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin)
+					if err := applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin); err != nil {
+						return nil, err
+					}
 					service.Methods = append(service.Methods, method)
 				}
 			}
