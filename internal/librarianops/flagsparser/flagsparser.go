@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flags_parser
+// Package flagsparser provides functionality for parsing command line flags for librarianops commands.
+package flagsparser
 
 import (
 	"fmt"
@@ -22,7 +23,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// Parses the command line flags for librarianops commands.
+// ParseRepoFlags parses the command line flags for librarianops commands.
 func ParseRepoFlags(cmd *cli.Command) (repoName, workDir string, err error) {
 	workDir = cmd.String("C")
 	command.Verbose = cmd.Bool("v")
