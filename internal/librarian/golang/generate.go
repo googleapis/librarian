@@ -18,6 +18,7 @@ package golang
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -343,6 +344,10 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
 	return filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			// Skip the update if the baseDir is not existed.
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
 			return err
 		}
 		if info.IsDir() || !strings.HasPrefix(info.Name(), "snippet_metadata") {
