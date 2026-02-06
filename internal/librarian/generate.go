@@ -82,6 +82,11 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 }
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
+	parallelization := cfg.Parallelization
+	if parallelization == nil {
+		parallelization = &config.Parallelization{}
+	}
+
 	// Fetch sources.
 	var googleapisDir string
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
@@ -107,14 +112,14 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		rustSources.Googleapis = googleapisDir
 	}
 
-	// Prepare and clean libraries sequentially.
-	// This avoids race conditions when output directories are nested.
+	// Prepare the libraries to generate by skipping as specified and applying
+	// defaults.
 	var libraries []*config.Library
 	for _, lib := range cfg.Libraries {
 		if !shouldGenerate(lib, all, libraryName) {
 			continue
 		}
-		prepared, err := prepareLibrary(cfg.Language, lib, cfg.Default)
+		prepared, err := applyDefaults(cfg.Language, lib, cfg.Default)
 		if err != nil {
 			return err
 		}
@@ -132,24 +137,45 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 	}
 
-	// Generate all libraries in parallel.
-	g, gctx := errgroup.WithContext(ctx)
-	for _, lib := range libraries {
-		g.Go(func() error {
-			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
-		})
-	}
-	if err := g.Wait(); err != nil {
+	// Clean all libraries.
+	if err := executeInParallel(ctx, libraries, parallelization.Clean, func(gctx context.Context, lib *config.Library) error {
+		return cleanLibrary(cfg.Language, lib)
+	}); err != nil {
 		return err
 	}
 
-	// Format all libraries sequentially.
-	for _, lib := range libraries {
-		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
-			return err
-		}
+	// Generate all libraries.
+	if err := executeInParallel(ctx, libraries, parallelization.Generate, func(gctx context.Context, lib *config.Library) error {
+		return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
+	}); err != nil {
+		return err
 	}
+
+	// Format all libraries.
+	if err := executeInParallel(ctx, libraries, parallelization.Format, func(gctx context.Context, lib *config.Library) error {
+		return formatLibrary(gctx, cfg.Language, lib)
+	}); err != nil {
+		return err
+	}
+
 	return postGenerate(ctx, cfg.Language)
+}
+
+// executeInParallel perform the given operation for all libraries in the
+// specified slice, with a specified degree of parallelization, where a degree
+// of 0 is equivalent to 1 and anything negative is unlimited.
+func executeInParallel(ctx context.Context, libraries []*config.Library, parallelization int, function func(context context.Context, lib *config.Library) error) error {
+	g, gctx := errgroup.WithContext(ctx)
+	if parallelization == 0 {
+		parallelization = 1
+	}
+	g.SetLimit(parallelization)
+	for _, lib := range libraries {
+		g.Go(func() error {
+			return function(gctx, lib)
+		})
+	}
+	return g.Wait()
 }
 
 // postGenerate performs repository-level actions after all individual
@@ -196,29 +222,25 @@ func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
 	return all || lib.Name == libraryName
 }
 
-// prepareLibrary applies defaults and cleans the output directory.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	library, err := applyDefaults(language, lib, defaults)
-	if err != nil {
-		return nil, err
-	}
+// cleanLibrary cleans the output directory for a library.
+func cleanLibrary(language string, library *config.Library) error {
 	switch language {
 	case languageFake:
 		// No cleaning needed.
 	case languageDart, languageGo, languagePython:
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return nil, err
+			return err
 		}
 	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
-			return nil, fmt.Errorf("library %q: %w", library.Name, err)
+			return fmt.Errorf("library %q: %w", library.Name, err)
 		}
 		if err := cleanOutput(library.Output, keep); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return library, nil
+	return nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, src *source.Sources) error {
@@ -235,6 +257,7 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 		if err := python.Generate(ctx, library, googleapisDir); err != nil {
 			return err
 		}
+		return nil
 	case languageGo:
 		if err := golang.Generate(ctx, library, googleapisDir); err != nil {
 			return err

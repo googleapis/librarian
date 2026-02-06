@@ -41,9 +41,28 @@ type Config struct {
 	// Default contains default settings for all libraries. They apply to all libraries unless overridden.
 	Default *Default `yaml:"default,omitempty"`
 
+	// Parallelization indicates the degree of parallelization that should be
+	// used for various operations.
+	Parallelization *Parallelization `yaml:"parallelization,omitempty"`
+
 	// Libraries contains configuration overrides for libraries that need
 	// special handling, and differ from default settings.
 	Libraries []*Library `yaml:"libraries,omitempty"`
+}
+
+// Parallelization indicates the degree of parallelization that should be used
+// for various operations. Any negative value represents unlimited
+// parallelization; a positive number represents a specific limit of
+// parallelization; 0 is treated as equivalent to 1 (for the sake of
+// convenience, as a default value).
+type Parallelization struct {
+	// Clean indicates the degree of parallelization for clean operations before
+	// generation.
+	Clean int `yaml:"clean,omitempty"`
+	// Generate indicates the degree of parallelization for generation.
+	Generate int `yaml:"generate,omitempty"`
+	// Format indicates the degree of parallelization for formatting.
+	Format int `yaml:"format,omitempty"`
 }
 
 // Release holds the configuration parameter for publish command.
