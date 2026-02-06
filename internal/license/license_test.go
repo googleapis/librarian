@@ -20,12 +20,12 @@ import (
 )
 
 func TestLicense(t *testing.T) {
-	got := LicenseHeader("2038")
+	got := Header("2038")
 	want := "Copyright 2038"
 	if len(got) != 13 {
-		t.Errorf("bad header length from LicenseHeader(), got=%d, want=%q", len(got), 13)
+		t.Errorf("bad header length from Header(), got=%d, want=%q", len(got), 13)
 	}
 	if !strings.Contains(got[0], want) {
-		t.Errorf("bad start line for LicenseHeader(), got=%q, want=%q", got[0], want)
+		t.Errorf("bad start line for Header(), got=%q, want=%q", got[0], want)
 	}
 }
