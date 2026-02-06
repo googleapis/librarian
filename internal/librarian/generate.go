@@ -227,20 +227,18 @@ func cleanLibrary(language string, library *config.Library) error {
 	switch language {
 	case languageFake:
 		// No cleaning needed.
+		return nil
 	case languageDart, languageGo, languagePython:
-		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return err
-		}
+		return cleanOutput(library.Output, library.Keep)
 	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return fmt.Errorf("library %q: %w", library.Name, err)
 		}
-		if err := cleanOutput(library.Output, keep); err != nil {
-			return err
-		}
+		return cleanOutput(library.Output, keep)
+	default:
+		return fmt.Errorf("language %q does not support cleaning", language)
 	}
-	return nil
 }
 
 func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, src *source.Sources) error {
