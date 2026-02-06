@@ -24,8 +24,7 @@ import (
 
 // Upgrade consist in getting the latest librarian version and updates the librarian.yaml file.
 // It returns the new version, and an error if one occurred.
-func runUpgrade(repoDir string) (string, error) {
-	ctx := context.Background()
+func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 	version, err := GetLatestLibrarianVersion(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get latest librarian version: %w", err)
