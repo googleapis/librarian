@@ -121,14 +121,14 @@ func ParseTransports(path string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
 	}
-	f, err := build.ParseBuild(path, data)
+	file, err := build.ParseBuild(path, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
 	}
 
 	transports := make(map[string]string)
 	for ruleName, lang := range ruleToLang {
-		for _, rule := range f.Rules(ruleName) {
+		for _, rule := range file.Rules(ruleName) {
 			tStr := rule.AttrString("transport")
 			if tStr == "" {
 				continue
