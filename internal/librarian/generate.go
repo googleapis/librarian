@@ -257,7 +257,6 @@ func generate(ctx context.Context, language string, library *config.Library, goo
 		if err := python.Generate(ctx, library, googleapisDir); err != nil {
 			return err
 		}
-		return nil
 	case languageGo:
 		if err := golang.Generate(ctx, library, googleapisDir); err != nil {
 			return err
