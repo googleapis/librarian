@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Given a repository directory add the librarian config file to it and return it.
+// Given a repository directory, returns the path to the librarian config file.
 // For example if the repoDir is "/path/to/repo", the config file path will be "/path/to/repo/librarian.yaml".
 func GenerateLibrarianConfigPath(repoDir string) string {
 	return filepath.Join(repoDir, "librarian.yaml")
