@@ -17,8 +17,6 @@ package test;
 
 import "google/api/annotations.proto";
 import "google/api/client.proto";
-import "google/api/field_behavior.proto";
-import "google/api/resource.proto";
 
 // A service with an API version.
 service Service {

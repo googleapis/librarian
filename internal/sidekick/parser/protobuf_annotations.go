@@ -167,9 +167,12 @@ func parseDefaultHost(m proto.Message) string {
 	return defaultHost
 }
 
-func parseAPIVersion(m proto.Message) string {
+func parseAPIVersion(serviceID string, m proto.Message) string {
 	apiVersion := proto.GetExtension(m, annotations.E_ApiVersion)
-	return apiVersion.(string)
+	if version, ok := apiVersion.(string); ok {
+		return version
+	}
+	panic(fmt.Sprintf("bad api_version type, this is unexpected as protoc validates the `google.api.api_version` type. serviceID=%s, apiVersion=%q", serviceID, apiVersion))
 }
 
 func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {

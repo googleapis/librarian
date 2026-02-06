@@ -280,7 +280,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			service := processService(state, s, sFQN, f.GetPackage())
 			for _, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
-				apiVersion := parseAPIVersion(s.GetOptions())
+				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
 				method, err := processMethod(state, m, mFQN, f.GetPackage(), sFQN, apiVersion)
 				if err != nil {
 					return nil, err
@@ -343,7 +343,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 						// define the mixin method in the code.
 						continue
 					}
-					apiVersion := parseAPIVersion(mixinProto.GetOptions())
+					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
 					method, err := processMethod(state, m, mFQN, service.Package, sFQN, apiVersion)
 					if err != nil {
 						return nil, err
