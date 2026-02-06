@@ -134,18 +134,16 @@ var APIs = []API{
 			if err := os.WriteFile(filepath.Join(buildBazelDir, "BUILD.bazel"), []byte(test.buildBazel), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			if err := runUpdateTransports(apiGoPath, googleapisDir); err != nil {
 				t.Fatalf("runUpdateTransports() error = %v", err)
 			}
-
 			got, err := os.ReadFile(apiGoPath)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := strings.TrimSpace(string(got)); diff != strings.TrimSpace(test.want) {
-				t.Errorf("mismatch:\ngot:\n%s\nwant:\n%s", string(got), test.want)
+			if diff := cmp.Diff(strings.TrimSpace(test.want), strings.TrimSpace(string(got))); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
