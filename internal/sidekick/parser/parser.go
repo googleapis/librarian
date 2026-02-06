@@ -23,6 +23,8 @@ import (
 
 // ModelConfig holds the configuration necessary to parse an API specification.
 type ModelConfig struct {
+	Language string
+
 	// Source configuration
 	// SpecificationFormat is the format of the API specification.
 	// Supported values are "discovery", "openapi", "protobuf", and "none".
@@ -54,6 +56,7 @@ func NewModelConfigFromSidekickConfig(cfg *config.Config) ModelConfig {
 		specFormat = "discovery"
 	}
 	return ModelConfig{
+		Language:            cfg.General.Language,
 		SpecificationFormat: specFormat,
 		SpecificationSource: cfg.General.SpecificationSource,
 		ServiceConfig:       cfg.General.ServiceConfig,

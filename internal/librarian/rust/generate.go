@@ -39,11 +39,11 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := libraryToSidekickConfig(library, library.APIs[0], sources)
+	modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
-	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(sidekickConfig))
+	model, err := parser.CreateModel(modelConfig)
 	if err != nil {
 		return err
 	}
@@ -59,8 +59,8 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 			return err
 		}
 	}
-	codec := buildCodec(library)
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, codec); err != nil {
+	modelConfig.Codec = buildCodec(library)
+	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
 	if !exists {
@@ -102,7 +102,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
-			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec)
+			err = sidekickrust.Generate(ctx, model, module.Output, parser.NewModelConfigFromSidekickConfig(sidekickConfig))
 		case "rust_storage":
 			return generateRustStorage(ctx, library, module.Output, sources)
 		case "rust+prost":
@@ -204,7 +204,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
 
-	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig.General.SpecificationFormat, storageConfig.Codec, controlModel, controlConfig.General.SpecificationFormat, controlConfig.Codec)
+	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, parser.NewModelConfigFromSidekickConfig(storageConfig), controlModel, parser.NewModelConfigFromSidekickConfig(controlConfig))
 }
 
 func findModuleByOutput(library *config.Library, output string) *config.RustModule {
