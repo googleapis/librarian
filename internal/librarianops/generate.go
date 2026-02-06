@@ -24,7 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarianops/flags_parser"
+	"github.com/googleapis/librarian/internal/librarianops/flagsparser"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -67,7 +67,7 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			repoName, workDir, err := flags_parser.ParseRepoFlags(cmd)
+			repoName, workDir, err := flagsparser.ParseRepoFlags(cmd)
 			if err != nil {
 				return err
 			}

@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Given a repository directory add the librarian config file to it and return it.
+// GenerateLibrarianConfigPath given a repository directory, returns the path to the librarian config file.
 // For example if the repoDir is "/path/to/repo", the config file path will be "/path/to/repo/librarian.yaml".
 func GenerateLibrarianConfigPath(repoDir string) string {
 	return filepath.Join(repoDir, "librarian.yaml")
@@ -37,7 +37,8 @@ func getConfigFile(configPath string) (*config.Config, error) {
 	return yaml.Read[config.Config](configPath)
 }
 
-// Updates the version field in the librarian.yaml config file with the provided version. If the file does not exist, returns an error.
+// UpdateLibrarianVersion updates the version field in the librarian.yaml config file with the provided version.
+// If the file does not exist, returns an error.
 func UpdateLibrarianVersion(version, configPath string) error {
 	configFile, err := getConfigFile(configPath)
 	if err != nil {
