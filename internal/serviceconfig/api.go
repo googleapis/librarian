@@ -121,6 +121,7 @@ var APIs = []API{
 	{Path: "google/cloud/apigeeregistry/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/apihub/v1"},
 	{Path: "google/cloud/apiregistry/v1"},
+	{Path: "google/cloud/apiregistry/v1beta"},
 	{Path: "google/cloud/apphub/v1"},
 	{Path: "google/cloud/asset/v1"},
 	{Path: "google/cloud/asset/v1p1beta1", Languages: []string{langPython}},
