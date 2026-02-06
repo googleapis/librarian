@@ -78,7 +78,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       secretManagerYamlFullPath,
-			SpecificationSource: path.Join(mainTestdataDir, "secretmanager_openapi_v1.json"),
+			SpecificationSource: openAPIFile,
 		},
 	}
 	model, err := CreateModel(cfg)
