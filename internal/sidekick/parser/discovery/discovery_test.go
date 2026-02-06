@@ -29,7 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/sample"
 )
 
-const computeDiscoveryFile = "../../testdata/disco/compute.v1.json"
+const computeDiscoveryFile = "../../../testdata/discovery/compute.v1.json"
 
 func TestSorted(t *testing.T) {
 	got, err := ComputeDisco(t, nil)

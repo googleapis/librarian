@@ -59,7 +59,7 @@ func TestDisco_FindSources(t *testing.T) {
 			SpecificationSource: discoSourceFileRelative,
 		},
 		Source: map[string]string{
-			"test-root": testdataDir,
+			"test-root": mainTestdataDir,
 			"roots":     "undefined,test",
 		},
 	}

@@ -29,8 +29,9 @@ import (
 )
 
 var (
-	testdataDir, _  = filepath.Abs("../testdata")
-	expectedInNosvc = []string{
+	testdataDir, _      = filepath.Abs("../testdata")
+	localTestdataDir, _ = filepath.Abs("testdata")
+	expectedInNosvc     = []string{
 		"README.md",
 		"Cargo.toml",
 		path.Join("src", "lib.rs"),
@@ -82,7 +83,7 @@ func TestCodecError(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
@@ -92,7 +93,7 @@ func TestCodecError(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"--invalid--": "--invalid--",
@@ -122,7 +123,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
@@ -155,7 +156,7 @@ func TestRustFromDiscovery(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "disco",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "disco/compute.v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
 		},
 		Codec: map[string]string{
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
@@ -368,7 +369,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 			SpecificationSource: "google/protobuf",
 		},
 		Source: map[string]string{
-			"protobuf-root": testdataDir,
+			"protobuf-root": localTestdataDir,
 			"include-list":  "source_context.proto",
 		},
 		Codec: map[string]string{
