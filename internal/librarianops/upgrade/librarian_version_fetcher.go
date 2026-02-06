@@ -29,5 +29,5 @@ func GetLatestLibrarianVersion(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("getting librarian version failed: %w", err)
 	}
-	return strings.TrimSpace(string(version)), nil
+return strings.TrimSpace(version), nil
 }
