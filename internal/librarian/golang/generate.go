@@ -17,14 +17,23 @@ package golang
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	//go:embed template/_README.md.txt
+	readmeTmpl string
+
+	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
 // Generate generates a Go client library.
@@ -70,6 +79,13 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 
 	moduleRoot := filepath.Join(outdir, library.Name)
+	absModuleRoot, err := filepath.Abs(moduleRoot)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
+		return fmt.Errorf("invalid library name: path traversal detected")
+	}
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
@@ -77,6 +93,13 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
+	}
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		return err
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		return err
 	}
 	return nil
 }
@@ -292,4 +315,23 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}
 	return files, nil
+}
+
+func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot string) error {
+	if len(library.APIs) == 0 {
+		return fmt.Errorf("no APIs configured")
+	}
+	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	if err != nil {
+		return err
+	}
+	err = readmeTmplParsed.Execute(f, map[string]string{
+		"Name":       api.Title,
+		"ModulePath": modulePath(library),
+	})
+	cerr := f.Close()
+	if err != nil {
+		return err
+	}
+	return cerr
 }
