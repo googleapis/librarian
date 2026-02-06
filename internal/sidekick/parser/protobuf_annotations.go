@@ -167,6 +167,11 @@ func parseDefaultHost(m proto.Message) string {
 	return defaultHost
 }
 
+func parseAPIVersion(m proto.Message) string {
+	apiVersion := proto.GetExtension(m, annotations.E_ApiVersion)
+	return apiVersion.(string)
+}
+
 func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {
 	if field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING {
 		return false
