@@ -102,7 +102,7 @@ func TestUpgradeCommand(t *testing.T) {
 	}
 
 	cmd := upgradeCommand()
-	if err := cmd.Run(context.Background(), []string{"-C", "."}); err != nil {
+if err := cmd.Run(t.Context(), []string{"-C", "."}); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
