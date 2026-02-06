@@ -61,7 +61,7 @@ For each repository, librarianops will:
 			if err != nil {
 				return err
 			}
-			version, err := runUpgrade(workDir)
+version, err := runUpgrade(ctx, workDir)
 			if err != nil {
 				return err
 			}
