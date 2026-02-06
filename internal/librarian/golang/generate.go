@@ -101,6 +101,9 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateREADME(library, api, moduleRoot); err != nil {
 		return err
 	}
+	if err := updateSnippetMetadata(library, outdir); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -334,4 +337,28 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
+}
+
+func updateSnippetMetadata(library *config.Library, output string) error {
+	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
+	return filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() || !strings.HasPrefix(info.Name(), "snippet_metadata") {
+			return nil
+		}
+		read, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		// Replace the placeholder with library version.
+		newContent := strings.Replace(string(read), "$VERSION", library.Version, 1)
+		err = os.WriteFile(path, []byte(newContent), 0644)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
