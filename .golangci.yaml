@@ -60,9 +60,6 @@ linters:
       - path: internal/legacylibrarian/
         linters:
           - godoclint
-      - path: internal/sidekick/sample/
-        linters:
-          - godoclint
       - path: _test\.go$
         linters:
           - godoclint

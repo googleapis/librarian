@@ -793,12 +793,6 @@ type PathVariable struct {
 	AllowReserved bool
 }
 
-// PathMatch is a single wildcard match in a path.
-type PathMatch struct{}
-
-// PathMatchRecursive is a recursive wildcard match in a path.
-type PathMatchRecursive struct{}
-
 // NewPathTemplate creates a new PathTemplate.
 func NewPathTemplate() *PathTemplate {
 	return &PathTemplate{}

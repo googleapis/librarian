@@ -21,11 +21,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
 	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
