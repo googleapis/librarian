@@ -33,7 +33,7 @@ var (
 	mainTestdataDir, _        = filepath.Abs("../../testdata")
 	discoSourceFile           = path.Join(mainTestdataDir, discoSourceFileRelative)
 	secretManagerYamlFullPath = path.Join(mainTestdataDir, "googleapis", secretManagerYamlRelative)
-	openAPIFile               = path.Join(mainTestdataDir, "openapi/secretmanager_openapi_v1.json")
+	openAPIFile               = path.Join(mainTestdataDir, "secretmanager_openapi_v1.json")
 	protobufFile              = path.Join("testdata", "scalar.proto")
 )
 
@@ -78,7 +78,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       secretManagerYamlFullPath,
-			SpecificationSource: path.Join(mainTestdataDir, "openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(mainTestdataDir, "secretmanager_openapi_v1.json"),
 		},
 	}
 	model, err := CreateModel(cfg)
