@@ -109,7 +109,7 @@ if err := cmd.Run(t.Context(), []string{"-C", "."}); err != nil {
 
 func TestUpgradeCommand_NoRepo(t *testing.T) {
 	cmd := upgradeCommand()
-	if err := cmd.Run(context.Background(), []string{}); err == nil {
+if err := cmd.Run(t.Context(), []string{}); err == nil {
 		t.Error("expected error, got nil")
 	}
 }
