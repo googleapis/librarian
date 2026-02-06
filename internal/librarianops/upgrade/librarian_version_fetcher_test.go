@@ -33,14 +33,13 @@ func TestGetLatestLibrarianVersion(t *testing.T) {
 			t.Errorf("Expected a version string starting with 'v', got %q", actualVersion)
 		}
 	})
+}
 
-	t.Run("Handle Command Error", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // Immediately cancel the context to force an error.
-		_, err := GetLatestLibrarianVersion(ctx)
-		if err == nil {
-			t.Fatal("Expected an error for a canceled context, but got nil")
-		}
-		t.Logf("Successfully captured error as expected: %v", err)
-	})
+func TestGetLatestLibrarianVersion_Error(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel() // Immediately cancel the context to force an error.
+	_, err := GetLatestLibrarianVersion(ctx)
+	if err == nil {
+		t.Fatal("Expected an error for a canceled context, but got nil")
+	}
 }
