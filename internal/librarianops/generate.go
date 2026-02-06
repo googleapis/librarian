@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarianops/flags_parser"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -66,30 +67,13 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			repoName, workDir, err := parseRepoFlags(cmd)
+			repoName, workDir, err := flags_parser.ParseRepoFlags(cmd)
 			if err != nil {
 				return err
 			}
 			return runGenerate(ctx, repoName, workDir)
 		},
 	}
-}
-
-func parseRepoFlags(cmd *cli.Command) (repoName, workDir string, err error) {
-	workDir = cmd.String("C")
-	command.Verbose = cmd.Bool("v")
-
-	if workDir != "" {
-		// When -C is provided, infer repo name from directory basename.
-		repoName = filepath.Base(workDir)
-	} else {
-		// When -C is not provided, require positional repo argument.
-		if cmd.Args().Len() == 0 {
-			return "", "", fmt.Errorf("usage: librarianops <command> <repo> or librarianops <command> -C <dir>")
-		}
-		repoName = cmd.Args().Get(0)
-	}
-	return repoName, workDir, nil
 }
 
 func runGenerate(ctx context.Context, repoName, repoDir string) error {
