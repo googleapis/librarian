@@ -31,7 +31,7 @@ import (
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.
-func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.Config) (*api.API, error) {
+func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConfig *config.Discovery) (*api.API, error) {
 	doc, err := newDiscoDocument(contents)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, cfg *config.C
 	// output on each run.
 	slices.SortStableFunc(result.Services, compareServices)
 
-	lroAnnotations(result, cfg)
+	lroAnnotations(result, discoveryConfig)
 
 	return result, nil
 }

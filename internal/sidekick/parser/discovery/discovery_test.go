@@ -234,11 +234,11 @@ func ComputeDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	return NewAPI(sc, contents, nil)
 }
 
-func ComputeDiscoWithLros(t *testing.T, cfg *config.Config) (*api.API, error) {
+func ComputeDiscoWithLros(t *testing.T, discoveryConfig *config.Discovery) (*api.API, error) {
 	t.Helper()
 	contents, err := os.ReadFile(computeDiscoveryFile)
 	if err != nil {
 		return nil, err
 	}
-	return NewAPI(nil, contents, cfg)
+	return NewAPI(nil, contents, discoveryConfig)
 }
