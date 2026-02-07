@@ -30,15 +30,15 @@ import (
 
 // Generate generates a Dart client library.
 func Generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
-	sidekickConfig, err := toSidekickConfig(library, library.APIs[0], sources)
+	modelConfig, err := toModelConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
-	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(sidekickConfig))
+	model, err := parser.CreateModel(modelConfig)
 	if err != nil {
 		return err
 	}
-	if err := sidekickdart.Generate(ctx, model, library.Output, sidekickConfig); err != nil {
+	if err := sidekickdart.Generate(ctx, model, library.Output, modelConfig.Codec); err != nil {
 		return err
 	}
 	return nil
