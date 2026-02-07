@@ -51,24 +51,6 @@ type ModelConfig struct {
 	Discovery *config.Discovery
 }
 
-// NewModelConfigFromSidekickConfig creates a ModelConfig from a sidekick Config.
-func NewModelConfigFromSidekickConfig(cfg *config.Config) ModelConfig {
-	if cfg == nil {
-		return ModelConfig{}
-	}
-	return ModelConfig{
-		Language:            cfg.General.Language,
-		SpecificationFormat: cfg.General.SpecificationFormat,
-		SpecificationSource: cfg.General.SpecificationSource,
-		ServiceConfig:       cfg.General.ServiceConfig,
-		Source:              cfg.Source,
-		Codec:               cfg.Codec,
-		CommentOverrides:    cfg.CommentOverrides,
-		PaginationOverrides: cfg.PaginationOverrides,
-		Discovery:           cfg.Discovery,
-	}
-}
-
 // CreateModel parses the service specification referenced in `config`,
 // cross-references the model, and applies any transformations or overrides
 // required by the configuration.
