@@ -42,7 +42,7 @@ func TestCreateModelDisco(t *testing.T) {
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: discoSourceFile,
 	}
-	got, err := CreateModel(NewModelConfigFromSidekickConfig(cfg))
+	got, err := CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: openAPIFile,
 	}
-	model, err := CreateModel(NewModelConfigFromSidekickConfig(cfg))
+	model, err := CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
 	}
-	model, err := CreateModel(NewModelConfigFromSidekickConfig(cfg))
+	model, err := CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestCreateModelOverrides(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	model, err := CreateModel(NewModelConfigFromSidekickConfig(cfg))
+	model, err := CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestCreateModelNone(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	model, err := CreateModel(NewModelConfigFromSidekickConfig(cfg))
+	model, err := CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestCreateModelUnknown(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	if got, err := CreateModel(NewModelConfigFromSidekickConfig(cfg)); err == nil {
+	if got, err := CreateModel(cfg); err == nil {
 		t.Errorf("expected error with unknown specification format, got=%v", got)
 	}
 }
@@ -193,7 +193,7 @@ func TestCreateModelBadParse(t *testing.T) {
 			"description-override": "Description Override",
 		},
 	}
-	if got, err := CreateModel(NewModelConfigFromSidekickConfig(cfg)); err == nil {
+	if got, err := CreateModel(cfg); err == nil {
 		t.Errorf("expected error with bad specification, got=%v", got)
 	}
 }
