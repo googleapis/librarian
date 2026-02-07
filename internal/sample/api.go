@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sample provides sample data for testing.
 package sample
 
 import (
@@ -22,15 +21,23 @@ import (
 )
 
 const (
-	APIName           = "secretmanager"
-	APITitle          = "Secret Manager API"
-	APIPackageName    = "google.cloud.secretmanager.v1"
-	APIDescription    = "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	// APIName is the name of the sample API.
+	APIName = "secretmanager"
+	// APITitle is the title of the sample API.
+	APITitle = "Secret Manager API"
+	// APIPackageName is the package name of the sample API.
+	APIPackageName = "google.cloud.secretmanager.v1"
+	// APIDescription is the description of the sample API.
+	APIDescription = "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+	// SpecificationName is the specification name of the sample API.
 	SpecificationName = "google.cloud.secretmanager.v1"
 
+	// ServiceName is the name of the sample service.
 	ServiceName = "SecretManagerService"
+	// DefaultHost is the default host of the sample service.
 	DefaultHost = "secretmanager.googleapis.com"
-	Package     = "google.cloud.secretmanager.v1"
+	// Package is the package of the sample API.
+	Package = "google.cloud.secretmanager.v1"
 )
 
 // API returns a sample API.

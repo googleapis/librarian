@@ -39,8 +39,8 @@ import (
 
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
-func ParseProtobuf(cfg *config.Config) (*api.API, error) {
-	source := cfg.General.SpecificationSource
+func ParseProtobuf(cfg ModelConfig) (*api.API, error) {
+	source := cfg.SpecificationSource
 	request, err := newCodeGeneratorRequest(source, cfg.Source)
 	if err != nil {
 		return nil, err
@@ -346,7 +346,9 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 					if err != nil {
 						return nil, err
 					}
-					applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin)
+					if err := applyServiceConfigMethodOverrides(method, originalFQN, serviceConfig, result, mixin); err != nil {
+						return nil, err
+					}
 					service.Methods = append(service.Methods, method)
 				}
 			}

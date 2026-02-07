@@ -20,11 +20,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
-	"github.com/googleapis/librarian/internal/sidekick/config"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 )
@@ -1272,14 +1271,11 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 }
 
 func TestOpenAPI_ParseBadFiles(t *testing.T) {
-	for _, general := range []config.GeneralConfig{
+	for _, cfg := range []ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: openAPIFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
 	} {
-		cfg := &config.Config{
-			General: general,
-		}
 		if got, err := ParseOpenAPI(cfg); err == nil {
 			t.Fatalf("expected error with missing source file, got=%v", got)
 		}

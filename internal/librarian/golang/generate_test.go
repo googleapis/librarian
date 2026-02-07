@@ -17,10 +17,12 @@ package golang
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -48,6 +50,7 @@ func TestGenerate(t *testing.T) {
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
 				"secretmanager/apiv1/version.go",
 				"secretmanager/internal/version.go",
+				"secretmanager/README.md",
 			},
 			removed: []string{
 				"cloud.google.com",
@@ -206,5 +209,39 @@ func main() {
 `
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateREADME(t *testing.T) {
+	dir := t.TempDir()
+	moduleRoot := filepath.Join(dir, "secretmanager")
+	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: dir,
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
+
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(content)
+	if !strings.Contains(s, "Secret Manager API") {
+		t.Errorf("want title in README, got:\n%s", s)
+	}
+	if !strings.Contains(s, "cloud.google.com/go/secretmanager") {
+		t.Errorf("want module path in README, got:\n%s", s)
 	}
 }

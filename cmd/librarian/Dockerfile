@@ -37,7 +37,7 @@
 FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
 
 ARG TARGETARCH
-ENV GO_VERSION=1.25.6
+ENV GO_VERSION=1.25.7
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \

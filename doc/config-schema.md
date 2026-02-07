@@ -110,7 +110,7 @@ This document describes the schema for the librarian.yaml.
 | `dependencies` | string | Dependencies is a comma-separated list of dependencies. |
 | `dev_dependencies` | string | DevDependencies is a comma-separated list of development dependencies. |
 | `extra_imports` | string | ExtraImports is additional imports to include in the generated library. |
-| `include_list` | list of string | IncludeList is a list of items to include. |
+| `include_list` | list of string | IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `issue_tracker_url` | string | IssueTrackerURL is the URL for the issue tracker. |
 | `library_path_override` | string | LibraryPathOverride overrides the library path. |
 | `name_override` | string | NameOverride overrides the package name |
@@ -165,7 +165,7 @@ This document describes the schema for the librarian.yaml.
 | `package_name_override` | string | PackageNameOverride overrides the package name. |
 | `root_name` | string | RootName is the root name for the crate. |
 | `default_features` | list of string | DefaultFeatures is a list of default features to enable. |
-| `include_list` | list of string | IncludeList is a list of items to include. |
+| `include_list` | list of string | IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `included_ids` | list of string | IncludedIds is a list of IDs to include. |
 | `skipped_ids` | list of string | SkippedIds is a list of IDs to skip. |
 | `disabled_clippy_warnings` | list of string | DisabledClippyWarnings is a list of clippy warnings to disable. |

@@ -1,6 +1,6 @@
 module github.com/googleapis/librarian
 
-go 1.25.6
+go 1.25.7
 
 require (
 	cloud.google.com/go/artifactregistry v1.19.0
@@ -19,7 +19,6 @@ require (
 	github.com/pb33f/libopenapi v0.25.9
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/urfave/cli/v3 v3.6.1
-	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/mod v0.31.0
