@@ -359,7 +359,6 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			return err
 		}
 
-		// Replace the placeholder with library version.
 		newContent := strings.Replace(string(read), "$VERSION", library.Version, 1)
 		err = os.WriteFile(path, []byte(newContent), 0644)
 		if err != nil {
