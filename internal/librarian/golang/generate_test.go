@@ -253,12 +253,12 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	outputDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "accessapproval", "apiv1")
-	err := os.MkdirAll(outputDir, 0755)
+	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "accessapproval", "apiv1")
+	err := os.MkdirAll(metadataDir, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	metadata := filepath.Join(outputDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
+	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
 	data := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/accessapproval/apiv1",
@@ -273,14 +273,14 @@ func TestUpdateSnippetMetadata(t *testing.T) {
  }
 }
 `
-	if err := os.WriteFile(metadata, []byte(data), 0755); err != nil {
+	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
 		return
 	}
 	if err := updateSnippetMetadata(library, tmpDir); err != nil {
 		t.Fatal(err)
 	}
 
-	content, err := os.ReadFile(metadata)
+	content, err := os.ReadFile(metadataFile)
 	if err != nil {
 		t.Fatal(err)
 	}
