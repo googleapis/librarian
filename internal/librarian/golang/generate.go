@@ -341,6 +341,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 	return cerr
 }
 
+// updateSnippetMetadata updates the snippet metadata files with the correct library version.
 func updateSnippetMetadata(library *config.Library, output string) error {
 	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
