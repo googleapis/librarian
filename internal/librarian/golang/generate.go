@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -342,7 +343,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 
 func updateSnippetMetadata(library *config.Library, output string) error {
 	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
-	return filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			// Skip the update if the baseDir is not existed.
 			if errors.Is(err, os.ErrNotExist) {
@@ -350,7 +351,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			}
 			return err
 		}
-		if info.IsDir() || !strings.HasPrefix(info.Name(), "snippet_metadata") {
+		if d.IsDir() || !strings.HasPrefix(d.Name(), "snippet_metadata") {
 			return nil
 		}
 		read, err := os.ReadFile(path)
