@@ -619,12 +619,14 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				Name: "google-cloud-showcase",
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
-						{},
+						{
+							Language: "rust_storage",
+						},
 					},
 				},
 			},
 			want: parser.ModelConfig{
-				Language:            "rust",
+				Language:            "rust_storage",
 				SpecificationFormat: "protobuf",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
