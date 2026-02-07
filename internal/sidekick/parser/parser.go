@@ -24,6 +24,8 @@ import (
 // ModelConfig holds the configuration necessary to parse an API specification.
 type ModelConfig struct {
 	// Source configuration
+	// SpecificationFormat is the format of the API specification.
+	// Supported values are "discovery", "openapi", "protobuf", and "none".
 	SpecificationFormat string
 	SpecificationSource string
 	Source              map[string]string

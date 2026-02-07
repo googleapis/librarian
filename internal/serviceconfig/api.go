@@ -334,7 +334,7 @@ var APIs = []API{
 	{Path: "google/cloud/saasplatform/saasservicemgmt/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/scheduler/v1"},
 	{Path: "google/cloud/scheduler/v1beta1", Languages: []string{langPython}},
-	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/openapi/secretmanager_openapi_v1.json"},
+	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/secretmanager_openapi_v1.json"},
 	{Path: "google/cloud/secretmanager/v1beta2", Languages: []string{langPython}},
 	{Path: "google/cloud/secrets/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/securesourcemanager/v1"},
