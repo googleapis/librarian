@@ -27,45 +27,19 @@ import (
 )
 
 const (
-	sidekickFile             = ".sidekick.toml"
-	googleapisArchivePrefix  = "https://github.com/googleapis/googleapis/archive/"
-	showcaseArchivePrefix    = "https://github.com/googleapis/gapic-showcase/archive/"
-	protobufArchivePrefix    = "https://github.com/protocolbuffers/protobuf/archive/"
-	conformanceArchivePrefix = "https://github.com/protocolbuffers/protobuf/archive/"
-	tarballSuffix            = ".tar.gz"
-	librarianDir             = ".librarian"
-	librarianStateFile       = "state.yaml"
-	librarianConfigFile      = "config.yaml"
-	defaultTagFormat         = "{name}/v{version}"
-	googleapisRepo           = "github.com/googleapis/googleapis"
+	librarianDir        = ".librarian"
+	librarianStateFile  = "state.yaml"
+	librarianConfigFile = "config.yaml"
+	defaultTagFormat    = "{name}/v{version}"
+	googleapisRepo      = "github.com/googleapis/googleapis"
 )
 
 var (
-	errRepoNotFound                = errors.New("-repo flag is required")
-	errSidekickNotFound            = errors.New(".sidekick.toml not found")
-	errTidyFailed                  = errors.New("librarian tidy failed")
-	errUnableToCalculateOutputPath = errors.New("unable to calculate output path")
-	errFetchSource                 = errors.New("cannot fetch source")
+	errRepoNotFound = errors.New("-repo flag is required")
+	errTidyFailed   = errors.New("librarian tidy failed")
+	errFetchSource  = errors.New("cannot fetch source")
 
 	fetchSource = fetchGoogleapis
-
-	pathToName = map[string]string{
-		"google_cloud_protojson_conformance": "google_cloud_protobuf_test_messages_proto3",
-		"google_cloud_showcase_v1beta1":      "google_cloud_showcase_v1beta1",
-	}
-
-	libraryToKeep = map[string][]string{
-		"google_cloud_protobuf": {"lib/src/encoding.dart"},
-		"google_cloud_rpc": {
-			"lib/src/exceptions.dart",
-			"lib/src/versions.dart",
-			"lib/src/vm.dart",
-			"lib/src/web.dart",
-			"lib/exceptions.dart",
-			"lib/service_client.dart",
-		},
-		"google_cloud_showcase_v1beta1": {"dart_test.yaml"},
-	}
 )
 
 func main() {
