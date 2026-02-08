@@ -29,35 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-)
-
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
 type RepoConfig struct {
 	Modules []*RepoConfigModule `yaml:"modules"`
@@ -89,6 +60,41 @@ type MigrationInput struct {
 	lang            string
 	repoPath        string
 }
+
+var (
+	addGoModules = map[string]*RepoConfigModule{
+		"ai": {
+			APIs: []*RepoConfigAPI{
+				{
+					Path:            "google/ai/generativelanguage/v1",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1alpha",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta2",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+			},
+		},
+	}
+
+	libraryOverrides = map[string]*config.Library{
+		"ai": {
+			ReleaseLevel: "beta",
+		},
+	}
+)
 
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
@@ -153,6 +159,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries = buildGoLibraries(input)
 	}
 
@@ -233,6 +240,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
+		}
+		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
+		if override, ok := libraryOverrides[id]; ok {
+			library.ReleaseLevel = override.ReleaseLevel
 		}
 
 		libGoModule, ok := idToGoModule[id]

@@ -37,8 +37,8 @@ pub trait StorageControl: std::fmt::Debug + Send + Sync {
     fn {{Codec.Name}}(
         &self,
         _req: {{InputType.Codec.QualifiedName}},
-        _options: gax::options::RequestOptions,
-    ) -> impl std::future::Future<Output = crate::Result<gax::response::Response<{{Codec.ReturnType}}>>> + Send {
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         gaxi::unimplemented::unimplemented_stub()
     }
     {{/Methods}}
@@ -50,8 +50,8 @@ pub trait StorageControl: std::fmt::Debug + Send + Sync {
     fn {{Codec.Name}}(
         &self,
         _req: {{InputType.Codec.QualifiedName}},
-        _options: gax::options::RequestOptions,
-    ) -> impl std::future::Future<Output = crate::Result<gax::response::Response<{{Codec.ReturnType}}>>> + Send {
+        _options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         gaxi::unimplemented::unimplemented_stub()
     }
     {{/Methods}}
@@ -68,8 +68,8 @@ where
     fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: gax::options::RequestOptions,
-    ) -> impl std::future::Future<Output = crate::Result<gax::response::Response<{{Codec.ReturnType}}>>> + Send {
+        options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         T::{{Codec.Name}}(self, req, options)
     }
     {{/Methods}}
@@ -86,8 +86,8 @@ where
     fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: gax::options::RequestOptions,
-    ) -> impl std::future::Future<Output = crate::Result<gax::response::Response<{{Codec.ReturnType}}>>> + Send {
+        options: crate::RequestOptions,
+    ) -> impl std::future::Future<Output = crate::Result<crate::Response<{{Codec.ReturnType}}>>> + Send {
         T::{{Codec.Name}}(self, req, options)
     }
     {{/Methods}}

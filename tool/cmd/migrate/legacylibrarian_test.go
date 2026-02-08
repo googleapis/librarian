@@ -115,7 +115,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					TagFormat:    defaultTagFormat,
+					ReleaseLevel: "ga",
 				},
 			},
 		},
@@ -230,7 +231,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					TagFormat:    defaultTagFormat,
+					ReleaseLevel: "ga",
 				},
 				Libraries: []*config.Library{
 					{
@@ -402,23 +404,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					},
 				},
 				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig: &RepoConfig{
-					Modules: []*RepoConfigModule{
-						{
-							Name: "ai",
-							APIs: []*RepoConfigAPI{
-								{
-									Path:            "google/maps/fleetengine/v1",
-									ClientDirectory: "proto_package: maps.fleetengine.v1",
-									DisableGAPIC:    true,
-									NestedProtos:    []string{"grafeas/grafeas.proto"},
-									ProtoPackage:    "google.cloud.translation.v3",
-								},
-							},
-							ModulePathVersion: "v2",
-						},
-					},
-				},
+				repoConfig:      nil,
 			},
 			want: []*config.Library{
 				{
@@ -427,6 +413,7 @@ func TestBuildGoLibraries(t *testing.T) {
 						{Path: "google/ai/generativelanguage/v1"},
 						{Path: "google/ai/generativelanguage/v1alpha"},
 					},
+					ReleaseLevel: "beta",
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
