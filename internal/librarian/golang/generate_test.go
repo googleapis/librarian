@@ -289,3 +289,52 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		t.Errorf("want version in snippet metadata, got:\n%s", s)
 	}
 }
+
+func TestBuildGAPICImportPath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		library *config.Library
+		goAPI   *config.GoAPI
+		want    string
+	}{
+		{
+			name:    "single version without customize client directory",
+			apiPath: "google/cloud/accessapproval/v1",
+			library: &config.Library{
+				Name: "accessapproval",
+			},
+			want: "cloud.google.com/go/accessapproval/apiv1;accessapproval",
+		},
+		{
+			name:    "customize client directory",
+			apiPath: "google/ai/generativelanguage/v1",
+			library: &config.Library{
+				Name: "ai",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "generativelanguage",
+			},
+			want: "cloud.google.com/go/generativelanguage/apiv1;generativelanguage",
+		},
+		{
+			name:    "customize import path and client directory",
+			apiPath: "google/ai/generativelanguage/v1",
+			library: &config.Library{
+				Name: "ai",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "generativelanguage",
+				ImportPath:      "ai/generativelanguage",
+			},
+			want: "cloud.google.com/go/ai/generativelanguage/apiv1;generativelanguage",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildGAPICImportPath(test.apiPath, test.library, test.goAPI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
