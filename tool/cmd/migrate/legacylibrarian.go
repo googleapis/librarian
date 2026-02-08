@@ -122,6 +122,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries = buildGoLibraries(input)
 	}
 
