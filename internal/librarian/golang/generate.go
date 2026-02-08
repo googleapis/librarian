@@ -120,7 +120,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
-	return command.Run(ctx, "gofmt", args...)
+	return command.Run(ctx, "goimports", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {

@@ -183,7 +183,18 @@ func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "gofmt")
 	outDir := t.TempDir()
 	goFile := filepath.Join(outDir, "test.go")
-	if err := os.WriteFile(goFile, []byte("package main\n\n\n\nfunc main() { \n\nfmt.Print(\"hello world\") \n\n}"), 0644); err != nil {
+	unformatted := `package main
+
+import (
+"fmt"
+"os"
+)
+
+func main() {
+fmt.Println("Hello World")
+}
+`
+	if err := os.WriteFile(goFile, []byte(unformatted), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -201,10 +212,12 @@ func TestFormat(t *testing.T) {
 	got := string(gotBytes)
 	want := `package main
 
+import (
+	"fmt"
+)
+
 func main() {
-
-	fmt.Print("hello world")
-
+	fmt.Println("Hello World")
 }
 `
 	if diff := cmp.Diff(want, got); diff != "" {
