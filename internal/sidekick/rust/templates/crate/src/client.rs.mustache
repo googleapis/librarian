@@ -31,7 +31,7 @@ limitations under the License.
 {{^Model.Codec.InternalBuilders}}
 /// # Example
 /// ```
-/// # async fn sample() -> crate::ClientBuilderResult<()> {
+/// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
 /// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
 /// let client = {{Codec.Name}}::builder().build().await?;
 /// // use `client` to make requests to the {{Codec.APITitle}}.
@@ -97,7 +97,7 @@ impl {{Codec.Name}} {
     {{^Model.Codec.InternalBuilders}}
     ///
     /// ```
-    /// # async fn sample() -> crate::ClientBuilderResult<()> {
+    /// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
     /// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
     /// let client = {{Codec.Name}}::builder().build().await?;
     /// # Ok(()) }

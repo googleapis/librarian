@@ -31,7 +31,7 @@ pub mod {{Codec.ModuleName}} {
     {{^Codec.InternalBuilders}}
     ///
     /// ```
-    /// # async fn sample() -> crate::ClientBuilderResult<()> {
+    /// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
     /// # use {{Model.Codec.PackageNamespace}}::*;
     /// # use builder::{{Codec.ModuleName}}::ClientBuilder;
     /// # use client::{{Codec.Name}};
@@ -84,7 +84,7 @@ pub mod {{Codec.ModuleName}} {
     /// # Example
     /// ```
     /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
-    /// # async fn sample() -> crate::Result<()> {
+    /// # async fn sample() -> {{Model.Codec.PackageNamespace}}::Result<()> {
     {{#OperationInfo}}
     /// use google_cloud_lro::Poller;
     ///
