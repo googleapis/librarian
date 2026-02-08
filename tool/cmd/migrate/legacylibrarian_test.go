@@ -389,6 +389,37 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "go_libraries with non-default release level",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "ai",
+							APIs: []*legacyconfig.API{
+								{
+									Path:          "google/another/api/v1",
+									ServiceConfig: "another/config.yaml",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+			},
+			want: []*config.Library{
+				{
+					Name: "ai",
+					APIs: []*config.API{
+						{
+							Path: "google/another/api/v1",
+						},
+					},
+					ReleaseLevel: "beta",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGoLibraries(test.input)
