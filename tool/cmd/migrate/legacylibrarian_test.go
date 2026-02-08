@@ -387,6 +387,73 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "additional go module",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "ai",
+							APIs: []*legacyconfig.API{
+								{Path: "google/ai/generativelanguage/v1"},
+								{Path: "google/ai/generativelanguage/v1alpha"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "ai",
+							APIs: []*RepoConfigAPI{
+								{
+									Path:            "google/maps/fleetengine/v1",
+									ClientDirectory: "proto_package: maps.fleetengine.v1",
+									DisableGAPIC:    true,
+									NestedProtos:    []string{"grafeas/grafeas.proto"},
+									ProtoPackage:    "google.cloud.translation.v3",
+								},
+							},
+							ModulePathVersion: "v2",
+						},
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name: "ai",
+					APIs: []*config.API{
+						{Path: "google/ai/generativelanguage/v1"},
+						{Path: "google/ai/generativelanguage/v1alpha"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								Path:            "google/ai/generativelanguage/v1",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1alpha",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1beta",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1beta2",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGoLibraries(test.input)
