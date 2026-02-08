@@ -180,7 +180,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "gofmt")
+	testhelper.RequireCommand(t, "goimports")
 	outDir := t.TempDir()
 	goFile := filepath.Join(outDir, "test.go")
 	unformatted := `package main
