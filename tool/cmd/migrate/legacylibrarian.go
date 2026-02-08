@@ -212,7 +212,6 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			library.SkipRelease = libCfg.ReleaseBlocked
 		}
 		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
-		// Libraries are not in addLibraries will have a default value.
 		if override, ok := libraryOverrides[id]; ok {
 			library.ReleaseLevel = override.ReleaseLevel
 		}
