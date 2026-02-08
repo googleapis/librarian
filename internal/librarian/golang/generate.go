@@ -199,12 +199,17 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 		clientDir = goAPI.ClientDirectory
 	}
 
+	importPath := clientDir
+	if goAPI != nil && goAPI.ImportPath != "" {
+		importPath = goAPI.ImportPath
+	}
+
 	var modulePathVersion string
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
-		clientDir, modulePathVersion, version, clientDir)
+		importPath, modulePathVersion, version, clientDir)
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
