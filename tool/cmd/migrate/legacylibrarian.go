@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,35 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
+)
+
+var (
+	addGoModules = map[string]*RepoConfigModule{
+		"ai": {
+			APIs: []*RepoConfigAPI{
+				{
+					Path:            "google/ai/generativelanguage/v1",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1alpha",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta2",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+			},
+		},
+	}
 )
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
@@ -46,6 +76,7 @@ type RepoConfigAPI struct {
 	Path            string   `yaml:"path"`
 	ClientDirectory string   `yaml:"client_directory,omitempty"`
 	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
+	ImportPath      string   `yaml:"import_path,omitempty"`
 	NestedProtos    []string `yaml:"nested_protos,omitempty"`
 	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
@@ -185,6 +216,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 				return mod.Name
 			})
 	}
+	maps.Copy(idToGoModule, addGoModules)
 
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
@@ -211,6 +243,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 					Path:            api.Path,
 					ClientDirectory: api.ClientDirectory,
 					DisableGAPIC:    api.DisableGAPIC,
+					ImportPath:      api.ImportPath,
 					NestedProtos:    api.NestedProtos,
 					ProtoPackage:    api.ProtoPackage,
 				})
