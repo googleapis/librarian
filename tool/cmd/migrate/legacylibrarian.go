@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	addLibraries = map[string]*config.Library{
+	libraryOverrides = map[string]*config.Library{
 		"ai": {
 			ReleaseLevel: "beta",
 		},
@@ -213,8 +213,8 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 		}
 		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
 		// Libraries are not in addLibraries will have a default value.
-		if addLib, ok := addLibraries[id]; ok {
-			library.ReleaseLevel = addLib.ReleaseLevel
+		if override, ok := libraryOverrides[id]; ok {
+			library.ReleaseLevel = override.ReleaseLevel
 		}
 
 		libGoModule, ok := idToGoModule[id]
