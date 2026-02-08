@@ -31,7 +31,7 @@ pub mod {{Codec.ModuleName}} {
     {{^Codec.InternalBuilders}}
     ///
     /// ```
-    /// # async fn sample() -> gax::client_builder::Result<()> {
+    /// # async fn sample() -> crate::ClientBuilderResult<()> {
     /// # use {{Model.Codec.PackageNamespace}}::*;
     /// # use builder::{{Codec.ModuleName}}::ClientBuilder;
     /// # use client::{{Codec.Name}};
@@ -43,15 +43,15 @@ pub mod {{Codec.ModuleName}} {
     /// ```
     {{/Codec.InternalBuilders}}
     {{Codec.BuilderVisibility}} type ClientBuilder =
-        gax::client_builder::ClientBuilder<client::Factory, gaxi::options::Credentials>;
+        crate::ClientBuilder<client::Factory, gaxi::options::Credentials>;
 
     pub(crate) mod client {
         use super::super::super::client::{{Codec.Name}};
         pub struct Factory;
-        impl gax::client_builder::internal::ClientFactory for Factory {
+        impl crate::ClientFactory for Factory {
             type Client = {{Codec.Name}};
             type Credentials = gaxi::options::Credentials;
-            async fn build(self, config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self::Client> {
+            async fn build(self, config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self::Client> {
                 Self::Client::new(config).await
             }
         }
@@ -63,7 +63,7 @@ pub mod {{Codec.ModuleName}} {
     pub(crate) struct RequestBuilder<R: std::default::Default> {
         stub: std::sync::Arc<dyn super::super::stub::dynamic::{{Codec.Name}}>,
         request: R,
-        options: gax::options::RequestOptions,
+        options: crate::RequestOptions,
     }
 
     impl<R> RequestBuilder<R>
@@ -72,7 +72,7 @@ pub mod {{Codec.ModuleName}} {
             Self {
                 stub,
                 request: R::default(),
-                options: gax::options::RequestOptions::default(),
+                options: crate::RequestOptions::default(),
             }
         }
     }
@@ -84,7 +84,7 @@ pub mod {{Codec.ModuleName}} {
     /// # Example
     /// ```
     /// # use {{Model.Codec.PackageNamespace}}::builder::{{Service.Codec.ModuleName}}::{{Codec.BuilderName}};
-    /// # async fn sample() -> gax::Result<()> {
+    /// # async fn sample() -> crate::Result<()> {
     {{#OperationInfo}}
     /// use google_cloud_lro::Poller;
     ///
@@ -93,7 +93,7 @@ pub mod {{Codec.ModuleName}} {
     {{/OperationInfo}}
     {{^OperationInfo}}
     {{#Pagination}}
-    /// use gax::paginator::ItemPaginator;
+    /// use google_cloud_gax::paginator::ItemPaginator;
     ///
     /// let builder = prepare_request_builder();
     /// let mut items = builder.by_item();
@@ -132,7 +132,7 @@ pub mod {{Codec.ModuleName}} {
         }
 
         /// Sets all the options, replacing any prior values.
-        pub fn with_options<V: Into<gax::options::RequestOptions>>(mut self, v: V) -> Self {
+        pub fn with_options<V: Into<crate::RequestOptions>>(mut self, v: V) -> Self {
             self.0.options = v.into();
             self
         }
@@ -154,16 +154,16 @@ pub mod {{Codec.ModuleName}} {
             }}
             {{#HasAutoPopulatedFields}}
             let req = Self::auto_populate(self.0.request, false);
-            (*self.0.stub).{{Codec.Name}}(req, self.0.options).await.map(gax::response::Response::into_body)
+            (*self.0.stub).{{Codec.Name}}(req, self.0.options).await.map(crate::Response::into_body)
             {{/HasAutoPopulatedFields}}
             {{^HasAutoPopulatedFields}}
-            (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await.map(gax::response::Response::into_body)
+            (*self.0.stub).{{Codec.Name}}(self.0.request, self.0.options).await.map(crate::Response::into_body)
             {{/HasAutoPopulatedFields}}
         }
         {{#Pagination}}
 
         /// Streams each page in the collection.
-        pub fn by_page(self) -> impl gax::paginator::Paginator<{{OutputType.Codec.QualifiedName}}, gax::error::Error> {
+        pub fn by_page(self) -> impl google_cloud_gax::paginator::Paginator<{{OutputType.Codec.QualifiedName}}, crate::Error> {
             use std::clone::Clone;
             {{#Optional}}
             let token = self.0.request.{{Codec.FieldName}}.clone().unwrap_or_default();
@@ -189,12 +189,12 @@ pub mod {{Codec.ModuleName}} {
                 builder.0.request = builder.0.request.set_{{Codec.SetterName}}(token);
                 builder.send()
             };
-            gax::paginator::internal::new_paginator(token, execute)
+            google_cloud_gax::paginator::internal::new_paginator(token, execute)
         }
 
         /// Streams each item in the collection.
-        pub fn by_item(self) -> impl gax::paginator::ItemPaginator<{{{OutputType.Codec.QualifiedName}}}, gax::error::Error> {
-            use gax::paginator::Paginator;
+        pub fn by_item(self) -> impl google_cloud_gax::paginator::ItemPaginator<{{{OutputType.Codec.QualifiedName}}}, crate::Error> {
+            use google_cloud_gax::paginator::Paginator;
             self.by_page().items()
         }
         {{/Pagination}}
@@ -210,7 +210,7 @@ pub mod {{Codec.ModuleName}} {
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
-            options.set_retry_policy(gax::retry_policy::NeverRetry);
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
             {{#Codec.PollingPathParameters}}
             let {{Name}} = self.0.request.{{Name}}.clone();
             {{/Codec.PollingPathParameters}}
@@ -269,7 +269,7 @@ pub mod {{Codec.ModuleName}} {
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
-            options.set_retry_policy(gax::retry_policy::NeverRetry);
+            options.set_retry_policy(google_cloud_gax::retry_policy::NeverRetry);
             let query = move |name| {
                 let stub = stub.clone();
                 let options = options.clone();
@@ -469,8 +469,8 @@ pub mod {{Codec.ModuleName}} {
     }
 
     #[doc(hidden)]
-    impl gax::options::internal::RequestBuilder for {{Codec.BuilderName}} {
-        fn request_options(&mut self) -> &mut gax::options::RequestOptions {
+    impl crate::RequestBuilder for {{Codec.BuilderName}} {
+        fn request_options(&mut self) -> &mut crate::RequestOptions {
             &mut self.0.options
         }
     }

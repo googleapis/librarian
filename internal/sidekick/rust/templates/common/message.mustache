@@ -182,7 +182,7 @@ impl wkt::message::Message for {{Codec.Name}} {
 
 {{> /templates/common/feature_gate}}
 #[doc(hidden)]
-impl gax::paginator::internal::PageableResponse for {{Codec.Name}} {
+impl google_cloud_gax::paginator::internal::PageableResponse for {{Codec.Name}} {
     {{#PageableItem}}
     {{^Map}}
     type PageItem = {{{Codec.PrimitiveFieldType}}};
