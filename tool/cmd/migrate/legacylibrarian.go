@@ -28,6 +28,14 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+var (
+	addLibraries = map[string]*config.Library{
+		"ai": {
+			ReleaseLevel: "beta",
+		},
+	}
+)
+
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
 type RepoConfig struct {
 	Modules []*RepoConfigModule `yaml:"modules"`
@@ -202,6 +210,11 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
+		}
+		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
+		// Libraries are not in addLibraries will have a default value.
+		if addLib, ok := addLibraries[id]; ok {
+			library.ReleaseLevel = addLib.ReleaseLevel
 		}
 
 		libGoModule, ok := idToGoModule[id]
