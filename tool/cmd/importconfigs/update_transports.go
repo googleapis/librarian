@@ -199,7 +199,7 @@ func createTransportsExpr(transports map[string]string) *ast.CompositeLit {
 	}
 	for _, lang := range keys {
 		val := transports[lang]
-		var langKey ast.Expr = ast.NewIdent("lang" + strings.ToUpper(lang[:1]) + lang[1:])
+		var langKey ast.Expr = ast.NewIdent("Lang" + strings.ToUpper(lang[:1]) + lang[1:])
 		if !langConstantExists(lang) {
 			langKey = &ast.BasicLit{Kind: token.STRING, Value: "\"" + lang + "\""}
 		}

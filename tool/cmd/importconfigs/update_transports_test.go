@@ -34,7 +34,7 @@ func TestRunUpdateTransports(t *testing.T) {
 			name: "update existing transports",
 			apiGo: `package serviceconfig
 var APIs = []API{
-	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{langAll: Rest}},
+	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{LangAll: Rest}},
 }
 `,
 			buildBazel: `
@@ -46,7 +46,7 @@ php_gapic_library(
 			want: `package serviceconfig
 
 var APIs = []API{
-	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{langPhp: GRPCRest}},
+	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{LangPhp: GRPCRest}},
 }
 `,
 		},
@@ -66,7 +66,7 @@ go_gapic_library(
 			want: `package serviceconfig
 
 var APIs = []API{
-	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{langGo: GRPC}},
+	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{LangGo: GRPC}},
 }
 `,
 		},
@@ -89,7 +89,7 @@ ruby_cloud_gapic_library(name = "foo-ruby", transport = "rest")
 			want: `package serviceconfig
 
 var APIs = []API{
-	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{langAll: Rest}},
+	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{LangAll: Rest}},
 }
 `,
 		},
@@ -97,7 +97,7 @@ var APIs = []API{
 			name: "omit default GRPCRest for all",
 			apiGo: `package serviceconfig
 var APIs = []API{
-	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{langAll: Rest}},
+	{Path: "google/cloud/foo/v1", Transports: map[string]Transport{LangAll: Rest}},
 }
 `,
 			buildBazel: `
