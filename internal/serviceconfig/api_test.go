@@ -16,6 +16,8 @@ package serviceconfig
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestAPIsNoDuplicates(t *testing.T) {
@@ -35,5 +37,48 @@ func TestAPIsAlphabeticalOrder(t *testing.T) {
 		if prev > curr {
 			t.Errorf("APIs not in alphabetical order: %q comes after %q", prev, curr)
 		}
+	}
+}
+
+func TestGetTransport(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *API
+		lang string
+		want string
+	}{
+		{
+			name: "empty serviceconfig",
+			sc:   &API{},
+			lang: "go",
+			want: "grpc+rest",
+		},
+		{
+			name: "go specific transport",
+			sc: &API{
+				Transports: map[string]Transport{
+					"go": GRPC,
+				},
+			},
+			lang: "go",
+			want: "grpc",
+		},
+		{
+			name: "other language transport",
+			sc: &API{
+				Transports: map[string]Transport{
+					"go": GRPC,
+				},
+			},
+			lang: "python",
+			want: "grpc+rest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.Transport(test.lang)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

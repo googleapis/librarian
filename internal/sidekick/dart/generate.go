@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
@@ -28,9 +27,9 @@ import (
 var dartTemplates embed.FS
 
 // Generate generates Dart code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, config *config.Config) error {
+func Generate(ctx context.Context, model *api.API, outdir string, codec map[string]string) error {
 	annotate := newAnnotateModel(model)
-	if err := annotate.annotateModel(config.Codec); err != nil {
+	if err := annotate.annotateModel(codec); err != nil {
 		return err
 	}
 
@@ -38,7 +37,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, config *config
 	err := language.GenerateFromModel(outdir, model, provider, generatedFiles(model))
 	if err == nil {
 		// Check if we're configured to skip formatting.
-		skipFormat := config.Codec["skip-format"]
+		skipFormat := codec["skip-format"]
 		if skipFormat != "true" {
 			err = formatDirectory(ctx, outdir)
 		}
