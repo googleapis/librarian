@@ -354,35 +354,28 @@ func TestBuildGAPICImportPath(t *testing.T) {
 
 func TestGetReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		sc   *serviceconfig.API
-		want string
+		name    string
+		apiPath string
+		want    string
 	}{
 		{
-			name: "not set",
-			lib:  &config.Library{},
-			sc:   nil,
-			want: "",
+			name:    "ga",
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "ga",
 		},
 		{
-			name: "found in library",
-			lib: &config.Library{
-				ReleaseLevel: "ga",
-			},
-			sc:   nil,
-			want: "ga",
+			name:    "alpha",
+			apiPath: "google/cloud/secretmanager/v1alpha1",
+			want:    "alpha",
 		},
 		{
-			name: "found in api",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{"go": "beta"},
-			},
-			want: "beta",
+			name:    "beta",
+			apiPath: "google/cloud/secretmanager/v1beta2",
+			want:    "beta",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := releaseLevel(test.lib, test.sc)
+			got := releaseLevel(test.apiPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
