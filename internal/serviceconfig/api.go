@@ -88,8 +88,8 @@ type API struct {
 // The default value is empty string, if undefined for a language.
 func (api *API) GetReleaseLevel(language string) string {
 	var level string
-	if trans, ok := api.Transports[language]; ok {
-		level = string(trans)
+	if lv, ok := api.ReleaseLevels[language]; ok {
+		level = lv
 	}
 
 	return level
