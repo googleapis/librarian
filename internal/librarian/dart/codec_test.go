@@ -15,7 +15,7 @@
 package dart
 
 import (
-	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -283,7 +283,7 @@ func TestToModelConfig(t *testing.T) {
 		channel       *config.API
 		googleapisDir string
 		want          parser.ModelConfig
-		wantErr       error
+		wantErrMsg    string
 	}{
 		{
 			name:    "empty library",
@@ -405,20 +405,35 @@ func TestToModelConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "unsupported specification format",
+			library: &config.Library{
+				SpecificationFormat: "openapi",
+			},
+			channel: &config.API{
+				Path: "google/api/apikeys/v2",
+			},
+			googleapisDir: googleapisDir,
+			wantErrMsg:    `dart generation requires protobuf specification format, got "openapi"`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &source.Sources{
 				Googleapis: test.googleapisDir,
 			}
 			got, err := toModelConfig(test.library, test.channel, sources)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Errorf("toModelConfig() error = %v, wantErr %v", err, test.wantErr)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if test.wantErrMsg != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErrMsg) {
+					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErrMsg)
 				}
 				return
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if err != nil {
+				t.Errorf("toModelConfig() unexpected error: %v", err)
+				return
 			}
 		})
 	}

@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -24,6 +25,10 @@ import (
 )
 
 func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
+	if library.SpecificationFormat != "" && library.SpecificationFormat != "protobuf" {
+		return parser.ModelConfig{}, fmt.Errorf("dart generation requires protobuf specification format, got %q", library.SpecificationFormat)
+	}
+
 	src := addLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
