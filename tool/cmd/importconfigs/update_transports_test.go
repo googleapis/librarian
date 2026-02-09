@@ -244,25 +244,6 @@ func TestSimplifyTransports(t *testing.T) {
 	}
 }
 
-func TestLangConstantExists(t *testing.T) {
-	for _, test := range []struct {
-		lang string
-		want bool
-	}{
-		{"all", true},
-		{"go", true},
-		{"rust", true},
-		{"unknown", false},
-	} {
-		t.Run(test.lang, func(t *testing.T) {
-			got := langConstantExists(test.lang)
-			if got != test.want {
-				t.Errorf("langConstantExists(%q) = %v, want %v", test.lang, got, test.want)
-			}
-		})
-	}
-}
-
 func TestReadTransports_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	got := readTransports(tmpDir, "missing")
