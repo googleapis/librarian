@@ -86,6 +86,17 @@ type API struct {
 	Transports map[string]Transport
 }
 
+// Transport gets transport for a given language.
+//
+// The default value is GRPCRest, if undefined for a language.
+func (api *API) Transport(language string) string {
+	if trans, ok := api.Transports[language]; ok {
+		return string(trans)
+	}
+
+	return string(GRPCRest)
+}
+
 // APIs defines API paths that require explicit configurations.
 // APIs not in this list are implicitly allowed if
 // they start with "google/cloud/".
@@ -128,7 +139,7 @@ var APIs = []API{
 	{Path: "google/chat/v1", Languages: []string{LangPython}},
 	{Path: "google/cloud/accessapproval/v1"},
 	{Path: "google/cloud/advisorynotifications/v1"},
-	{Path: "google/cloud/aiplatform/v1"},
+	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{LangGo: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/instance", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
