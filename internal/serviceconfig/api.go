@@ -68,6 +68,10 @@ type API struct {
 	// If ServiceConfig is empty, the service config is assumed to live at this path.
 	Path string
 
+	// ReleaseLevel is the release level, such as "stable" or "preview". The value is different among
+	// languages.
+	// The key is the language name, e.g., "go", "python".
+	// Optional. If omitted, the value is empty.
 	ReleaseLevels map[string]string
 
 	// ServiceConfig is the service config file path override.
