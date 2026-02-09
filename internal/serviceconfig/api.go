@@ -18,6 +18,7 @@ package serviceconfig
 
 const (
 	langDart   = "dart"
+	langGo     = "go"
 	langPython = "python"
 	langRust   = "rust"
 
@@ -132,7 +133,7 @@ var APIs = []API{
 	{Path: "google/chat/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/accessapproval/v1"},
 	{Path: "google/cloud/advisorynotifications/v1"},
-	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{"go": GRPC}},
+	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{langGo: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/instance", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
