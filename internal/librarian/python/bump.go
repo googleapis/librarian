@@ -48,13 +48,13 @@ func Bump(output, version string) error {
 // preserved.
 func bumpGapicVersions(output, version string) error {
 	return filepath.WalkDir(output, func(path string, d fs.DirEntry, err error) error {
-		if d.Name() == gapicVersionFile {
-			if !d.Type().IsRegular() {
-				return fmt.Errorf("failed to bump %s: %w", path, errSymLinkVersionFile)
-			}
-			return bumpSingleGapicVersionFile(path, version)
+		if d.Name() != gapicVersionFile {
+			return nil
 		}
-		return nil
+		if !d.Type().IsRegular() {
+			return fmt.Errorf("failed to bump %s: %w", path, errSymLinkVersionFile)
+		}
+		return bumpSingleGapicVersionFile(path, version)
 	})
 }
 
