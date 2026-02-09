@@ -154,7 +154,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return err
 	}
 	args = append(args, protoFiles...)
-	print(strings.Join(args, " "))
 	return command.Run(ctx, args[0], args[1:]...)
 }
 
