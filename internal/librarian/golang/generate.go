@@ -31,6 +31,12 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	releaseLevelAlpha = "alpha"
+	releaseLevelBeta  = "beta"
+	releaseLevelGA    = "ga"
+)
+
 var (
 	//go:embed template/_README.md.txt
 	readmeTmpl string
@@ -182,10 +188,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
 	opts = append(opts, "transport="+transport(sc))
-	level := releaseLevel(library, sc)
-	if level != "" {
-		opts = append(opts, "release-level="+level)
-	}
+	opts = append(opts, "release-level="+releaseLevel(apiPath))
 	return opts, nil
 }
 
@@ -372,23 +375,14 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 }
 
 // releaseLevel get release level for an API for language Go.
-//
-// The preference is as follows:
-//
-// 1. the value found in serviceconfig.API.
-//
-// 2. the value found in config.Library.
-//
-// 3. empty value.
-func releaseLevel(library *config.Library, sc *serviceconfig.API) string {
-	var level string
-	if sc != nil {
-		level = sc.ReleaseLevel("go")
+func releaseLevel(apiPath string) string {
+	if strings.Contains(apiPath, releaseLevelAlpha) {
+		return releaseLevelAlpha
 	}
-	if level == "" {
-		level = library.ReleaseLevel
+	if strings.Contains(apiPath, releaseLevelBeta) {
+		return releaseLevelBeta
 	}
-	return level
+	return releaseLevelGA
 }
 
 // transport get transport from serviceconfig.API for language Go.
