@@ -182,8 +182,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
 	opts = append(opts, "transport="+transport(sc))
-	if library.ReleaseLevel != "" {
-		opts = append(opts, "release-level="+library.ReleaseLevel)
+	level := releaseLevel(library, sc)
+	if level != "" {
+		opts = append(opts, "release-level="+level)
 	}
 	return opts, nil
 }
