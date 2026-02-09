@@ -91,7 +91,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
-			wantDir: "customdir/apiv1",
+			wantDir: "secretmanager/customdir/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
