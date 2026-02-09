@@ -4,7 +4,7 @@ This document describes the schema for the API Allowlist.
 
 ## API Configuration
 
-[Link to code](../internal/serviceconfig/api.go#L48)
+[Link to code](../internal/serviceconfig/api.go#L49)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `Discovery` | string | Discovery is the file path to a discovery document in github.com/googleapis/discovery-artifact-manager. Used by sidekick languages (Rust, Dart) as an alternative to proto files. |

@@ -82,3 +82,46 @@ func TestGetReleaseLevel(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTransport(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *API
+		lang string
+		want string
+	}{
+		{
+			name: "empty serviceconfig",
+			sc:   &API{},
+			lang: "go",
+			want: "grpc+rest",
+		},
+		{
+			name: "go specific transport",
+			sc: &API{
+				Transports: map[string]Transport{
+					"go": GRPC,
+				},
+			},
+			lang: "go",
+			want: "grpc",
+		},
+		{
+			name: "other language transport",
+			sc: &API{
+				Transports: map[string]Transport{
+					"go": GRPC,
+				},
+			},
+			lang: "python",
+			want: "grpc+rest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.Transport(test.lang)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
