@@ -87,10 +87,10 @@ type API struct {
 	Transports map[string]Transport
 }
 
-// GetReleaseLevel gets release level for a given language.
+// ReleaseLevel gets release level for a given language.
 //
 // The default value is empty string, if undefined for a language.
-func (api *API) GetReleaseLevel(language string) string {
+func (api *API) ReleaseLevel(language string) string {
 	var level string
 	if lv, ok := api.ReleaseLevels[language]; ok {
 		level = lv

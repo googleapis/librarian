@@ -75,7 +75,7 @@ func TestGetReleaseLevel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.GetReleaseLevel(test.lang)
+			got := test.sc.ReleaseLevel(test.lang)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

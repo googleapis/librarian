@@ -386,7 +386,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 func getReleaseLevel(library *config.Library, sc *serviceconfig.API) string {
 	var level string
 	if sc != nil {
-		level = sc.GetReleaseLevel("go")
+		level = sc.ReleaseLevel("go")
 	}
 	if level == "" {
 		level = library.ReleaseLevel
