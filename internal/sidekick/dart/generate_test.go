@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -37,12 +36,10 @@ func TestFromProtobuf(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
@@ -61,11 +58,11 @@ func TestFromProtobuf(t *testing.T) {
 			"proto:google.cloud.location":    "package:google_cloud_location/location.dart",
 		},
 	}
-	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
+	model, err := parser.CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg.Codec); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
