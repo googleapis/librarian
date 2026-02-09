@@ -17,10 +17,14 @@
 package serviceconfig
 
 const (
-	LangDart   = "dart"
-	LangGo     = "go"
+	// LangDart is the language identifier for Dart.
+	LangDart = "dart"
+	// LangGo is the language identifier for Go.
+	LangGo = "go"
+	// LangPython is the language identifier for Python.
 	LangPython = "python"
-	LangRust   = "rust"
+	// LangRust is the language identifier for Rust.
+	LangRust = "rust"
 
 	titleAppsScriptTypes           = "Google Apps Script Types"
 	titleAccessContextManagerTypes = "Access Context Manager Types"
