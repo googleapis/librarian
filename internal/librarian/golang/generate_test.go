@@ -382,7 +382,7 @@ func TestGetReleaseLevel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := getReleaseLevel(test.lib, test.sc)
+			got := releaseLevel(test.lib, test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -426,7 +426,7 @@ func TestGetTransport(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := getTransport(test.sc)
+			got := transport(test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
