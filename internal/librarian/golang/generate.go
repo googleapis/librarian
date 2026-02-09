@@ -370,8 +370,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 	})
 }
 
-// getTransport get transport from serviceconfig.APIs for a given
-// API and language Go.
+// getTransport get transport from serviceconfig.API for language Go.
 //
 // The default value is serviceconfig.GRPCRest.
 func getTransport(sc *serviceconfig.API) string {

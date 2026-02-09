@@ -351,3 +351,47 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTransport(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want string
+	}{
+		{
+			name: "nil serviceconfig",
+			sc:   nil,
+			want: "grpc+rest",
+		},
+		{
+			name: "empty serviceconfig",
+			sc:   &serviceconfig.API{},
+			want: "grpc+rest",
+		},
+		{
+			name: "go specific transport",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					"go": serviceconfig.GRPC,
+				},
+			},
+			want: "grpc",
+		},
+		{
+			name: "other language transport",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					"python": serviceconfig.GRPC,
+				},
+			},
+			want: "grpc+rest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := getTransport(test.sc)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
