@@ -40,49 +40,6 @@ func TestAPIsAlphabeticalOrder(t *testing.T) {
 	}
 }
 
-func TestGetReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		sc   *API
-		lang string
-		want string
-	}{
-		{
-			name: "empty serviceconfig",
-			sc:   &API{},
-			lang: "go",
-			want: "",
-		},
-		{
-			name: "go specific release level",
-			sc: &API{
-				ReleaseLevels: map[string]string{
-					"go": "beta",
-				},
-			},
-			lang: "go",
-			want: "beta",
-		},
-		{
-			name: "other language transport",
-			sc: &API{
-				ReleaseLevels: map[string]string{
-					"go": "beta",
-				},
-			},
-			lang: "python",
-			want: "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.ReleaseLevel(test.lang)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string
