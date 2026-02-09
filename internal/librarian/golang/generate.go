@@ -18,7 +18,9 @@ package golang
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -101,6 +103,9 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateREADME(library, api, moduleRoot); err != nil {
 		return err
 	}
+	if err := updateSnippetMetadata(library, outdir); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -115,7 +120,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
-	return command.Run(ctx, "gofmt", args...)
+	return command.Run(ctx, "goimports", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
@@ -194,12 +199,17 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 		clientDir = goAPI.ClientDirectory
 	}
 
+	importPath := clientDir
+	if goAPI != nil && goAPI.ImportPath != "" {
+		importPath = goAPI.ImportPath
+	}
+
 	var modulePathVersion string
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
-		clientDir, modulePathVersion, version, clientDir)
+		importPath, modulePathVersion, version, clientDir)
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
@@ -334,4 +344,32 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
+}
+
+// updateSnippetMetadata updates the snippet metadata files with the correct library version.
+func updateSnippetMetadata(library *config.Library, output string) error {
+	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
+	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Skip the update if the baseDir is not existed.
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		if d.IsDir() || !strings.HasPrefix(d.Name(), "snippet_metadata") {
+			return nil
+		}
+		read, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		newContent := strings.Replace(string(read), "$VERSION", library.Version, 1)
+		err = os.WriteFile(path, []byte(newContent), 0644)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }

@@ -24,7 +24,7 @@ limitations under the License.
 {{/Codec.PerServiceFeatures}}
 use crate::Result;
 #[allow(unused_imports)]
-use gax::error::Error;
+use crate::Error;
 {{#Codec.PerServiceFeatures}}
 #[cfg(any({{#Codec.Services}}feature = "{{Codec.FeatureName}}",{{/Codec.Services}}))]
 {{/Codec.PerServiceFeatures}}
@@ -83,7 +83,7 @@ impl std::fmt::Debug for {{Codec.Name}} {
 #[cfg(any({{#Codec.Services}}feature = "{{Codec.FeatureName}}",{{/Codec.Services}}))]
 {{/Codec.PerServiceFeatures}}
 impl {{Codec.Name}} {
-    pub async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
+    pub async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
         {{#Codec.DetailedTracingAttributes}}
         #[cfg(google_cloud_unstable_tracing)]
         let inner = if gaxi::options::tracing_enabled(&config) {
@@ -109,10 +109,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: gax::options::RequestOptions,
-    ) -> Result<gax::response::Response<{{Codec.ReturnType}}>> {
+        options: crate::RequestOptions,
+    ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
         use gaxi::{prost::ToProto, grpc::tonic::{GrpcMethod, Extensions}};
-        let options = gax::options::internal::set_default_idempotency(
+        let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#2588) - resolve this in the model }}
             {{#HasAutoPopulatedFields}}
@@ -181,15 +181,15 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_error_policy::PollingErrorPolicy> {
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy> {
         self.inner.get_polling_error_policy(options)
     }
 
     fn get_polling_backoff_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_backoff_policy::PollingBackoffPolicy> {
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
         self.inner.get_polling_backoff_policy(options)
     }
     {{/Codec.HasLROs}}

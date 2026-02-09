@@ -1,0 +1,45 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load(
+    "proto_library_with_info",
+    "py_gapic_assembly_pkg",
+    "py_gapic_library",
+    "py_test",
+)
+
+proto_library(
+    name = "x_proto",
+    srcs = [
+        "x.proto",
+    ],
+    deps = [
+    ],
+)
+
+proto_library_with_info(
+    name = "x_proto_with_info",
+    deps = [
+        ":x_proto",
+    ],
+)
+
+py_gapic_library(
+    name = "budgets_py_gapic_1",
+    srcs = [":x_proto"],
+    grpc_service_config = "billingbudgets_grpc_service_config.json",
+    rest_numeric_enums = True,
+    service_yaml = "billingbudgets.yaml",
+    transport = "grpc+rest",
+    deps = [
+    ],
+)
+
+py_gapic_library(
+    name = "budgets_py_gapic_2",
+    srcs = [":x_proto"],
+    grpc_service_config = "billingbudgets_grpc_service_config.json",
+    rest_numeric_enums = True,
+    service_yaml = "billingbudgets.yaml",
+    transport = "grpc+rest",
+    deps = [
+    ],
+)

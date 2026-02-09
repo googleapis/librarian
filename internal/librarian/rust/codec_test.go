@@ -327,13 +327,13 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				SpecificationFormat: "openapi",
 			},
 			api: &config.API{
-				Path: "testdata/openapi/secretmanager_openapi_v1.json",
+				Path: "testdata/secretmanager_openapi_v1.json",
 			},
 			want: &sidekickconfig.Config{
 				General: sidekickconfig.GeneralConfig{
 					Language:            "rust",
 					SpecificationFormat: "openapi",
-					SpecificationSource: "testdata/openapi/secretmanager_openapi_v1.json",
+					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
 					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				},
 				Source: map[string]string{

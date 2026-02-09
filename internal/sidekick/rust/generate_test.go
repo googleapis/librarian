@@ -83,7 +83,7 @@ func TestCodecError(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
@@ -93,13 +93,13 @@ func TestCodecError(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"--invalid--": "--invalid--",
 		},
 	}
-	model, err := parser.CreateModel(errorConfig)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(errorConfig))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,13 +123,13 @@ func TestRustFromOpenAPI(t *testing.T) {
 		General: config.GeneralConfig{
 			SpecificationFormat: "openapi",
 			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
+			SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		},
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestRustFromDiscovery(t *testing.T) {
 			"per-service-features": "true",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func TestRustFromProtobuf(t *testing.T) {
 			"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +249,7 @@ func TestRustClient(t *testing.T) {
 				"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
 			},
 		}
-		model, err := parser.CreateModel(cfg)
+		model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -299,7 +299,7 @@ func TestRustNosvc(t *testing.T) {
 			"package:google-cloud-type":     "source=google.type,package=google-cloud-type",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -338,7 +338,7 @@ func TestRustModuleRpc(t *testing.T) {
 			"package:wkt":       "source=google.protobuf,package=google-cloud-wkt",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +378,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 			"module-path":       "crate",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
+	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
 	if err != nil {
 		t.Fatal(err)
 	}
