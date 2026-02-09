@@ -83,7 +83,7 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The Showcase API ("schema/google/showcase/v1beta1") is a special case:
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
-func Find(googleapisDir, path string) (*API, error) {
+func Find(googleapisDir, path, language string) (*API, error) {
 	var result *API
 	for _, api := range APIs {
 		// The path for OpenAPI and discovery documents are in
@@ -99,8 +99,10 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 	}
 
-	if result == nil {
-		return nil, fmt.Errorf("API %s is not in allowlist", path)
+	var err error
+	result, err = validateAPI(path, language, result)
+	if err != nil {
+		return nil, err
 	}
 
 	// If service config is overridden in allowlist, use it
@@ -110,7 +112,7 @@ func Find(googleapisDir, path string) (*API, error) {
 
 	// Search filesystem for service config
 	dir := filepath.Join(googleapisDir, result.Path)
-	_, err := os.Stat(dir)
+	_, err = os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return result, nil
@@ -144,6 +146,28 @@ func Find(googleapisDir, path string) (*API, error) {
 		}
 	}
 	return result, nil
+}
+
+// validateAPI checks if the given API path is allowed for the specified language.
+// If the API is not in the allowlist, it is only allowed if it has the "google/cloud/" prefix.
+// If the API is in the allowlist but has a language restriction, it checks if the
+// language is in the allowed list.
+func validateAPI(path, language string, api *API) (*API, error) {
+	if api == nil {
+		if strings.HasPrefix(path, "google/cloud/") {
+			return &API{Path: path}, nil
+		}
+		return nil, fmt.Errorf("API %s is not in allowlist", path)
+	}
+	if len(api.Languages) == 0 {
+		return api, nil
+	}
+	for _, l := range api.Languages {
+		if l == language {
+			return api, nil
+		}
+	}
+	return nil, fmt.Errorf("API %s is not allowed for language %s", path, language)
 }
 
 func populateTitle(googleapisDir string, api *API) (*API, error) {

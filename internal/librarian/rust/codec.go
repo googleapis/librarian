@@ -39,7 +39,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	api, err := serviceconfig.Find(root, ch.Path)
+	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
 	if err != nil {
 		return parser.ModelConfig{}, err
 	}
@@ -232,7 +232,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		src["include-list"] = module.IncludeList
 	}
 	if module.Source != "" && src["roots"] == "googleapis" {
-		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
+		api, err := serviceconfig.Find(sources.Googleapis, module.Source, "rust")
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}

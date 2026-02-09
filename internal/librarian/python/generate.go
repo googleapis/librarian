@@ -70,7 +70,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// api.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangPython)
 	if err != nil {
 		return fmt.Errorf("failed to find service config: %w", err)
 	}
@@ -206,7 +206,7 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 
-	api, err := serviceconfig.Find(googleapisDir, ch.Path)
+	api, err := serviceconfig.Find(googleapisDir, ch.Path, "python")
 	if err != nil {
 		return nil, err
 	}
