@@ -81,6 +81,9 @@ type API struct {
 	Transports map[string]Transport
 }
 
+// GetTransport gets transport for a given language.
+//
+// The default value is GRPCRest, if unset for a language.
 func (api *API) GetTransport(language string) string {
 	if trans, ok := api.Transports[language]; ok {
 		return string(trans)
