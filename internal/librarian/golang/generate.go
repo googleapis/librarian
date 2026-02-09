@@ -158,7 +158,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 }
 
 func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, apiPath, "go")
+	sc, err := serviceconfig.Find(googleapisDir, apiPath, serviceconfig.LangGo)
 	if err != nil {
 		return nil, err
 	}
