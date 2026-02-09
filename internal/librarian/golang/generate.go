@@ -154,6 +154,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return err
 	}
 	args = append(args, protoFiles...)
+	print(strings.Join(args, " "))
 	return command.Run(ctx, args[0], args[1:]...)
 }
 
@@ -181,9 +182,14 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	transport := library.Transport
+	var transport string
+	if sc != nil {
+		if t, ok := sc.Transports["go"]; ok {
+			transport = string(t)
+		}
+	}
 	if transport == "" {
-		transport = "grpc+rest"
+		transport = string(serviceconfig.GRPCRest)
 	}
 	opts = append(opts, "transport="+transport)
 	if library.ReleaseLevel != "" {
