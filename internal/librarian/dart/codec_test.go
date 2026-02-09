@@ -422,9 +422,6 @@ func TestToModelConfig(t *testing.T) {
 				Googleapis: test.googleapisDir,
 			}
 			got, err := toModelConfig(test.library, test.channel, sources)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
 			if test.wantErrMsg != "" {
 				if err == nil || !strings.Contains(err.Error(), test.wantErrMsg) {
 					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErrMsg)
@@ -434,6 +431,9 @@ func TestToModelConfig(t *testing.T) {
 			if err != nil {
 				t.Errorf("toModelConfig() unexpected error: %v", err)
 				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
