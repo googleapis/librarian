@@ -195,7 +195,7 @@ var APIs = []API{
 	{Path: "google/cloud/cloudsecuritycompliance/v1"},
 	{Path: "google/cloud/commerce/consumer/procurement/v1"},
 	{Path: "google/cloud/commerce/consumer/procurement/v1alpha1", Languages: []string{LangPython}},
-	{Path: "google/cloud/common", Languages: []string{LangPython}},
+	{Path: "google/cloud/common"},
 	{Path: "google/cloud/compute/v1", Discovery: "discoveries/compute.v1.json"},
 	{Path: "google/cloud/compute/v1beta", Languages: []string{LangPython}},
 	{Path: "google/cloud/confidentialcomputing/v1"},
