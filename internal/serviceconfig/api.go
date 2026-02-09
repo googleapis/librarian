@@ -82,7 +82,9 @@ type API struct {
 	Transports map[string]Transport
 }
 
-// APIs defines all API paths and their language availability.
+// APIs defines API paths that require explicit configurations.
+// APIs not in this list are implicitly allowed if
+// they start with "google/cloud/".
 var APIs = []API{
 	{Path: "google/ads/admanager/v1", Languages: []string{LangPython}},
 	{Path: "google/ads/datamanager/v1", Languages: []string{LangPython}},

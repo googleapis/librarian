@@ -72,9 +72,12 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
-// Find looks up the service config path and title override for a given API path.
-// It first checks the API allowlist for overrides, then searches for YAML files
-// containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
+// Find looks up the service config path and title override for a given API path,
+// and validates that the API is allowed for the specified language.
+//
+// It first checks the API list for overrides and language restrictions,
+// then searches for YAML files containing "type: google.api.Service",
+// skipping any files ending in _gapic.yaml.
 //
 // The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
@@ -105,7 +108,7 @@ func Find(googleapisDir, path, language string) (*API, error) {
 		return nil, err
 	}
 
-	// If service config is overridden in allowlist, use it
+	// If service config is overridden in API list, use it
 	if result.ServiceConfig != "" {
 		return populateTitle(googleapisDir, result)
 	}
@@ -149,14 +152,18 @@ func Find(googleapisDir, path, language string) (*API, error) {
 }
 
 // validateAPI checks if the given API path is allowed for the specified language.
-// If the API is not in the allowlist, it is only allowed if it has the "google/cloud/" prefix.
-// If the API is in the allowlist but has a language restriction, it checks if the
-// language is in the allowed list.
+//
+// API paths starting with "google/cloud/" are allowed for all languages by default.
+// If such a path is explicitly included in the allowlist, it must satisfy any
+// language restrictions defined there.
+//
+// API paths not starting with "google/cloud/" must be explicitly included in the
+// allowlist and satisfy its language restrictions.
 func validateAPI(path, language string, api *API) (*API, error) {
+	if api == nil && strings.HasPrefix(path, "google/cloud/") {
+		return &API{Path: path}, nil
+	}
 	if api == nil {
-		if strings.HasPrefix(path, "google/cloud/") {
-			return &API{Path: path}, nil
-		}
 		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
 	if len(api.Languages) == 0 {
