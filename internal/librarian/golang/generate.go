@@ -374,15 +374,8 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 //
 // The default value is serviceconfig.GRPCRest.
 func getTransport(sc *serviceconfig.API) string {
-	var transport string
 	if sc != nil {
-		if t, ok := sc.Transports["go"]; ok {
-			transport = string(t)
-		}
+		return sc.GetTransport("go")
 	}
-	if transport == "" {
-		transport = string(serviceconfig.GRPCRest)
-	}
-
-	return transport
+	return string(serviceconfig.GRPCRest)
 }

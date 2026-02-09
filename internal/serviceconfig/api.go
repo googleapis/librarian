@@ -81,6 +81,14 @@ type API struct {
 	Transports map[string]Transport
 }
 
+func (api *API) GetTransport(language string) string {
+	if trans, ok := api.Transports[language]; ok {
+		return string(trans)
+	}
+
+	return string(GRPCRest)
+}
+
 // APIs defines all API paths and their language availability.
 var APIs = []API{
 	{Path: "google/ads/admanager/v1", Languages: []string{langPython}},
