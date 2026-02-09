@@ -116,6 +116,7 @@ func readTransports(googleapisDir, path string) map[string]string {
 	return simplifyTransports(transports)
 }
 
+// findAPIsSlice locates the APIs variable in the provided AST file and returns its composite literal value.
 func findAPIsSlice(astFile *ast.File) *ast.CompositeLit {
 	var apisSlice *ast.CompositeLit
 	ast.Inspect(astFile, func(n ast.Node) bool {
@@ -136,6 +137,8 @@ func findAPIsSlice(astFile *ast.File) *ast.CompositeLit {
 	return apisSlice
 }
 
+// extractAPIInfo parses an API composite literal to find the Path value and the index of the Transports field.
+// If not found, it returns an empty string for path, and -1 for transportsIdx.
 func extractAPIInfo(apiLit *ast.CompositeLit) (string, int) {
 	var path string
 	transportsIdx := -1
@@ -160,6 +163,8 @@ func extractAPIInfo(apiLit *ast.CompositeLit) (string, int) {
 	return path, transportsIdx
 }
 
+// simplifyTransports attempts to condense the transports map to a single "all" entry
+// if all supported languages share the same transport value.
 func simplifyTransports(transports map[string]string) map[string]string {
 	if len(transports) != len(allLanguages) {
 		return transports

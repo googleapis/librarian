@@ -15,7 +15,6 @@
 package importconfig
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -274,7 +273,7 @@ func TestReadTransports_Error(t *testing.T) {
 
 func TestUpdateTransportsCommand(t *testing.T) {
 	cmd := updateTransportsCommand()
-	ctx := context.Background()
+	ctx := t.Context()
 	// Just test that the command can be initialized and run with --help.
 	if err := cmd.Run(ctx, []string{"update-transports", "--help"}); err != nil {
 		t.Fatalf("cmd.Run() error = %v", err)
