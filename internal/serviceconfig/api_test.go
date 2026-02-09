@@ -16,6 +16,8 @@ package serviceconfig
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestAPIsNoDuplicates(t *testing.T) {
@@ -35,5 +37,48 @@ func TestAPIsAlphabeticalOrder(t *testing.T) {
 		if prev > curr {
 			t.Errorf("APIs not in alphabetical order: %q comes after %q", prev, curr)
 		}
+	}
+}
+
+func TestGetReleaseLevel(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *API
+		lang string
+		want string
+	}{
+		{
+			name: "empty serviceconfig",
+			sc:   &API{},
+			lang: "go",
+			want: "",
+		},
+		{
+			name: "go specific release level",
+			sc: &API{
+				ReleaseLevels: map[string]string{
+					"go": "beta",
+				},
+			},
+			lang: "go",
+			want: "beta",
+		},
+		{
+			name: "other language transport",
+			sc: &API{
+				ReleaseLevels: map[string]string{
+					"go": "beta",
+				},
+			},
+			lang: "python",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.GetReleaseLevel(test.lang)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
