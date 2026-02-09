@@ -181,16 +181,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	var transport string
-	if sc != nil {
-		if t, ok := sc.Transports["go"]; ok {
-			transport = string(t)
-		}
-	}
-	if transport == "" {
-		transport = string(serviceconfig.GRPCRest)
-	}
-	opts = append(opts, "transport="+transport)
+	opts = append(opts, "transport="+getTransport(sc))
 	if library.ReleaseLevel != "" {
 		opts = append(opts, "release-level="+library.ReleaseLevel)
 	}
@@ -377,4 +368,22 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		}
 		return nil
 	})
+}
+
+// getTransport get transport from serviceconfig.APIs for a given
+// API and language Go.
+//
+// The default value is serviceconfig.GRPCRest.
+func getTransport(sc *serviceconfig.API) string {
+	var transport string
+	if sc != nil {
+		if t, ok := sc.Transports["go"]; ok {
+			transport = string(t)
+		}
+	}
+	if transport == "" {
+		transport = string(serviceconfig.GRPCRest)
+	}
+
+	return transport
 }
