@@ -46,9 +46,10 @@ const (
 
 // API describes an API path and its availability across languages.
 type API struct {
-	// Path is the proto directory path in github.com/googleapis/googleapis.
-	// If ServiceConfig is empty, the service config is assumed to live at this path.
-	Path string
+	// Discovery is the file path to a discovery document in
+	// github.com/googleapis/discovery-artifact-manager.
+	// Used by sidekick languages (Rust, Dart) as an alternative to proto files.
+	Discovery string
 
 	// Languages restricts which languages can generate client libraries for this API.
 	// Empty means all languages can use this API.
@@ -59,14 +60,15 @@ type API struct {
 	//   - Some APIs (like DIREGAPIC protos) are only used by specific languages
 	Languages []string
 
-	// Discovery is the file path to a discovery document in
-	// github.com/googleapis/discovery-artifact-manager.
-	// Used by sidekick languages (Rust, Dart) as an alternative to proto files.
-	Discovery string
-
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
 	OpenAPI string
+
+	// Path is the proto directory path in github.com/googleapis/googleapis.
+	// If ServiceConfig is empty, the service config is assumed to live at this path.
+	Path string
+
+	ReleaseLevels map[string]string
 
 	// ServiceConfig is the service config file path override.
 	// If empty, the service config is discovered in the directory specified by Path.
@@ -79,6 +81,18 @@ type API struct {
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
 	Transports map[string]Transport
+}
+
+// GetReleaseLevel gets release level for a given language.
+//
+// The default value is empty string, if undefined for a language.
+func (api *API) GetReleaseLevel(language string) string {
+	var level string
+	if trans, ok := api.Transports[language]; ok {
+		level = string(trans)
+	}
+
+	return level
 }
 
 // GetTransport gets transport for a given language.
@@ -137,7 +151,7 @@ var APIs = []API{
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema},
-	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{langPython}},
+	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{langPython}, ReleaseLevels: map[string]string{"go": "beta"}},
 	{Path: "google/cloud/alloydb/connectors/v1"},
 	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{langPython}},
 	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{langPython}},
