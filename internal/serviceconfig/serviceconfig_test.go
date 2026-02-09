@@ -120,6 +120,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 				Title:         "Vertex AI API",
+				Transports:    map[string]Transport{"python": "grpc"},
 			},
 		},
 		{
@@ -140,6 +141,7 @@ func TestFind(t *testing.T) {
 				Discovery:     "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 				Title:         "Google Compute Engine API",
+				Transports:    map[string]Transport{"csharp": "rest", "go": "rest", "java": "rest", "php": "rest"},
 			},
 		},
 	} {
