@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#ModelCodec.GenerateRpcSamples}}
-{{#IsSimpleOrLRO}}
+{{^IsStreaming}}
 ///
 /// # Example
 /// ```
@@ -22,6 +22,9 @@ limitations under the License.
 {{#IsLRO}}
 /// use google_cloud_lro::Poller;
 {{/IsLRO}}
+{{#IsList}}
+/// use google_cloud_gax::paginator::ItemPaginator as _;
+{{/IsList}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(
 {{> /templates/common/client_method_samples/parameters}}
@@ -30,5 +33,5 @@ limitations under the License.
 ///     Ok(())
 /// }
 /// ```
-{{/IsSimpleOrLRO}}
+{{/IsStreaming}}
 {{/ModelCodec.GenerateRpcSamples}}
