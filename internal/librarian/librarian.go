@@ -70,6 +70,7 @@ func Run(ctx context.Context, args ...string) error {
 			updateCommand(),
 			versionCommand(),
 			publishCommand(),
+			tagCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)

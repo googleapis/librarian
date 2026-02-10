@@ -25,6 +25,10 @@ limitations under the License.
 ///    client: &{{Service.Codec.Name}},
 ///    resource_name: &str
 {{/AIPStandardUndeleteInfo}}
+{{#AIPStandardListInfo}}
+///    client: &{{Service.Codec.Name}},
+///    parent: &str
+{{/AIPStandardListInfo}}
 {{^IsAIPStandard}}
 ///    client: &{{Service.Codec.Name}}
 {{/IsAIPStandard}}
