@@ -4,7 +4,7 @@ This document describes the schema for the API Allowlist.
 
 ## API Configuration
 
-[Link to code](../internal/serviceconfig/api.go#L53)
+[Link to code](../internal/serviceconfig/api.go#L66)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `APIDescription` | string | APIDescription provides the information for describing an API. |
