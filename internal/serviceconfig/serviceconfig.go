@@ -174,6 +174,12 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 	if api.Title == "" {
 		api.Title = cfg.GetTitle()
 	}
+	if api.ServiceName == "" {
+		api.ServiceName = cfg.GetName()
+	}
+	if api.APIDescription == "" && cfg.GetDocumentation() != nil {
+		api.APIDescription = cfg.GetDocumentation().GetSummary()
+	}
 	publishing := cfg.GetPublishing()
 	if publishing != nil {
 		if api.NewIssueURI == "" {
