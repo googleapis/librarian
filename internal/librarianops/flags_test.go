@@ -35,7 +35,7 @@ func TestParseRepoFlags(t *testing.T) {
 			},
 		},
 	}
-	for _, testCase := range []struct {
+	for _, test := range []struct {
 		name         string
 		args         []string
 		wantRepoName string
