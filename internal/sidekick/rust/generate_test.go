@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -80,7 +81,7 @@ func TestCodecError(t *testing.T) {
 	outDir := t.TempDir()
 
 	goodConfig := parser.ModelConfig{
-		SpecificationFormat: "openapi",
+		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
@@ -89,7 +90,7 @@ func TestCodecError(t *testing.T) {
 	}
 
 	errorConfig := parser.ModelConfig{
-		SpecificationFormat: "openapi",
+		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
@@ -117,7 +118,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "openapi",
+		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
@@ -148,7 +149,7 @@ func TestRustFromDiscovery(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "discovery",
+		SpecificationFormat: libconfig.SpecDiscovery,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
 		Codec: map[string]string{
@@ -182,7 +183,7 @@ func TestRustFromProtobuf(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
@@ -222,7 +223,7 @@ func TestRustClient(t *testing.T) {
 		outDir := t.TempDir()
 
 		cfg := parser.ModelConfig{
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: libconfig.SpecProtobuf,
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
 			Source: map[string]string{
@@ -270,7 +271,7 @@ func TestRustNosvc(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
@@ -311,7 +312,7 @@ func TestRustModuleRpc(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/rpc/rpc_publish.yaml",
 		SpecificationSource: "google/rpc",
 		Source: map[string]string{
@@ -349,7 +350,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "google/protobuf",
 		Source: map[string]string{
 			"protobuf-root": localTestdataDir,

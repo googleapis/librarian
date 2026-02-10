@@ -49,7 +49,7 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 	}
 
 	modelConfig := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       api.ServiceConfig,
 		SpecificationSource: ch.Path,
 		Source:              src,

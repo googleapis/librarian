@@ -57,6 +57,26 @@ func GetLastTag(ctx context.Context, gitExe, remote, branch string) (string, err
 	return strings.TrimSuffix(tag, "\n"), nil
 }
 
+// Tag creates the given tag name pointing at the given revision. The revision
+// is often a commit hash, but can be a relative revision (e.g. "HEAD~").
+func Tag(ctx context.Context, gitExe, tagName, revision string) error {
+	output, err := command.Output(ctx, gitExe, "tag", tagName, revision)
+	if err != nil {
+		return err
+	}
+	if len(output) > 0 {
+		return fmt.Errorf("unexpected output from git tag: %s", output)
+	}
+	return nil
+}
+
+// GetCommitHash returns the commit hash pointed at by the given revision,
+// which could be a tag name, a branch name, a relative revision (e.g. "HEAD~").
+func GetCommitHash(ctx context.Context, gitExe, revision string) (string, error) {
+	output, err := command.Output(ctx, gitExe, "rev-parse", revision)
+	return strings.TrimSpace(output), err
+}
+
 // FilesChangedSince returns the files changed since the given git ref.
 func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges []string) ([]string, error) {
 	output, err := command.Output(ctx, gitExe, "diff", "--name-only", ref)

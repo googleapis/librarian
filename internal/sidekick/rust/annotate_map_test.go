@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"testing"
 
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -75,7 +76,7 @@ func TestMapKeyAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec, err := newCodec("protobuf", map[string]string{})
+		codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
 		codec.packageMapping = map[string]*packagez{
 			"test":            {name: "google-cloud-test"},
 			"google.protobuf": {name: "wkt"},
@@ -101,27 +102,27 @@ func TestMapValueAnnotations(t *testing.T) {
 		typezID     string
 		wantSerdeAs string
 	}{
-		{"protobuf", api.STRING_TYPE, "unused", "serde_with::Same"},
-		{"discovery", api.STRING_TYPE, "unused", "serde_with::Same"},
-		{"protobuf", api.BYTES_TYPE, "unused", "serde_with::base64::Base64"},
-		{"discovery", api.BYTES_TYPE, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
-		{"protobuf", api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
-		{"discovery", api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{libconfig.SpecProtobuf, api.STRING_TYPE, "unused", "serde_with::Same"},
+		{libconfig.SpecDiscovery, api.STRING_TYPE, "unused", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.BYTES_TYPE, "unused", "serde_with::base64::Base64"},
+		{libconfig.SpecDiscovery, api.BYTES_TYPE, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
+		{libconfig.SpecDiscovery, api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 
-		{"protobuf", api.BOOL_TYPE, "unused", "serde_with::Same"},
-		{"protobuf", api.INT32_TYPE, "unused", "wkt::internal::I32"},
-		{"protobuf", api.SFIXED32_TYPE, "unused", "wkt::internal::I32"},
-		{"protobuf", api.SINT32_TYPE, "unused", "wkt::internal::I32"},
-		{"protobuf", api.INT64_TYPE, "unused", "wkt::internal::I64"},
-		{"protobuf", api.SFIXED64_TYPE, "unused", "wkt::internal::I64"},
-		{"protobuf", api.SINT64_TYPE, "unused", "wkt::internal::I64"},
-		{"protobuf", api.UINT32_TYPE, "unused", "wkt::internal::U32"},
-		{"protobuf", api.FIXED32_TYPE, "unused", "wkt::internal::U32"},
-		{"protobuf", api.UINT64_TYPE, "unused", "wkt::internal::U64"},
-		{"protobuf", api.FIXED64_TYPE, "unused", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.BOOL_TYPE, "unused", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.INT32_TYPE, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.SFIXED32_TYPE, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.SINT32_TYPE, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.INT64_TYPE, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.SFIXED64_TYPE, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.SINT64_TYPE, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.UINT32_TYPE, "unused", "wkt::internal::U32"},
+		{libconfig.SpecProtobuf, api.FIXED32_TYPE, "unused", "wkt::internal::U32"},
+		{libconfig.SpecProtobuf, api.UINT64_TYPE, "unused", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.FIXED64_TYPE, "unused", "wkt::internal::U64"},
 
-		{"protobuf", api.MESSAGE_TYPE, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
-		{"protobuf", api.MESSAGE_TYPE, ".test.Message", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".test.Message", "serde_with::Same"},
 	} {
 		mapMessage := &api.Message{
 			Name:    "$map<unused, unused>",
@@ -209,7 +210,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 	_, err := annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
