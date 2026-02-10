@@ -26,6 +26,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -188,7 +189,11 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
 	opts = append(opts, "transport="+transport(sc))
-	opts = append(opts, "release-level="+releaseLevel(apiPath))
+	level, err := releaseLevel(apiPath, library.Version)
+	if err != nil {
+		return nil, err
+	}
+	opts = append(opts, "release-level="+level)
 	return opts, nil
 }
 
@@ -375,14 +380,19 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 }
 
 // releaseLevel get release level for an API for language Go.
-func releaseLevel(apiPath string) string {
+func releaseLevel(apiPath, version string) (string, error) {
 	if strings.Contains(apiPath, releaseLevelAlpha) {
-		return releaseLevelAlpha
+		return releaseLevelAlpha, nil
 	}
-	if strings.Contains(apiPath, releaseLevelBeta) {
-		return releaseLevelBeta
+	semverVer, err := semver.NewVersion(version)
+	if err != nil {
+		return "", err
 	}
-	return releaseLevelGA
+	if strings.Contains(apiPath, releaseLevelBeta) || semverVer.Major() < 1 {
+		return releaseLevelBeta, nil
+	}
+
+	return releaseLevelGA, nil
 }
 
 // transport get transport from serviceconfig.API for language Go.

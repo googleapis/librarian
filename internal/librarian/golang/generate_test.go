@@ -151,6 +151,7 @@ func TestGenerate(t *testing.T) {
 			}
 			library := &config.Library{
 				Name:         libraryName,
+				Version:      "1.0.0",
 				Output:       outdir,
 				APIs:         []*config.API{{Path: apiPath}},
 				Transport:    test.transport,
@@ -352,16 +353,24 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
-func TestGetReleaseLevel(t *testing.T) {
+func TestGetReleaseLevel_Success(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		apiPath string
+		version string
 		want    string
 	}{
 		{
 			name:    "ga",
 			apiPath: "google/cloud/secretmanager/v1",
+			version: "1.0.0",
 			want:    "ga",
+		},
+		{
+			name:    "stable with preview version",
+			apiPath: "google/cloud/secretmanager/v1",
+			version: "0.11.0",
+			want:    "beta",
 		},
 		{
 			name:    "alpha",
@@ -371,11 +380,16 @@ func TestGetReleaseLevel(t *testing.T) {
 		{
 			name:    "beta",
 			apiPath: "google/cloud/secretmanager/v1beta2",
+			version: "1.0.0",
 			want:    "beta",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := releaseLevel(test.apiPath)
+			got, err := releaseLevel(test.apiPath, test.version)
+			if err != nil {
+				t.Error(err)
+				return
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
