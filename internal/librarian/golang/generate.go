@@ -219,14 +219,14 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
-		return &config.GoAPI{}
+		return nil
 	}
 	for _, ga := range library.Go.GoAPIs {
 		if ga.Path == apiPath {
 			return ga
 		}
 	}
-	return &config.GoAPI{}
+	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
