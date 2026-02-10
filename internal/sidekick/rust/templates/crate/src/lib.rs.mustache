@@ -99,10 +99,10 @@ limitations under the License.
 /// The messages and enums that are part of this client library.
 #[allow(clippy::module_inception)]
 pub mod model;
-
 {{#Codec.HasServices}}
-pub use gax::Result;
-pub use gax::error::Error;
+
+pub use google_cloud_gax::Result;
+pub use google_cloud_gax::error::Error;
 
 {{! Google APIs often use angle brackets for <PLACEHOLDERS>, rustdoc does not like those. }}
 #[allow(rustdoc::invalid_html_tags)]
@@ -146,7 +146,16 @@ pub(crate) mod info {
     }
 }
 
+// Define some shortcuts for imported crates.
+pub(crate) use google_cloud_gax::client_builder::ClientBuilder;
+pub(crate) use google_cloud_gax::client_builder::Result as ClientBuilderResult;
+pub(crate) use google_cloud_gax::client_builder::internal::ClientFactory;
+pub(crate) use google_cloud_gax::client_builder::internal::new_builder as new_client_builder;
+pub(crate) use google_cloud_gax::options::RequestOptions;
+pub(crate) use google_cloud_gax::options::internal::RequestBuilder;
+pub(crate) use google_cloud_gax::response::Response;
 {{/Codec.HasServices}}
 {{#Codec.ExtraModules}}
+
 pub mod {{{.}}};
 {{/Codec.ExtraModules}}

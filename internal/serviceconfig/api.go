@@ -18,6 +18,7 @@ package serviceconfig
 
 const (
 	langDart   = "dart"
+	langGo     = "go"
 	langPython = "python"
 	langRust   = "rust"
 
@@ -30,6 +31,18 @@ const (
 
 	serviceConfigAIPlatformSchema  = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
 	serviceConfigAIPlatformV1Beta1 = "google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml"
+)
+
+// Transport defines the supported transport protocol.
+type Transport string
+
+const (
+	// GRPC indicates gRPC transport.
+	GRPC Transport = "grpc"
+	// Rest indicates REST transport.
+	Rest Transport = "rest"
+	// GRPCRest indicates both gRPC and REST transports.
+	GRPCRest Transport = "grpc+rest"
 )
 
 // API describes an API path and its availability across languages.
@@ -62,6 +75,22 @@ type API struct {
 
 	// Title overrides the API title from the service config.
 	Title string
+
+	// Transports defines the supported transports per language.
+	// Map key is the language name (e.g., "python", "rust").
+	// Optional. If omitted, all languages use GRPCRest by default.
+	Transports map[string]Transport
+}
+
+// Transport gets transport for a given language.
+//
+// The default value is GRPCRest, if undefined for a language.
+func (api *API) Transport(language string) string {
+	if trans, ok := api.Transports[language]; ok {
+		return string(trans)
+	}
+
+	return string(GRPCRest)
 }
 
 // APIs defines all API paths and their language availability.
@@ -104,7 +133,7 @@ var APIs = []API{
 	{Path: "google/chat/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/accessapproval/v1"},
 	{Path: "google/cloud/advisorynotifications/v1"},
-	{Path: "google/cloud/aiplatform/v1"},
+	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{langGo: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/instance", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
@@ -121,6 +150,7 @@ var APIs = []API{
 	{Path: "google/cloud/apigeeregistry/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/apihub/v1"},
 	{Path: "google/cloud/apiregistry/v1"},
+	{Path: "google/cloud/apiregistry/v1beta", Languages: []string{langPython}},
 	{Path: "google/cloud/apphub/v1"},
 	{Path: "google/cloud/asset/v1"},
 	{Path: "google/cloud/asset/v1p1beta1", Languages: []string{langPython}},

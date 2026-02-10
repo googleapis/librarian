@@ -17,15 +17,15 @@ package license
 
 import "fmt"
 
-// LicenseHeader returns the license header with the given year.
-func LicenseHeader(year string) []string {
+// Header returns the license header with the given year.
+func Header(year string) []string {
 	full := []string{fmt.Sprintf(" Copyright %s Google LLC", year)}
-	full = append(full, LicenseHeaderBulk()...)
+	full = append(full, HeaderBulk()...)
 	return full
 }
 
-// LicenseHeaderBulk returns the bulk of the license header.
-func LicenseHeaderBulk() []string {
+// HeaderBulk returns the bulk of the license header.
+func HeaderBulk() []string {
 	return []string{
 		"",
 		" Licensed under the Apache License, Version 2.0 (the \"License\");",

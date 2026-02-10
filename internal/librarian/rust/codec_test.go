@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
@@ -41,12 +42,12 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
-func TestLibraryToSidekickConfig(t *testing.T) {
+func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
 		api     *config.API
-		want    *sidekickconfig.Config
+		want    parser.ModelConfig
 	}{
 		{
 			name: "minimal config",
@@ -58,13 +59,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -83,13 +82,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -107,13 +104,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -146,13 +141,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -170,13 +163,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -206,13 +197,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -237,13 +226,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -274,13 +261,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/secretmanager/v1",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -304,13 +289,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "disco",
-					SpecificationSource: "discoveries/compute.v1.json",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "discovery",
+				SpecificationSource: "discoveries/compute.v1.json",
+				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
@@ -329,13 +312,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "testdata/secretmanager_openapi_v1.json",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "openapi",
-					SpecificationSource: "testdata/secretmanager_openapi_v1.json",
-					ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "openapi",
+				SpecificationSource: "testdata/secretmanager_openapi_v1.json",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -353,13 +334,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "disco",
-					SpecificationSource: "discoveries/compute.v1.json",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "discovery",
+				SpecificationSource: "discoveries/compute.v1.json",
+				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
@@ -377,12 +356,10 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/apps/script/type/gmail",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/apps/script/type/gmail",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/apps/script/type/gmail",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"title-override":  "Google Apps Script Types",
@@ -399,12 +376,10 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/longrunning",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/longrunning",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/longrunning",
 				Source: map[string]string{
 					"googleapis-root":      absPath(t, googleapisRoot),
 					"description-override": "Defines types and an abstract service to handle long-running operations.",
@@ -427,12 +402,10 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/spanner/admin/database/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/spanner/admin/database/v1",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/spanner/admin/database/v1",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
@@ -451,12 +424,10 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/storageinsights/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/storageinsights/v1",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/storageinsights/v1",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -492,13 +463,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "disco",
-					SpecificationSource: "discoveries/compute.v1.json",
-					ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "discovery",
+				SpecificationSource: "discoveries/compute.v1.json",
+				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
@@ -533,12 +502,10 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/vision/v1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/cloud/vision/v1",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/cloud/vision/v1",
 				Source: map[string]string{
 					"googleapis-root":   absPath(t, googleapisRoot),
 					"protobuf-src-root": absPath(t, protobufSrcRoot),
@@ -556,13 +523,11 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 			api: &config.API{
 				Path: "schema/google/showcase/v1beta1",
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "schema/google/showcase/v1beta1",
-					ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "schema/google/showcase/v1beta1",
+				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"showcase-root":   absPath(t, showcaseRoot),
@@ -581,9 +546,12 @@ func TestLibraryToSidekickConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			got, err := libraryToSidekickConfig(test.library, test.api, sources)
+			got, err := libraryToModelConfig(test.library, test.api, sources)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if test.want.Codec == nil {
+				test.want.Codec = buildCodec(test.library)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -596,7 +564,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		want    *sidekickconfig.Config
+		want    parser.ModelConfig
 	}{
 		{
 			name: "with veneer documentation overrides",
@@ -625,7 +593,8 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
+			want: parser.ModelConfig{
+				Language: "rust",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -656,11 +625,9 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust_storage",
-					SpecificationFormat: "protobuf",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust_storage",
+				SpecificationFormat: "protobuf",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -679,11 +646,9 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "none",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "none",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -702,11 +667,9 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust+prost",
-					SpecificationFormat: "protobuf",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -726,12 +689,10 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust+prost",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "google/logging/type",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "google/logging/type",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -754,11 +715,9 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust+prost",
-					SpecificationFormat: "protobuf",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"included-ids":    "id1,id2",
@@ -781,12 +740,10 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				},
 				Roots: []string{"conformance"},
 			},
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "rust",
-					SpecificationFormat: "protobuf",
-					SpecificationSource: "conformance",
-				},
+			want: parser.ModelConfig{
+				Language:            "rust",
+				SpecificationFormat: "protobuf",
+				SpecificationSource: "conformance",
 				Source: map[string]string{
 					"conformance-root": absPath(t, conformanceRoot),
 					"roots":            "conformance",
@@ -811,11 +768,6 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				}
 				if diff := cmp.Diff(test.want.Source, got.Source); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-				if test.want.General.Language != "" {
-					if diff := cmp.Diff(test.want.General, got.General); diff != "" {
-						t.Errorf("mismatch (-want +got):\n%s", diff)
-					}
 				}
 				commentOverrides = append(commentOverrides, got.CommentOverrides...)
 			}

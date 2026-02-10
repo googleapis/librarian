@@ -18,17 +18,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
+
+// pythonGapicInfo contains information about the py_gapic_library target
+// from BUILD.bazel.
+type pythonGapicInfo struct {
+	// transport is the transport specified in the BUILD.bazel file as a
+	// top-level attribute. The transport may instead be specified in optArgs;
+	// this is handled in the generator.
+	transport string
+
+	// optArgs is the value of the opt_args attribute in the BUILD.bazel file,
+	// if any. If a rest_numeric_enums attribute is specified as False, this is
+	// included in optArgs as rest-numeric-enums.
+	optArgs []string
+}
 
 // buildPythonLibraries builds a set of librarian libraries from legacylibrarian
 // libraries and the googleapis directory used to find settings in service
@@ -63,9 +79,75 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 			return nil, err
 		}
 
+		// Apply any information from the BUILD.bazel files in the various API
+		// directories. This also detects if there are any non-GAPIC APIs (e.g
+		// pure proto "type" packages) as they cannot currently be migrated.
+		library, err = applyBuildBazelConfig(library, googleapisDir)
+		if err != nil {
+			return nil, err
+		}
+		// Skip anything that can't be migrated yet.
+		if library == nil {
+			continue
+		}
+
 		libraries = append(libraries, library)
 	}
 	return libraries, nil
+}
+
+// applyBuildBazelConfig applies the information from BUILD.bazel files
+// associated with the APIs in the library, adding GAPIC generator arguments,
+// discovering non-default transports etc. If any APIs within the library are
+// not GAPIC APIs (e.g. they're just protos), applyBuildBazelConfig returns nil
+// instead of returning the a pointer to the library config; the caller should
+// then skip this library as it cannot yet be migrated.
+func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*config.Library, error) {
+	pythonConfig := &config.PythonPackage{
+		OptArgsByAPI: make(map[string][]string),
+	}
+	allTransports := make(map[string]bool)
+	transportsByApi := make(map[string]string)
+	allGapic := true
+
+	for _, api := range library.APIs {
+		bazelGapicInfo, err := parseBazelPythonInfo(googleapisDir, api.Path)
+		if err != nil {
+			return nil, err
+		}
+		if bazelGapicInfo == nil {
+			allGapic = false
+			continue
+		}
+		transportsByApi[api.Path] = bazelGapicInfo.transport
+		allTransports[bazelGapicInfo.transport] = true
+		if len(bazelGapicInfo.optArgs) != 0 {
+			pythonConfig.OptArgsByAPI[api.Path] = bazelGapicInfo.optArgs
+		}
+	}
+	if !allGapic {
+		slog.Info("Skipping not-fully-GAPIC library", "library", library.Name)
+		return nil, nil
+	}
+	if len(allTransports) == 1 {
+		// One consistent transport; set it library-wide if it's not the default.
+		transport := transportsByApi[library.APIs[0].Path]
+		if transport != "grpc+rest" {
+			library.Transport = transport
+		}
+	} else {
+		// Transport differs by API version. Add it into OptArgsByAPI.
+		for _, api := range library.APIs {
+			optArgs := pythonConfig.OptArgsByAPI[api.Path]
+			optArgs = append(optArgs, fmt.Sprintf("transport=%s", transportsByApi[api.Path]))
+			pythonConfig.OptArgsByAPI[api.Path] = optArgs
+		}
+	}
+
+	if len(pythonConfig.OptArgsByAPI) > 0 {
+		library.Python = pythonConfig
+	}
+	return library, nil
 }
 
 // transformPreserveToKeep converts the "preserve" entries in a legacylibrarian
@@ -210,4 +292,43 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		library.DescriptionOverride = repoMetadata.APIDescription
 	}
 	return library, nil
+}
+
+// parseBazelPythonInfo reads a BUILD.bazel file from the specified API
+// directory (relative to googleapisDir) and populates a pythonGapicInfo with
+// information based on the attributes. This function fails with an error if
+// there's no such BUILD.bazel file, it's invalid, or it includes multiple
+// py_gapic_library rules. If the file exists with no py_gapic_library rules,
+// the function succeeds but returns a nil pointer (to indicate there's no
+// GAPIC library).
+func parseBazelPythonInfo(googleapisDir, apiDir string) (*pythonGapicInfo, error) {
+	path := filepath.Join(googleapisDir, apiDir, "BUILD.bazel")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+	rules := file.Rules("py_gapic_library")
+	if len(rules) == 0 {
+		return nil, nil
+	}
+	if len(rules) > 1 {
+		return nil, fmt.Errorf("file %s contains multiple py_gapic_library rules", path)
+	}
+	rule := rules[0]
+	optArgs := rule.AttrStrings("opt_args")
+	if rule.AttrLiteral("rest_numeric_enums") == "False" {
+		optArgs = append(optArgs, "rest-numeric-enums=False")
+	}
+	transport := rule.AttrString("transport")
+	if transport == "" {
+		transport = "grpc+rest"
+	}
+	return &pythonGapicInfo{
+		transport: transport,
+		optArgs:   optArgs,
+	}, nil
 }

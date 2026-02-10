@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/sample"
+	"github.com/googleapis/librarian/internal/sample"
 	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
