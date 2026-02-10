@@ -269,20 +269,19 @@ func extractCollectionFromStrings(parts []string) string {
 	var sb strings.Builder
 	var prev string
 
-	for i, curr := range parts {
-		if i > 0 {
-			isWildcard := curr == "*" || curr == "**"
-			// Check if previous was a literal (not a wildcard)
-			isPrevLiteral := prev != "" && prev != "*" && prev != "**"
-
-			if isWildcard && isPrevLiteral {
+	for _, curr := range parts {
+		isWildcard := curr == "*" || curr == "**"
+		if isWildcard {
+			if prev != "" {
 				if sb.Len() > 0 {
 					sb.WriteByte('.')
 				}
 				sb.WriteString(prev)
+				prev = ""
 			}
+		} else {
+			prev = curr
 		}
-		prev = curr
 	}
 	return sb.String()
 }

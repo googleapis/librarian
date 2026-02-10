@@ -551,7 +551,8 @@ func newFormat(message *api.Message) string {
 			}
 			if f.Repeated {
 				// Format repeated scalars with .join(',').
-				sb.WriteString(fmt.Sprintf("%s.join(',')", f.JSONName))
+				sb.WriteString(f.JSONName)
+				sb.WriteString(".join(',')")
 			} else {
 				sb.WriteString(f.JSONName)
 			}
