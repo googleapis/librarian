@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -180,6 +181,8 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, l
 	switch cfg.Language {
 	case languageFake:
 		return fakeBumpLibrary(lib, version)
+	case languagePython:
+		return python.Bump(output, version)
 	case languageRust:
 		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
 	default:

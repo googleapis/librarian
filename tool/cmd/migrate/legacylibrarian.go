@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -46,6 +47,7 @@ type RepoConfigAPI struct {
 	Path            string   `yaml:"path"`
 	ClientDirectory string   `yaml:"client_directory,omitempty"`
 	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
+	ImportPath      string   `yaml:"import_path,omitempty"`
 	NestedProtos    []string `yaml:"nested_protos,omitempty"`
 	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
@@ -58,6 +60,41 @@ type MigrationInput struct {
 	lang            string
 	repoPath        string
 }
+
+var (
+	addGoModules = map[string]*RepoConfigModule{
+		"ai": {
+			APIs: []*RepoConfigAPI{
+				{
+					Path:            "google/ai/generativelanguage/v1",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1alpha",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+				{
+					Path:            "google/ai/generativelanguage/v1beta2",
+					ClientDirectory: "generativelanguage",
+					ImportPath:      "ai/generativelanguage",
+				},
+			},
+		},
+	}
+
+	libraryOverrides = map[string]*config.Library{
+		"ai": {
+			ReleaseLevel: "beta",
+		},
+	}
+)
 
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
@@ -122,6 +159,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries = buildGoLibraries(input)
 	}
 
@@ -185,6 +223,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 				return mod.Name
 			})
 	}
+	maps.Copy(idToGoModule, addGoModules)
 
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
@@ -202,6 +241,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
 		}
+		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
+		if override, ok := libraryOverrides[id]; ok {
+			library.ReleaseLevel = override.ReleaseLevel
+		}
 
 		libGoModule, ok := idToGoModule[id]
 		if ok {
@@ -211,6 +254,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 					Path:            api.Path,
 					ClientDirectory: api.ClientDirectory,
 					DisableGAPIC:    api.DisableGAPIC,
+					ImportPath:      api.ImportPath,
 					NestedProtos:    api.NestedProtos,
 					ProtoPackage:    api.ProtoPackage,
 				})

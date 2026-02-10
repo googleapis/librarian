@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
@@ -275,14 +275,14 @@ func TestBuildCodec(t *testing.T) {
 	}
 }
 
-func TestToSidekickConfig(t *testing.T) {
+func TestToModelConfig(t *testing.T) {
 	googleapisDir := t.TempDir()
 	for _, test := range []struct {
 		name          string
 		library       *config.Library
 		channel       *config.API
 		googleapisDir string
-		want          *sidekickconfig.Config
+		want          parser.ModelConfig
 		wantErr       error
 	}{
 		{
@@ -292,13 +292,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "dart",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "",
-					SpecificationSource: "google/api/apikeys/v2",
-				},
+			want: parser.ModelConfig{
+				SpecificationFormat: "protobuf",
+				ServiceConfig:       "",
+				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -315,13 +312,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "dart",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "",
-					SpecificationSource: "google/api/apikeys/v2",
-				},
+			want: parser.ModelConfig{
+				SpecificationFormat: "protobuf",
+				ServiceConfig:       "",
+				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root":      googleapisDir,
 					"description-override": "this is a description override",
@@ -341,13 +335,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "dart",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "",
-					SpecificationSource: "google/api/apikeys/v2",
-				},
+			want: parser.ModelConfig{
+				SpecificationFormat: "protobuf",
+				ServiceConfig:       "",
+				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"name-override":   "override-name",
@@ -387,13 +378,10 @@ func TestToSidekickConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: &sidekickconfig.Config{
-				General: sidekickconfig.GeneralConfig{
-					Language:            "dart",
-					SpecificationFormat: "protobuf",
-					ServiceConfig:       "",
-					SpecificationSource: "google/api/apikeys/v2",
-				},
+			want: parser.ModelConfig{
+				SpecificationFormat: "protobuf",
+				ServiceConfig:       "",
+				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -422,10 +410,10 @@ func TestToSidekickConfig(t *testing.T) {
 			sources := &source.Sources{
 				Googleapis: test.googleapisDir,
 			}
-			got, err := toSidekickConfig(test.library, test.channel, sources)
+			got, err := toModelConfig(test.library, test.channel, sources)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
-					t.Errorf("toSidekickConfig() error = %v, wantErr %v", err, test.wantErr)
+					t.Errorf("toModelConfig() error = %v, wantErr %v", err, test.wantErr)
 				}
 				return
 			}

@@ -17,14 +17,25 @@ package golang
 
 import (
 	"context"
+	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	//go:embed template/_README.md.txt
+	readmeTmpl string
+
+	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
 // Generate generates a Go client library.
@@ -70,6 +81,13 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 
 	moduleRoot := filepath.Join(outdir, library.Name)
+	absModuleRoot, err := filepath.Abs(moduleRoot)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
+		return fmt.Errorf("invalid library name: path traversal detected")
+	}
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
@@ -77,6 +95,16 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
+	}
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	if err != nil {
+		return err
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		return err
+	}
+	if err := updateSnippetMetadata(library, outdir); err != nil {
+		return err
 	}
 	return nil
 }
@@ -92,7 +120,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
-	return command.Run(ctx, "gofmt", args...)
+	return command.Run(ctx, "goimports", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
@@ -153,11 +181,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	transport := library.Transport
-	if transport == "" {
-		transport = "grpc+rest"
-	}
-	opts = append(opts, "transport="+transport)
+	opts = append(opts, "transport="+getTransport(sc))
 	if library.ReleaseLevel != "" {
 		opts = append(opts, "release-level="+library.ReleaseLevel)
 	}
@@ -171,12 +195,17 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 		clientDir = goAPI.ClientDirectory
 	}
 
+	importPath := clientDir
+	if goAPI != nil && goAPI.ImportPath != "" {
+		importPath = goAPI.ImportPath
+	}
+
 	var modulePathVersion string
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
-		clientDir, modulePathVersion, version, clientDir)
+		importPath, modulePathVersion, version, clientDir)
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
@@ -292,4 +321,61 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 		return nil, fmt.Errorf("no .proto files found in %s", apiDir)
 	}
 	return files, nil
+}
+
+func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot string) error {
+	if len(library.APIs) == 0 {
+		return fmt.Errorf("no APIs configured")
+	}
+	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	if err != nil {
+		return err
+	}
+	err = readmeTmplParsed.Execute(f, map[string]string{
+		"Name":       api.Title,
+		"ModulePath": modulePath(library),
+	})
+	cerr := f.Close()
+	if err != nil {
+		return err
+	}
+	return cerr
+}
+
+// updateSnippetMetadata updates the snippet metadata files with the correct library version.
+func updateSnippetMetadata(library *config.Library, output string) error {
+	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
+	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Skip the update if the baseDir is not existed.
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		if d.IsDir() || !strings.HasPrefix(d.Name(), "snippet_metadata") {
+			return nil
+		}
+		read, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		newContent := strings.Replace(string(read), "$VERSION", library.Version, 1)
+		err = os.WriteFile(path, []byte(newContent), 0644)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+// getTransport get transport from serviceconfig.API for language Go.
+//
+// The default value is serviceconfig.GRPCRest.
+func getTransport(sc *serviceconfig.API) string {
+	if sc != nil {
+		return sc.Transport("go")
+	}
+	return string(serviceconfig.GRPCRest)
 }

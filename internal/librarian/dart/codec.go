@@ -19,11 +19,11 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func toSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
+func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
@@ -45,20 +45,17 @@ func toSidekickConfig(library *config.Library, ch *config.API, sources *source.S
 	}
 	api, err := serviceconfig.Find(root, ch.Path)
 	if err != nil {
-		return nil, err
+		return parser.ModelConfig{}, err
 	}
 
-	sidekickCfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			Language:            "dart",
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       api.ServiceConfig,
-			SpecificationSource: ch.Path,
-		},
-		Source: src,
-		Codec:  buildCodec(library),
+	modelConfig := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       api.ServiceConfig,
+		SpecificationSource: ch.Path,
+		Source:              src,
+		Codec:               buildCodec(library),
 	}
-	return sidekickCfg, nil
+	return modelConfig, nil
 }
 
 func buildCodec(library *config.Library) map[string]string {

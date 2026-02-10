@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 	internalVersionTmpl string
 )
 
-func generateInternalVersionFile(moduleDir, version string) error {
+func generateInternalVersionFile(moduleDir, version string) (err error) {
 	if version == "" {
 		version = "0.0.0"
 	}
@@ -44,26 +45,30 @@ func generateInternalVersionFile(moduleDir, version string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if err := writeLicenseHeader(f); err != nil {
+		return err
+	}
 	t := template.Must(template.New("version").Parse(internalVersionTmpl))
-	err = t.Execute(f, map[string]any{
-		"Year":    time.Now().Year(),
+	return t.Execute(f, map[string]any{
 		"Version": version,
 	})
-	if cerr := f.Close(); cerr != nil && err == nil {
-		err = cerr
-	}
-	return err
 }
 
-func generateClientVersionFile(library *config.Library, apiPath string) error {
+func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
 	version := filepath.Base(apiPath)
-	clientDir := library.Name
 	goAPI := findGoAPI(library, apiPath)
+	var clientDir string
 	if goAPI != nil && goAPI.ClientDirectory != "" {
 		clientDir = goAPI.ClientDirectory
 	}
 
-	dir := filepath.Join(library.Output, clientDir, "api"+version)
+	dir := filepath.Join(library.Output, library.Name, clientDir, "api"+version)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -71,14 +76,36 @@ func generateClientVersionFile(library *config.Library, apiPath string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if err := writeLicenseHeader(f); err != nil {
+		return err
+	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
-	err = t.Execute(f, map[string]any{
-		"Year":       time.Now().Year(),
-		"Package":    clientDir,
+	pkg := library.Name
+	if clientDir != "" {
+		pkg = clientDir
+	}
+	return t.Execute(f, map[string]any{
+		"Package":    pkg,
 		"ModulePath": modulePath(library),
 	})
-	if cerr := f.Close(); cerr != nil && err == nil {
-		err = cerr
+}
+
+// writeLicenseHeader writes the license header as Go comments to the given file.
+func writeLicenseHeader(f *os.File) error {
+	year := time.Now().Format("2006")
+	for _, line := range license.Header(year) {
+		if _, err := f.WriteString("//" + line + "\n"); err != nil {
+			return err
+		}
 	}
-	return err
+	if _, err := f.WriteString("\n"); err != nil {
+		return err
+	}
+	return nil
 }
