@@ -270,8 +270,8 @@ func extractCollectionFromStrings(parts []string) string {
 	var prev string
 
 	for _, curr := range parts {
-		isWildcard := curr == "*" || curr == "**"
-		if isWildcard {
+		switch curr {
+		case "*", "**":
 			if prev != "" {
 				if sb.Len() > 0 {
 					sb.WriteByte('.')
@@ -279,7 +279,7 @@ func extractCollectionFromStrings(parts []string) string {
 				sb.WriteString(prev)
 				prev = ""
 			}
-		} else {
+		default:
 			prev = curr
 		}
 	}
