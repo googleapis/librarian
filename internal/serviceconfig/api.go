@@ -80,6 +80,18 @@ type API struct {
 	// Title overrides the API title from the service config.
 	Title string
 
+	// NewIssueURI overrides the new issue URI from the service config's
+	// publishing section.
+	NewIssueURI string
+
+	// DocumentationURI overrides the product documentation URI from the service
+	// config's publishing section.
+	DocumentationURI string
+
+	// APIShortName overrides the API short name from the service config's
+	// publishing section.
+	APIShortName string
+
 	// Transports defines the supported transports per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
