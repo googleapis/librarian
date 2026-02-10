@@ -66,7 +66,7 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			repoName, workDir, verbose, err := parseRepoFlags(cmd)
+			repoName, workDir, verbose, err := parseFlags(cmd)
 			if err != nil {
 				return err
 			}

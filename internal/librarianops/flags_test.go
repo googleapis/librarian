@@ -22,7 +22,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func TestParseRepoFlags(t *testing.T) {
+func TestParseFlags(t *testing.T) {
 	app := &cli.Command{
 		Name: "librarianops",
 		Commands: []*cli.Command{
@@ -71,35 +71,35 @@ func TestParseRepoFlags(t *testing.T) {
 			wantVerbose:  true,
 		},
 	} {
-		t.Run(testCase.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			var (
 				repoName, workDir string
 				verbose           bool
 				err               error
 			)
 			app.Commands[0].Action = func(ctx context.Context, cmd *cli.Command) error {
-				repoName, workDir, verbose, err = parseRepoFlags(cmd)
+				repoName, workDir, verbose, err = parseFlags(cmd)
 				return err
 			}
 
-			if err := app.Run(t.Context(), testCase.args); err != nil {
+			if err := app.Run(t.Context(), test.args); err != nil {
 				t.Fatalf("app.Run() error = %v, wantErr %v", err, false)
 			}
 
-			if diff := cmp.Diff(testCase.wantRepoName, repoName); diff != "" {
+			if diff := cmp.Diff(test.wantRepoName, repoName); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(testCase.wantWorkDir, workDir); diff != "" {
-				t.Errorf("parseRepoFlags() workDir mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantWorkDir, workDir); diff != "" {
+				t.Errorf("parseFlags() workDir mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(testCase.wantVerbose, verbose); diff != "" {
-				t.Errorf("parseRepoFlags() verbose mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantVerbose, verbose); diff != "" {
+				t.Errorf("parseFlags() verbose mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestParseRepoFlags_Error(t *testing.T) {
+func TestParseFlags_Error(t *testing.T) {
 	app := &cli.Command{
 		Name: "librarianops",
 		Commands: []*cli.Command{
@@ -112,7 +112,7 @@ func TestParseRepoFlags_Error(t *testing.T) {
 			},
 		},
 	}
-	for _, testCase := range []struct {
+	for _, test := range []struct {
 		name string
 		args []string
 	}{
@@ -121,15 +121,12 @@ func TestParseRepoFlags_Error(t *testing.T) {
 			args: []string{"librarianops", "test-command"},
 		},
 	} {
-		t.Run(testCase.name, func(t *testing.T) {
-			var (
-				err error
-			)
+		t.Run(test.name, func(t *testing.T) {
 			app.Commands[0].Action = func(ctx context.Context, cmd *cli.Command) error {
-				_, _, _, err := parseRepoFlags(cmd)
+				_, _, _, err := parseFlags(cmd)
 				return err
 			}
-			if err := app.Run(t.Context(), testCase.args); err == nil {
+			if err := app.Run(t.Context(), test.args); err == nil {
 				t.Fatalf("app.Run() error = %v, wantErr %v", err, true)
 			}
 		})

@@ -21,8 +21,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// ParseRepoFlags parses the command line flags for librarianops commands.
-func parseRepoFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err error) {
+// parseFlags parses the command line flags for librarianops commands.
+func parseFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err error) {
 	workDir = cmd.String("C")
 	verbose = cmd.Bool("v")
 	if workDir != "" {
