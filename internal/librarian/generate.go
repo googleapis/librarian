@@ -210,13 +210,13 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 			return nil, err
 		}
 	case languageGo:
-		clientDir := filepath.Join(library.Output, library.Name)
-		if err := cleanOutput(clientDir, library.Keep); err != nil {
-			return nil, err
-		}
-		snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-		if err := cleanOutput(snippetDir, library.Keep); err != nil {
-			return nil, err
+		var libraryDirs []string
+		libraryDirs = append(libraryDirs, filepath.Join(library.Output, library.Name))
+		libraryDirs = append(libraryDirs, filepath.Join(library.Output, "internal", "generated", "snippets", library.Name))
+		for _, dir := range libraryDirs {
+			if err := cleanOutput(dir, library.Keep); err != nil {
+				return nil, err
+			}
 		}
 	case languageRust:
 		keep, err := rust.Keep(library)
