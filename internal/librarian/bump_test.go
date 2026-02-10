@@ -48,7 +48,6 @@ func TestBumpCommand(t *testing.T) {
 		args         []string
 		withChanges  []string
 		wantVersions map[string]string
-		preview      bool
 	}{
 		{
 			name:         "library name",
@@ -72,27 +71,18 @@ func TestBumpCommand(t *testing.T) {
 			},
 		},
 		{
+			name: "all flag no changes",
+			args: []string{"librarian", "bump", "--all"},
+			wantVersions: map[string]string{
+				sample.Lib1Name: sample.InitialVersion,
+				sample.Lib2Name: sample.InitialVersion,
+			},
+		},
+		{
 			name:         "all flag 1 has changes",
 			args:         []string{"librarian", "bump", "--all"},
 			withChanges:  []string{lib1Change},
 			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
-		},
-		{
-			name:         "preview library released",
-			args:         []string{"librarian", "bump", sample.Lib1Name},
-			withChanges:  []string{lib1Change},
-			wantVersions: map[string]string{sample.Lib1Name: sample.NextPreviewPrereleaseVersion},
-			preview:      true,
-		},
-		{
-			name:        "all preview libraries released",
-			args:        []string{"librarian", "bump", "--all"},
-			withChanges: []string{lib1Change, lib2Change},
-			wantVersions: map[string]string{
-				sample.Lib1Name: sample.NextPreviewPrereleaseVersion,
-				sample.Lib2Name: sample.NextPreviewPrereleaseVersion,
-			},
-			preview: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -100,17 +90,8 @@ func TestBumpCommand(t *testing.T) {
 			opts := testhelper.SetupOptions{
 				Clone:       cfg.Release.Branch,
 				Config:      cfg,
-				Tag:         sample.InitialTag,
+				Tags:        []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
 				WithChanges: test.withChanges,
-			}
-			if test.preview {
-				previewCfg := sample.PreviewConfig()
-				opts.Clone = previewCfg.Release.Branch
-				opts.PreviewOptions = &testhelper.SetupOptions{
-					Config:      previewCfg,
-					WithChanges: test.withChanges,
-					Tag:         sample.InitialPreviewTag,
-				}
 			}
 			testhelper.Setup(t, opts)
 
@@ -143,7 +124,7 @@ func TestBumpCommandDeriveOutput(t *testing.T) {
 	testhelper.Setup(t, testhelper.SetupOptions{
 		Clone:       cfg.Release.Branch,
 		Config:      cfg,
-		Tag:         sample.InitialTag,
+		Tags:        []string{sample.InitialLib1Tag},
 		WithChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
 	})
 
@@ -282,13 +263,55 @@ func TestFindLibrary(t *testing.T) {
 	}
 }
 
+func TestRunBump_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, "git")
+
+	tests := []struct {
+		name            string
+		libraryName     string
+		versionOverride string
+		wantErr         error
+	}{
+		{
+			name:            "invalid version override",
+			libraryName:     sample.Lib1Name,
+			versionOverride: "0.9.0",
+			wantErr:         semver.ErrInvalidNextVersion,
+		},
+		{
+			name:        "library not found",
+			libraryName: "not-found",
+			wantErr:     ErrLibraryNotFound,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
+			opts := testhelper.SetupOptions{
+				Clone:  cfg.Release.Branch,
+				Config: cfg,
+			}
+			testhelper.Setup(t, opts)
+
+			gotErr := runBump(t.Context(), cfg, false, test.libraryName, test.versionOverride)
+			if gotErr == nil {
+				t.Fatal("expected error; got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("bumpLibrary() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestBumpLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
 		name            string
 		cfg             *config.Config
-		previewCfg      *config.Config
 		versionOverride string
 		wantVersion     string
 	}{
@@ -296,22 +319,6 @@ func TestBumpLibrary(t *testing.T) {
 			name:        "library released",
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
-		},
-		{
-			name:        "preview library released",
-			cfg:         sample.Config(),
-			previewCfg:  sample.PreviewConfig(),
-			wantVersion: sample.NextPreviewPrereleaseVersion,
-		},
-		{
-			name: "preview library catches up to main",
-			cfg: func() *config.Config {
-				c := sample.Config()
-				c.Libraries[0].Version = sample.NextVersion
-				return c
-			}(),
-			previewCfg:  sample.PreviewConfig(),
-			wantVersion: sample.NextPreviewCoreVersion,
 		},
 		{
 			name: "version override",
@@ -327,24 +334,14 @@ func TestBumpLibrary(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			targetCfg := test.cfg
 			opts := testhelper.SetupOptions{
 				Clone:  test.cfg.Release.Branch,
 				Config: test.cfg,
 			}
-			// Test should target the preview branch instead of default main.
-			if test.previewCfg != nil {
-				targetCfg = test.previewCfg
-				opts.Clone = test.previewCfg.Release.Branch
-				opts.PreviewOptions = &testhelper.SetupOptions{
-					Config: test.previewCfg,
-				}
-			}
 			testhelper.Setup(t, opts)
 
-			targetLibCfg := targetCfg.Libraries[0]
-			// Unused string param: lastTag.
-			err := bumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride)
+			targetLibCfg := test.cfg.Libraries[0]
+			err := bumpLibrary(t.Context(), test.cfg, targetLibCfg, "git", test.versionOverride)
 			if err != nil {
 				t.Fatalf("bumpLibrary() error = %v", err)
 			}
@@ -352,87 +349,229 @@ func TestBumpLibrary(t *testing.T) {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
 			}
 		})
-
 	}
 }
 
-func TestBumpAll(t *testing.T) {
+func TestBumpLibrary_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
-	for _, test := range []struct {
-		name        string
-		cfg         *config.Config
-		previewCfg  *config.Config
-		withChanges []string
-		skipPublish bool
-		wantVersion string
+	tests := []struct {
+		name            string
+		cfg             *config.Config
+		versionOverride string
+		wantErr         error
 	}{
 		{
-			name:        "library has changes",
-			cfg:         sample.Config(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantVersion: sample.NextVersion,
+			name:            "invalid version override",
+			cfg:             sample.Config(),
+			versionOverride: "0.9.0",
+			wantErr:         semver.ErrInvalidNextVersion,
 		},
 		{
-			name:        "library does not have any changes",
-			cfg:         sample.Config(),
-			wantVersion: sample.InitialVersion,
-		},
-		{
-			name: "library has changes but skipPublish is true",
+			name: "version override",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Libraries[0].SkipPublish = true
+				c.Language = languageRust
 				return c
 			}(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantVersion: sample.InitialVersion,
+			versionOverride: "2.0.0",
 		},
-		{
-			name:        "preview library does not have any changes",
-			cfg:         sample.Config(),
-			previewCfg:  sample.PreviewConfig(),
-			wantVersion: sample.InitialPreviewVersion,
-		},
-		{
-			name:        "preview library has changes",
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			cfg:         sample.Config(),
-			previewCfg:  sample.PreviewConfig(),
-			wantVersion: sample.NextPreviewPrereleaseVersion,
-		},
-	} {
+	}
+
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			targetCfg := test.cfg
-			sinceTag := sample.InitialTag
 			opts := testhelper.SetupOptions{
-				Clone:       test.cfg.Release.Branch,
-				Config:      test.cfg,
-				Tag:         sample.InitialTag,
-				WithChanges: test.withChanges,
-			}
-			// Test should target the preview branch instead of default main.
-			if test.previewCfg != nil {
-				targetCfg = test.previewCfg
-				sinceTag = sample.InitialPreviewTag
-				opts.Clone = test.previewCfg.Release.Branch
-				opts.PreviewOptions = &testhelper.SetupOptions{
-					Config:      test.previewCfg,
-					WithChanges: test.withChanges,
-					Tag:         sample.InitialPreviewTag,
-				}
+				Clone:  test.cfg.Release.Branch,
+				Config: test.cfg,
 			}
 			testhelper.Setup(t, opts)
 
-			err := bumpAll(t.Context(), targetCfg, sinceTag, "git")
+			targetLibCfg := test.cfg.Libraries[0]
+			gotErr := bumpLibrary(t.Context(), test.cfg, targetLibCfg, "git", test.versionOverride)
+			if gotErr == nil {
+				t.Fatal("expected error; got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("bumpLibrary() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestFindLibrariesToBump(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	lib1Change := filepath.Join(sample.Lib1Output, "src", "lib.rs")
+	lib2Change := filepath.Join(sample.Lib2Output, "src", "lib.rs")
+	for _, test := range []struct {
+		name        string
+		all         bool
+		libraryName string
+		// withChanges is a list of files to modify and then commit; this is
+		// used when that's all that's required.
+		withChanges []string
+		// setup is a function executed after setting up the repo (including
+		// after applying withChanges) so that
+		setup     func(*testing.T, *config.Config)
+		wantNames []string
+	}{
+		{
+			name:        "library specified directly",
+			libraryName: sample.Lib2Name,
+			wantNames:   []string{sample.Lib2Name},
+		},
+		{
+			name:        "library specified directly, ignored skip",
+			libraryName: sample.Lib2Name,
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[1].SkipPublish = true
+				writeConfigAndCommit(t, cfg)
+			},
+			wantNames: []string{sample.Lib2Name},
+		},
+		{
+			name:        "library specified directly, ignored empty version",
+			libraryName: sample.Lib2Name,
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[1].Version = ""
+				cfg.Libraries[1].SkipPublish = true
+				writeConfigAndCommit(t, cfg)
+			},
+			wantNames: []string{sample.Lib2Name},
+		},
+		{
+			name:        "one library has changes",
+			all:         true,
+			withChanges: []string{lib1Change},
+			wantNames:   []string{sample.Lib1Name},
+		},
+		{
+			name:        "one library has changes, but it's skipped",
+			all:         true,
+			withChanges: []string{lib1Change},
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[0].SkipPublish = true
+				writeConfigAndCommit(t, cfg)
+			},
+			wantNames: []string{},
+		},
+		{
+			name:        "one library has changes, but it's unreleased",
+			all:         true,
+			withChanges: []string{lib1Change},
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[0].Version = ""
+				writeConfigAndCommit(t, cfg)
+			},
+			wantNames: []string{},
+		},
+		{
+			name: "no libraries have changes",
+			all:  true,
+			setup: func(t *testing.T, cfg *config.Config) {
+				writeFileAndCommit(t, "unrelated-README.txt", []byte("test"), "non-library-related-commit")
+			},
+			wantNames: []string{},
+		},
+		{
+			name:        "multiple libraries have changes",
+			all:         true,
+			withChanges: []string{lib1Change, lib2Change},
+			wantNames:   []string{sample.Lib1Name, sample.Lib2Name},
+		},
+		{
+			name:        "multiple libraries have changes, one is skipped",
+			all:         true,
+			withChanges: []string{lib1Change, lib2Change},
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[0].SkipPublish = true
+				writeConfigAndCommit(t, cfg)
+			},
+			wantNames: []string{sample.Lib2Name},
+		},
+		{
+			name:        "two libraries have been changed but one has already been released",
+			all:         true,
+			withChanges: []string{lib1Change, lib2Change},
+			wantNames:   []string{sample.Lib1Name},
+			setup: func(t *testing.T, cfg *config.Config) {
+				// Simulate the release of sample.Lib2: bump the version,
+				// commit the config, tag it.
+				cfg.Libraries[1].Version = sample.NextVersion
+				writeConfigAndCommit(t, cfg)
+				tagName := formatTagName(cfg.Default.TagFormat, cfg.Libraries[1])
+				git.Tag(t.Context(), "git", tagName, "HEAD")
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
+			opts := testhelper.SetupOptions{
+				Config:      cfg,
+				Tags:        []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
+				WithChanges: test.withChanges,
+			}
+			testhelper.Setup(t, opts)
+			if test.setup != nil {
+				test.setup(t, cfg)
+			}
+
+			gotLibraries, err := findLibrariesToBump(t.Context(), cfg, "git", test.all, test.libraryName)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// releaseAll directly modifies the config provided, so we use it as
-			// our "got".
-			gotVersion := targetCfg.Libraries[0].Version
-			if gotVersion != test.wantVersion {
-				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
+			gotNames := []string{}
+			for _, gotLibrary := range gotLibraries {
+				gotNames = append(gotNames, gotLibrary.Name)
+			}
+			if diff := cmp.Diff(test.wantNames, gotNames); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindLibrariesToBump_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, test := range []struct {
+		name        string
+		all         bool
+		libraryName string
+		setup       func(*testing.T, *config.Config)
+		wantErr     error
+	}{
+		{
+			name:        "specified library does not exist",
+			libraryName: "non-existent",
+			wantErr:     ErrLibraryNotFound,
+		},
+		{
+			name: "library has no tag for last release",
+			all:  true,
+			setup: func(t *testing.T, cfg *config.Config) {
+				// Simulate half a release of sample.Lib2: bump the version,
+				// commit the config, but fail to tag.
+				cfg.Libraries[1].Version = sample.NextVersion
+				writeConfigAndCommit(t, cfg)
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
+			opts := testhelper.SetupOptions{
+				Config: cfg,
+				Tags:   []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
+			}
+			testhelper.Setup(t, opts)
+			if test.setup != nil {
+				test.setup(t, cfg)
+			}
+
+			_, gotErr := findLibrariesToBump(t.Context(), cfg, "git", test.all, test.libraryName)
+			if gotErr == nil {
+				t.Fatal("expected error; got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("findLibrariesToBump() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -505,6 +644,7 @@ func TestDeriveNextVersion(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		cfg             *config.Config
+		previewCfg      *config.Config
 		versionOpts     semver.DeriveNextOptions
 		versionOverride string
 		wantVersion     string
@@ -555,9 +695,40 @@ func TestDeriveNextVersion(t *testing.T) {
 			versionOverride: "1.2.3",
 			wantVersion:     "1.2.3",
 		},
+		{
+			name:        "preview library released",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
+		},
+		{
+			name: "preview library catches up to main",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewCoreVersion,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveNextVersion(t.Context(), "git", test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			targetCfg := test.cfg
+			opts := testhelper.SetupOptions{
+				Clone:  test.cfg.Release.Branch,
+				Config: test.cfg,
+			}
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config: test.previewCfg,
+				}
+			}
+			testhelper.Setup(t, opts)
+
+			got, err := deriveNextVersion(t.Context(), "git", targetCfg, targetCfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -911,6 +1082,209 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 	}
 }
 
+func TestLegacyRustBumpLibrary(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	tests := []struct {
+		name            string
+		cfg             *config.Config
+		previewCfg      *config.Config
+		versionOverride string
+		wantVersion     string
+	}{
+		{
+			name:        "library released",
+			cfg:         sample.Config(),
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name:        "preview library released",
+			cfg:         sample.Config(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewPrereleaseVersion,
+		},
+		{
+			name: "preview library catches up to main",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = sample.NextVersion
+				return c
+			}(),
+			previewCfg:  sample.PreviewConfig(),
+			wantVersion: sample.NextPreviewCoreVersion,
+		},
+		{
+			name: "version override",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = "1.3.0"
+				return c
+			}(),
+			versionOverride: "2.0.0",
+			wantVersion:     "2.0.0",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			targetCfg := test.cfg
+			opts := testhelper.SetupOptions{
+				Clone:  test.cfg.Release.Branch,
+				Config: test.cfg,
+			}
+			// Test should target the preview branch instead of default main.
+			if test.previewCfg != nil {
+				targetCfg = test.previewCfg
+				opts.Clone = test.previewCfg.Release.Branch
+				opts.PreviewOptions = &testhelper.SetupOptions{
+					Config: test.previewCfg,
+				}
+			}
+			testhelper.Setup(t, opts)
+
+			targetLibCfg := targetCfg.Libraries[0]
+			// Unused string param: lastTag.
+			err := legacyRustBumpLibrary(t.Context(), targetCfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride)
+			if err != nil {
+				t.Fatalf("legacyRustBumpLibrary() error = %v", err)
+			}
+			if targetLibCfg.Version != test.wantVersion {
+				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
+			}
+		})
+
+	}
+}
+
+func TestLegacyRustBump(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	lib1Change := filepath.Join(sample.Lib1Output, "src", "lib.rs")
+	lib2Change := filepath.Join(sample.Lib2Output, "src", "lib.rs")
+
+	for _, test := range []struct {
+		name            string
+		libraryName     string
+		versionOverride string
+		all             bool
+		withChanges     []string
+		wantVersions    map[string]string
+	}{
+		{
+			name:         "library name",
+			libraryName:  sample.Lib1Name,
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
+		},
+		{
+			name:            "library name and explicit version",
+			libraryName:     sample.Lib1Name,
+			versionOverride: "1.2.3",
+			withChanges:     []string{lib1Change},
+			wantVersions:    map[string]string{sample.Lib1Name: "1.2.3"},
+		},
+		{
+			name:        "all flag all have changes",
+			all:         true,
+			withChanges: []string{lib1Change, lib2Change},
+			wantVersions: map[string]string{
+				sample.Lib1Name: sample.NextVersion,
+				sample.Lib2Name: sample.NextVersion,
+			},
+		},
+		{
+			name:         "all flag 1 has changes",
+			all:          true,
+			withChanges:  []string{lib1Change},
+			wantVersions: map[string]string{sample.Lib1Name: sample.NextVersion},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := sample.Config()
+			opts := testhelper.SetupOptions{
+				Clone:       cfg.Release.Branch,
+				Config:      cfg,
+				Tags:        []string{sample.InitialLegacyRustTag},
+				WithChanges: test.withChanges,
+			}
+			testhelper.Setup(t, opts)
+
+			if err := legacyRustBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride, "git"); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := yaml.Read[config.Config](librarianConfigPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, lib := range got.Libraries {
+				if want, ok := test.wantVersions[lib.Name]; ok {
+					if lib.Version != want {
+						t.Errorf("library %s: got version %q, want %q", lib.Name, lib.Version, want)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestLegacyRustBumpAll(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+
+	for _, test := range []struct {
+		name        string
+		cfg         *config.Config
+		withChanges []string
+		skipPublish bool
+		wantVersion string
+	}{
+		{
+			name:        "library has changes",
+			cfg:         sample.Config(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.NextVersion,
+		},
+		{
+			name:        "library does not have any changes",
+			cfg:         sample.Config(),
+			wantVersion: sample.InitialVersion,
+		},
+		{
+			name: "library has changes but skipPublish is true",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].SkipPublish = true
+				return c
+			}(),
+			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+			wantVersion: sample.InitialVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			targetCfg := test.cfg
+			sinceTag := sample.InitialLegacyRustTag
+			opts := testhelper.SetupOptions{
+				Clone:       test.cfg.Release.Branch,
+				Config:      test.cfg,
+				Tags:        []string{sample.InitialLegacyRustTag},
+				WithChanges: test.withChanges,
+			}
+			testhelper.Setup(t, opts)
+
+			err := legacyRustBumpAll(t.Context(), targetCfg, sinceTag, "git")
+			if err != nil {
+				t.Fatal(err)
+			}
+			// releaseAll directly modifies the config provided, so we use it as
+			// our "got".
+			gotVersion := targetCfg.Libraries[0].Version
+			if gotVersion != test.wantVersion {
+				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
+			}
+		})
+	}
+}
+
 func writeReadmeAndCommit(t *testing.T, newContent string) {
 	writeFileAndCommit(t, testhelper.ReadmeFile, []byte(newContent), "Modified readme")
 }
@@ -927,7 +1301,10 @@ func writeFileAndCommit(t *testing.T, path string, content []byte, message strin
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", message, "."); err != nil {
+	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Run(t.Context(), "git", "commit", "-m", message); err != nil {
 		t.Fatal(err)
 	}
 }

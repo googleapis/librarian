@@ -29,17 +29,33 @@ const (
 	Lib1Name = "google-cloud-storage"
 	// Lib2Name is the name of the second library added to the [Config].
 	Lib2Name = "gax-internal"
-	// InitialTag is the tag form of [InitialVersion] for use in tests.
-	InitialTag = "v1.0.0"
+	// InitialLegacyRustTag is the tag form of [InitialVersion] for use in
+	// tests of the legacy Rust behavior where each release has a single tag.
+	InitialLegacyRustTag = "v1.0.0"
+	// InitialLib1Tag is the tag form of [Lib1Name] [InitialVersion] for use in
+	// tests.
+	InitialLib1Tag = "google-cloud-storage/v1.0.0"
+	// InitialLib2Tag is the tag form of [Lib2Name] [InitialVersion] for use in
+	// tests.
+	InitialLib2Tag = "gax-internal/v1.0.0"
+	// NextLib1Tag is the tag form of [Lib1Name] [NextVersion] for use in
+	// tests.
+	NextLib1Tag = "google-cloud-storage/v1.1.0"
+	// NextLib2Tag is the tag form of [Lib2Name] [NextVersion] for use in
+	// tests.
+	NextLib2Tag = "gax-internal/v1.1.0"
 	// InitialVersion is the initial version assigned to libraries in
 	// [Config].
 	InitialVersion = "1.0.0"
 	// NextVersion is the next version typically assigned to libraries
 	// starting from [InitialVersion].
 	NextVersion = "1.1.0"
-	// InitialPreviewTag is the tag form of [InitialPreviewVersion] for use in
-	// tests.
-	InitialPreviewTag = "v1.1.0-preview.1"
+	// InitialLib1PreviewTag is the tag form of [Lib1Name]
+	// [InitialPreviewVersion] for use in tests.
+	InitialLib1PreviewTag = "google-cloud-storage/v1.1.0-preview.1"
+	// InitialLib2PreviewTag is the tag form of [Lib2Name]
+	// [InitialPreviewVersion] for use in tests.
+	InitialLib2PreviewTag = "gax-internal/v1.1.0-preview.1"
 	// InitialPreviewVersion is an initial version that can be assigned to
 	// libraries on a preview branch.
 	InitialPreviewVersion = "1.1.0-preview.1"
@@ -74,7 +90,9 @@ func Config() *config.Config {
 	return &config.Config{
 		Language: "fake",
 		Version:  LibrarianVersion,
-		Default:  &config.Default{},
+		Default: &config.Default{
+			TagFormat: "{name}/v{version}",
+		},
 		Release: &config.Release{
 			Remote: "origin",
 			Branch: "main",

@@ -181,7 +181,7 @@ func TestParse_Errors(t *testing.T) {
 		{
 			name:    "invalid version with v prefix",
 			version: "v1.2.3",
-			wantErr: errInvalidVersion,
+			wantErr: ErrInvalidVersion,
 		},
 		{
 			name:    "invalid prerelease number with separator",
@@ -191,17 +191,17 @@ func TestParse_Errors(t *testing.T) {
 		{
 			name:    "invalid major number",
 			version: "a.2.3",
-			wantErr: errInvalidVersion,
+			wantErr: ErrInvalidVersion,
 		},
 		{
 			name:    "invalid minor number",
 			version: "1.a.3",
-			wantErr: errInvalidVersion,
+			wantErr: ErrInvalidVersion,
 		},
 		{
 			name:    "invalid patch number",
 			version: "1.2.a",
-			wantErr: errInvalidVersion,
+			wantErr: ErrInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -547,7 +547,7 @@ func TestDeriveNextOptions_DeriveNext_Error(t *testing.T) {
 			name:           "bad version",
 			changeLevel:    Minor,
 			currentVersion: "abc123",
-			wantErr:        errInvalidVersion,
+			wantErr:        ErrInvalidVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -751,31 +751,8 @@ func TestValidateNext(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			name:        "invalid nextVersion",
-			nextVersion: "invalid",
-			wantErr:     true,
-		},
-		{
 			name:        "valid nextVersion, no currentVersion",
 			nextVersion: "1.2.3",
-		},
-		{
-			name:           "valid nextVersion, invalid currentVersion",
-			currentVersion: "invalid",
-			nextVersion:    "1.2.3",
-			wantErr:        true,
-		},
-		{
-			name:           "nextVersion is earlier than currentVersion",
-			currentVersion: "1.3.0",
-			nextVersion:    "1.2.0",
-			wantErr:        true,
-		},
-		{
-			name:           "nextVersion is equal to currentVersion",
-			currentVersion: "1.2.3",
-			nextVersion:    "1.2.3",
-			wantErr:        true,
 		},
 		{
 			name:           "nextVersion is later than currentVersion",
@@ -785,9 +762,50 @@ func TestValidateNext(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := ValidateNext(test.currentVersion, test.nextVersion)
-			if (err != nil) != test.wantErr {
-				t.Errorf("CheckValidNext(%q, %q) error = %v, wantErr %v", test.currentVersion, test.nextVersion, err, test.wantErr)
+			if err != nil {
+				t.Fatalf("ValidateNext(%q, %q) error = %v", test.currentVersion, test.nextVersion, err)
 			}
+		})
+	}
+}
+
+func TestValidateNext_Error(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		currentVersion string
+		nextVersion    string
+		wantErr        error
+	}{
+		{
+			name:        "invalid nextVersion",
+			nextVersion: "invalid",
+			wantErr:     ErrInvalidVersion,
+		},
+		{
+			name:           "valid nextVersion, invalid currentVersion",
+			currentVersion: "invalid",
+			nextVersion:    "1.2.3",
+			wantErr:        ErrInvalidVersion,
+		},
+		{
+			name:           "nextVersion is earlier than currentVersion",
+			currentVersion: "1.3.0",
+			nextVersion:    "1.2.0",
+			wantErr:        ErrInvalidNextVersion,
+		},
+		{
+			name:           "nextVersion is equal to currentVersion",
+			currentVersion: "1.2.3",
+			nextVersion:    "1.2.3",
+			wantErr:        ErrInvalidNextVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateNext(test.currentVersion, test.nextVersion)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ValidateNext(%s, %s) error = %v, wantErr %v", test.currentVersion, test.nextVersion, err, test.wantErr)
+			}
+
 		})
 	}
 }
