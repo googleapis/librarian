@@ -118,7 +118,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(t.Context(), wantTag, command.GetExecutablePath(nil, "git"), nil)
+	got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), wantTag, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestFilesBadRef(t *testing.T) {
 	const wantTag = "release-2002-03-04"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	if got, err := FilesChangedSince(t.Context(), "--invalid--", command.GetExecutablePath(nil, "git"), nil); err == nil {
+	if got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), "--invalid--", nil); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
