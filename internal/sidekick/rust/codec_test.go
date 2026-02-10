@@ -66,7 +66,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format:  "disco",
+			Format:  "discovery",
 			Options: map[string]string{},
 			Update: func(c *codec) {
 				c.systemParameters = []systemParameter{
