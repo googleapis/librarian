@@ -380,7 +380,7 @@ func TestGetReleaseLevel_Success(t *testing.T) {
 		{
 			name:    "beta",
 			apiPath: "google/cloud/secretmanager/v1beta2",
-			version: "1.0.0",
+			version: "0.7.0",
 			want:    "beta",
 		},
 		{
