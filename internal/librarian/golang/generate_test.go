@@ -383,6 +383,12 @@ func TestGetReleaseLevel_Success(t *testing.T) {
 			version: "1.0.0",
 			want:    "beta",
 		},
+		{
+			name:    "alpha in api path",
+			apiPath: "google/cloud/alphabet/v1",
+			version: "1.0.0",
+			want:    "ga",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := releaseLevel(test.apiPath, test.version)
