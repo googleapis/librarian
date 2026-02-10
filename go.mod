@@ -7,26 +7,26 @@ require (
 	cloud.google.com/go/cloudbuild v1.25.0
 	cloud.google.com/go/iam v1.5.3
 	cloud.google.com/go/longrunning v0.8.0
-	github.com/bazelbuild/buildtools v0.0.0-20251112105957-8e68360eeafa
+	github.com/bazelbuild/buildtools v0.0.0-20260202105709-e24971d9d1a7
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-git/go-git/v5 v5.16.5
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v69 v69.2.0
 	github.com/google/uuid v1.6.0
-	github.com/google/yamlfmt v0.20.0
+	github.com/google/yamlfmt v0.21.0
 	github.com/googleapis/gax-go/v2 v2.17.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pb33f/libopenapi v0.25.9
 	github.com/pelletier/go-toml/v2 v2.2.4
-	github.com/urfave/cli/v3 v3.6.1
-	github.com/yuin/goldmark v1.7.13
-	golang.org/x/exp v0.0.0-20250911091902-df9299821621
+	github.com/urfave/cli/v3 v3.6.2
+	github.com/yuin/goldmark v1.7.16
+	golang.org/x/exp v0.0.0-20260209203927-2842357ff358
 	golang.org/x/mod v0.33.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/tools v0.41.0
-	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409
-	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20
+	golang.org/x/tools v0.42.0
+	google.golang.org/genproto v0.0.0-20260209200024-4cfbd4190f57
+	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -288,6 +288,7 @@ require (
 	honnef.co/go/tools v0.6.1 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
+	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
 retract (
