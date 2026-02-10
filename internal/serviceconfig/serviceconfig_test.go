@@ -92,12 +92,14 @@ func TestFind(t *testing.T) {
 			name: "found with title",
 			api:  "google/cloud/secretmanager/v1",
 			want: &API{
+				Description:      "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				Path:             "google/cloud/secretmanager/v1",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
-				APIShortName:     "secretmanager",
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
+				ServiceName:      "secretmanager.googleapis.com",
+				ShortName:        "secretmanager",
 				Title:            "Secret Manager API",
 			},
 		},
@@ -123,20 +125,24 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+				ServiceName:   "aiplatform.googleapis.com",
 				Title:         "Vertex AI API",
+				Transports:    map[string]Transport{"python": "grpc"},
 			},
 		},
 		{
 			name: "openapi",
 			api:  "testdata/secretmanager_openapi_v1.json",
 			want: &API{
+				Description:      "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				Path:             "google/cloud/secretmanager/v1",
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Title:            "Secret Manager API",
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
-				APIShortName:     "secretmanager",
+				ServiceName:      "secretmanager.googleapis.com",
+				ShortName:        "secretmanager",
 			},
 		},
 		{
@@ -146,7 +152,9 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/compute/v1",
 				Discovery:     "discoveries/compute.v1.json",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
+				ServiceName:   "compute.googleapis.com",
 				Title:         "Google Compute Engine API",
+				Transports:    map[string]Transport{"csharp": "rest", "go": "rest", "java": "rest", "php": "rest"},
 			},
 		},
 	} {
@@ -240,7 +248,7 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Title:            "service config title",
 				DocumentationURI: "service config doc uri",
 				NewIssueURI:      "service config new issue uri",
-				APIShortName:     "service config short name",
+				ShortName:        "service config short name",
 			},
 		},
 		{
@@ -262,7 +270,7 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Title:            "override title",
 				DocumentationURI: "override doc uri",
 				NewIssueURI:      "override new issue uri",
-				APIShortName:     "override short name",
+				ShortName:        "override short name",
 			},
 			cfg: &Service{
 				Title: "service config title",
@@ -276,7 +284,7 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Title:            "override title",
 				DocumentationURI: "override doc uri",
 				NewIssueURI:      "override new issue uri",
-				APIShortName:     "override short name",
+				ShortName:        "override short name",
 			},
 		},
 	} {
