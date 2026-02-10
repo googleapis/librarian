@@ -26,7 +26,7 @@ import (
 )
 
 func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
-	specFormat := "protobuf"
+	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
 	}
@@ -39,7 +39,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	api, err := serviceconfig.Find(root, ch.Path)
+	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
 	if err != nil {
 		return parser.ModelConfig{}, err
 	}
@@ -49,9 +49,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 
 	var specSource string
 	switch specFormat {
-	case "discovery":
+	case config.SpecDiscovery:
 		specSource = api.Discovery
-	case "openapi":
+	case config.SpecOpenAPI:
 		specSource = api.OpenAPI
 	default:
 		specSource = ch.Path
@@ -232,7 +232,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		src["include-list"] = module.IncludeList
 	}
 	if module.Source != "" && src["roots"] == "googleapis" {
-		api, err := serviceconfig.Find(sources.Googleapis, module.Source)
+		api, err := serviceconfig.Find(sources.Googleapis, module.Source, serviceconfig.LangRust)
 		if err != nil {
 			return parser.ModelConfig{}, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
@@ -248,7 +248,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		language = "rust+prost"
 	}
 
-	specificationFormat := "protobuf"
+	specificationFormat := config.SpecProtobuf
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}

@@ -21,7 +21,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -35,9 +36,9 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
+	cfg := &sidekickconfig.Config{
+		General: sidekickconfig.GeneralConfig{
+			SpecificationFormat: config.SpecProtobuf,
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
 		},

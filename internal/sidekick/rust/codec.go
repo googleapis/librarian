@@ -27,6 +27,7 @@ import (
 	"time"
 	"unicode"
 
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/iancoleman/strcase"
@@ -55,7 +56,7 @@ var commentUrlRegex = regexp.MustCompile(
 
 func newCodec(specificationFormat string, options map[string]string) (*codec, error) {
 	var sysParams []systemParameter
-	if specificationFormat == "protobuf" {
+	if specificationFormat == libconfig.SpecProtobuf {
 		sysParams = append(sysParams, systemParameter{
 			Name: "$alt", Value: "json;enum-encoding=int",
 		})
@@ -74,8 +75,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		version:                 "0.0.0",
 		releaseLevel:            "preview",
 		systemParameters:        sysParams,
-		serializeEnumsAsStrings: specificationFormat != "protobuf",
-		bytesUseUrlSafeAlphabet: specificationFormat == "disco",
+		serializeEnumsAsStrings: specificationFormat != libconfig.SpecProtobuf,
+		bytesUseUrlSafeAlphabet: specificationFormat == libconfig.SpecDiscovery,
 	}
 
 	for key, definition := range options {
