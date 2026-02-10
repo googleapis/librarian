@@ -7,14 +7,14 @@ This document describes the schema for the API Allowlist.
 [Link to code](../internal/serviceconfig/api.go#L66)
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `APIDescription` | string | APIDescription provides the information for describing an API. |
-| `APIShortName` | string | APIShortName overrides the API short name from the service config's publishing section. |
+| `Description` | string | Description provides the information for describing an API. |
 | `Discovery` | string | Discovery is the file path to a discovery document in github.com/googleapis/discovery-artifact-manager. Used by sidekick languages (Rust, Dart) as an alternative to proto files. |
 | `DocumentationURI` | string | DocumentationURI overrides the product documentation URI from the service config's publishing section. |
 | `Languages` | list of string | Languages restricts which languages can generate client libraries for this API. Empty means all languages can use this API.<br><br>Restrictions exist for several reasons:<br>- Newer languages (Rust, Dart) skip older beta versions when stable versions exist<br>- Python has historical legacy APIs not available to other languages<br>- Some APIs (like DIREGAPIC protos) are only used by specific languages |
 | `NewIssueURI` | string | NewIssueURI overrides the new issue URI from the service config's publishing section. |
 | `OpenAPI` | string | OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata. This is not an official spec yet and exists only for Rust to validate OpenAPI support. |
 | `Path` | string | Path is the proto directory path in github.com/googleapis/googleapis. If ServiceConfig is empty, the service config is assumed to live at this path. |
+| `ShortName` | string | ShortName overrides the API short name from the service config's publishing section. |
 | `ServiceConfig` | string | ServiceConfig is the service config file path override. If empty, the service config is discovered in the directory specified by Path. |
 | `ServiceName` | string | ServiceName is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`. |
 | `Title` | string | Title overrides the API title from the service config. |
