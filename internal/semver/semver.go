@@ -27,13 +27,13 @@ import (
 )
 
 const (
-	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
+	// SpecV2 corresponds to SemVer spec version 2.0.0
 	// https://semver.org/spec/v2.0.0.html.
-	SemVerSpecV2 = "2.0.0"
+	SpecV2 = "2.0.0"
 
-	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
+	// SpecV1 corresponds to SemVer spec version 1.0.0
 	// https://semver.org/spec/v1.0.0.html.
-	SemVerSpecV1 = "1.0.0"
+	SpecV1 = "1.0.0"
 )
 
 // version represents a semantic version.
@@ -98,7 +98,7 @@ func parse(versionString string) (version, error) {
 
 	var err error
 	v := version{
-		SpecVersion: SemVerSpecV2,
+		SpecVersion: SpecV2,
 	}
 
 	v.Major, err = strconv.Atoi(vParts[0])
@@ -132,7 +132,7 @@ func parse(versionString string) (version, error) {
 	} else if matches := semverV1PrereleaseNumberRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
 		v.Prerelease = matches[1]
 		numStr = matches[2]
-		v.SpecVersion = SemVerSpecV1
+		v.SpecVersion = SpecV1
 	} else {
 		v.Prerelease = prerelease
 	}
@@ -187,7 +187,7 @@ func (o stringifyOptions) Stringify(v version) string {
 
 		if v.PrereleaseNumber != nil {
 			var numStr string
-			if v.SpecVersion == SemVerSpecV1 {
+			if v.SpecVersion == SpecV1 {
 				numStr = fmt.Sprintf("%02d", *v.PrereleaseNumber)
 			} else {
 				numStr = strconv.Itoa(*v.PrereleaseNumber)
