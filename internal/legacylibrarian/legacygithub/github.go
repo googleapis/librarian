@@ -49,7 +49,8 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err == nil &&
 			resp.StatusCode != http.StatusServiceUnavailable &&
 			resp.StatusCode != http.StatusInternalServerError &&
-			resp.StatusCode != http.StatusTooManyRequests {
+			resp.StatusCode != http.StatusTooManyRequests &&
+			resp.StatusCode != http.StatusBadGateway {
 			return resp, nil
 		}
 		if err != nil {

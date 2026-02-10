@@ -1036,6 +1036,19 @@ func TestRetryableTransport(t *testing.T) {
 			wantRequestCount: 3,
 		},
 		{
+			name: "Success after retries (502)",
+			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
+				if requestCount < 3 {
+					w.WriteHeader(http.StatusBadGateway)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			},
+			wantStatusCode:   http.StatusOK,
+			wantErr:          false,
+			wantRequestCount: 3,
+		},
+		{
 			name: "Success after retries (429)",
 			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
 				if requestCount < 2 {
