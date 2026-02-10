@@ -29,12 +29,12 @@ func TestParse(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		version string
-		want    version
+		want    Version
 	}{
 		{
 			name:    "valid version",
 			version: "1.2.3",
-			want: version{
+			want: Version{
 				Major:       1,
 				Minor:       2,
 				Patch:       3,
@@ -44,7 +44,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with prerelease",
 			version: "1.2.3-alpha.1",
-			want: version{
+			want: Version{
 				Major:               1,
 				Minor:               2,
 				Patch:               3,
@@ -57,7 +57,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-betaXX",
 			version: "1.2.3-beta21",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -69,7 +69,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with prerelease without version",
 			version: "1.2.3-beta",
-			want: version{
+			want: Version{
 				Major:       1,
 				Minor:       2,
 				Patch:       3,
@@ -80,7 +80,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid shortened version",
 			version: "1.2",
-			want: version{
+			want: Version{
 				Major:       1,
 				Minor:       2,
 				Patch:       0,
@@ -90,7 +90,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-alpha<digits>",
 			version: "1.2.3-alpha1",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -102,7 +102,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-beta<digits>",
 			version: "1.2.3-beta2",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -114,7 +114,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-rc<digits>",
 			version: "1.2.3-rc3",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -126,7 +126,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-preview<digits>",
 			version: "1.2.3-preview4",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -138,7 +138,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-a<digits>",
 			version: "1.2.3-a5",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -150,7 +150,7 @@ func TestParse(t *testing.T) {
 		{
 			name:    "valid version with format 1.2.3-b<digits>",
 			version: "1.2.3-b6",
-			want: version{
+			want: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -161,7 +161,7 @@ func TestParse(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			actual, err := parse(test.version)
+			actual, err := Parse(test.version)
 			if err != nil {
 				t.Fatalf("Parse() failed: %v", err)
 			}
@@ -205,7 +205,7 @@ func TestParse_Errors(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, gotErr := parse(test.version)
+			_, gotErr := Parse(test.version)
 			if gotErr == nil {
 				t.Errorf("Parse(%q) should have failed", test.version)
 			} else if !errors.Is(gotErr, test.wantErr) {
@@ -256,7 +256,7 @@ func TestParse_Invalid(t *testing.T) {
 		"99999999999999999999999.999999999999999999.99999999999999999----RC-SNAPSHOT.12.09.1--------------------------------..12",
 	} {
 		t.Run(version, func(t *testing.T) {
-			if _, err := parse(version); err == nil {
+			if _, err := Parse(version); err == nil {
 				t.Error("Parse() should have failed")
 			}
 		})
@@ -266,12 +266,12 @@ func TestParse_Invalid(t *testing.T) {
 func TestVersion_String(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		version  version
+		version  Version
 		expected string
 	}{
 		{
 			name: "simple version",
-			version: version{
+			version: Version{
 				Major: 1,
 				Minor: 2,
 				Patch: 3,
@@ -280,7 +280,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease",
-			version: version{
+			version: Version{
 				Major:               1,
 				Minor:               2,
 				Patch:               3,
@@ -292,7 +292,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease, semver spec v1 no separator",
-			version: version{
+			version: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -304,7 +304,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease, semver spec v1 no separator, zero padded single digit",
-			version: version{
+			version: Version{
 				Major:            1,
 				Minor:            2,
 				Patch:            3,
@@ -316,7 +316,7 @@ func TestVersion_String(t *testing.T) {
 		},
 		{
 			name: "with prerelease no number",
-			version: version{
+			version: Version{
 				Major:      1,
 				Minor:      2,
 				Patch:      3,

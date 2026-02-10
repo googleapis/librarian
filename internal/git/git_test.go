@@ -118,7 +118,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(t.Context(), wantTag, command.GetExecutablePath(nil, "git"), nil)
+	got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), wantTag, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestFilesBadRef(t *testing.T) {
 	const wantTag = "release-2002-03-04"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	if got, err := FilesChangedSince(t.Context(), "--invalid--", command.GetExecutablePath(nil, "git"), nil); err == nil {
+	if got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), "--invalid--", nil); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
@@ -484,5 +484,102 @@ func TestCheckout_Error(t *testing.T) {
 	err := Checkout(t.Context(), "git", "invalid-revision")
 	if err == nil {
 		t.Errorf("expected error when checking out a non-existent revision, but did not get one")
+	}
+}
+
+func TestTag(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	const tagName = "test-tag"
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+	commit, err := GetCommitHash(t.Context(), "git", "HEAD~")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = Tag(t.Context(), "git", tagName, commit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	taggedCommit, err := GetCommitHash(t.Context(), "git", tagName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if commit != taggedCommit {
+		// Deliberately not using diff as the hashes are basically opaque
+		t.Errorf("GetCommitHash() after Tag(): got = %s; want = %s", taggedCommit, commit)
+	}
+}
+
+func TestTag_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, test := range []struct {
+		name    string
+		tagName string
+		commit  string
+	}{
+		{
+			name:    "non-existent commit",
+			tagName: "test-tag",
+			commit:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		{
+			name:    "empty commit",
+			tagName: "test-tag",
+			commit:  "",
+		},
+		{
+			name:    "empty tag name",
+			tagName: "",
+			commit:  "HEAD",
+		},
+		{
+			name:    "invalid tag name",
+			tagName: "HEAD",
+			commit:  "HEAD",
+		},
+		{
+			name:    "unexpected output",
+			tagName: "--help",
+			commit:  "x",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testhelper.SetupRepo(t)
+			err := Tag(t.Context(), "git", test.tagName, test.commit)
+			if err == nil {
+				t.Fatal("wanted an error; got none")
+			}
+		})
+	}
+}
+
+func TestGetCommitHash(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	opts := testhelper.SetupOptions{
+		WithChanges: []string{testhelper.ReadmeFile},
+	}
+	testhelper.Setup(t, opts)
+	commits, err := FindCommitsForPath(t.Context(), "git", ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	headCommit, err := GetCommitHash(t.Context(), "git", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headCommit != commits[0] {
+		// Deliberately not using diff as the hashes are basically opaque
+		t.Errorf("GetCommitHash() for HEAD: got = %s; want = %s", headCommit, commits[0])
+	}
+
+	previousToHeadCommit, err := GetCommitHash(t.Context(), "git", "HEAD~")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if previousToHeadCommit != commits[1] {
+		// Deliberately not using diff as the hashes are basically opaque
+		t.Errorf("GetCommitHash() for HEAD~: got = %s; want = %s", previousToHeadCommit, commits[1])
 	}
 }

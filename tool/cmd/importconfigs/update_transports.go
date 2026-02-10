@@ -31,7 +31,18 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var allLanguages = []string{"csharp", "go", "java", "nodejs", "php", "python", "ruby"}
+var langToConstant = map[string]string{
+	"all":    "LangAll",
+	"csharp": "LangCsharp",
+	"go":     "LangGo",
+	"java":   "LangJava",
+	"nodejs": "LangNodejs",
+	"php":    "LangPhp",
+	"python": "LangPython",
+	"ruby":   "LangRuby",
+}
+
+const bazelLangs = 7
 
 func updateTransportsCommand() *cli.Command {
 	return &cli.Command{
@@ -165,11 +176,14 @@ func extractAPIInfo(apiLit *ast.CompositeLit) (string, int) {
 // simplifyTransports attempts to condense the transports map to a single "all" entry
 // if all supported languages share the same transport value.
 func simplifyTransports(transports map[string]string) map[string]string {
-	if len(transports) != len(allLanguages) {
+	if len(transports) != bazelLangs {
 		return transports
 	}
 	var firstVal string
-	for _, lang := range allLanguages {
+	for lang := range langToConstant {
+		if lang == "all" {
+			continue
+		}
 		val, ok := transports[lang]
 		if !ok {
 			return transports
@@ -199,8 +213,10 @@ func createTransportsExpr(transports map[string]string) *ast.CompositeLit {
 	}
 	for _, lang := range keys {
 		val := transports[lang]
-		var langKey ast.Expr = ast.NewIdent("lang" + strings.ToUpper(lang[:1]) + lang[1:])
-		if !langConstantExists(lang) {
+		var langKey ast.Expr
+		if constName, ok := langToConstant[lang]; ok {
+			langKey = ast.NewIdent(constName)
+		} else {
 			langKey = &ast.BasicLit{Kind: token.STRING, Value: "\"" + lang + "\""}
 		}
 
@@ -222,12 +238,4 @@ func createTransportsExpr(transports map[string]string) *ast.CompositeLit {
 		})
 	}
 	return mapElt
-}
-
-func langConstantExists(lang string) bool {
-	switch lang {
-	case "all", "csharp", "go", "java", "nodejs", "php", "python", "ruby", "rust":
-		return true
-	}
-	return false
 }
