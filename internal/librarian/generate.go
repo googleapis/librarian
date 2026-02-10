@@ -205,8 +205,17 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	switch language {
 	case languageFake:
 		// No cleaning needed.
-	case languageDart, languageGo, languagePython:
+	case languageDart, languagePython:
 		if err := cleanOutput(library.Output, library.Keep); err != nil {
+			return nil, err
+		}
+	case languageGo:
+		clientDir := filepath.Join(library.Output, library.Name)
+		if err := cleanOutput(clientDir, library.Keep); err != nil {
+			return nil, err
+		}
+		snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+		if err := cleanOutput(snippetDir, library.Keep); err != nil {
 			return nil, err
 		}
 	case languageRust:
