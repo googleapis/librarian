@@ -144,7 +144,7 @@ func TestFind(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Find(googleapisDir, test.api)
+			got, err := Find(googleapisDir, test.api, LangGo)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)
@@ -208,5 +208,62 @@ func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
 	_, err := FindGRPCServiceConfig(dir, apiPath)
 	if err == nil {
 		t.Fatal("expected error for multiple gRPC service config files")
+	}
+}
+
+func TestValidateAPI(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		api      *API
+		wantErr  bool
+	}{
+		{
+			name:     "api in allowlist, all languages",
+			path:     "google/api",
+			language: LangGo,
+			api:      &API{Path: "google/api"},
+			wantErr:  false,
+		},
+		{
+			name:     "api in allowlist, restricted language allowed",
+			path:     "google/cloud/aiplatform/v1beta1",
+			language: LangPython,
+			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
+			wantErr:  false,
+		},
+		{
+			name:     "api in allowlist, restricted language not allowed",
+			path:     "google/cloud/aiplatform/v1beta1",
+			language: LangGo,
+			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
+			wantErr:  true,
+		},
+		{
+			name:     "api not in list, google/cloud/ prefix",
+			path:     "google/cloud/newapi/v1",
+			language: LangGo,
+			api:      nil,
+			wantErr:  false,
+		},
+		{
+			name:     "api not in list, no google/cloud/ prefix",
+			path:     "google/ads/newapi/v1",
+			language: LangGo,
+			api:      nil,
+			wantErr:  true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := validateAPI(test.path, test.language, test.api)
+			if (err != nil) != test.wantErr {
+				t.Errorf("validateAPI() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if !test.wantErr && got == nil {
+				t.Error("validateAPI() returned nil but want non-nil API")
+			}
+		})
 	}
 }

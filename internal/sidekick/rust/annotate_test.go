@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -35,7 +36,7 @@ func TestPackageNames(t *testing.T) {
 	}
 	// Override the default name for test APIs ("Test").
 	model.Name = "workflows-v1"
-	codec, err := newCodec("protobuf", map[string]string{
+	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"version":                     "1.2.3",
 		"release-level":               "stable",
 		"copyright-year":              "2035",
@@ -177,7 +178,7 @@ func TestServiceAnnotations(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.DeleteResource")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 	wantService := &serviceAnnotations{
 		Name:              "ResourceService",
@@ -240,7 +241,7 @@ func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"extend-grpc-transport": "true",
 	})
 	annotateModel(model, codec)
@@ -257,7 +258,7 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
 	annotateModel(model, codec)
@@ -273,7 +274,7 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"has-veneer": "true",
 	})
 	annotateModel(model, codec)
@@ -290,7 +291,7 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
 	annotateModel(model, codec)
@@ -306,7 +307,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	if !ok {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"per-service-features": "true",
 	})
 	annotateModel(model, codec)
@@ -379,7 +380,7 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			if !ok {
 				t.Fatalf("cannot find service %s", id)
 			}
-			codec := newTestCodec(t, "protobuf", "", map[string]string{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
@@ -457,7 +458,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := newTestCodec(t, "protobuf", "test", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	codec.packageMapping["google.longrunning"] = &packagez{name: "google-cloud-longrunning"}
@@ -492,7 +493,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"name-overrides": ".test.v1.ResourceService=Renamed",
 	})
 	annotateModel(model, codec)
@@ -728,7 +729,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"name-overrides": ".test.Message.nested_thing=NestedThingOneOf",
 	})
 	annotateModel(model, codec)
@@ -842,7 +843,7 @@ func TestEnumAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, "protobuf", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
 	wantEnumCodec := &enumAnnotation{
@@ -945,7 +946,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-	codec := newTestCodec(t, "protobuf", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
 	want := &enumAnnotation{
@@ -1008,7 +1009,7 @@ func TestJsonNameAnnotations(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
 	want := &fieldAnnotations{
@@ -1110,7 +1111,7 @@ func TestMessageAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "test.v1", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{})
 	annotateModel(model, codec)
 	want := &messageAnnotation{
 		Name:              "TestMessage",
@@ -1202,7 +1203,7 @@ func TestPathInfoAnnotations(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec := newTestCodec(t, "protobuf", "test.v1", map[string]string{
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{
 			"include-grpc-only-methods": "true",
 		})
 		annotateModel(model, codec)
@@ -1406,7 +1407,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
 	if diff := cmp.Diff(want_b0, b0.Codec); diff != "" {
@@ -1472,7 +1473,7 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 		[]*api.Enum{},
 		[]*api.Service{service})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",
 	})
 	annotateModel(model, codec)
@@ -1552,7 +1553,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 			[]*api.Enum{},
 			[]*api.Service{service})
 		api.CrossReference(model)
-		codec := newTestCodec(t, "protobuf", "", map[string]string{})
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
 		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
 			t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
@@ -1719,7 +1720,7 @@ func TestInternalMessageOverrides(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{public, private1, private2},
 		[]*api.Enum{},
 		[]*api.Service{})
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"internal-types": ".test.Private1,.test.Private2",
 	})
 	annotateModel(model, codec)
@@ -1760,7 +1761,7 @@ func TestRoutingRequired(t *testing.T) {
 	if err := api.CrossReference(model); err != nil {
 		t.Fatal(err)
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"include-grpc-only-methods": "true",
 		"routing-required":          "true",
 	})
@@ -1773,7 +1774,7 @@ func TestRoutingRequired(t *testing.T) {
 
 func TestGenerateSetterSamples(t *testing.T) {
 	model := serviceAnnotationsModel()
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"generate-setter-samples": "true",
 	})
 	annotateModel(model, codec)
@@ -1784,7 +1785,7 @@ func TestGenerateSetterSamples(t *testing.T) {
 
 func TestGenerateRpcSamples(t *testing.T) {
 	model := serviceAnnotationsModel()
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"generate-rpc-samples": "true",
 	})
 	annotateModel(model, codec)
@@ -1819,7 +1820,7 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-			codec := newTestCodec(t, "protobuf", "", test.options)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
 			got, err := annotateModel(model, codec)
 			if err != nil {
 				t.Fatal(err)
@@ -1859,7 +1860,7 @@ func TestSetterSampleAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
 	api.CrossReference(model)
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"generate-setter-samples": "true",
 	})
 	annotateModel(model, codec)
@@ -1953,7 +1954,7 @@ func TestEnumAnnotationsValuesForExamples(t *testing.T) {
 			if err := api.CrossReference(model); err != nil {
 				t.Fatalf("CrossReference() failed: %v", err)
 			}
-			codec := newTestCodec(t, "protobuf", "", map[string]string{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 			annotateModel(model, codec)
 
 			got := enum.Codec.(*enumAnnotation).ValuesForExamples
@@ -2080,7 +2081,7 @@ func TestOneOfExampleFieldSelection(t *testing.T) {
 			}
 			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage, mapMessage}, []*api.Enum{}, []*api.Service{})
 			api.CrossReference(model)
-			codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 			if _, err := annotateModel(model, codec); err != nil {
 				t.Fatal(err)
 			}
@@ -2460,7 +2461,7 @@ func TestFindResourceNameFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			codec := newTestCodec(t, "protobuf", "", map[string]string{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 
 			if tt.setup != nil {
 				tt.setup(tt.method)

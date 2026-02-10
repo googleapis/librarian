@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -48,7 +49,7 @@ func TestParseOptions(t *testing.T) {
 		Update  func(*codec)
 	}{
 		{
-			Format:  "protobuf",
+			Format:  libconfig.SpecProtobuf,
 			Options: map[string]string{},
 			Update: func(c *codec) {
 				c.systemParameters = []systemParameter{
@@ -57,7 +58,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format:  "openapi",
+			Format:  libconfig.SpecOpenAPI,
 			Options: map[string]string{},
 			Update: func(c *codec) {
 				c.systemParameters = []systemParameter{
@@ -66,7 +67,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format:  "discovery",
+			Format:  libconfig.SpecDiscovery,
 			Options: map[string]string{},
 			Update: func(c *codec) {
 				c.systemParameters = []systemParameter{
@@ -75,7 +76,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"package-name-override": "override",
 			},
@@ -84,7 +85,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"name-overrides": "a=b,c=d",
 			},
@@ -96,7 +97,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"module-path": "crate::generated::storage",
 			},
@@ -105,7 +106,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"copyright-year": "2035",
 			},
@@ -114,7 +115,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"not-for-publication": "true",
 			},
@@ -123,7 +124,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"version": "1.2.3",
 			},
@@ -132,7 +133,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"release-level": "stable",
 			},
@@ -141,7 +142,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"package:bytes":    "force-used=true,package=bytes",
 				"package:location": "package=google-cloud-location,source=google.cloud.location",
@@ -162,7 +163,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"disabled-rustdoc-warnings": "",
 			},
@@ -171,7 +172,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"disabled-rustdoc-warnings": "a,b,c",
 			},
@@ -180,7 +181,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"disabled-clippy-warnings": "",
 			},
@@ -189,7 +190,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"disabled-clippy-warnings": "a,b,c",
 			},
@@ -198,7 +199,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"template-override": "templates/http-client",
 			},
@@ -207,7 +208,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"include-grpc-only-methods": "true",
 			},
@@ -216,7 +217,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"per-service-features": "true",
 			},
@@ -225,7 +226,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"default-features": "a,b,c",
 			},
@@ -234,7 +235,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"default-features": "",
 			},
@@ -243,7 +244,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"detailed-tracing-attributes": "true",
 			},
@@ -252,7 +253,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"has-veneer": "true",
 			},
@@ -261,7 +262,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"extra-modules": "a,b,c",
 			},
@@ -270,7 +271,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"internal-types": "a,b,c",
 			},
@@ -279,7 +280,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"routing-required": "true",
 			},
@@ -288,7 +289,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"extend-grpc-transport": "true",
 			},
@@ -297,7 +298,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"generate-setter-samples": "true",
 			},
@@ -306,7 +307,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"generate-rpc-samples": "true",
 			},
@@ -315,7 +316,7 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 		{
-			Format: "protobuf",
+			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
 				"internal-builders": "true",
 			},
@@ -405,7 +406,7 @@ func TestPackageName(t *testing.T) {
 
 func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api *api.API) {
 	t.Helper()
-	c, err := newCodec("protobuf", opts)
+	c, err := newCodec(libconfig.SpecProtobuf, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,7 +417,7 @@ func rustPackageNameImpl(t *testing.T, want string, opts map[string]string, api 
 }
 
 func TestServiceName(t *testing.T) {
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"name-overrides": ".google.testing.BadName=GoodName,.google.testing.Old=New",
 	})
 	if err != nil {
@@ -426,7 +427,7 @@ func TestServiceName(t *testing.T) {
 	testServiceNameImpl(t, c, "Old", "New")
 	testServiceNameImpl(t, c, "Unchanged", "Unchanged")
 
-	c2, err := newCodec("protobuf", map[string]string{})
+	c2, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -447,7 +448,7 @@ func testServiceNameImpl(t *testing.T, c *codec, serviceName string, want string
 }
 
 func TestOneOfEnumName(t *testing.T) {
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"name-overrides": ".google.testing.Message.conflict=ConflictOneOf",
 	})
 	if err != nil {
@@ -456,7 +457,7 @@ func TestOneOfEnumName(t *testing.T) {
 	testOneOfEnumNameImpl(t, c, "conflict", "ConflictOneOf")
 	testOneOfEnumNameImpl(t, c, "basic_case", "BasicCase")
 
-	c2, err := newCodec("protobuf", map[string]string{})
+	c2, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -28,7 +29,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	_, err = annotateModel(model, codec)
@@ -98,7 +99,7 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
 	if err != nil {
@@ -144,7 +145,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	}
 	gotMethod.APIVersion = "v1_20260205"
 
-	codec := newTestCodec(t, "discovery", "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecDiscovery, "", map[string]string{})
 	_, err = annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
@@ -167,7 +168,7 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec := newTestCodec(t, "protobuf", "", map[string]string{
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"internal-builders": "true",
 	})
 	_, err = annotateModel(model, codec)

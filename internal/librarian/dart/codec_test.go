@@ -293,7 +293,7 @@ func TestToModelConfig(t *testing.T) {
 			},
 			googleapisDir: googleapisDir,
 			want: parser.ModelConfig{
-				SpecificationFormat: "protobuf",
+				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
@@ -313,7 +313,7 @@ func TestToModelConfig(t *testing.T) {
 			},
 			googleapisDir: googleapisDir,
 			want: parser.ModelConfig{
-				SpecificationFormat: "protobuf",
+				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
@@ -336,7 +336,7 @@ func TestToModelConfig(t *testing.T) {
 			},
 			googleapisDir: googleapisDir,
 			want: parser.ModelConfig{
-				SpecificationFormat: "protobuf",
+				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
@@ -379,7 +379,7 @@ func TestToModelConfig(t *testing.T) {
 			},
 			googleapisDir: googleapisDir,
 			want: parser.ModelConfig{
-				SpecificationFormat: "protobuf",
+				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{

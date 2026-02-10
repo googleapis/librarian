@@ -17,6 +17,7 @@ package parser
 import (
 	"fmt"
 
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -27,7 +28,11 @@ type ModelConfig struct {
 
 	// Source configuration
 	// SpecificationFormat is the format of the API specification.
-	// Supported values are "discovery", "openapi", "protobuf", and "none".
+	// Supported values are:
+	// - `config.SpecDiscovery`: "discovery"
+	// - `config.SpecOpenAPI`: "openapi"
+	// - `config.SpecProtobuf`: "protobuf"
+	// - `config.SpecNone`: "none"
 	SpecificationFormat string
 	SpecificationSource string
 	Source              map[string]string
@@ -71,11 +76,11 @@ func CreateModel(cfg ModelConfig) (*api.API, error) {
 	var err error
 	var model *api.API
 	switch cfg.SpecificationFormat {
-	case "discovery":
+	case libconfig.SpecDiscovery:
 		model, err = ParseDisco(cfg)
-	case "openapi":
+	case libconfig.SpecOpenAPI:
 		model, err = ParseOpenAPI(cfg)
-	case "protobuf":
+	case libconfig.SpecProtobuf:
 		model, err = ParseProtobuf(cfg)
 	case "none":
 		return nil, nil
