@@ -26,7 +26,7 @@ import (
 )
 
 func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
-	specFormat := "protobuf"
+	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
 	}
@@ -49,9 +49,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 
 	var specSource string
 	switch specFormat {
-	case "discovery":
+	case config.SpecDiscovery:
 		specSource = api.Discovery
-	case "openapi":
+	case config.SpecOpenAPI:
 		specSource = api.OpenAPI
 	default:
 		specSource = ch.Path
@@ -248,7 +248,7 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 		language = "rust+prost"
 	}
 
-	specificationFormat := "protobuf"
+	specificationFormat := config.SpecProtobuf
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}

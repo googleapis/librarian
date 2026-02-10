@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -37,7 +38,7 @@ func TestFromProtobuf(t *testing.T) {
 	outDir := t.TempDir()
 
 	cfg := parser.ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{

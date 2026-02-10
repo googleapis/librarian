@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	libconfig "github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -38,7 +40,7 @@ var (
 
 func TestCreateModelDisco(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: "discovery",
+		SpecificationFormat: libconfig.SpecDiscovery,
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: discoSourceFile,
 	}
@@ -72,7 +74,7 @@ func TestCreateModelDisco(t *testing.T) {
 
 func TestCreateModelOpenAPI(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: "openapi",
+		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: openAPIFile,
 	}
@@ -90,7 +92,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 func TestCreateModelProtobuf(t *testing.T) {
 	requireProtoc(t)
 	cfg := ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
@@ -111,7 +113,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 func TestCreateModelOverrides(t *testing.T) {
 	requireProtoc(t)
 	cfg := ModelConfig{
-		SpecificationFormat: "protobuf",
+		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
@@ -182,7 +184,7 @@ func TestCreateModelUnknown(t *testing.T) {
 
 func TestCreateModelBadParse(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: "openapi",
+		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       secretManagerYamlRelative,
 		// Note the mismatch between the format and the file contents.
 		SpecificationSource: discoSourceFile,
