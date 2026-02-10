@@ -22,7 +22,7 @@ import (
 )
 
 // ParseRepoFlags parses the command line flags for librarianops commands.
-func ParseRepoFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err error) {
+func parseRepoFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err error) {
 	workDir = cmd.String("C")
 	verbose = cmd.Bool("v")
 	if workDir != "" {
