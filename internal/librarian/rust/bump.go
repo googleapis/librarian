@@ -20,10 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 var (
@@ -48,6 +48,10 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 }
 
 func writeVersion(library *config.Library, output, version string) error {
+	// validate version before writing to Cargo.toml
+	if _, err := semver.Parse(version); err != nil {
+		return err
+	}
 	cargoFile := filepath.Join(output, "Cargo.toml")
 	_, err := os.Stat(cargoFile)
 	switch {
