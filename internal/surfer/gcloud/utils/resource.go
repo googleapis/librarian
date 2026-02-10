@@ -249,7 +249,7 @@ func ExtractPathFromSegments(segments []api.PathSegment) string {
 		if seg.Literal != nil {
 			val := *seg.Literal
 			// Heuristic: Skip API version at the start.
-			if i == 0 && strings.HasPrefix(val, "v") && len(val) > 1 && (val[1] >= '0' && val[1] <= '9') {
+			if i == 0 && len(val) >= 2 && val[0] == 'v' && val[1] >= '0' && val[1] <= '9' {
 				continue
 			}
 			parts = append(parts, val)
@@ -266,16 +266,23 @@ func ExtractPathFromSegments(segments []api.PathSegment) string {
 // extractCollectionFromStrings constructs a collection path from a list of string segments
 // (literals and wildcards), following AIP-122 conventions (literal followed by variable/wildcard).
 func extractCollectionFromStrings(parts []string) string {
-	var collectionParts []string
-	for i := 0; i < len(parts)-1; i++ {
-		// A collection identifier is a literal segment followed by a wildcard segment (* or **).
-		// We assume standard patterns like "projects", "*", "locations", "*".
-		isLiteral := parts[i] != "*" && parts[i] != "**"
-		isWildcard := parts[i+1] == "*" || parts[i+1] == "**"
+	var sb strings.Builder
+	var prev string
 
-		if isLiteral && isWildcard {
-			collectionParts = append(collectionParts, parts[i])
+	for i, curr := range parts {
+		if i > 0 {
+			isWildcard := curr == "*" || curr == "**"
+			// Check if previous was a literal (not a wildcard)
+			isPrevLiteral := prev != "" && prev != "*" && prev != "**"
+
+			if isWildcard && isPrevLiteral {
+				if sb.Len() > 0 {
+					sb.WriteByte('.')
+				}
+				sb.WriteString(prev)
+			}
 		}
+		prev = curr
 	}
-	return strings.Join(collectionParts, ".")
+	return sb.String()
 }

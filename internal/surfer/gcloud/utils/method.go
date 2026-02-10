@@ -124,11 +124,6 @@ func IsStandardMethod(m *api.Method) bool {
 	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
 }
 
-// IsCustomMethod determines if the method is a custom method (i.e., not a standard AIP method).
-func IsCustomMethod(m *api.Method) bool {
-	return !IsStandardMethod(m)
-}
-
 // getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
 func getHTTPVerb(m *api.Method) string {
 	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {

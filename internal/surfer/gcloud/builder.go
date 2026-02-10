@@ -420,7 +420,8 @@ func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
 	if len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
 		req.Method = *method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if utils.IsCustomMethod(method) {
+	} else if !utils.IsStandardMethod(method) {
+		// We treat any non-standard method as a custom method (AIP-136).
 		commandName, _ := utils.GetCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		req.Method = strcase.ToLowerCamel(commandName)
@@ -439,22 +440,24 @@ func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Servic
 	// This is true if the operation response type matches the method's resource type.
 	// We reuse the 'resource' variable looked up earlier.
 	resource := utils.GetResourceForMethod(method, model)
-	if resource != nil {
-		// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
-		// matches the resource singular name or type.
-		responseTypeID := method.OperationInfo.ResponseTypeID
-		// Extract short name from FQN (last element after dot)
-		responseTypeName := responseTypeID
-		if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
-			responseTypeName = responseTypeID[idx+1:]
-		}
+	if resource == nil {
+		return async
+	}
 
-		singular := utils.GetSingularResourceNameForMethod(method, model)
-		if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
-			async.ExtractResourceResult = true
-		} else {
-			async.ExtractResourceResult = false
-		}
+	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
+	// matches the resource singular name or type.
+	responseTypeID := method.OperationInfo.ResponseTypeID
+	// Extract short name from FQN (last element after dot)
+	responseTypeName := responseTypeID
+	if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
+		responseTypeName = responseTypeID[idx+1:]
+	}
+
+	singular := utils.GetSingularResourceNameForMethod(method, model)
+	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
+		async.ExtractResourceResult = true
+	} else {
+		async.ExtractResourceResult = false
 	}
 
 	return async
@@ -525,7 +528,9 @@ func newOutputConfig(method *api.Method, _ *api.API) *OutputConfig {
 
 // newFormat generates a gcloud table format string from a message definition.
 func newFormat(message *api.Message) string {
-	var columns []string
+	var sb strings.Builder
+	first := true
+
 	for _, f := range message.Fields {
 		// Sanitize field name to prevent DSL injection.
 		if !utils.IsSafeName(f.JSONName) {
@@ -539,32 +544,37 @@ func newFormat(message *api.Message) string {
 			f.Typez == api.DOUBLE_TYPE || f.Typez == api.FLOAT_TYPE
 
 		if isScalar {
+			if !first {
+				// The newline is not strictly required by gcloud, but we add it to
+				// match the existing format convention which improves readability in the YAML.
+				sb.WriteString(",\n")
+			}
 			if f.Repeated {
 				// Format repeated scalars with .join(',').
-				columns = append(columns, fmt.Sprintf("%s.join(',')", f.JSONName))
+				sb.WriteString(fmt.Sprintf("%s.join(',')", f.JSONName))
 			} else {
-				columns = append(columns, f.JSONName)
+				sb.WriteString(f.JSONName)
 			}
+			first = false
 			continue
 		}
 
 		// Include timestamps (usually messages like google.protobuf.Timestamp).
 		if f.MessageType != nil && strings.HasSuffix(f.TypezID, ".Timestamp") {
-			columns = append(columns, f.JSONName)
+			if !first {
+				// The newline is not strictly required by gcloud, but we add it to
+				// match the existing format convention which improves readability in the YAML.
+				sb.WriteString(",\n")
+			}
+			sb.WriteString(f.JSONName)
+			first = false
 		}
 	}
 
-	return newTable(columns)
-}
-
-// newTable constructs a gcloud table format string from a list of columns.
-// It follows the convention of placing each column on a new line for better
-// readability in the command YAML.
-func newTable(columns []string) string {
-	if len(columns) == 0 {
+	if sb.Len() == 0 {
 		return ""
 	}
-	return fmt.Sprintf("table(\n%s)", strings.Join(columns, ",\n"))
+	return fmt.Sprintf("table(\n%s)", sb.String())
 }
 
 // findHelpTextRule finds the help text rule from the config that applies to the current method.
