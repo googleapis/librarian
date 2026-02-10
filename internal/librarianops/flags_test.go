@@ -87,7 +87,7 @@ func TestParseRepoFlags(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(testCase.wantRepoName, repoName); diff != "" {
-				t.Errorf("parseRepoFlags() repoName mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(testCase.wantWorkDir, workDir); diff != "" {
 				t.Errorf("parseRepoFlags() workDir mismatch (-want +got):\n%s", diff)
