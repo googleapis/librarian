@@ -51,13 +51,9 @@ func NewModelConfigFromSidekickConfig(cfg *config.Config) ModelConfig {
 	if cfg == nil {
 		return ModelConfig{}
 	}
-	specFormat := cfg.General.SpecificationFormat
-	if specFormat == "disco" {
-		specFormat = "discovery"
-	}
 	return ModelConfig{
 		Language:            cfg.General.Language,
-		SpecificationFormat: specFormat,
+		SpecificationFormat: cfg.General.SpecificationFormat,
 		SpecificationSource: cfg.General.SpecificationSource,
 		ServiceConfig:       cfg.General.ServiceConfig,
 		Source:              cfg.Source,

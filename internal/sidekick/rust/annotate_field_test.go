@@ -630,7 +630,7 @@ func TestBytesAnnotations(t *testing.T) {
 	}{
 		{"protobuf", "::bytes::Bytes", "serde_with::base64::Base64"},
 		{"openapi", "::bytes::Bytes", "serde_with::base64::Base64"},
-		{"disco", "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{"discovery", "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 	} {
 		singular_field := &api.Field{
 			Name:     "singular_field",

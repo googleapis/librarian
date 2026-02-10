@@ -75,7 +75,7 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 		releaseLevel:            "preview",
 		systemParameters:        sysParams,
 		serializeEnumsAsStrings: specificationFormat != "protobuf",
-		bytesUseUrlSafeAlphabet: specificationFormat == "disco",
+		bytesUseUrlSafeAlphabet: specificationFormat == "discovery",
 	}
 
 	for key, definition := range options {

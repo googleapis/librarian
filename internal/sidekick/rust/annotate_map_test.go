@@ -102,11 +102,11 @@ func TestMapValueAnnotations(t *testing.T) {
 		wantSerdeAs string
 	}{
 		{"protobuf", api.STRING_TYPE, "unused", "serde_with::Same"},
-		{"disco", api.STRING_TYPE, "unused", "serde_with::Same"},
+		{"discovery", api.STRING_TYPE, "unused", "serde_with::Same"},
 		{"protobuf", api.BYTES_TYPE, "unused", "serde_with::base64::Base64"},
-		{"disco", api.BYTES_TYPE, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{"discovery", api.BYTES_TYPE, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 		{"protobuf", api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
-		{"disco", api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{"discovery", api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 
 		{"protobuf", api.BOOL_TYPE, "unused", "serde_with::Same"},
 		{"protobuf", api.INT32_TYPE, "unused", "wkt::internal::I32"},
