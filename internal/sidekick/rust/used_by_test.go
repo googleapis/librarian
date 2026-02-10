@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -28,7 +29,7 @@ func TestUsedByServicesWithServices(t *testing.T) {
 		ID:   ".test.Service",
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:tracing":  "used-if=services,package=tracing",
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 	})
@@ -56,7 +57,7 @@ func TestUsedByServicesWithServices(t *testing.T) {
 
 func TestUsedByServicesNoServices(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:tracing":  "used-if=services,package=tracing",
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 	})
@@ -92,7 +93,7 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:lro":      "used-if=lro,package=google-cloud-lro",
 	})
@@ -128,7 +129,7 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:lro":      "used-if=lro,package=google-cloud-lro",
 	})
@@ -168,7 +169,7 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:uuid":     "used-if=autopopulated,package=uuid,feature=v4",
 	})
@@ -205,7 +206,7 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 		Methods: []*api.Method{method},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service})
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:location": "package=gcp-sdk-location,source=google.cloud.location",
 		"package:uuid":     "used-if=autopopulated,package=uuid,feature=v4",
 	})
@@ -240,7 +241,7 @@ func TestRequiredPackages(t *testing.T) {
 		"package:gax":         "package=gcp-sdk-gax,force-used=true",
 		"package:auth":        "ignore=true",
 	}
-	c, err := newCodec("protobuf", options)
+	c, err := newCodec(libconfig.SpecProtobuf, options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +263,7 @@ func TestRequiredPackagesLocal(t *testing.T) {
 	options := map[string]string{
 		"package:gtype": "package=types,source=google.type,source=test-only,force-used=true",
 	}
-	c, err := newCodec("protobuf", options)
+	c, err := newCodec(libconfig.SpecProtobuf, options)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -310,7 +311,7 @@ func TestFindUsedPackages(t *testing.T) {
 		Package: "google.cloud.common",
 	}
 
-	c, err := newCodec("protobuf", map[string]string{
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:common":      "package=google-cloud-common,source=google.cloud.common",
 		"package:longrunning": "package=google-longrunning,source=google.longrunning",
 	})

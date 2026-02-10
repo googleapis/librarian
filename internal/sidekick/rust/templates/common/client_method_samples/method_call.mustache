@@ -49,3 +49,12 @@ limitations under the License.
 ///     println!("response {:?}", response);
 {{/LongRunningReturnsEmpty}}
 {{/IsLRO}}
+{{#IsList}}
+///     let mut list = client
+///         .{{Codec.Name}}()
+{{> /templates/common/client_method_samples/builder_fields}}
+///         .by_item();
+///     while let Some(item) = list.next().await.transpose()? {
+///         println!("{:?}", item);
+///     }
+{{/IsList}}

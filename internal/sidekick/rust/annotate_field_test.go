@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -89,7 +90,7 @@ func TestFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
 		Name:              "TestMessage",
@@ -259,7 +260,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
 		Name:              "TestMessage",
@@ -449,7 +450,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[inner_message.ID] = inner_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 	codec.packageMapping["test.v1.inner"] = &packagez{name: "rusty-test-inner-v1"}
 	annotateModel(model, codec)
 	wantMessage := &messageAnnotation{
@@ -601,7 +602,7 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 		api.CrossReference(model)
 		api.LabelRecursiveFields(model)
-		codec := newTestCodec(t, "protobuf", "test", map[string]string{})
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
 		annotateModel(model, codec)
 
 		wantField := &fieldAnnotations{
@@ -628,9 +629,9 @@ func TestBytesAnnotations(t *testing.T) {
 		wantType            string
 		wantSerdeAs         string
 	}{
-		{"protobuf", "::bytes::Bytes", "serde_with::base64::Base64"},
-		{"openapi", "::bytes::Bytes", "serde_with::base64::Base64"},
-		{"disco", "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{libconfig.SpecProtobuf, "::bytes::Bytes", "serde_with::base64::Base64"},
+		{libconfig.SpecOpenAPI, "::bytes::Bytes", "serde_with::base64::Base64"},
+		{libconfig.SpecDiscovery, "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 	} {
 		singular_field := &api.Field{
 			Name:     "singular_field",
@@ -800,7 +801,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	model.State.MessageByID[map_message.ID] = map_message
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
-	codec, err := newCodec("protobuf", map[string]string{
+	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:wkt": "force-used=true,package=google-cloud-wkt,source=google.protobuf",
 	})
 	if err != nil {

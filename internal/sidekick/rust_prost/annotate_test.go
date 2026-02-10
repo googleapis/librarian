@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
@@ -26,7 +27,7 @@ import (
 func TestModelAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: libconfig.SpecProtobuf,
 			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
@@ -59,7 +60,7 @@ func TestModelAnnotations(t *testing.T) {
 func TestServiceAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: libconfig.SpecProtobuf,
 			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
@@ -97,7 +98,7 @@ func TestServiceAnnotations(t *testing.T) {
 func TestMethodAnnotations(t *testing.T) {
 	cfg := &config.Config{
 		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: libconfig.SpecProtobuf,
 			SpecificationSource: "../../testdata/googleapis/google/type",
 		},
 		Source: map[string]string{
