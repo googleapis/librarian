@@ -178,7 +178,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		api.ServiceName = cfg.GetName()
 	}
 	if api.APIDescription == "" && cfg.GetDocumentation() != nil {
-		api.APIDescription = cfg.GetDocumentation().GetSummary()
+		api.APIDescription = strings.TrimSpace(cfg.GetDocumentation().GetSummary())
 	}
 	publishing := cfg.GetPublishing()
 	if publishing != nil {
