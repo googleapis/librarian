@@ -27,13 +27,13 @@ import (
 )
 
 const (
-	// SpecV2 corresponds to SemVer spec version 2.0.0
-	// https://semver.org/spec/v2.0.0.html.
-	SpecV2 = "2.0.0"
-
-	// SpecV1 corresponds to SemVer spec version 1.0.0
-	// https://semver.org/spec/v1.0.0.html.
+	// SpecV1 is the string for Semantic Versioning 1.0.0.
+	// See https://semver.org/spec/v1.0.0.html.
 	SpecV1 = "1.0.0"
+
+	// SpecV2 is the string for Semantic Versioning 2.0.0.
+	// See https://semver.org/spec/v2.0.0.html.
+	SpecV2 = "2.0.0"
 )
 
 // version represents a semantic version.
