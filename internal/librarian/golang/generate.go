@@ -28,7 +28,14 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+const (
+	releaseLevelAlpha = "alpha"
+	releaseLevelBeta  = "beta"
+	releaseLevelGA    = "ga"
 )
 
 var (
@@ -181,10 +188,12 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	opts = append(opts, "transport="+getTransport(sc))
-	if library.ReleaseLevel != "" {
-		opts = append(opts, "release-level="+library.ReleaseLevel)
+	opts = append(opts, "transport="+transport(sc))
+	level, err := releaseLevel(apiPath, library.Version)
+	if err != nil {
+		return nil, err
 	}
+	opts = append(opts, "release-level="+level)
 	return opts, nil
 }
 
@@ -370,10 +379,33 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 	})
 }
 
-// getTransport get transport from serviceconfig.API for language Go.
+// releaseLevel determines the release level for an API based on the API path and the library's current version.
+func releaseLevel(apiPath, version string) (string, error) {
+	apiVersion := filepath.Base(apiPath)
+	if strings.Contains(apiVersion, releaseLevelAlpha) {
+		return releaseLevelAlpha, nil
+	}
+	if strings.Contains(apiVersion, releaseLevelBeta) {
+		return releaseLevelBeta, nil
+	}
+	if version == "" {
+		return releaseLevelAlpha, nil
+	}
+	semverVer, err := semver.Parse(version)
+	if err != nil {
+		return "", err
+	}
+	if semverVer.Major < 1 {
+		return releaseLevelBeta, nil
+	}
+
+	return releaseLevelGA, nil
+}
+
+// transport get transport from serviceconfig.API for language Go.
 //
 // The default value is serviceconfig.GRPCRest.
-func getTransport(sc *serviceconfig.API) string {
+func transport(sc *serviceconfig.API) string {
 	if sc != nil {
 		return sc.Transport("go")
 	}

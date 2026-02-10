@@ -16,6 +16,7 @@ package repometadata
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,6 +36,7 @@ func TestGenerate(t *testing.T) {
 			name: "no overrides",
 			library: &config.Library{
 				Name:         "google-cloud-secret-manager",
+				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				ReleaseLevel: "stable",
 			},
 			want: RepoMetadata{
@@ -42,7 +44,7 @@ func TestGenerate(t *testing.T) {
 				NamePretty:           "Secret Manager",
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-				IssueTracker:         "",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             "python",
 				LibraryType:          "GAPIC_AUTO",
@@ -58,6 +60,7 @@ func TestGenerate(t *testing.T) {
 			library: &config.Library{
 				Name:                "google-cloud-secret-manager",
 				ReleaseLevel:        "stable",
+				APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 			},
 			defaultVersion: "v1",
@@ -67,7 +70,7 @@ func TestGenerate(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 				DefaultVersion:       "v1",
-				IssueTracker:         "",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             "python",
 				LibraryType:          "GAPIC_AUTO",
@@ -80,15 +83,13 @@ func TestGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			serviceYAMLPath := filepath.Join("testdata", "secretmanager.yaml")
-
 			tmpDir := t.TempDir()
 			outDir := filepath.Join(tmpDir, "output")
 			if err := os.MkdirAll(outDir, 0755); err != nil {
 				t.Fatal(err)
 			}
 
-			if err := Generate(test.library, "python", "googleapis/google-cloud-python", serviceYAMLPath, test.defaultVersion, outDir); err != nil {
+			if err := Generate(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
 				t.Fatal(err)
 			}
 
@@ -105,6 +106,53 @@ func TestGenerate(t *testing.T) {
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGenerate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		defaultVersion string
+		library        *config.Library
+		wantErr        error
+	}{
+		{
+			name: "no APIs",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+			},
+			wantErr: errNoAPIs,
+		},
+		{
+			name: "non-allowlisted API",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs:         []*config.API{{Path: "google/cloud/notallowed/v1"}},
+			},
+			// Error returned by serviceconfig.Find isn't easily distinguished
+		},
+		{
+			name: "no service config",
+			library: &config.Library{
+				Name:         "google-longrunning",
+				ReleaseLevel: "stable",
+				APIs:         []*config.API{{Path: "google/longrunning"}},
+			},
+			wantErr: errNoServiceConfig,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			gotErr := Generate(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, tmpDir)
+			if gotErr == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("Generate() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
