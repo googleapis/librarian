@@ -69,7 +69,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// Generate .repo-metadata.json.
 	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
 	// hardcoding the language and repo name, instead getting it passed in.
-	if err := repometadata.Generate(library, "python", "googleapis/google-cloud-python", googleapisDir, defaultVersion, outdir); err != nil {
+	if err := repometadata.FromLibrary(library, "python", "googleapis/google-cloud-python", googleapisDir, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
