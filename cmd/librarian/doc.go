@@ -187,5 +187,25 @@ GLOBAL OPTIONS:
 
 	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
+
+# tag
+
+NAME:
+
+	librarian tag - tags a release commit based on the libraries published
+
+USAGE:
+
+	librarian tag
+
+OPTIONS:
+
+	--library string  library to find a release commit for; default finds latest release commit for any library
+	--help, -h        show help
+
+GLOBAL OPTIONS:
+
+	--force, -f    skip binary version check
+	--verbose, -v  enable verbose logging
 */
 package main

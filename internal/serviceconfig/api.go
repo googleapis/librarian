@@ -110,13 +110,15 @@ func (api *API) Transport(language string) string {
 	return string(GRPCRest)
 }
 
-// APIs defines all API paths and their language availability.
+// APIs defines API paths that require explicit configurations.
+// APIs not in this list are implicitly allowed if
+// they start with "google/cloud/".
 var APIs = []API{
 	{Path: "google/ads/admanager/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangAll: Rest}},
 	{Path: "google/ads/datamanager/v1", Languages: []string{LangPython}},
 	{Path: "google/ai/generativelanguage/v1", Languages: []string{LangPython}},
 	{Path: "google/ai/generativelanguage/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/ai/generativelanguage/v1beta", Languages: []string{LangPython}},
+	{Path: "google/ai/generativelanguage/v1beta", Languages: []string{LangPython, LangDart}},
 	{Path: "google/ai/generativelanguage/v1beta2", Languages: []string{LangPython}},
 	{Path: "google/ai/generativelanguage/v1beta3", Languages: []string{LangPython}},
 	{Path: "google/analytics/admin/v1alpha", Languages: []string{LangPython}},
@@ -155,7 +157,7 @@ var APIs = []API{
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
+	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{LangPython, LangDart}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
 	{Path: "google/cloud/alloydb/connectors/v1", Transports: map[string]Transport{LangPython: GRPCRest}},
 	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
 	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
@@ -223,7 +225,7 @@ var APIs = []API{
 	{Path: "google/cloud/cloudsecuritycompliance/v1"},
 	{Path: "google/cloud/commerce/consumer/procurement/v1"},
 	{Path: "google/cloud/commerce/consumer/procurement/v1alpha1", Languages: []string{LangPython}},
-	{Path: "google/cloud/common", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
+	{Path: "google/cloud/common", Transports: map[string]Transport{LangPython: GRPC}},
 	{Path: "google/cloud/compute/v1", Discovery: "discoveries/compute.v1.json", Transports: map[string]Transport{LangCsharp: Rest, LangGo: Rest, LangJava: Rest, LangPhp: Rest}},
 	{Path: "google/cloud/compute/v1beta", Languages: []string{LangPython}, Transports: map[string]Transport{LangGo: Rest, LangJava: Rest}},
 	{Path: "google/cloud/confidentialcomputing/v1"},
@@ -477,7 +479,7 @@ var APIs = []API{
 	{Path: "google/monitoring/metricsscope/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
 	{Path: "google/monitoring/v3", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
 	{Path: "google/privacy/dlp/v2"},
-	{Path: "google/protobuf", Languages: []string{LangRust}},
+	{Path: "google/protobuf", Languages: []string{LangRust, LangDart}},
 	{Path: "google/pubsub/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
 	{Path: "google/rpc"},
 	{Path: "google/rpc/context", Title: "RPC Audit and Logging Attributes"},

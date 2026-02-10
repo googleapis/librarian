@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -28,7 +29,7 @@ import (
 func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	parserConfig := &config.Config{
 		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
+			SpecificationFormat: libconfig.SpecProtobuf,
 		},
 		Source: map[string]string{
 			"local-root":   googleapisPath,

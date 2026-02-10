@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -54,7 +55,7 @@ func TestDefaultFeatures(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec := newTestCodec(t, "protobuf", "", test.Options)
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
@@ -89,7 +90,7 @@ func TestRustdocWarnings(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec := newTestCodec(t, "protobuf", "", test.Options)
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
@@ -124,7 +125,7 @@ func TestClippyWarnings(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec := newTestCodec(t, "protobuf", "", test.Options)
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
@@ -163,7 +164,7 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 		},
 	} {
 		model := newTestAnnotateModelAPI()
-		codec := newTestCodec(t, "protobuf", "", test.Options)
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.Options)
 		got, err := annotateModel(model, codec)
 		if err != nil {
 			t.Fatal(err)
