@@ -40,7 +40,7 @@ var (
 
 func TestCreateModelDisco(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: libconfig.SpecDiscovery,
+		SpecificationFormat: config.SpecDiscovery,
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: discoSourceFile,
 	}

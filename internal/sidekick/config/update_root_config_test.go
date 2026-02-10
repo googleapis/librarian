@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	toml "github.com/pelletier/go-toml/v2"
 )
@@ -54,7 +53,7 @@ func TestUpdateRootConfig(t *testing.T) {
 	rootConfig := &Config{
 		General: GeneralConfig{
 			Language:            "rust",
-			SpecificationFormat: libconfig.SpecProtobuf,
+			SpecificationFormat: config.SpecProtobuf,
 		},
 		Source: map[string]string{
 			"github-api":  testGitHubApi,
