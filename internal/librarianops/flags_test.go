@@ -90,10 +90,10 @@ func TestParseFlags(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantWorkDir, workDir); diff != "" {
-				t.Errorf("parseFlags() workDir mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantVerbose, verbose); diff != "" {
-				t.Errorf("parseFlags() verbose mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
