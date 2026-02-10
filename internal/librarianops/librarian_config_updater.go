@@ -37,8 +37,8 @@ func getConfigFile(configPath string) (*config.Config, error) {
 	return yaml.Read[config.Config](configPath)
 }
 
-// UpdateLibrarianVersionInConfigFile updates the version field in the librarian.yaml config file with the provided version.
-// If the file does not exist, returns an error.
+// UpdateLibrarianVersionInConfigFile updates the version field in the librarian.yaml config file with the provided
+// version. If the file does not exist, returns an error.
 func UpdateLibrarianVersionInConfigFile(version, configPath string) error {
 	configFile, err := getConfigFile(configPath)
 	if err != nil {
