@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package upgrade
+package librarianops
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -25,76 +28,166 @@ import (
 func TestGenerateLibrarianConfigPath(t *testing.T) {
 	repoDir := "/path/to/repo"
 	expectedPath := "/path/to/repo/librarian.yaml"
-	actualPath := GenerateLibrarianConfigPath(repoDir)
-	if actualPath != expectedPath {
-		t.Errorf("generateLibrarianConfigPath() = %s; want %s", actualPath, expectedPath)
+	generatedPath := GenerateLibrarianConfigPath(repoDir)
+	if diff := cmp.Diff(expectedPath, generatedPath); diff != "" {
+		t.Errorf("mismatch (-expected +generated):\n%s", diff)
 	}
 }
 
 func TestGetConfigFile(t *testing.T) {
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "librarian.yaml")
-	initialVersion := "v0.0.1"
+	for _, test := range []struct {
+		name    string
+		version string
+	}{
+		{
+			name:    "Success",
+			version: "v0.0.1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tempDir := t.TempDir()
+			configPath := filepath.Join(tempDir, "librarian.yaml")
 
-	initialConfig := &config.Config{
-		Version: initialVersion,
+			initialConfig := &config.Config{
+				Version: test.version,
+			}
+			if err := yaml.Write(configPath, initialConfig); err != nil {
+				t.Fatalf("failed to write initial config file: %v", err)
+			}
+
+			got, err := getConfigFile(configPath)
+			if err != nil {
+				t.Fatalf("getConfigFile() failed: %v", err)
+			}
+			want := initialConfig
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if err := yaml.Write(configPath, initialConfig); err != nil {
-		t.Fatalf("failed to write initial config file: %v", err)
+}
+
+func TestGetConfigFile_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setup      func(t *testing.T) string
+		wantErrStr string
+	}{
+		{
+			name: "File not found",
+			setup: func(t *testing.T) string {
+				return filepath.Join(t.TempDir(), "nonexistent.yaml")
+			},
+			wantErrStr: "config file does not exist at path",
+		},
+		{
+			name: "Invalid YAML",
+			setup: func(t *testing.T) string {
+				configPath := filepath.Join(t.TempDir(), "librarian.yaml")
+				if err := os.WriteFile(configPath, []byte("invalid-yaml: ["), 0644); err != nil {
+					t.Fatalf("failed to write invalid config file: %v", err)
+				}
+				return configPath
+			},
+			wantErrStr: "did not find expected node content",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			configPath := test.setup(t)
+			_, err := getConfigFile(configPath)
+			if err == nil {
+				t.Fatal("getConfigFile() expected an error, but got nil")
+			}
+			if !strings.Contains(err.Error(), test.wantErrStr) {
+				t.Errorf("getConfigFile() error = %v, want substring %q", err, test.wantErrStr)
+			}
+		})
 	}
-
-	t.Run("Success", func(t *testing.T) {
-		cfg, err := getConfigFile(configPath)
-		if err != nil {
-			t.Fatalf("getConfigFile() failed: %v", err)
-		}
-		if cfg.Version != initialVersion {
-			t.Errorf("wrong version, got: %s, want: %s", cfg.Version, initialVersion)
-		}
-	})
-
-	t.Run("FileNotFound", func(t *testing.T) {
-		nonExistentPath := filepath.Join(tempDir, "nonexistent.yaml")
-		_, err := getConfigFile(nonExistentPath)
-		if err == nil {
-			t.Error("expected an error for a non-existent file, but got nil")
-		}
-	})
 }
 
 func TestUpdateLibrarianVersion(t *testing.T) {
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "librarian.yaml")
-	initialVersion := "v0.0.1"
-	newVersion := "v0.1.0"
+	for _, test := range []struct {
+		name           string
+		initialVersion string
+		newVersion     string
+	}{
+		{
+			name:           "Success",
+			initialVersion: "v0.0.1",
+			newVersion:     "v0.1.0",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tempDir := t.TempDir()
+			configPath := filepath.Join(tempDir, "librarian.yaml")
 
-	initialConfig := &config.Config{
-		Version: initialVersion,
+			initialConfig := &config.Config{
+				Version: test.initialVersion,
+			}
+			if err := yaml.Write(configPath, initialConfig); err != nil {
+				t.Fatalf("failed to write initial config file: %v", err)
+			}
+
+			if err := UpdateLibrarianVersion(test.newVersion, configPath); err != nil {
+				t.Fatalf("updateLibrarianVersion() failed: %v", err)
+			}
+
+			updatedConfig, err := getConfigFile(configPath)
+			if err != nil {
+				t.Fatalf("getConfigFile() failed: %v", err)
+			}
+
+			wantConfig := initialConfig
+			wantConfig.Version = test.newVersion
+
+			if diff := cmp.Diff(wantConfig, updatedConfig); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if err := yaml.Write(configPath, initialConfig); err != nil {
-		t.Fatalf("failed to write initial config file: %v", err)
+}
+
+func TestUpdateLibrarianVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		newVersion string
+		setup      func(t *testing.T) string
+		wantErrStr string
+	}{
+		{
+			name:       "File not found",
+			newVersion: "v0.1.0",
+			setup: func(t *testing.T) string {
+				return filepath.Join(t.TempDir(), "nonexistent.yaml")
+			},
+			wantErrStr: "config file does not exist at path",
+		},
+		{
+			name:       "Invalid YAML",
+			newVersion: "v0.1.0",
+			setup: func(t *testing.T) string {
+				configPath := filepath.Join(t.TempDir(), "librarian.yaml")
+				if err := os.WriteFile(configPath, []byte("invalid-yaml: ["), 0644); err != nil {
+					t.Fatalf("failed to write invalid config file: %v", err)
+				}
+				return configPath
+			},
+			wantErrStr: "did not find expected node content",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			configPath := test.setup(t)
+			err := UpdateLibrarianVersion(test.newVersion, configPath)
+			if err == nil {
+				t.Fatal("UpdateLibrarianVersion() expected an error, but got nil")
+			}
+			if !strings.Contains(err.Error(), test.wantErrStr) {
+				t.Errorf("UpdateLibrarianVersion() error = %v, want substring %q", err, test.wantErrStr)
+			}
+		})
 	}
-
-	t.Run("Success", func(t *testing.T) {
-		if err := UpdateLibrarianVersion(newVersion, configPath); err != nil {
-			t.Fatalf("updateLibrarianVersion() failed: %v", err)
-		}
-
-		updatedConfig, err := getConfigFile(configPath)
-		if err != nil {
-			t.Fatalf("getConfigFile() failed: %v", err)
-		}
-
-		if updatedConfig.Version != newVersion {
-			t.Errorf("version not updated, got: %s, want: %s", updatedConfig.Version, newVersion)
-		}
-	})
-
-	t.Run("FileNotFound", func(t *testing.T) {
-		nonExistentPath := filepath.Join(tempDir, "nonexistent.yaml")
-		err := UpdateLibrarianVersion(newVersion, nonExistentPath)
-		if err == nil {
-			t.Error("expected an error for a non-existent file, but got nil")
-		}
-	})
 }

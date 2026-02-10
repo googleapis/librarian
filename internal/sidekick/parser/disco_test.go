@@ -20,16 +20,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestDisco_Parse(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			// Mixing Compute and Secret Manager like this is fine in tests.
-			SpecificationSource: discoSourceFile,
-			ServiceConfig:       secretManagerYamlFullPath,
-		},
+	cfg := ModelConfig{
+		// Mixing Compute and Secret Manager like this is fine in tests.
+		SpecificationSource: discoSourceFile,
+		ServiceConfig:       secretManagerYamlFullPath,
 	}
 	got, err := ParseDisco(cfg)
 	if err != nil {
@@ -54,12 +51,10 @@ func TestDisco_Parse(t *testing.T) {
 }
 
 func TestDisco_FindSources(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationSource: discoSourceFileRelative,
-		},
+	cfg := ModelConfig{
+		SpecificationSource: discoSourceFileRelative,
 		Source: map[string]string{
-			"test-root": testdataDir,
+			"test-root": mainTestdataDir,
 			"roots":     "undefined,test",
 		},
 	}
@@ -83,10 +78,8 @@ func TestDisco_FindSources(t *testing.T) {
 }
 
 func TestDisco_ParseNoServiceConfig(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationSource: discoSourceFile,
 	}
 	got, err := ParseDisco(cfg)
 	if err != nil {
@@ -107,10 +100,8 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 }
 
 func TestDisco_ParsePagination(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
@@ -136,10 +127,8 @@ func TestDisco_ParsePagination(t *testing.T) {
 }
 
 func TestDisco_ParsePaginationAggregate(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
@@ -165,10 +154,8 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 }
 
 func TestDisco_ParseDeprecatedEnum(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
 	if err != nil {
@@ -190,12 +177,12 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 }
 
 func TestDisco_ParseBadFiles(t *testing.T) {
-	for _, cfg := range []config.GeneralConfig{
+	for _, cfg := range []ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: discoSourceFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
 	} {
-		if got, err := ParseDisco(&config.Config{General: cfg}); err == nil {
+		if got, err := ParseDisco(cfg); err == nil {
 			t.Fatalf("expected error with missing source file, got=%v", got)
 		}
 	}

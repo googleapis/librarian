@@ -21,16 +21,14 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *source.Sources) (*sidekickconfig.Config, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
 	specFormat := "protobuf"
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
-	}
-	if specFormat == "discovery" {
-		specFormat = "disco"
 	}
 
 	src := addLibraryRoots(library, sources)
@@ -43,39 +41,39 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 	}
 	api, err := serviceconfig.Find(root, ch.Path)
 	if err != nil {
-		return nil, err
+		return parser.ModelConfig{}, err
 	}
 	if api.Title != "" {
 		src["title-override"] = api.Title
 	}
+
 	var specSource string
 	switch specFormat {
-	case "disco":
+	case "discovery":
 		specSource = api.Discovery
 	case "openapi":
 		specSource = api.OpenAPI
 	default:
 		specSource = ch.Path
 	}
+
+	modelCfg := parser.ModelConfig{
+		Language:            "rust",
+		SpecificationFormat: specFormat,
+		SpecificationSource: specSource,
+		Source:              src,
+		ServiceConfig:       api.ServiceConfig,
+		Codec:               buildCodec(library),
+	}
+
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
 			src["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
 		}
-	}
-	sidekickCfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			Language:            "rust",
-			SpecificationFormat: specFormat,
-			ServiceConfig:       api.ServiceConfig,
-			SpecificationSource: specSource,
-		},
-		Source: src,
-	}
-	if library.Rust != nil {
 		if len(library.Rust.DocumentationOverrides) > 0 {
-			sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
 			for i, override := range library.Rust.DocumentationOverrides {
-				sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+				modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
 					ID:      override.ID,
 					Match:   override.Match,
 					Replace: override.Replace,
@@ -83,9 +81,9 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 			}
 		}
 		if len(library.Rust.PaginationOverrides) > 0 {
-			sidekickCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+			modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
 			for i, override := range library.Rust.PaginationOverrides {
-				sidekickCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+				modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
 					ID:        override.ID,
 					ItemField: override.ItemField,
 				}
@@ -99,13 +97,13 @@ func libraryToSidekickConfig(library *config.Library, ch *config.API, sources *s
 					MethodID: poller.MethodID,
 				}
 			}
-			sidekickCfg.Discovery = &sidekickconfig.Discovery{
+			modelCfg.Discovery = &sidekickconfig.Discovery{
 				OperationID: library.Rust.Discovery.OperationID,
 				Pollers:     pollers,
 			}
 		}
 	}
-	return sidekickCfg, nil
+	return modelCfg, nil
 }
 
 func buildCodec(library *config.Library) map[string]string {

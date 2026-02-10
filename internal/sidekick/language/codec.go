@@ -17,7 +17,7 @@
 package language
 
 import (
-	"log/slog"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -38,11 +38,10 @@ type GeneratedFile struct {
 type TemplateProvider func(templateName string) (string, error)
 
 // PathParams returns the path parameters for a method.
-func PathParams(m *api.Method, state *api.APIState) []*api.Field {
+func PathParams(m *api.Method, state *api.APIState) ([]*api.Field, error) {
 	msg, ok := state.MessageByID[m.InputTypeID]
 	if !ok {
-		slog.Error("unable to lookup request type", "id", m.InputTypeID)
-		return nil
+		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
 	}
 	pathNames := []string{}
 	t := m.PathInfo.Bindings[0].PathTemplate
@@ -63,7 +62,7 @@ func PathParams(m *api.Method, state *api.APIState) []*api.Field {
 			}
 		}
 	}
-	return params
+	return params, nil
 }
 
 // QueryParams returns the query parameters for a method.

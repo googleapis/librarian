@@ -88,7 +88,7 @@ func TestAddLibraryCommand(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			googleapisDir, err := filepath.Abs("testdata/googleapis")
+			googleapisDir, err := filepath.Abs("../testdata/googleapis")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -130,7 +130,7 @@ func TestAddLibraryCommand(t *testing.T) {
 }
 
 func TestAddCommand(t *testing.T) {
-	googleapisDir, err := filepath.Abs("testdata/googleapis")
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}

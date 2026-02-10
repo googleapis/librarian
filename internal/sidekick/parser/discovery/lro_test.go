@@ -24,16 +24,14 @@ import (
 )
 
 func TestLroAnnotations(t *testing.T) {
-	cfg := &config.Config{
-		Discovery: &config.Discovery{
-			OperationID: "..Operation",
-			Pollers: []*config.Poller{
-				{Prefix: "compute/v1/projects/{project}/zones/{zone}", MethodID: "..zoneOperations.get"},
-				{Prefix: "compute/v1/projects/{project}/regions/{region}", MethodID: "..regionOperations.get"},
-			},
+	discoveryConfig := &config.Discovery{
+		OperationID: "..Operation",
+		Pollers: []*config.Poller{
+			{Prefix: "compute/v1/projects/{project}/zones/{zone}", MethodID: "..zoneOperations.get"},
+			{Prefix: "compute/v1/projects/{project}/regions/{region}", MethodID: "..regionOperations.get"},
 		},
 	}
-	model, err := ComputeDiscoWithLros(t, cfg)
+	model, err := ComputeDiscoWithLros(t, discoveryConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,13 +109,11 @@ func TestLroAnnotations(t *testing.T) {
 }
 
 func TestLroAnnotationsError(t *testing.T) {
-	cfg := &config.Config{
-		Discovery: &config.Discovery{
-			OperationID: "..Operation",
-			Pollers: []*config.Poller{
-				{Prefix: "p/{project}/l/{zone}", MethodID: "..Operations.get_1"},
-				{Prefix: "p/{project}/l/{region}", MethodID: "..Operations.get_2"},
-			},
+	discoveryConfig := &config.Discovery{
+		OperationID: "..Operation",
+		Pollers: []*config.Poller{
+			{Prefix: "p/{project}/l/{zone}", MethodID: "..Operations.get_1"},
+			{Prefix: "p/{project}/l/{region}", MethodID: "..Operations.get_2"},
 		},
 	}
 
@@ -221,7 +217,7 @@ func TestLroAnnotationsError(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{operation}, []*api.Enum{}, []*api.Service{badService, pollerService})
-	if lroAnnotations(model, cfg) == nil {
+	if lroAnnotations(model, discoveryConfig) == nil {
 		t.Errorf("expected an error, got %v", badService)
 	}
 }

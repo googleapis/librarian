@@ -31,7 +31,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "path/to/repo",
+			Dir:    "testdata/googleapis",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -115,7 +115,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					TagFormat:    defaultTagFormat,
+					ReleaseLevel: "ga",
 				},
 			},
 		},
@@ -186,6 +187,11 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 								Path: "google/cloud/secretmanager/v1",
 							},
 						},
+						Python: &config.PythonPackage{
+							OptArgsByAPI: map[string][]string{
+								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
+							},
+						},
 					},
 				},
 			},
@@ -225,7 +231,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat: defaultTagFormat,
+					TagFormat:    defaultTagFormat,
+					ReleaseLevel: "ga",
 				},
 				Libraries: []*config.Library{
 					{
@@ -378,6 +385,58 @@ func TestBuildGoLibraries(t *testing.T) {
 							},
 						},
 						ModulePathVersion: "v2",
+					},
+				},
+			},
+		},
+		{
+			name: "additional go module",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "ai",
+							APIs: []*legacyconfig.API{
+								{Path: "google/ai/generativelanguage/v1"},
+								{Path: "google/ai/generativelanguage/v1alpha"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+			},
+			want: []*config.Library{
+				{
+					Name: "ai",
+					APIs: []*config.API{
+						{Path: "google/ai/generativelanguage/v1"},
+						{Path: "google/ai/generativelanguage/v1alpha"},
+					},
+					ReleaseLevel: "beta",
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								Path:            "google/ai/generativelanguage/v1",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1alpha",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1beta",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+							{
+								Path:            "google/ai/generativelanguage/v1beta2",
+								ClientDirectory: "generativelanguage",
+								ImportPath:      "ai/generativelanguage",
+							},
+						},
 					},
 				},
 			},

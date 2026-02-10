@@ -39,11 +39,11 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 		return fmt.Errorf("the Rust generator only supports a single api per library")
 	}
 
-	sidekickConfig, err := libraryToSidekickConfig(library, library.APIs[0], sources)
+	modelConfig, err := libraryToModelConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err
 	}
-	model, err := parser.CreateModel(sidekickConfig)
+	model, err := parser.CreateModel(modelConfig)
 	if err != nil {
 		return err
 	}
@@ -59,8 +59,7 @@ func Generate(ctx context.Context, library *config.Library, sources *source.Sour
 			return err
 		}
 	}
-	codec := buildCodec(library)
-	if err := sidekickrust.Generate(ctx, model, library.Output, sidekickConfig.General.SpecificationFormat, codec); err != nil {
+	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
 	if !exists {
@@ -96,13 +95,13 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
-		model, err := parser.CreateModel(sidekickConfig)
+		model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(sidekickConfig))
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
 		}
 		switch sidekickConfig.General.Language {
 		case "rust":
-			err = sidekickrust.Generate(ctx, model, module.Output, sidekickConfig.General.SpecificationFormat, sidekickConfig.Codec)
+			err = sidekickrust.Generate(ctx, model, module.Output, parser.NewModelConfigFromSidekickConfig(sidekickConfig))
 		case "rust_storage":
 			return generateRustStorage(ctx, library, module.Output, sources)
 		case "rust+prost":
@@ -185,7 +184,7 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create storage sidekick config: %w", err)
 	}
-	storageModel, err := parser.CreateModel(storageConfig)
+	storageModel, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(storageConfig))
 	if err != nil {
 		return fmt.Errorf("failed to create storage model: %w", err)
 	}
@@ -199,12 +198,12 @@ func generateRustStorage(ctx context.Context, library *config.Library, moduleOut
 	if err != nil {
 		return fmt.Errorf("failed to create control sidekick config: %w", err)
 	}
-	controlModel, err := parser.CreateModel(controlConfig)
+	controlModel, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(controlConfig))
 	if err != nil {
 		return fmt.Errorf("failed to create control model: %w", err)
 	}
 
-	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, storageConfig.General.SpecificationFormat, storageConfig.Codec, controlModel, controlConfig.General.SpecificationFormat, controlConfig.Codec)
+	return sidekickrust.GenerateStorage(ctx, moduleOutput, storageModel, parser.NewModelConfigFromSidekickConfig(storageConfig), controlModel, parser.NewModelConfigFromSidekickConfig(controlConfig))
 }
 
 func findModuleByOutput(library *config.Library, output string) *config.RustModule {

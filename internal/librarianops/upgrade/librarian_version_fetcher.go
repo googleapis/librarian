@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package upgrade provides functionality for upgrading librarian.yaml.
-package upgrade
+// Package librarianops provides operations related to the Librarian tool.
+package librarianops
 
 import (
 	"context"
