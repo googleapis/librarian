@@ -144,7 +144,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	}
 	gotMethod.APIVersion = "v1_20260205"
 
-	codec := newTestCodec(t, "disco", "", map[string]string{})
+	codec := newTestCodec(t, "discovery", "", map[string]string{})
 	_, err = annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
