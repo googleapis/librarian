@@ -12,31 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package upgrade
+package librarianops
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/librarianops/flagsparser"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/urfave/cli/v3"
 )
-
-// Upgrade consist in getting the latest librarian version and updates the librarian.yaml file.
-// It returns the new version, and an error if one occurred.
-func runUpgrade(ctx context.Context, repoDir string) (string, error) {
-	version, err := GetLatestLibrarianVersion(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get latest librarian version: %w", err)
-	}
-
-	configPath := GenerateLibrarianConfigPath(repoDir)
-	if err := UpdateLibrarianVersion(version, configPath); err != nil {
-		return "", fmt.Errorf("failed to update librarian version: %w", err)
-	}
-
-	return version, nil
-}
 
 func upgradeCommand() *cli.Command {
 	return &cli.Command{
@@ -57,16 +41,32 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			_, workDir, err := flagsparser.ParseRepoFlags(cmd)
+			_, workDir, verbose, err := ParseRepoFlags(cmd)
 			if err != nil {
 				return err
 			}
-			version, err := runUpgrade(ctx, workDir)
+			command.Verbose = verbose
+			_, err = runUpgrade(ctx, workDir)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Successfully updated librarian version to %s in %s\n", version, GenerateLibrarianConfigPath(workDir))
 			return nil
 		},
 	}
+}
+
+// Upgrade consist in getting the latest librarian version and updates the librarian.yaml file.
+// It returns the new version, and an error if one occurred.
+func runUpgrade(ctx context.Context, repoDir string) (string, error) {
+	version, err := GetLatestLibrarianVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest librarian version: %w", err)
+	}
+
+	configPath := GenerateLibrarianConfigPath(repoDir)
+	if err := UpdateLibrarianVersionInConfigFile(version, configPath); err != nil {
+		return "", fmt.Errorf("failed to update librarian version: %w", err)
+	}
+
+	return version, nil
 }
