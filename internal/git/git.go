@@ -36,8 +36,8 @@ var (
 )
 
 // AssertGitStatusClean returns an error if the git working directory has uncommitted changes.
-func AssertGitStatusClean(ctx context.Context, git string) error {
-	output, err := command.Output(ctx, git, "status", "--porcelain")
+func AssertGitStatusClean(ctx context.Context, gitExe string) error {
+	output, err := command.Output(ctx, gitExe, "status", "--porcelain")
 	if err != nil {
 		return fmt.Errorf("failed to check git status: %w", err)
 	}
@@ -78,10 +78,10 @@ func GetCommitHash(ctx context.Context, gitExe, revision string) (string, error)
 }
 
 // FilesChangedSince returns the files changed since the given git ref.
-func FilesChangedSince(ctx context.Context, ref, gitExe string, ignoredChanges []string) ([]string, error) {
+func FilesChangedSince(ctx context.Context, gitExe, ref string, ignoredChanges []string) ([]string, error) {
 	output, err := command.Output(ctx, gitExe, "diff", "--name-only", ref)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get files changed since tag %s: %w", ref, err)
+		return nil, fmt.Errorf("failed to get files changed since ref %s: %w", ref, err)
 	}
 	return filesFilter(ignoredChanges, strings.Split(output, "\n")), nil
 }
@@ -168,8 +168,8 @@ func FindCommitsForPath(ctx context.Context, gitExe, path string) ([]string, err
 // branch, this will leave the repository with a detached head. If revision is the
 // name of a valid path, that file is checked out instead. (Git does not provide a
 // way of differentiation between these.)
-func Checkout(ctx context.Context, git, revision string) error {
-	_, err := command.Output(ctx, git, "checkout", revision)
+func Checkout(ctx context.Context, gitExe, revision string) error {
+	_, err := command.Output(ctx, gitExe, "checkout", revision)
 	if err != nil {
 		return fmt.Errorf("failed to checkout revision %s: %w", revision, err)
 	}
