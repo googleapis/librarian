@@ -107,7 +107,7 @@ func TestGetConfigFile_Error(t *testing.T) {
 	}
 }
 
-func TestUpdateLibrarianVersion(t *testing.T) {
+func TestUpdateLibrarianVersionInConfigFile(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		initialVersion string
@@ -131,8 +131,8 @@ func TestUpdateLibrarianVersion(t *testing.T) {
 				t.Fatalf("failed to write initial config file: %v", err)
 			}
 
-			if err := UpdateLibrarianVersion(test.newVersion, configPath); err != nil {
-				t.Fatalf("updateLibrarianVersion() failed: %v", err)
+			if err := UpdateLibrarianVersionInConfigFile(test.newVersion, configPath); err != nil {
+				t.Fatalf("UpdateLibrarianVersionInConfigFile() failed: %v", err)
 			}
 
 			updatedConfig, err := getConfigFile(configPath)
@@ -150,7 +150,7 @@ func TestUpdateLibrarianVersion(t *testing.T) {
 	}
 }
 
-func TestUpdateLibrarianVersion_Error(t *testing.T) {
+func TestUpdateLibrarianVersionInConfigFile_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		newVersion string
@@ -181,12 +181,12 @@ func TestUpdateLibrarianVersion_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			configPath := test.setup(t)
-			err := UpdateLibrarianVersion(test.newVersion, configPath)
+			err := UpdateLibrarianVersionInConfigFile(test.newVersion, configPath)
 			if err == nil {
-				t.Fatal("UpdateLibrarianVersion() expected an error, but got nil")
+				t.Fatal("UpdateLibrarianVersionInConfigFile() expected an error, but got nil")
 			}
 			if !strings.Contains(err.Error(), test.wantErrStr) {
-				t.Errorf("UpdateLibrarianVersion() error = %v, want substring %q", err, test.wantErrStr)
+				t.Errorf("UpdateLibrarianVersionInConfigFile() error = %v, want substring %q", err, test.wantErrStr)
 			}
 		})
 	}
