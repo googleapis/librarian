@@ -114,12 +114,8 @@ func Generate(library *config.Library, language, repo, googleapisDir, defaultVer
 		DistributionName:    library.Name,
 	}
 
-	if api.DocumentationURI != "" {
-		metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
-	}
-	if api.NewIssueURI != "" {
-		metadata.IssueTracker = api.NewIssueURI
-	}
+	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
+	metadata.IssueTracker = api.NewIssueURI
 	metadata.APIShortname = api.APIShortName
 	metadata.Name = api.APIShortName
 
