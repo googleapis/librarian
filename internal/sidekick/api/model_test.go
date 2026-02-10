@@ -310,37 +310,6 @@ func TestIsLRO(t *testing.T) {
 	}
 }
 
-func TestIsSimpleOrLRO(t *testing.T) {
-	testCases := []struct {
-		name   string
-		method *Method
-		want   bool
-	}{
-		{
-			name:   "simple method",
-			method: &Method{},
-			want:   true,
-		},
-		{
-			name:   "LRO method",
-			method: &Method{OperationInfo: &OperationInfo{}},
-			want:   true,
-		},
-		{
-			name:   "streaming method",
-			method: &Method{ClientSideStreaming: true},
-			want:   false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.method.IsSimpleOrLRO(); got != tc.want {
-				t.Errorf("IsSimpleOrLRO() = %v, want %v", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestLongRunningHelpers(t *testing.T) {
 	emptyMsg := &Message{ID: ".google.protobuf.Empty"}
 	responseMsg := &Message{ID: "some.response.Message"}
@@ -394,6 +363,73 @@ func TestLongRunningHelpers(t *testing.T) {
 			}
 			if got := tc.method.LongRunningReturnsEmpty(); got != tc.wantEmpty {
 				t.Errorf("LongRunningReturnsEmpty() = %v, want %v", got, tc.wantEmpty)
+			}
+		})
+	}
+}
+
+func TestIsList(t *testing.T) {
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "list method",
+			method: &Method{OutputType: &Message{Pagination: &PaginationInfo{}}},
+			want:   true,
+		},
+		{
+			name:   "simple method",
+			method: &Method{},
+			want:   false,
+		},
+		{
+			name:   "no output type",
+			method: &Method{OutputType: nil},
+			want:   false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsList(); got != tc.want {
+				t.Errorf("IsList() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsStreaming(t *testing.T) {
+	testCases := []struct {
+		name   string
+		method *Method
+		want   bool
+	}{
+		{
+			name:   "unary method",
+			method: &Method{},
+			want:   false,
+		},
+		{
+			name:   "client streaming",
+			method: &Method{ClientSideStreaming: true},
+			want:   true,
+		},
+		{
+			name:   "server streaming",
+			method: &Method{ServerSideStreaming: true},
+			want:   true,
+		},
+		{
+			name:   "bidi streaming",
+			method: &Method{ClientSideStreaming: true, ServerSideStreaming: true},
+			want:   true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.method.IsStreaming(); got != tc.want {
+				t.Errorf("IsStreaming() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -983,6 +1019,136 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	}
 }
 
+func TestAIPStandardListInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Create a resource type for the list items
+	resourceType := "google.cloud.secretmanager.v1/Secret"
+	// Ensure the parent field points to this resource type in child_type?
+	// No, parent field child_type matches the listed resource type.
+
+	secretResource := &Resource{Type: resourceType, Plural: "Secrets"}
+	secretMessage := &Message{Resource: secretResource}
+	parentField := &Field{
+		Name:              "parent",
+		ResourceReference: &ResourceReference{ChildType: resourceType},
+	}
+	otherParentField := &Field{
+		Name:              "database", // Not named "parent"
+		ResourceReference: &ResourceReference{ChildType: resourceType},
+	}
+	plainParentField := &Field{Name: "parent"} // No child_type
+
+	pageableItem := &Field{Name: "secrets", MessageType: secretMessage}
+	paginationInfo := &PaginationInfo{PageableItem: pageableItem}
+	listOutput := &Message{
+		Name:       "ListSecretsResponse",
+		Pagination: paginationInfo,
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardListInfo
+	}{
+		{
+			name: "valid list operation with parent field match by child_type",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: &AIPStandardListInfo{
+				ParentRequestField: parentField,
+			},
+		},
+		{
+			name: "valid list operation with other field match by child_type",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{otherParentField}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: &AIPStandardListInfo{
+				ParentRequestField: otherParentField,
+			},
+		},
+		{
+			name: "valid list operation with parent field name match (fallback)",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{plainParentField}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: &AIPStandardListInfo{
+				ParentRequestField: plainParentField,
+			},
+		},
+		{
+			name: "list operation missing parent field",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "method name does not start with List",
+			method: &Method{
+				Name:       "EnumerateSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "input type name mismatch",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "EnumerateSecretsRequest", Fields: []*Field{parentField}},
+				OutputType: listOutput,
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "output type name mismatch",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
+				OutputType: &Message{Name: "EnumerateSecretsResponse", Pagination: paginationInfo},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "not a list operation (no pagination)",
+			method: &Method{
+				Name:       "ListSecrets",
+				InputType:  &Message{Name: "ListSecretsRequest", Fields: []*Field{parentField}},
+				OutputType: &Message{Name: "ListSecretsResponse"}, // No pagination
+				Model:      f.model,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardListInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardListInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFindBestResourceFieldByType(t *testing.T) {
 	f := newAIPTestFixture()
 	targetType := f.resource.Type
@@ -1083,6 +1249,67 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 			got := findBestResourceFieldBySingular(msg, f.model.State.ResourceByType, targetSingular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("findBestResourceFieldBySingular() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindBestParentFieldByType(t *testing.T) {
+	childType := "google.cloud.secretmanager.v1/SecretVersion"
+
+	parentField := &Field{
+		Name:              "parent",
+		ResourceReference: &ResourceReference{ChildType: childType},
+	}
+
+	parentFieldByName := &Field{
+		Name: "parent",
+		// No matching child type, just name
+	}
+
+	parentFieldByChildType := &Field{
+		Name:              "database",
+		ResourceReference: &ResourceReference{ChildType: childType},
+	}
+
+	wrongField := &Field{Name: "wrong"}
+
+	for _, tc := range []struct {
+		name   string
+		fields []*Field
+		want   *Field
+	}{
+		{
+			name:   "exact match (name + child type)",
+			fields: []*Field{parentField},
+			want:   parentField,
+		},
+		{
+			name:   "name match only (fallback)",
+			fields: []*Field{parentFieldByName},
+			want:   parentFieldByName,
+		},
+		{
+			name:   "child type match only",
+			fields: []*Field{parentFieldByChildType},
+			want:   parentFieldByChildType,
+		},
+		{
+			name:   "name match prefers exact name",
+			fields: []*Field{parentFieldByName, parentFieldByChildType},
+			want:   parentFieldByName,
+		},
+		{
+			name:   "no match",
+			fields: []*Field{wrongField},
+			want:   nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := &Message{Fields: tc.fields}
+			got := findBestParentFieldByType(msg, childType)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findBestParentFieldByType() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
