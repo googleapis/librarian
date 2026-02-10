@@ -12,31 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package flagsparser provides functionality for parsing command line flags for librarianops commands.
-package flagsparser
+package librarianops
 
 import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/urfave/cli/v3"
 )
 
 // ParseRepoFlags parses the command line flags for librarianops commands.
-func ParseRepoFlags(cmd *cli.Command) (repoName, workDir string, err error) {
+func ParseRepoFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err error) {
 	workDir = cmd.String("C")
-	command.Verbose = cmd.Bool("v")
-
+	verbose = cmd.Bool("v")
 	if workDir != "" {
 		// When -C is provided, infer repo name from directory basename.
 		repoName = filepath.Base(workDir)
 	} else {
 		// When -C is not provided, require positional repo argument.
 		if cmd.Args().Len() == 0 {
-			return "", "", fmt.Errorf("usage: librarianops <command> <repo> or librarianops <command> -C <dir>")
+			return "", "", verbose, fmt.Errorf("usage: librarianops <command> <repo> or librarianops <command> -C <dir>")
 		}
 		repoName = cmd.Args().Get(0)
 	}
-	return repoName, workDir, nil
+	return repoName, workDir, verbose, nil
 }

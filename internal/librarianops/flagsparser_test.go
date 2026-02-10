@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package flagsparser
+package librarianops
 
 import (
 	"context"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/urfave/cli/v3"
 )
 
@@ -72,12 +71,8 @@ func TestParseRepoFlags(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Reset global verbose flag for each test.
-			originalVerbose := command.Verbose
-			command.Verbose = false
-			t.Cleanup(func() { command.Verbose = originalVerbose })
-
 			var repoName, workDir string
+			var verbose bool
 			var err error
 			app := &cli.Command{
 				Name: "librarianops",
@@ -89,7 +84,7 @@ func TestParseRepoFlags(t *testing.T) {
 							&cli.BoolFlag{Name: "v"},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
-							repoName, workDir, err = ParseRepoFlags(cmd)
+							repoName, workDir, verbose, err = ParseRepoFlags(cmd)
 							return err
 						},
 					},
@@ -111,8 +106,8 @@ func TestParseRepoFlags(t *testing.T) {
 			if workDir != tc.wantWorkDir {
 				t.Errorf("parseRepoFlags() workDir = %q, want %q", workDir, tc.wantWorkDir)
 			}
-			if command.Verbose != tc.wantVerbose {
-				t.Errorf("command.Verbose = %v, want %v", command.Verbose, tc.wantVerbose)
+			if verbose != tc.wantVerbose {
+				t.Errorf("parseRepoFlags() verbose = %v, want %v", verbose, tc.wantVerbose)
 			}
 		})
 	}
