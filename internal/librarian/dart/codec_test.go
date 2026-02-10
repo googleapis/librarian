@@ -15,7 +15,7 @@
 package dart
 
 import (
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -283,7 +283,7 @@ func TestToModelConfig(t *testing.T) {
 		channel       *config.API
 		googleapisDir string
 		want          parser.ModelConfig
-		wantErrMsg    string
+		wantErr       error
 	}{
 		{
 			name:    "empty library",
@@ -414,7 +414,7 @@ func TestToModelConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			wantErrMsg:    `dart generation requires protobuf specification format, got "openapi"`,
+			wantErr:       errInvalidSpecificationFormat,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -422,9 +422,9 @@ func TestToModelConfig(t *testing.T) {
 				Googleapis: test.googleapisDir,
 			}
 			got, err := toModelConfig(test.library, test.channel, sources)
-			if test.wantErrMsg != "" {
-				if err == nil || !strings.Contains(err.Error(), test.wantErrMsg) {
-					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErrMsg)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErr)
 				}
 				return
 			}

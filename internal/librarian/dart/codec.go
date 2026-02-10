@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -24,9 +25,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
+var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
+
 func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != "protobuf" {
-		return parser.ModelConfig{}, fmt.Errorf("dart generation requires protobuf specification format, got %q", library.SpecificationFormat)
+		return parser.ModelConfig{}, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
 
 	src := addLibraryRoots(library, sources)
