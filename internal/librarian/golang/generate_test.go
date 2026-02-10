@@ -353,7 +353,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
-func TestGetReleaseLevel_Success(t *testing.T) {
+func TestReleaseLevel_Success(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		apiPath string
@@ -367,7 +367,7 @@ func TestGetReleaseLevel_Success(t *testing.T) {
 			want:    "ga",
 		},
 		{
-			name:    "stable with preview version",
+			name:    "stable with pre-GA version",
 			apiPath: "google/cloud/secretmanager/v1",
 			version: "0.11.0",
 			want:    "beta",

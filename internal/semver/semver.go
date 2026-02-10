@@ -71,7 +71,7 @@ var (
 	errInvalidPrereleaseNumber = errors.New("invalid prerelease number")
 )
 
-// Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [version]
+// Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [Version]
 // struct.
 func Parse(versionString string) (Version, error) {
 	// Our client versions must not have a "v" prefix.
@@ -148,7 +148,7 @@ func Parse(versionString string) (Version, error) {
 	return v, nil
 }
 
-// String formats a [version] struct into a string.
+// String formats a [Version] struct into a string.
 func (v Version) String() string {
 	return stringifyOptions{}.Stringify(v)
 }
