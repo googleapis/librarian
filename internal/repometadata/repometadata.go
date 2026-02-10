@@ -33,6 +33,12 @@ var (
 	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
 )
 
+type libraryInfo struct {
+	descriptionOverride string
+	name                string
+	releaseLevel        string
+}
+
 // RepoMetadata represents the .repo-metadata.json file structure.
 type RepoMetadata struct {
 	// APIDescription is the description of the API.
@@ -78,9 +84,9 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 }
 
-// Generate generates the .repo-metadata.json file by parsing the
-// service YAML.
-func Generate(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
+// FromLibrary generates the .repo-metadata.json file from config.Library.
+// It retrieves API information from the provided googleapisDir and constructs the metadata.
+func FromLibrary(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
@@ -95,34 +101,36 @@ func Generate(library *config.Library, language, repo, googleapisDir, defaultVer
 	if api.ServiceConfig == "" {
 		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
 	}
-	svcCfg, err := serviceconfig.Read(filepath.Join(googleapisDir, api.ServiceConfig))
-	if err != nil {
-		return fmt.Errorf("failed to read service config: %w", err)
+	info := &libraryInfo{
+		descriptionOverride: library.DescriptionOverride,
+		name:                library.Name,
+		releaseLevel:        library.ReleaseLevel,
 	}
+	return FromAPI(api, info, language, repo, defaultVersion, outdir)
+}
 
-	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(svcCfg.GetName()))
-
+// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
+func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultVersion, outputDir string) error {
+	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
 	metadata := &RepoMetadata{
-		APIID:               svcCfg.GetName(),
+		APIID:               api.ServiceName,
 		NamePretty:          cleanTitle(api.Title),
 		DefaultVersion:      defaultVersion,
 		ClientDocumentation: clientDocURL,
-		ReleaseLevel:        library.ReleaseLevel,
+		ReleaseLevel:        info.releaseLevel,
 		Language:            language,
 		LibraryType:         "GAPIC_AUTO",
 		Repo:                repo,
-		DistributionName:    library.Name,
+		DistributionName:    info.name,
 	}
 
 	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
 	metadata.IssueTracker = api.NewIssueURI
-	metadata.APIShortname = api.APIShortName
-	metadata.Name = api.APIShortName
-
-	if library.DescriptionOverride != "" {
-		metadata.APIDescription = library.DescriptionOverride
-	} else if svcCfg.GetDocumentation() != nil && svcCfg.GetDocumentation().GetSummary() != "" {
-		metadata.APIDescription = strings.TrimSpace(svcCfg.GetDocumentation().GetSummary())
+	metadata.APIShortname = api.ShortName
+	metadata.Name = api.ShortName
+	metadata.APIDescription = api.Description
+	if info.descriptionOverride != "" {
+		metadata.APIDescription = info.descriptionOverride
 	}
 
 	data, err := json.MarshalIndent(metadata, "", "    ")
@@ -130,7 +138,7 @@ func Generate(library *config.Library, language, repo, googleapisDir, defaultVer
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	metadataPath := filepath.Join(outdir, ".repo-metadata.json")
+	metadataPath := filepath.Join(outputDir, ".repo-metadata.json")
 	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)
 	}

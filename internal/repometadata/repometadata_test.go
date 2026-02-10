@@ -89,7 +89,7 @@ func TestGenerate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := Generate(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
+			if err := FromLibrary(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
 				t.Fatal(err)
 			}
 
@@ -147,7 +147,7 @@ func TestGenerate_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			gotErr := Generate(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, tmpDir)
+			gotErr := FromLibrary(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, tmpDir)
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
 			}
