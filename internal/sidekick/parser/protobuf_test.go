@@ -2210,8 +2210,14 @@ func TestProtobuf_SubdirRedundancy(t *testing.T) {
 		"extra-protos-subdir": "should_ignore_folder",
 		"include-list":        "scalar.proto",
 	}
-	_, err := newCodeGeneratorRequest("testdata", options)
+	req, err := newCodeGeneratorRequest("testdata", options)
 	if err != nil {
 		t.Fatalf("newCodeGeneratorRequest() failed: %v", err)
+	}
+	if want, got := 1, len(req.FileToGenerate); want != got {
+		t.Fatalf("newCodeGeneratorRequest() returned %d files, want %d", got, want)
+	}
+	if want := "scalar.proto"; !strings.HasSuffix(req.FileToGenerate[0], want) {
+		t.Errorf("newCodeGeneratorRequest() returned file %q, want suffix %q", req.FileToGenerate[0], want)
 	}
 }
