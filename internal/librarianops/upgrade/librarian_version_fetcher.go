@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package librarianops provides operations related to the Librarian tool.
 package librarianops
 
 import (
