@@ -1010,7 +1010,7 @@ func TestRetryableTransport(t *testing.T) {
 		wantRequestCount int
 	}{
 		{
-			name: "Success after retries",
+			name: "Success after retries (503)",
 			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
 				if requestCount < 3 {
 					w.WriteHeader(http.StatusServiceUnavailable)
@@ -1021,6 +1021,33 @@ func TestRetryableTransport(t *testing.T) {
 			wantStatusCode:   http.StatusOK,
 			wantErr:          false,
 			wantRequestCount: 3,
+		},
+		{
+			name: "Success after retries (500)",
+			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
+				if requestCount < 3 {
+					w.WriteHeader(http.StatusInternalServerError)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			},
+			wantStatusCode:   http.StatusOK,
+			wantErr:          false,
+			wantRequestCount: 3,
+		},
+		{
+			name: "Success after retries (429)",
+			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
+				if requestCount < 2 {
+					w.Header().Set("Retry-After", "0")
+					w.WriteHeader(http.StatusTooManyRequests)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			},
+			wantStatusCode:   http.StatusOK,
+			wantErr:          false,
+			wantRequestCount: 2,
 		},
 		{
 			name: "Failure after all retries",

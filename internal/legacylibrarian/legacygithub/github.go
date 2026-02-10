@@ -46,7 +46,10 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		resp, err = t.transport.RoundTrip(req)
-		if err == nil && resp.StatusCode != http.StatusServiceUnavailable {
+		if err == nil &&
+			resp.StatusCode != http.StatusServiceUnavailable &&
+			resp.StatusCode != http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests {
 			return resp, nil
 		}
 		if err != nil {
@@ -57,8 +60,18 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := t.delay
 		if delay == 0 {
-			delay = retryDelay
+			if resp != nil {
+				if after := resp.Header.Get("Retry-After"); after != "" {
+					if d, err := time.ParseDuration(after + "s"); err == nil {
+						delay = d
+					}
+				}
+			}
+			if delay == 0 {
+				delay = retryDelay
+			}
 		}
+		slog.Info("retrying shortly", "delay", delay)
 		time.Sleep(delay)
 	}
 	return resp, err
