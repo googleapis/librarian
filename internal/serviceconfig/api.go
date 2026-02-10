@@ -64,12 +64,8 @@ const (
 
 // API describes an API path and its availability across languages.
 type API struct {
-	// APIDescription provides the information for describing an API.
-	APIDescription string
-
-	// APIShortName overrides the API short name from the service config's
-	// publishing section.
-	APIShortName string
+	// Description provides the information for describing an API.
+	Description string
 
 	// Discovery is the file path to a discovery document in
 	// github.com/googleapis/discovery-artifact-manager.
@@ -100,6 +96,10 @@ type API struct {
 	// Path is the proto directory path in github.com/googleapis/googleapis.
 	// If ServiceConfig is empty, the service config is assumed to live at this path.
 	Path string
+
+	// ShortName overrides the API short name from the service config's
+	// publishing section.
+	ShortName string
 
 	// ServiceConfig is the service config file path override.
 	// If empty, the service config is discovered in the directory specified by Path.

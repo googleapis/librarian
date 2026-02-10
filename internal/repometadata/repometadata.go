@@ -126,9 +126,9 @@ func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultV
 
 	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
 	metadata.IssueTracker = api.NewIssueURI
-	metadata.APIShortname = api.APIShortName
-	metadata.Name = api.APIShortName
-	metadata.APIDescription = api.APIDescription
+	metadata.APIShortname = api.ShortName
+	metadata.Name = api.ShortName
+	metadata.APIDescription = api.Description
 	if info.descriptionOverride != "" {
 		metadata.APIDescription = info.descriptionOverride
 	}
