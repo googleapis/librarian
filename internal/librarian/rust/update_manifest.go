@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -54,6 +55,35 @@ func updateCargoVersion(path, newVersion string) error {
 	// The number of spaces may seem weird. They match the number of spaces in
 	// the mustache template.
 	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+}
+
+var versionRegex = regexp.MustCompile(`version\s*=\s*"[^"]*"`)
+
+// updateWorkspaceVersion updates the version of a crate in a workspace Cargo.toml.
+// It searches for a line that starts with the crate name followed by "=" and
+// contains a "version =" field.
+func updateWorkspaceVersion(path, crateName, newVersion string) error {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(contents), "\n")
+	updated := false
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, crateName) {
+			continue
+		}
+		after := strings.TrimSpace(trimmed[len(crateName):])
+		if strings.HasPrefix(after, "=") && versionRegex.MatchString(line) {
+			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion))
+			updated = true
+		}
+	}
+	if !updated {
+		return nil
+	}
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 

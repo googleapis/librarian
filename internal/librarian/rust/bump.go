@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -65,6 +66,11 @@ edition                = "2021"
 		if err := updateCargoVersion(cargoFile, version); err != nil {
 			return err
 		}
+	}
+
+	// Update the workspace manifest if it exists.
+	if err := updateWorkspaceVersion("Cargo.toml", library.Name, version); err != nil && !os.IsNotExist(err) {
+		return err
 	}
 	library.Version = version
 	return nil

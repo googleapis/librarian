@@ -175,3 +175,94 @@ func TestBumpLibraryNoVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestBumpUpdatesWorkspaceDependency(t *testing.T) {
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "taplo")
+	for _, test := range []struct {
+		name       string
+		rootCargo  string
+		libName    string
+		oldVersion string
+		newVersion string
+		want       string
+	}{
+		{
+			name: "single line table",
+			rootCargo: `[workspace.dependencies]
+google-cloud-storage = { version = "0.1.0", path = "storage" }
+google-cloud-auth        = { default-features = false, version = "1.5", path = "src/auth" }
+`,
+			libName:    "google-cloud-storage",
+			oldVersion: "0.1.0",
+			newVersion: "0.2.0",
+			want:       `google-cloud-storage = { version = "0.2.0", path = "storage" }`,
+		},
+		{
+			name: "multiple spaces",
+			rootCargo: `[workspace.dependencies]
+google-cloud-storage    = { version = "0.1.0", path = "storage" }
+`,
+			libName:    "google-cloud-storage",
+			oldVersion: "0.1.0",
+			newVersion: "0.2.0",
+			want:       `google-cloud-storage    = { version = "0.2.0", path = "storage" }`,
+		},
+		{
+			name: "no spaces around equals",
+			rootCargo: `[workspace.dependencies]
+google-cloud-storage={version="0.1.0",path="storage"}
+`,
+			libName:    "google-cloud-storage",
+			oldVersion: "0.1.0",
+			newVersion: "0.2.0",
+			want:       `google-cloud-storage={version = "0.2.0",path="storage"}`,
+		},
+		{
+			name: "multiple occurrences",
+			rootCargo: `[workspace.dependencies]
+google-cloud-storage = { version = "0.1.0", path = "storage" }
+[dependencies]
+google-cloud-storage = { version = "0.1.0", path = "storage" }
+`,
+			libName:    "google-cloud-storage",
+			oldVersion: "0.1.0",
+			newVersion: "0.2.0",
+			want:       `version = "0.2.0"`, // Both lines should contain this
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+
+			libDir := "storage"
+			if err := os.WriteFile("Cargo.toml", []byte(test.rootCargo), 0644); err != nil {
+				t.Fatal(err)
+			}
+			createCrate(t, libDir, test.libName, test.oldVersion)
+			lib := &config.Library{
+				Name:    test.libName,
+				Version: test.oldVersion,
+				Output:  libDir,
+			}
+
+			if err := writeVersion(lib, libDir, test.newVersion); err != nil {
+				t.Fatal(err)
+			}
+
+			checkCargoVersion(t, filepath.Join(libDir, "Cargo.toml"), test.newVersion)
+			rootContents, err := os.ReadFile("Cargo.toml")
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := string(rootContents)
+			if test.name == "multiple occurrences" {
+				if strings.Count(got, test.want) != 2 {
+					t.Errorf("expected 2 occurrences of %q, got %d:\n%s", test.want, strings.Count(got, test.want), got)
+				}
+			} else if !strings.Contains(got, test.want) {
+				t.Errorf("root Cargo.toml was not updated:\nwant: %q\ngot:\n%s", test.want, got)
+			}
+		})
+	}
+}
