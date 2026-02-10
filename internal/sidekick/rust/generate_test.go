@@ -24,7 +24,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -79,22 +78,20 @@ var (
 
 func TestCodecError(t *testing.T) {
 	outDir := t.TempDir()
-	goodConfig := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
-		},
+
+	goodConfig := parser.ModelConfig{
+		SpecificationFormat: "openapi",
+		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
 		},
 	}
-	errorConfig := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
-		},
+
+	errorConfig := parser.ModelConfig{
+		SpecificationFormat: "openapi",
+		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"--invalid--": "--invalid--",
 		},
@@ -103,14 +100,14 @@ func TestCodecError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, errorConfig.General.SpecificationFormat, errorConfig.Codec); err == nil {
+	if err := Generate(t.Context(), model, outDir, errorConfig); err == nil {
 		t.Errorf("expected an error with invalid Codec options")
 	}
 
-	if err := GenerateStorage(t.Context(), outDir, model, errorConfig.General.SpecificationFormat, errorConfig.Codec, model, goodConfig.General.SpecificationFormat, goodConfig.Codec); err == nil {
+	if err := GenerateStorage(t.Context(), outDir, model, errorConfig, model, goodConfig); err == nil {
 		t.Errorf("expected an error with invalid Codec options for storage")
 	}
-	if err := GenerateStorage(t.Context(), outDir, model, goodConfig.General.SpecificationFormat, goodConfig.Codec, model, errorConfig.General.SpecificationFormat, errorConfig.Codec); err == nil {
+	if err := GenerateStorage(t.Context(), outDir, model, goodConfig, model, errorConfig); err == nil {
 		t.Errorf("expected an error with invalid Codec options for control")
 	}
 }
@@ -119,12 +116,10 @@ func TestRustFromOpenAPI(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "openapi",
-			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/openapi/secretmanager_openapi_v1.json"),
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "openapi",
+		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
 		},
@@ -133,7 +128,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -152,12 +147,10 @@ func TestRustFromOpenAPI(t *testing.T) {
 func TestRustFromDiscovery(t *testing.T) {
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "disco",
-			ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
-			SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "discovery",
+		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
 		Codec: map[string]string{
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
@@ -167,7 +160,7 @@ func TestRustFromDiscovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -188,12 +181,10 @@ func TestRustFromProtobuf(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
@@ -209,7 +200,7 @@ func TestRustFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInCrate {
@@ -230,12 +221,10 @@ func TestRustClient(t *testing.T) {
 	for _, override := range []string{"http-client", "grpc-client"} {
 		outDir := t.TempDir()
 
-		cfg := &config.Config{
-			General: config.GeneralConfig{
-				SpecificationFormat: "protobuf",
-				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				SpecificationSource: "google/cloud/secretmanager/v1",
-			},
+		cfg := parser.ModelConfig{
+			SpecificationFormat: "protobuf",
+			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			SpecificationSource: "google/cloud/secretmanager/v1",
 			Source: map[string]string{
 				"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 			},
@@ -253,7 +242,7 @@ func TestRustClient(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+		if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 			t.Fatal(err)
 		}
 		for _, expected := range expectedInClient {
@@ -280,12 +269,10 @@ func TestRustNosvc(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
@@ -303,7 +290,7 @@ func TestRustNosvc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	for _, expected := range expectedInNosvc {
@@ -323,12 +310,10 @@ func TestRustModuleRpc(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       "google/rpc/rpc_publish.yaml",
-			SpecificationSource: "google/rpc",
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       "google/rpc/rpc_publish.yaml",
+		SpecificationSource: "google/rpc",
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
@@ -342,7 +327,7 @@ func TestRustModuleRpc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, path.Join(outDir, "rpc"), cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, path.Join(outDir, "rpc"), cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -363,11 +348,9 @@ func TestRustBootstrapWkt(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			SpecificationSource: "google/protobuf",
-		},
+	cfg := parser.ModelConfig{
+		SpecificationFormat: "protobuf",
+		SpecificationSource: "google/protobuf",
 		Source: map[string]string{
 			"protobuf-root": localTestdataDir,
 			"include-list":  "source_context.proto",
@@ -382,7 +365,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, path.Join(outDir, "wkt"), cfg.General.SpecificationFormat, cfg.Codec); err != nil {
+	if err := Generate(t.Context(), model, path.Join(outDir, "wkt"), cfg); err != nil {
 		t.Fatal(err)
 	}
 

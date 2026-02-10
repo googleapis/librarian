@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (
@@ -33,17 +32,15 @@ var (
 	mainTestdataDir, _        = filepath.Abs("../../testdata")
 	discoSourceFile           = path.Join(mainTestdataDir, discoSourceFileRelative)
 	secretManagerYamlFullPath = path.Join(mainTestdataDir, "googleapis", secretManagerYamlRelative)
-	openAPIFile               = path.Join(mainTestdataDir, "openapi/secretmanager_openapi_v1.json")
+	openAPIFile               = path.Join(mainTestdataDir, "secretmanager_openapi_v1.json")
 	protobufFile              = path.Join("testdata", "scalar.proto")
 )
 
 func TestCreateModelDisco(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "disco",
-			ServiceConfig:       secretManagerYamlFullPath,
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "discovery",
+		ServiceConfig:       secretManagerYamlFullPath,
+		SpecificationSource: discoSourceFile,
 	}
 	got, err := CreateModel(cfg)
 	if err != nil {
@@ -74,12 +71,10 @@ func TestCreateModelDisco(t *testing.T) {
 }
 
 func TestCreateModelOpenAPI(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "openapi",
-			ServiceConfig:       secretManagerYamlFullPath,
-			SpecificationSource: path.Join(mainTestdataDir, "openapi/secretmanager_openapi_v1.json"),
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "openapi",
+		ServiceConfig:       secretManagerYamlFullPath,
+		SpecificationSource: openAPIFile,
 	}
 	model, err := CreateModel(cfg)
 	if err != nil {
@@ -94,12 +89,10 @@ func TestCreateModelOpenAPI(t *testing.T) {
 
 func TestCreateModelProtobuf(t *testing.T) {
 	requireProtoc(t)
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       secretManagerYamlRelative,
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       secretManagerYamlRelative,
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
 			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
 		},
@@ -117,12 +110,10 @@ func TestCreateModelProtobuf(t *testing.T) {
 
 func TestCreateModelOverrides(t *testing.T) {
 	requireProtoc(t)
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "protobuf",
-			ServiceConfig:       secretManagerYamlRelative,
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "protobuf",
+		ServiceConfig:       secretManagerYamlRelative,
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
 			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
@@ -152,12 +143,10 @@ func TestCreateModelOverrides(t *testing.T) {
 
 func TestCreateModelNone(t *testing.T) {
 	requireProtoc(t)
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "none",
-			ServiceConfig:       secretManagerYamlRelative,
-			SpecificationSource: "none",
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "none",
+		ServiceConfig:       secretManagerYamlRelative,
+		SpecificationSource: "none",
 		Source: map[string]string{
 			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
@@ -175,12 +164,10 @@ func TestCreateModelNone(t *testing.T) {
 }
 
 func TestCreateModelUnknown(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "--unknown--",
-			ServiceConfig:       secretManagerYamlRelative,
-			SpecificationSource: "none",
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "--unknown--",
+		ServiceConfig:       secretManagerYamlRelative,
+		SpecificationSource: "none",
 		Source: map[string]string{
 			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",
@@ -194,13 +181,11 @@ func TestCreateModelUnknown(t *testing.T) {
 }
 
 func TestCreateModelBadParse(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: "openapi",
-			ServiceConfig:       secretManagerYamlRelative,
-			// Note the mismatch between the format and the file contents.
-			SpecificationSource: discoSourceFile,
-		},
+	cfg := ModelConfig{
+		SpecificationFormat: "openapi",
+		ServiceConfig:       secretManagerYamlRelative,
+		// Note the mismatch between the format and the file contents.
+		SpecificationSource: discoSourceFile,
 		Source: map[string]string{
 			"googleapis-root":      path.Join(testdataDir, "../../testdata/googleapis"),
 			"name-override":        "Name Override",

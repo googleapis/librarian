@@ -29,20 +29,20 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: gax::options::RequestOptions,
-    ) -> crate::Result<gax::response::Response<{{Codec.ReturnType}}>>;
+        options: crate::RequestOptions,
+    ) -> crate::Result<crate::Response<{{Codec.ReturnType}}>>;
 
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_error_policy::PollingErrorPolicy>;
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy>;
 
     fn get_polling_backoff_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_backoff_policy::PollingBackoffPolicy>;
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy>;
     {{/Codec.HasLROs}}
 }
 
@@ -57,8 +57,8 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
-        options: gax::options::RequestOptions,
-    ) -> crate::Result<gax::response::Response<{{Codec.ReturnType}}>> {
+        options: crate::RequestOptions,
+    ) -> crate::Result<crate::Response<{{Codec.ReturnType}}>> {
         T::{{Codec.Name}}(self, req, options).await
     }
 
@@ -66,15 +66,15 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     {{#Codec.HasLROs}}
     fn get_polling_error_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_error_policy::PollingErrorPolicy> {
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_error_policy::PollingErrorPolicy> {
         T::get_polling_error_policy(self, options)
     }
 
     fn get_polling_backoff_policy(
         &self,
-        options: &gax::options::RequestOptions,
-    ) -> std::sync::Arc<dyn gax::polling_backoff_policy::PollingBackoffPolicy> {
+        options: &crate::RequestOptions,
+    ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
         T::get_polling_backoff_policy(self, options)
     }
     {{/Codec.HasLROs}}

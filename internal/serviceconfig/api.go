@@ -18,6 +18,7 @@ package serviceconfig
 
 const (
 	langDart   = "dart"
+	langGo     = "go"
 	langPython = "python"
 	langRust   = "rust"
 
@@ -81,6 +82,17 @@ type API struct {
 	Transports map[string]Transport
 }
 
+// Transport gets transport for a given language.
+//
+// The default value is GRPCRest, if undefined for a language.
+func (api *API) Transport(language string) string {
+	if trans, ok := api.Transports[language]; ok {
+		return string(trans)
+	}
+
+	return string(GRPCRest)
+}
+
 // APIs defines all API paths and their language availability.
 var APIs = []API{
 	{Path: "google/ads/admanager/v1", Languages: []string{langPython}},
@@ -121,7 +133,7 @@ var APIs = []API{
 	{Path: "google/chat/v1", Languages: []string{langPython}},
 	{Path: "google/cloud/accessapproval/v1"},
 	{Path: "google/cloud/advisorynotifications/v1"},
-	{Path: "google/cloud/aiplatform/v1"},
+	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{langGo: GRPC}},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/instance", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema},
 	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema},
@@ -334,7 +346,7 @@ var APIs = []API{
 	{Path: "google/cloud/saasplatform/saasservicemgmt/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/scheduler/v1"},
 	{Path: "google/cloud/scheduler/v1beta1", Languages: []string{langPython}},
-	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/openapi/secretmanager_openapi_v1.json"},
+	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/secretmanager_openapi_v1.json"},
 	{Path: "google/cloud/secretmanager/v1beta2", Languages: []string{langPython}},
 	{Path: "google/cloud/secrets/v1beta1", Languages: []string{langPython}},
 	{Path: "google/cloud/securesourcemanager/v1"},

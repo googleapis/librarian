@@ -31,7 +31,7 @@ limitations under the License.
 {{^Model.Codec.InternalBuilders}}
 /// # Example
 /// ```
-/// # async fn sample() -> gax::client_builder::Result<()> {
+/// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
 /// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
 /// let client = {{Codec.Name}}::builder().build().await?;
 /// // use `client` to make requests to the {{Codec.APITitle}}.
@@ -97,14 +97,14 @@ impl {{Codec.Name}} {
     {{^Model.Codec.InternalBuilders}}
     ///
     /// ```
-    /// # async fn sample() -> gax::client_builder::Result<()> {
+    /// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
     /// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
     /// let client = {{Codec.Name}}::builder().build().await?;
     /// # Ok(()) }
     /// ```
     {{/Model.Codec.InternalBuilders}}
     {{Codec.BuilderVisibility}} fn builder() -> super::builder::{{Codec.ModuleName}}::ClientBuilder {
-        gax::client_builder::internal::new_builder(super::builder::{{Codec.ModuleName}}::client::Factory)
+        crate::new_client_builder(super::builder::{{Codec.ModuleName}}::client::Factory)
     }
     {{/Codec.HasVeneer}}
 
@@ -117,23 +117,23 @@ impl {{Codec.Name}} {
         Self { inner: std::sync::Arc::new(stub) }
     }
 
-    pub(crate) async fn new(config: gaxi::options::ClientConfig) -> gax::client_builder::Result<Self> {
+    pub(crate) async fn new(config: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<Self> {
         let inner = Self::build_inner(config).await?;
         Ok(Self { inner })
     }
 
-    async fn build_inner(conf: gaxi::options::ClientConfig) -> gax::client_builder::Result<std::sync::Arc<dyn super::stub::dynamic::{{Codec.Name}}>> {
+    async fn build_inner(conf: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<std::sync::Arc<dyn super::stub::dynamic::{{Codec.Name}}>> {
         if gaxi::options::tracing_enabled(&conf) {
             return Ok(std::sync::Arc::new(Self::build_with_tracing(conf).await?));
         }
         Ok(std::sync::Arc::new(Self::build_transport(conf).await?))
     }
 
-    async fn build_transport(conf: gaxi::options::ClientConfig) -> gax::client_builder::Result<impl super::stub::{{Codec.Name}}> {
+    async fn build_transport(conf: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<impl super::stub::{{Codec.Name}}> {
         super::transport::{{Codec.Name}}::new(conf).await
     }
 
-    async fn build_with_tracing(conf: gaxi::options::ClientConfig) -> gax::client_builder::Result<impl super::stub::{{Codec.Name}}> {
+    async fn build_with_tracing(conf: gaxi::options::ClientConfig) -> crate::ClientBuilderResult<impl super::stub::{{Codec.Name}}> {
         Self::build_transport(conf).await.map(super::tracing::{{Codec.Name}}::new)
     }
     {{#Codec.Methods}}
