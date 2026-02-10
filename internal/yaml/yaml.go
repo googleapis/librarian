@@ -87,7 +87,7 @@ func Write(path string, v any) error {
 	// Add # comment prefix to each line of the license header.
 	var b strings.Builder
 	year := time.Now().Year()
-	for _, line := range license.LicenseHeader(strconv.Itoa(year)) {
+	for _, line := range license.Header(strconv.Itoa(year)) {
 		b.WriteString("#")
 		b.WriteString(line)
 		b.WriteString("\n")

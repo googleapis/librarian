@@ -263,6 +263,61 @@ go_gapic_library(
 	}
 }
 
+func TestParseTransports(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    map[string]string
+	}{
+		{
+			name: "happy path",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+    transport = "grpc+rest",
+)
+py_gapic_library(
+    name = "asset_py_gapic",
+    transport = "grpc",
+)
+php_gapic_library(
+    name = "asset_php_gapic",
+    transport = "rest",
+)
+`,
+			want: map[string]string{
+				"go":     "grpc+rest",
+				"python": "grpc",
+				"php":    "rest",
+			},
+		},
+		{
+			name: "missing transport attribute",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+)
+`,
+			want: map[string]string{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := ParseTransports(buildPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func mustParse(t *testing.T, content string) *Config {
 	t.Helper()
 	tmpDir := t.TempDir()

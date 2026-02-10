@@ -16,7 +16,6 @@ package parser
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"cloud.google.com/go/iam/apiv1/iampb"
@@ -127,7 +126,7 @@ func applyServiceConfigMethodOverrides(
 	originalID string,
 	serviceConfig *serviceconfig.Service,
 	api *api.API,
-	mixin *api.Service) {
+	mixin *api.Service) error {
 	for _, rule := range serviceConfig.GetHttp().GetRules() {
 		selector := rule.GetSelector()
 		if !strings.HasPrefix(selector, ".") {
@@ -138,8 +137,7 @@ func applyServiceConfigMethodOverrides(
 		}
 		pathInfo, err := processRule(rule, api.State, targetMethod.InputTypeID)
 		if err != nil {
-			slog.Error("unsupported http rule", "method", targetMethod, "rule", rule)
-			continue
+			return fmt.Errorf("unsupported http rule %q in method %s", rule, targetMethod.ID)
 		}
 		targetMethod.PathInfo = pathInfo
 	}
@@ -157,4 +155,5 @@ func applyServiceConfigMethodOverrides(
 	if targetMethod.Documentation == "" {
 		targetMethod.Documentation = fmt.Sprintf("Provides the [%s][%s] service functionality in this service.", mixin.Name, mixin.ID[1:])
 	}
+	return nil
 }
