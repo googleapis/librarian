@@ -32,11 +32,13 @@ import (
 const (
 	maxRetries = 3
 	retryDelay = 2 * time.Second
+	maxDelay   = 60 * time.Second
 )
 
 type retryableTransport struct {
 	transport http.RoundTripper
 	delay     time.Duration
+	sleep     func(time.Duration)
 }
 
 // RoundTrip implements the http.RoundTripper interface and adds retry logic
@@ -46,7 +48,11 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		resp, err = t.transport.RoundTrip(req)
-		if err == nil && resp.StatusCode != http.StatusServiceUnavailable {
+		if err == nil &&
+			resp.StatusCode != http.StatusServiceUnavailable &&
+			resp.StatusCode != http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests &&
+			resp.StatusCode != http.StatusBadGateway {
 			return resp, nil
 		}
 		if err != nil {
@@ -57,9 +63,22 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := t.delay
 		if delay == 0 {
-			delay = retryDelay
+			if resp != nil {
+				if after := resp.Header.Get("Retry-After"); after != "" {
+					if d, err := time.ParseDuration(after + "s"); err == nil {
+						delay = d
+					}
+				}
+			}
+			if delay == 0 {
+				delay = retryDelay
+			}
 		}
-		time.Sleep(delay)
+		if delay > maxDelay {
+			delay = maxDelay
+		}
+		slog.Info("retrying shortly", "delay", delay)
+		t.sleep(delay)
 	}
 	return resp, err
 }
@@ -100,7 +119,7 @@ func newClientWithHTTP(accessToken string, repo *Repository, httpClient *http.Cl
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	httpClient.Transport = &retryableTransport{transport: transport}
+	httpClient.Transport = &retryableTransport{transport: transport, sleep: time.Sleep}
 	client := github.NewClient(httpClient)
 	if repo != nil && repo.BaseURL != "" {
 		baseURL, _ := url.Parse(repo.BaseURL)
