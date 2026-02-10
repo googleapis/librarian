@@ -385,11 +385,14 @@ func releaseLevel(apiPath, version string) (string, error) {
 	if strings.Contains(apiVersion, releaseLevelAlpha) || version == "" {
 		return releaseLevelAlpha, nil
 	}
+	if strings.Contains(apiVersion, releaseLevelBeta) {
+		return releaseLevelBeta, nil
+	}
 	semverVer, err := semver.Parse(version)
 	if err != nil {
 		return "", err
 	}
-	if strings.Contains(apiVersion, releaseLevelBeta) || semverVer.Major < 1 {
+	if semverVer.Major < 1 {
 		return releaseLevelBeta, nil
 	}
 
