@@ -139,7 +139,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 }
 
 func bumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	filesChanged, err := git.FilesChangedSince(ctx, lastTag, gitExe, cfg.Release.IgnoredChanges)
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.Release.IgnoredChanges)
 	if err != nil {
 		return err
 	}

@@ -390,11 +390,6 @@ func (m *Method) IsLRO() bool {
 	return m.OperationInfo != nil
 }
 
-// IsSimpleOrLRO returns true if the method is simple or a long-running operation.
-func (m *Method) IsSimpleOrLRO() bool {
-	return m.IsSimple() || m.IsLRO()
-}
-
 // LongRunningResponseType returns the response type of the long-running operation.
 func (m *Method) LongRunningResponseType() *Message {
 	if m.OperationInfo == nil {
@@ -409,12 +404,23 @@ func (m *Method) LongRunningReturnsEmpty() bool {
 	return responseType != nil && responseType.ID == ".google.protobuf.Empty"
 }
 
+// IsList returns true if the method is a list operation.
+func (m *Method) IsList() bool {
+	return m.OutputType != nil && m.OutputType.Pagination != nil
+}
+
+// IsStreaming returns true if the method is client-side or server-side streaming.
+func (m *Method) IsStreaming() bool {
+	return m.ClientSideStreaming || m.ServerSideStreaming
+}
+
 // IsAIPStandard returns true if the method is one of the AIP standard methods.
 // IsAIPStandard simplifies writing mustache templates, mostly for samples.
 func (m *Method) IsAIPStandard() bool {
 	return m.AIPStandardGetInfo() != nil ||
 		m.AIPStandardDeleteInfo() != nil ||
-		m.AIPStandardUndeleteInfo() != nil
+		m.AIPStandardUndeleteInfo() != nil ||
+		m.AIPStandardListInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations
@@ -537,10 +543,66 @@ func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
 	}
 }
 
+// AIPStandardListInfo contains information relevant to list operations
+// that are like those defined by AIP-132.
+type AIPStandardListInfo struct {
+	// ParentRequestField is the field in the method input that contains the parent resource name
+	// of the resources that the list operation should fetch.
+	ParentRequestField *Field
+}
+
+// AIPStandardListInfo returns information relevant to a list operation that is like
+// a list operation as defined by AIP-132, if the method is such an operation.
+func (m *Method) AIPStandardListInfo() *AIPStandardListInfo {
+	if !m.IsList() || m.InputType == nil {
+		return nil
+	}
+
+	// Standard list methods for resource "Foo" should be named "ListFoos".
+	maybePlural, found := strings.CutPrefix(strings.ToLower(m.Name), "list")
+	if !found || maybePlural == "" {
+		return nil
+	}
+
+	// The request name should be "ListFoosRequest".
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("list%srequest", maybePlural) {
+		return nil
+	}
+
+	// The response name should be "ListFoosResponse".
+	if strings.ToLower(m.OutputType.Name) != fmt.Sprintf("list%sresponse", maybePlural) {
+		return nil
+	}
+
+	// Identify the listed resource type.
+	pageableItem := m.OutputType.Pagination.PageableItem
+	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
+		// If we can't identify the resource, we can't match strictly.
+		// However, standard AIP-132 implies we should be able to.
+		return nil
+	}
+	resourceType := pageableItem.MessageType.Resource.Type
+
+	// The request needs to have a field for the parent.
+	parentField := findBestParentFieldByType(m.InputType, resourceType)
+
+	if parentField == nil {
+		return nil
+	}
+
+	return &AIPStandardListInfo{
+		ParentRequestField: parentField,
+	}
+}
+
 const (
 	// StandardFieldNameForResourceRef is the standard name for resource references
 	// to the resource being operated on by standard methods as defined by AIPs.
 	StandardFieldNameForResourceRef = "name"
+
+	// StandardFieldNameForParentResourceRef is the standard name for resource references
+	// to the child resource being operated on by standard methods as defined by AIPs.
+	StandardFieldNameForParentResourceRef = "parent"
 
 	// GenericResourceType is a special resource type that may be used by resource references
 	// in contexts where the referenced resource may be of any type, as defined by AIPs.
@@ -608,6 +670,25 @@ func findBestResourceFieldBySingular(message *Message, resourcesByType map[strin
 			return field
 		}
 		if matchesTarget {
+			bestField = field
+		}
+	}
+	return bestField
+}
+
+// findBestParentFieldByType finds the best field in the message that references
+// the parent of a resource of the given type.
+//
+// We prioritize the matches as follows:
+// 1. The field name is "parent".
+// 2. The field references the child type.
+func findBestParentFieldByType(message *Message, childType string) *Field {
+	var bestField *Field
+	for _, field := range message.Fields {
+		if field.Name == StandardFieldNameForParentResourceRef {
+			return field
+		}
+		if field.ResourceReference != nil && field.ResourceReference.ChildType == childType {
 			bestField = field
 		}
 	}
