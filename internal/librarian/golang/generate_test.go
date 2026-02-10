@@ -239,7 +239,7 @@ func TestGenerateREADME(t *testing.T) {
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
 	if err != nil {
 		t.Fatal(err)
 	}
