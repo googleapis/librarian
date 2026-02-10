@@ -98,28 +98,47 @@ func Find(googleapisDir, path string) (*API, error) {
 			break
 		}
 	}
-
 	if result == nil {
 		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
 
-	// If service config is overridden in allowlist, use it
-	if result.ServiceConfig != "" {
-		return populateTitle(googleapisDir, result)
+	// Find the service config if it hasn't been specified.
+	if result.ServiceConfig == "" {
+		serviceConfigPath, err := findServiceConfig(googleapisDir, result.Path)
+		if err != nil {
+			return nil, fmt.Errorf("error when finding service config for %s: %w", result.Path, err)
+		}
+		result.ServiceConfig = serviceConfigPath
 	}
 
-	// Search filesystem for service config
-	dir := filepath.Join(googleapisDir, result.Path)
+	// Populate API fields that haven't been explicitly specified, if we have
+	// a service config.
+	if result.ServiceConfig != "" {
+		serviceConfig, err := Read(filepath.Join(googleapisDir, result.ServiceConfig))
+		if err != nil {
+			return nil, err
+		}
+		result = populateFromServiceConfig(result, serviceConfig)
+	}
+	return result, nil
+}
+
+// findServiceConfig searches the filesystem for a service config file under the
+// given directory. An empty string is returned if no service config is found;
+// otherwise, the location of the service config relative to the googleapis
+// directory is returned.
+func findServiceConfig(googleapisDir, path string) (string, error) {
+	dir := filepath.Join(googleapisDir, path)
 	_, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return result, nil
+			return "", nil
 		}
-		return nil, err
+		return "", err
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -136,26 +155,32 @@ func Find(googleapisDir, path string) (*API, error) {
 		filePath := filepath.Join(dir, name)
 		isServiceConfig, err := isServiceConfigFile(filePath)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		if isServiceConfig {
-			result.ServiceConfig = filepath.Join(result.Path, name)
-			return populateTitle(googleapisDir, result)
+			return filepath.Join(path, name), nil
 		}
 	}
-	return result, nil
+	return "", nil
 }
 
-func populateTitle(googleapisDir string, api *API) (*API, error) {
-	if api.Title != "" || api.ServiceConfig == "" {
-		return api, nil
+func populateFromServiceConfig(api *API, cfg *Service) *API {
+	if api.Title == "" {
+		api.Title = cfg.GetTitle()
 	}
-	cfg, err := Read(filepath.Join(googleapisDir, api.ServiceConfig))
-	if err != nil {
-		return nil, err
+	publishing := cfg.GetPublishing()
+	if publishing != nil {
+		if api.NewIssueURI == "" {
+			api.NewIssueURI = publishing.GetNewIssueUri()
+		}
+		if api.DocumentationURI == "" {
+			api.DocumentationURI = publishing.GetDocumentationUri()
+		}
+		if api.APIShortName == "" {
+			api.APIShortName = publishing.GetApiShortName()
+		}
 	}
-	api.Title = cfg.GetTitle()
-	return api, nil
+	return api
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
