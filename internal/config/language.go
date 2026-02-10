@@ -23,11 +23,12 @@ type GoModule struct {
 	ModulePathVersion           string   `yaml:"module_path_version,omitempty"`
 }
 
-// GoAPI represents configuration for a single API api within a Go module.
+// GoAPI represents configuration for a single API within a Go module.
 type GoAPI struct {
 	Path            string   `yaml:"path,omitempty"`
 	ClientDirectory string   `yaml:"client_directory,omitempty"`
 	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
+	ImportPath      string   `yaml:"import_path,omitempty"`
 	NestedProtos    []string `yaml:"nested_protos,omitempty"`
 	ProtoPackage    string   `yaml:"proto_package,omitempty"`
 }
