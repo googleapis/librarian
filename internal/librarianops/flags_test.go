@@ -126,7 +126,7 @@ func TestParseRepoFlags_Error(t *testing.T) {
 				err error
 			)
 			app.Commands[0].Action = func(ctx context.Context, cmd *cli.Command) error {
-				_, _, _, err = parseRepoFlags(cmd)
+				_, _, _, err := parseRepoFlags(cmd)
 				return err
 			}
 			if err := app.Run(t.Context(), testCase.args); err == nil {
