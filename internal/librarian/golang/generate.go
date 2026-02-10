@@ -381,14 +381,15 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
 func releaseLevel(apiPath, version string) (string, error) {
-	if strings.Contains(apiPath, releaseLevelAlpha) {
+	apiVersion := filepath.Base(apiPath)
+	if strings.Contains(apiVersion, releaseLevelAlpha) {
 		return releaseLevelAlpha, nil
 	}
 	semverVer, err := semver.Parse(version)
 	if err != nil {
 		return "", err
 	}
-	if strings.Contains(apiPath, releaseLevelBeta) || semverVer.Major < 1 {
+	if strings.Contains(apiVersion, releaseLevelBeta) || semverVer.Major < 1 {
 		return releaseLevelBeta, nil
 	}
 
