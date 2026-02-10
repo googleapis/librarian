@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
@@ -91,10 +92,13 @@ func TestFind(t *testing.T) {
 			name: "found with title",
 			api:  "google/cloud/secretmanager/v1",
 			want: &API{
-				Path:          "google/cloud/secretmanager/v1",
-				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
-				Title:         "Secret Manager API",
+				Path:             "google/cloud/secretmanager/v1",
+				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
+				APIShortName:     "secretmanager",
+				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
+				Title:            "Secret Manager API",
 			},
 		},
 		{
@@ -126,10 +130,13 @@ func TestFind(t *testing.T) {
 			name: "openapi",
 			api:  "testdata/secretmanager_openapi_v1.json",
 			want: &API{
-				Path:          "google/cloud/secretmanager/v1",
-				OpenAPI:       "testdata/secretmanager_openapi_v1.json",
-				ServiceConfig: "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Title:         "Secret Manager API",
+				Path:             "google/cloud/secretmanager/v1",
+				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
+				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Title:            "Secret Manager API",
+				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
+				APIShortName:     "secretmanager",
 			},
 		},
 		{
@@ -144,7 +151,7 @@ func TestFind(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Find(googleapisDir, test.api)
+			got, err := Find(googleapisDir, test.api, LangGo)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)
@@ -208,5 +215,133 @@ func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
 	_, err := FindGRPCServiceConfig(dir, apiPath)
 	if err == nil {
 		t.Fatal("expected error for multiple gRPC service config files")
+	}
+}
+
+func TestPopulateFromServiceConfig(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  *API
+		cfg  *Service
+		want *API
+	}{
+		{
+			name: "populate everything from service config",
+			api:  &API{},
+			cfg: &Service{
+				Title: "service config title",
+				Publishing: &annotations.Publishing{
+					DocumentationUri: "service config doc uri",
+					NewIssueUri:      "service config new issue uri",
+					ApiShortName:     "service config short name",
+				},
+			},
+			want: &API{
+				Title:            "service config title",
+				DocumentationURI: "service config doc uri",
+				NewIssueURI:      "service config new issue uri",
+				APIShortName:     "service config short name",
+			},
+		},
+		{
+			name: "no publishing",
+			api: &API{
+				DocumentationURI: "override doc uri",
+			},
+			cfg: &Service{
+				Title: "service config title",
+			},
+			want: &API{
+				Title:            "service config title",
+				DocumentationURI: "override doc uri",
+			},
+		},
+		{
+			name: "everything overridden",
+			api: &API{
+				Title:            "override title",
+				DocumentationURI: "override doc uri",
+				NewIssueURI:      "override new issue uri",
+				APIShortName:     "override short name",
+			},
+			cfg: &Service{
+				Title: "service config title",
+				Publishing: &annotations.Publishing{
+					DocumentationUri: "service config doc uri",
+					NewIssueUri:      "service config new issue uri",
+					ApiShortName:     "service config short name",
+				},
+			},
+			want: &API{
+				Title:            "override title",
+				DocumentationURI: "override doc uri",
+				NewIssueURI:      "override new issue uri",
+				APIShortName:     "override short name",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := populateFromServiceConfig(test.api, test.cfg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestValidateAPI(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		api      *API
+		wantErr  bool
+	}{
+		{
+			name:     "api in allowlist, all languages",
+			path:     "google/api",
+			language: LangGo,
+			api:      &API{Path: "google/api"},
+			wantErr:  false,
+		},
+		{
+			name:     "api in allowlist, restricted language allowed",
+			path:     "google/cloud/aiplatform/v1beta1",
+			language: LangPython,
+			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
+			wantErr:  false,
+		},
+		{
+			name:     "api in allowlist, restricted language not allowed",
+			path:     "google/cloud/aiplatform/v1beta1",
+			language: LangGo,
+			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
+			wantErr:  true,
+		},
+		{
+			name:     "api not in list, google/cloud/ prefix",
+			path:     "google/cloud/newapi/v1",
+			language: LangGo,
+			api:      nil,
+			wantErr:  false,
+		},
+		{
+			name:     "api not in list, no google/cloud/ prefix",
+			path:     "google/ads/newapi/v1",
+			language: LangGo,
+			api:      nil,
+			wantErr:  true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := validateAPI(test.path, test.language, test.api)
+			if (err != nil) != test.wantErr {
+				t.Errorf("validateAPI() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if !test.wantErr && got == nil {
+				t.Error("validateAPI() returned nil but want non-nil API")
+			}
+		})
 	}
 }

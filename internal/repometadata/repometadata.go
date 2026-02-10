@@ -18,6 +18,7 @@ package repometadata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,6 +26,11 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	errNoAPIs          = errors.New("library has no APIs from which to get metadata")
+	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
 )
 
 // RepoMetadata represents the .repo-metadata.json file structure.
@@ -74,12 +80,22 @@ type RepoMetadata struct {
 
 // Generate generates the .repo-metadata.json file by parsing the
 // service YAML.
-func Generate(library *config.Library, language, repo, serviceConfigPath, defaultVersion, outdir string) error {
+func Generate(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
-
-	svcCfg, err := serviceconfig.Read(serviceConfigPath)
+	if len(library.APIs) == 0 {
+		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
+	}
+	firstAPIPath := library.APIs[0].Path
+	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, language)
+	if err != nil {
+		return fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
+	}
+	if api.ServiceConfig == "" {
+		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
+	}
+	svcCfg, err := serviceconfig.Read(filepath.Join(googleapisDir, api.ServiceConfig))
 	if err != nil {
 		return fmt.Errorf("failed to read service config: %w", err)
 	}
@@ -88,7 +104,7 @@ func Generate(library *config.Library, language, repo, serviceConfigPath, defaul
 
 	metadata := &RepoMetadata{
 		APIID:               svcCfg.GetName(),
-		NamePretty:          cleanTitle(svcCfg.GetTitle()),
+		NamePretty:          cleanTitle(api.Title),
 		DefaultVersion:      defaultVersion,
 		ClientDocumentation: clientDocURL,
 		ReleaseLevel:        library.ReleaseLevel,
@@ -98,16 +114,10 @@ func Generate(library *config.Library, language, repo, serviceConfigPath, defaul
 		DistributionName:    library.Name,
 	}
 
-	if svcCfg.GetPublishing() != nil {
-		publishing := svcCfg.GetPublishing()
-		if publishing.GetDocumentationUri() != "" {
-			metadata.ProductDocumentation = extractBaseProductURL(publishing.GetDocumentationUri())
-		}
-		if publishing.GetApiShortName() != "" {
-			metadata.APIShortname = publishing.GetApiShortName()
-			metadata.Name = publishing.GetApiShortName()
-		}
-	}
+	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
+	metadata.IssueTracker = api.NewIssueURI
+	metadata.APIShortname = api.APIShortName
+	metadata.Name = api.APIShortName
 
 	if library.DescriptionOverride != "" {
 		metadata.APIDescription = library.DescriptionOverride

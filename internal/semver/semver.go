@@ -27,17 +27,17 @@ import (
 )
 
 const (
-	// SemVerSpecV2 corresponds to SemVer spec version 2.0.0
-	// https://semver.org/spec/v2.0.0.html.
-	SemVerSpecV2 = "2.0.0"
+	// SpecV1 is the string for Semantic Versioning 1.0.0.
+	// See https://semver.org/spec/v1.0.0.html.
+	SpecV1 = "1.0.0"
 
-	// SemVerSpecV1 corresponds to SemVer spec version 1.0.0
-	// https://semver.org/spec/v1.0.0.html.
-	SemVerSpecV1 = "1.0.0"
+	// SpecV2 is the string for Semantic Versioning 2.0.0.
+	// See https://semver.org/spec/v2.0.0.html.
+	SpecV2 = "2.0.0"
 )
 
-// version represents a semantic version.
-type version struct {
+// Version represents a semantic version.
+type Version struct {
 	Major, Minor, Patch int
 	// Prerelease is the non-numeric part of the prerelease string (e.g., "alpha", "beta").
 	Prerelease string
@@ -71,12 +71,12 @@ var (
 	errInvalidPrereleaseNumber = errors.New("invalid prerelease number")
 )
 
-// parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [version]
+// Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [Version]
 // struct.
-func parse(versionString string) (version, error) {
+func Parse(versionString string) (Version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
+		return Version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -84,7 +84,7 @@ func parse(versionString string) (version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
+		return Version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -97,8 +97,8 @@ func parse(versionString string) (version, error) {
 	vParts := strings.Split(versionCore, ".")
 
 	var err error
-	v := version{
-		SpecVersion: SemVerSpecV2,
+	v := Version{
+		SpecVersion: SpecV2,
 	}
 
 	v.Major, err = strconv.Atoi(vParts[0])
@@ -132,7 +132,7 @@ func parse(versionString string) (version, error) {
 	} else if matches := semverV1PrereleaseNumberRegexp.FindStringSubmatch(prerelease); len(matches) == 3 {
 		v.Prerelease = matches[1]
 		numStr = matches[2]
-		v.SpecVersion = SemVerSpecV1
+		v.SpecVersion = SpecV1
 	} else {
 		v.Prerelease = prerelease
 	}
@@ -140,7 +140,7 @@ func parse(versionString string) (version, error) {
 	if numStr != "" {
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
-			return version{}, errors.Join(errInvalidPrereleaseNumber, err)
+			return Version{}, errors.Join(errInvalidPrereleaseNumber, err)
 		}
 		v.PrereleaseNumber = &num
 	}
@@ -148,8 +148,8 @@ func parse(versionString string) (version, error) {
 	return v, nil
 }
 
-// String formats a [version] struct into a string.
-func (v version) String() string {
+// String formats a [Version] struct into a string.
+func (v Version) String() string {
 	return stringifyOptions{}.Stringify(v)
 }
 
@@ -168,7 +168,7 @@ type stringifyOptions struct {
 
 // Stringify formats the given version as a string with the formatting options
 // configured in [stringifyOptions].
-func (o stringifyOptions) Stringify(v version) string {
+func (o stringifyOptions) Stringify(v Version) string {
 	var vStr strings.Builder
 
 	if o.IncludeVPrefix {
@@ -187,7 +187,7 @@ func (o stringifyOptions) Stringify(v version) string {
 
 		if v.PrereleaseNumber != nil {
 			var numStr string
-			if v.SpecVersion == SemVerSpecV1 {
+			if v.SpecVersion == SpecV1 {
 				numStr = fmt.Sprintf("%02d", *v.PrereleaseNumber)
 			} else {
 				numStr = strconv.Itoa(*v.PrereleaseNumber)
@@ -276,7 +276,7 @@ func DeriveNext(changeLevel ChangeLevel, currentVersion string, opts DeriveNextO
 		return currentVersion, nil
 	}
 
-	v, err := parse(currentVersion)
+	v, err := Parse(currentVersion)
 	if err != nil {
 		return "", err
 	}
@@ -285,7 +285,7 @@ func DeriveNext(changeLevel ChangeLevel, currentVersion string, opts DeriveNextO
 }
 
 // deriveNext implements next version derivation based on the [DeriveNextOptions].
-func deriveNext(changeLevel ChangeLevel, v version, opts DeriveNextOptions) string {
+func deriveNext(changeLevel ChangeLevel, v Version, opts DeriveNextOptions) string {
 	// Only bump the prerelease version number.
 	if v.Prerelease != "" && !opts.BumpVersionCore {
 		// Append prerelease number if there isn't one.
@@ -352,14 +352,14 @@ var (
 // prerelease number bump is all that is necessary. Every change is treated as a
 // [Minor] change. The provided preview version must have a prerelease segment.
 func DeriveNextPreview(previewVersion, stableVersion string, opts DeriveNextOptions) (string, error) {
-	pv, err := parse(previewVersion)
+	pv, err := Parse(previewVersion)
 	if err != nil {
 		return "", errors.Join(errInvalidPreviewVersion, err)
 	}
 	if pv.Prerelease == "" {
 		return "", fmt.Errorf("%w: %s", errPreviewMissingPrerelease, previewVersion)
 	}
-	sv, err := parse(stableVersion)
+	sv, err := Parse(stableVersion)
 	if err != nil {
 		return "", errors.Join(errInvalidStableVersion, err)
 	}

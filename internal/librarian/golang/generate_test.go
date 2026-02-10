@@ -151,6 +151,7 @@ func TestGenerate(t *testing.T) {
 			}
 			library := &config.Library{
 				Name:         libraryName,
+				Version:      "1.0.0",
 				Output:       outdir,
 				APIs:         []*config.API{{Path: apiPath}},
 				Transport:    test.transport,
@@ -238,7 +239,7 @@ func TestGenerateREADME(t *testing.T) {
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path)
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,6 +346,111 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGAPICImportPath(test.apiPath, test.library, test.goAPI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestReleaseLevel_Success(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		version string
+		want    string
+	}{
+		{
+			name:    "ga",
+			apiPath: "google/cloud/secretmanager/v1",
+			version: "1.0.0",
+			want:    "ga",
+		},
+		{
+			name:    "stable with pre-GA version",
+			apiPath: "google/cloud/secretmanager/v1",
+			version: "0.11.0",
+			want:    "beta",
+		},
+		{
+			name:    "alpha",
+			apiPath: "google/cloud/secretmanager/v1alpha1",
+			want:    "alpha",
+		},
+		{
+			name:    "beta",
+			apiPath: "google/cloud/secretmanager/v1beta2",
+			want:    "beta",
+		},
+		{
+			name:    "alpha in api path",
+			apiPath: "google/cloud/alphabet/v1",
+			version: "1.0.0",
+			want:    "ga",
+		},
+		{
+			name:    "empty version",
+			apiPath: "google/cloud/alphabet/v1",
+			version: "",
+			want:    "alpha",
+		},
+		{
+			name:    "empty version with beta path",
+			apiPath: "google/cloud/alphabet/v1beta1",
+			version: "",
+			want:    "beta",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := releaseLevel(test.apiPath, test.version)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetTransport(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want string
+	}{
+		{
+			name: "nil serviceconfig",
+			sc:   nil,
+			want: "grpc+rest",
+		},
+		{
+			name: "empty serviceconfig",
+			sc:   &serviceconfig.API{},
+			want: "grpc+rest",
+		},
+		{
+			name: "go specific transport",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					"go": serviceconfig.GRPC,
+				},
+			},
+			want: "grpc",
+		},
+		{
+			name: "other language transport",
+			sc: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					"python": serviceconfig.GRPC,
+				},
+			},
+			want: "grpc+rest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := transport(test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
