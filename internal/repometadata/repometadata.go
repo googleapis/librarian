@@ -84,9 +84,9 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 }
 
-// Generate generates the .repo-metadata.json file by parsing the
-// service YAML.
-func Generate(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
+// FromLibrary generates the .repo-metadata.json file from config.Library.
+// It retrieves API information from the provided googleapisDir and constructs the metadata.
+func FromLibrary(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
@@ -106,10 +106,11 @@ func Generate(library *config.Library, language, repo, googleapisDir, defaultVer
 		name:                library.Name,
 		releaseLevel:        library.ReleaseLevel,
 	}
-	return generateFrom(api, info, language, repo, defaultVersion, outdir)
+	return FromAPI(api, info, language, repo, defaultVersion, outdir)
 }
 
-func generateFrom(api *serviceconfig.API, info *libraryInfo, language, repo, defaultVersion, outputDir string) error {
+// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
+func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultVersion, outputDir string) error {
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
 	metadata := &RepoMetadata{
 		APIID:               api.ServiceName,
