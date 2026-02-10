@@ -225,7 +225,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:                "google-cloud-accessapproval-v1",
-						SpecificationFormat: "protobuf",
+						SpecificationFormat: config.SpecProtobuf,
 						APIs: []*config.API{
 							{
 								Path: "google/cloud/accessapproval/v1",

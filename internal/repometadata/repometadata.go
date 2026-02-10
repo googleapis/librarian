@@ -88,7 +88,7 @@ func Generate(library *config.Library, language, repo, googleapisDir, defaultVer
 		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
 	}
 	firstAPIPath := library.APIs[0].Path
-	api, err := serviceconfig.Find(googleapisDir, firstAPIPath)
+	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, language)
 	if err != nil {
 		return fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
 	}

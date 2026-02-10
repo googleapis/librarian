@@ -72,9 +72,12 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
-// Find looks up the service config path and title override for a given API path.
-// It first checks the API allowlist for overrides, then searches for YAML files
-// containing "type: google.api.Service", skipping any files ending in _gapic.yaml.
+// Find looks up the service config path and title override for a given API path,
+// and validates that the API is allowed for the specified language.
+//
+// It first checks the API list for overrides and language restrictions,
+// then searches for YAML files containing "type: google.api.Service",
+// skipping any files ending in _gapic.yaml.
 //
 // The path should be relative to googleapisDir (e.g., "google/cloud/secretmanager/v1").
 // Returns an API struct with Path, ServiceConfig, and Title fields populated.
@@ -83,7 +86,7 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The Showcase API ("schema/google/showcase/v1beta1") is a special case:
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
-func Find(googleapisDir, path string) (*API, error) {
+func Find(googleapisDir, path, language string) (*API, error) {
 	var result *API
 	for _, api := range APIs {
 		// The path for OpenAPI and discovery documents are in
@@ -98,8 +101,11 @@ func Find(googleapisDir, path string) (*API, error) {
 			break
 		}
 	}
-	if result == nil {
-		return nil, fmt.Errorf("API %s is not in allowlist", path)
+
+	var err error
+	result, err = validateAPI(path, language, result)
+	if err != nil {
+		return nil, err
 	}
 
 	// Find the service config if it hasn't been specified.
@@ -181,6 +187,32 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		}
 	}
 	return api
+}
+
+// validateAPI checks if the given API path is allowed for the specified language.
+//
+// API paths starting with "google/cloud/" are allowed for all languages by default.
+// If such a path is explicitly included in the allowlist, it must satisfy any
+// language restrictions defined there.
+//
+// API paths not starting with "google/cloud/" must be explicitly included in the
+// allowlist and satisfy its language restrictions.
+func validateAPI(path, language string, api *API) (*API, error) {
+	if api == nil && strings.HasPrefix(path, "google/cloud/") {
+		return &API{Path: path}, nil
+	}
+	if api == nil {
+		return nil, fmt.Errorf("API %s is not in allowlist", path)
+	}
+	if len(api.Languages) == 0 {
+		return api, nil
+	}
+	for _, l := range api.Languages {
+		if l == language {
+			return api, nil
+		}
+	}
+	return nil, fmt.Errorf("API %s is not allowed for language %s", path, language)
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".

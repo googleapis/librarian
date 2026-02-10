@@ -4,7 +4,7 @@ This document describes the schema for the API Allowlist.
 
 ## API Configuration
 
-[Link to code](../internal/serviceconfig/api.go#L49)
+[Link to code](../internal/serviceconfig/api.go#L53)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `Path` | string | Path is the proto directory path in github.com/googleapis/googleapis. If ServiceConfig is empty, the service config is assumed to live at this path. |

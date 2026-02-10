@@ -76,7 +76,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 	if len(lib.Roots) == 1 && lib.Roots[0] == "googleapis" {
 		lib.Roots = nil
 	}
-	if lib.SpecificationFormat == "protobuf" {
+	if lib.SpecificationFormat == config.SpecProtobuf {
 		lib.SpecificationFormat = ""
 	}
 	// Only remove derivable API paths when there's exactly one API.

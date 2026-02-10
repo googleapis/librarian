@@ -200,7 +200,7 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 
-	api, err := serviceconfig.Find(googleapisDir, ch.Path)
+	api, err := serviceconfig.Find(googleapisDir, ch.Path, serviceconfig.LangPython)
 	if err != nil {
 		return nil, err
 	}
