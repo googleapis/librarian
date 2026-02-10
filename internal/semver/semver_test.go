@@ -38,7 +38,7 @@ func TestParse(t *testing.T) {
 				Major:       1,
 				Minor:       2,
 				Patch:       3,
-				SpecVersion: SemVerSpecV2,
+				SpecVersion: SpecV2,
 			},
 		},
 		{
@@ -51,7 +51,7 @@ func TestParse(t *testing.T) {
 				Prerelease:          "alpha",
 				PrereleaseSeparator: ".",
 				PrereleaseNumber:    ptr(1),
-				SpecVersion:         SemVerSpecV2,
+				SpecVersion:         SpecV2,
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(21),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -74,7 +74,7 @@ func TestParse(t *testing.T) {
 				Minor:       2,
 				Patch:       3,
 				Prerelease:  "beta",
-				SpecVersion: SemVerSpecV2,
+				SpecVersion: SpecV2,
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestParse(t *testing.T) {
 				Major:       1,
 				Minor:       2,
 				Patch:       0,
-				SpecVersion: SemVerSpecV2,
+				SpecVersion: SpecV2,
 			},
 		},
 		{
@@ -96,7 +96,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "alpha",
 				PrereleaseNumber: ptr(1),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -108,7 +108,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(2),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "rc",
 				PrereleaseNumber: ptr(3),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "preview",
 				PrereleaseNumber: ptr(4),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "a",
 				PrereleaseNumber: ptr(5),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 		{
@@ -156,7 +156,7 @@ func TestParse(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "b",
 				PrereleaseNumber: ptr(6),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 		},
 	} {
@@ -298,7 +298,7 @@ func TestVersion_String(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(21),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 			expected: "1.2.3-beta21",
 		},
@@ -310,7 +310,7 @@ func TestVersion_String(t *testing.T) {
 				Patch:            3,
 				Prerelease:       "beta",
 				PrereleaseNumber: ptr(2),
-				SpecVersion:      SemVerSpecV1,
+				SpecVersion:      SpecV1,
 			},
 			expected: "1.2.3-beta02",
 		},
