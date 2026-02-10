@@ -26,9 +26,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -384,11 +384,11 @@ func releaseLevel(apiPath, version string) (string, error) {
 	if strings.Contains(apiPath, releaseLevelAlpha) {
 		return releaseLevelAlpha, nil
 	}
-	semverVer, err := semver.NewVersion(version)
+	semverVer, err := semver.Parse(version)
 	if err != nil {
 		return "", err
 	}
-	if strings.Contains(apiPath, releaseLevelBeta) || semverVer.Major() < 1 {
+	if strings.Contains(apiPath, releaseLevelBeta) || semverVer.Major < 1 {
 		return releaseLevelBeta, nil
 	}
 
