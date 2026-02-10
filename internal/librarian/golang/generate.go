@@ -379,7 +379,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 	})
 }
 
-// releaseLevel get release level for an API for language Go.
+// releaseLevel determines the release level for an API based on the API path and the library's current version.
 func releaseLevel(apiPath, version string) (string, error) {
 	if strings.Contains(apiPath, releaseLevelAlpha) {
 		return releaseLevelAlpha, nil
