@@ -33,15 +33,15 @@ func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoin
 	if err := preFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
 	}
-	gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitPath, config.Remote, config.Branch)
+	gitExe := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	if err := git.MatchesBranchPoint(ctx, gitPath, config.Remote, config.Branch); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitExe, config.Remote, config.Branch); err != nil {
 		return err
 	}
-	files, err := git.FilesChangedSince(ctx, lastTag, gitPath, config.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}

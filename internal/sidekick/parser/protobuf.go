@@ -280,7 +280,8 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			service := processService(state, s, sFQN, f.GetPackage())
 			for _, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
-				method, err := processMethod(state, m, mFQN, f.GetPackage(), sFQN)
+				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
+				method, err := processMethod(state, m, mFQN, f.GetPackage(), sFQN, apiVersion)
 				if err != nil {
 					return nil, err
 				}
@@ -342,7 +343,8 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 						// define the mixin method in the code.
 						continue
 					}
-					method, err := processMethod(state, m, mFQN, service.Package, sFQN)
+					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
+					method, err := processMethod(state, m, mFQN, service.Package, sFQN, apiVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -466,7 +468,7 @@ func processService(state *api.APIState, s *descriptorpb.ServiceDescriptorProto,
 	return service
 }
 
-func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID string) (*api.Method, error) {
+func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion string) (*api.Method, error) {
 	pathInfo, err := parsePathInfo(m, state)
 	if err != nil {
 		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
@@ -489,6 +491,7 @@ func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, m
 		Routing:             routing,
 		ReturnsEmpty:        outputTypeID == ".google.protobuf.Empty",
 		SourceServiceID:     serviceID,
+		APIVersion:          apiVersion,
 	}
 	state.MethodByID[mFQN] = method
 	return method, nil
