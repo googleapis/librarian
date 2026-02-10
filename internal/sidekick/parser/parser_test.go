@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	libconfig "github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -74,7 +73,7 @@ func TestCreateModelDisco(t *testing.T) {
 
 func TestCreateModelOpenAPI(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: libconfig.SpecOpenAPI,
+		SpecificationFormat: config.SpecOpenAPI,
 		ServiceConfig:       secretManagerYamlFullPath,
 		SpecificationSource: openAPIFile,
 	}
@@ -184,7 +183,7 @@ func TestCreateModelUnknown(t *testing.T) {
 
 func TestCreateModelBadParse(t *testing.T) {
 	cfg := ModelConfig{
-		SpecificationFormat: libconfig.SpecOpenAPI,
+		SpecificationFormat: config.SpecOpenAPI,
 		ServiceConfig:       secretManagerYamlRelative,
 		// Note the mismatch between the format and the file contents.
 		SpecificationSource: discoSourceFile,
