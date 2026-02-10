@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	testdataDir, _      = filepath.Abs("../testdata")
+	testdataDir, _      = filepath.Abs("../../testdata")
 	localTestdataDir, _ = filepath.Abs("testdata")
 	expectedInNosvc     = []string{
 		"README.md",
@@ -82,8 +82,8 @@ func TestCodecError(t *testing.T) {
 
 	goodConfig := parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
-		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
 		},
@@ -91,8 +91,8 @@ func TestCodecError(t *testing.T) {
 
 	errorConfig := parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
-		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"--invalid--": "--invalid--",
 		},
@@ -119,8 +119,8 @@ func TestRustFromOpenAPI(t *testing.T) {
 
 	cfg := parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
-		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "secretmanager_openapi_v1.json"),
 		Codec: map[string]string{
 			"package:wkt": "source=google.protobuf,package=google-cloud-wkt",
 		},
@@ -150,8 +150,8 @@ func TestRustFromDiscovery(t *testing.T) {
 
 	cfg := parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecDiscovery,
-		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/compute/v1/compute_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "discovery/compute.v1.json"),
 		Codec: map[string]string{
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
@@ -187,7 +187,7 @@ func TestRustFromProtobuf(t *testing.T) {
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"package:wkt":                   "source=google.protobuf,package=google-cloud-wkt",
@@ -227,7 +227,7 @@ func TestRustClient(t *testing.T) {
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
 			Source: map[string]string{
-				"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+				"googleapis-root": path.Join(testdataDir, "googleapis"),
 			},
 			Codec: map[string]string{
 				"copyright-year":                "2025",
@@ -275,7 +275,7 @@ func TestRustNosvc(t *testing.T) {
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":                "2025",
@@ -316,7 +316,7 @@ func TestRustModuleRpc(t *testing.T) {
 		ServiceConfig:       "google/rpc/rpc_publish.yaml",
 		SpecificationSource: "google/rpc",
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",
