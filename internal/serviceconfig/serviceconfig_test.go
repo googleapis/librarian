@@ -25,7 +25,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
-const googleapisDir = "../testdata/googleapis"
+const googleapisDir = "testdata/googleapis"
 
 func TestRead(t *testing.T) {
 	got, err := Read(filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"))
