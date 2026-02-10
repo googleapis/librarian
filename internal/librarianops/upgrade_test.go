@@ -75,9 +75,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 			name: "GetLatestLibrarianVersion error",
 			setup: func(t *testing.T) string {
 				// Make the "go" command fail by setting an invalid PATH.
-				oldPath := os.Getenv("PATH")
 				t.Setenv("PATH", t.TempDir())
-				t.Cleanup(func() { t.Setenv("PATH", oldPath) })
 				return t.TempDir()
 			},
 		},
@@ -104,16 +102,6 @@ func TestRunUpgrade_Error(t *testing.T) {
 }
 
 func TestUpgradeCommand(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd() failed: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(wd); err != nil {
-			t.Fatalf("os.Chdir(%q) failed: %v", wd, err)
-		}
-	})
-
 	for _, test := range []struct {
 		name    string
 		args    []string
@@ -145,18 +133,14 @@ func TestUpgradeCommand(t *testing.T) {
 			name: "runUpgrade error",
 			args: []string{"-C", "."},
 			setup: func(t *testing.T) {
-				oldPath := os.Getenv("PATH")
 				t.Setenv("PATH", t.TempDir())
-				t.Cleanup(func() { t.Setenv("PATH", oldPath) })
 			},
 			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := t.TempDir()
-			if err := os.Chdir(repoDir); err != nil {
-				t.Fatalf("os.Chdir(%q) failed: %v", repoDir, err)
-			}
+			t.Chdir(repoDir)
 			test.setup(t)
 
 			cmd := upgradeCommand()
