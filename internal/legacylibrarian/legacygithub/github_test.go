@@ -1008,6 +1008,7 @@ func TestRetryableTransport(t *testing.T) {
 		wantStatusCode   int
 		wantErr          bool
 		wantRequestCount int
+		wantSlept        time.Duration
 	}{
 		{
 			name: "Success after retries (503)",
@@ -1063,6 +1064,21 @@ func TestRetryableTransport(t *testing.T) {
 			wantRequestCount: 2,
 		},
 		{
+			name: "Success after retries with capping (Retry-After > 60s)",
+			handler: func(w http.ResponseWriter, r *http.Request, requestCount int) {
+				if requestCount < 2 {
+					w.Header().Set("Retry-After", "120")
+					w.WriteHeader(http.StatusTooManyRequests)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			},
+			wantStatusCode:   http.StatusOK,
+			wantErr:          false,
+			wantRequestCount: 2,
+			wantSlept:        60 * time.Second,
+		},
+		{
 			name: "Failure after all retries",
 			handler: func(w http.ResponseWriter, r *http.Request, _ int) {
 				w.WriteHeader(http.StatusServiceUnavailable)
@@ -1087,7 +1103,11 @@ func TestRetryableTransport(t *testing.T) {
 			if !ok {
 				t.Fatalf("expected transport to be *retryableTransport but got %T", httpClient.Transport)
 			}
-			rt.delay = 1 * time.Millisecond
+			// Mock sleep to verifying delay duration and avoid waiting
+			var slept time.Duration
+			rt.sleep = func(d time.Duration) {
+				slept = d
+			}
 			client.BaseURL, _ = url.Parse(server.URL + "/")
 
 			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
@@ -1112,6 +1132,9 @@ func TestRetryableTransport(t *testing.T) {
 			}
 			if requestCount != test.wantRequestCount {
 				t.Errorf("requestCount = %d, want %d", requestCount, test.wantRequestCount)
+			}
+			if test.wantSlept > 0 && slept != test.wantSlept {
+				t.Errorf("slept = %v, want %v", slept, test.wantSlept)
 			}
 		})
 	}
