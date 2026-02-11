@@ -16,10 +16,12 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -224,7 +226,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			})
 	}
 	maps.Copy(idToGoModule, addGoModules)
-
+	nameWithAliasshim, err := libraryWithAliasshim(input.repoPath)
+	if err != nil {
+		panic(err)
+	}
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -235,6 +240,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
+		if _, ok := nameWithAliasshim[id]; ok {
+			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
+		}
+		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
@@ -321,4 +330,35 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	}
 
 	return yaml.Read[RepoConfig](configFile)
+}
+
+func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
+	files, err := aliasshim(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]bool)
+	for _, file := range files {
+		// aliasshim.go always lives in repoPath/{libraryName}/aliasshim/ directory.
+		parentDir := filepath.Dir(filepath.Dir(file))
+		names[filepath.Base(parentDir)] = true
+	}
+	return names, nil
+}
+
+func aliasshim(repoPath string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(repoPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if d.Name() == "aliasshim.go" {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }
