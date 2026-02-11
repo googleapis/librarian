@@ -162,7 +162,10 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.Transport = "grpc+rest"
 	} else {
 		cfg.Default.ReleaseLevel = "ga"
-		cfg.Libraries = buildGoLibraries(input)
+		cfg.Libraries, err = buildGoLibraries(input)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
@@ -203,7 +206,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	}, nil
 }
 
-func buildGoLibraries(input *MigrationInput) []*config.Library {
+func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap(
 		input.librarianState.Libraries,
@@ -228,7 +231,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 	maps.Copy(idToGoModule, addGoModules)
 	nameWithAliasshim, err := libraryWithAliasshim(input.repoPath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
@@ -283,7 +286,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 		libraries = append(libraries, library)
 	}
 
-	return libraries
+	return libraries, nil
 }
 
 func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {

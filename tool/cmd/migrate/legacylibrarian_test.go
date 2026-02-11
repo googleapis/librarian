@@ -446,7 +446,10 @@ func TestBuildGoLibraries(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGoLibraries(test.input)
+			got, err := buildGoLibraries(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got, cmpopts.SortSlices(func(a, b *config.Library) bool {
 				return a.Name < b.Name
 			})); diff != "" {
@@ -529,8 +532,7 @@ func TestLibraryWithAliasshim_Success(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := libraryWithAliasshim(test.repoPath)
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
