@@ -42,3 +42,19 @@ func GetGcloudType(t api.Typez) string {
 		panic(fmt.Sprintf("unsupported API type: %v", t))
 	}
 }
+
+// IsSafeName checks if a name contains only safe characters (alphanumeric, underscores, dots).
+// This prevents injection vulnerabilities when generating code or templates.
+func IsSafeName(name string) bool {
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '_', r == '.':
+		default:
+			return false
+		}
+	}
+	return true
+}
