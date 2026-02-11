@@ -102,6 +102,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		{
 			name:        "go_monorepo_defaults",
 			lang:        "go",
+			repoPath:    "testdata/google-cloud-go",
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
@@ -197,8 +198,9 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 		},
 		{
-			name: "has_a_librarian_config",
-			lang: "go",
+			name:     "has_a_librarian_config",
+			lang:     "go",
+			repoPath: "testdata/google-cloud-go",
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
