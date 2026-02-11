@@ -408,6 +408,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 				librarianConfig: &legacyconfig.LibrarianConfig{},
 				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
 			},
 			want: []*config.Library{
 				{
