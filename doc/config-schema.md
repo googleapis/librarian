@@ -103,7 +103,7 @@ This document describes the schema for the librarian.yaml.
 
 ## DartPackage Configuration
 
-[Link to code](../internal/config/language.go#L280)
+[Link to code](../internal/config/language.go#L284)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -114,10 +114,10 @@ This document describes the schema for the librarian.yaml.
 | `issue_tracker_url` | string | IssueTrackerURL is the URL for the issue tracker. |
 | `library_path_override` | string | LibraryPathOverride overrides the library path. |
 | `name_override` | string | NameOverride overrides the package name |
-| `packages` | map[string]string | Packages maps Dart package names to version constraints. Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0". |
+| `packages` | map[string]string | Packages maps Dart package names to version constraints. Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0". These are merged with default settings, with library settings taking precedence. |
 | `part_file` | string | PartFile is the path to a part file to include in the generated library. |
-| `prefixes` | map[string]string | Prefixes maps protobuf package names to Dart import prefixes. Keys are in the format "prefix:google.protobuf" and values are the prefix names. |
-| `protos` | map[string]string | Protos maps protobuf package names to Dart import paths. Keys are in the format "proto:google.api" and values are import paths like "package:google_cloud_api/api.dart". |
+| `prefixes` | map[string]string | Prefixes maps protobuf package names to Dart import prefixes. Keys are in the format "prefix:google.protobuf" and values are the prefix names. These are merged with default settings, with library settings taking precedence. |
+| `protos` | map[string]string | Protos maps protobuf package names to Dart import paths. Keys are in the format "proto:google.api" and values are import paths like "package:google_cloud_api/api.dart". These are merged with default settings, with library settings taking precedence. |
 | `readme_after_title_text` | string | ReadmeAfterTitleText is text to insert in the README after the title. |
 | `readme_quickstart_text` | string | ReadmeQuickstartText is text to use for the quickstart section in the README. |
 | `repository_url` | string | RepositoryURL is the URL to the repository for this package. |
@@ -147,7 +147,7 @@ This document describes the schema for the librarian.yaml.
 
 ## PythonPackage Configuration
 
-[Link to code](../internal/config/language.go#L265)
+[Link to code](../internal/config/language.go#L269)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
@@ -155,7 +155,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustCrate Configuration
 
-[Link to code](../internal/config/language.go#L131)
+[Link to code](../internal/config/language.go#L135)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
@@ -185,14 +185,14 @@ This document describes the schema for the librarian.yaml.
 [Link to code](../internal/config/language.go#L37)
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. |
+| `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. These are inherited by all libraries. If a library defines its own package_dependencies, the library-specific ones take precedence over these defaults for dependencies with the same name. |
 | `disabled_rustdoc_warnings` | list of string | DisabledRustdocWarnings is a list of rustdoc warnings to disable. |
 | `generate_setter_samples` | string | GenerateSetterSamples indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | GenerateRpcSamples indicates whether to generate RPC samples. |
 
 ## RustDiscovery Configuration
 
-[Link to code](../internal/config/language.go#L247)
+[Link to code](../internal/config/language.go#L251)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
@@ -200,7 +200,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDocumentationOverride Configuration
 
-[Link to code](../internal/config/language.go#L226)
+[Link to code](../internal/config/language.go#L230)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified element ID (e.g., .google.cloud.dialogflow.v2.Message.field). |
@@ -209,7 +209,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustModule Configuration
 
-[Link to code](../internal/config/language.go#L54)
+[Link to code](../internal/config/language.go#L57)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
@@ -238,7 +238,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPackageDependency Configuration
 
-[Link to code](../internal/config/language.go#L198)
+[Link to code](../internal/config/language.go#L202)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the dependency name. It is listed first so it appears at the top of each dependency entry in YAML. |
@@ -251,7 +251,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPaginationOverride Configuration
 
-[Link to code](../internal/config/language.go#L238)
+[Link to code](../internal/config/language.go#L242)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
@@ -259,7 +259,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPoller Configuration
 
-[Link to code](../internal/config/language.go#L256)
+[Link to code](../internal/config/language.go#L260)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `prefix` | string | Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |

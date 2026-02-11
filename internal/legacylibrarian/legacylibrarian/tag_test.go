@@ -16,6 +16,7 @@ package legacylibrarian
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -620,6 +621,11 @@ func TestProcessPullRequest(t *testing.T) {
 			if test.ghClient.replaceLabelsCalls != test.wantReplaceLabelsCalls {
 				t.Errorf("replaceLabelsCalls = %v, want %v", test.ghClient.replaceLabelsCalls, test.wantReplaceLabelsCalls)
 			}
+			if test.wantErrMsg == "" && test.ghClient.replaceLabelsCalls > 0 {
+				if !slices.Contains(test.ghClient.replacedLabels, releaseDoneLabel) {
+					t.Errorf("expected release:done label in %v", test.ghClient.replacedLabels)
+				}
+			}
 			if diff := cmp.Diff(test.wantReleaseNames, test.ghClient.releaseNames); diff != "" {
 				t.Errorf("releaseNames mismatch (-want +got):\n%s", diff)
 			}
@@ -627,7 +633,7 @@ func TestProcessPullRequest(t *testing.T) {
 	}
 }
 
-func TestReplacePendingLabel(t *testing.T) {
+func TestReplaceReleasePendingLabel(t *testing.T) {
 	prWithPending := &legacygithub.PullRequest{
 		Number: gh.Ptr(123),
 		Labels: []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}, {Name: gh.Ptr("label1")}},
@@ -642,16 +648,25 @@ func TestReplacePendingLabel(t *testing.T) {
 		pr         *legacygithub.PullRequest
 		ghClient   *mockGitHubClient
 		wantErrMsg string
+		newLabel   string
 	}{
 		{
-			name:     "with pending label",
+			name:     "replace with done label",
 			pr:       prWithPending,
 			ghClient: &mockGitHubClient{},
+			newLabel: releaseDoneLabel,
+		},
+		{
+			name:     "replace with failed label",
+			pr:       prWithPending,
+			ghClient: &mockGitHubClient{},
+			newLabel: releaseFailedLabel,
 		},
 		{
 			name:     "without pending label",
 			pr:       prWithoutPending,
 			ghClient: &mockGitHubClient{},
+			newLabel: releaseDoneLabel,
 		},
 		{
 			name: "replace labels fails",
@@ -660,13 +675,14 @@ func TestReplacePendingLabel(t *testing.T) {
 				replaceLabelsErr: errors.New("replace labels error"),
 			},
 			wantErrMsg: "failed to replace labels",
+			newLabel:   releaseDoneLabel,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &tagRunner{
 				ghClient: test.ghClient,
 			}
-			err := r.replacePendingLabel(t.Context(), test.pr)
+			err := r.replaceReleasePendingLabel(t.Context(), test.pr, test.newLabel)
 			if err != nil {
 				if test.wantErrMsg == "" {
 					t.Fatalf("unexpected error: %v", err)
@@ -677,6 +693,11 @@ func TestReplacePendingLabel(t *testing.T) {
 				return
 			} else if test.wantErrMsg != "" {
 				t.Fatalf("expected error containing %q, got nil", test.wantErrMsg)
+			}
+			if test.ghClient.replacedLabels != nil {
+				if !slices.Contains(test.ghClient.replacedLabels, test.newLabel) {
+					t.Errorf("expected %s label in %v", test.newLabel, test.ghClient.replacedLabels)
+				}
 			}
 		})
 	}
@@ -727,8 +748,8 @@ func Test_tagRunner_run_processPullRequests(t *testing.T) {
 	if ghClient.createReleaseCalls != 1 {
 		t.Errorf("createReleaseCalls = %v, want 1", ghClient.createReleaseCalls)
 	}
-	if ghClient.replaceLabelsCalls != 1 {
-		t.Errorf("replaceLabelsCalls = %v, want 1", ghClient.replaceLabelsCalls)
+	if ghClient.replaceLabelsCalls != 2 {
+		t.Errorf("replaceLabelsCalls = %v, want 2", ghClient.replaceLabelsCalls)
 	}
 	wantReleaseNames := []string{"google-cloud-storage: v1.2.3"}
 	if diff := cmp.Diff(wantReleaseNames, ghClient.releaseNames); diff != "" {

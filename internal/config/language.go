@@ -35,7 +35,10 @@ type GoAPI struct {
 
 // RustDefault contains Rust-specific default configuration.
 type RustDefault struct {
-	// PackageDependencies is a list of default package dependencies.
+	// PackageDependencies is a list of default package dependencies. These
+	// are inherited by all libraries. If a library defines its own
+	// package_dependencies, the library-specific ones take precedence over
+	// these defaults for dependencies with the same name.
 	PackageDependencies []*RustPackageDependency `yaml:"package_dependencies,omitempty"`
 
 	// DisabledRustdocWarnings is a list of rustdoc warnings to disable.
@@ -127,7 +130,8 @@ type RustModule struct {
 	Template string `yaml:"template"`
 }
 
-// RustCrate contains Rust-specific library configuration.
+// RustCrate contains Rust-specific library configuration. It inherits from
+// RustDefault, allowing library-specific overrides of global settings.
 type RustCrate struct {
 	RustDefault `yaml:",inline"`
 
@@ -305,6 +309,7 @@ type DartPackage struct {
 
 	// Packages maps Dart package names to version constraints.
 	// Keys are in the format "package:googleapis_auth" and values are version strings like "^2.0.0".
+	// These are merged with default settings, with library settings taking precedence.
 	Packages map[string]string `yaml:"packages,omitempty"`
 
 	// PartFile is the path to a part file to include in the generated library.
@@ -312,10 +317,12 @@ type DartPackage struct {
 
 	// Prefixes maps protobuf package names to Dart import prefixes.
 	// Keys are in the format "prefix:google.protobuf" and values are the prefix names.
+	// These are merged with default settings, with library settings taking precedence.
 	Prefixes map[string]string `yaml:"prefixes,omitempty"`
 
 	// Protos maps protobuf package names to Dart import paths.
 	// Keys are in the format "proto:google.api" and values are import paths like "package:google_cloud_api/api.dart".
+	// These are merged with default settings, with library settings taking precedence.
 	Protos map[string]string `yaml:"protos,omitempty"`
 
 	// ReadmeAfterTitleText is text to insert in the README after the title.
