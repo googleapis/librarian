@@ -40,6 +40,7 @@ const (
 	tagCmdName          = "tag"
 	releasePendingLabel = "release:pending"
 	releaseDoneLabel    = "release:done"
+	releaseFailedLabel  = "release:failed"
 )
 
 var (
@@ -134,6 +135,9 @@ func (r *tagRunner) run(ctx context.Context) error {
 	for _, p := range prs {
 		if err := r.processPullRequest(ctx, p); err != nil {
 			slog.Error("failed to process pull request", "pr", p.GetNumber(), "error", err)
+			if err := r.replaceReleasePendingLabel(ctx, p, releaseFailedLabel); err != nil {
+				slog.Error("failed to replace pending label with failed label", "pr", p.GetNumber(), "error", err)
+			}
 			hadErrors = true
 			continue
 		}
@@ -228,7 +232,7 @@ func (r *tagRunner) processPullRequest(ctx context.Context, p *legacygithub.Pull
 		}
 
 	}
-	return r.replacePendingLabel(ctx, p)
+	return r.replaceReleasePendingLabel(ctx, p, releaseDoneLabel)
 }
 
 // parsePullRequestBody parses a string containing release notes and returns a slice of ParsedPullRequestBody.
@@ -314,8 +318,8 @@ func parsePullRequestBody(body string) []libraryRelease {
 	return parsedBodies
 }
 
-// replacePendingLabel is a helper function that replaces the `release:pending` label with `release:done`.
-func (r *tagRunner) replacePendingLabel(ctx context.Context, p *legacygithub.PullRequest) error {
+// replaceReleasePendingLabel is a helper function that replaces the `release:pending` label with `newLabel`.
+func (r *tagRunner) replaceReleasePendingLabel(ctx context.Context, p *legacygithub.PullRequest, newLabel string) error {
 	var currentLabels []string
 	for _, label := range p.Labels {
 		currentLabels = append(currentLabels, label.GetName())
@@ -323,7 +327,7 @@ func (r *tagRunner) replacePendingLabel(ctx context.Context, p *legacygithub.Pul
 	currentLabels = slices.DeleteFunc(currentLabels, func(s string) bool {
 		return s == releasePendingLabel
 	})
-	currentLabels = append(currentLabels, releaseDoneLabel)
+	currentLabels = append(currentLabels, newLabel)
 	if err := r.ghClient.ReplaceLabels(ctx, p.GetNumber(), currentLabels); err != nil {
 		return fmt.Errorf("failed to replace labels: %w", err)
 	}
