@@ -46,3 +46,26 @@ func TestGetGcloudType(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSafeName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		want bool
+	}{
+		{"validName", true},
+		{"valid_name", true},
+		{"valid.name", true},
+		{"valid123", true},
+		{"invalid-name", false},
+		{"invalid name", false},
+		{"invalid$name", false},
+		{"", true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := IsSafeName(test.name)
+			if got != test.want {
+				t.Errorf("IsSafeName(%q) = %v, want %v", test.name, got, test.want)
+			}
+		})
+	}
+}

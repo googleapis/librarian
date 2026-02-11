@@ -88,6 +88,11 @@ func TestGenerateResourceCommands(t *testing.T) {
 				Package: "google.cloud.parallelstore.v1",
 			},
 			InputType: &api.Message{},
+			PathInfo: &api.PathInfo{
+				Bindings: []*api.PathBinding{{
+					PathTemplate: &api.PathTemplate{},
+				}},
+			},
 		},
 	}, tmpDir, &Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
 

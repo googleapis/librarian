@@ -237,3 +237,51 @@ func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string
 	}
 	return ""
 }
+
+// ExtractPathFromSegments extracts the dot-separated collection path from path segments.
+// It handles:
+// 1. Skipping API version prefixes (e.g., v1).
+// 2. Extracting internal structure from complex variables (e.g., {name=projects/*/locations/*}).
+// 3. Including all literal segments (e.g., instances in .../instances).
+func ExtractPathFromSegments(segments []api.PathSegment) string {
+	var parts []string
+	for i, seg := range segments {
+		if seg.Literal != nil {
+			val := *seg.Literal
+			// Heuristic: Skip API version at the start.
+			if i == 0 && len(val) >= 2 && val[0] == 'v' && val[1] >= '0' && val[1] <= '9' {
+				continue
+			}
+			parts = append(parts, val)
+		} else if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
+			internal := extractCollectionFromStrings(seg.Variable.Segments)
+			if internal != "" {
+				parts = append(parts, internal)
+			}
+		}
+	}
+	return strings.Join(parts, ".")
+}
+
+// extractCollectionFromStrings constructs a collection path from a list of string segments
+// (literals and wildcards), following AIP-122 conventions (literal followed by variable/wildcard).
+func extractCollectionFromStrings(parts []string) string {
+	var sb strings.Builder
+	var prev string
+
+	for _, curr := range parts {
+		switch curr {
+		case "*", "**":
+			if prev != "" {
+				if sb.Len() > 0 {
+					sb.WriteByte('.')
+				}
+				sb.WriteString(prev)
+				prev = ""
+			}
+		default:
+			prev = curr
+		}
+	}
+	return sb.String()
+}
