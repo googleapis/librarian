@@ -73,6 +73,8 @@ func cleanOutput(dir string, keep []string) error {
 	})
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/4001): move this function
+// to internal/librarian/golang when the logic is deviate from cleanOutput.
 func cleanGo(library *config.Library) (*config.Library, error) {
 	libraryDir := filepath.Join(library.Output, library.Name)
 	if err := cleanOutput(libraryDir, library.Keep); err != nil {
