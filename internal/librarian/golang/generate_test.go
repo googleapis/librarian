@@ -159,7 +159,7 @@ func TestGenerate(t *testing.T) {
 				Go:           test.goModule,
 			}
 
-			if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			if err := generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 			if err := Format(t.Context(), library); err != nil {

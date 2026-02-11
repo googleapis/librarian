@@ -31,7 +31,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -78,10 +77,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if cfg.Sources == nil {
 		return errEmptySources
 	}
-	return generateLibraries(ctx, all, cfg, libraryName)
-}
 
-func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
 	// Fetch sources.
 	var googleapisDir string
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
@@ -97,24 +93,24 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		googleapisDir = dir
 	}
 
-	var rustSources *source.Sources
+	var rustDartSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
 		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
 		if err != nil {
 			return err
 		}
-		rustSources = sources
-		rustSources.Googleapis = googleapisDir
+		rustDartSources = sources
+		rustDartSources.Googleapis = googleapisDir
 	}
 
-	// Prepare and clean libraries sequentially.
-	// This avoids race conditions when output directories are nested.
+	// Prepare the libraries to generate by skipping as specified and applying
+	// defaults.
 	var libraries []*config.Library
 	for _, lib := range cfg.Libraries {
 		if !shouldGenerate(lib, all, libraryName) {
 			continue
 		}
-		prepared, err := prepareLibrary(cfg.Language, lib, cfg.Default)
+		prepared, err := applyDefaults(cfg.Language, lib, cfg.Default)
 		if err != nil {
 			return err
 		}
@@ -132,24 +128,105 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		return fmt.Errorf("%w: %q", ErrLibraryNotFound, libraryName)
 	}
 
-	// Generate all libraries in parallel.
-	g, gctx := errgroup.WithContext(ctx)
-	for _, lib := range libraries {
-		g.Go(func() error {
-			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
-		})
-	}
-	if err := g.Wait(); err != nil {
+	// Clean, generate and format libraries. Each of these steps is completed
+	// before the next one starts, but each language can choose whether to
+	// implement the step in parallel across all libraries or in sequence.
+	if err := cleanLibraries(cfg.Language, libraries); err != nil {
 		return err
 	}
-
-	// Format all libraries sequentially.
-	for _, lib := range libraries {
-		if err := formatLibrary(ctx, cfg.Language, lib); err != nil {
-			return err
-		}
+	if err := generateLibraries(ctx, cfg.Language, libraries, googleapisDir, rustDartSources); err != nil {
+		return err
+	}
+	if err := formatLibraries(ctx, cfg.Language, libraries); err != nil {
+		return err
 	}
 	return postGenerate(ctx, cfg.Language)
+}
+
+// cleanLibraries iterates over all the given libraries sequentially,
+// delegating to language-specific code to clean each library.
+func cleanLibraries(language string, libraries []*config.Library) error {
+	for _, library := range libraries {
+		switch language {
+		case languageFake:
+			// No cleaning needed.
+		case languageDart, languageGo, languagePython:
+			if err := cleanOutput(library.Output, library.Keep); err != nil {
+				return err
+			}
+		case languageRust:
+			keep, err := rust.Keep(library)
+			if err != nil {
+				return fmt.Errorf("library %q: %w", library.Name, err)
+			}
+			if err := cleanOutput(library.Output, keep); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// generateLibraries delegates to language-specific code to generate all the
+// given libraries.
+func generateLibraries(ctx context.Context, language string, libraries []*config.Library, googleapisDir string, src *source.Sources) error {
+	switch language {
+	case languageFake:
+		if err := fakeGenerateLibraries(libraries); err != nil {
+			return err
+		}
+	case languageDart:
+		if err := dart.GenerateLibraries(ctx, libraries, src); err != nil {
+			return err
+		}
+	case languagePython:
+		if err := python.GenerateLibraries(ctx, libraries, googleapisDir); err != nil {
+			return err
+		}
+	case languageGo:
+		if err := golang.GenerateLibraries(ctx, libraries, googleapisDir); err != nil {
+			return err
+		}
+	case languageRust:
+		if err := rust.GenerateLibraries(ctx, libraries, src); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("language %q does not support generation", language)
+	}
+	return nil
+}
+
+// formatLibraries iterates over all the given libraries sequentially,
+// delegating to language-specific code to format each library.
+func formatLibraries(ctx context.Context, language string, libraries []*config.Library) error {
+	for _, library := range libraries {
+		switch language {
+		case languageFake:
+			if err := fakeFormat(library); err != nil {
+				return err
+			}
+		case languageDart:
+			if err := dart.Format(ctx, library); err != nil {
+				return err
+			}
+		case languageGo:
+			if err := golang.Format(ctx, library); err != nil {
+				return err
+			}
+		case languageRust:
+			if err := rust.Format(ctx, library); err != nil {
+				return err
+			}
+		case languagePython:
+			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
+			// generation and formatting for Python.
+			return nil
+		default:
+			return fmt.Errorf("language %q does not support formatting", language)
+		}
+	}
+	return nil
 }
 
 // postGenerate performs repository-level actions after all individual
@@ -194,77 +271,6 @@ func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
 		return false
 	}
 	return all || lib.Name == libraryName
-}
-
-// prepareLibrary applies defaults and cleans the output directory.
-func prepareLibrary(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	library, err := applyDefaults(language, lib, defaults)
-	if err != nil {
-		return nil, err
-	}
-	switch language {
-	case languageFake:
-		// No cleaning needed.
-	case languageDart, languageGo, languagePython:
-		if err := cleanOutput(library.Output, library.Keep); err != nil {
-			return nil, err
-		}
-	case languageRust:
-		keep, err := rust.Keep(library)
-		if err != nil {
-			return nil, fmt.Errorf("library %q: %w", library.Name, err)
-		}
-		if err := cleanOutput(library.Output, keep); err != nil {
-			return nil, err
-		}
-	}
-	return library, nil
-}
-
-func generate(ctx context.Context, language string, library *config.Library, googleapisDir string, src *source.Sources) error {
-	switch language {
-	case languageFake:
-		if err := fakeGenerate(library); err != nil {
-			return err
-		}
-	case languageDart:
-		if err := dart.Generate(ctx, library, src); err != nil {
-			return err
-		}
-	case languagePython:
-		if err := python.Generate(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	case languageGo:
-		if err := golang.Generate(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	case languageRust:
-		if err := rust.Generate(ctx, library, src); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("language %q does not support generation", language)
-	}
-	return nil
-}
-
-func formatLibrary(ctx context.Context, language string, library *config.Library) error {
-	switch language {
-	case languageFake:
-		return fakeFormat(library)
-	case languageDart:
-		return dart.Format(ctx, library)
-	case languageGo:
-		return golang.Format(ctx, library)
-	case languageRust:
-		return rust.Format(ctx, library)
-	case languagePython:
-		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
-		// generation and formatting for Python.
-		return nil
-	}
-	return fmt.Errorf("language %q does not support formatting", language)
 }
 
 // cleanOutput removes all files in dir except those in keep. The keep list
