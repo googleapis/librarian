@@ -335,6 +335,8 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	return yaml.Read[RepoConfig](configFile)
 }
 
+// libraryWithAliasshim traverses the repoPath to find repoPath/{libraryName}/aliasshim/aliasshim.go.
+// Returns all name of the library in a map for faster look up.
 func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
 	files, err := aliasshim(repoPath)
 	if err != nil {
@@ -342,7 +344,6 @@ func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
 	}
 	names := make(map[string]bool)
 	for _, file := range files {
-		// aliasshim.go always lives in repoPath/{libraryName}/aliasshim/ directory.
 		parentDir := filepath.Dir(filepath.Dir(file))
 		names[filepath.Base(parentDir)] = true
 	}
