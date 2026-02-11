@@ -444,6 +444,27 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "fill keep list",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "accessapproval",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+			},
+			want: []*config.Library{
+				{
+					Name: "accessapproval",
+					Keep: []string{"aliasshim/aliasshim.go"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
