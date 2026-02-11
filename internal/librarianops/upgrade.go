@@ -41,16 +41,13 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			_, workDir, verbose, err := ParseRepoFlags(cmd)
+			_, workDir, verbose, err := parseFlags(cmd)
 			if err != nil {
 				return err
 			}
 			command.Verbose = verbose
 			_, err = runUpgrade(ctx, workDir)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		},
 	}
 }
@@ -58,13 +55,12 @@ For each repository, librarianops will:
 // Upgrade consist in getting the latest librarian version and updates the librarian.yaml file.
 // It returns the new version, and an error if one occurred.
 func runUpgrade(ctx context.Context, repoDir string) (string, error) {
-	version, err := GetLatestLibrarianVersion(ctx)
+	version, err := getLibrarianVersionAtMain(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get latest librarian version: %w", err)
 	}
 
-	configPath := GenerateLibrarianConfigPath(repoDir)
-	if err := UpdateLibrarianVersionInConfigFile(version, configPath); err != nil {
+	if err := updateLibrarianVersion(version, repoDir); err != nil {
 		return "", fmt.Errorf("failed to update librarian version: %w", err)
 	}
 

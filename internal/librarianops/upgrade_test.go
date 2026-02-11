@@ -16,6 +16,7 @@ package librarianops
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,37 +25,41 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+func generateLibrarianConfigPath(repoDir string) string {
+	return filepath.Join(repoDir, "librarian.yaml")
+}
+
 func TestRunUpgrade(t *testing.T) {
-	wantVersion, err := GetLatestLibrarianVersion(t.Context())
+	wantVersion, err := getLibrarianVersionAtMain(t.Context())
 	if err != nil {
-		t.Fatalf("GetLatestLibrarianVersion() failed: %v", err)
+		t.Fatal(err)
 	}
 	if !semver.IsValid(wantVersion) {
-		t.Fatalf("version from GetLatestLibrarianVersion %q is not a valid semantic version", wantVersion)
+		t.Fatalf("version from getLibrarianVersionAtMain %q is not a valid semantic version", wantVersion)
 	}
 
 	repoDir := t.TempDir()
-	configPath := GenerateLibrarianConfigPath(repoDir)
+	configPath := generateLibrarianConfigPath(repoDir)
 	initialConfig := &config.Config{
 		Language: "rust",
 		Version:  "v0.1.0",
 	}
 	if err := yaml.Write(configPath, initialConfig); err != nil {
-		t.Fatalf("Failed to write initial librarian.yaml: %v", err)
+		t.Fatal(err)
 	}
 
 	gotVersion, err := runUpgrade(t.Context(), repoDir)
 	if err != nil {
-		t.Fatalf("runUpgrade failed: %v", err)
+		t.Fatal(err)
 	}
 
 	if diff := cmp.Diff(wantVersion, gotVersion); diff != "" {
-		t.Errorf("runUpgrade() version mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	gotConfig, err := yaml.Read[config.Config](configPath)
 	if err != nil {
-		t.Fatalf("Failed to read librarian.yaml: %v", err)
+		t.Fatal(err)
 	}
 
 	wantConfig := &config.Config{
@@ -62,7 +67,7 @@ func TestRunUpgrade(t *testing.T) {
 		Version:  wantVersion,
 	}
 	if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
-		t.Errorf("config mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -72,7 +77,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 		setup func(t *testing.T) (repoDir string)
 	}{
 		{
-			name: "GetLatestLibrarianVersion error",
+			name: "getLibrarianVersionAtMain error",
 			setup: func(t *testing.T) string {
 				// Make the "go" command fail by setting an invalid PATH.
 				t.Setenv("PATH", t.TempDir())
@@ -84,9 +89,9 @@ func TestRunUpgrade_Error(t *testing.T) {
 			setup: func(t *testing.T) string {
 				// Make writing the config file fail by creating a directory at its path.
 				repoDir := t.TempDir()
-				configPath := GenerateLibrarianConfigPath(repoDir)
+				configPath := generateLibrarianConfigPath(repoDir)
 				if err := os.Mkdir(configPath, 0755); err != nil {
-					t.Fatalf("Failed to create directory at config path: %v", err)
+					t.Fatal(err)
 				}
 				return repoDir
 			},
@@ -102,32 +107,36 @@ func TestRunUpgrade_Error(t *testing.T) {
 }
 
 func TestUpgradeCommand(t *testing.T) {
+	// Chdir is necessary because the upgrade command's -C flag defaults to the
+	// current working directory.
+	repoDir := t.TempDir()
+	t.Chdir(repoDir)
+
+	configPath := generateLibrarianConfigPath(".")
+	initialConfig := &config.Config{
+		Language: "rust",
+		Version:  "v0.1.0",
+	}
+	if err := yaml.Write(configPath, initialConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := upgradeCommand()
+	if err := cmd.Run(t.Context(), []string{"-C", "."}); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestUpgradeCommand_Error(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		args    []string
-		setup   func(t *testing.T)
-		wantErr bool
+		name  string
+		args  []string
+		setup func(t *testing.T)
 	}{
 		{
-			name: "success",
-			args: []string{"-C", "."},
-			setup: func(t *testing.T) {
-				configPath := "librarian.yaml"
-				initialConfig := &config.Config{
-					Language: "rust",
-					Version:  "v0.1.0",
-				}
-				if err := yaml.Write(configPath, initialConfig); err != nil {
-					t.Fatalf("Failed to write initial librarian.yaml: %v", err)
-				}
-			},
-			wantErr: false,
-		},
-		{
-			name:    "no repo arg",
-			args:    []string{},
-			setup:   func(t *testing.T) {},
-			wantErr: true,
+			name:  "no repo arg",
+			args:  []string{},
+			setup: func(t *testing.T) {},
 		},
 		{
 			name: "runUpgrade error",
@@ -135,18 +144,15 @@ func TestUpgradeCommand(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
-			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repoDir := t.TempDir()
-			t.Chdir(repoDir)
+			t.Chdir(t.TempDir())
 			test.setup(t)
 
 			cmd := upgradeCommand()
-			err := cmd.Run(t.Context(), test.args)
-			if (err != nil) != test.wantErr {
-				t.Errorf("cmd.Run() error = %v, wantErr %v", err, test.wantErr)
+			if err := cmd.Run(t.Context(), test.args); err == nil {
+				t.Error("expected error, got nil")
 			}
 		})
 	}
