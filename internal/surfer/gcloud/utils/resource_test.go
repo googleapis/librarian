@@ -243,6 +243,60 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 	}
 }
 
+func TestExtractPathFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     string
+	}{
+		{
+			name: "Standard Regional",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("v1"),
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegment().WithLiteral("locations"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
+				*api.NewPathSegment().WithLiteral("instances"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
+			},
+			want: "projects.locations.instances",
+		},
+		{
+			name: "Complex Variable",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("v1"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()),
+			},
+			want: "projects.locations.instances",
+		},
+		{
+			name: "Trailing Literal (List)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("v1"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()),
+				*api.NewPathSegment().WithLiteral("instances"),
+			},
+			want: "projects.locations.instances",
+		},
+		{
+			name: "No Version",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
+			},
+			want: "projects",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ExtractPathFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("ExtractPathFromSegments mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestIsPrimaryResource(t *testing.T) {
 	for _, test := range []struct {
 		name   string

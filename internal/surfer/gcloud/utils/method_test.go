@@ -171,6 +171,49 @@ func TestGetCommandName(t *testing.T) {
 	}
 }
 
+func TestFindResourceMessage(t *testing.T) {
+	instanceMsg := &api.Message{
+		Name: "Instance",
+	}
+	for _, test := range []struct {
+		name       string
+		outputType *api.Message
+		want       *api.Message
+	}{
+		{
+			name: "Standard List Response",
+			outputType: &api.Message{
+				Fields: []*api.Field{
+					{Name: "next_page_token", Typez: api.STRING_TYPE},
+					{Name: "instances", Repeated: true, MessageType: instanceMsg},
+				},
+			},
+			want: instanceMsg,
+		},
+		{
+			name: "No Repeated Message",
+			outputType: &api.Message{
+				Fields: []*api.Field{
+					{Name: "status", Typez: api.STRING_TYPE},
+				},
+			},
+			want: nil,
+		},
+		{
+			name:       "Nil Output Type",
+			outputType: nil,
+			want:       nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FindResourceMessage(test.outputType)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("FindResourceMessage mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGetCommandName_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string

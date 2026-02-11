@@ -560,7 +560,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 	}
 }
 
-func TestModuleToSidekickConfig(t *testing.T) {
+func TestModuleToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -762,7 +762,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 
 			var commentOverrides []sidekickconfig.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
-				got, err := moduleToSidekickConfig(test.library, module, sources)
+				got, err := moduleToModelConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
 				}

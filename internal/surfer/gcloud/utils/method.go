@@ -118,6 +118,12 @@ func IsDelete(m *api.Method) bool {
 	return true
 }
 
+// IsStandardMethod determines if the method is one of the standard AIP methods
+// (Get, List, Create, Update, Delete).
+func IsStandardMethod(m *api.Method) bool {
+	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
+}
+
 // getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
 func getHTTPVerb(m *api.Method) string {
 	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
@@ -172,4 +178,18 @@ func IsCollectionMethod(m *api.Method) bool {
 		// If the path ends with a literal, it's a collection method.
 		return lastSegment.Literal != nil
 	}
+}
+
+// FindResourceMessage identifies the primary resource message within a List response.
+// Per AIP-132, this is usually the repeated field in the response message.
+func FindResourceMessage(outputType *api.Message) *api.Message {
+	if outputType == nil {
+		return nil
+	}
+	for _, f := range outputType.Fields {
+		if f.Repeated && f.MessageType != nil {
+			return f.MessageType
+		}
+	}
+	return nil
 }

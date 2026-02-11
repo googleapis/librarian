@@ -65,13 +65,15 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 		return nil, err
 	}
 	cmd.Arguments = args
-	cmd.Request = newRequest(method, overrides, model)
+	cmd.Request = newRequest(method, overrides, model, service)
 
 	if utils.IsList(method) {
 		// List commands should have an id_field to enable the --uri flag.
 		cmd.Response = &Response{
 			IDField: "name",
 		}
+		// List commands should have a default output format.
+		cmd.Output = newOutputConfig(method, model)
 	}
 
 	if utils.IsUpdate(method) {
@@ -82,7 +84,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	}
 
 	if method.OperationInfo != nil {
-		cmd.Async = newAsync(method, overrides)
+		cmd.Async = newAsync(method, model, overrides, service)
 	}
 
 	return cmd, nil
@@ -408,20 +410,172 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 }
 
 // newRequest creates the `Request` part of the command definition.
-func newRequest(method *api.Method, overrides *Config, model *api.API) *Request {
-	// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
-	return &Request{
+func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.Service) *Request {
+	req := &Request{
 		APIVersion: apiVersion(overrides),
-		Collection: []string{fmt.Sprintf("parallelstore.projects.locations.%s", utils.GetPluralResourceNameForMethod(method, model))},
+		Collection: newCollectionPath(method, service, false),
 	}
+
+	// For custom methods (AIP-136), the `method` field in the request configuration
+	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
+	if len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		req.Method = *method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !utils.IsStandardMethod(method) {
+		// We treat any non-standard method as a custom method (AIP-136).
+		commandName, _ := utils.GetCommandName(method)
+		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
+		req.Method = strcase.ToLowerCamel(commandName)
+	}
+
+	return req
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(_ *api.Method, _ *Config) *Async {
-	return &Async{
-		// TODO(https://github.com/googleapis/librarian/issues/3290): The collection path is partially hardcoded.
-		Collection: []string{"parallelstore.projects.locations.operations"},
+func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Service) *Async {
+	async := &Async{
+		Collection: newCollectionPath(method, service, true),
 	}
+
+	// Determine if the operation result should be extracted as the resource.
+	// This is true if the operation response type matches the method's resource type.
+	// We reuse the 'resource' variable looked up earlier.
+	resource := utils.GetResourceForMethod(method, model)
+	if resource == nil {
+		return async
+	}
+
+	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
+	// matches the resource singular name or type.
+	responseTypeID := method.OperationInfo.ResponseTypeID
+	// Extract short name from FQN (last element after dot)
+	responseTypeName := responseTypeID
+	if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
+		responseTypeName = responseTypeID[idx+1:]
+	}
+
+	singular := utils.GetSingularResourceNameForMethod(method, model)
+	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
+		async.ExtractResourceResult = true
+	} else {
+		async.ExtractResourceResult = false
+	}
+
+	return async
+}
+
+// newCollectionPath constructs the gcloud collection path(s) for a request or async operation.
+// It follows AIP-127 and AIP-132 by extracting the collection structure directly from
+// the method's HTTP annotation (PathInfo).
+func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) []string {
+	var collections []string
+	hostParts := strings.Split(service.DefaultHost, ".")
+	shortServiceName := hostParts[0]
+
+	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
+	for _, binding := range method.PathInfo.Bindings {
+		if binding.PathTemplate == nil {
+			continue
+		}
+
+		basePath := utils.ExtractPathFromSegments(binding.PathTemplate.Segments)
+
+		if basePath == "" {
+			continue
+		}
+
+		if isAsync {
+			// For Async operations (AIP-151), the operations resource usually resides in the
+			// parent collection of the primary resource. We replace the last segment (the resource collection)
+			// with "operations".
+			// Example: projects.locations.instances -> projects.locations.operations
+			if idx := strings.LastIndex(basePath, "."); idx != -1 {
+				basePath = basePath[:idx] + ".operations"
+			} else {
+				basePath = "operations"
+			}
+		}
+
+		fullPath := fmt.Sprintf("%s.%s", shortServiceName, basePath)
+		collections = append(collections, fullPath)
+	}
+
+	// Remove duplicates if any.
+	slices.Sort(collections)
+	return slices.Compact(collections)
+}
+
+// newOutputConfig generates the output configuration for List commands.
+func newOutputConfig(method *api.Method, _ *api.API) *OutputConfig {
+	// We only generate output config for list methods.
+	if !utils.IsList(method) {
+		return nil
+	}
+
+	resourceMsg := utils.FindResourceMessage(method.OutputType)
+	if resourceMsg == nil {
+		return nil
+	}
+
+	format := newFormat(resourceMsg)
+	if format == "" {
+		return nil
+	}
+
+	return &OutputConfig{
+		Format: format,
+	}
+}
+
+// newFormat generates a gcloud table format string from a message definition.
+func newFormat(message *api.Message) string {
+	var sb strings.Builder
+	first := true
+
+	for _, f := range message.Fields {
+		// Sanitize field name to prevent DSL injection.
+		if !utils.IsSafeName(f.JSONName) {
+			continue
+		}
+
+		// Include scalars and enums.
+		isScalar := f.Typez == api.STRING_TYPE ||
+			f.Typez == api.INT32_TYPE || f.Typez == api.INT64_TYPE ||
+			f.Typez == api.BOOL_TYPE || f.Typez == api.ENUM_TYPE ||
+			f.Typez == api.DOUBLE_TYPE || f.Typez == api.FLOAT_TYPE
+
+		if isScalar {
+			if !first {
+				// The newline is not strictly required by gcloud, but we add it to
+				// match the existing format convention which improves readability in the YAML.
+				sb.WriteString(",\n")
+			}
+			if f.Repeated {
+				// Format repeated scalars with .join(',').
+				sb.WriteString(f.JSONName)
+				sb.WriteString(".join(',')")
+			} else {
+				sb.WriteString(f.JSONName)
+			}
+			first = false
+			continue
+		}
+
+		// Include timestamps (usually messages like google.protobuf.Timestamp).
+		if f.MessageType != nil && strings.HasSuffix(f.TypezID, ".Timestamp") {
+			if !first {
+				// The newline is not strictly required by gcloud, but we add it to
+				// match the existing format convention which improves readability in the YAML.
+				sb.WriteString(",\n")
+			}
+			sb.WriteString(f.JSONName)
+			first = false
+		}
+	}
+
+	if sb.Len() == 0 {
+		return ""
+	}
+	return fmt.Sprintf("table(\n%s)", sb.String())
 }
 
 // findHelpTextRule finds the help text rule from the config that applies to the current method.
