@@ -98,4 +98,3 @@ func newPseudoVersion(info *debug.BuildInfo) string {
 	}
 	return buf.String()
 }
-

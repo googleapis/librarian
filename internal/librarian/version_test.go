@@ -151,4 +151,3 @@ func TestNewPseudoVersion(t *testing.T) {
 		})
 	}
 }
-

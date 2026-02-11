@@ -22,12 +22,12 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/source"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
