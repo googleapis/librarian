@@ -35,7 +35,7 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",

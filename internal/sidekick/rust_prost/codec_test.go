@@ -23,7 +23,7 @@ import (
 )
 
 func TestParseOptions(t *testing.T) {
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{

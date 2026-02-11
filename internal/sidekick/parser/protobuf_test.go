@@ -2127,7 +2127,7 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 
 func TestProtobuf_ParseBadFiles(t *testing.T) {
 	requireProtoc(t)
-	for _, cfg := range []ModelConfig{
+	for _, cfg := range []*ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: protobufFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},

@@ -54,7 +54,7 @@ type ModelConfig struct {
 // CreateModel parses the service specification referenced in `config`,
 // cross-references the model, and applies any transformations or overrides
 // required by the configuration.
-func CreateModel(cfg ModelConfig) (*api.API, error) {
+func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	var err error
 	var model *api.API
 	switch cfg.SpecificationFormat {

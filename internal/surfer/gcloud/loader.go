@@ -26,7 +26,7 @@ import (
 
 // createAPIModel parses the service specification and creates the API model.
 func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
-	parserConfig := parser.ModelConfig{
+	parserConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Source: map[string]string{
 			"local-root":   googleapisPath,

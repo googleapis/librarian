@@ -35,7 +35,7 @@ type codec struct {
 	RootName string
 }
 
-func newCodec(cfg parser.ModelConfig) *codec {
+func newCodec(cfg *parser.ModelConfig) *codec {
 	year, _, _ := time.Now().Date()
 	result := &codec{
 		GenerationYear: fmt.Sprintf("%04d", year),

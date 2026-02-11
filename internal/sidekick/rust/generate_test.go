@@ -80,7 +80,7 @@ var (
 func TestCodecError(t *testing.T) {
 	outDir := t.TempDir()
 
-	goodConfig := parser.ModelConfig{
+	goodConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
@@ -89,7 +89,7 @@ func TestCodecError(t *testing.T) {
 		},
 	}
 
-	errorConfig := parser.ModelConfig{
+	errorConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
@@ -117,7 +117,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecOpenAPI,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/secretmanager_openapi_v1.json"),
@@ -148,7 +148,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 func TestRustFromDiscovery(t *testing.T) {
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecDiscovery,
 		ServiceConfig:       path.Join(testdataDir, "../../testdata/googleapis/google/cloud/compute/v1/compute_v1.yaml"),
 		SpecificationSource: path.Join(testdataDir, "../../testdata/discovery/compute.v1.json"),
@@ -182,7 +182,7 @@ func TestRustFromProtobuf(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
@@ -222,7 +222,7 @@ func TestRustClient(t *testing.T) {
 	for _, override := range []string{"http-client", "grpc-client"} {
 		outDir := t.TempDir()
 
-		cfg := parser.ModelConfig{
+		cfg := &parser.ModelConfig{
 			SpecificationFormat: libconfig.SpecProtobuf,
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
@@ -270,7 +270,7 @@ func TestRustNosvc(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
@@ -311,7 +311,7 @@ func TestRustModuleRpc(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/rpc/rpc_publish.yaml",
 		SpecificationSource: "google/rpc",
@@ -349,7 +349,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 	requireProtoc(t)
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "google/protobuf",
 		Source: map[string]string{
