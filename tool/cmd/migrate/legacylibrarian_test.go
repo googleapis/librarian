@@ -540,3 +540,10 @@ func TestLibraryWithAliasshim_Success(t *testing.T) {
 		})
 	}
 }
+
+func TestLibraryWithAliasshim_Error(t *testing.T) {
+	_, err := libraryWithAliasshim("testdata/non-existent-repo")
+	if err == nil {
+		t.Fatal(err)
+	}
+}
