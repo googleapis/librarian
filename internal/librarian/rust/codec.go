@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -41,7 +41,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	}
 	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
 	if err != nil {
-		return parser.ModelConfig{}, err
+		return nil, err
 	}
 	if api.Title != "" {
 		src["title-override"] = api.Title
@@ -57,7 +57,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 		specSource = ch.Path
 	}
 
-	modelCfg := parser.ModelConfig{
+	modelCfg := &parser.ModelConfig{
 		Language:            "rust",
 		SpecificationFormat: specFormat,
 		SpecificationSource: specSource,
@@ -220,7 +220,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (parser.ModelConfig, error) {
+func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		src["included-ids"] = strings.Join(module.IncludedIds, ",")
@@ -234,7 +234,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	if module.Source != "" && src["roots"] == "googleapis" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source, serviceconfig.LangRust)
 		if err != nil {
-			return parser.ModelConfig{}, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
+			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
 		if api != nil && api.Title != "" {
 			src["title-override"] = api.Title
@@ -252,7 +252,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}
-	modelCfg := parser.ModelConfig{
+	modelCfg := &parser.ModelConfig{
 		Language:            language,
 		SpecificationFormat: specificationFormat,
 		ServiceConfig:       module.ServiceConfig,

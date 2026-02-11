@@ -24,26 +24,36 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// cleanOutput removes all files in dir except those in keep. The keep list
+// checkAndClean removes all files in dir except those in keep. The keep list
 // should contain paths relative to dir. It returns an error if any file
 // in keep does not exist.
-func cleanOutput(dir string, keep []string) error {
+func checkAndClean(dir string, keep []string) error {
+	keepSet, err := check(dir, keep)
+	if err != nil {
+		return err
+	}
+	return clean(dir, keepSet)
+}
+
+// check validates the given directory and returns a set of files to keep.
+// It ensures that the provided directory exists and is a directory.
+// It also verifies that all files specified in 'keep' exist within 'dir'.
+func check(dir string, keep []string) (map[string]bool, error) {
 	info, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil
+			return nil, nil
 		}
-		return fmt.Errorf("cannot access output directory %q: %w", dir, err)
+		return nil, fmt.Errorf("cannot access output directory %q: %w", dir, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("%q is not a directory", dir)
+		return nil, fmt.Errorf("%q is not a directory", dir)
 	}
-
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
 		path := filepath.Join(dir, k)
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("keep file %q does not exist", k)
+			return nil, fmt.Errorf("keep file %q does not exist", k)
 		}
 		// Effectively get a canonical relative path. While in most cases
 		// this will be equal to k, it might not be - in particular,
@@ -51,10 +61,15 @@ func cleanOutput(dir string, keep []string) error {
 		// will be a backslash.
 		rel, err := filepath.Rel(dir, path)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		keepSet[rel] = true
 	}
+	return keepSet, nil
+}
+
+// clean removes files from dir that are not in keepSet.
+func clean(dir string, keepSet map[string]bool) error {
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -74,14 +89,14 @@ func cleanOutput(dir string, keep []string) error {
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/4001): move this function
-// to internal/librarian/golang when the logic is deviate from cleanOutput.
+// to internal/librarian/golang when the logic is deviate from checkAndClean.
 func cleanGo(library *config.Library) (*config.Library, error) {
 	libraryDir := filepath.Join(library.Output, library.Name)
-	if err := cleanOutput(libraryDir, library.Keep); err != nil {
+	if err := checkAndClean(libraryDir, library.Keep); err != nil {
 		return nil, err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := cleanOutput(snippetDir, nil); err != nil {
+	if err := checkAndClean(snippetDir, nil); err != nil {
 		return nil, err
 	}
 	return library, nil

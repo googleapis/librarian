@@ -282,7 +282,7 @@ func TestToModelConfig(t *testing.T) {
 		library       *config.Library
 		channel       *config.API
 		googleapisDir string
-		want          parser.ModelConfig
+		want          *parser.ModelConfig
 		wantErr       error
 	}{
 		{
@@ -292,7 +292,7 @@ func TestToModelConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
@@ -312,7 +312,7 @@ func TestToModelConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
@@ -335,7 +335,7 @@ func TestToModelConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
@@ -378,7 +378,7 @@ func TestToModelConfig(t *testing.T) {
 				Path: "google/api/apikeys/v2",
 			},
 			googleapisDir: googleapisDir,
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",

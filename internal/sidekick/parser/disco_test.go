@@ -23,7 +23,7 @@ import (
 )
 
 func TestDisco_Parse(t *testing.T) {
-	cfg := ModelConfig{
+	cfg := &ModelConfig{
 		// Mixing Compute and Secret Manager like this is fine in tests.
 		SpecificationSource: discoSourceFile,
 		ServiceConfig:       secretManagerYamlFullPath,
@@ -58,7 +58,7 @@ func TestDisco_FindSources(t *testing.T) {
 			"roots":     "undefined,test",
 		},
 	}
-	got, err := ParseDisco(cfg)
+	got, err := ParseDisco(&cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestDisco_FindSources(t *testing.T) {
 }
 
 func TestDisco_ParseNoServiceConfig(t *testing.T) {
-	cfg := ModelConfig{
+	cfg := &ModelConfig{
 		SpecificationSource: discoSourceFile,
 	}
 	got, err := ParseDisco(cfg)
@@ -100,7 +100,7 @@ func TestDisco_ParseNoServiceConfig(t *testing.T) {
 }
 
 func TestDisco_ParsePagination(t *testing.T) {
-	cfg := ModelConfig{
+	cfg := &ModelConfig{
 		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
@@ -127,7 +127,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 }
 
 func TestDisco_ParsePaginationAggregate(t *testing.T) {
-	cfg := ModelConfig{
+	cfg := &ModelConfig{
 		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
@@ -154,7 +154,7 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 }
 
 func TestDisco_ParseDeprecatedEnum(t *testing.T) {
-	cfg := ModelConfig{
+	cfg := &ModelConfig{
 		SpecificationSource: discoSourceFile,
 	}
 	model, err := ParseDisco(cfg)
@@ -177,7 +177,7 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 }
 
 func TestDisco_ParseBadFiles(t *testing.T) {
-	for _, cfg := range []ModelConfig{
+	for _, cfg := range []*ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: discoSourceFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},

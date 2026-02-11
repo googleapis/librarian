@@ -1271,7 +1271,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 }
 
 func TestOpenAPI_ParseBadFiles(t *testing.T) {
-	for _, cfg := range []ModelConfig{
+	for _, cfg := range []*ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: openAPIFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},

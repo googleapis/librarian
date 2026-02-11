@@ -28,7 +28,7 @@ import (
 var templates embed.FS
 
 // Generate generates code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg parser.ModelConfig) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
 	// A template provide converts a template name into the contents.
 	provider := func(name string) (string, error) {
 		contents, err := templates.ReadFile(name)

@@ -43,7 +43,7 @@ type methodAnnotations struct {
 	ID string
 }
 
-func (codec *codec) annotateModel(model *api.API, cfg parser.ModelConfig) error {
+func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
 	rootSource := cfg.Source[codec.RootName]
 	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, cfg.Source)
 	if err != nil {

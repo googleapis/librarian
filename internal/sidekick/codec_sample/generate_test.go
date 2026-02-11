@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	testdataDir, _ = filepath.Abs("../testdata")
+	testdataDir, _ = filepath.Abs("../../testdata")
 )
 
 func TestFromProtobuf(t *testing.T) {
@@ -35,12 +35,12 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	outDir := t.TempDir()
 
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":              "2025",

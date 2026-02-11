@@ -25,7 +25,7 @@ import (
 )
 
 func TestModelAnnotations(t *testing.T) {
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{
@@ -56,7 +56,7 @@ func TestModelAnnotations(t *testing.T) {
 }
 
 func TestServiceAnnotations(t *testing.T) {
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{
@@ -92,7 +92,7 @@ func TestServiceAnnotations(t *testing.T) {
 }
 
 func TestMethodAnnotations(t *testing.T) {
-	cfg := parser.ModelConfig{
+	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{

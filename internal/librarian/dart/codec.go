@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
@@ -45,10 +45,10 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 	}
 	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
 	if err != nil {
-		return parser.ModelConfig{}, err
+		return nil, err
 	}
 
-	modelConfig := parser.ModelConfig{
+	modelConfig := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       api.ServiceConfig,
 		SpecificationSource: ch.Path,
