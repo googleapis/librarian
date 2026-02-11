@@ -28,17 +28,17 @@ import (
 // should contain paths relative to dir. It returns an error if any file
 // in keep does not exist.
 func checkAndClean(dir string, keep []string) error {
-	keepSet, err := checkKeep(dir, keep)
+	keepSet, err := check(dir, keep)
 	if err != nil {
 		return err
 	}
 	return clean(dir, keepSet)
 }
 
-// checkKeep validates the given directory and returns a set of files to keep.
+// check validates the given directory and returns a set of files to keep.
 // It ensures that the provided directory exists and is a directory.
 // It also verifies that all files specified in 'keep' exist within 'dir'.
-func checkKeep(dir string, keep []string) (map[string]bool, error) {
+func check(dir string, keep []string) (map[string]bool, error) {
 	info, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
