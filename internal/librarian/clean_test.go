@@ -161,8 +161,7 @@ func TestCleanGo_Success(t *testing.T) {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
 
-			_, err := cleanGo(lib)
-			if err != nil {
+			if err := cleanGo(lib); err != nil {
 				t.Fatal(err)
 			}
 
@@ -214,9 +213,9 @@ func TestCleanGo_Error(t *testing.T) {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
 
-			_, err := cleanGo(lib)
+			err := cleanGo(lib)
 			if err == nil {
-				t.Error(err)
+				t.Errorf("expected error with message %s; got nil", test.wantErrMsg)
 				return
 			}
 			if diff := cmp.Diff(test.wantErrMsg, err.Error()); diff != "" {

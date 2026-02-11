@@ -90,14 +90,14 @@ func clean(dir string, keepSet map[string]bool) error {
 
 // TODO(https://github.com/googleapis/librarian/issues/4001): move this function
 // to internal/librarian/golang when the logic is deviate from checkAndClean.
-func cleanGo(library *config.Library) (*config.Library, error) {
+func cleanGo(library *config.Library) error {
 	libraryDir := filepath.Join(library.Output, library.Name)
 	if err := checkAndClean(libraryDir, library.Keep); err != nil {
-		return nil, err
+		return err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
 	if err := checkAndClean(snippetDir, nil); err != nil {
-		return nil, err
+		return err
 	}
-	return library, nil
+	return nil
 }
