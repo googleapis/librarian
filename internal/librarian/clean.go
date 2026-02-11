@@ -32,22 +32,7 @@ func checkAndClean(dir string, keep []string) error {
 	if err != nil {
 		return err
 	}
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		if keepSet[rel] {
-			return nil
-		}
-		return os.Remove(path)
-	})
+	return clean(dir, keepSet)
 }
 
 // checkKeep validates the given directory and returns a set of files to keep.
@@ -81,6 +66,26 @@ func checkKeep(dir string, keep []string) (map[string]bool, error) {
 		keepSet[rel] = true
 	}
 	return keepSet, nil
+}
+
+// clean removes files from dir that are not in keepSet.
+func clean(dir string, keepSet map[string]bool) error {
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if keepSet[rel] {
+			return nil
+		}
+		return os.Remove(path)
+	})
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/4001): move this function
