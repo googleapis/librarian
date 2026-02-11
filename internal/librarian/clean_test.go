@@ -96,7 +96,7 @@ func TestCleanOutput(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			err := cleanOutput(dir, test.keep)
+			err := checkAndClean(dir, test.keep)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("expected error, got nil")
