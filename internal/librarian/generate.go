@@ -212,7 +212,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	case languageGo:
 		var libraryDirs []string
 		libraryDirs = append(libraryDirs, filepath.Join(library.Output, library.Name))
-		libraryDirs = append(libraryDirs, filepath.Join(library.Output, "internal", "generated", "snippets", library.Name))
+		libraryDirs = append(libraryDirs, filepath.Join("internal", "generated", "snippets", library.Name))
 		for _, dir := range libraryDirs {
 			if err := cleanOutput(dir, library.Keep); err != nil {
 				return nil, err
