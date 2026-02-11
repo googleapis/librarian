@@ -229,7 +229,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			})
 	}
 	maps.Copy(idToGoModule, addGoModules)
-	nameWithAliasshim, err := libraryWithAliasshim(input.repoPath)
+	libraryNames, err := libraryWithAliasshim(input.repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
-		if _, ok := nameWithAliasshim[id]; ok {
+		if libraryNames[id] {
 			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
 		}
 		slices.Sort(library.Keep)
