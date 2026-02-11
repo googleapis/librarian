@@ -50,6 +50,9 @@ func checkAndClean(dir string, keep []string) error {
 	})
 }
 
+// checkKeep validates the given directory and returns a set of files to keep.
+// It ensures that the provided directory exists and is a directory.
+// It also verifies that all files specified in 'keep' exist within 'dir'.
 func checkKeep(dir string, keep []string) (map[string]bool, error) {
 	info, err := os.Stat(dir)
 	if err != nil {
