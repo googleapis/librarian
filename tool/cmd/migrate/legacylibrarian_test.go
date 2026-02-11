@@ -294,8 +294,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
