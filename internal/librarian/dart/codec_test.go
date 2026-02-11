@@ -405,6 +405,17 @@ func TestToModelConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "unsupported specification format",
+			library: &config.Library{
+				SpecificationFormat: "openapi",
+			},
+			channel: &config.API{
+				Path: "google/api/apikeys/v2",
+			},
+			googleapisDir: googleapisDir,
+			wantErr:       errInvalidSpecificationFormat,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &source.Sources{
@@ -413,8 +424,12 @@ func TestToModelConfig(t *testing.T) {
 			got, err := toModelConfig(test.library, test.channel, sources)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
-					t.Errorf("toModelConfig() error = %v, wantErr %v", err, test.wantErr)
+					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErr)
 				}
+				return
+			}
+			if err != nil {
+				t.Errorf("toModelConfig() unexpected error: %v", err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
