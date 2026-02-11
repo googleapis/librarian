@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestCleanOutput(t *testing.T) {
@@ -116,4 +118,118 @@ func TestCleanOutput(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCleanGo(t *testing.T) {
+	root := t.TempDir()
+	libraryName := "testlib"
+	for _, test := range []struct {
+		name         string
+		outputFiles  []string
+		snippetFiles []string
+		keep         []string
+		wantErr      bool
+		wantOutput   []string
+	}{
+		{
+			name:         "removes all except keep list",
+			outputFiles:  []string{"file1.go", "file2.go", "go.mod"},
+			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
+			keep:         []string{"file1.go"},
+			wantOutput:   []string{"file1.go"},
+		},
+		{
+			name:         "remove all files",
+			outputFiles:  []string{"file1.go", "file2.go"},
+			snippetFiles: []string{"snippet1.go"},
+			keep:         []string{},
+			wantOutput:   []string{},
+		},
+		{
+			name:         "keep file not found in output directory",
+			outputFiles:  []string{"file2.go"},
+			snippetFiles: []string{"snippet1.go"},
+			keep:         []string{"file1.go"},
+			wantErr:      true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outputPath := filepath.Join(root, libraryName)
+			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
+			lib := &config.Library{
+				Name:   libraryName,
+				Output: filepath.Join(root),
+				Keep:   test.keep,
+			}
+			if test.outputFiles != nil {
+				createFiles(t, outputPath, test.outputFiles)
+			}
+			if test.snippetFiles != nil {
+				createFiles(t, snippetPath, test.snippetFiles)
+			}
+
+			_, err := cleanGo(lib)
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			gotOutputFiles := getFilesInDir(t, outputPath, filepath.Join(root, libraryName))
+			slices.Sort(gotOutputFiles)
+			slices.Sort(test.wantOutput)
+			if !slices.Equal(gotOutputFiles, test.wantOutput) {
+				t.Errorf("output directory: got %v, want %v", gotOutputFiles, test.wantOutput)
+			}
+
+			gotSnippetFiles := getFilesInDir(t, snippetPath, root)
+			if !slices.Equal(gotSnippetFiles, []string{}) {
+				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, []string{})
+			}
+		})
+	}
+}
+
+func createFiles(t *testing.T, base string, files []string) {
+	t.Helper()
+	if err := os.MkdirAll(base, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		filePath := filepath.Join(base, file)
+		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// getFilesInDir is a test helper to get relative paths of files in a directory.
+func getFilesInDir(t *testing.T, dirPath, basePath string) []string {
+	t.Helper()
+	var files []string
+	err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(basePath, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, rel)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("failed to walk directory %q: %v", dirPath, err)
+	}
+	return files
 }

@@ -74,13 +74,13 @@ func cleanOutput(dir string, keep []string) error {
 }
 
 func cleanGo(library *config.Library) (*config.Library, error) {
-	var libraryDirs []string
-	libraryDirs = append(libraryDirs, filepath.Join(library.Output, library.Name))
-	libraryDirs = append(libraryDirs, filepath.Join("internal", "generated", "snippets", library.Name))
-	for _, dir := range libraryDirs {
-		if err := cleanOutput(dir, library.Keep); err != nil {
-			return nil, err
-		}
+	libraryDir := filepath.Join(library.Output, library.Name)
+	if err := cleanOutput(libraryDir, library.Keep); err != nil {
+		return nil, err
+	}
+	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if err := cleanOutput(snippetDir, nil); err != nil {
+		return nil, err
 	}
 	return library, nil
 }
