@@ -29,7 +29,7 @@ var errInvalidSpecificationFormat = errors.New("dart generation requires protobu
 
 func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
-		return parser.ModelConfig{}, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
+		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
 
 	src := addLibraryRoots(library, sources)
