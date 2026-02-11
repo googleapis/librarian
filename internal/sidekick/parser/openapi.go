@@ -33,7 +33,7 @@ import (
 )
 
 // ParseOpenAPI parses an OpenAPI specification and returns an API model.
-func ParseOpenAPI(cfg ModelConfig) (*api.API, error) {
+func ParseOpenAPI(cfg *ModelConfig) (*api.API, error) {
 	source := cfg.SpecificationSource
 	contents, err := os.ReadFile(source)
 	if err != nil {

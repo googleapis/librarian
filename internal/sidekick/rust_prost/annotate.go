@@ -20,7 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"github.com/googleapis/librarian/internal/sidekick/rust"
 )
@@ -43,9 +43,9 @@ type methodAnnotations struct {
 	ID string
 }
 
-func (codec *codec) annotateModel(model *api.API, cfg *config.Config) error {
+func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
 	rootSource := cfg.Source[codec.RootName]
-	files, err := protobuf.DetermineInputFiles(cfg.General.SpecificationSource, cfg.Source)
+	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, cfg.Source)
 	if err != nil {
 		return err
 	}

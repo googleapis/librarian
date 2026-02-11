@@ -25,7 +25,8 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
@@ -33,8 +34,8 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model using prost.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
-	if cfg.General.SpecificationFormat != libconfig.SpecProtobuf {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
+	if cfg.SpecificationFormat != libconfig.SpecProtobuf {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)
 	}
 	if err := command.Run(ctx, "cargo", "--version"); err != nil {

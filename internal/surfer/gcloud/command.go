@@ -298,5 +298,5 @@ type Async struct {
 	Collection StringOrSlice `yaml:"collection,omitempty"`
 
 	// ExtractResourceResult indicates whether to extract the resource result from the LRO.
-	ExtractResourceResult bool `yaml:"extract_resource_result,omitempty"`
+	ExtractResourceResult bool `yaml:"extract_resource_result"`
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -41,7 +41,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	}
 	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
 	if err != nil {
-		return parser.ModelConfig{}, err
+		return nil, err
 	}
 	if api.Title != "" {
 		src["title-override"] = api.Title
@@ -57,7 +57,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 		specSource = ch.Path
 	}
 
-	modelCfg := parser.ModelConfig{
+	modelCfg := &parser.ModelConfig{
 		Language:            "rust",
 		SpecificationFormat: specFormat,
 		SpecificationSource: specSource,
@@ -220,7 +220,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToSidekickConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*sidekickconfig.Config, error) {
+func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 	if len(module.IncludedIds) > 0 {
 		src["included-ids"] = strings.Join(module.IncludedIds, ",")
@@ -252,27 +252,25 @@ func moduleToSidekickConfig(library *config.Library, module *config.RustModule, 
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}
-	sidekickCfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			Language:            language,
-			SpecificationFormat: specificationFormat,
-			ServiceConfig:       module.ServiceConfig,
-			SpecificationSource: module.Source,
-		},
-		Source: src,
-		Codec:  buildModuleCodec(library, module),
+	modelCfg := &parser.ModelConfig{
+		Language:            language,
+		SpecificationFormat: specificationFormat,
+		ServiceConfig:       module.ServiceConfig,
+		SpecificationSource: module.Source,
+		Source:              src,
+		Codec:               buildModuleCodec(library, module),
 	}
 	if len(module.DocumentationOverrides) > 0 {
-		sidekickCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
+		modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
 		for i, override := range module.DocumentationOverrides {
-			sidekickCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+			modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
 				ID:      override.ID,
 				Match:   override.Match,
 				Replace: override.Replace,
 			}
 		}
 	}
-	return sidekickCfg, nil
+	return modelCfg, nil
 }
 
 func buildModuleCodec(library *config.Library, module *config.RustModule) map[string]string {

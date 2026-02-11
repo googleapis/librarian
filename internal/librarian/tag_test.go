@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -114,6 +115,7 @@ func TestTag_Error(t *testing.T) {
 		name    string
 		setup   func(cfg *config.Config)
 		library string
+		wantErr error
 	}{
 		{
 			name: "custom tool specified for git and doesn't exist",
@@ -127,6 +129,7 @@ func TestTag_Error(t *testing.T) {
 				}
 				writeConfigAndCommit(t, cfg)
 			},
+			// Can't easily check this error
 		},
 		{
 			name: "repo is dirty",
@@ -138,20 +141,13 @@ func TestTag_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-		},
-		{
-			name: "language isn't supported",
-			setup: func(cfg *config.Config) {
-				// Add a release commit to distinguish this case from "no releases"
-				cfg.Libraries[0].Version = "1.1.0"
-				cfg.Language = "unsupported-for-publish"
-				writeConfigAndCommit(t, cfg)
-			},
+			wantErr: git.ErrGitStatusUnclean,
 		},
 		{
 			name: "no release commit",
 			setup: func(cfg *config.Config) {
 			},
+			wantErr: errReleaseCommitNotFound,
 		},
 		{
 			name: "no release commit for specified library",
@@ -160,16 +156,21 @@ func TestTag_Error(t *testing.T) {
 				writeConfigAndCommit(t, cfg)
 			},
 			library: sample.Lib1Name,
+			wantErr: errReleaseCommitNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
+			cfg.Default.TagFormat = "{name}/v{version}"
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
 			err := tag(t.Context(), cfg, test.library)
 			if err == nil {
-				t.Errorf("publish(): expected error, got none")
+				t.Fatal("expected error, got nil")
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("expected %v, got %v", test.wantErr, err)
 			}
 		})
 	}

@@ -20,15 +20,15 @@ import (
 	"embed"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/language"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
 // Generate generates code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *config.Config) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
 	// A template provide converts a template name into the contents.
 	provider := func(name string) (string, error) {
 		contents, err := templates.ReadFile(name)

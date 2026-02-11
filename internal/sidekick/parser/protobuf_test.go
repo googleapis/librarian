@@ -2127,7 +2127,7 @@ func TestProtobuf_ResourceCoverage(t *testing.T) {
 
 func TestProtobuf_ParseBadFiles(t *testing.T) {
 	requireProtoc(t)
-	for _, cfg := range []ModelConfig{
+	for _, cfg := range []*ModelConfig{
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: protobufFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
@@ -2196,5 +2196,28 @@ func requireProtoc(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("protoc"); err != nil {
 		t.Skip("skipping test because protoc is not installed")
+	}
+}
+
+func TestProtobuf_SubdirRedundancy(t *testing.T) {
+	requireProtoc(t)
+	// This test covers a scenario where the -root option already contains the
+	// subdirectory, but a -subdir option is also present.
+	// Ensure that they are not double-joined.
+	options := map[string]string{
+		"googleapis-root":     "../../testdata/googleapis",
+		"extra-protos-root":   "testdata",
+		"extra-protos-subdir": "should_ignore_folder",
+		"include-list":        "scalar.proto",
+	}
+	req, err := newCodeGeneratorRequest("testdata", options)
+	if err != nil {
+		t.Fatalf("newCodeGeneratorRequest() failed: %v", err)
+	}
+	if want, got := 1, len(req.FileToGenerate); want != got {
+		t.Fatalf("newCodeGeneratorRequest() returned %d files, want %d", got, want)
+	}
+	if want := "scalar.proto"; !strings.HasSuffix(req.FileToGenerate[0], want) {
+		t.Errorf("newCodeGeneratorRequest() returned file %q, want suffix %q", req.FileToGenerate[0], want)
 	}
 }

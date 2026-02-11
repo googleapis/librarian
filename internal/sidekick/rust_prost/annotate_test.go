@@ -21,15 +21,13 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 func TestModelAnnotations(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: libconfig.SpecProtobuf,
-			SpecificationSource: "../../testdata/googleapis/google/type",
-		},
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{
 			"include-list": "f1.proto,f2.proto",
 		},
@@ -58,11 +56,9 @@ func TestModelAnnotations(t *testing.T) {
 }
 
 func TestServiceAnnotations(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: libconfig.SpecProtobuf,
-			SpecificationSource: "../../testdata/googleapis/google/type",
-		},
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{
 			"include-list": "unused.proto",
 		},
@@ -96,11 +92,9 @@ func TestServiceAnnotations(t *testing.T) {
 }
 
 func TestMethodAnnotations(t *testing.T) {
-	cfg := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: libconfig.SpecProtobuf,
-			SpecificationSource: "../../testdata/googleapis/google/type",
-		},
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		SpecificationSource: "../../testdata/googleapis/google/type",
 		Source: map[string]string{
 			"include-list": "unused.proto",
 		},

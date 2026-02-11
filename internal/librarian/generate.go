@@ -18,9 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -205,16 +202,18 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	switch language {
 	case languageFake:
 		// No cleaning needed.
-	case languageDart, languageGo, languagePython:
-		if err := cleanOutput(library.Output, library.Keep); err != nil {
+	case languageDart, languagePython:
+		if err := checkAndClean(library.Output, library.Keep); err != nil {
 			return nil, err
 		}
+	case languageGo:
+		return cleanGo(library)
 	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
 			return nil, fmt.Errorf("library %q: %w", library.Name, err)
 		}
-		if err := cleanOutput(library.Output, keep); err != nil {
+		if err := checkAndClean(library.Output, keep); err != nil {
 			return nil, err
 		}
 	}
@@ -265,53 +264,4 @@ func formatLibrary(ctx context.Context, language string, library *config.Library
 		return nil
 	}
 	return fmt.Errorf("language %q does not support formatting", language)
-}
-
-// cleanOutput removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if any file
-// in keep does not exist.
-func cleanOutput(dir string, keep []string) error {
-	info, err := os.Stat(dir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil
-		}
-		return fmt.Errorf("cannot access output directory %q: %w", dir, err)
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%q is not a directory", dir)
-	}
-
-	keepSet := make(map[string]bool)
-	for _, k := range keep {
-		path := filepath.Join(dir, k)
-		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("keep file %q does not exist", k)
-		}
-		// Effectively get a canonical relative path. While in most cases
-		// this will be equal to k, it might not be - in particular,
-		// on Windows the directory separator in paths returned by Rel
-		// will be a backslash.
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		keepSet[rel] = true
-	}
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		if keepSet[rel] {
-			return nil
-		}
-		return os.Remove(path)
-	})
 }

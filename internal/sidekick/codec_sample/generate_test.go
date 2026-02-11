@@ -22,12 +22,11 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
 var (
-	testdataDir, _ = filepath.Abs("../testdata")
+	testdataDir, _ = filepath.Abs("../../testdata")
 )
 
 func TestFromProtobuf(t *testing.T) {
@@ -36,14 +35,12 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	outDir := t.TempDir()
 
-	cfg := &sidekickconfig.Config{
-		General: sidekickconfig.GeneralConfig{
-			SpecificationFormat: config.SpecProtobuf,
-			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			SpecificationSource: "google/cloud/secretmanager/v1",
-		},
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecProtobuf,
+		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "../../testdata/googleapis"),
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":              "2025",
@@ -54,7 +51,7 @@ func TestFromProtobuf(t *testing.T) {
 			"proto:google.cloud.location": "package:google_cloud_location/location.dart",
 		},
 	}
-	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(cfg))
+	model, err := parser.CreateModel(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

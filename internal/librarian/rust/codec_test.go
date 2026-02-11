@@ -47,7 +47,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 		name    string
 		library *config.Library
 		api     *config.API
-		want    parser.ModelConfig
+		want    *parser.ModelConfig
 	}{
 		{
 			name: "minimal config",
@@ -59,7 +59,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -82,7 +82,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -104,7 +104,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -141,7 +141,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -163,7 +163,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -197,7 +197,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -226,7 +226,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -261,7 +261,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
@@ -289,7 +289,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
@@ -312,7 +312,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "testdata/secretmanager_openapi_v1.json",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecOpenAPI,
 				SpecificationSource: "testdata/secretmanager_openapi_v1.json",
@@ -334,7 +334,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
@@ -356,7 +356,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/apps/script/type/gmail",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/apps/script/type/gmail",
@@ -376,7 +376,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/longrunning",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/longrunning",
@@ -402,7 +402,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/spanner/admin/database/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/spanner/admin/database/v1",
@@ -424,7 +424,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/storageinsights/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/storageinsights/v1",
@@ -463,7 +463,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "discoveries/compute.v1.json",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
@@ -502,7 +502,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/vision/v1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/vision/v1",
@@ -523,7 +523,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "schema/google/showcase/v1beta1",
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "schema/google/showcase/v1beta1",
@@ -560,11 +560,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 	}
 }
 
-func TestModuleToSidekickConfig(t *testing.T) {
+func TestModuleToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		want    parser.ModelConfig
+		want    *parser.ModelConfig
 	}{
 		{
 			name: "with veneer documentation overrides",
@@ -593,7 +593,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language: "rust",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -625,7 +625,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust_storage",
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
@@ -646,7 +646,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: "none",
 				Source: map[string]string{
@@ -667,7 +667,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
@@ -689,7 +689,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/logging/type",
@@ -715,7 +715,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 					},
 				},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
@@ -740,7 +740,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 				},
 				Roots: []string{"conformance"},
 			},
-			want: parser.ModelConfig{
+			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "conformance",
@@ -762,7 +762,7 @@ func TestModuleToSidekickConfig(t *testing.T) {
 
 			var commentOverrides []sidekickconfig.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
-				got, err := moduleToSidekickConfig(test.library, module, sources)
+				got, err := moduleToModelConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
 				}

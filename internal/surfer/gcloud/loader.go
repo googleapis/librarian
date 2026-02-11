@@ -20,17 +20,14 @@ import (
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"gopkg.in/yaml.v3"
 )
 
 // createAPIModel parses the service specification and creates the API model.
 func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
-	parserConfig := &config.Config{
-		General: config.GeneralConfig{
-			SpecificationFormat: libconfig.SpecProtobuf,
-		},
+	parserConfig := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
 		Source: map[string]string{
 			"local-root":   googleapisPath,
 			"include-list": includeList,
@@ -45,7 +42,7 @@ func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	// we don't use all the functionality of post-processing of CreateModel, so depending
 	// on our needs, if we don't find ourselves needing the additional post-processing
 	// functionality, we could write our own simpler `CreateModel` function
-	model, err := parser.CreateModel(parser.NewModelConfigFromSidekickConfig(parserConfig))
+	model, err := parser.CreateModel(parserConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API model: %w", err)
 	}
