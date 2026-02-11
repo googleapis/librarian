@@ -52,7 +52,7 @@ For each repository, librarianops will:
 	}
 }
 
-// Upgrade consist in getting the latest librarian version and updates the librarian.yaml file.
+// runUpgrade consists in getting the latest librarian version and updates the librarian.yaml file.
 // It returns the new version, and an error if one occurred.
 func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 	version, err := getLibrarianVersionAtMain(ctx)
