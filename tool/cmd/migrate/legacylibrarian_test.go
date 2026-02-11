@@ -356,6 +356,7 @@ func TestBuildGoLibraries(t *testing.T) {
 						},
 					},
 				},
+				repoPath: "testdata/google-cloud-go",
 			},
 			want: []*config.Library{
 				{
