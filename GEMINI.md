@@ -15,8 +15,8 @@ You are a Senior Go Engineer building "Librarian", a system to onboard, generate
 
 After modifying code, you MUST run these commands:
 - **Format:** `gofmt -s -w .`
-- **Imports:** `goimports -w .`
-- **Lint:** `golangci-lint run`
+- **Imports:** `go tool goimports -w .`
+- **Lint:** `go tool golangci-lint run`
 - **Tests:** `go test -short ./...` (for fast feedback)
 - **YAML:** `yamlfmt` (if YAML files were touched)
 

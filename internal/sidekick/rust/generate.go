@@ -28,7 +28,7 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg parser.ModelConfig) error {
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
 	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg parser.Mod
 }
 
 // GenerateStorage generates Rust code for the storage service.
-func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageConfig parser.ModelConfig, controlModel *api.API, controlConfig parser.ModelConfig) error {
+func GenerateStorage(ctx context.Context, outdir string, storageModel *api.API, storageConfig *parser.ModelConfig, controlModel *api.API, controlConfig *parser.ModelConfig) error {
 	storageCodec, err := newCodec(storageConfig.SpecificationFormat, storageConfig.Codec)
 	if err != nil {
 		return err

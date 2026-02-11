@@ -15,6 +15,8 @@
 package dart
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -23,7 +25,13 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (parser.ModelConfig, error) {
+var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
+
+func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
+	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
+		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
+	}
+
 	src := addLibraryRoots(library, sources)
 
 	if library.DescriptionOverride != "" {
@@ -45,10 +53,10 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 	}
 	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
 	if err != nil {
-		return parser.ModelConfig{}, err
+		return nil, err
 	}
 
-	modelConfig := parser.ModelConfig{
+	modelConfig := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       api.ServiceConfig,
 		SpecificationSource: ch.Path,
