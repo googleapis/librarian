@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 // CrateInfo contains the package information.
@@ -41,7 +42,7 @@ type Cargo struct {
 // line-based approach to preserve comments and formatting, which is important
 // because some Cargo.toml files are hand-crafted and contain comments that
 // must be preserved.
-func updateCargoVersion(path, newVersion string) error {
+func updateCargoVersion(path string, newVersion semver.Version) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -54,7 +55,7 @@ func updateCargoVersion(path, newVersion string) error {
 	}
 	// The number of spaces may seem weird. They match the number of spaces in
 	// the mustache template.
-	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion)
+	lines[idx] = fmt.Sprintf(`version                = "%s"`, newVersion.String())
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
 }
 
@@ -63,7 +64,7 @@ var versionRegex = regexp.MustCompile(`version\s*=\s*"[^"]*"`)
 // updateWorkspaceVersion updates the version of a crate in a workspace Cargo.toml.
 // It searches for a line that starts with the crate name followed by "=" and
 // contains a "version =" field.
-func updateWorkspaceVersion(path, crateName, newVersion string) error {
+func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -77,7 +78,7 @@ func updateWorkspaceVersion(path, crateName, newVersion string) error {
 		}
 		after := strings.TrimSpace(trimmed[len(crateName):])
 		if strings.HasPrefix(after, "=") && versionRegex.MatchString(line) {
-			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion))
+			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion.String()))
 			updated = true
 		}
 	}

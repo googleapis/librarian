@@ -47,13 +47,14 @@ func Bump(ctx context.Context, library *config.Library, output, version, gitExe,
 	return writeVersion(library, output, version)
 }
 
-func writeVersion(library *config.Library, output, version string) error {
+func writeVersion(library *config.Library, output, versionString string) error {
 	// validate version before writing to Cargo.toml
-	if _, err := semver.Parse(version); err != nil {
+	version, err := semver.Parse(versionString)
+	if err != nil {
 		return err
 	}
 	cargoFile := filepath.Join(output, "Cargo.toml")
-	_, err := os.Stat(cargoFile)
+	_, err = os.Stat(cargoFile)
 	switch {
 	case err != nil && !os.IsNotExist(err):
 		return err
@@ -62,7 +63,7 @@ func writeVersion(library *config.Library, output, version string) error {
 name                   = "%s"
 version                = "%s"
 edition                = "2021"
-`, library.Name, version)
+`, library.Name, version.String())
 		if err := os.WriteFile(cargoFile, []byte(cargo), 0644); err != nil {
 			return err
 		}
@@ -76,6 +77,6 @@ edition                = "2021"
 	if err := updateWorkspaceVersion("Cargo.toml", library.Name, version); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	library.Version = version
+	library.Version = version.String()
 	return nil
 }
