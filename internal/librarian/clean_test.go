@@ -20,6 +20,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -120,7 +121,7 @@ func TestCleanOutput(t *testing.T) {
 	}
 }
 
-func TestCleanGo(t *testing.T) {
+func TestCleanGo_Success(t *testing.T) {
 	root := t.TempDir()
 	libraryName := "testlib"
 	for _, test := range []struct {
@@ -128,7 +129,6 @@ func TestCleanGo(t *testing.T) {
 		outputFiles  []string
 		snippetFiles []string
 		keep         []string
-		wantErr      bool
 		wantOutput   []string
 	}{
 		{
@@ -144,13 +144,6 @@ func TestCleanGo(t *testing.T) {
 			snippetFiles: []string{"snippet1.go"},
 			keep:         []string{},
 			wantOutput:   []string{},
-		},
-		{
-			name:         "keep file not found in output directory",
-			outputFiles:  []string{"file2.go"},
-			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"file1.go"},
-			wantErr:      true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -169,14 +162,8 @@ func TestCleanGo(t *testing.T) {
 			}
 
 			_, err := cleanGo(lib)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
 			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				t.Fatal(err)
 			}
 
 			gotOutputFiles := getFilesInDir(t, outputPath, filepath.Join(root, libraryName))
@@ -189,6 +176,51 @@ func TestCleanGo(t *testing.T) {
 			gotSnippetFiles := getFilesInDir(t, snippetPath, root)
 			if !slices.Equal(gotSnippetFiles, []string{}) {
 				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, []string{})
+			}
+		})
+	}
+}
+
+func TestCleanGo_Error(t *testing.T) {
+	root := t.TempDir()
+	libraryName := "testlib"
+	for _, test := range []struct {
+		name         string
+		outputFiles  []string
+		snippetFiles []string
+		keep         []string
+		wantErrMsg   string
+	}{
+		{
+			name:         "keep file not found in output directory",
+			outputFiles:  []string{"file2.go"},
+			snippetFiles: []string{"snippet1.go"},
+			keep:         []string{"file1.go"},
+			wantErrMsg:   "keep file \"file1.go\" does not exist",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outputPath := filepath.Join(root, libraryName)
+			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
+			lib := &config.Library{
+				Name:   libraryName,
+				Output: filepath.Join(root),
+				Keep:   test.keep,
+			}
+			if test.outputFiles != nil {
+				createFiles(t, outputPath, test.outputFiles)
+			}
+			if test.snippetFiles != nil {
+				createFiles(t, snippetPath, test.snippetFiles)
+			}
+
+			_, err := cleanGo(lib)
+			if err == nil {
+				t.Error(err)
+				return
+			}
+			if diff := cmp.Diff(test.wantErrMsg, err.Error()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
