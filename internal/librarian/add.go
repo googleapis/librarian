@@ -26,6 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/urfave/cli/v3"
@@ -34,7 +35,6 @@ import (
 var (
 	errLibraryAlreadyExists = errors.New("library already exists in config")
 	errMissingAPI           = errors.New("must provide at least one API")
-	errConfigNotFound       = errors.New("librarian.yaml not found")
 )
 
 func addCommand() *cli.Command {
@@ -47,7 +47,7 @@ func addCommand() *cli.Command {
 			if len(apis) == 0 {
 				return errMissingAPI
 			}
-			cfg, err := loadConfig(ctx)
+			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}

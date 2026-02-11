@@ -78,7 +78,7 @@ func updateCommand() *cli.Command {
 					return fmt.Errorf("%w: %s", errUnknownSource, source)
 				}
 			}
-			cfg, err := loadConfig(ctx)
+			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}
