@@ -465,9 +465,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "accessapproval",
-					Keep: []string{
-						"aliasshim/aliasshim.go",
-					},
+					Keep: []string{"aliasshim/aliasshim.go"},
 				},
 			},
 		},
