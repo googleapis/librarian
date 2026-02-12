@@ -470,7 +470,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Name: "accessapproval",
 					Keep: []string{
 						"CHANGES.md",
-						"accessapproval/aliasshim/aliasshim.go",
+						"aliasshim/aliasshim.go",
 					},
 				},
 			},
