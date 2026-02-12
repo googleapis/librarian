@@ -96,23 +96,26 @@ func cleanGo(library *config.Library) (*config.Library, error) {
 		return nil, err
 	}
 	packageDir := filepath.Join(library.Output, library.Name)
-	if err := clean(packageDir, stripPrefix(keepFiles, packageDir)); err != nil {
+	if err := clean(packageDir, relativizePaths(keepFiles, packageDir)); err != nil {
 		return nil, err
 	}
 	snippetsDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := clean(snippetsDir, stripPrefix(keepFiles, snippetsDir)); err != nil {
+	if err := clean(snippetsDir, relativizePaths(keepFiles, snippetsDir)); err != nil {
 		return nil, err
 	}
 	return library, nil
 }
 
-func stripPrefix(keepFiles map[string]bool, dir string) map[string]bool {
+// relativizePaths converts a map of file paths to a new map where paths are relative to the given subdirectory `dir`.
+// It is used to adapt a global "keep" list for specific subdirectories.
+func relativizePaths(keepFiles map[string]bool, dir string) map[string]bool {
 	res := make(map[string]bool)
 	for key := range keepFiles {
 		rel, err := filepath.Rel(dir, key)
 		if err != nil {
-			// It is fine to ignore the error because we need to separate keep
-			// list into two parts, one for package dir and one for snippets dir.
+			// This error means the key is not under the current `dir`.
+			// It's expected behavior as we're splitting a global keep list into parts for different
+			// subdirectories, so we simply skip it.
 			continue
 		}
 		res[rel] = true
