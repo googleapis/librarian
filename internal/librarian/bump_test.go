@@ -296,10 +296,7 @@ func TestRunBump_Error(t *testing.T) {
 			testhelper.Setup(t, opts)
 
 			gotErr := runBump(t.Context(), cfg, false, test.libraryName, test.versionOverride)
-			if gotErr == nil {
-				t.Fatal("expected error; got nil")
-			}
-			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("bumpLibrary() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
@@ -368,13 +365,14 @@ func TestBumpLibrary_Error(t *testing.T) {
 			wantErr:         semver.ErrInvalidNextVersion,
 		},
 		{
-			name: "version override",
+			name: "unsupported language",
 			cfg: func() *config.Config {
 				c := sample.Config()
 				c.Language = languageRust
 				return c
 			}(),
 			versionOverride: "2.0.0",
+			// There's no specific error we can specify; just test for non-nil.
 		},
 	}
 
@@ -410,7 +408,8 @@ func TestFindLibrariesToBump(t *testing.T) {
 		// used when that's all that's required.
 		withChanges []string
 		// setup is a function executed after setting up the repo (including
-		// after applying withChanges) so that
+		// after applying withChanges) so that we can make more custom changes
+		// such as "more tags after making changes".
 		setup     func(*testing.T, *config.Config)
 		wantNames []string
 	}{
@@ -433,7 +432,6 @@ func TestFindLibrariesToBump(t *testing.T) {
 			libraryName: sample.Lib2Name,
 			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[1].Version = ""
-				cfg.Libraries[1].SkipPublish = true
 				writeConfigAndCommit(t, cfg)
 			},
 			wantNames: []string{sample.Lib2Name},
