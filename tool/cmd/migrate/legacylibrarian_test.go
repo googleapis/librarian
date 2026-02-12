@@ -118,6 +118,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Default: &config.Default{
 					TagFormat:    defaultTagFormat,
 					ReleaseLevel: "ga",
+					Output:       ".",
 				},
 			},
 		},
@@ -233,6 +234,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
+					Output:       ".",
 					TagFormat:    defaultTagFormat,
 					ReleaseLevel: "ga",
 				},
