@@ -35,6 +35,24 @@ func checkAndClean(dir string, keep []string) error {
 	return clean(dir, keepSet)
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/4001): move this function
+// to internal/librarian/golang when the logic is deviate from checkAndClean.
+func cleanGo(library *config.Library) (*config.Library, error) {
+	keepFiles, err := check(library.Output, library.Keep)
+	if err != nil {
+		return nil, err
+	}
+	packageDir := filepath.Join(library.Output, library.Name)
+	if err := clean(packageDir, relativizePaths(keepFiles, packageDir)); err != nil {
+		return nil, err
+	}
+	snippetsDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if err := clean(snippetsDir, relativizePaths(keepFiles, snippetsDir)); err != nil {
+		return nil, err
+	}
+	return library, nil
+}
+
 // check validates the given directory and returns a set of files to keep.
 // It ensures that the provided directory exists and is a directory.
 // It also verifies that all files specified in 'keep' exist within 'dir'.
@@ -86,24 +104,6 @@ func clean(dir string, keepSet map[string]bool) error {
 		}
 		return os.Remove(path)
 	})
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/4001): move this function
-// to internal/librarian/golang when the logic is deviate from checkAndClean.
-func cleanGo(library *config.Library) (*config.Library, error) {
-	keepFiles, err := check(library.Output, library.Keep)
-	if err != nil {
-		return nil, err
-	}
-	packageDir := filepath.Join(library.Output, library.Name)
-	if err := clean(packageDir, relativizePaths(keepFiles, packageDir)); err != nil {
-		return nil, err
-	}
-	snippetsDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := clean(snippetsDir, relativizePaths(keepFiles, snippetsDir)); err != nil {
-		return nil, err
-	}
-	return library, nil
 }
 
 // relativizePaths converts a map of file paths to a new map where paths are relative to the given subdirectory `dir`.
