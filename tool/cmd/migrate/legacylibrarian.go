@@ -244,7 +244,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = append(library.Keep, libState.PreserveRegex...)
-		library.Keep = append(library.Keep, filepath.Join(id, "CHANGES.md"))
+		library.Keep = append(library.Keep, "CHANGES.md")
 		if libraryNames[id] {
 			library.Keep = append(library.Keep, filepath.Join(id, "aliasshim", "aliasshim.go"))
 		}

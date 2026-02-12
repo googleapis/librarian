@@ -241,12 +241,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:    "another-library",
-						Keep:    []string{"another-library/CHANGES.md"},
+						Keep:    []string{"CHANGES.md"},
 						Version: "2.0.0",
 					},
 					{
 						Name:         "example-library",
-						Keep:         []string{"example-library/CHANGES.md"},
+						Keep:         []string{"CHANGES.md"},
 						Version:      "1.0.0",
 						SkipGenerate: true,
 						SkipRelease:  true,
@@ -369,7 +369,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							Path: "google/another/api/v1",
 						},
 					},
-					Keep: []string{"another-library/CHANGES.md"},
+					Keep: []string{"CHANGES.md"},
 				},
 				{
 					Name: "example-library",
@@ -378,7 +378,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							Path: "google/example/api/v1",
 						},
 					},
-					Keep: []string{"example-library/CHANGES.md"},
+					Keep: []string{"CHANGES.md"},
 					Go: &config.GoModule{
 						DeleteGenerationOutputPaths: []string{
 							"internal/generated/snippets/storage/internal",
@@ -422,7 +422,7 @@ func TestBuildGoLibraries(t *testing.T) {
 						{Path: "google/ai/generativelanguage/v1"},
 						{Path: "google/ai/generativelanguage/v1alpha"},
 					},
-					Keep:         []string{"ai/CHANGES.md"},
+					Keep:         []string{"CHANGES.md"},
 					ReleaseLevel: "beta",
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
@@ -469,7 +469,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "accessapproval",
 					Keep: []string{
-						"accessapproval/CHANGES.md",
+						"CHANGES.md",
 						"accessapproval/aliasshim/aliasshim.go",
 					},
 				},
