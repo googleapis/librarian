@@ -75,9 +75,9 @@ func TestRunUpgrade(t *testing.T) {
 
 func TestRunUpgrade_Error(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		setup     func(t *testing.T) (repoDir string)
-		wantError string
+		name           string
+		setup          func(t *testing.T) (repoDir string)
+		wantErrMessage string
 	}{
 		{
 			name: "getLibrarianVersionAtMain error",
@@ -86,7 +86,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 				return t.TempDir()
 			},
-			wantError: "failed to get latest librarian version",
+			wantErrMessage: "failed to get latest librarian version",
 		},
 		{
 			name: "UpdateLibrarianVersion error",
@@ -99,7 +99,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 				}
 				return repoDir
 			},
-			wantError: "failed to update librarian version",
+			wantErrMessage: "failed to update librarian version",
 		},
 		{
 			name: "runLibrarianWithVersion error",
@@ -114,7 +114,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 				}
 				return repoDir
 			},
-			wantError: "failed to run librarian generate",
+			wantErrMessage: "failed to run librarian generate",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -123,9 +123,8 @@ func TestRunUpgrade_Error(t *testing.T) {
 			if gotErr == nil {
 				t.Fatal("got nil, want error")
 			}
-			// Error is dynamic so just checking the substring.
-			if !strings.Contains(gotErr.Error(), test.wantError) {
-				t.Errorf("error detail mismatch\ngot:  %q\nwant substring: %q", gotErr.Error(), test.wantError)
+			if !strings.Contains(gotErr.Error(), test.wantErrMessage) {
+				t.Errorf("error detail mismatch\ngot:  %q\nwant substring: %q", gotErr.Error(), test.wantErrMessage)
 			}
 		})
 	}
@@ -159,15 +158,15 @@ func TestUpgradeCommand(t *testing.T) {
 
 func TestUpgradeCommand_Error(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		args      []string
-		setup     func(t *testing.T)
-		wantError string
+		name           string
+		args           []string
+		setup          func(t *testing.T)
+		wantErrMessage string
 	}{{
-		name:      "usage error",
-		args:      []string{},
-		setup:     func(t *testing.T) {},
-		wantError: "usage:",
+		name:           "usage error",
+		args:           []string{},
+		setup:          func(t *testing.T) {},
+		wantErrMessage: "usage:",
 	},
 		{
 			name: "runUpgrade error",
@@ -175,7 +174,7 @@ func TestUpgradeCommand_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
-			wantError: "failed to get latest librarian version",
+			wantErrMessage: "failed to get latest librarian version",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -187,9 +186,8 @@ func TestUpgradeCommand_Error(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
-			// Error is dynamic so just checking the substring.
-			if !strings.Contains(err.Error(), test.wantError) {
-				t.Errorf("error mismatch\ngot: %q, want substring: %q", err.Error(), test.wantError)
+			if !strings.Contains(err.Error(), test.wantErrMessage) {
+				t.Errorf("error mismatch\ngot: %q, want substring: %q", err.Error(), test.wantErrMessage)
 			}
 		})
 	}
