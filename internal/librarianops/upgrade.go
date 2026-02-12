@@ -33,7 +33,8 @@ func upgradeCommand() *cli.Command {
 
 For each repository, librarianops will:
   1. Get the latest librarian version from @main.
-  2. Update the version field in librarian.yaml.`,
+  2. Update the version field in librarian.yaml.
+  3. Run 'librarian generate --all'.`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "C",
@@ -52,7 +53,7 @@ For each repository, librarianops will:
 	}
 }
 
-// runUpgrade consists in getting the latest librarian version and updates the librarian.yaml file.
+// runUpgrade consists in getting the latest librarian version, updates the librarian.yaml file and run librarian generate.
 // It returns the new version, and an error if one occurred.
 func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 	version, err := getLibrarianVersionAtMain(ctx)
@@ -62,6 +63,10 @@ func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 
 	if err := updateLibrarianVersion(version, repoDir); err != nil {
 		return "", fmt.Errorf("failed to update librarian version: %w", err)
+	}
+
+	if err := runLibrarianWithVersion(ctx, version, command.Verbose, "generate", "--all"); err != nil {
+		return "", fmt.Errorf("failed to run librarian generate: %w", err)
 	}
 
 	return version, nil

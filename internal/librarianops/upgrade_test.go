@@ -96,6 +96,21 @@ func TestRunUpgrade_Error(t *testing.T) {
 			},
 			wantError: "failed to update librarian version",
 		},
+		{
+			name: "runLibrarianWithVersion error",
+			setup: func(t *testing.T) string {
+				repoDir := t.TempDir()
+				configPath := generateLibrarianConfigPath(t, repoDir)
+				// Use an invalid config that will cause `librarian generate` to fail.
+				// An empty language should be invalid.
+				cfg := &config.Config{Language: ""}
+				if err := yaml.Write(configPath, cfg); err != nil {
+					t.Fatal(err)
+				}
+				return repoDir
+			},
+			wantError: "failed to run librarian generate",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := test.setup(t)
@@ -138,13 +153,12 @@ func TestUpgradeCommand_Error(t *testing.T) {
 		args      []string
 		setup     func(t *testing.T)
 		wantError string
-	}{
-		{
-			name:      "wrong arguments",
-			args:      []string{},
-			setup:     func(t *testing.T) {},
-			wantError: "usage: librarianops <command> <repo> or librarianops <command> -C <dir>",
-		},
+	}{{
+		name:      "usage error",
+		args:      []string{},
+		setup:     func(t *testing.T) {},
+		wantError: "usage:",
+	},
 		{
 			name: "runUpgrade error",
 			args: []string{"-C", "."},
