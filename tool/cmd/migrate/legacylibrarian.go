@@ -16,10 +16,12 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -160,7 +162,10 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.Transport = "grpc+rest"
 	} else {
 		cfg.Default.ReleaseLevel = "ga"
-		cfg.Libraries = buildGoLibraries(input)
+		cfg.Libraries, err = buildGoLibraries(input)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
@@ -201,7 +206,7 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	}, nil
 }
 
-func buildGoLibraries(input *MigrationInput) []*config.Library {
+func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap(
 		input.librarianState.Libraries,
@@ -224,7 +229,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			})
 	}
 	maps.Copy(idToGoModule, addGoModules)
-
+	libraryNames, err := libraryWithAliasshim(input.repoPath)
+	if err != nil {
+		return nil, err
+	}
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -235,6 +243,10 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = libState.PreserveRegex
+		if libraryNames[id] {
+			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
+		}
+		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
@@ -274,7 +286,7 @@ func buildGoLibraries(input *MigrationInput) []*config.Library {
 		libraries = append(libraries, library)
 	}
 
-	return libraries
+	return libraries, nil
 }
 
 func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
@@ -321,4 +333,36 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	}
 
 	return yaml.Read[RepoConfig](configFile)
+}
+
+// libraryWithAliasshim traverses the repoPath to find repoPath/{libraryName}/aliasshim/aliasshim.go.
+// Returns all name of the library in a map for faster look up.
+func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
+	files, err := aliasshim(repoPath)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]bool)
+	for _, file := range files {
+		parentDir := filepath.Dir(filepath.Dir(file))
+		names[filepath.Base(parentDir)] = true
+	}
+	return names, nil
+}
+
+func aliasshim(repoPath string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(repoPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if d.Name() == "aliasshim.go" {
+			files = append(files, path)
+		}
+		return nil
+	})
+	return files, err
 }

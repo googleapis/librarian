@@ -102,6 +102,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		{
 			name:        "go_monorepo_defaults",
 			lang:        "go",
+			repoPath:    "testdata/google-cloud-go",
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
@@ -197,8 +198,9 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 		},
 		{
-			name: "has_a_librarian_config",
-			lang: "go",
+			name:     "has_a_librarian_config",
+			lang:     "go",
+			repoPath: "testdata/google-cloud-go",
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
@@ -292,8 +294,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			}
 
 			if err != nil {
-				t.Error(err)
-				return
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -354,6 +355,7 @@ func TestBuildGoLibraries(t *testing.T) {
 						},
 					},
 				},
+				repoPath: "testdata/google-cloud-go",
 			},
 			want: []*config.Library{
 				{
@@ -405,6 +407,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 				librarianConfig: &legacyconfig.LibrarianConfig{},
 				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
 			},
 			want: []*config.Library{
 				{
@@ -441,9 +444,33 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "fill keep list",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "accessapproval",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+			},
+			want: []*config.Library{
+				{
+					Name: "accessapproval",
+					Keep: []string{"aliasshim/aliasshim.go"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGoLibraries(test.input)
+			got, err := buildGoLibraries(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got, cmpopts.SortSlices(func(a, b *config.Library) bool {
 				return a.Name < b.Name
 			})); diff != "" {
@@ -504,5 +531,40 @@ func TestReadRepoConfig(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestLibraryWithAliasshim_Success(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		want     map[string]bool
+	}{
+		{
+			name:     "success",
+			repoPath: "testdata/library-with-aliasshim/success",
+			want: map[string]bool{
+				"accessapproval": true,
+				"beyondcorp":     true,
+				"clouddms":       true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := libraryWithAliasshim(test.repoPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLibraryWithAliasshim_Error(t *testing.T) {
+	_, err := libraryWithAliasshim("testdata/non-existent-repo")
+	if err == nil {
+		t.Fatal(err)
 	}
 }

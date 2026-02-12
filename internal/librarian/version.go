@@ -15,21 +15,10 @@
 package librarian
 
 import (
-	"context"
 	_ "embed"
-	"errors"
-	"fmt"
 	"runtime/debug"
 	"strings"
 	"time"
-
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
-)
-
-var (
-	errNoConfigVersion = errors.New("librarian.yaml does not specify a version")
-	errVersionMismatch = errors.New("version mismatch")
 )
 
 //go:embed version.txt
@@ -71,41 +60,6 @@ func version(info *debug.BuildInfo) string {
 	return info.Main.Version
 }
 
-// loadConfig reads librarian.yaml and verifies that the librarian binary
-// version matches the version specified in the configuration file. It returns
-// the config and an error if the versions do not match. The check is skipped
-// if the -f flag is set or if the binary version is "not available", which
-// occurs during local development without VCS info.
-func loadConfig(ctx context.Context) (*config.Config, error) {
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errConfigNotFound, err)
-	}
-	if !skipVersionCheck(ctx) {
-		if err := compareVersions(cfg.Version, Version()); err != nil {
-			return nil, err
-		}
-	}
-	return cfg, nil
-}
-
-func compareVersions(configVersion, binaryVersion string) error {
-	if configVersion == "" {
-		return errNoConfigVersion
-	}
-	// Skip check for local builds, which have no version info.
-	if binaryVersion == versionNotAvailable {
-		return nil
-	}
-	if configVersion != binaryVersion {
-		return fmt.Errorf(`%w: binary version %s does not match librarian.yaml version %s
-	go run github.com/googleapis/librarian/cmd/librarian@%s
-    or use -f to skip this check`,
-			errVersionMismatch, binaryVersion, configVersion, configVersion)
-	}
-	return nil
-}
-
 // newPseudoVersion constructs a pseudo-version string from the build info.
 func newPseudoVersion(info *debug.BuildInfo) string {
 	var revision, at string
@@ -143,10 +97,4 @@ func newPseudoVersion(info *debug.BuildInfo) string {
 		}
 	}
 	return buf.String()
-}
-
-// skipVersionCheck returns true if the -f flag was set to skip version checking.
-func skipVersionCheck(ctx context.Context) bool {
-	v, _ := ctx.Value(skipVersionCheckKey{}).(bool)
-	return v
 }

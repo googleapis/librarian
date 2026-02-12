@@ -13,47 +13,41 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
+{{!
+Terminate some lines in a comment so
+(a) we can read this code as each case is in a separate line,and
+(b) the newline is suppressed in the output to get tighter code.
+}}
 {{#IsSimple}}
 {{#ReturnsEmpty}}
-///     client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .send()
-///         .await?;
+///     client.{{Codec.Name}}(){{!
+        }}{{> /templates/common/client_method_samples/builder_fields}}{{!
+        }}.send().await?;
 {{/ReturnsEmpty}}
 {{^ReturnsEmpty}}
-///     let response = client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .send()
-///         .await?;
+///     let response = client.{{Codec.Name}}(){{!
+        }}{{> /templates/common/client_method_samples/builder_fields}}{{!
+        }}.send().await?;
 ///     println!("response {:?}", response);
 {{/ReturnsEmpty}}
 {{/IsSimple}}
 {{#IsLRO}}
 {{#LongRunningReturnsEmpty}}
-///     client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .poller()
-///         .until_done()
-///         .await?;
+///     client.{{Codec.Name}}(){{!
+        }}{{> /templates/common/client_method_samples/builder_fields}}{{!
+        }}.poller().until_done().await?;
 {{/LongRunningReturnsEmpty}}
 {{^LongRunningReturnsEmpty}}
-///     let response = client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .poller()
-///         .until_done()
-///         .await?;
+///     let response = client.{{Codec.Name}}(){{!
+        }}{{> /templates/common/client_method_samples/builder_fields}}{{!
+        }}.poller().until_done().await?;
 ///     println!("response {:?}", response);
 {{/LongRunningReturnsEmpty}}
 {{/IsLRO}}
 {{#IsList}}
-///     let mut list = client
-///         .{{Codec.Name}}()
-{{> /templates/common/client_method_samples/builder_fields}}
-///         .by_item();
+///     let mut list = client.{{Codec.Name}}(){{!
+        }}{{> /templates/common/client_method_samples/builder_fields}}{{!
+        }}.by_item();
 ///     while let Some(item) = list.next().await.transpose()? {
 ///         println!("{:?}", item);
 ///     }

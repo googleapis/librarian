@@ -15,6 +15,7 @@ name: Rust & Sidekick
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
+  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -32,16 +33,7 @@ jobs:
         run: cargo version
       - name: Display rustc version
         run: rustup show active-toolchain -v
-      - name: Install taplo
-        run: |
-          set -e
-          curl -fsSL https://github.com/tamasfe/taplo/releases/download/$VERSION/taplo-linux-x86_64.gz | gunzip -c - | sudo tee /usr/local/bin/taplo > /dev/null
-          sha512sum -c <(echo "$CHECKSUM /usr/local/bin/taplo")
-          sudo chmod +x /usr/local/bin/taplo
-          taplo --version
-        env:
-          VERSION: 0.10.0
-          CHECKSUM: 33587a0beb692561b1bc411f484f088117b45d14e993cdb8e5d66dd967026d9e166ab8b23ec7c4791d1c17ec8bd9f1d6b05a16e742c70c6a6f16dc5f7ca3ff53
+      - uses: ./.github/actions/install-taplo
       - name: Verify git and tar are available
         run: |
           git --version
@@ -50,3 +42,61 @@ jobs:
         run: go test -race ./internal/sidekick/...
       - name: Run internal/librarian/rust tests
         run: go test -race ./internal/librarian/rust
+  integration:
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - uses: ./.github/actions/install-protoc
+      - name: Install librarian
+        run: go install ./cmd/librarian
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/install-taplo
+      - name: Checkout google-cloud-rust
+        uses: actions/checkout@v5
+        with:
+          repository: googleapis/google-cloud-rust
+          path: google-cloud-rust
+      - name: Run librarian generate
+        working-directory: google-cloud-rust
+        run: librarian generate --all
+      - name: Run cargo check
+        working-directory: google-cloud-rust
+        run: cargo check -p google-cloud-showcase-v1beta1
+  create-issue-on-failure:
+    runs-on: ubuntu-24.04
+    needs: [test, integration]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Create an issue for push event to main
+        run: |
+          ISSUE_TITLE="rust: google-cloud-rust fails with librarian at HEAD"
+          BODY="The Rust CI failed on the \`main\` branch.
+
+          Running \`librarian generate --all\` on the [google-cloud-rust](https://github.com/googleapis/google-cloud-rust) repository using \`librarian\` at HEAD failed.
+
+          Note: This integration test only runs as a postsubmit test due to its long execution time.
+
+          Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Check for an existing open issue
+          EXISTING_ISSUE=$(gh issue list --repo $GH_REPO --search "$ISSUE_TITLE in:title" --state open --json number --jq '.[0].number')
+
+          if [[ -n "$EXISTING_ISSUE" && "$EXISTING_ISSUE" != "null" ]]; then
+            echo "Found existing open issue #$EXISTING_ISSUE. Adding comment."
+            gh issue comment "$EXISTING_ISSUE" --repo $GH_REPO --body "The build failed again. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "Creating new issue."
+            ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO)
+            ISSUE_NUM=${ISSUE_LINK##*/}
+            gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TEST_RESULT: ${{ needs.test.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
