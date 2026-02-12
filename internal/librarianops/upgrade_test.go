@@ -39,15 +39,9 @@ func TestRunUpgrade(t *testing.T) {
 	repoDir := t.TempDir()
 	t.Chdir(repoDir)
 	configPath := generateLibrarianConfigPath(t, repoDir)
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
 	initialConfig := sample.Config()
 	initialConfig.Language = "fake"
 	initialConfig.Version = "v0.1.0"
-	initialConfig.Sources.Googleapis.Dir = googleapisDir
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
 	}
@@ -137,15 +131,9 @@ func TestUpgradeCommand(t *testing.T) {
 	t.Chdir(repoDir)
 
 	configPath := generateLibrarianConfigPath(t, ".")
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
 	initialConfig := sample.Config()
 	initialConfig.Language = "fake"
 	initialConfig.Version = "v0.1.0"
-	initialConfig.Sources.Googleapis.Dir = googleapisDir
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
 	}
