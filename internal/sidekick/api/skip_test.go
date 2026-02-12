@@ -40,8 +40,8 @@ func TestSkipMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Message1"},
 	})
 	want := []*Message{m0, m2}
 
@@ -68,8 +68,8 @@ func TestSkipEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0, e1, e2}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Enum1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Enum1"},
 	})
 
 	want := []*Enum{e0, e2}
@@ -98,8 +98,8 @@ func TestSkipNestedMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message2.Message1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Message2.Message1"},
 	})
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages); diff != "" {
@@ -131,8 +131,8 @@ func TestSkipNestedEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Message.Enum1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Message.Enum1"},
 	})
 
 	want := []*Enum{e0, e2}
@@ -159,8 +159,8 @@ func TestSkipServices(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Service1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Service1"},
 	})
 
 	want := []*Service{s0, s2}
@@ -202,8 +202,8 @@ func TestSkipMethods(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"skipped-ids": ".test.Service1.Method1",
+	SkipModelElements(model, ModelOverride{
+		SkippedIDs: []string{".test.Service1.Method1"},
 	})
 
 	wantServices := []*Service{s0, s1, s2}
@@ -228,8 +228,8 @@ func TestSkipMethods(t *testing.T) {
 
 func TestIncludeUnknownIdError(t *testing.T) {
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{})
-	err := SkipModelElements(model, map[string]string{
-		"included-ids": ".test.UnknownId",
+	err := SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.UnknownId"},
 	})
 	if err == nil {
 		t.Fatal("SkipModelElements should error on unknown IDs")
@@ -264,8 +264,8 @@ func TestIncludeNestedEnums(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{e0, e1, e2}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Message.Enum0",
+	SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.Message.Enum0"},
 	})
 
 	want := []*Enum{e0}
@@ -292,8 +292,8 @@ func TestIncludeNestedMessages(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m0, m1, m2}, []*Enum{}, []*Service{})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Message2.Message0",
+	SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.Message2.Message0"},
 	})
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
@@ -343,8 +343,8 @@ func TestIncludeMethods(t *testing.T) {
 	}
 	model := NewTestAPI([]*Message{m}, []*Enum{}, []*Service{s0, s1, s2})
 	CrossReference(model)
-	SkipModelElements(model, map[string]string{
-		"included-ids": ".test.Service1.Method1,.test.Service1.Method2",
+	SkipModelElements(model, ModelOverride{
+		IncludedIDs: []string{".test.Service1.Method1", ".test.Service1.Method2"},
 	})
 
 	wantServices := []*Service{s1}

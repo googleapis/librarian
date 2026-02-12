@@ -17,30 +17,26 @@ package api
 import (
 	"fmt"
 	"slices"
-	"strings"
 )
 
 // SkipModelElements prunes the model of any elements that are not desired.
 //
-// The elements to be pruned are determined by the `options` map.
+// The elements to be pruned are determined by the `overrides`.
 //
-// The `included-ids` key is a comma-separated list of fully-qualified IDs.
-// If this key is present, then any element that is not a dependency of one of
-// the listed IDs is pruned.
+// If `overrides.IncludedIDs` is set, then any element that is not a dependency
+// of one of the listed IDs is pruned.
 //
-// The `skipped-ids` key is a comma-separated list of fully-qualified IDs.
-// If this key is present, then any element with an ID in this list is pruned.
+// If `overrides.SkippedIDs` is set, then any element with an ID in this list is
+// pruned.
 //
-// It is an error to specify both `included-ids` and `skipped-ids`.
-func SkipModelElements(model *API, options map[string]string) error {
-	included_ids, included_ok := options["included-ids"]
-	skipped_ids, skipped_ok := options["skipped-ids"]
-	if included_ok && skipped_ok {
-		return fmt.Errorf("both `included-ids` and `skipped-ids` set. Only set one")
+// It is an error to specify both `IncludedIDs` and `SkippedIDs`.
+func SkipModelElements(model *API, overrides ModelOverride) error {
+	if len(overrides.IncludedIDs) > 0 && len(overrides.SkippedIDs) > 0 {
+		return fmt.Errorf("both `IncludedIDs` and `SkippedIDs` set. Only set one")
 	}
 
-	if included_ok {
-		includedIds, err := FindDependencies(model, strings.Split(included_ids, ","))
+	if len(overrides.IncludedIDs) > 0 {
+		includedIds, err := FindDependencies(model, overrides.IncludedIDs)
 		if err != nil {
 			return err
 		}
@@ -48,9 +44,9 @@ func SkipModelElements(model *API, options map[string]string) error {
 		skipModelElementsImpl(model, skip)
 	}
 
-	if skipped_ok {
+	if len(overrides.SkippedIDs) > 0 {
 		skippedIDs := map[string]bool{}
-		for _, id := range strings.Split(skipped_ids, ",") {
+		for _, id := range overrides.SkippedIDs {
 			skippedIDs[id] = true
 		}
 		skip := func(id string) bool { return skippedIDs[id] }

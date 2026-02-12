@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	sidekickapi "github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -301,6 +302,9 @@ func TestToModelConfig(t *testing.T) {
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
+				Override: sidekickapi.ModelOverride{
+					Title: "",
+				},
 			},
 		},
 		{
@@ -317,11 +321,14 @@ func TestToModelConfig(t *testing.T) {
 				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
-					"googleapis-root":      googleapisDir,
-					"description-override": "this is a description override",
-					"roots":                "googleapis",
+					"googleapis-root": googleapisDir,
+					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
+				Override: sidekickapi.ModelOverride{
+					Description: "this is a description override",
+					Title:       "",
+				},
 			},
 		},
 		{
@@ -341,10 +348,13 @@ func TestToModelConfig(t *testing.T) {
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
-					"name-override":   "override-name",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
+				Override: sidekickapi.ModelOverride{
+					Name:  "override-name",
+					Title: "",
+				},
 			},
 		},
 		{
@@ -385,7 +395,9 @@ func TestToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
-					"title-override":  "library-title-override",
+				},
+				Override: sidekickapi.ModelOverride{
+					Title: "library-title-override",
 				},
 				Codec: map[string]string{
 					"api-keys-environment-variables": "GOOGLE_API_KEY",
