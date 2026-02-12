@@ -161,6 +161,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		cfg.Default.Keep = []string{"CHANGES.md"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries, err = buildGoLibraries(input)
@@ -243,7 +244,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
-		library.Keep = append(library.Keep, append(libState.PreserveRegex, "CHANGES.md")...)
+		library.Keep = append(library.Keep, libState.PreserveRegex...)
 		if libraryNames[id] {
 			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
 		}
