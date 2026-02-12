@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -95,13 +96,25 @@ func cleanGo(library *config.Library) (*config.Library, error) {
 	if err != nil {
 		return nil, err
 	}
-	var libraryDirs []string
-	libraryDirs = append(libraryDirs, filepath.Join(library.Output, library.Name))
-	libraryDirs = append(libraryDirs, filepath.Join(library.Output, "internal", "generated", "snippets", library.Name))
-	for _, base := range libraryDirs {
-		if err := clean(base, keepFiles); err != nil {
-			return nil, err
-		}
+	packageDir := filepath.Join(library.Output, library.Name)
+	if err := clean(packageDir, stripPrefix(keepFiles, packageDir)); err != nil {
+		return nil, err
+	}
+	snippetsDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if err := clean(snippetsDir, stripPrefix(keepFiles, snippetsDir)); err != nil {
+		return nil, err
 	}
 	return library, nil
+}
+
+func stripPrefix(keepFiles map[string]bool, dir string) map[string]bool {
+	res := make(map[string]bool)
+	for key := range keepFiles {
+		if !strings.HasPrefix(key, dir) {
+			continue
+		}
+		key = strings.TrimPrefix(key, dir)
+		res[key] = true
+	}
+	return res
 }
