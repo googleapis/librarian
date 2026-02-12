@@ -21,7 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickapi "github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -62,7 +62,7 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 		SpecificationSource: ch.Path,
 		Source:              src,
 		Codec:               buildCodec(library),
-		Override: sidekickapi.ModelOverride{
+		Override: api.ModelOverride{
 			Name:        name,
 			Description: library.DescriptionOverride,
 			Title:       title,

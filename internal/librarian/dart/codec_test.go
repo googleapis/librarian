@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	sidekickapi "github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
@@ -295,16 +296,13 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
 				},
-				Codec: map[string]string{},
-				Override: sidekickapi.ModelOverride{
-					Title: "",
-				},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
 			},
 		},
 		{
@@ -318,16 +316,14 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
-				Override: sidekickapi.ModelOverride{
+				Override: api.ModelOverride{
 					Description: "this is a description override",
-					Title:       "",
 				},
 			},
 		},
@@ -344,16 +340,14 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
-				Override: sidekickapi.ModelOverride{
-					Name:  "override-name",
-					Title: "",
+				Override: api.ModelOverride{
+					Name: "override-name",
 				},
 			},
 		},
@@ -390,7 +384,6 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
