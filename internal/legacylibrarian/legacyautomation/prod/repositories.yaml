@@ -1,4 +1,4 @@
-# SHA correspondes to v0.8.2
+# SHA corresponds to v0.8.2
 librarian-image-sha: sha256:4150f5d6478bd979442d0a883ce70ac3f8cf95a19fd7ff6d21f20eb522a975c2
 repositories:
   - name: "gapic-generator-go"
