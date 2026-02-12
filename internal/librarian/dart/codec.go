@@ -47,6 +47,15 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 		return nil, err
 	}
 
+	title := svcConfig.Title
+	var name string
+	if library.Dart != nil {
+		name = library.Dart.NameOverride
+		if library.Dart.TitleOverride != "" {
+			title = library.Dart.TitleOverride
+		}
+	}
+
 	modelConfig := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       svcConfig.ServiceConfig,
@@ -54,15 +63,10 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 		Source:              src,
 		Codec:               buildCodec(library),
 		Override: sidekickapi.ModelOverride{
+			Name:        name,
 			Description: library.DescriptionOverride,
-			Title:       svcConfig.Title,
+			Title:       title,
 		},
-	}
-	if library.Dart != nil {
-		modelConfig.Override.Name = library.Dart.NameOverride
-		if library.Dart.TitleOverride != "" {
-			modelConfig.Override.Title = library.Dart.TitleOverride
-		}
 	}
 	return modelConfig, nil
 }
