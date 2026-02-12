@@ -17,21 +17,6 @@ permissions:
   contents: read
   issues: write
 jobs:
-  test:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: "go.mod"
-      - name: Run tests
-        run: |
-          go test -race -coverprofile=coverage.out -covermode=atomic \
-            $(go list ./... | grep -v -E 'internal/librarian/(python|rust|dart)|internal/sidekick')
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
   go-generate:
     runs-on: ubuntu-24.04
     steps:
@@ -50,16 +35,45 @@ jobs:
             git diff
             exit 1
           fi
+  legacylibrarian:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run tests
+        run: |
+          go test -race -coverprofile=coverage.out -covermode=atomic ./internal/legacylibrarian/...
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run tests
+        run: |
+          go test -race -coverprofile=coverage.out -covermode=atomic \
+            $(go list ./... | grep -v -E 'internal/librarian/(python|rust|dart)|internal/sidekick|internal/legacylibrarian')
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
   create-issue-on-failure:
     runs-on: ubuntu-24.04
-    needs: [test, go-generate]
+    needs: [go-generate, legacylibrarian, test]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - name: Create an issue for push event to main
         run: |
           ISSUE_TITLE="all: tests failed at HEAD"
           BODY="Tests failed at HEAD of the \`main\` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."
-          ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO)
+          ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" --assignee ${{ github.actor }} -R $GH_REPO)
           ISSUE_NUM=${ISSUE_LINK##*/}
           gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
         env:

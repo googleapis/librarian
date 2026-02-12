@@ -177,9 +177,9 @@ type SetupOptions struct {
 	// remoteDir is the directory of the repo created by [SetupRepo] that
 	// should be cloned when [Clone] is set. Internal only.
 	remoteDir string
-	// Tag is the tag that will be applied once all initial file set up is
+	// Tags is the list of tags that will be applied once all initial file set up is
 	// complete.
-	Tag string
+	Tags []string
 	// WithChanges is a list of file paths that should show as changed and be
 	// committed after Tag has been applied.
 	WithChanges []string
@@ -199,8 +199,8 @@ func setup(t *testing.T, opts SetupOptions) {
 	if opts.Config != nil {
 		addLibrarianConfig(t, opts.Config)
 	}
-	if opts.Tag != "" {
-		if err := command.Run(t.Context(), "git", "tag", opts.Tag); err != nil {
+	for _, tag := range opts.Tags {
+		if err := command.Run(t.Context(), "git", "tag", tag); err != nil {
 			t.Fatal(err)
 		}
 	}

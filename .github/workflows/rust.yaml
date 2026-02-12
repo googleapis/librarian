@@ -74,7 +74,7 @@ jobs:
     steps:
       - name: Create an issue for push event to main
         run: |
-          ISSUE_TITLE="rust: google-cloud-rust fails with librarian at HEAD"
+          ISSUE_TITLE="google-cloud-rust: librarian generate fails when run at HEAD"
           BODY="The Rust CI failed on the \`main\` branch.
 
           Running \`librarian generate --all\` on the [google-cloud-rust](https://github.com/googleapis/google-cloud-rust) repository using \`librarian\` at HEAD failed.
@@ -91,7 +91,7 @@ jobs:
             gh issue comment "$EXISTING_ISSUE" --repo $GH_REPO --body "The build failed again. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
             echo "Creating new issue."
-            ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" -R $GH_REPO)
+            ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" --assignee ${{ github.actor }} -R $GH_REPO)
             ISSUE_NUM=${ISSUE_LINK##*/}
             gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
           fi

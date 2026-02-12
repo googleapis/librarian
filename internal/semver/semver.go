@@ -62,13 +62,17 @@ var (
 	// prerelease - https://semver.org/spec/v1.0.0.html#spec-item-4.
 	semverV1PrereleaseNumberRegexp = regexp.MustCompile(`^(.*?)(\d+)$`)
 
-	// errInvalidVersion is returned when the version string provided is invalid as
+	// ErrInvalidVersion is returned when the version string provided is invalid as
 	// per the SemVer spec - https://semver.org.
-	errInvalidVersion = errors.New("invalid version format")
+	ErrInvalidVersion = errors.New("invalid version format")
 
 	// errInvalidPrereleaseNumber is returned when the prerelease number of a
 	// version string is invalid.
 	errInvalidPrereleaseNumber = errors.New("invalid prerelease number")
+
+	// ErrInvalidNextVersion is returned when the proposed next release version
+	// is invalid compared with the current version.
+	ErrInvalidNextVersion = errors.New("invalid next version")
 )
 
 // Parse deconstructs the SemVer 1.0.0 or 2.0.0 version string into a [Version]
@@ -76,7 +80,7 @@ var (
 func Parse(versionString string) (Version, error) {
 	// Our client versions must not have a "v" prefix.
 	if strings.HasPrefix(versionString, "v") {
-		return Version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
+		return Version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
 	}
 
 	// Prepend "v" internally so that we can use various [semver] APIs.
@@ -84,7 +88,7 @@ func Parse(versionString string) (Version, error) {
 	// Strips build metadata if present - we do not use build metadata suffixes.
 	vPrefixedVersion := "v" + versionString
 	if !semver.IsValid(vPrefixedVersion) {
-		return Version{}, fmt.Errorf("%w: %s", errInvalidVersion, versionString)
+		return Version{}, fmt.Errorf("%w: %s", ErrInvalidVersion, versionString)
 	}
 	vPrefixedVersion = semver.Canonical(vPrefixedVersion)
 
@@ -398,20 +402,20 @@ func DeriveNextPreview(previewVersion, stableVersion string, opts DeriveNextOpti
 func ValidateNext(currentVersion, nextVersion string) error {
 	vPrefixedNextVersion := "v" + nextVersion
 	if !semver.IsValid(vPrefixedNextVersion) {
-		return fmt.Errorf("%w: %s", errInvalidVersion, nextVersion)
+		return fmt.Errorf("%w: %s", ErrInvalidVersion, nextVersion)
 	}
 	if currentVersion == "" {
 		return nil
 	}
 	vPrefixedCurrentVersion := "v" + currentVersion
 	if !semver.IsValid(vPrefixedCurrentVersion) {
-		return fmt.Errorf("%w: %s", errInvalidVersion, currentVersion)
+		return fmt.Errorf("%w: %s", ErrInvalidVersion, currentVersion)
 	}
 	switch semver.Compare(vPrefixedNextVersion, vPrefixedCurrentVersion) {
 	case 0:
-		return fmt.Errorf("version %s is already the current version", nextVersion)
+		return fmt.Errorf("%w: version %s is already the current version", ErrInvalidNextVersion, nextVersion)
 	case -1:
-		return fmt.Errorf("version %s is a regression from current version %s", nextVersion, currentVersion)
+		return fmt.Errorf("%w: version %s is a regression from current version %s", ErrInvalidNextVersion, nextVersion, currentVersion)
 	}
 	return nil
 }

@@ -95,11 +95,17 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 		if err != nil {
 			return err
 		}
-		tagName := strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
+		tagName := formatTagName(tagFormat, lib)
 		err = git.Tag(ctx, gitExe, tagName, releaseCommitHash)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
 	}
 	return nil
+}
+
+// formatTagName computes the name of the tag expected to be applied to the
+// commit that released the given library.
+func formatTagName(tagFormat string, lib *config.Library) string {
+	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
 }
