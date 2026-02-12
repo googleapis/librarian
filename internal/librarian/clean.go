@@ -91,13 +91,17 @@ func clean(dir string, keepSet map[string]bool) error {
 // TODO(https://github.com/googleapis/librarian/issues/4001): move this function
 // to internal/librarian/golang when the logic is deviate from checkAndClean.
 func cleanGo(library *config.Library) (*config.Library, error) {
-	libraryDir := filepath.Join(library.Output, library.Name)
-	if err := checkAndClean(libraryDir, library.Keep); err != nil {
+	keepFiles, err := check(library.Output, library.Keep)
+	if err != nil {
 		return nil, err
 	}
-	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := checkAndClean(snippetDir, nil); err != nil {
-		return nil, err
+	var libraryDirs []string
+	libraryDirs = append(libraryDirs, filepath.Join(library.Output, library.Name))
+	libraryDirs = append(libraryDirs, filepath.Join(library.Output, "internal", "generated", "snippets", library.Name))
+	for _, base := range libraryDirs {
+		if err := clean(base, keepFiles); err != nil {
+			return nil, err
+		}
 	}
 	return library, nil
 }
