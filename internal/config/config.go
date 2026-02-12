@@ -122,6 +122,8 @@ type Source struct {
 
 // Default contains default settings for all libraries.
 type Default struct {
+	// Keep lists files and directories to preserve during regeneration.
+	Keep []string `yaml:"keep,omitempty"`
 	// Output is the directory where code is written. For example, for Rust
 	// this is src/generated.
 	Output string `yaml:"output,omitempty"`

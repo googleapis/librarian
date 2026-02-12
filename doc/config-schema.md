@@ -62,6 +62,7 @@ This document describes the schema for the librarian.yaml.
 [Link to code](../internal/config/config.go#L124)
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
 | `output` | string | Output is the directory where code is written. For example, for Rust this is src/generated. |
 | `release_level` | string | ReleaseLevel is either "stable" or "preview". |
 | `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
@@ -71,7 +72,7 @@ This document describes the schema for the librarian.yaml.
 
 ## Library Configuration
 
-[Link to code](../internal/config/config.go#L148)
+[Link to code](../internal/config/config.go#L150)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
@@ -96,7 +97,7 @@ This document describes the schema for the librarian.yaml.
 
 ## API Configuration
 
-[Link to code](../internal/config/config.go#L220)
+[Link to code](../internal/config/config.go#L222)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |

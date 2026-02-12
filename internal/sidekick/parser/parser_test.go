@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 const (
@@ -115,10 +116,12 @@ func TestCreateModelOverrides(t *testing.T) {
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: map[string]string{
-			"googleapis-root":      path.Join(mainTestdataDir, "googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
+		},
+		Override: api.ModelOverride{
+			Name:        "Name Override",
+			Title:       "Title Override",
+			Description: "Description Override",
 		},
 	}
 	model, err := CreateModel(cfg)
@@ -148,10 +151,12 @@ func TestCreateModelNone(t *testing.T) {
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "none",
 		Source: map[string]string{
-			"googleapis-root":      path.Join(mainTestdataDir, "googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
+		},
+		Override: api.ModelOverride{
+			Name:        "Name Override",
+			Title:       "Title Override",
+			Description: "Description Override",
 		},
 	}
 	model, err := CreateModel(cfg)
@@ -169,10 +174,12 @@ func TestCreateModelUnknown(t *testing.T) {
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "none",
 		Source: map[string]string{
-			"googleapis-root":      path.Join(mainTestdataDir, "googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
+		},
+		Override: api.ModelOverride{
+			Name:        "Name Override",
+			Title:       "Title Override",
+			Description: "Description Override",
 		},
 	}
 	if got, err := CreateModel(cfg); err == nil {
@@ -187,10 +194,12 @@ func TestCreateModelBadParse(t *testing.T) {
 		// Note the mismatch between the format and the file contents.
 		SpecificationSource: discoSourceFile,
 		Source: map[string]string{
-			"googleapis-root":      path.Join(mainTestdataDir, "googleapis"),
-			"name-override":        "Name Override",
-			"title-override":       "Title Override",
-			"description-override": "Description Override",
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
+		},
+		Override: api.ModelOverride{
+			Name:        "Name Override",
+			Title:       "Title Override",
+			Description: "Description Override",
 		},
 	}
 	if got, err := CreateModel(cfg); err == nil {

@@ -21,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -34,34 +35,38 @@ func toModelConfig(library *config.Library, ch *config.API, sources *source.Sour
 
 	src := addLibraryRoots(library, sources)
 
-	if library.DescriptionOverride != "" {
-		src["description-override"] = library.DescriptionOverride
-	}
-	if library.Dart != nil && library.Dart.NameOverride != "" {
-		src["name-override"] = library.Dart.NameOverride
-	}
-	if library.Dart != nil && library.Dart.TitleOverride != "" {
-		src["title-override"] = library.Dart.TitleOverride
-	}
 	if library.Dart != nil && library.Dart.IncludeList != nil {
 		src["include-list"] = strings.Join(library.Dart.IncludeList, ",")
 	}
-
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
+	svcConfig, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
 	if err != nil {
 		return nil, err
 	}
 
+	title := svcConfig.Title
+	var name string
+	if library.Dart != nil {
+		name = library.Dart.NameOverride
+		if library.Dart.TitleOverride != "" {
+			title = library.Dart.TitleOverride
+		}
+	}
+
 	modelConfig := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
-		ServiceConfig:       api.ServiceConfig,
+		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: ch.Path,
 		Source:              src,
 		Codec:               buildCodec(library),
+		Override: api.ModelOverride{
+			Name:        name,
+			Description: library.DescriptionOverride,
+			Title:       title,
+		},
 	}
 	return modelConfig, nil
 }

@@ -6,7 +6,10 @@
 * @googleapis/cloud-sdk-librarian-team
 
 # Locations for all sidekick code.
-/*/sidekick/ @googleapis/cloud-sdk-sidekick-team @googleapis/cloud-sdk-rust-team
+/*/sidekick/ @googleapis/cloud-sdk-dart-team @googleapis/cloud-sdk-rust-team
+/*/sidekick/dart/ @googleapis/cloud-sdk-dart-team
+/*/sidekick/rust/ @googleapis/cloud-sdk-rust-team
+/*/sidekick/rust_prost/ @googleapis/cloud-sdk-rust-team
 
 # Locations for all surfer code.
 /*/surfer/ @googleapis/cloud-sdk-surfer-team

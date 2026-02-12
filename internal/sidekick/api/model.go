@@ -169,6 +169,15 @@ type API struct {
 	Codec any
 }
 
+// ModelOverride holds configuration overrides for an API model.
+type ModelOverride struct {
+	Name        string
+	Title       string
+	Description string
+	IncludedIDs []string
+	SkippedIDs  []string
+}
+
 // HasMessages returns true if the API contains messages (most do).
 //
 // This is useful in the mustache templates to skip code that only makes sense

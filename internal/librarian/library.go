@@ -27,6 +27,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d == nil {
 		return lib
 	}
+	if d.Keep != nil {
+		lib.Keep = append(lib.Keep, d.Keep...)
+	}
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
