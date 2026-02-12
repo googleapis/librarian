@@ -1615,6 +1615,69 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	}
 }
 
+func TestFormatDocCommentsSetextHeadings(t *testing.T) {
+	for _, testCase := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name: "simple",
+			input: `blah
+
+-
+  a fragmented list item
+   -
+     another fragmented list item`,
+			want: `/// blah
+///
+/// - a fragmented list item
+///   - another fragmented list item`,
+		},
+		{
+
+			name:  "repro-4019",
+			input: "Represents a collection of network endpoints.\n\nA network endpoint group (NEG) defines how a set of endpoints should be\nreached, whether they are reachable, and where they are located.\nFor more information about using NEGs for different use cases, seeNetwork endpoint groups overview.\n\nNote: Use the following APIs to manage network endpoint groups:\n   \n   - \n   To manage NEGs with zonal scope (such as zonal NEGs, hybrid connectivity\n   NEGs): zonal\n   API\n   - \n   To manage NEGs with regional scope (such as regional internet NEGs,\n   serverless NEGs, Private Service Connect NEGs): regional\n   API\n   - \n   To manage NEGs with global scope (such as global internet NEGs):global\n   API",
+			want: `/// Represents a collection of network endpoints.
+///
+/// A network endpoint group (NEG) defines how a set of endpoints should be
+/// reached, whether they are reachable, and where they are located.
+/// For more information about using NEGs for different use cases, seeNetwork endpoint groups overview.
+///
+/// Note: Use the following APIs to manage network endpoint groups:
+///
+/// - To manage NEGs with zonal scope (such as zonal NEGs, hybrid connectivity
+///   NEGs): zonal
+///   API
+/// - To manage NEGs with regional scope (such as regional internet NEGs,
+///   serverless NEGs, Private Service Connect NEGs): regional
+///   API
+/// - To manage NEGs with global scope (such as global internet NEGs):global
+///   API`,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			model := api.NewTestAPI(
+				[]*api.Message{}, []*api.Enum{},
+				[]*api.Service{})
+			err := api.CrossReference(model)
+			if err != nil {
+				t.Fatal(err)
+			}
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+
+			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model.State, []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := strings.Join(comments, "\n")
+			if diff := cmp.Diff(testCase.want, got); diff != "" {
+				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+			}
+		})
+	}
+}
+
 func TestFormatDocCommentsImpliedCrossLinks(t *testing.T) {
 	input := `
 implied service reference [SomeService][]
