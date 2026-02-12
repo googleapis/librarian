@@ -22,18 +22,34 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 func TestBump(t *testing.T) {
 	const readme = "This is a readme file"
 	const versionBefore = "line1\n" + gapicVersionLinePrefix + "\"1.2.2\"# Other stuff\n" + "line3"
 	const versionAfter = "line1\n" + gapicVersionLinePrefix + "\"1.2.3\"\n" + "line3"
+	const snippetMetadataBefore = `{
+  "clientLibrary": {
+    "otherField": "x",
+    "version": "1.2.2"
+  },
+  "otherField": "y"
+}`
+	const snippetMetadataAfter = `{
+  "clientLibrary": {
+    "otherField": "x",
+    "version": "1.2.3"
+  },
+  "otherField": "y"
+}`
 	initial := map[string]string{
-		"README.txt":                              readme,
-		"docs/README.txt":                         readme,
-		"google/cloud/iam/" + gapicVersionFile:    versionBefore,
-		"google/cloud/iam_v1/" + gapicVersionFile: versionBefore,
-		"other/" + gapicVersionFile:               versionBefore,
+		"README.txt":                                      readme,
+		"docs/README.txt":                                 readme,
+		"google/cloud/iam/" + gapicVersionFile:            versionBefore,
+		"google/cloud/iam_v1/" + gapicVersionFile:         versionBefore,
+		"other/" + gapicVersionFile:                       versionBefore,
+		"samples/generated_samples/snippet_metadata.json": snippetMetadataBefore,
 	}
 	dir := t.TempDir()
 	for file, content := range initial {
@@ -51,11 +67,12 @@ func TestBump(t *testing.T) {
 	}
 
 	wantAfter := map[string]string{
-		"README.txt":                           readme,
-		"docs/README.txt":                      readme,
-		"google/cloud/iam/gapic_version.py":    versionAfter,
-		"google/cloud/iam_v1/gapic_version.py": versionAfter,
-		"other/gapic_version.py":               versionAfter,
+		"README.txt":                                      readme,
+		"docs/README.txt":                                 readme,
+		"google/cloud/iam/gapic_version.py":               versionAfter,
+		"google/cloud/iam_v1/gapic_version.py":            versionAfter,
+		"other/gapic_version.py":                          versionAfter,
+		"samples/generated_samples/snippet_metadata.json": snippetMetadataAfter,
 	}
 	for file, want := range wantAfter {
 		got, err := os.ReadFile(filepath.Join(dir, file))
@@ -95,6 +112,17 @@ func TestBump_Error(t *testing.T) {
 			},
 			wantErr: errNoVersionFound,
 		},
+		{
+			name: "snippet metadata file is invalid",
+			setup: func(dir string) error {
+				snippetMetadataPath := filepath.Join(dir, "samples", "generated_samples", "snippet_metadata.json")
+				if err := os.MkdirAll(filepath.Dir(snippetMetadataPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				return os.WriteFile(snippetMetadataPath, []byte("{}"), 0644)
+			},
+			wantErr: snippetmetadata.ErrNoClientLibraryField,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -103,7 +131,7 @@ func TestBump_Error(t *testing.T) {
 			}
 			gotErr := Bump(dir, "1.2.3")
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("bumpSingleGapicVersion() error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("bump() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
