@@ -452,6 +452,9 @@ func TestBuildGoLibraries(t *testing.T) {
 						{
 							ID: "accessapproval",
 						},
+						{
+							ID: "cloudprofiler",
+						},
 					},
 				},
 				librarianConfig: &legacyconfig.LibrarianConfig{},
@@ -461,7 +464,11 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "accessapproval",
-					Keep: []string{"aliasshim/aliasshim.go"},
+					Keep: []string{"accessapproval/CHANGES.md", "accessapproval/aliasshim/aliasshim.go"},
+				},
+				{
+					Name: "cloudprofiler",
+					Keep: []string{"cloudprofiler/CHANGES.md"},
 				},
 			},
 		},
