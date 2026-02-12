@@ -20,7 +20,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -110,11 +109,13 @@ func cleanGo(library *config.Library) (*config.Library, error) {
 func stripPrefix(keepFiles map[string]bool, dir string) map[string]bool {
 	res := make(map[string]bool)
 	for key := range keepFiles {
-		if !strings.HasPrefix(key, dir) {
+		rel, err := filepath.Rel(dir, key)
+		if err != nil {
+			// It is fine to ignore the error because we need to separate keep
+			// list into two parts, one for package dir and one for snippets dir.
 			continue
 		}
-		key = strings.TrimPrefix(key, dir)
-		res[key] = true
+		res[rel] = true
 	}
 	return res
 }
