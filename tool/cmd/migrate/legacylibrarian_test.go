@@ -116,7 +116,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					Keep:         []string{"CHANGES.md"},
 					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
@@ -235,7 +234,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					Keep:         []string{"CHANGES.md"},
 					Output:       ".",
 					TagFormat:    defaultTagFormat,
 					ReleaseLevel: "ga",
