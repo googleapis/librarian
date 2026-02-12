@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
@@ -67,7 +68,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -90,7 +93,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -112,7 +117,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -149,7 +156,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -171,7 +180,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -205,7 +216,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -234,7 +247,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 				CommentOverrides: []sidekickconfig.DocumentationOverride{
 					{
@@ -269,7 +284,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 				PaginationOverrides: []sidekickconfig.PaginationOverride{
 					{
@@ -298,7 +315,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
-					"title-override":  "Google Compute Engine API",
+				},
+				Override: api.ModelOverride{
+					Title: "Google Compute Engine API",
 				},
 			},
 		},
@@ -320,7 +339,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Secret Manager API",
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
 				},
 			},
 		},
@@ -344,7 +365,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 					"discovery-root":  absPath(t, discoveryRoot),
 					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "googleapis,discovery,showcase",
-					"title-override":  "Google Compute Engine API",
+				},
+				Override: api.ModelOverride{
+					Title: "Google Compute Engine API",
 				},
 			},
 		},
@@ -362,8 +385,10 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationSource: "google/apps/script/type/gmail",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"title-override":  "Google Apps Script Types",
 					"roots":           "googleapis",
+				},
+				Override: api.ModelOverride{
+					Title: "Google Apps Script Types",
 				},
 			},
 		},
@@ -381,9 +406,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/longrunning",
 				Source: map[string]string{
-					"googleapis-root":      absPath(t, googleapisRoot),
-					"description-override": "Defines types and an abstract service to handle long-running operations.",
-					"roots":                "googleapis",
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
+				},
+				Override: api.ModelOverride{
+					Description: "Defines types and an abstract service to handle long-running operations.",
 				},
 			},
 		},
@@ -408,8 +435,14 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationSource: "google/spanner/admin/database/v1",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"skipped-ids":     ".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation,.google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest,.google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
 					"roots":           "googleapis",
+				},
+				Override: api.ModelOverride{
+					SkippedIDs: []string{
+						".google.spanner.admin.database.v1.DatabaseAdmin.InternalUpdateGraphOperation",
+						".google.spanner.admin.database.v1.InternalUpdateGraphOperationRequest",
+						".google.spanner.admin.database.v1.InternalUpdateGraphOperationResponse",
+					},
 				},
 			},
 		},
@@ -472,7 +505,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"discovery-root":  absPath(t, discoveryRoot),
 					"roots":           "googleapis,discovery",
-					"title-override":  "Google Compute Engine API",
+				},
+				Override: api.ModelOverride{
+					Title: "Google Compute Engine API",
 				},
 				Discovery: &sidekickconfig.Discovery{
 					OperationID: ".google.cloud.compute.v1.Operation",
@@ -532,7 +567,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"showcase-root":   absPath(t, showcaseRoot),
 					"roots":           "showcase,googleapis",
-					"title-override":  "Client Libraries Showcase API",
+				},
+				Override: api.ModelOverride{
+					Title: "Client Libraries Showcase API",
 				},
 			},
 		},
@@ -696,7 +733,9 @@ func TestModuleToModelConfig(t *testing.T) {
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
-					"title-override":  "Logging types",
+				},
+				Override: api.ModelOverride{
+					Title: "Logging types",
 				},
 			},
 		},
@@ -720,10 +759,12 @@ func TestModuleToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
-					"included-ids":    "id1,id2",
 					"include-list":    "example-list",
 					"roots":           "googleapis",
-					"skipped-ids":     "id3,id4",
+				},
+				Override: api.ModelOverride{
+					IncludedIDs: []string{"id1", "id2"},
+					SkippedIDs:  []string{"id3", "id4"},
 				},
 			},
 		},

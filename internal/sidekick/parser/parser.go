@@ -49,6 +49,9 @@ type ModelConfig struct {
 
 	// Discovery poller configurations
 	Discovery *config.Discovery
+
+	// Model overrides
+	Override api.ModelOverride
 }
 
 // CreateModel parses the service specification referenced in `config`,
@@ -77,7 +80,7 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	if err := api.SkipModelElements(model, cfg.Source); err != nil {
+	if err := api.SkipModelElements(model, cfg.Override); err != nil {
 		return nil, err
 	}
 	if err := api.PatchDocumentation(model, cfg.CommentOverrides); err != nil {
@@ -87,14 +90,14 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err := api.Validate(model); err != nil {
 		return nil, err
 	}
-	if name, ok := cfg.Source["name-override"]; ok {
-		model.Name = name
+	if cfg.Override.Name != "" {
+		model.Name = cfg.Override.Name
 	}
-	if title, ok := cfg.Source["title-override"]; ok {
-		model.Title = title
+	if cfg.Override.Title != "" {
+		model.Title = cfg.Override.Title
 	}
-	if description, ok := cfg.Source["description-override"]; ok {
-		model.Description = description
+	if cfg.Override.Description != "" {
+		model.Description = cfg.Override.Description
 	}
 	return model, nil
 }

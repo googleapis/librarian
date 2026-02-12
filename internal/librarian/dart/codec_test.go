@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -294,13 +295,13 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
 				},
-				Codec: map[string]string{},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
 			},
 		},
 		{
@@ -314,14 +315,15 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
-					"googleapis-root":      googleapisDir,
-					"description-override": "this is a description override",
-					"roots":                "googleapis",
+					"googleapis-root": googleapisDir,
+					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
+				Override: api.ModelOverride{
+					Description: "this is a description override",
+				},
 			},
 		},
 		{
@@ -337,14 +339,15 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
-					"name-override":   "override-name",
 					"roots":           "googleapis",
 				},
 				Codec: map[string]string{},
+				Override: api.ModelOverride{
+					Name: "override-name",
+				},
 			},
 		},
 		{
@@ -380,12 +383,13 @@ func TestToModelConfig(t *testing.T) {
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				ServiceConfig:       "",
 				SpecificationSource: "google/api/apikeys/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
-					"title-override":  "library-title-override",
+				},
+				Override: api.ModelOverride{
+					Title: "library-title-override",
 				},
 				Codec: map[string]string{
 					"api-keys-environment-variables": "GOOGLE_API_KEY",
