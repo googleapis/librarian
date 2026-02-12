@@ -116,8 +116,9 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					TagFormat:    defaultTagFormat,
+					Output:       ".",
 					ReleaseLevel: "ga",
+					TagFormat:    defaultTagFormat,
 				},
 			},
 		},
@@ -233,6 +234,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
+					Output:       ".",
 					TagFormat:    defaultTagFormat,
 					ReleaseLevel: "ga",
 				},
@@ -461,7 +463,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "accessapproval",
-					Keep: []string{"aliasshim/aliasshim.go"},
+					Keep: []string{"accessapproval/aliasshim/aliasshim.go"},
 				},
 			},
 		},
