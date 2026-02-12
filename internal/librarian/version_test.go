@@ -15,8 +15,6 @@
 package librarian
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"runtime/debug"
 	"strings"
@@ -149,82 +147,6 @@ func TestNewPseudoVersion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			if got := newPseudoVersion(test.buildinfo); got != test.want {
 				t.Errorf("got %s; want %s", got, test.want)
-			}
-		})
-	}
-}
-
-func TestCompareVersions(t *testing.T) {
-	for _, test := range []struct {
-		name          string
-		configVersion string
-		binaryVersion string
-		wantErr       error
-	}{
-		{
-			name:          "matching versions",
-			configVersion: "v1.0.0",
-			binaryVersion: "v1.0.0",
-		},
-		{
-			name:          "mismatched versions",
-			configVersion: "v1.0.0",
-			binaryVersion: "v2.0.0",
-			wantErr:       errVersionMismatch,
-		},
-		{
-			name:          "local build skips check",
-			configVersion: "v1.0.0",
-			binaryVersion: versionNotAvailable,
-		},
-		{
-			name:          "empty config version",
-			configVersion: "",
-			binaryVersion: "v1.0.0",
-			wantErr:       errNoConfigVersion,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			err := compareVersions(test.configVersion, test.binaryVersion)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("got %v; want %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestSkipVersionCheck(t *testing.T) {
-	for _, test := range []struct {
-		name   string
-		setKey bool
-		value  bool
-		want   bool
-	}{
-		{
-			name:   "key set to true",
-			setKey: true,
-			value:  true,
-			want:   true,
-		},
-		{
-			name:   "key set to false",
-			setKey: true,
-			value:  false,
-			want:   false,
-		},
-		{
-			name:   "key not set",
-			setKey: false,
-			want:   false,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := t.Context()
-			if test.setKey {
-				ctx = context.WithValue(ctx, skipVersionCheckKey{}, test.value)
-			}
-			if got := skipVersionCheck(ctx); got != test.want {
-				t.Errorf("got %v; want %v", got, test.want)
 			}
 		})
 	}

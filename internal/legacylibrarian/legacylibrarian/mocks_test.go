@@ -60,6 +60,7 @@ type mockGitHubClient struct {
 	releaseNames            []string
 	librarianState          *legacyconfig.LibrarianState
 	librarianConfig         *legacyconfig.LibrarianConfig
+	replacedLabels          []string
 }
 
 func (m *mockGitHubClient) GetRawContent(ctx context.Context, path, ref string) ([]byte, error) {
@@ -94,6 +95,7 @@ func (m *mockGitHubClient) GetLabels(ctx context.Context, number int) ([]string,
 
 func (m *mockGitHubClient) ReplaceLabels(ctx context.Context, number int, labels []string) error {
 	m.replaceLabelsCalls++
+	m.replacedLabels = labels
 	return m.replaceLabelsErr
 }
 

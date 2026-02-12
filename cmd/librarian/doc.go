@@ -41,7 +41,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # generate
@@ -61,7 +60,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # bump
@@ -94,7 +92,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # tidy
@@ -113,7 +110,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # update
@@ -142,7 +138,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # version
@@ -161,7 +156,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # publish
@@ -185,7 +179,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 
 # tag
@@ -205,7 +198,6 @@ OPTIONS:
 
 GLOBAL OPTIONS:
 
-	--force, -f    skip binary version check
 	--verbose, -v  enable verbose logging
 */
 package main

@@ -829,6 +829,39 @@ func toScreamingSnake(symbol string) string {
 	return strcase.ToScreamingSnake(symbol)
 }
 
+func isMultiLineListItem(lines []string, index int) bool {
+	if strings.TrimSpace(lines[index]) != "-" {
+		return false
+	}
+	if index+1 >= len(lines) {
+		return false
+	}
+	s := lines[index+1]
+	return len(s) > 0 && unicode.IsSpace(rune(s[0]))
+}
+
+// fixSetextHeadings avoids [setext headers] that were intended to be list
+// items, which may result from the discovery documentation pipepline.
+//
+// [setext headers]: https://spec.commonmark.org/0.20/#setext-header
+func fixSetextHeadings(input string) string {
+	var result []string
+	lines := strings.Split(input, "\n")
+	i := 0
+	for i < len(lines) {
+		if isMultiLineListItem(lines, i) {
+			merged := strings.TrimRightFunc(lines[i], unicode.IsSpace) + " " + strings.TrimSpace(lines[i+1])
+			result = append(result, merged)
+			i += 2 // Skip lines[i+1], as we have already used it.
+			continue
+		}
+		result = append(result, lines[i])
+		i++
+	}
+
+	return strings.Join(result, "\n")
+}
+
 // formatDocComments formats blockquotes which requires special treatment for
 // Rust.
 //
@@ -845,6 +878,7 @@ func toScreamingSnake(symbol string) string {
 func (c *codec) formatDocComments(
 	documentation, elementID string, state *api.APIState, scopes []string) ([]string, error) {
 	var results []string
+
 	md := goldmark.New(
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
@@ -852,7 +886,8 @@ func (c *codec) formatDocComments(
 		goldmark.WithExtensions(),
 	)
 
-	documentationBytes := []byte(documentation)
+	cleaned := fixSetextHeadings(documentation)
+	documentationBytes := []byte(cleaned)
 	doc := md.Parser().Parse(text.NewReader(documentationBytes))
 	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		switch node.Kind() {

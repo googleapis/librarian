@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,7 +172,7 @@ func TestBumpCommand_Error(t *testing.T) {
 		{
 			name:    "missing librarian yaml file",
 			args:    []string{"librarian", "bump", "--all"},
-			wantErr: errConfigNotFound,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name:    "local repo is dirty",

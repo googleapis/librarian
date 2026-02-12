@@ -1,0 +1,27 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Install taplo
+runs:
+  using: composite
+  steps:
+    - name: Install taplo
+      run: |
+        set -e
+        curl -fsSL https://github.com/tamasfe/taplo/releases/download/$VERSION/taplo-linux-x86_64.gz | gunzip -c - | sudo install -m 0755 /dev/stdin /usr/local/bin/taplo
+        sha512sum -c <(echo "$CHECKSUM /usr/local/bin/taplo")
+        taplo --version
+      shell: bash
+      env:
+        VERSION: 0.10.0
+        CHECKSUM: 33587a0beb692561b1bc411f484f088117b45d14e993cdb8e5d66dd967026d9e166ab8b23ec7c4791d1c17ec8bd9f1d6b05a16e742c70c6a6f16dc5f7ca3ff53

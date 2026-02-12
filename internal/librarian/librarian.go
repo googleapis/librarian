@@ -28,8 +28,6 @@ import (
 // ErrLibraryNotFound is returned when the specified library is not found in config.
 var ErrLibraryNotFound = errors.New("library not found")
 
-type skipVersionCheckKey struct{}
-
 const (
 	librarianConfigPath = "librarian.yaml"
 	languageDart        = "dart"
@@ -47,11 +45,6 @@ func Run(ctx context.Context, args ...string) error {
 		UsageText: "librarian [command]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:    "force",
-				Aliases: []string{"f"},
-				Usage:   "skip binary version check",
-			},
-			&cli.BoolFlag{
 				Name:    "verbose",
 				Aliases: []string{"v"},
 				Usage:   "enable verbose logging",
@@ -59,7 +52,6 @@ func Run(ctx context.Context, args ...string) error {
 		},
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			command.Verbose = cmd.Bool("verbose")
-			ctx = context.WithValue(ctx, skipVersionCheckKey{}, cmd.Bool("force"))
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
