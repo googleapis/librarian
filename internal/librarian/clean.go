@@ -35,6 +35,9 @@ func checkAndClean(dir string, keep []string) error {
 	return clean(dir, keepSet)
 }
 
+// cleanGo cleans the output directories for a Go library, removing all files
+// except those specified in the library's keep list.
+//
 // TODO(https://github.com/googleapis/librarian/issues/4001): move this function
 // to internal/librarian/golang when the logic is deviate from checkAndClean.
 func cleanGo(library *config.Library) (*config.Library, error) {
