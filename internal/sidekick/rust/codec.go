@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"log/slog"
@@ -846,13 +845,8 @@ func isMultiLineListItem(lines []string, index int) bool {
 //
 // [setext headers]: https://spec.commonmark.org/0.20/#setext-header
 func fixSetextHeadings(input string) string {
-	scanner := bufio.NewScanner(strings.NewReader(input))
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
 	var result []string
+	lines := strings.Split(input, "\n")
 	i := 0
 	for i < len(lines) {
 		if isMultiLineListItem(lines, i) {

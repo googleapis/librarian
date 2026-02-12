@@ -1672,7 +1672,7 @@ func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 			}
 			got := strings.Join(comments, "\n")
 			if diff := cmp.Diff(testCase.want, got); diff != "" {
-				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
