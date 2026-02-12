@@ -245,7 +245,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		library.Keep = libState.PreserveRegex
 		if libraryNames[id] {
-			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
+			library.Keep = append(library.Keep, filepath.Join(id, "aliasshim", "aliasshim.go"))
 		}
 		slices.Sort(library.Keep)
 
