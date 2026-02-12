@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 	"golang.org/x/mod/semver"
 )
@@ -36,11 +37,17 @@ func TestRunUpgrade(t *testing.T) {
 	}
 
 	repoDir := t.TempDir()
+	t.Chdir(repoDir)
 	configPath := generateLibrarianConfigPath(t, repoDir)
-	initialConfig := &config.Config{
-		Language: "rust",
-		Version:  "v0.1.0",
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
 	}
+	googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
+	initialConfig := sample.Config()
+	initialConfig.Language = "fake"
+	initialConfig.Version = "v0.1.0"
+	initialConfig.Sources.Googleapis.Dir = googleapisDir
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
 	}
@@ -59,10 +66,8 @@ func TestRunUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantConfig := &config.Config{
-		Language: "rust",
-		Version:  wantVersion,
-	}
+	wantConfig := initialConfig
+	wantConfig.Version = wantVersion
 	if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -133,10 +138,15 @@ func TestUpgradeCommand(t *testing.T) {
 	t.Chdir(repoDir)
 
 	configPath := generateLibrarianConfigPath(t, ".")
-	initialConfig := &config.Config{
-		Language: "rust",
-		Version:  "v0.1.0",
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
 	}
+	googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
+	initialConfig := sample.Config()
+	initialConfig.Language = "fake"
+	initialConfig.Version = "v0.1.0"
+	initialConfig.Sources.Googleapis.Dir = googleapisDir
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
 	}
