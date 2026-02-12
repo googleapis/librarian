@@ -130,13 +130,15 @@ func TestCleanGo_Success(t *testing.T) {
 		snippetFiles []string
 		keep         []string
 		wantOutput   []string
+		wantSnippets []string
 	}{
 		{
 			name:         "removes all except keep list",
 			outputFiles:  []string{"file1.go", "file2.go", "go.mod"},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{"file1.go"},
+			keep:         []string{"testlib/file1.go"},
 			wantOutput:   []string{"file1.go"},
+			wantSnippets: []string{},
 		},
 		{
 			name:         "remove all files",
@@ -151,7 +153,7 @@ func TestCleanGo_Success(t *testing.T) {
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
 				Name:   libraryName,
-				Output: filepath.Join(root),
+				Output: ".",
 				Keep:   test.keep,
 			}
 			if test.outputFiles != nil {
@@ -160,8 +162,15 @@ func TestCleanGo_Success(t *testing.T) {
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
-
-			_, err := cleanGo(lib)
+			cwd, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chdir(root); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chdir(cwd)
+			_, err = cleanGo(lib)
 			if err != nil {
 				t.Fatal(err)
 			}
