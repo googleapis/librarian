@@ -162,14 +162,8 @@ func TestCleanGo_Success(t *testing.T) {
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
-			cwd, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
 			t.Chdir(root)
-			defer t.Chdir(cwd)
-			_, err = cleanGo(lib)
-			if err != nil {
+			if _, err := cleanGo(lib); err != nil {
 				t.Fatal(err)
 			}
 
