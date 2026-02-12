@@ -166,10 +166,8 @@ func TestCleanGo_Success(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := os.Chdir(root); err != nil {
-				t.Fatal(err)
-			}
-			defer os.Chdir(cwd)
+			t.Chdir(root)
+			defer t.Chdir(cwd)
 			_, err = cleanGo(lib)
 			if err != nil {
 				t.Fatal(err)
