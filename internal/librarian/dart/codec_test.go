@@ -21,7 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickapi "github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -389,7 +388,7 @@ func TestToModelConfig(t *testing.T) {
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
 				},
-				Override: sidekickapi.ModelOverride{
+				Override: api.ModelOverride{
 					Title: "library-title-override",
 				},
 				Codec: map[string]string{
