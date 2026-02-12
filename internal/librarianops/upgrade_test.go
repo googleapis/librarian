@@ -17,6 +17,7 @@ package librarianops
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,10 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 	"golang.org/x/mod/semver"
 )
-
-func generateLibrarianConfigPath(repoDir string) string {
-	return filepath.Join(repoDir, "librarian.yaml")
-}
 
 func TestRunUpgrade(t *testing.T) {
 	wantVersion, err := getLibrarianVersionAtMain(t.Context())
@@ -39,7 +36,7 @@ func TestRunUpgrade(t *testing.T) {
 	}
 
 	repoDir := t.TempDir()
-	configPath := generateLibrarianConfigPath(repoDir)
+	configPath := generateLibrarianConfigPath(t, repoDir)
 	initialConfig := &config.Config{
 		Language: "rust",
 		Version:  "v0.1.0",
@@ -73,8 +70,9 @@ func TestRunUpgrade(t *testing.T) {
 
 func TestRunUpgrade_Error(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T) (repoDir string)
+		name      string
+		setup     func(t *testing.T) (repoDir string)
+		wantError string
 	}{
 		{
 			name: "getLibrarianVersionAtMain error",
@@ -83,24 +81,31 @@ func TestRunUpgrade_Error(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 				return t.TempDir()
 			},
+			wantError: "failed to get latest librarian version",
 		},
 		{
 			name: "UpdateLibrarianVersion error",
 			setup: func(t *testing.T) string {
 				// Make writing the config file fail by creating a directory at its path.
 				repoDir := t.TempDir()
-				configPath := generateLibrarianConfigPath(repoDir)
+				configPath := generateLibrarianConfigPath(t, repoDir)
 				if err := os.Mkdir(configPath, 0755); err != nil {
 					t.Fatal(err)
 				}
 				return repoDir
 			},
+			wantError: "failed to update librarian version",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := test.setup(t)
-			if _, err := runUpgrade(t.Context(), repoDir); err == nil {
-				t.Error("expected error, got nil")
+			_, gotErr := runUpgrade(t.Context(), repoDir)
+			if gotErr == nil {
+				t.Fatal("got nil, want error")
+			}
+			// Error is dynamic so just checking the substring.
+			if !strings.Contains(gotErr.Error(), test.wantError) {
+				t.Errorf("error detail mismatch\ngot:  %q\nwant substring: %q", gotErr.Error(), test.wantError)
 			}
 		})
 	}
@@ -112,7 +117,7 @@ func TestUpgradeCommand(t *testing.T) {
 	repoDir := t.TempDir()
 	t.Chdir(repoDir)
 
-	configPath := generateLibrarianConfigPath(".")
+	configPath := generateLibrarianConfigPath(t, ".")
 	initialConfig := &config.Config{
 		Language: "rust",
 		Version:  "v0.1.0",
@@ -129,14 +134,16 @@ func TestUpgradeCommand(t *testing.T) {
 
 func TestUpgradeCommand_Error(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		args  []string
-		setup func(t *testing.T)
+		name      string
+		args      []string
+		setup     func(t *testing.T)
+		wantError string
 	}{
 		{
-			name:  "no repo arg",
-			args:  []string{},
-			setup: func(t *testing.T) {},
+			name:      "wrong arguments",
+			args:      []string{},
+			setup:     func(t *testing.T) {},
+			wantError: "usage: librarianops <command> <repo> or librarianops <command> -C <dir>",
 		},
 		{
 			name: "runUpgrade error",
@@ -144,6 +151,7 @@ func TestUpgradeCommand_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
+			wantError: "failed to get latest librarian version",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -151,9 +159,19 @@ func TestUpgradeCommand_Error(t *testing.T) {
 			test.setup(t)
 
 			cmd := upgradeCommand()
-			if err := cmd.Run(t.Context(), test.args); err == nil {
-				t.Error("expected error, got nil")
+			err := cmd.Run(t.Context(), test.args)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			// Error is dynamic so just checking the substring.
+			if !strings.Contains(err.Error(), test.wantError) {
+				t.Errorf("error mismatch\ngot: %q, want substring: %q", err.Error(), test.wantError)
 			}
 		})
 	}
+}
+
+func generateLibrarianConfigPath(t *testing.T, repoDir string) string {
+	t.Helper()
+	return filepath.Join(repoDir, "librarian.yaml")
 }
