@@ -180,6 +180,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 	if api.Description == "" && cfg.GetDocumentation() != nil {
 		api.Description = strings.TrimSpace(cfg.GetDocumentation().GetSummary())
 	}
+	api.ShortName = defaultShortName(api.ServiceName)
 	publishing := cfg.GetPublishing()
 	if publishing != nil {
 		if api.NewIssueURI == "" {
@@ -188,7 +189,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		if api.DocumentationURI == "" {
 			api.DocumentationURI = publishing.GetDocumentationUri()
 		}
-		if api.ShortName == "" {
+		if publishing.GetApiShortName() != "" {
 			api.ShortName = publishing.GetApiShortName()
 		}
 	}
@@ -236,6 +237,11 @@ func isServiceConfigFile(path string) (bool, error) {
 		}
 	}
 	return false, scanner.Err()
+}
+
+// defaultShortName returns the default short name from serviceName.
+func defaultShortName(serviceName string) string {
+	return strings.Split(serviceName, ".")[0]
 }
 
 // FindGRPCServiceConfig searches for gRPC service config files in the given
