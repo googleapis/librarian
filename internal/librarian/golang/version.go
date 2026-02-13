@@ -61,14 +61,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	version := filepath.Base(apiPath)
-	goAPI := findGoAPI(library, apiPath)
-	var clientDir string
-	if goAPI != nil && goAPI.ClientDirectory != "" {
-		clientDir = goAPI.ClientDirectory
-	}
-
-	dir := filepath.Join(library.Output, library.Name, clientDir, "api"+version)
+	dir := apiVersionPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -87,6 +80,7 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
 	pkg := library.Name
+	clientDir := clientDirectory(library, apiPath)
 	if clientDir != "" {
 		pkg = clientDir
 	}
@@ -94,6 +88,20 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 		"Package":    pkg,
 		"ModulePath": modulePath(library),
 	})
+}
+
+func apiVersionPath(library *config.Library, apiPath string) string {
+	version := filepath.Base(apiPath)
+	clientDir := clientDirectory(library, apiPath)
+	return filepath.Join(library.Output, library.Name, clientDir, "api"+version)
+}
+
+func clientDirectory(library *config.Library, apiPath string) string {
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI != nil {
+		return goAPI.ClientDirectory
+	}
+	return ""
 }
 
 // writeLicenseHeader writes the license header as Go comments to the given file.
