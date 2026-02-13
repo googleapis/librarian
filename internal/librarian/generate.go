@@ -80,29 +80,9 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 }
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
-	// Fetch sources.
-	var googleapisDir string
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return errors.New("must specify --googleapis flag")
-	}
-	if cfg.Sources.Googleapis.Dir != "" {
-		googleapisDir = cfg.Sources.Googleapis.Dir
-	} else {
-		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
-		if err != nil {
-			return fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
-		}
-		googleapisDir = dir
-	}
-
-	var rustSources *source.Sources
-	if cfg.Language == languageRust || cfg.Language == languageDart {
-		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
-		if err != nil {
-			return err
-		}
-		rustSources = sources
-		rustSources.Googleapis = googleapisDir
+	googleapisDir, rustSources, err := LoadSources(ctx, cfg)
+	if err != nil {
+		return err
 	}
 
 	// Prepare and clean libraries sequentially.
@@ -148,6 +128,34 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		}
 	}
 	return postGenerate(ctx, cfg.Language)
+}
+
+func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sources, error) {
+	// Fetch sources.
+	var googleapisDir string
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return "", nil, errors.New("must specify googleapis source in librarian.yaml")
+	}
+	if cfg.Sources.Googleapis.Dir != "" {
+		googleapisDir = cfg.Sources.Googleapis.Dir
+	} else {
+		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
+		}
+		googleapisDir = dir
+	}
+
+	var rustSources *source.Sources
+	if cfg.Language == languageRust || cfg.Language == languageDart {
+		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
+		if err != nil {
+			return "", nil, err
+		}
+		rustSources = sources
+		rustSources.Googleapis = googleapisDir
+	}
+	return googleapisDir, rustSources, nil
 }
 
 // postGenerate performs repository-level actions after all individual
