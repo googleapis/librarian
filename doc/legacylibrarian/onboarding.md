@@ -61,13 +61,13 @@ Read our guide on
 
 ## Step 6: Running Legacy Librarian
 
-Currently running legacy librarian from main is unstable, please use the v0.8.0 tag when running 
+Currently running legacy librarian from main is unstable, please use the `latest` tag when running 
 locally.
 
 ### Using `go run`
 
 ```sh
-$ go run github.com/googleapis/librarian/cmd/legacylibrarian@v0.8.0
+$ go run github.com/googleapis/librarian/cmd/legacylibrarian@latest
 ```
 
 ### Using `go install`
@@ -76,7 +76,7 @@ To install a binary locally, and then run it (assuming the `$GOBIN` directory
 is in your path):
 
 ```sh
-$ go install github.com/googleapis/librarian/cmd/legacylibrarian@v0.8.0
+$ go install github.com/googleapis/librarian/cmd/legacylibrarian@latest
 ```
 
 
