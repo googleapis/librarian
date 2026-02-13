@@ -256,7 +256,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := addLibrary(cfg, test.apis...)
+			_, cfg, err := addLibrary(cfg, test.apis...)
 			if err != nil {
 				t.Fatal(err)
 			}
