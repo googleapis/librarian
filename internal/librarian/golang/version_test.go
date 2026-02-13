@@ -114,7 +114,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 	}
 }
 
-func TestAPIVersionPath(t *testing.T) {
+func TestResolveClientPath(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		library         *config.Library
@@ -187,7 +187,7 @@ func TestAPIVersionPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotVersionPath, gotClientDir := apiVersionPath(test.library, test.apiPath)
+			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)
 			if gotVersionPath != test.wantVersionPath {
 				t.Errorf("got %q, want %q", gotVersionPath, test.wantVersionPath)
 			}

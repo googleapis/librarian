@@ -61,7 +61,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	dir, clientDir := apiVersionPath(library, apiPath)
+	dir, clientDir := resolveClientPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -89,7 +89,8 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	})
 }
 
-func apiVersionPath(library *config.Library, apiPath string) (string, string) {
+// resolveClientPath constructs the full path for the API version and determines the client directory.
+func resolveClientPath(library *config.Library, apiPath string) (string, string) {
 	version := filepath.Base(apiPath)
 	clientDir := clientDirectory(library, apiPath)
 	return filepath.Join(library.Output, library.Name, clientDir, "api"+version), clientDir
