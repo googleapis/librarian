@@ -28,6 +28,13 @@ limitations under the License.
 {{#AIPStandardCreateInfo}}
 /// use {{Service.Model.Codec.PackageNamespace}}::model::{{ResourceRequestField.MessageType.Codec.Name}};
 {{/AIPStandardCreateInfo}}
+{{#AIPStandardUpdateInfo}}
+{{#UpdateMaskRequestField}}
+/// # extern crate wkt as google_cloud_wkt;
+/// use google_cloud_wkt::FieldMask;
+{{/UpdateMaskRequestField}}
+/// use {{Service.Model.Codec.PackageNamespace}}::model::{{ResourceRequestField.MessageType.Codec.Name}};
+{{/AIPStandardUpdateInfo}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(
 {{> /templates/common/client_method_samples/parameters}}

@@ -33,6 +33,12 @@ Use no newline at the end of file so the partials are all merged into a single l
 }}{{/ResourceIDRequestField}}{{!
 }}.set_{{ResourceRequestField.Codec.SetterName}}({{ResourceRequestField.MessageType.Codec.Name}}::new()/* set fields */){{!
 }}{{/AIPStandardCreateInfo}}{{!
+}}{{#AIPStandardUpdateInfo}}{{!
+}}.set_{{ResourceRequestField.Codec.SetterName}}({{ResourceRequestField.MessageType.Codec.Name}}::new().set_name(name)/* set fields */){{!
+}}{{#UpdateMaskRequestField}}{{!
+}}.set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated", "fields"])){{!
+}}{{/UpdateMaskRequestField}}{{!
+}}{{/AIPStandardUpdateInfo}}{{!
 }}{{#AIPStandardListInfo}}{{!
 }}.set_{{ParentRequestField.Codec.SetterName}}(parent){{!
 }}{{/AIPStandardListInfo}}{{!

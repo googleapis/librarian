@@ -430,7 +430,8 @@ func (m *Method) IsAIPStandard() bool {
 		m.AIPStandardDeleteInfo() != nil ||
 		m.AIPStandardUndeleteInfo() != nil ||
 		m.AIPStandardListInfo() != nil ||
-		m.AIPStandardCreateInfo() != nil
+		m.AIPStandardCreateInfo() != nil ||
+		m.AIPStandardUpdateInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations
@@ -628,6 +629,66 @@ func (m *Method) AIPStandardCreateInfo() *AIPStandardCreateInfo {
 	}
 }
 
+// AIPStandardUpdateInfo contains information relevant to update operations
+// that are like those defined by AIP-134.
+type AIPStandardUpdateInfo struct {
+	// ResourceRequestField is the field in the method input that contains the resource
+	// to be updated.
+	ResourceRequestField *Field
+	// UpdateMaskRequestField is the field in the method input that contains the update mask.
+	UpdateMaskRequestField *Field
+}
+
+// AIPStandardUpdateInfo returns information relevant to an update operation that is like
+// an update operation as defined by AIP-134, if the method is such an operation.
+func (m *Method) AIPStandardUpdateInfo() *AIPStandardUpdateInfo {
+	if (!m.IsSimple() && !m.IsLRO()) || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := m.standardMethodOutputResource()
+	if outputResource == nil {
+		return nil
+	}
+
+	// Standard update methods for resource "Foo" should be named "UpdateFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "update")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	// The request name should be "UpdateFooRequest".
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
+		return nil
+	}
+	// If the resource has a singular name, it must match.
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
+		return nil
+	}
+
+	// The request needs to have a field for the resource.
+	var targetTypeID string
+	if outputResource.Self != nil {
+		targetTypeID = outputResource.Self.ID
+	}
+	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+	// The request may have an update mask.
+	var updateMaskField *Field
+	for _, f := range m.InputType.Fields {
+		if f.Name == StandardFieldNameForUpdateMask && f.TypezID == ".google.protobuf.FieldMask" {
+			updateMaskField = f
+			break
+		}
+	}
+
+	return &AIPStandardUpdateInfo{
+		ResourceRequestField:   resourceField,
+		UpdateMaskRequestField: updateMaskField,
+	}
+}
+
 // AIPStandardListInfo contains information relevant to list operations
 // that are like those defined by AIP-132.
 type AIPStandardListInfo struct {
@@ -692,6 +753,10 @@ const (
 	// GenericResourceType is a special resource type that may be used by resource references
 	// in contexts where the referenced resource may be of any type, as defined by AIPs.
 	GenericResourceType = "*"
+
+	// StandardFieldNameForUpdateMask is the standard name for the update mask field
+	// in update operations as defined by AIP-134.
+	StandardFieldNameForUpdateMask = "update_mask"
 )
 
 // findBestResourceFieldByType finds the best field in the message that references

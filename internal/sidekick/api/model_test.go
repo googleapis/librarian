@@ -1114,6 +1114,121 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	}
 }
 
+func TestAIPStandardUpdateInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Setup for Update
+	secretMessage := &Message{ID: "secret_message_id"}
+	f.resource.Self = secretMessage
+
+	resourceField := &Field{
+		Name:    "secret",
+		Typez:   MESSAGE_TYPE,
+		TypezID: secretMessage.ID,
+	}
+	updateMaskField := &Field{
+		Name:    "update_mask",
+		TypezID: ".google.protobuf.FieldMask",
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardUpdateInfo
+	}{
+		{
+			name: "valid update operation",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+						updateMaskField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardUpdateInfo{
+				ResourceRequestField:   resourceField,
+				UpdateMaskRequestField: updateMaskField,
+			},
+		},
+		{
+			name: "valid update operation without mask",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardUpdateInfo{
+				ResourceRequestField: resourceField,
+			},
+		},
+		{
+			name: "invalid update operation (wrong name)",
+			method: &Method{
+				Name: "ModifySecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "invalid update operation (wrong request name)",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "ModifySecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "invalid update operation (missing resource)",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						updateMaskField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardUpdateInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardUpdateInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAIPStandardListInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
