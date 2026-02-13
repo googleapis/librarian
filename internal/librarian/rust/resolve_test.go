@@ -141,13 +141,13 @@ func TestResolveDependencies(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := ResolveDependencies(t.Context(), test.cfg, test.lib, sources)
+			gotLib, err := ResolveDependencies(t.Context(), test.cfg, test.lib, sources)
 			if (err != nil) != test.wantErr {
 				t.Errorf("ResolveDependencies() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
 			if err == nil {
-				got := test.lib.Rust.PackageDependencies
+				got := gotLib.Rust.PackageDependencies
 				sort.Slice(got, func(i, j int) bool {
 					return got[i].Source < got[j].Source
 				})

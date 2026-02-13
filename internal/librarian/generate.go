@@ -130,6 +130,7 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	return postGenerate(ctx, cfg.Language)
 }
 
+// LoadSources fetches and loads the sources required for generation.
 func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sources, error) {
 	// Fetch sources.
 	var googleapisDir string

@@ -61,25 +61,27 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if err != nil {
 		return err
 	}
-	if err := resolveDependencies(ctx, cfg, lib); err != nil {
+	lib, err = resolveDependencies(ctx, cfg, lib)
+	if err != nil {
 		return err
 	}
+	_ = lib
 	if err := RunTidyOnConfig(ctx, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
-func resolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library) error {
+func resolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	switch cfg.Language {
 	case languageRust:
 		_, sources, err := LoadSources(ctx, cfg)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		return rust.ResolveDependencies(ctx, cfg, lib, sources)
 	default:
-		return nil
+		return lib, nil
 	}
 }
 
