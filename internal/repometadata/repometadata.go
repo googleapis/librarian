@@ -153,9 +153,11 @@ func FromAPI(api *serviceconfig.API, info *LibraryInfo, language, repo, defaultV
 // buildClientDocURL builds the client documentation URL based on language.
 func buildClientDocURL(language, serviceName string) string {
 	switch language {
-	case "python":
+	case serviceconfig.LangGo:
+		return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest", serviceName)
+	case serviceconfig.LangPython:
 		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", serviceName)
-	case "rust":
+	case serviceconfig.LangRust:
 		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", serviceName)
 	default:
 		return ""
