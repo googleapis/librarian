@@ -26,6 +26,13 @@ Use no newline at the end of file so the partials are all merged into a single l
 }}{{#AIPStandardUndeleteInfo}}{{!
 }}.set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name){{!
 }}{{/AIPStandardUndeleteInfo}}{{!
+}}{{#AIPStandardCreateInfo}}{{!
+}}.set_{{ParentRequestField.Codec.SetterName}}(parent){{!
+}}{{#ResourceIDRequestField}}{{!
+}}.set_{{Codec.SetterName}}(id){{!
+}}{{/ResourceIDRequestField}}{{!
+}}.set_{{ResourceRequestField.Codec.SetterName}}({{ResourceRequestField.MessageType.Codec.Name}}::new()/* set fields */){{!
+}}{{/AIPStandardCreateInfo}}{{!
 }}{{#AIPStandardListInfo}}{{!
 }}.set_{{ParentRequestField.Codec.SetterName}}(parent){{!
 }}{{/AIPStandardListInfo}}{{!

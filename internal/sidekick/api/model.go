@@ -429,7 +429,8 @@ func (m *Method) IsAIPStandard() bool {
 	return m.AIPStandardGetInfo() != nil ||
 		m.AIPStandardDeleteInfo() != nil ||
 		m.AIPStandardUndeleteInfo() != nil ||
-		m.AIPStandardListInfo() != nil
+		m.AIPStandardListInfo() != nil ||
+		m.AIPStandardCreateInfo() != nil
 }
 
 // AIPStandardGetInfo contains information relevant to get operations
@@ -444,7 +445,11 @@ type AIPStandardGetInfo struct {
 // a get operation as defined by AIP-131, if the method is such an operation.
 func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	// A get operation is always a simple operation that returns a resource.
-	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty || m.OutputType == nil || m.OutputType.Resource == nil {
+	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := m.standardMethodOutputResource()
+	if outputResource == nil {
 		return nil
 	}
 
@@ -459,13 +464,13 @@ func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
 	}
 
 	// If the resource has a singular name, it must match.
-	if m.OutputType.Resource.Singular != "" &&
-		strings.ToLower(m.OutputType.Resource.Singular) != maybeSingular {
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
 		return nil
 	}
 
 	// The request needs to have a field for the resource name of the resource to obtain.
-	resourceField := findBestResourceFieldByType(m.InputType, m.Model.State.ResourceByType, m.OutputType.Resource.Type)
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model.State.ResourceByType, outputResource.Type)
 
 	if resourceField == nil {
 		return nil
@@ -549,6 +554,77 @@ func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
 
 	return &AIPStandardUndeleteInfo{
 		ResourceNameRequestField: resourceField,
+	}
+}
+
+// AIPStandardCreateInfo contains information relevant to create operations
+// that are like those defined by AIP-133.
+type AIPStandardCreateInfo struct {
+	// ParentRequestField is the field in the method input that contains the parent resource name
+	// where the resource is to be created.
+	ParentRequestField *Field
+	// ResourceIDRequestField is the field in the method input that contains the resource ID
+	// for the resource to be created. This field is optional in the AIP.
+	ResourceIDRequestField *Field
+	// ResourceRequestField is the field in the method input that contains the resource
+	// to be created.
+	ResourceRequestField *Field
+}
+
+// AIPStandardCreateInfo returns information relevant to a create operation that is like
+// a create operation as defined by AIP-133, if the method is such an operation.
+func (m *Method) AIPStandardCreateInfo() *AIPStandardCreateInfo {
+	// A create operation is always a simple operation that returns a resource.
+	// Or an LRO that returns a resource.
+	if (!m.IsSimple() && !m.IsLRO()) || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := m.standardMethodOutputResource()
+	if outputResource == nil {
+		return nil
+	}
+
+	// Standard create methods for resource "Foo" should be named "CreateFoo".
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "create")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+
+	// The request name should be "CreateFooRequest".
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("create%srequest", maybeSingular) {
+		return nil
+	}
+
+	// If the resource has a singular name, it must match.
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
+		return nil
+	}
+
+	// The request needs to have a field for the parent.
+	parentField := findBestParentFieldByType(m.InputType, outputResource.Type)
+	if parentField == nil {
+		return nil
+	}
+
+	// The request needs to have a field for the resource.
+	var targetTypeID string
+	if outputResource.Self != nil {
+		targetTypeID = outputResource.Self.ID
+	}
+	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+
+	// The request may have a field for the resource ID.
+	// AIP-133 says it should be named `<singular>_id`.
+	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
+
+	return &AIPStandardCreateInfo{
+		ParentRequestField:     parentField,
+		ResourceIDRequestField: resourceIDField,
+		ResourceRequestField:   resourceField,
 	}
 }
 
@@ -702,6 +778,59 @@ func findBestParentFieldByType(message *Message, childType string) *Field {
 		}
 	}
 	return bestField
+}
+
+// findBodyField finds the field that represents the body of the request.
+//
+// It looks for a field that matches the BodyFieldPath in PathInfo.
+// If not found (or BodyFieldPath is empty/*), it looks for a field with the
+// same type as the target resource.
+func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, singular string) *Field {
+	var resourceField *Field
+	bodyFieldPath := ""
+	if pathInfo != nil {
+		bodyFieldPath = pathInfo.BodyFieldPath
+	}
+
+	for _, f := range message.Fields {
+		// Check for BodyFieldPath match
+		if f.Name == bodyFieldPath {
+			return f
+		}
+		// Check for singular name AND type match
+		if f.Name == singular && f.TypezID == targetTypeID {
+			if resourceField == nil {
+				resourceField = f
+			}
+		}
+	}
+	return resourceField
+}
+
+// findResourceIDField finds the field that represents the resource ID.
+//
+// It looks for a field named `<singular>_id`.
+func findResourceIDField(message *Message, singular string) *Field {
+	expectedIDName := fmt.Sprintf("%s_id", singular)
+	for _, f := range message.Fields {
+		if f.Name == expectedIDName && f.Typez == STRING_TYPE {
+			return f
+		}
+	}
+	return nil
+}
+
+// standardMethodOutputResource returns the resource returned by a standard method.
+func (m *Method) standardMethodOutputResource() *Resource {
+	if m.OutputType != nil && m.OutputType.Resource != nil {
+		return m.OutputType.Resource
+	}
+	if m.OperationInfo != nil {
+		if lroResponse := m.LongRunningResponseType(); lroResponse != nil {
+			return lroResponse.Resource
+		}
+	}
+	return nil
 }
 
 // PathInfo contains normalized request path information.

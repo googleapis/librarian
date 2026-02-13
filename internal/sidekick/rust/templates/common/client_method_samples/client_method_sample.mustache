@@ -25,6 +25,9 @@ limitations under the License.
 {{#IsList}}
 /// use google_cloud_gax::paginator::ItemPaginator as _;
 {{/IsList}}
+{{#AIPStandardCreateInfo}}
+/// use {{Service.Model.Codec.PackageNamespace}}::model::{{ResourceRequestField.MessageType.Codec.Name}};
+{{/AIPStandardCreateInfo}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(
 {{> /templates/common/client_method_samples/parameters}}
