@@ -28,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -102,15 +103,20 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-		svrAPI, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
 		if err != nil {
+			return err
+		}
+		info := &repometadata.LibraryInfo{}
+		outDir := filepath.Join(outdir, api.Path)
+		if err := repometadata.FromAPI(svcAPI, info, serviceconfig.LangGo, "", "", outDir); err != nil {
 			return err
 		}
 		// We only need to generate README.md at module root once.
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, svrAPI, moduleRoot); err != nil {
+		if err := generateREADME(library, svcAPI, moduleRoot); err != nil {
 			return err
 		}
 	}
