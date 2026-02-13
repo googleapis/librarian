@@ -49,6 +49,21 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
+			name:    "simple_commit_with_no_space_separator",
+			message: "feat:add new feature",
+			want: []*ConventionalCommit{
+				{
+					Type:       "feat",
+					Subject:    "add new feature",
+					LibraryID:  "example-id",
+					IsNested:   false,
+					Footers:    make(map[string]string),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
 			name:    "simple_commit_with_scope",
 			message: "feat(scope): add new feature",
 			want: []*ConventionalCommit{
