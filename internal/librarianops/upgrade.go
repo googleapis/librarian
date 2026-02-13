@@ -17,8 +17,11 @@ package librarianops
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -70,4 +73,14 @@ func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 	}
 
 	return version, nil
+}
+
+func updateLibrarianVersion(version, repoDir string) error {
+	configPath := filepath.Join(repoDir, "librarian.yaml")
+	cfg, err := yaml.Read[config.Config](configPath)
+	if err != nil {
+		return err
+	}
+	cfg.Version = version
+	return yaml.Write(configPath, cfg)
 }

@@ -19,12 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -48,13 +45,12 @@ directory (repo name is inferred from the directory basename).
 For each repository, librarianops will:
   1. Clone the repository to a temporary directory (or use existing directory with -C)
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
-  3. Resolve librarian version from @main and update version field in librarian.yaml
-  4. Run librarian tidy
-  5. Run librarian update --all
-  6. Run librarian generate --all
-  7. Run cargo update --workspace (google-cloud-rust only)
-  8. Commit changes
-  9. Create a pull request`,
+  3. Run librarian tidy
+  4. Run librarian update --all
+  5. Run librarian generate --all
+  6. Run cargo update --workspace (google-cloud-rust only)
+  7. Commit changes
+  8. Create a pull request`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "C",
@@ -113,9 +109,6 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 	}
 	version, err := getLibrarianVersionAtMain(ctx)
 	if err != nil {
-		return err
-	}
-	if err := updateLibrarianVersion(version, repoDir); err != nil {
 		return err
 	}
 	if repoName != repoFake {
@@ -201,16 +194,6 @@ func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("no version in go list output: %s", output)
 	}
 	return mod.Version, nil
-}
-
-func updateLibrarianVersion(version, repoDir string) error {
-	configPath := filepath.Join(repoDir, "librarian.yaml")
-	cfg, err := yaml.Read[config.Config](configPath)
-	if err != nil {
-		return err
-	}
-	cfg.Version = version
-	return yaml.Write(configPath, cfg)
 }
 
 func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {

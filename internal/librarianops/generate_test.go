@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
@@ -152,36 +151,6 @@ func TestGenerateCommand_Errors(t *testing.T) {
 				t.Errorf("expected error, got nil")
 			}
 		})
-	}
-}
-
-func TestUpdateLibrarianVersion(t *testing.T) {
-	repoDir := t.TempDir()
-	configPath := filepath.Join(repoDir, "librarian.yaml")
-	initialConfig := &config.Config{
-		Language: "rust",
-		Version:  sample.LibrarianVersion,
-	}
-	if err := yaml.Write(configPath, initialConfig); err != nil {
-		t.Fatal(err)
-	}
-
-	newVersion := "v0.2.0"
-	if err := updateLibrarianVersion(newVersion, repoDir); err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := yaml.Read[config.Config](configPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := &config.Config{
-		Language: "rust",
-		Version:  newVersion,
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
