@@ -113,3 +113,87 @@ func TestGenerateClientVersionFile(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveClientPath(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		library         *config.Library
+		apiPath         string
+		wantVersionPath string
+		wantClientDir   string
+	}{
+		{
+			name: "from apiPath",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+					},
+				},
+			},
+			apiPath:         "google/cloud/secretmanager/v1",
+			wantVersionPath: "secretmanager/apiv1",
+			wantClientDir:   "",
+		},
+		{
+			name: "non existing GoAPI",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path: "google/cloud/secretmanager/v1beta1",
+						},
+					},
+				},
+			},
+			apiPath:         "google/cloud/secretmanager/v1",
+			wantVersionPath: "secretmanager/apiv1",
+			wantClientDir:   "",
+		},
+		{
+			name: "from apiPath and client directory",
+			library: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/ai/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/cloud/ai/v1",
+							ClientDirectory: "customdir",
+						},
+						{
+							Path: "google/cloud/ai/v1beta1",
+						},
+					},
+				},
+			},
+			apiPath:         "google/cloud/ai/v1",
+			wantVersionPath: "ai/customdir/apiv1",
+			wantClientDir:   "customdir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)
+			if gotVersionPath != test.wantVersionPath {
+				t.Errorf("got %q, want %q", gotVersionPath, test.wantVersionPath)
+			}
+			if gotClientDir != test.wantClientDir {
+				t.Errorf("got %q, want %q", gotClientDir, test.wantClientDir)
+			}
+		})
+	}
+}
