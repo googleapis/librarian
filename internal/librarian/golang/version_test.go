@@ -113,3 +113,35 @@ func TestGenerateClientVersionFile(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIVersionPath(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		version     string
+		wantVersion string
+	}{
+		{
+			name:        "with version",
+			version:     "1.2.3",
+			wantVersion: `const Version = "1.2.3"`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := generateInternalVersionFile(dir, test.version); err != nil {
+				t.Fatal(err)
+			}
+
+			content, err := os.ReadFile(filepath.Join(dir, "internal", "version.go"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(content), test.wantVersion) {
+				t.Errorf("want %q in output, got:\n%s", test.wantVersion, content)
+			}
+			if !strings.Contains(string(content), "package internal") {
+				t.Errorf("want package internal in output, got:\n%s", content)
+			}
+		})
+	}
+}
