@@ -71,7 +71,7 @@ func TestUpdateLibraryVersion_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: errNoClientLibraryField,
+			wantErr: ErrNoClientLibraryField,
 		},
 		{
 			name: "readonly file",
