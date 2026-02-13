@@ -45,13 +45,12 @@ DESCRIPTION:
 	For each repository, librarianops will:
 	  1. Clone the repository to a temporary directory (or use existing directory with -C)
 	  2. Create a branch: librarianops-generateall-YYYY-MM-DD
-	  3. Resolve librarian version from @main and update version field in librarian.yaml
-	  4. Run librarian tidy
-	  5. Run librarian update --all
-	  6. Run librarian generate --all
-	  7. Run cargo update --workspace (google-cloud-rust only)
-	  8. Commit changes
-	  9. Create a pull request
+	  3. Run librarian tidy
+	  4. Run librarian update --all
+	  5. Run librarian generate --all
+	  6. Run cargo update --workspace (google-cloud-rust only)
+	  7. Commit changes
+	  8. Create a pull request
 
 OPTIONS:
 
