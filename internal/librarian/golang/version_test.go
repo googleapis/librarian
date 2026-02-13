@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -188,11 +189,11 @@ func TestResolveClientPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)
-			if gotVersionPath != test.wantVersionPath {
-				t.Errorf("got %q, want %q", gotVersionPath, test.wantVersionPath)
+			if diff := cmp.Diff(test.wantVersionPath, gotVersionPath); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			if gotClientDir != test.wantClientDir {
-				t.Errorf("got %q, want %q", gotClientDir, test.wantClientDir)
+			if diff := cmp.Diff(test.wantClientDir, gotClientDir); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
