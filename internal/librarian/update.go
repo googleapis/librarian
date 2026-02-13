@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -37,9 +36,8 @@ var (
 		"showcase":    {Org: "googleapis", Repo: "gapic-showcase", Branch: fetch.DefaultBranchMain},
 	}
 
-	errBothSourceAndAllFlag   = errors.New("cannot specify a source when --all is set")
-	errMissingSourceOrAllFlag = errors.New("a source must be specified, or use the --all flag")
-	errUnknownSource          = errors.New("unknown source")
+	errNoSourcesProvided = errors.New("at least one source must be provided")
+	errUnknownSource     = errors.New("unknown source")
 )
 
 // updateCommand returns the `update` subcommand.
@@ -53,41 +51,27 @@ func updateCommand() *cli.Command {
   - googleapis
   - protobuf
   - showcase`,
-		UsageText: "librarian update [--all | source]",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "all",
-				Usage: "update discovery and googleapis sources",
-			},
-		},
+		UsageText: "librarian update <sources...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			all := cmd.Bool("all")
-			source := cmd.Args().First()
-
-			if all && source != "" {
-				return errBothSourceAndAllFlag
+			args := cmd.Args().Slice()
+			if len(args) == 0 {
+				return errNoSourcesProvided
 			}
-			if !all && source == "" {
-				return errMissingSourceOrAllFlag
-			}
-			if source != "" {
-				// Normalize to lowercase to simplify remainder of execution.
-				source = strings.ToLower(source)
-
-				if _, ok := sourceRepos[source]; !ok {
-					return fmt.Errorf("%w: %s", errUnknownSource, source)
+			for _, arg := range args {
+				if _, ok := sourceRepos[arg]; !ok {
+					return fmt.Errorf("%w: %s", errUnknownSource, arg)
 				}
 			}
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}
-			return runUpdate(cfg, all, source)
+			return runUpdate(cfg, args)
 		},
 	}
 }
 
-func runUpdate(cfg *config.Config, all bool, sourceName string) error {
+func runUpdate(cfg *config.Config, sourceNames []string) error {
 	if cfg.Sources == nil {
 		return errEmptySources
 	}
@@ -105,14 +89,7 @@ func runUpdate(cfg *config.Config, all bool, sourceName string) error {
 		"showcase":    cfg.Sources.Showcase,
 	}
 
-	var sourceNamesToProcess []string
-	if all {
-		sourceNamesToProcess = []string{"discovery", "googleapis"}
-	} else {
-		sourceNamesToProcess = []string{sourceName}
-	}
-
-	for _, name := range sourceNamesToProcess {
+	for _, name := range sourceNames {
 		source := sourcesMap[name]
 		repo := sourceRepos[name]
 		if err := updateSource(endpoints, repo, source, cfg); err != nil {

@@ -19,9 +19,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -46,7 +49,7 @@ For each repository, librarianops will:
   1. Clone the repository to a temporary directory (or use existing directory with -C)
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
   3. Run librarian tidy
-  4. Run librarian update --all
+  4. Run librarian update for configured sources (discovery, googleapis)
   5. Run librarian generate --all
   6. Run cargo update --workspace (google-cloud-rust only)
   7. Commit changes
@@ -117,8 +120,17 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 		}
 	}
 	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, verbose, "update", "--all"); err != nil {
+		configPath := filepath.Join(repoDir, "librarian.yaml")
+		cfg, err := yaml.Read[config.Config](configPath)
+		if err != nil {
 			return err
+		}
+		sources := sourcesToUpdate(cfg)
+		if len(sources) > 0 {
+			args := append([]string{"update"}, sources...)
+			if err := runLibrarianWithVersion(ctx, version, verbose, args...); err != nil {
+				return err
+			}
 		}
 	}
 	if err := runLibrarianWithVersion(ctx, version, verbose, "generate", "--all"); err != nil {
@@ -202,4 +214,18 @@ func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, 
 	}
 	return command.Run(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
+}
+
+func sourcesToUpdate(cfg *config.Config) []string {
+	if cfg.Sources == nil {
+		return nil
+	}
+	var sources []string
+	if cfg.Sources.Discovery != nil {
+		sources = append(sources, "discovery")
+	}
+	if cfg.Sources.Googleapis != nil {
+		sources = append(sources, "googleapis")
+	}
+	return sources
 }

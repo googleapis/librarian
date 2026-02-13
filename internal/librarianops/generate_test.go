@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
@@ -149,6 +150,55 @@ func TestGenerateCommand_Errors(t *testing.T) {
 			err := Run(t.Context(), test.args...)
 			if err == nil {
 				t.Errorf("expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestSourcesToUpdate(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+		want []string
+	}{
+		{
+			name: "both sources",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Discovery:  &config.Source{Commit: "abc"},
+					Googleapis: &config.Source{Commit: "def"},
+				},
+			},
+			want: []string{"discovery", "googleapis"},
+		},
+		{
+			name: "only googleapis",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "def"},
+				},
+			},
+			want: []string{"googleapis"},
+		},
+		{
+			name: "only discovery",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Discovery: &config.Source{Commit: "abc"},
+				},
+			},
+			want: []string{"discovery"},
+		},
+		{
+			name: "no sources configured",
+			cfg:  &config.Config{},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sourcesToUpdate(test.cfg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
