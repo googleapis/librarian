@@ -249,7 +249,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						Name:         "example-library",
 						Version:      "1.0.0",
 						SkipGenerate: true,
-						SkipPublish:  true,
+						SkipRelease:  true,
 					},
 				},
 			},

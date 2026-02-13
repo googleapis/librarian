@@ -96,7 +96,7 @@ func TestBuildCodec(t *testing.T) {
 		{
 			name: "not for publication",
 			library: &config.Library{
-				SkipPublish: true,
+				SkipRelease: true,
 			},
 			want: map[string]string{
 				"not-for-publication": "true",
@@ -196,7 +196,7 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				CopyrightYear: "2025",
 				Version:       "1.0.0",
-				SkipPublish:   true,
+				SkipRelease:   true,
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 					Dependencies:                "http: ^1.3.0",
@@ -353,7 +353,7 @@ func TestToModelConfig(t *testing.T) {
 		{
 			name: "with dart package",
 			library: &config.Library{
-				SkipPublish: true,
+				SkipRelease: true,
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "GOOGLE_API_KEY",
 					Dependencies:                "dep-1,dep-2",

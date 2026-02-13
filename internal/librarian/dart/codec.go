@@ -79,7 +79,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
-	if library.SkipPublish {
+	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}
 	if library.Dart == nil {

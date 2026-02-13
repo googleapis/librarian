@@ -253,7 +253,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
-			library.SkipPublish = libCfg.ReleaseBlocked
+			library.SkipRelease = libCfg.ReleaseBlocked
 		}
 		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
 		if override, ok := libraryOverrides[id]; ok {
