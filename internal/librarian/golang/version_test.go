@@ -129,6 +129,9 @@ func TestAPIVersionPath(t *testing.T) {
 					{
 						Path: "google/cloud/secretmanager/v1",
 					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+					},
 				},
 				Output: ".",
 			},
@@ -163,6 +166,67 @@ func TestAPIVersionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := apiVersionPath(test.library, test.apiPath)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestClientDirectory(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		apiPath string
+		want    string
+	}{
+		{
+			name: "from apiPath",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+					},
+				},
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "",
+		},
+		{
+			name: "from Go API",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/cloud/secretmanager/v1",
+							ClientDirectory: "customdir",
+						},
+						{
+							Path:            "google/cloud/secretmanager/v1beta1",
+							ClientDirectory: "anotherdir",
+						},
+					},
+				},
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "customdir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := clientDirectory(test.library, test.apiPath)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
