@@ -33,10 +33,14 @@ var (
 	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
 )
 
-type libraryInfo struct {
-	descriptionOverride string
-	name                string
-	releaseLevel        string
+// LibraryInfo contains information about a library that is not available in the service config.
+type LibraryInfo struct {
+	// DescriptionOverride overrides the library description from the service config.
+	DescriptionOverride string
+	// Name is the name of the library distribution package.
+	Name string
+	// ReleaseLevel is the release level (e.g., "stable", "preview").
+	ReleaseLevel string
 }
 
 // RepoMetadata represents the .repo-metadata.json file structure.
@@ -101,27 +105,27 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 	if api.ServiceConfig == "" {
 		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
 	}
-	info := &libraryInfo{
-		descriptionOverride: library.DescriptionOverride,
-		name:                library.Name,
-		releaseLevel:        library.ReleaseLevel,
+	info := &LibraryInfo{
+		DescriptionOverride: library.DescriptionOverride,
+		Name:                library.Name,
+		ReleaseLevel:        library.ReleaseLevel,
 	}
 	return FromAPI(api, info, language, repo, defaultVersion, outdir)
 }
 
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
-func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultVersion, outputDir string) error {
+func FromAPI(api *serviceconfig.API, info *LibraryInfo, language, repo, defaultVersion, outputDir string) error {
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
 	metadata := &RepoMetadata{
 		APIID:               api.ServiceName,
 		NamePretty:          cleanTitle(api.Title),
 		DefaultVersion:      defaultVersion,
 		ClientDocumentation: clientDocURL,
-		ReleaseLevel:        info.releaseLevel,
+		ReleaseLevel:        info.ReleaseLevel,
 		Language:            language,
 		LibraryType:         "GAPIC_AUTO",
 		Repo:                repo,
-		DistributionName:    info.name,
+		DistributionName:    info.Name,
 	}
 
 	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
@@ -129,8 +133,8 @@ func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultV
 	metadata.APIShortname = api.ShortName
 	metadata.Name = api.ShortName
 	metadata.APIDescription = api.Description
-	if info.descriptionOverride != "" {
-		metadata.APIDescription = info.descriptionOverride
+	if info.DescriptionOverride != "" {
+		metadata.APIDescription = info.DescriptionOverride
 	}
 
 	data, err := json.MarshalIndent(metadata, "", "    ")
