@@ -25,6 +25,10 @@ import (
 	"github.com/googleapis/librarian/internal/license"
 )
 
+const (
+	defaultVersion = "0.0.0"
+)
+
 var (
 	//go:embed template/_version.go.txt
 	clientVersionTmpl string
@@ -35,7 +39,7 @@ var (
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
 	if version == "" {
-		version = "0.0.0"
+		version = defaultVersion
 	}
 	internalDir := filepath.Join(moduleDir, "internal")
 	if err := os.MkdirAll(internalDir, 0755); err != nil {

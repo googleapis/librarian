@@ -37,6 +37,7 @@ const (
 	releaseLevelAlpha = "alpha"
 	releaseLevelBeta  = "beta"
 	releaseLevelGA    = "ga"
+	repo              = "googleapis/google-cloud-go"
 )
 
 var (
@@ -108,8 +109,8 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			return err
 		}
 		info := &repometadata.LibraryInfo{}
-		outDir := filepath.Join(outdir, api.Path)
-		if err := repometadata.FromAPI(svcAPI, info, serviceconfig.LangGo, "", "", outDir); err != nil {
+		metadataDir, _ := resolveClientPath(library, api.Path)
+		if err := repometadata.FromAPI(svcAPI, info, serviceconfig.LangGo, repo, defaultVersion, metadataDir); err != nil {
 			return err
 		}
 		// We only need to generate README.md at module root once.
