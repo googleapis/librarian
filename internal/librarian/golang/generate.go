@@ -100,6 +100,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
+	info := &repometadata.LibraryInfo{
+		DescriptionOverride: library.DescriptionOverride,
+		Name:                library.Name,
+		ReleaseLevel:        library.ReleaseLevel,
+	}
 	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
@@ -108,7 +113,6 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if err != nil {
 			return err
 		}
-		info := &repometadata.LibraryInfo{}
 		metadataDir, _ := resolveClientPath(library, api.Path)
 		if err := repometadata.FromAPI(svcAPI, info, serviceconfig.LangGo, repo, defaultVersion, metadataDir); err != nil {
 			return err
