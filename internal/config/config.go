@@ -188,9 +188,6 @@ type Library struct {
 	// SkipPublish disables publishing for this library.
 	SkipPublish bool `yaml:"skip_publish,omitempty"`
 
-	// SkipRelease disables releasing for this library.
-	SkipRelease bool `yaml:"skip_release,omitempty"`
-
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
