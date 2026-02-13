@@ -42,7 +42,7 @@ const (
 )
 
 var (
-	commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s(?P<description>.*)`)
+	commitRegex = regexp.MustCompile(`^(?P<type>\w+)(?:\((?P<scope>.*)\))?(?P<breaking>!)?:\s?(?P<description>.*)`)
 	// footerRegex defines the format for a conventional commit footer.
 	// A footer key consists of letters and hyphens, or is the "BREAKING CHANGE"
 	// literal. The key is followed by ":" and then the value.
