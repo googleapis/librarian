@@ -61,7 +61,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	dir := apiVersionPath(library, apiPath)
+	dir, clientDir := apiVersionPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -80,7 +80,6 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
 	pkg := library.Name
-	clientDir := clientDirectory(library, apiPath)
 	if clientDir != "" {
 		pkg = clientDir
 	}
@@ -90,10 +89,10 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	})
 }
 
-func apiVersionPath(library *config.Library, apiPath string) string {
+func apiVersionPath(library *config.Library, apiPath string) (string, string) {
 	version := filepath.Base(apiPath)
 	clientDir := clientDirectory(library, apiPath)
-	return filepath.Join(library.Output, library.Name, clientDir, "api"+version)
+	return filepath.Join(library.Output, library.Name, clientDir, "api"+version), clientDir
 }
 
 func clientDirectory(library *config.Library, apiPath string) string {
