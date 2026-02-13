@@ -423,7 +423,7 @@ func TestFindLibrariesToBump(t *testing.T) {
 			name:        "library specified directly, ignored skip",
 			libraryName: sample.Lib2Name,
 			setup: func(t *testing.T, cfg *config.Config) {
-				cfg.Libraries[1].SkipPublish = true
+				cfg.Libraries[1].SkipRelease = true
 				writeConfigAndCommit(t, cfg)
 			},
 			wantNames: []string{sample.Lib2Name},
@@ -448,7 +448,7 @@ func TestFindLibrariesToBump(t *testing.T) {
 			all:         true,
 			withChanges: []string{lib1Change},
 			setup: func(t *testing.T, cfg *config.Config) {
-				cfg.Libraries[0].SkipPublish = true
+				cfg.Libraries[0].SkipRelease = true
 				writeConfigAndCommit(t, cfg)
 			},
 			wantNames: []string{},
@@ -482,7 +482,7 @@ func TestFindLibrariesToBump(t *testing.T) {
 			all:         true,
 			withChanges: []string{lib1Change, lib2Change},
 			setup: func(t *testing.T, cfg *config.Config) {
-				cfg.Libraries[0].SkipPublish = true
+				cfg.Libraries[0].SkipRelease = true
 				writeConfigAndCommit(t, cfg)
 			},
 			wantNames: []string{sample.Lib2Name},
@@ -1252,7 +1252,7 @@ func TestLegacyRustBumpAll(t *testing.T) {
 			name: "library has changes but skipPublish is true",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Libraries[0].SkipPublish = true
+				c.Libraries[0].SkipRelease = true
 				return c
 			}(),
 			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
