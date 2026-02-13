@@ -85,8 +85,7 @@ This document describes the schema for the librarian.yaml.
 | `release_level` | string | ReleaseLevel is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
 | `roots` | list of string | Roots specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | SkipGenerate disables code generation for this library. |
-| `skip_publish` | bool | SkipPublish disables publishing for this library. |
-| `skip_release` | bool | SkipRelease disables releasing for this library. |
+| `skip_release` | bool | SkipRelease disables release for this library. |
 | `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Veneer indicates this library has handwritten code. A veneer may contain generated libraries. |
@@ -97,7 +96,7 @@ This document describes the schema for the librarian.yaml.
 
 ## API Configuration
 
-[Link to code](../internal/config/config.go#L222)
+[Link to code](../internal/config/config.go#L219)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
