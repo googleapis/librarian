@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,24 +31,30 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 	if len(lib.APIs) == 0 {
 		return nil
 	}
+	externalPackages, err := findExternalPackages(lib, sources)
+	if err != nil {
+		return err
+	}
+	resolveExternalPackages(cfg, lib, externalPackages)
+	return nil
+}
 
-	// We only resolve dependencies for the first API in the library.
+func findExternalPackages(lib *config.Library, sources *source.Sources) (map[string]bool, error) {
+	// Only resolve dependencies for the first API in the library.
 	// This is consistent with how the Rust generator works.
 	modelConfig, err := libraryToModelConfig(lib, lib.APIs[0], sources)
 	if err != nil {
-		return fmt.Errorf("failed to create model config: %w", err)
+		return nil, fmt.Errorf("failed to create model config: %w", err)
 	}
 	model, err := parser.CreateModel(modelConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create model: %w", err)
+		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
-
 	// Identify the packages owned by the current library.
 	ownedPackages := map[string]bool{}
 	for _, api := range lib.APIs {
 		ownedPackages[toPackageName(api.Path)] = true
 	}
-	// Also add packages from the model in case they differ.
 	for _, s := range model.Services {
 		ownedPackages[s.Package] = true
 	}
@@ -58,7 +64,6 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 	for _, e := range model.Enums {
 		ownedPackages[e.Package] = true
 	}
-
 	// Identify all dependencies.
 	var targetIDs []string
 	for _, s := range model.Services {
@@ -70,12 +75,10 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 	for _, e := range model.Enums {
 		targetIDs = append(targetIDs, e.ID)
 	}
-
 	allDeps, err := api.FindDependencies(model, targetIDs)
 	if err != nil {
-		return fmt.Errorf("failed to find dependencies: %w", err)
+		return nil, fmt.Errorf("failed to find dependencies: %w", err)
 	}
-
 	// Map dependencies back to Protobuf packages.
 	externalPackages := map[string]bool{}
 	for id := range allDeps {
@@ -92,46 +95,34 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 		}
 	}
 
-	if len(externalPackages) == 0 {
-		return nil
-	}
+	return externalPackages, nil
+}
 
+func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPackages map[string]bool) {
+	if len(externalPackages) == 0 {
+		return
+	}
 	if lib.Rust == nil {
 		lib.Rust = &config.RustCrate{}
 	}
-
 	// Map Protobuf packages to Rust crates.
 	for pkg := range externalPackages {
-		// Skip if already present in the library or in the defaults.
-		isDependencyPresent := func(deps []*config.RustPackageDependency) bool {
-			return slices.ContainsFunc(deps, func(d *config.RustPackageDependency) bool {
-				return d.Source == pkg
-			})
-		}
-		if isDependencyPresent(lib.Rust.PackageDependencies) {
+		if isDependencyPresent(pkg, lib, cfg) {
 			continue
 		}
-		if cfg.Default != nil && cfg.Default.Rust != nil && isDependencyPresent(cfg.Default.Rust.PackageDependencies) {
-			continue
-		}
-
 		// Check other libraries in the config.
 		for _, other := range cfg.Libraries {
 			if other == lib {
 				continue
 			}
-			// This is a heuristic: we check if either the library name or the
+			// Check if either the library name or the
 			// first API path corresponds to the package.
-			// e.g. "google-cloud-secretmanager-v1" -> "google.cloud.secretmanager.v1"
-			// e.g. "google/cloud/secretmanager/v1" -> "google.cloud.secretmanager.v1"
-			var matchPkg string
+			var apiPathMatches bool
 			if len(other.APIs) > 0 {
-				matchPkg = toPackageName(other.APIs[0].Path)
-			} else {
-				matchPkg = derivePackageName(other.Name)
+				apiPathMatches = toPackageName(other.APIs[0].Path) == pkg
 			}
-
-			if matchPkg == pkg {
+			libNameMatches := derivePackageName(other.Name) == pkg
+			if apiPathMatches || libNameMatches {
 				lib.Rust.PackageDependencies = append(lib.Rust.PackageDependencies, &config.RustPackageDependency{
 					Name:    other.Name,
 					Package: other.Name,
@@ -141,7 +132,21 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 			}
 		}
 	}
-	return nil
+}
+
+func isDependencyPresent(pkg string, lib *config.Library, cfg *config.Config) bool {
+	check := func(deps []*config.RustPackageDependency) bool {
+		return slices.ContainsFunc(deps, func(d *config.RustPackageDependency) bool {
+			return d.Source == pkg
+		})
+	}
+	if lib.Rust != nil && check(lib.Rust.PackageDependencies) {
+		return true
+	}
+	if cfg.Default != nil && cfg.Default.Rust != nil && check(cfg.Default.Rust.PackageDependencies) {
+		return true
+	}
+	return false
 }
 
 // derivePackageName derives a Protobuf package name from a library name.

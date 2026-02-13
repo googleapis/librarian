@@ -70,6 +70,9 @@ func TestResolveDependencies(t *testing.T) {
 							{Path: "google/cloud/gkehub/v1/configmanagement"},
 						},
 					},
+					{
+						Name: "no-apis-library",
+					},
 				},
 			},
 			want: []*config.RustPackageDependency{
