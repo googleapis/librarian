@@ -98,17 +98,21 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
-	if err != nil {
-		return err
-	}
-	if err := generateREADME(library, api, moduleRoot); err != nil {
-		return err
+		svrAPI, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		if err != nil {
+			return err
+		}
+		// We only need to generate README.md at module root once.
+		if i != 0 {
+			continue
+		}
+		if err := generateREADME(library, svrAPI, moduleRoot); err != nil {
+			return err
+		}
 	}
 	if err := updateSnippetMetadata(library, outdir); err != nil {
 		return err
