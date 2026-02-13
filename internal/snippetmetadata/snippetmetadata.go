@@ -26,7 +26,9 @@ import (
 )
 
 var (
-	errNoClientLibraryField     = errors.New("no clientLibrary field at the top level")
+	// ErrNoClientLibraryField is the error returned if a snippet metadata file
+	// has no clientLibrary field at the top level.
+	ErrNoClientLibraryField     = errors.New("no clientLibrary field at the top level")
 	errSnippetMetadataDirectory = errors.New("expected file; was a directory")
 	errSnippetMetadataLink      = errors.New("expected regular file; was a link")
 )
@@ -65,7 +67,7 @@ func updateLibraryVersion(path, version string) error {
 	}
 	clientLibrary, ok := metadata["clientLibrary"].(map[string]any)
 	if !ok {
-		return fmt.Errorf("error updating snippet metadata file %s: %w", path, errNoClientLibraryField)
+		return fmt.Errorf("error updating snippet metadata file %s: %w", path, ErrNoClientLibraryField)
 	}
 	clientLibrary["version"] = version
 	return writeMetadata(path, metadata)
