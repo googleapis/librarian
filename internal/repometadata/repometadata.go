@@ -33,10 +33,14 @@ var (
 	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
 )
 
+// LibraryInfo contains information about a library that is not available in the service config.
 type LibraryInfo struct {
+	// DescriptionOverride overrides the library description from the service config.
 	DescriptionOverride string
-	Name                string
-	ReleaseLevel        string
+	// Name is the name of the library distribution package.
+	Name string
+	// ReleaseLevel is the release level (e.g., "stable", "preview").
+	ReleaseLevel string
 }
 
 // RepoMetadata represents the .repo-metadata.json file structure.
