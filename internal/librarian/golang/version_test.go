@@ -197,6 +197,26 @@ func TestClientDirectory(t *testing.T) {
 			want:    "",
 		},
 		{
+			name: "non existing GoAPI",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path: "google/cloud/secretmanager/v1alpha1",
+						},
+					},
+				},
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "",
+		},
+		{
 			name: "from Go API",
 			library: &config.Library{
 				Name: "secretmanager",
