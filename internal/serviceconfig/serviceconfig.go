@@ -171,14 +171,17 @@ func findServiceConfig(googleapisDir, path string) (string, error) {
 }
 
 func populateFromServiceConfig(api *API, cfg *Service) *API {
-	if api.Title == "" {
-		api.Title = cfg.GetTitle()
+	if api.Description == "" && cfg.GetDocumentation() != nil {
+		api.Description = strings.TrimSpace(cfg.GetDocumentation().GetSummary())
 	}
 	if api.ServiceName == "" {
 		api.ServiceName = cfg.GetName()
 	}
-	if api.Description == "" && cfg.GetDocumentation() != nil {
-		api.Description = strings.TrimSpace(cfg.GetDocumentation().GetSummary())
+	if api.ShortName == "" {
+		api.ShortName = defaultShortName(api.ServiceName)
+	}
+	if api.Title == "" {
+		api.Title = cfg.GetTitle()
 	}
 	api.ShortName = defaultShortName(api.ServiceName)
 	publishing := cfg.GetPublishing()
