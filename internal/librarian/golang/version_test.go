@@ -116,31 +116,55 @@ func TestGenerateClientVersionFile(t *testing.T) {
 
 func TestAPIVersionPath(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		version     string
-		wantVersion string
+		name    string
+		library *config.Library
+		apiPath string
+		want    string
 	}{
 		{
-			name:        "with version",
-			version:     "1.2.3",
-			wantVersion: `const Version = "1.2.3"`,
+			name: "from apiPath",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Output: ".",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "secretmanager/apiv1",
+		},
+		{
+			name: "from apiPath and client directory",
+			library: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/ai/v1",
+					},
+				},
+				Output: ".",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/cloud/ai/v1",
+							ClientDirectory: "customdir",
+						},
+						{
+							Path: "google/cloud/ai/v1beta1",
+						},
+					},
+				},
+			},
+			apiPath: "google/cloud/ai/v1",
+			want:    "ai/customdir/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if err := generateInternalVersionFile(dir, test.version); err != nil {
-				t.Fatal(err)
-			}
-
-			content, err := os.ReadFile(filepath.Join(dir, "internal", "version.go"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !strings.Contains(string(content), test.wantVersion) {
-				t.Errorf("want %q in output, got:\n%s", test.wantVersion, content)
-			}
-			if !strings.Contains(string(content), "package internal") {
-				t.Errorf("want package internal in output, got:\n%s", content)
+			got := apiVersionPath(test.library, test.apiPath)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
