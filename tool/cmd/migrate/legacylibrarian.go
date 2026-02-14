@@ -63,41 +63,6 @@ type MigrationInput struct {
 	repoPath        string
 }
 
-var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-
-	libraryOverrides = map[string]*config.Library{
-		"ai": {
-			ReleaseLevel: "beta",
-		},
-	}
-)
-
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
