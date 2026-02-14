@@ -25,6 +25,10 @@ import (
 	"github.com/googleapis/librarian/internal/license"
 )
 
+const (
+	defaultVersion = "0.0.0"
+)
+
 var (
 	//go:embed template/_version.go.txt
 	clientVersionTmpl string
@@ -35,7 +39,7 @@ var (
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
 	if version == "" {
-		version = "0.0.0"
+		version = defaultVersion
 	}
 	internalDir := filepath.Join(moduleDir, "internal")
 	if err := os.MkdirAll(internalDir, 0755); err != nil {
@@ -61,14 +65,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	version := filepath.Base(apiPath)
-	goAPI := findGoAPI(library, apiPath)
-	var clientDir string
-	if goAPI != nil && goAPI.ClientDirectory != "" {
-		clientDir = goAPI.ClientDirectory
-	}
-
-	dir := filepath.Join(library.Output, library.Name, clientDir, "api"+version)
+	dir, clientDir := resolveClientPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -94,6 +91,33 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 		"Package":    pkg,
 		"ModulePath": modulePath(library),
 	})
+}
+
+// resolveClientPath constructs the full path for the API version and determines the client directory.
+func resolveClientPath(library *config.Library, apiPath string) (string, string) {
+	version := filepath.Base(apiPath)
+	clientDir := clientDirectory(library, apiPath)
+	return filepath.Join(library.Output, library.Name, clientDir, "api"+version), clientDir
+}
+
+func clientDirectory(library *config.Library, apiPath string) string {
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI != nil {
+		return goAPI.ClientDirectory
+	}
+	return ""
+}
+
+func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
+	if library.Go == nil {
+		return nil
+	}
+	for _, ga := range library.Go.GoAPIs {
+		if ga.Path == apiPath {
+			return ga
+		}
+	}
+	return nil
 }
 
 // writeLicenseHeader writes the license header as Go comments to the given file.

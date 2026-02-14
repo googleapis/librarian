@@ -28,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -36,6 +37,7 @@ const (
 	releaseLevelAlpha = "alpha"
 	releaseLevelBeta  = "beta"
 	releaseLevelGA    = "ga"
+	repo              = "googleapis/google-cloud-go"
 )
 
 var (
@@ -98,17 +100,25 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
-	if err != nil {
-		return err
-	}
-	if err := generateREADME(library, api, moduleRoot); err != nil {
-		return err
+		svcAPI, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		if err != nil {
+			return err
+		}
+		metadataDir, _ := resolveClientPath(library, api.Path)
+		if err := repometadata.FromAPI(svcAPI, library, serviceconfig.LangGo, repo, defaultVersion, metadataDir); err != nil {
+			return err
+		}
+		// We only need to generate README.md at module root once.
+		if i != 0 {
+			continue
+		}
+		if err := generateREADME(library, svcAPI, moduleRoot); err != nil {
+			return err
+		}
 	}
 	if err := updateSnippetMetadata(library, outdir); err != nil {
 		return err
@@ -215,18 +225,6 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
 		importPath, modulePathVersion, version, clientDir)
-}
-
-func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
-	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
-		}
-	}
-	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
