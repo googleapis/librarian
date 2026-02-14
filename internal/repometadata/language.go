@@ -16,6 +16,7 @@ package repometadata
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -26,7 +27,7 @@ func goClientDocURL(library *config.Library, apiPath string) string {
 	suffix := fmt.Sprintf("api%s", filepath.Base(apiPath))
 	clientDir := clientDirectory(library, apiPath)
 	if clientDir != "" {
-		suffix = fmt.Sprintf("%s/%s", clientDir, suffix)
+		suffix = path.Join(clientDir, suffix)
 	}
 	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
 }
