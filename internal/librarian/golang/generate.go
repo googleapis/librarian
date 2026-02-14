@@ -100,11 +100,6 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
-	info := &repometadata.LibraryInfo{
-		DescriptionOverride: library.DescriptionOverride,
-		Name:                library.Name,
-		ReleaseLevel:        library.ReleaseLevel,
-	}
 	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
@@ -114,7 +109,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			return err
 		}
 		metadataDir, _ := resolveClientPath(library, api.Path)
-		if err := repometadata.FromAPI(svcAPI, info, serviceconfig.LangGo, repo, defaultVersion, metadataDir); err != nil {
+		if err := repometadata.FromAPI(svcAPI, library, serviceconfig.LangGo, repo, defaultVersion, metadataDir); err != nil {
 			return err
 		}
 		// We only need to generate README.md at module root once.
