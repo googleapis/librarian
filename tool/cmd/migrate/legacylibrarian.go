@@ -234,12 +234,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			var goAPIs []*config.GoAPI
 			for _, api := range libGoModule.APIs {
 				goAPIs = append(goAPIs, &config.GoAPI{
-					Path:            api.Path,
-					ClientDirectory: api.ClientDirectory,
-					DisableGAPIC:    api.DisableGAPIC,
-					ImportPath:      api.ImportPath,
-					NestedProtos:    api.NestedProtos,
-					ProtoPackage:    api.ProtoPackage,
+					ClientDirectory:    api.ClientDirectory,
+					DisableGAPIC:       api.DisableGAPIC,
+					ImportPath:         api.ImportPath,
+					NestedProtos:       api.NestedProtos,
+					NoRESTNumericEnums: api.NoRESTNumericEnums,
+					Path:               api.Path,
+					ProtoPackage:       api.ProtoPackage,
 				})
 			}
 
