@@ -561,6 +561,7 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := buildGAPICOpts(test.apiPath, test.library, test.goAPI, test.googleapisDir)
 			if err != nil {
 				t.Fatal(err)
