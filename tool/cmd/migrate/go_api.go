@@ -162,6 +162,8 @@ var (
 			"benchmarks/bench.go",
 			"benchmarks/benchmarked-queries.json",
 			"benchmarks/README.md",
+			"internal/query/order.go",
+			"internal/query/order_test.go",
 			"CHANGES.md",
 			"README.md",
 			"arrow.go",
