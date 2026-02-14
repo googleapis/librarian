@@ -46,12 +46,13 @@ type RepoConfigModule struct {
 
 // RepoConfigAPI represents an API in repo-config.yaml.
 type RepoConfigAPI struct {
-	Path            string   `yaml:"path"`
-	ClientDirectory string   `yaml:"client_directory,omitempty"`
-	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
-	ImportPath      string   `yaml:"import_path,omitempty"`
-	NestedProtos    []string `yaml:"nested_protos,omitempty"`
-	ProtoPackage    string   `yaml:"proto_package,omitempty"`
+	Path               string   `yaml:"path"`
+	ClientDirectory    string   `yaml:"client_directory,omitempty"`
+	DisableGAPIC       bool     `yaml:"disable_gapic,omitempty"`
+	ImportPath         string   `yaml:"import_path,omitempty"`
+	NoRESTNumericEnums bool     `yaml:"no_rest_numeric_enums,omitempty"`
+	NestedProtos       []string `yaml:"nested_protos,omitempty"`
+	ProtoPackage       string   `yaml:"proto_package,omitempty"`
 }
 
 // MigrationInput holds all intermediate configuration and state necessary for migration from legacy files.
@@ -62,41 +63,6 @@ type MigrationInput struct {
 	lang            string
 	repoPath        string
 }
-
-var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-
-	libraryOverrides = map[string]*config.Library{
-		"ai": {
-			ReleaseLevel: "beta",
-		},
-	}
-)
 
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
@@ -248,6 +214,9 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libraryNames[id] {
 			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
 		}
+		if keep, ok := addKeep[id]; ok {
+			library.Keep = append(library.Keep, keep...)
+		}
 		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
@@ -265,12 +234,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			var goAPIs []*config.GoAPI
 			for _, api := range libGoModule.APIs {
 				goAPIs = append(goAPIs, &config.GoAPI{
-					Path:            api.Path,
-					ClientDirectory: api.ClientDirectory,
-					DisableGAPIC:    api.DisableGAPIC,
-					ImportPath:      api.ImportPath,
-					NestedProtos:    api.NestedProtos,
-					ProtoPackage:    api.ProtoPackage,
+					ClientDirectory:    api.ClientDirectory,
+					DisableGAPIC:       api.DisableGAPIC,
+					ImportPath:         api.ImportPath,
+					NestedProtos:       api.NestedProtos,
+					NoRESTNumericEnums: api.NoRESTNumericEnums,
+					Path:               api.Path,
+					ProtoPackage:       api.ProtoPackage,
 				})
 			}
 

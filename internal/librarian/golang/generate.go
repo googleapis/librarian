@@ -177,7 +177,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	opts := []string{
 		"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI),
 		"metadata",
-		"rest-numeric-enums",
+	}
+	if !goAPI.NoRESTNumericEnums {
+		opts = append(opts, "rest-numeric-enums")
 	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
