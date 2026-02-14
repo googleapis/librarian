@@ -52,6 +52,22 @@ func TestGoClientDocURL(t *testing.T) {
 			apiPath: "google/ai/generativelanguage/v1",
 			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/generativelanguage/apiv1",
 		},
+		{
+			name: "client directory with another api path",
+			library: &config.Library{
+				Name: "ai",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/ai/generativelanguage/v1beta1",
+							ClientDirectory: "generativelanguage",
+						},
+					},
+				},
+			},
+			apiPath: "google/ai/generativelanguage/v1",
+			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/apiv1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := goClientDocURL(test.library, test.apiPath)
