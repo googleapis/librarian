@@ -46,12 +46,13 @@ type RepoConfigModule struct {
 
 // RepoConfigAPI represents an API in repo-config.yaml.
 type RepoConfigAPI struct {
-	Path            string   `yaml:"path"`
-	ClientDirectory string   `yaml:"client_directory,omitempty"`
-	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
-	ImportPath      string   `yaml:"import_path,omitempty"`
-	NestedProtos    []string `yaml:"nested_protos,omitempty"`
-	ProtoPackage    string   `yaml:"proto_package,omitempty"`
+	Path               string   `yaml:"path"`
+	ClientDirectory    string   `yaml:"client_directory,omitempty"`
+	DisableGAPIC       bool     `yaml:"disable_gapic,omitempty"`
+	ImportPath         string   `yaml:"import_path,omitempty"`
+	NoRESTNumericEnums bool     `yaml:"no_rest_numeric_enums,omitempty"`
+	NestedProtos       []string `yaml:"nested_protos,omitempty"`
+	ProtoPackage       string   `yaml:"proto_package,omitempty"`
 }
 
 // MigrationInput holds all intermediate configuration and state necessary for migration from legacy files.

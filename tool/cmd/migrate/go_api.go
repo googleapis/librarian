@@ -45,9 +45,10 @@ var (
 		"bigquery": {
 			APIs: []*RepoConfigAPI{
 				{
-					Path:            "google/cloud/bigquery/analyticshub/v1",
-					ClientDirectory: "analyticshub",
-					ImportPath:      "bigquery/analyticshub",
+					Path:               "google/cloud/bigquery/analyticshub/v1",
+					ClientDirectory:    "analyticshub",
+					ImportPath:         "bigquery/analyticshub",
+					NoRESTNumericEnums: true,
 				},
 				{
 					Path:            "google/cloud/bigquery/biglake/v1",
@@ -70,9 +71,10 @@ var (
 					ImportPath:      "bigquery/connection",
 				},
 				{
-					Path:            "google/cloud/bigquery/dataexchange/v1beta1",
-					ClientDirectory: "dataexchange",
-					ImportPath:      "bigquery/dataexchange",
+					Path:               "google/cloud/bigquery/dataexchange/v1beta1",
+					ClientDirectory:    "dataexchange",
+					ImportPath:         "bigquery/dataexchange",
+					NoRESTNumericEnums: true,
 				},
 				{
 					Path:            "google/cloud/bigquery/datapolicies/v1",
@@ -80,9 +82,10 @@ var (
 					ImportPath:      "bigquery/datapolicies",
 				},
 				{
-					Path:            "google/cloud/bigquery/datapolicies/v1beta1",
-					ClientDirectory: "datapolicies",
-					ImportPath:      "bigquery/datapolicies",
+					Path:               "google/cloud/bigquery/datapolicies/v1beta1",
+					ClientDirectory:    "datapolicies",
+					ImportPath:         "bigquery/datapolicies",
+					NoRESTNumericEnums: true,
 				},
 				{
 					Path:            "google/cloud/bigquery/datapolicies/v2",
@@ -100,14 +103,16 @@ var (
 					ImportPath:      "bigquery/datatransfer",
 				},
 				{
-					Path:            "google/cloud/bigquery/migration/v2",
-					ClientDirectory: "migration",
-					ImportPath:      "bigquery/migration",
+					Path:               "google/cloud/bigquery/migration/v2",
+					ClientDirectory:    "migration",
+					ImportPath:         "bigquery/migration",
+					NoRESTNumericEnums: true,
 				},
 				{
-					Path:            "google/cloud/bigquery/migration/v2alpha",
-					ClientDirectory: "migration",
-					ImportPath:      "bigquery/migration",
+					Path:               "google/cloud/bigquery/migration/v2alpha",
+					ClientDirectory:    "migration",
+					ImportPath:         "bigquery/migration",
+					NoRESTNumericEnums: true,
 				},
 				{
 					Path:            "google/cloud/bigquery/reservation/v1",
@@ -115,9 +120,10 @@ var (
 					ImportPath:      "bigquery/reservation",
 				},
 				{
-					Path:            "google/cloud/bigquery/storage/v1",
-					ClientDirectory: "storage",
-					ImportPath:      "bigquery/storage",
+					Path:               "google/cloud/bigquery/storage/v1",
+					ClientDirectory:    "storage",
+					ImportPath:         "bigquery/storage",
+					NoRESTNumericEnums: true,
 				},
 				{
 					Path:            "google/cloud/bigquery/storage/v1alpha",
@@ -130,14 +136,16 @@ var (
 					ImportPath:      "bigquery/storage",
 				},
 				{
-					Path:            "google/cloud/bigquery/storage/v1beta1",
-					ClientDirectory: "storage",
-					ImportPath:      "bigquery/storage",
+					Path:               "google/cloud/bigquery/storage/v1beta1",
+					ClientDirectory:    "storage",
+					ImportPath:         "bigquery/storage",
+					NoRESTNumericEnums: true,
 				},
 				{
-					Path:            "google/cloud/bigquery/storage/v1beta2",
-					ClientDirectory: "storage",
-					ImportPath:      "bigquery/storage",
+					Path:               "google/cloud/bigquery/storage/v1beta2",
+					ClientDirectory:    "storage",
+					ImportPath:         "bigquery/storage",
+					NoRESTNumericEnums: true,
 				},
 			},
 		},
