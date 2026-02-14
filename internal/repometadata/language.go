@@ -19,16 +19,25 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-func goClientDocURL(api *serviceconfig.API, library *config.Library, serviceName string) string {
-	version := filepath.Base(api.Path)
-	clientDir := clientDirectory(library, api.Path)
+func goClientDocURL(library *config.Library, apiPath, serviceName string) string {
+	name, version := goNameAndVersion(library, apiPath, serviceName)
+	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/api%s", name, version)
+}
+
+func goDistributionName(library *config.Library, apiPath, serviceName string) string {
+	name, version := goNameAndVersion(library, apiPath, serviceName)
+	return fmt.Sprintf("cloud.google.com/go/%s/api%s", name, version)
+}
+
+func goNameAndVersion(library *config.Library, apiPath, serviceName string) (string, string) {
+	version := filepath.Base(apiPath)
+	clientDir := clientDirectory(library, apiPath)
 	if clientDir != "" {
 		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
 	}
-	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/api%s", serviceName, version)
+	return serviceName, version
 }
 
 func clientDirectory(library *config.Library, apiPath string) string {
