@@ -167,7 +167,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name:        "google-cloud-secretmanager",
 				Roots:       []string{"googleapis"},
-				SkipPublish: true,
+				SkipRelease: true,
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -968,7 +968,7 @@ func TestBuildCodec(t *testing.T) {
 				Version:       "0.1.0",
 				ReleaseLevel:  "preview",
 				CopyrightYear: "2024",
-				SkipPublish:   true,
+				SkipRelease:   true,
 				Keep:          []string{"src/mod1.rs", "src/mod2.rs", "other.txt"},
 			},
 			want: map[string]string{

@@ -1019,6 +1019,216 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	}
 }
 
+func TestAIPStandardCreateInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Setup for Create
+	secretMessage := &Message{ID: "secret_message_id"}
+	f.resource.Self = secretMessage
+
+	parentField := &Field{
+		Name:              "parent",
+		ResourceReference: &ResourceReference{ChildType: f.resource.Type},
+		Typez:             STRING_TYPE,
+	}
+	resourceField := &Field{
+		Name:    "secret",
+		Typez:   MESSAGE_TYPE,
+		TypezID: secretMessage.ID,
+	}
+	idField := &Field{
+		Name:  "secret_id",
+		Typez: STRING_TYPE,
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardCreateInfo
+	}{
+		{
+			name: "valid create operation",
+			method: &Method{
+				Name: "CreateSecret",
+				InputType: &Message{
+					Name: "CreateSecretRequest",
+					Fields: []*Field{
+						parentField,
+						idField,
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardCreateInfo{
+				ParentRequestField:     parentField,
+				ResourceIDRequestField: idField,
+				ResourceRequestField:   resourceField,
+			},
+		},
+		{
+			name: "valid create operation without id",
+			method: &Method{
+				Name: "CreateSecret",
+				InputType: &Message{
+					Name: "CreateSecretRequest",
+					Fields: []*Field{
+						parentField,
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardCreateInfo{
+				ParentRequestField:   parentField,
+				ResourceRequestField: resourceField,
+			},
+		},
+		{
+			name: "invalid create operation (wrong name)",
+			method: &Method{
+				Name: "MakeSecret",
+				InputType: &Message{
+					Name: "CreateSecretRequest",
+					Fields: []*Field{
+						parentField,
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardCreateInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardCreateInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAIPStandardUpdateInfo(t *testing.T) {
+	f := newAIPTestFixture()
+
+	// Setup for Update
+	secretMessage := &Message{ID: "secret_message_id"}
+	f.resource.Self = secretMessage
+
+	resourceField := &Field{
+		Name:    "secret",
+		Typez:   MESSAGE_TYPE,
+		TypezID: secretMessage.ID,
+	}
+	updateMaskField := &Field{
+		Name:    "update_mask",
+		TypezID: ".google.protobuf.FieldMask",
+	}
+
+	testCases := []struct {
+		name   string
+		method *Method
+		want   *AIPStandardUpdateInfo
+	}{
+		{
+			name: "valid update operation",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+						updateMaskField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardUpdateInfo{
+				ResourceRequestField:   resourceField,
+				UpdateMaskRequestField: updateMaskField,
+			},
+		},
+		{
+			name: "valid update operation without mask",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: &AIPStandardUpdateInfo{
+				ResourceRequestField: resourceField,
+			},
+		},
+		{
+			name: "invalid update operation (wrong name)",
+			method: &Method{
+				Name: "ModifySecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "invalid update operation (wrong request name)",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "ModifySecretRequest",
+					Fields: []*Field{
+						resourceField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+		{
+			name: "invalid update operation (missing resource)",
+			method: &Method{
+				Name: "UpdateSecret",
+				InputType: &Message{
+					Name: "UpdateSecretRequest",
+					Fields: []*Field{
+						updateMaskField,
+					},
+				},
+				OutputType: &Message{Resource: f.resource},
+				Model:      f.model,
+			},
+			want: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.method.AIPStandardUpdateInfo()
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("AIPStandardUpdateInfo() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAIPStandardListInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
@@ -1434,6 +1644,106 @@ func TestField_IsResourceReference(t *testing.T) {
 			got := test.field.IsResourceReference()
 			if got != test.want {
 				t.Errorf("IsResourceReference() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFindBodyField(t *testing.T) {
+	messageType := &Message{ID: "message_id"}
+	bodyField := &Field{Name: "body_field"}
+	typeMatchField := &Field{Typez: MESSAGE_TYPE, TypezID: messageType.ID, Name: "type_match"}
+	otherField := &Field{Name: "other"}
+
+	testCases := []struct {
+		name       string
+		message    *Message
+		pathInfo   *PathInfo
+		targetType string
+		singular   string
+		want       *Field
+	}{
+		{
+			name:     "match by path info",
+			message:  &Message{Fields: []*Field{bodyField, otherField}},
+			pathInfo: &PathInfo{BodyFieldPath: "body_field"},
+			want:     bodyField,
+		},
+		{
+			name:       "match by type and name",
+			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			targetType: messageType.ID,
+			singular:   "type_match",
+			want:       typeMatchField,
+		},
+		{
+			name:       "match by type but wrong name",
+			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			targetType: messageType.ID,
+			singular:   "wrong_name",
+			want:       nil,
+		},
+		{
+			name:       "match by name but wrong type",
+			message:    &Message{Fields: []*Field{typeMatchField, otherField}},
+			targetType: "different_message_id",
+			singular:   "type_match",
+			want:       nil,
+		},
+		{
+			name:       "path info overrides type match",
+			message:    &Message{Fields: []*Field{typeMatchField, bodyField}},
+			pathInfo:   &PathInfo{BodyFieldPath: "body_field"},
+			targetType: messageType.ID,
+			singular:   "type_match",
+			want:       bodyField,
+		},
+		{
+			name:    "no match",
+			message: &Message{Fields: []*Field{otherField}},
+			want:    nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := findBodyField(tc.message, tc.pathInfo, tc.targetType, tc.singular)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findBodyField() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindResourceIDField(t *testing.T) {
+	idField := &Field{Name: "book_id", Typez: STRING_TYPE}
+	otherField := &Field{Name: "other"}
+
+	testCases := []struct {
+		name     string
+		message  *Message
+		singular string
+		want     *Field
+	}{
+		{
+			name:     "found id field",
+			message:  &Message{Fields: []*Field{idField, otherField}},
+			singular: "book",
+			want:     idField,
+		},
+		{
+			name:     "not found",
+			message:  &Message{Fields: []*Field{otherField}},
+			singular: "book",
+			want:     nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := findResourceIDField(tc.message, tc.singular)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findResourceIDField() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
