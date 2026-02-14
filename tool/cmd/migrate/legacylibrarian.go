@@ -213,6 +213,9 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libraryNames[id] {
 			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
 		}
+		if keep, ok := addKeep[id]; ok {
+			library.Keep = append(library.Keep, keep...)
+		}
 		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]

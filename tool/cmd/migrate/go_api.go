@@ -148,4 +148,12 @@ var (
 			ReleaseLevel: "beta",
 		},
 	}
+
+	addKeep = map[string][]string{
+		"bigquery": {
+			"benchmarks/bench.go",
+			"benchmarks/benchmarked-queries.json",
+			"benchmarks/README.md",
+		},
+	}
 )
