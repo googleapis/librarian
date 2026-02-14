@@ -100,7 +100,7 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
 func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, defaultVersion, outputDir string) error {
-	serviceName := extractNameFromAPIID(api.ServiceName)
+	serviceName := extractName(api.ServiceName)
 	clientDocURL := buildClientDocURL(library, api.Path, serviceName, language)
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
@@ -178,9 +178,9 @@ func cleanTitle(title string) string {
 	return strings.TrimSpace(title)
 }
 
-// extractNameFromAPIID extracts the service name from the API ID.
+// extractName extracts the name from the API service name.
 // Example: "secretmanager.googleapis.com" -> "secretmanager".
-func extractNameFromAPIID(apiID string) string {
-	name, _, _ := strings.Cut(apiID, ".")
+func extractName(serviceName string) string {
+	name, _, _ := strings.Cut(serviceName, ".")
 	return name
 }
