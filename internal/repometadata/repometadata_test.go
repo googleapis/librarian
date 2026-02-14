@@ -235,32 +235,42 @@ func TestExtractBaseProductURL(t *testing.T) {
 
 func TestBuildClientDocURL(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		language    string
-		serviceName string
-		want        string
+		name      string
+		library   *config.Library
+		apiPath   string
+		shortname string
+		language  string
+		want      string
 	}{
 		{
-			name:        "python",
-			language:    "python",
-			serviceName: "secretmanager",
-			want:        "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+			name:      "python",
+			shortname: "secretmanager",
+			language:  "python",
+			want:      "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 		},
 		{
-			name:        "rust",
-			language:    "rust",
-			serviceName: "secretmanager",
-			want:        "https://docs.rs/google-cloud-secretmanager/latest",
+			name:      "rust",
+			shortname: "secretmanager",
+			language:  "rust",
+			want:      "https://docs.rs/google-cloud-secretmanager/latest",
 		},
 		{
-			name:        "unknown language",
-			language:    "vb",
-			serviceName: "secretmanager",
-			want:        "",
+			name:      "unknown language",
+			shortname: "secretmanager",
+			language:  "vb",
+			want:      "",
+		},
+		{
+			name:      "go",
+			library:   &config.Library{},
+			apiPath:   "google/cloud/secretmanager/v1",
+			shortname: "secretmanager",
+			language:  "go",
+			want:      "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildClientDocURL(test.language, test.serviceName)
+			got := buildClientDocURL(test.library, test.apiPath, test.shortname, test.language)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
