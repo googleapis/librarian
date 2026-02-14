@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 func TestGenerate(t *testing.T) {
@@ -171,14 +172,14 @@ func TestCleanTitle(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cleanTitle(test.title)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestExtractNameFromAPIID(t *testing.T) {
+func TestExtractShortname(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		apiID string
@@ -189,9 +190,9 @@ func TestExtractNameFromAPIID(t *testing.T) {
 		{"empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := extractNameFromAPIID(test.apiID)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := extractShortname(test.apiID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -226,8 +227,8 @@ func TestExtractBaseProductURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractBaseProductURL(test.docURI)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -235,34 +236,56 @@ func TestExtractBaseProductURL(t *testing.T) {
 
 func TestBuildClientDocURL(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		language    string
-		serviceName string
-		want        string
+		name     string
+		api      *serviceconfig.API
+		library  *config.Library
+		language string
+		want     string
 	}{
 		{
-			name:        "python",
-			language:    "python",
-			serviceName: "secretmanager",
-			want:        "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+			name: "python",
+			api: &serviceconfig.API{
+				Path:        "google/cloud/secretmanager/v1",
+				ServiceName: "secretmanager.googleapis.com",
+			},
+			language: "python",
+			want:     "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 		},
 		{
-			name:        "rust",
-			language:    "rust",
-			serviceName: "secretmanager",
-			want:        "https://docs.rs/google-cloud-secretmanager/latest",
+			name: "rust",
+			api: &serviceconfig.API{
+				Path:        "google/cloud/secretmanager/v1",
+				ServiceName: "secretmanager.googleapis.com",
+			},
+			language: "rust",
+			want:     "https://docs.rs/google-cloud-secretmanager/latest",
 		},
 		{
-			name:        "unknown language",
-			language:    "vb",
-			serviceName: "secretmanager",
-			want:        "",
+			name: "unknown language",
+			api: &serviceconfig.API{
+				Path:        "google/cloud/secretmanager/v1",
+				ServiceName: "secretmanager.googleapis.com",
+			},
+			language: "vb",
+			want:     "",
+		},
+		{
+			name: "go",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			api: &serviceconfig.API{
+				Path:        "google/cloud/secretmanager/v1",
+				ServiceName: "secretmanager.googleapis.com",
+			},
+			language: "go",
+			want:     "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildClientDocURL(test.language, test.serviceName)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := buildClientDocURL(test.api, test.library, test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
