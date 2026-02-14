@@ -178,7 +178,7 @@ func TestCleanTitle(t *testing.T) {
 	}
 }
 
-func TestExtractNameFromAPIID(t *testing.T) {
+func TestExtractShortname(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		apiID string
@@ -189,7 +189,7 @@ func TestExtractNameFromAPIID(t *testing.T) {
 		{"empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := extractNameFromAPIID(test.apiID)
+			got := extractShortname(test.apiID)
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
 			}
