@@ -17,6 +17,7 @@ package repometadata
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -54,8 +55,8 @@ func TestGoClientDocURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := goClientDocURL(test.library, test.apiPath)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

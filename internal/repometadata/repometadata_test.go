@@ -172,8 +172,8 @@ func TestCleanTitle(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cleanTitle(test.title)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -191,8 +191,8 @@ func TestExtractShortname(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractShortname(test.apiID)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -227,8 +227,8 @@ func TestExtractBaseProductURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractBaseProductURL(test.docURI)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -284,8 +284,8 @@ func TestBuildClientDocURL(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildClientDocURL(test.api, test.library, test.language)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
