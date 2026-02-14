@@ -56,16 +56,18 @@ func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
-
-	for _, lib := range cfg.Libraries {
-		if err := tidyLibrary(cfg, lib); err != nil {
-			return err
-		}
-	}
+	cfg.Libraries = tidyLibraries(cfg)
 	return yaml.Write(librarianConfigPath, formatConfig(cfg))
 }
 
-func tidyLibrary(cfg *config.Config, lib *config.Library) error {
+func tidyLibraries(cfg *config.Config) []*config.Library {
+	for i, lib := range cfg.Libraries {
+		cfg.Libraries[i] = tidyLibrary(cfg, lib)
+	}
+	return cfg.Libraries
+}
+
+func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
@@ -87,8 +89,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) error {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
-	tidyLanguageConfig(lib, cfg.Language)
-	return nil
+	return tidyLanguageConfig(lib, cfg.Language)
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
@@ -132,19 +133,36 @@ func validateLibraries(cfg *config.Config) error {
 	return nil
 }
 
-func tidyLanguageConfig(lib *config.Library, language string) {
-	switch language {
-	case languageRust:
-		tidyRustConfig(lib)
-	}
+// languageTidiers maps a language to a function that tidies the language-specific
+// configuration.
+var languageTidiers = map[string]func(*config.Library) *config.Library{
+	languageRust: tidyRustConfig,
+	languageFake: func(lib *config.Library) *config.Library { return lib },
 }
 
-func tidyRustConfig(lib *config.Library) {
-	if lib.Rust != nil && lib.Rust.Modules != nil {
-		lib.Rust.Modules = slices.DeleteFunc(lib.Rust.Modules, func(module *config.RustModule) bool {
-			return module.Source == "none" && module.Template == ""
-		})
+// tidyLanguageConfig finds and executes the language-specific tidier for a library.
+func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
+	if tidier, ok := languageTidiers[language]; ok {
+		return tidier(lib)
 	}
+	return lib
+}
+
+// isEmptyRustModule returns true if the module is a placeholder that can be removed.
+func isEmptyRustModule(module *config.RustModule) bool {
+	return module.Source == "none" && module.Template == ""
+}
+
+// deleteEmptyRustModules returns a new slice of modules with empty modules removed.
+func deleteEmptyRustModules(modules []*config.RustModule) []*config.RustModule {
+	return slices.DeleteFunc(modules, isEmptyRustModule)
+}
+
+func tidyRustConfig(lib *config.Library) *config.Library {
+	if lib.Rust != nil && lib.Rust.Modules != nil {
+		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
+	}
+	return lib
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
