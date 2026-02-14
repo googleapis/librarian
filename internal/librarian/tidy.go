@@ -137,7 +137,6 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
 	languageRust: tidyRustConfig,
-	languageFake: func(lib *config.Library) *config.Library { return lib },
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
