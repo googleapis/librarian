@@ -21,6 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// goClientDocURL builds the client documentation URL for Go SDK.
 func goClientDocURL(library *config.Library, apiPath string) string {
 	suffix := fmt.Sprintf("api%s", filepath.Base(apiPath))
 	clientDir := clientDirectory(library, apiPath)
