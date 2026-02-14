@@ -116,25 +116,25 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
 func FromAPI(api *serviceconfig.API, info *LibraryInfo, language, repo, defaultVersion, outputDir string) error {
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
-	metadata := &RepoMetadata{
-		APIID:               api.ServiceName,
-		NamePretty:          cleanTitle(api.Title),
-		DefaultVersion:      defaultVersion,
-		ClientDocumentation: clientDocURL,
-		ReleaseLevel:        info.ReleaseLevel,
-		Language:            language,
-		LibraryType:         "GAPIC_AUTO",
-		Repo:                repo,
-		DistributionName:    info.Name,
-	}
-
-	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
-	metadata.IssueTracker = api.NewIssueURI
-	metadata.APIShortname = api.ShortName
-	metadata.Name = api.ShortName
-	metadata.APIDescription = api.Description
+	apiDescription := api.Description
 	if info.DescriptionOverride != "" {
-		metadata.APIDescription = info.DescriptionOverride
+		apiDescription = info.DescriptionOverride
+	}
+	metadata := &RepoMetadata{
+		APIDescription:       apiDescription,
+		APIID:                api.ServiceName,
+		APIShortname:         api.ShortName,
+		ClientDocumentation:  clientDocURL,
+		DefaultVersion:       defaultVersion,
+		DistributionName:     info.Name,
+		IssueTracker:         api.NewIssueURI,
+		Language:             language,
+		LibraryType:          "GAPIC_AUTO",
+		Name:                 api.ShortName,
+		NamePretty:           cleanTitle(api.Title),
+		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
+		ReleaseLevel:         info.ReleaseLevel,
+		Repo:                 repo,
 	}
 
 	data, err := json.MarshalIndent(metadata, "", "    ")
