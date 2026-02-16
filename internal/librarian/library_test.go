@@ -353,6 +353,78 @@ func TestFillDefaults_Rust(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_Python(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.PythonDefault
+		want     *config.Library
+	}{
+		{
+			name: "common_gapic_paths only in defaults",
+			lib:  &config.Library{},
+			defaults: &config.PythonDefault{
+				CommonGAPICPaths: []string{"a", "b"},
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						CommonGAPICPaths: []string{"a", "b"},
+					},
+				},
+			},
+		},
+		{
+			name: "common_gapic_paths only in package",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						CommonGAPICPaths: []string{"a", "b"},
+					},
+				},
+			},
+			defaults: &config.PythonDefault{},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						CommonGAPICPaths: []string{"a", "b"},
+					},
+				},
+			},
+		},
+		{
+			name: "common_gapic_paths merged",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						CommonGAPICPaths: []string{"c", "d"},
+					},
+				},
+			},
+			defaults: &config.PythonDefault{
+				CommonGAPICPaths: []string{"a", "b"},
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						CommonGAPICPaths: []string{"a", "b", "c", "d"},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Python: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestPrepareLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name        string

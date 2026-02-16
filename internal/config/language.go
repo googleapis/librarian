@@ -280,8 +280,11 @@ type RustPoller struct {
 	MethodID string `yaml:"method_id"`
 }
 
-// PythonPackage contains Python-specific library configuration.
+// PythonPackage contains Python-specific library configuration. It inherits
+// from PythonDefault, allowing library-specific overrides of global settings.
 type PythonPackage struct {
+	PythonDefault `yaml:",inline"`
+
 	// OptArgs contains additional options passed to the generator, where
 	// the options are common to all apis.
 	// Example: ["warehouse-package-name=google-cloud-batch"]
@@ -297,6 +300,17 @@ type PythonPackage struct {
 	// ProtoOnlyAPIs contains the list of API paths which are proto-only, so
 	// should use regular protoc Python generation instead of GAPIC.
 	ProtoOnlyAPIs []string `yaml:"proto_only_apis,omitempty"`
+}
+
+// PythonDefault contains Python-specific default configuration.
+type PythonDefault struct {
+	// CommonGAPICPaths contains paths which are generated for any package
+	// containing a GAPIC API. These are relative to the package's output
+	// directory, and the string "{neutral-source}" is replaced with the path
+	// to the version-neutral source code (e.g. "google/cloud/run"). If a
+	// library defines its own common_gapic_paths, they will be appended to
+	// the defaults.
+	CommonGAPICPaths []string `yaml:"common_gapic_paths,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.
