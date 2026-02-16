@@ -183,6 +183,7 @@ func TestFieldAnnotations(t *testing.T) {
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.boxed_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "boxedField") });`,
 		IsBoxed:               true,
+		MapToBoxed:            true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
@@ -295,6 +296,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		ValueField:            value_field,
 		SerdeAs:               "std::collections::HashMap<wkt::internal::I32, serde_with::Same>",
 		IsBoxed:               true,
+		MapToBoxed:            true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
@@ -318,6 +320,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:               true,
+		MapToBoxed:            true,
 		SkipIfIsDefault:       true,
 		OtherFieldsInGroup:    []*api.Field{},
 		FieldTypeIsParentType: true,
@@ -342,6 +345,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = req.repeated_field.as_ref().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, v| { use gaxi::query_parameter::QueryParameter; v.add(builder, "repeatedField") });`,
 		IsBoxed:               true,
+		MapToBoxed:            false,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
@@ -365,6 +369,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		PrimitiveFieldType:    "crate::model::TestMessage",
 		AddQueryParameter:     `let builder = { use gaxi::query_parameter::QueryParameter; serde_json::to_value(&req.message_field).map_err(Error::ser)?.add(builder, "messageField") };`,
 		IsBoxed:               true,
+		MapToBoxed:            true,
 		SkipIfIsDefault:       true,
 		FieldTypeIsParentType: true,
 	}
@@ -508,6 +513,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		PrimitiveFieldType: "rusty_test_inner_v1::model::TestMessage",
 		AddQueryParameter:  `let builder = req.oneof_field().map(|p| serde_json::to_value(p).map_err(Error::ser) ).transpose()?.into_iter().fold(builder, |builder, p| { use gaxi::query_parameter::QueryParameter; p.add(builder, "oneofField") });`,
 		IsBoxed:            true,
+		MapToBoxed:         false,
 		SkipIfIsDefault:    true,
 		OtherFieldsInGroup: []*api.Field{},
 		AliasInExamples:    "OneofField",

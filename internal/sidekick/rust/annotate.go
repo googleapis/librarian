@@ -503,6 +503,8 @@ type fieldAnnotations struct {
 	ValueField *api.Field
 	// The templates need to generate different code for boxed fields.
 	IsBoxed bool
+	// If true, the field is boxed in the prost generated type.
+	MapToBoxed bool
 	// If true, it requires a serde_with::serde_as() transformation.
 	SerdeAs string
 	// If true, use `wkt::internal::is_default()` to skip the field
@@ -1479,6 +1481,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if field.Recursive || (field.Typez == api.MESSAGE_TYPE && field.IsOneOf) {
 		ann.IsBoxed = true
 	}
+	ann.MapToBoxed = mapToBoxed(field, message, model)
 	field.Codec = ann
 	if field.Typez == api.MESSAGE_TYPE {
 		if msg, ok := model.State.MessageByID[field.TypezID]; ok && msg.IsMap {
@@ -1650,4 +1653,40 @@ func isIdempotent(p *api.PathInfo) string {
 		}
 	}
 	return "true"
+}
+
+// mapToBoxed returns true if the prost generated type for this field is boxed.
+// Prost boxes fields that would cause an infinitely sized struct, which happens
+// on recursive cycles that are not broken by a repeated or map field.
+func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
+	if field.Typez != api.MESSAGE_TYPE || field.Repeated || field.Map {
+		return false
+	}
+
+	var check func(typezID string, targetID string, visited map[string]bool) bool
+	check = func(typezID string, targetID string, visited map[string]bool) bool {
+		if typezID == targetID {
+			return true
+		}
+		if visited[typezID] {
+			return false
+		}
+		visited[typezID] = true
+		msg, ok := model.State.MessageByID[typezID]
+		if !ok {
+			return false
+		}
+		for _, f := range msg.Fields {
+			if f.Typez != api.MESSAGE_TYPE || f.Repeated || f.Map {
+				continue
+			}
+			if check(f.TypezID, targetID, visited) {
+				return true
+			}
+		}
+		return false
+	}
+
+	visited := map[string]bool{message.ID: true}
+	return check(field.TypezID, message.ID, visited)
 }
