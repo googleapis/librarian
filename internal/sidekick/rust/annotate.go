@@ -1687,6 +1687,6 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 		return false
 	}
 
-	visited := map[string]bool{message.ID: true}
+	visited := make(map[string]bool)
 	return check(field.TypezID, message.ID, visited)
 }
