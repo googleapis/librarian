@@ -35,12 +35,7 @@ impl gaxi::prost::ToProto<{{Codec.RelativeName}}> for {{Codec.QualifiedName}} {
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.to_proto()?,
             {{/Optional}}
             {{#Optional}}
-            {{^Codec.MapToBoxed}}
             {{Codec.FieldName}}: self.{{Codec.FieldName}}.map(|v| v.to_proto()).transpose()?,
-            {{/Codec.MapToBoxed}}
-            {{#Codec.MapToBoxed}}
-            {{Codec.FieldName}}: self.{{Codec.FieldName}}.map(|v| v.to_proto().map(std::boxed::Box::new)).transpose()?,
-            {{/Codec.MapToBoxed}}
             {{/Optional}}
             {{/Singular}}
             {{#Repeated}}
