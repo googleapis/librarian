@@ -203,7 +203,11 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 	switch language {
 	case languageFake:
 		// No cleaning needed.
-	case languageDart, languagePython:
+	case languagePython:
+		if err := python.CleanLibrary(library); err != nil {
+			return nil, err
+		}
+	case languageDart:
 		if err := checkAndClean(library.Output, library.Keep); err != nil {
 			return nil, err
 		}

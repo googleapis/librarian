@@ -18,6 +18,7 @@ package python
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,6 +73,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// hardcoding the language and repo name, instead getting it passed in.
 	if err := repometadata.FromLibrary(library, "python", "googleapis/google-cloud-python", googleapisDir, defaultVersion, outdir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	}
+
+	if true {
+		slog.Info("quitting")
+		return nil
 	}
 
 	// Run post processor (synthtool)
