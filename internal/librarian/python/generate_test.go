@@ -15,10 +15,13 @@
 package python
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,9 +34,10 @@ const googleapisDir = "../../testdata/googleapis"
 func TestGetStagingChildDirectory(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name     string
-		apiPath  string
-		expected string
+		name      string
+		apiPath   string
+		protoOnly bool
+		expected  string
 	}{
 		{
 			name:     "versioned path",
@@ -45,9 +49,15 @@ func TestGetStagingChildDirectory(t *testing.T) {
 			apiPath:  "google/cloud/secretmanager/type",
 			expected: "type-py",
 		},
+		{
+			name:      "proto-only",
+			apiPath:   "google/cloud/secretmanager/type",
+			protoOnly: true,
+			expected:  "type",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := getStagingChildDirectory(test.apiPath)
+			got := getStagingChildDirectory(test.apiPath, test.protoOnly)
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("getStagingChildDirectory(%q) returned diff (-want +got):\n%s", test.apiPath, diff)
 			}
@@ -188,6 +198,32 @@ func TestCreateProtocOptions(t *testing.T) {
 				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
+		{
+			name: "proto-only exists but doesn't include API path",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Python: &config.PythonPackage{
+					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
+				},
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+		{
+			name: "proto-only exists and includes API path",
+			api:  &config.API{Path: "google/cloud/secretmanager/type"},
+			library: &config.Library{
+				Python: &config.PythonPackage{
+					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
+				},
+			},
+			expected: []string{
+				"--python_out=staging",
+				"--pyi_out=staging",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := createProtocOptions(test.api, test.library, googleapisDir, "staging")
@@ -197,6 +233,86 @@ func TestCreateProtocOptions(t *testing.T) {
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestStageProtoFiles(t *testing.T) {
+	targetDir := t.TempDir()
+	// Deliberately not including all proto files (or any non-proto) files here.
+	relativeProtoPaths := []string{
+		"google/cloud/gkehub/v1/feature.proto",
+		"google/cloud/gkehub/v1/membership.proto",
+	}
+	if err := stageProtoFiles(googleapisDir, targetDir, relativeProtoPaths); err != nil {
+		t.Fatal(err)
+	}
+	copiedFiles := []string{}
+	if err := filepath.WalkDir(targetDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.Type().IsDir() {
+			relative, err := filepath.Rel(targetDir, path)
+			if err != nil {
+				return err
+			}
+			copiedFiles = append(copiedFiles, relative)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(relativeProtoPaths, copiedFiles); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestStageProtoFiles_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name               string
+		relativeProtoPaths []string
+		setup              func(t *testing.T, targetDir string)
+		wantErr            error
+	}{
+		{
+			name:               "path doesn't exist",
+			relativeProtoPaths: []string{"google/cloud/bogus.proto"},
+			wantErr:            os.ErrNotExist,
+		},
+		{
+			name:               "can't create directory",
+			relativeProtoPaths: []string{"google/cloud/gkehub/v1/feature.proto"},
+			setup: func(t *testing.T, targetDir string) {
+				// Create a file with the name of the directory we'd create.
+				if err := os.WriteFile(filepath.Join(targetDir, "google"), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name:               "can't write file",
+			relativeProtoPaths: []string{"google/cloud/gkehub/v1/feature.proto"},
+			setup: func(t *testing.T, targetDir string) {
+				// Create a directory with the name of the file we'd create.
+				if err := os.MkdirAll(filepath.Join(targetDir, "google", "cloud", "gkehub", "v1", "feature.proto"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EISDIR,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			targetDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, targetDir)
+			}
+			gotErr := stageProtoFiles(googleapisDir, targetDir, test.relativeProtoPaths)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("stageProtoFiles error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
