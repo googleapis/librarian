@@ -49,7 +49,6 @@ var pythonDefaultCommonGAPICPaths = []string{
 	"README.rst",
 	"LICENSE",
 	"MANIFEST.in",
-	"setup.py",
 	"docs/_static/custom.css",
 	"docs/_templates/layout.html",
 	"docs/conf.py",

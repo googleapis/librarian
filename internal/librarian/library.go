@@ -106,9 +106,7 @@ func fillPython(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Python == nil {
 		lib.Python = &config.PythonPackage{}
 	}
-	if len(lib.Python.CommonGAPICPaths) == 0 {
-		lib.Python.CommonGAPICPaths = d.Python.CommonGAPICPaths
-	}
+	lib.Python.CommonGAPICPaths = append(d.Python.CommonGAPICPaths, lib.Python.CommonGAPICPaths...)
 	return lib
 }
 

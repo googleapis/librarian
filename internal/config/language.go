@@ -292,7 +292,9 @@ type PythonDefault struct {
 	// CommonGAPICPaths contains paths which are generated for any package
 	// containing a GAPIC API. These are relative to the package's output
 	// directory, and the string "{neutral-source}" is replaced with the path
-	// to the version-neutral source code (e.g. "google/cloud/run").
+	// to the version-neutral source code (e.g. "google/cloud/run"). If a
+	// library defines its own common_gapic_paths, they will be appended to
+	// the defaults.
 	CommonGAPICPaths []string `yaml:"common_gapic_paths"`
 }
 
