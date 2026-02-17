@@ -101,6 +101,7 @@ func clientDirectory(library *config.Library, apiPath string) string {
 	if goAPI != nil {
 		return goAPI.ClientDirectory
 	}
+	// Return an empty client directory if we can't find one.
 	return ""
 }
 
