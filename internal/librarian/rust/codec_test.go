@@ -823,6 +823,41 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with pagination overrides in multiple rust modules",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					PaginationOverrides: []config.RustPaginationOverride{
+						{
+							ID:        ".google.cloud.example.v1.Example.ListExamples",
+							ItemField: "examples",
+						},
+					},
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+						},
+						{
+							Template: "prost",
+						},
+					},
+				},
+			},
+			want: &parser.ModelConfig{
+				Language: "rust",
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
+				},
+				PaginationOverrides: []sidekickconfig.PaginationOverride{
+					{
+						ID:        ".google.cloud.example.v1.Example.ListExamples",
+						ItemField: "examples",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &source.Sources{
@@ -834,7 +869,6 @@ func TestModuleToModelConfig(t *testing.T) {
 			}
 
 			var commentOverrides []sidekickconfig.DocumentationOverride
-			var paginationOverrides []sidekickconfig.PaginationOverride
 			for _, module := range test.library.Rust.Modules {
 				got, err := moduleToModelConfig(test.library, module, sources)
 				if err != nil {
@@ -844,12 +878,11 @@ func TestModuleToModelConfig(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 				commentOverrides = append(commentOverrides, got.CommentOverrides...)
-				paginationOverrides = append(paginationOverrides, got.PaginationOverrides...)
+				if diff := cmp.Diff(test.want.PaginationOverrides, got.PaginationOverrides); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			}
 			if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(test.want.PaginationOverrides, paginationOverrides); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
