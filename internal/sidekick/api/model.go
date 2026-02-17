@@ -300,8 +300,6 @@ type Method struct {
 	SourceServiceID string
 	// Codec contains language specific annotations.
 	Codec any
-	// HeuristicMetadata contains the results of the resource name identification heuristic, if any.
-	HeuristicMetadata *HeuristicMetadata
 }
 
 // RoutingCombos returns all combinations of routing parameters.
@@ -931,6 +929,9 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
+	// ResourceNameHeuristic contains the results of the resource name identification heuristic, if any.
+	// This helps identify which resource this path is likely targeting.
+	ResourceNameHeuristic *ResourceNameHeuristic
 	// Language specific annotations.
 	Codec any
 }
@@ -1517,16 +1518,13 @@ func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
 }
 
-// HeuristicMetadata contains the results of the resource name identification heuristic.
-// It provides the formula used by language-specific generators to inject tracing attributes.
-type HeuristicMetadata struct {
-	// FieldPaths is a list of paths to the fields that compose the resource name.
-	// For exploded paths, it will have multiple entries (e.g., [["project", "instance"]]).
-	// For full capture paths, it will have a single entry (e.g., [["name"]]).
+// ResourceNameHeuristic contains the results of the resource name identification heuristic.
+// It provides the sequences of fields used by language-specific generators to inject tracing attributes.
+type ResourceNameHeuristic struct {
+	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
+	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
 	FieldPaths [][]string
 	// PathTemplate is the template for the resource name.
 	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
 	PathTemplate *PathTemplate
-	// ServiceHost is the host name of the service, e.g., "compute.googleapis.com".
-	ServiceHost string
 }
