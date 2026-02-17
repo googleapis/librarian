@@ -256,9 +256,12 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, cfg, err := addLibrary(cfg, test.apis...)
+			gotName, cfg, err := addLibrary(cfg, test.apis...)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if gotName != test.wantName {
+				t.Errorf("gotName = %q, want %q", gotName, test.wantName)
 			}
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))

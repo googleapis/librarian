@@ -27,9 +27,9 @@ import (
 )
 
 // ResolveDependencies automatically resolves Protobuf dependencies for a Rust library.
-func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library, sources *source.Sources) (*config.Library, error) {
+func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library, sources *source.Sources) (*config.Config, error) {
 	if len(lib.APIs) == 0 {
-		return lib, nil
+		return cfg, nil
 	}
 	externalPackages, err := findExternalPackages(lib, sources)
 	if err != nil {
@@ -97,9 +97,9 @@ func findExternalPackages(lib *config.Library, sources *source.Sources) (map[str
 	return externalPackages, nil
 }
 
-func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPackages map[string]bool) *config.Library {
+func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPackages map[string]bool) *config.Config {
 	if len(externalPackages) == 0 {
-		return lib
+		return cfg
 	}
 	if lib.Rust == nil {
 		lib.Rust = &config.RustCrate{}
@@ -131,7 +131,7 @@ func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPa
 			}
 		}
 	}
-	return lib
+	return cfg
 }
 
 func isDependencyPresent(pkg string, lib *config.Library, cfg *config.Config) bool {
