@@ -1,18 +1,4 @@
-// Copyright 2026 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package librarian
+package golang
 
 import (
 	"errors"
@@ -20,22 +6,24 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
-var (
-	nestedVersion = regexp.MustCompile(`^v(\d+)$`)
-)
-
-// checkAndClean removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if any file
-// in keep does not exist.
-func checkAndClean(dir string, keep []string) error {
-	keepSet, err := check(dir, keep)
+func CleanGo(library *config.Library) (*config.Library, error) {
+	libraryDir := filepath.Join(library.Output, library.Name)
+	keepSet, err := check(libraryDir, library.Keep)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return clean(dir, keepSet)
+	if err := clean(libraryDir, keepSet); err != nil {
+		return nil, err
+	}
+	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if err := clean(snippetDir, nil); err != nil {
+		return nil, err
+	}
+	return library, nil
 }
 
 // check validates the given directory and returns a set of files to keep.
@@ -71,15 +59,13 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	return keepSet, nil
 }
 
-// clean removes files from dir that are not in keepSet.
 func clean(dir string, keepSet map[string]bool) error {
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			// Skip the nested version, e.g., v2.
-			if nestedVersion.MatchString(d.Name()) {
+			if {
 				return fs.SkipDir
 			}
 			return nil

@@ -208,7 +208,7 @@ func prepareLibrary(language string, lib *config.Library, defaults *config.Defau
 			return nil, err
 		}
 	case languageGo:
-		return cleanGo(library)
+		return golang.CleanGo(library)
 	case languageRust:
 		keep, err := rust.Keep(library)
 		if err != nil {
