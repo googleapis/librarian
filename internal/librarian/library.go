@@ -45,6 +45,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Dart != nil {
 		return fillDart(lib, d)
 	}
+	if d.Python != nil {
+		return fillPython(lib, d)
+	}
 	return lib
 }
 
@@ -94,6 +97,18 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	lib.Dart.Prefixes = mergeMaps(lib.Dart.Prefixes, d.Dart.Prefixes)
 	lib.Dart.Protos = mergeMaps(lib.Dart.Protos, d.Dart.Protos)
 	lib.Dart.Dependencies = mergeDartDependencies(lib.Dart.Dependencies, d.Dart.Dependencies)
+	return lib
+}
+
+// fillPython populates empty Python-specific fields in lib from the provided
+// default.
+func fillPython(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Python == nil {
+		lib.Python = &config.PythonPackage{}
+	}
+	if len(lib.Python.CommonGAPICPaths) == 0 {
+		lib.Python.CommonGAPICPaths = d.Python.CommonGAPICPaths
+	}
 	return lib
 }
 

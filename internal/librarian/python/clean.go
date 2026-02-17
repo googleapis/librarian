@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -28,16 +29,21 @@ type apiInfo struct {
 	// rootDir is the directory (relative to the package root) containing
 	// all the subdirectories, e.g. "google/cloud".
 	rootDir string
-	// commonDir is the directory (relative to rootDir) containing code which
+	// neutralDir is the directory (relative to rootDir) containing code which
 	// is generated for all APIs in a version-neutral way, e.g. "run".
-	commonDir string
+	neutralDir string
 	// versionDir is the directory (relative to rootDir) containing code which
 	// is specific to a single version, e.g. "run_v2". This is empty if the API
 	// path has no version component (e.g. for "google/shopping/type").
 	versionDir string
 }
 
-var errBadAPIPath = errors.New("invalid API path")
+const neutralSourcePlaceholder = "{neutral-source}"
+
+var (
+	errBadAPIPath               = errors.New("invalid API path")
+	errNoCommonGAPICFilesConfig = errors.New("when cleaning a GAPIC package, a config with common GAPIC paths must be provided")
+)
 
 // CleanLibrary removes all generated code from beneath the given library's
 // output directory. If the output directory does not currently exist, this
@@ -86,11 +92,11 @@ func cleanProtoOnly(api *config.API, lib *config.Library) error {
 			continue
 		}
 		name := dirEntry.Name()
-		if !strings.HasSuffix(name, "_pb2.py") && !strings.HasSuffix(name, "_pb2.pyi") {
+		if !strings.HasSuffix(name, "_pb2.py") && !strings.HasSuffix(name, "_pb2.pyi") && !strings.HasSuffix(name, ".proto") {
 			continue
 		}
-		if err := os.Remove(filepath.Join(dir, name)); err != nil {
-			return fmt.Errorf("error deleting %s from %s: %w", name, dir, err)
+		if err := deleteUnlessKept(lib, filepath.Join(api.Path, name)); err != nil {
+			return fmt.Errorf("error deleting %s/%s: %w", api.Path, name, err)
 		}
 	}
 	return nil
@@ -113,12 +119,12 @@ func cleanGAPIC(api *config.API, lib *config.Library) error {
 	if apiInfo.versionDir == "" {
 		return nil
 	}
-	dir := filepath.Join(lib.Output, apiInfo.rootDir, apiInfo.versionDir)
-	if err := os.RemoveAll(dir); err != nil {
+	srcDir := filepath.Join(apiInfo.rootDir, apiInfo.versionDir)
+	if err := deleteUnlessKept(lib, srcDir); err != nil {
 		return err
 	}
-	docsDir := filepath.Join(lib.Output, "docs", apiInfo.versionDir)
-	return os.RemoveAll(docsDir)
+	docsDir := filepath.Join("docs", apiInfo.versionDir)
+	return deleteUnlessKept(lib, docsDir)
 }
 
 // cleanGAPICCommon cleans the common output created for packages containing
@@ -128,44 +134,51 @@ func cleanGAPICCommon(lib *config.Library) error {
 	if err != nil {
 		return err
 	}
-	// Whole directories to delete
-	if err := os.RemoveAll(filepath.Join(lib.Output, "samples", "generated")); err != nil {
+	if lib.Python == nil {
+		return errNoCommonGAPICFilesConfig
+	}
+	if len(lib.Python.CommonGAPICPaths) == 0 {
+		return errNoCommonGAPICFilesConfig
+	}
+	neutralDir := filepath.Join(apiInfo.rootDir, apiInfo.neutralDir)
+	for _, path := range lib.Python.CommonGAPICPaths {
+		replacedPath := strings.ReplaceAll(path, neutralSourcePlaceholder, neutralDir)
+		if err := deleteUnlessKept(lib, replacedPath); err != nil {
+			return fmt.Errorf("error deleting %s: %w", replacedPath, err)
+		}
+	}
+	return nil
+}
+
+// deleteUnlessKept deletes the specified path unless it's preserved by the
+// Keep configuration of the specifified library. If the path is a directory,
+// the function recurses, deleting all files below the directory (including
+// files in child directories). Directories themselves are never deleted. If
+// a directory appears in a Keep list, no child files are deleted.
+// The path is expected to be relative to the library's output directory.
+// No error is reported if the given path is not found.
+func deleteUnlessKept(lib *config.Library, path string) error {
+	if slices.Contains(lib.Keep, path) {
+		return nil
+	}
+	fullPath := filepath.Join(lib.Output, path)
+	stat, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(lib.Output, "tests", "unit", "gapic")); err != nil {
+	if !stat.IsDir() {
+		return os.Remove(fullPath)
+	}
+	children, err := os.ReadDir(fullPath)
+	if err != nil {
 		return err
 	}
-	// TODO: Check that there's never anything else here.
-	if err := os.RemoveAll(filepath.Join(lib.Output, "testing")); err != nil {
-		return err
-	}
-	// Individual files to delete.
-	files := []string{
-		filepath.Join(apiInfo.rootDir, apiInfo.commonDir, "__init__.py"),
-		filepath.Join(apiInfo.rootDir, apiInfo.commonDir, "gapic_version.py"),
-		"tests/unit/__init__.py",
-		"tests/__init__.py",
-		"setup.py",
-		"noxfile.py",
-		".coveragerc",
-		".flake8",
-		".repo-metadata.json",
-		"mypy.ini",
-		"README.rst",
-		"LICENSE",
-		"MANIFEST.in",
-		"setup.py",
-		"docs/static/_custom.css",
-		"docs/_templates/layout.html",
-		"docs/conf.py",
-		"docs/index.rst",
-		"docs/multiprocessing.rst",
-		"docs/README.rst",
-		"docs/summary_overview.md",
-	}
-	for _, file := range files {
-		if err := os.Remove(filepath.Join(lib.Output, file)); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("error deleting %s/%s: %w", lib.Output, file, err)
+	for _, child := range children {
+		if err := deleteUnlessKept(lib, filepath.Join(path, child.Name())); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -203,7 +216,7 @@ func deriveAPIInfo(api *config.API, lib *config.Library) (*apiInfo, error) {
 	}
 	return &apiInfo{
 		rootDir:    rootDir,
-		commonDir:  gapicName,
+		neutralDir: gapicName,
 		versionDir: versionDir,
 	}, nil
 }
