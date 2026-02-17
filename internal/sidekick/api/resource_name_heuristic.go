@@ -16,24 +16,25 @@ package api
 
 import "strings"
 
-// TargetList defines the service IDs (Protobuf package names) that are eligible for the gated heuristic.
-var TargetList = []string{
-	".google.cloud.compute",
-	".google.cloud.sql",
-	".google.cloud.bigquery",
+// eligibleServices defines the service IDs (Protobuf package names) that are eligible for the gated heuristic.
+var eligibleServices = map[string]bool{
+	".google.cloud.compute":  true,
+	".google.cloud.sql":      true,
+	".google.cloud.bigquery": true,
 }
 
 // IsHeuristicEligible returns true if the given service ID is in the allowlist for the resource name heuristic.
 func IsHeuristicEligible(serviceID string) bool {
-	for _, target := range TargetList {
-		if strings.HasPrefix(serviceID, target) {
-			return true
-		}
+	parts := strings.Split(serviceID, ".")
+	if len(parts) >= 4 {
+		// Extract the service prefix (e.g., ".google.cloud.compute.v1")
+		prefix := strings.Join(parts[:4], ".")
+		return eligibleServices[prefix]
 	}
 	return false
 }
 
-// baseVocabulary is the set of literal segments that are universal
+// baseVocabulary is the set of literal segments that are common
 // across Google Cloud APIs and should always be considered valid tokens.
 var baseVocabulary = map[string]bool{
 	"projects":        true,
@@ -43,7 +44,7 @@ var baseVocabulary = map[string]bool{
 	"billingAccounts": true,
 }
 
-// BaseVocabulary returns the set of literal segments that are universal
+// BaseVocabulary returns the set of literal segments that are common
 // across Google Cloud APIs and should always be considered valid tokens.
 // The returned map is read-only and should not be modified.
 func BaseVocabulary() map[string]bool {

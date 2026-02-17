@@ -1524,9 +1524,9 @@ type HeuristicMetadata struct {
 	// For exploded paths, it will have multiple entries (e.g., [["project", "instance"]]).
 	// For full capture paths, it will have a single entry (e.g., [["name"]]).
 	FieldPaths [][]string
-	// PathTemplate is the parameterized string for the resource name.
+	// PathTemplate is the template for the resource name.
 	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
-	PathTemplate string
+	PathTemplate *PathTemplate
 	// ServiceHost is the host name of the service, e.g., "compute.googleapis.com".
 	ServiceHost string
 }
