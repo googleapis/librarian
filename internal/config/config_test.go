@@ -95,7 +95,7 @@ func TestRead(t *testing.T) {
 				Rust: &RustCrate{
 					Modules: []*RustModule{
 						{
-							Source:          "google/storage/v2",
+							APIPath:         "google/storage/v2",
 							ServiceConfig:   "google/storage/v2/storage_v2.yaml",
 							Output:          "src/storage/src/generated/gapic",
 							Template:        "grpc-client",
@@ -107,7 +107,7 @@ func TestRead(t *testing.T) {
 							},
 						},
 						{
-							Source:   "google/storage/v2",
+							APIPath:  "google/storage/v2",
 							Output:   "src/storage/src/generated/protos/storage",
 							Template: "prost",
 						},

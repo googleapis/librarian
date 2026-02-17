@@ -491,12 +491,12 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 							Modules: []*config.RustModule{
 								{
 									Output:   "src/storage/src/generated/protos/storage",
-									Source:   "google/storage/v2",
+									APIPath:  "google/storage/v2",
 									Template: "prost",
 								},
 								{
 									Output:   "src/storage/control",
-									Source:   "none",
+									APIPath:  "none",
 									Template: "",
 								},
 							},
