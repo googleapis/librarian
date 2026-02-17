@@ -169,6 +169,8 @@ func cleanTitle(title string) string {
 	return strings.TrimSpace(title)
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/4083), remove this function since
+// short name is part of serviceconfig.API.
 // extractShortname extracts the short name from the API service name.
 // Example: "secretmanager.googleapis.com" -> "secretmanager".
 func extractShortname(serviceName string) string {
