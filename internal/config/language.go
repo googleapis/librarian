@@ -37,7 +37,8 @@ type GoAPI struct {
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`
 	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
-	// Use No prefix because we want the default behavior to generate rest numeric enums.
+	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
+	// to generate numeric enums
 	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
