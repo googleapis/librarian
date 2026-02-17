@@ -20,11 +20,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
-)
-
-var (
-	nestedVersion = regexp.MustCompile(`^v(\d+)$`)
 )
 
 // checkAndClean removes all files in dir except those in keep. The keep list
@@ -78,10 +73,6 @@ func clean(dir string, keepSet map[string]bool) error {
 			return err
 		}
 		if d.IsDir() {
-			// Skip the nested version, e.g., v2.
-			if nestedVersion.MatchString(d.Name()) {
-				return fs.SkipDir
-			}
 			return nil
 		}
 		rel, err := filepath.Rel(dir, path)

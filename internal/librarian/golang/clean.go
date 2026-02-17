@@ -86,6 +86,7 @@ func clean(dir string, keepSet map[string]bool) error {
 			return err
 		}
 		if d.IsDir() {
+			// Skip the nested version, e.g., v2.
 			if nestedVersion.MatchString(d.Name()) {
 				return fs.SkipDir
 			}
