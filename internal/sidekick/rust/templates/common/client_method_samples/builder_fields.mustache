@@ -12,34 +12,33 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}{{!
-Terminate each line in a comment so
-(a) we can read this code as each case is in a separate line,and
-(b) the newline is suppressed in the output to get tighter code.
-Use no newline at the end of file so the partials are all merged into a single line.
-}}{{#AIPStandardGetInfo}}{{!
-}}.set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name){{!
-}}{{/AIPStandardGetInfo}}{{!
-}}{{#AIPStandardDeleteInfo}}{{!
-}}.set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name){{!
-}}{{/AIPStandardDeleteInfo}}{{!
-}}{{#AIPStandardUndeleteInfo}}{{!
-}}.set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name){{!
-}}{{/AIPStandardUndeleteInfo}}{{!
-}}{{#AIPStandardCreateInfo}}{{!
-}}.set_{{ParentRequestField.Codec.SetterName}}(parent){{!
-}}{{#ResourceIDRequestField}}{{!
-}}.set_{{Codec.SetterName}}(id){{!
-}}{{/ResourceIDRequestField}}{{!
-}}.set_{{ResourceRequestField.Codec.SetterName}}({{ResourceRequestField.MessageType.Codec.Name}}::new()/* set fields */){{!
-}}{{/AIPStandardCreateInfo}}{{!
-}}{{#AIPStandardUpdateInfo}}{{!
-}}.set_{{ResourceRequestField.Codec.SetterName}}({{ResourceRequestField.MessageType.Codec.Name}}::new().set_name(name)/* set fields */){{!
-}}{{#UpdateMaskRequestField}}{{!
-}}.set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated", "fields"])){{!
-}}{{/UpdateMaskRequestField}}{{!
-}}{{/AIPStandardUpdateInfo}}{{!
-}}{{#AIPStandardListInfo}}{{!
-}}.set_{{ParentRequestField.Codec.SetterName}}(parent){{!
-}}{{/AIPStandardListInfo}}{{!
-}}{{^IsAIPStandard}}/* set fields */{{/IsAIPStandard}}
+}}
+{{#AIPStandardGetInfo}}
+///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
+{{/AIPStandardGetInfo}}
+{{#AIPStandardDeleteInfo}}
+///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
+{{/AIPStandardDeleteInfo}}
+{{#AIPStandardUndeleteInfo}}
+///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
+{{/AIPStandardUndeleteInfo}}
+{{#AIPStandardCreateInfo}}
+///         .set_{{ParentRequestField.Codec.SetterName}}(parent){{#ResourceIDRequestField}}.set_{{Codec.SetterName}}("{{Codec.SetterName}}_value"){{/ResourceIDRequestField}}
+///         .set_{{ResourceRequestField.Codec.SetterName}}(
+///             {{ResourceRequestField.MessageType.Codec.Name}}::new()/* set fields */
+///         )
+{{/AIPStandardCreateInfo}}
+{{#AIPStandardUpdateInfo}}
+///         .set_{{ResourceRequestField.Codec.SetterName}}(
+///             {{ResourceRequestField.MessageType.Codec.Name}}::new().set_name(name)/* set fields */
+///         )
+{{#UpdateMaskRequestField}}
+///         .set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated.field.path1", "updated.field.path2"]))
+{{/UpdateMaskRequestField}}
+{{/AIPStandardUpdateInfo}}
+{{#AIPStandardListInfo}}
+///         .set_{{ParentRequestField.Codec.SetterName}}(parent)
+{{/AIPStandardListInfo}}
+{{^IsAIPStandard}}
+///         /* set fields */
+{{/IsAIPStandard}}
