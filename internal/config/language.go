@@ -278,6 +278,10 @@ type PythonPackage struct {
 	// that API.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByAPI map[string][]string `yaml:"opt_args_by_api,omitempty"`
+
+	// ProtoOnlyAPIs contains the list of API paths which are proto-only, so
+	// should use regular protoc Python generation instead of GAPIC.
+	ProtoOnlyAPIs []string `yaml:"proto_only_apis,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.
