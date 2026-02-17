@@ -78,6 +78,8 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	return keepSet, nil
 }
 
+// clean traverses the specified directory and removes files that are not present in the keepSet.
+// It also skips directories that match the nestedVersion regex pattern.
 func clean(dir string, keepSet map[string]bool) error {
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
