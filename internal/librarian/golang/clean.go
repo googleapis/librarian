@@ -29,6 +29,7 @@ var (
 	nestedVersion = regexp.MustCompile(`^v(\d+)$`)
 )
 
+// CleanGo cleans up a Go library and its associated snippets.
 func CleanGo(library *config.Library) (*config.Library, error) {
 	libraryDir := filepath.Join(library.Output, library.Name)
 	keepSet, err := check(libraryDir, library.Keep)
