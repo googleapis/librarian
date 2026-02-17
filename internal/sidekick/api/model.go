@@ -300,6 +300,8 @@ type Method struct {
 	SourceServiceID string
 	// Codec contains language specific annotations.
 	Codec any
+	// HeuristicMetadata contains the results of the resource name identification heuristic, if any.
+	HeuristicMetadata *HeuristicMetadata
 }
 
 // RoutingCombos returns all combinations of routing parameters.
@@ -1513,4 +1515,18 @@ type ResourceReference struct {
 // IsResourceReference returns true if the field is annotated with google.api.resource_reference.
 func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
+}
+
+// HeuristicMetadata contains the results of the resource name identification heuristic.
+// It provides the formula used by language-specific generators to inject tracing attributes.
+type HeuristicMetadata struct {
+	// FieldPaths is a list of paths to the fields that compose the resource name.
+	// For exploded paths, it will have multiple entries (e.g, [["project", "instance"]]).
+	// For full capture paths, it will have a single entry (e.g, [["name"]]).
+	FieldPaths [][]string
+	// PathTemplate is the parameterized string for the resource name.
+	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
+	PathTemplate string
+	// ServiceHost is the host of name of the service, e.g., "compute.googleapis.com".
+	ServiceHost string
 }
