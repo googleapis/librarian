@@ -18,19 +18,32 @@ import "github.com/googleapis/librarian/internal/yaml"
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
+	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
-	GoAPIs                      []*GoAPI `yaml:"go_apis,omitempty"`
-	ModulePathVersion           string   `yaml:"module_path_version,omitempty"`
+	// GoAPIs is a list of Go-specific API configurations.
+	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
+	// ModulePathVersion is the version of the Go module path.
+	ModulePathVersion string `yaml:"module_path_version,omitempty"`
 }
 
 // GoAPI represents configuration for a single API within a Go module.
 type GoAPI struct {
-	Path            string   `yaml:"path,omitempty"`
-	ClientDirectory string   `yaml:"client_directory,omitempty"`
-	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
-	ImportPath      string   `yaml:"import_path,omitempty"`
-	NestedProtos    []string `yaml:"nested_protos,omitempty"`
-	ProtoPackage    string   `yaml:"proto_package,omitempty"`
+	// ClientDirectory is the directory where the client is generated, relative to Library.Output.
+	ClientDirectory string `yaml:"client_directory,omitempty"`
+	// DisableGAPIC determines whether to generate the GAPIC client.
+	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
+	// ImportPath is the Go import path for the API.
+	ImportPath string `yaml:"import_path,omitempty"`
+	// NestedProtos is a list of nested proto files.
+	NestedProtos []string `yaml:"nested_protos,omitempty"`
+	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
+	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
+	// to generate numeric enums
+	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+	// ProtoPackage is the proto package name.
+	ProtoPackage string `yaml:"proto_package,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.
