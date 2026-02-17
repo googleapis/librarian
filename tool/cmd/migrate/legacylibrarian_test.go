@@ -308,6 +308,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 }
 
 func TestBuildGoLibraries(t *testing.T) {
+	addKeep = map[string][]string{
+		"testLib": {
+			"file-to-keep-1.go",
+			"file-to-keep-2.go",
+		},
+	}
 	for _, test := range []struct {
 		name  string
 		input *MigrationInput
@@ -466,6 +472,31 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "accessapproval",
 					Keep: []string{"aliasshim/aliasshim.go"},
+				},
+			},
+		},
+		{
+			// addKeep is override at the top of this test.
+			name: "additional keep files",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "testLib",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+			},
+			want: []*config.Library{
+				{
+					Name: "testLib",
+					Keep: []string{
+						"file-to-keep-1.go",
+						"file-to-keep-2.go",
+					},
 				},
 			},
 		},
