@@ -178,7 +178,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI),
 		"metadata",
 	}
-	if !goAPI.NoRESTNumericEnums {
+	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
 	if sc != nil {
