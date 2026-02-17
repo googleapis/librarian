@@ -71,7 +71,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
 	case languageRust:
-		lib, err := findLibrary(cfg, name)
+		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
 		}

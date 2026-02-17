@@ -246,7 +246,7 @@ func TestFindLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := findLibrary(test.cfg, test.libraryName)
+			got, err := FindLibrary(test.cfg, test.libraryName)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("got error %v, want %v", err, test.wantErr)
