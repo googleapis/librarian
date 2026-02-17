@@ -65,7 +65,9 @@ func CleanLibrary(lib *config.Library) error {
 				return err
 			}
 		} else {
-			cleanGAPIC(api, lib)
+			if err := cleanGAPIC(api, lib); err != nil {
+				return err
+			}
 			anyGAPIC = true
 		}
 	}
