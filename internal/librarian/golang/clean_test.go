@@ -33,6 +33,7 @@ func TestCleanGo_Success(t *testing.T) {
 		snippetFiles []string
 		keep         []string
 		wantOutput   []string
+		wantSnippets []string
 	}{
 		{
 			name:         "removes all except keep list",
@@ -47,6 +48,14 @@ func TestCleanGo_Success(t *testing.T) {
 			snippetFiles: []string{"snippet1.go"},
 			keep:         []string{},
 			wantOutput:   []string{},
+		},
+		{
+			name:         "nested version",
+			outputFiles:  []string{"file1.go", "file2.go", "v2/nested_file.go"},
+			snippetFiles: []string{"v2/snippet.go"},
+			keep:         []string{},
+			wantOutput:   []string{"v2/nested_file.go"},
+			wantSnippets: []string{"internal/generated/snippets/testlib/v2/snippet.go"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -77,8 +86,8 @@ func TestCleanGo_Success(t *testing.T) {
 			}
 
 			gotSnippetFiles := getFilesInDir(t, snippetPath, root)
-			if !slices.Equal(gotSnippetFiles, []string{}) {
-				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, []string{})
+			if !slices.Equal(gotSnippetFiles, test.wantSnippets) {
+				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, test.wantSnippets)
 			}
 		})
 	}
