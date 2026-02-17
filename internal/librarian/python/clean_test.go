@@ -84,6 +84,8 @@ func TestCleanLibrary(t *testing.T) {
 							// This is in the keep list as well, so should be kept
 							"{neutral-source}/keep-me.txt",
 							"docs/delete-me.txt",
+							"doesn't-exist.txt",
+							"delete-me-directory",
 						},
 					},
 				},
@@ -101,11 +103,15 @@ func TestCleanLibrary(t *testing.T) {
 				"google/cloud/secretmanager_v1/delete-me.txt",
 				"google/cloud/secretmanager_v1/keep-me.txt",
 				"docs/delete-me.txt",
+				"delete-me-directory/a.txt",
+				"delete-me-directory/subdirectory/b.txt",
 			},
 			wantDeleted: []string{
 				"google/cloud/secretmanager/delete-me.txt",
 				"google/cloud/secretmanager_v1/delete-me.txt",
 				"docs/delete-me.txt",
+				"delete-me-directory/a.txt",
+				"delete-me-directory/subdirectory/b.txt",
 			},
 		},
 	} {

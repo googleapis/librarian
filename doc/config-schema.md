@@ -69,10 +69,11 @@ This document describes the schema for the librarian.yaml.
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
+| `python` | [PythonDefault](#pythondefault-configuration) (optional) | Python contains Python-specific default configuration. |
 
 ## Library Configuration
 
-[Link to code](../internal/config/config.go#L150)
+[Link to code](../internal/config/config.go#L153)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
@@ -96,14 +97,14 @@ This document describes the schema for the librarian.yaml.
 
 ## API Configuration
 
-[Link to code](../internal/config/config.go#L219)
+[Link to code](../internal/config/config.go#L222)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
 ## DartPackage Configuration
 
-[Link to code](../internal/config/language.go#L288)
+[Link to code](../internal/config/language.go#L300)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -145,11 +146,19 @@ This document describes the schema for the librarian.yaml.
 | `go_apis` | list of [GoAPI](#goapi-configuration) (optional) |  |
 | `module_path_version` | string |  |
 
-## PythonPackage Configuration
+## PythonDefault Configuration
 
-[Link to code](../internal/config/language.go#L269)
+[Link to code](../internal/config/language.go#L291)
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `common_gapic_paths` | list of string | CommonGAPICPaths contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). |
+
+## PythonPackage Configuration
+
+[Link to code](../internal/config/language.go#L270)
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| (embedded) | [PythonDefault](#pythondefault-configuration) |  |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 | `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
