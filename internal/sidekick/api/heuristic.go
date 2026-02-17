@@ -33,14 +33,19 @@ func IsHeuristicEligible(serviceID string) bool {
 	return false
 }
 
+// baseVocabulary is the set of literal segments that are universal
+// across Google Cloud APIs and should always be considered valid tokens.
+var baseVocabulary = map[string]bool{
+	"projects":        true,
+	"locations":       true,
+	"folders":         true,
+	"organizations":   true,
+	"billingAccounts": true,
+}
+
 // BaseVocabulary returns the set of literal segments that are universal
 // across Google Cloud APIs and should always be considered valid tokens.
+// The returned map is read-only and should not be modified.
 func BaseVocabulary() map[string]bool {
-	return map[string]bool{
-		"projects":        true,
-		"locations":       true,
-		"folders":         true,
-		"organizations":   true,
-		"billingAccounts": true,
-	}
+	return baseVocabulary
 }

@@ -1521,12 +1521,12 @@ func (f *Field) IsResourceReference() bool {
 // It provides the formula used by language-specific generators to inject tracing attributes.
 type HeuristicMetadata struct {
 	// FieldPaths is a list of paths to the fields that compose the resource name.
-	// For exploded paths, it will have multiple entries (e.g, [["project", "instance"]]).
-	// For full capture paths, it will have a single entry (e.g, [["name"]]).
+	// For exploded paths, it will have multiple entries (e.g., [["project", "instance"]]).
+	// For full capture paths, it will have a single entry (e.g., [["name"]]).
 	FieldPaths [][]string
 	// PathTemplate is the parameterized string for the resource name.
 	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
 	PathTemplate string
-	// ServiceHost is the host of name of the service, e.g., "compute.googleapis.com".
+	// ServiceHost is the host name of the service, e.g., "compute.googleapis.com".
 	ServiceHost string
 }
