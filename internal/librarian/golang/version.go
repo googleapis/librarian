@@ -105,18 +105,6 @@ func clientDirectory(library *config.Library, apiPath string) string {
 	return ""
 }
 
-func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
-	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
-		}
-	}
-	return nil
-}
-
 // writeLicenseHeader writes the license header as Go comments to the given file.
 func writeLicenseHeader(f *os.File) error {
 	year := time.Now().Format("2006")
