@@ -103,7 +103,7 @@ This document describes the schema for the librarian.yaml.
 
 ## DartPackage Configuration
 
-[Link to code](../internal/config/language.go#L285)
+[Link to code](../internal/config/language.go#L289)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -153,6 +153,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
+| `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
 
 ## RustCrate Configuration
 
