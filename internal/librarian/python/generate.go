@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -101,7 +102,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// TODO(https://github.com/googleapis/librarian/issues/3210): generate
 	// directly in place.
 
-	stagingChildDirectory := getStagingChildDirectory(api.Path)
+	protoOnly := isProtoOnly(api, library)
+	stagingChildDirectory := getStagingChildDirectory(api.Path, protoOnly)
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return err
@@ -141,10 +143,42 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("%s: %w", cmd.String(), err)
 	}
 
+	// Copy the proto files as well as the generated code for proto-only libraries.
+	if protoOnly {
+		if err := stageProtoFiles(googleapisDir, stagingDir, protos); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func createProtocOptions(ch *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+func stageProtoFiles(googleapisDir, targetDir string, relativeProtoPaths []string) error {
+	for _, proto := range relativeProtoPaths {
+		sourceProtoFile := filepath.Join(googleapisDir, proto)
+		content, err := os.ReadFile(sourceProtoFile)
+		if err != nil {
+			return fmt.Errorf("reading proto file %s failed: %w", sourceProtoFile, err)
+		}
+		targetProtoFile := filepath.Join(targetDir, proto)
+		dir := filepath.Dir(targetProtoFile)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("creating directory %s failed: %w", dir, err)
+		}
+		if err := os.WriteFile(targetProtoFile, content, 0644); err != nil {
+			return fmt.Errorf("writing proto file %s failed: %w", targetProtoFile, err)
+		}
+	}
+	return nil
+}
+
+func createProtocOptions(api *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+	if isProtoOnly(api, library) {
+		return []string{
+			fmt.Sprintf("--python_out=%s", stagingDir),
+			fmt.Sprintf("--pyi_out=%s", stagingDir),
+		}, nil
+	}
 	// GAPIC library: generate full client library
 	opts := []string{"metadata"}
 
@@ -155,7 +189,7 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	}
 	// Then options that apply to this specific api
 	if library.Python != nil && len(library.Python.OptArgsByAPI) > 0 {
-		apiOptArgs, ok := library.Python.OptArgsByAPI[ch.Path]
+		apiOptArgs, ok := library.Python.OptArgsByAPI[api.Path]
 		if ok {
 			opts = append(opts, apiOptArgs...)
 		}
@@ -187,7 +221,7 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	}
 
 	// Add gRPC service config (retry/timeout settings)
-	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, ch.Path)
+	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -200,12 +234,12 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 
-	api, err := serviceconfig.Find(googleapisDir, ch.Path, serviceconfig.LangPython)
+	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangPython)
 	if err != nil {
 		return nil, err
 	}
-	if api != nil && api.ServiceConfig != "" {
-		opts = append(opts, fmt.Sprintf("service-yaml=%s", api.ServiceConfig))
+	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
+		opts = append(opts, fmt.Sprintf("service-yaml=%s", apiMetadata.ServiceConfig))
 	}
 
 	return []string{
@@ -214,13 +248,17 @@ func createProtocOptions(ch *config.API, library *config.Library, googleapisDir,
 	}, nil
 }
 
+func isProtoOnly(api *config.API, library *config.Library) bool {
+	return library.Python != nil && slices.Contains(library.Python.ProtoOnlyAPIs, api.Path)
+}
+
 // getStagingChildDirectory determines where within owl-bot-staging/{library-name} the
 // generated code the given API path should be staged. This is not quite equivalent
 // to _get_staging_child_directory in the Python container, as for proto-only directories
 // we don't want the apiPath suffix.
-func getStagingChildDirectory(apiPath string) string {
+func getStagingChildDirectory(apiPath string, isProtoOnly bool) string {
 	versionCandidate := filepath.Base(apiPath)
-	if strings.HasPrefix(versionCandidate, "v") {
+	if strings.HasPrefix(versionCandidate, "v") || isProtoOnly {
 		return versionCandidate
 	} else {
 		return versionCandidate + "-py"

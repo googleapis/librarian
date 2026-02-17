@@ -33,12 +33,6 @@ var (
 	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
 )
 
-type libraryInfo struct {
-	descriptionOverride string
-	name                string
-	releaseLevel        string
-}
-
 // RepoMetadata represents the .repo-metadata.json file structure.
 type RepoMetadata struct {
 	// APIDescription is the description of the API.
@@ -101,36 +95,31 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 	if api.ServiceConfig == "" {
 		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
 	}
-	info := &libraryInfo{
-		descriptionOverride: library.DescriptionOverride,
-		name:                library.Name,
-		releaseLevel:        library.ReleaseLevel,
-	}
-	return FromAPI(api, info, language, repo, defaultVersion, outdir)
+	return FromAPI(api, library, language, repo, defaultVersion, outdir)
 }
 
-// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and additional library information.
-func FromAPI(api *serviceconfig.API, info *libraryInfo, language, repo, defaultVersion, outputDir string) error {
+// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
+func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, defaultVersion, outputDir string) error {
 	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
-	metadata := &RepoMetadata{
-		APIID:               api.ServiceName,
-		NamePretty:          cleanTitle(api.Title),
-		DefaultVersion:      defaultVersion,
-		ClientDocumentation: clientDocURL,
-		ReleaseLevel:        info.releaseLevel,
-		Language:            language,
-		LibraryType:         "GAPIC_AUTO",
-		Repo:                repo,
-		DistributionName:    info.name,
+	apiDescription := api.Description
+	if library.DescriptionOverride != "" {
+		apiDescription = library.DescriptionOverride
 	}
-
-	metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
-	metadata.IssueTracker = api.NewIssueURI
-	metadata.APIShortname = api.ShortName
-	metadata.Name = api.ShortName
-	metadata.APIDescription = api.Description
-	if info.descriptionOverride != "" {
-		metadata.APIDescription = info.descriptionOverride
+	metadata := &RepoMetadata{
+		APIDescription:       apiDescription,
+		APIID:                api.ServiceName,
+		APIShortname:         api.ShortName,
+		ClientDocumentation:  clientDocURL,
+		DefaultVersion:       defaultVersion,
+		DistributionName:     library.Name,
+		IssueTracker:         api.NewIssueURI,
+		Language:             language,
+		LibraryType:          "GAPIC_AUTO",
+		Name:                 api.ShortName,
+		NamePretty:           cleanTitle(api.Title),
+		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
+		ReleaseLevel:         library.ReleaseLevel,
+		Repo:                 repo,
 	}
 
 	data, err := json.MarshalIndent(metadata, "", "    ")

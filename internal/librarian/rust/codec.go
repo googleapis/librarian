@@ -113,7 +113,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.ReleaseLevel != "" {
 		codec["release-level"] = library.ReleaseLevel
 	}
-	if library.SkipPublish {
+	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}
 	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
@@ -266,6 +266,15 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 				ID:      override.ID,
 				Match:   override.Match,
 				Replace: override.Replace,
+			}
+		}
+	}
+	if len(library.Rust.PaginationOverrides) > 0 {
+		modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+		for i, override := range library.Rust.PaginationOverrides {
+			modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+				ID:        override.ID,
+				ItemField: override.ItemField,
 			}
 		}
 	}

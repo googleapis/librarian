@@ -120,7 +120,7 @@ NAME:
 
 USAGE:
 
-	librarian update [--all | source]
+	librarian update <sources...>
 
 DESCRIPTION:
 
@@ -133,7 +133,6 @@ DESCRIPTION:
 
 OPTIONS:
 
-	--all       update discovery and googleapis sources
 	--help, -h  show help
 
 GLOBAL OPTIONS:

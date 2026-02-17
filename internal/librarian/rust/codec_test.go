@@ -167,7 +167,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name:        "google-cloud-secretmanager",
 				Roots:       []string{"googleapis"},
-				SkipPublish: true,
+				SkipRelease: true,
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -791,6 +791,73 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with pagination overrides in rust module",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					PaginationOverrides: []config.RustPaginationOverride{
+						{
+							ID:        ".google.cloud.example.v1.Example.ListExamples",
+							ItemField: "examples",
+						},
+					},
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+						},
+					},
+				},
+			},
+			want: &parser.ModelConfig{
+				Language: "rust",
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
+				},
+				PaginationOverrides: []sidekickconfig.PaginationOverride{
+					{
+						ID:        ".google.cloud.example.v1.Example.ListExamples",
+						ItemField: "examples",
+					},
+				},
+			},
+		},
+		{
+			name: "with pagination overrides in multiple rust modules",
+			library: &config.Library{
+				Name: "google-cloud-example",
+				Rust: &config.RustCrate{
+					PaginationOverrides: []config.RustPaginationOverride{
+						{
+							ID:        ".google.cloud.example.v1.Example.ListExamples",
+							ItemField: "examples",
+						},
+					},
+					Modules: []*config.RustModule{
+						{
+							Template: "prost",
+						},
+						{
+							Template: "prost",
+						},
+					},
+				},
+			},
+			want: &parser.ModelConfig{
+				Language: "rust",
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
+				},
+				PaginationOverrides: []sidekickconfig.PaginationOverride{
+					{
+						ID:        ".google.cloud.example.v1.Example.ListExamples",
+						ItemField: "examples",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			sources := &source.Sources{
@@ -811,6 +878,9 @@ func TestModuleToModelConfig(t *testing.T) {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 				commentOverrides = append(commentOverrides, got.CommentOverrides...)
+				if diff := cmp.Diff(test.want.PaginationOverrides, got.PaginationOverrides); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
 			}
 			if diff := cmp.Diff(test.want.CommentOverrides, commentOverrides); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -968,7 +1038,7 @@ func TestBuildCodec(t *testing.T) {
 				Version:       "0.1.0",
 				ReleaseLevel:  "preview",
 				CopyrightYear: "2024",
-				SkipPublish:   true,
+				SkipRelease:   true,
 				Keep:          []string{"src/mod1.rs", "src/mod2.rs", "other.txt"},
 			},
 			want: map[string]string{

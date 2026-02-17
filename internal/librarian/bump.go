@@ -154,7 +154,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 
 	var librariesToBump []*config.Library
 	for _, lib := range cfg.Libraries {
-		if lib.SkipPublish || lib.Version == "" {
+		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}
 		lastReleaseTagName := formatTagName(cfg.Default.TagFormat, lib)
@@ -394,7 +394,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 		return err
 	}
 	for _, lib := range cfg.Libraries {
-		if lib.SkipPublish {
+		if lib.SkipRelease {
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
