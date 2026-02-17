@@ -108,6 +108,14 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
+					Name:         "google-cloud-audit-log",
+					APIs:         []*config.API{{Path: "google/cloud/audit"}},
+					ReleaseLevel: "preview",
+					Python: &config.PythonPackage{
+						ProtoOnlyAPIs: []string{"google/cloud/audit"},
+					},
+				},
+				{
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
