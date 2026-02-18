@@ -149,7 +149,7 @@ func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
 
 // isEmptyRustModule returns true if the module is a placeholder that can be removed.
 func isEmptyRustModule(module *config.RustModule) bool {
-	return module.Source == "none" && module.Template == ""
+	return module.APIPath == "none" && module.Template == ""
 }
 
 // deleteEmptyRustModules returns a new slice of modules with empty modules removed.

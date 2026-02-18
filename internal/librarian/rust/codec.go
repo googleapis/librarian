@@ -222,10 +222,10 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 	var title string
-	if module.Source != "" && src["roots"] == "googleapis" {
-		api, err := serviceconfig.Find(sources.Googleapis, module.Source, serviceconfig.LangRust)
+	if module.APIPath != "" && src["roots"] == "googleapis" {
+		api, err := serviceconfig.Find(sources.Googleapis, module.APIPath, serviceconfig.LangRust)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
+			return nil, fmt.Errorf("failed to find service config for %q: %w", module.APIPath, err)
 		}
 		if api != nil && api.Title != "" {
 			title = api.Title
@@ -250,7 +250,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		Language:            language,
 		SpecificationFormat: specificationFormat,
 		ServiceConfig:       module.ServiceConfig,
-		SpecificationSource: module.Source,
+		SpecificationSource: module.APIPath,
 		Source:              src,
 		Codec:               buildModuleCodec(library, module),
 		Override: api.ModelOverride{
