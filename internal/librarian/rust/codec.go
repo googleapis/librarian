@@ -70,9 +70,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
 		if len(library.Rust.DocumentationOverrides) > 0 {
-			modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(library.Rust.DocumentationOverrides))
 			for i, override := range library.Rust.DocumentationOverrides {
-				modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+				modelCfg.CommentOverrides[i] = api.DocumentationOverride{
 					ID:      override.ID,
 					Match:   override.Match,
 					Replace: override.Replace,
@@ -260,9 +260,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		},
 	}
 	if len(module.DocumentationOverrides) > 0 {
-		modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
+		modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(module.DocumentationOverrides))
 		for i, override := range module.DocumentationOverrides {
-			modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+			modelCfg.CommentOverrides[i] = api.DocumentationOverride{
 				ID:      override.ID,
 				Match:   override.Match,
 				Replace: override.Replace,

@@ -44,7 +44,7 @@ type ModelConfig struct {
 	Codec map[string]string
 
 	// Documentation/pagination overrides
-	CommentOverrides    []config.DocumentationOverride
+	CommentOverrides    []api.DocumentationOverride
 	PaginationOverrides []api.PaginationOverride
 
 	// Discovery poller configurations
