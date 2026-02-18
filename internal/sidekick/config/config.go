@@ -28,17 +28,8 @@ type DocumentationOverride struct {
 	Replace string `toml:"replace"`
 }
 
-// PaginationOverride describes overrides for pagination config of a method.
-type PaginationOverride struct {
-	// The method ID.
-	ID string `toml:"id"`
-	// The name of the field used for `items`.
-	ItemField string `toml:"item-field"`
-}
-
 // Config is the main configuration struct.
 type Config struct {
-	Discovery           *Discovery              `toml:"discovery,omitempty"`
-	CommentOverrides    []DocumentationOverride `toml:"documentation-overrides,omitempty"`
-	PaginationOverrides []PaginationOverride    `toml:"pagination-overrides,omitempty"`
+	Discovery        *Discovery              `toml:"discovery,omitempty"`
+	CommentOverrides []DocumentationOverride `toml:"documentation-overrides,omitempty"`
 }

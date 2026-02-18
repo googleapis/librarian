@@ -107,7 +107,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updateMethodPagination(nil, model)
+	api.UpdateMethodPagination(nil, model)
 	wantID := "..zones.list"
 	got, ok := model.State.MethodByID[wantID]
 	if !ok {
@@ -134,7 +134,7 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updateMethodPagination(nil, model)
+	api.UpdateMethodPagination(nil, model)
 	wantID := "..machineTypes.aggregatedList"
 	got, ok := model.State.MethodByID[wantID]
 	if !ok {
