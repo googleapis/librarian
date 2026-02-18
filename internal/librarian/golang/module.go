@@ -64,6 +64,11 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
+// defaultImportPathAndClientDir returns the default Go import path and client directory
+// based on the provided API path.
+//
+// The API path is expected to be either google/cloud/{dir}/{version} or
+// google/cloud/{dir}/{nested}/{version}.
 func defaultImportPathAndClientDir(apiPath string) (string, string) {
 	dirs := strings.Split(apiPath, "/")
 	if len(dirs) == 5 {
