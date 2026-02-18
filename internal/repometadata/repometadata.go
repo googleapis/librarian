@@ -100,7 +100,7 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, defaultVersion, outputDir string) error {
-	clientDocURL := buildClientDocURL(language, api.ShortName)
+	clientDocURL := buildClientDocURL(api, library, language)
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
 		apiDescription = library.DescriptionOverride
@@ -136,12 +136,14 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 }
 
 // buildClientDocURL builds the client documentation URL based on language.
-func buildClientDocURL(language, serviceName string) string {
+func buildClientDocURL(api *serviceconfig.API, library *config.Library, language string) string {
 	switch language {
-	case "python":
-		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", serviceName)
-	case "rust":
-		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", serviceName)
+	case serviceconfig.LangGo:
+		return goClientDocURL(library, api.Path)
+	case serviceconfig.LangPython:
+		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", api.ShortName)
+	case serviceconfig.LangRust:
+		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", api.ShortName)
 	default:
 		return ""
 	}
