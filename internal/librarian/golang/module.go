@@ -29,10 +29,14 @@ func Fill(library *config.Library) *config.Library {
 	}
 	var goAPIs []*config.GoAPI
 	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
 		if !strings.HasPrefix(api.Path, "google/cloud") {
+			// Do nothing for non cloud API.
+			if goAPI != nil {
+				goAPIs = append(goAPIs, goAPI)
+			}
 			continue
 		}
-		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
 			goAPI = &config.GoAPI{
 				Path: api.Path,
