@@ -103,7 +103,7 @@ This document describes the schema for the librarian.yaml.
 
 ## DartPackage Configuration
 
-[Link to code](../internal/config/language.go#L301)
+[Link to code](../internal/config/language.go#L303)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -126,7 +126,7 @@ This document describes the schema for the librarian.yaml.
 
 ## GoAPI Configuration
 
-[Link to code](../internal/config/language.go#L30)
+[Link to code](../internal/config/language.go#L32)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_directory` | string | ClientDirectory is the directory where the client is generated, relative to Library.Output. |
@@ -145,10 +145,11 @@ This document describes the schema for the librarian.yaml.
 | `delete_generation_output_paths` | list of string | DeleteGenerationOutputPaths is a list of paths to delete before generation. |
 | `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | GoAPIs is a list of Go-specific API configurations. |
 | `module_path_version` | string | ModulePathVersion is the version of the Go module path. |
+| `nested_module` | string | NestedModule is the name of a nested module directory to skip during cleaning. |
 
 ## PythonPackage Configuration
 
-[Link to code](../internal/config/language.go#L282)
+[Link to code](../internal/config/language.go#L284)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
@@ -157,7 +158,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustCrate Configuration
 
-[Link to code](../internal/config/language.go#L148)
+[Link to code](../internal/config/language.go#L150)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
@@ -184,7 +185,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDefault Configuration
 
-[Link to code](../internal/config/language.go#L50)
+[Link to code](../internal/config/language.go#L52)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. These are inherited by all libraries. If a library defines its own package_dependencies, the library-specific ones take precedence over these defaults for dependencies with the same name. |
@@ -194,7 +195,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDiscovery Configuration
 
-[Link to code](../internal/config/language.go#L264)
+[Link to code](../internal/config/language.go#L266)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
@@ -202,7 +203,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDocumentationOverride Configuration
 
-[Link to code](../internal/config/language.go#L243)
+[Link to code](../internal/config/language.go#L245)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified element ID (e.g., .google.cloud.dialogflow.v2.Message.field). |
@@ -211,7 +212,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustModule Configuration
 
-[Link to code](../internal/config/language.go#L70)
+[Link to code](../internal/config/language.go#L72)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
@@ -240,7 +241,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPackageDependency Configuration
 
-[Link to code](../internal/config/language.go#L215)
+[Link to code](../internal/config/language.go#L217)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the dependency name. It is listed first so it appears at the top of each dependency entry in YAML. |
@@ -253,7 +254,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPaginationOverride Configuration
 
-[Link to code](../internal/config/language.go#L255)
+[Link to code](../internal/config/language.go#L257)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
@@ -261,7 +262,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPoller Configuration
 
-[Link to code](../internal/config/language.go#L273)
+[Link to code](../internal/config/language.go#L275)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `prefix` | string | Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
