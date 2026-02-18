@@ -20,8 +20,23 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/googleapis/librarian/internal/config"
+)
+
+var (
+	generatedRegex = []*regexp.Regexp{
+		regexp.MustCompile(`^auxiliary\.go$`),
+		regexp.MustCompile(`^auxiliary_go123\.go$`),
+		regexp.MustCompile(`^doc\.go$`),
+		regexp.MustCompile(`.*_client\.go$`),
+		regexp.MustCompile(`.*_client_example_go123_test\.go$`),
+		regexp.MustCompile(`.*_client_example_test\.go$`),
+		regexp.MustCompile(`^gapic_metadata\.json$`),
+		regexp.MustCompile(`^helpers\.go$`),
+		regexp.MustCompile(`.*\.pb\.go$`),
+	}
 )
 
 // Clean cleans up a Go library and its associated snippets.
@@ -95,7 +110,14 @@ func clean(dir, nestedModule string, keepSet map[string]bool) error {
 		if err != nil {
 			return err
 		}
-		if keepSet[rel] {
+		isGenerated := false
+		for _, re := range generatedRegex {
+			if re.MatchString(d.Name()) {
+				isGenerated = true
+				break
+			}
+		}
+		if keepSet[rel] || !isGenerated {
 			return nil
 		}
 		return os.Remove(path)
