@@ -22,7 +22,7 @@ import (
 )
 
 // Fill populates empty Go-specific fields from the api path.
-// Non-default configurations read from librarian.yaml will NOT be overridden.
+// Library configs takes precedence.
 func Fill(library *config.Library) *config.Library {
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
