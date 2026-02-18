@@ -195,6 +195,7 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 	return res
 }
 
+// fillLibraryDefaults populates language-specific default values for the library.
 func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
 	case languageGo:
