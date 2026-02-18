@@ -32,24 +32,18 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		ResourceByType: make(map[string]*Resource),
 	}
 	for _, m := range messages {
-		if m.Package != "" {
-			packageName = m.Package
-		}
+		packageName = m.Package
 		state.MessageByID[m.ID] = m
 		if m.Resource != nil {
 			state.ResourceByType[m.Resource.Type] = m.Resource
 		}
 	}
 	for _, e := range enums {
-		if e.Package != "" {
-			packageName = e.Package
-		}
+		packageName = e.Package
 		state.EnumByID[e.ID] = e
 	}
 	for _, s := range services {
-		if s.Package != "" {
-			packageName = s.Package
-		}
+		packageName = s.Package
 		state.ServiceByID[s.ID] = s
 		for _, m := range s.Methods {
 			state.MethodByID[m.ID] = m
