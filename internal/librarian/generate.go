@@ -80,7 +80,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 }
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
-	googleapisDir, rustSources, err := LoadSources(ctx, cfg)
+	googleapisDir, rustDartSources, err := LoadSources(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
 		g.Go(func() error {
-			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
+			return generate(gctx, cfg.Language, lib, googleapisDir, rustDartSources)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -146,16 +146,16 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sourc
 		googleapisDir = dir
 	}
 
-	var rustSources *source.Sources
+	var rustDartSources *source.Sources
 	if cfg.Language == languageRust || cfg.Language == languageDart {
 		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
 		if err != nil {
 			return "", nil, err
 		}
-		rustSources = sources
-		rustSources.Googleapis = googleapisDir
+		rustDartSources = sources
+		rustDartSources.Googleapis = googleapisDir
 	}
-	return googleapisDir, rustSources, nil
+	return googleapisDir, rustDartSources, nil
 }
 
 // postGenerate performs repository-level actions after all individual
