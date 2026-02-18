@@ -78,3 +78,48 @@ func parentName(id string) string {
 	}
 	return "."
 }
+
+// NewTestMessage creates a message with defaults for testing.
+func NewTestMessage(name string) *Message {
+	return &Message{
+		Name:    name,
+		ID:      "." + name,
+		Package: "test",
+	}
+}
+
+// NewTestService creates a service with defaults for testing.
+func NewTestService(name string) *Service {
+	return &Service{
+		Name:    name,
+		ID:      "." + name,
+		Package: "test",
+	}
+}
+
+// NewTestMethod creates a method with defaults for testing.
+func NewTestMethod(name string) *Method {
+	return &Method{
+		Name: name,
+		ID:   "." + name,
+		PathInfo: &PathInfo{
+			Bindings: []*PathBinding{{}},
+		},
+	}
+}
+
+// NewTestField creates a field with defaults for testing.
+func NewTestField(name string) *Field {
+	return &Field{
+		Name:     name,
+		JSONName: name,
+		ID:       "." + name,
+	}
+}
+
+// NewTestResource creates a resource with defaults for testing.
+func NewTestResource(typez string) *Resource {
+	return &Resource{
+		Type: typez,
+	}
+}
