@@ -721,7 +721,7 @@ func TestModuleToModelConfig(t *testing.T) {
 					Modules: []*config.RustModule{
 						{
 							Template: "prost",
-							Source:   "google/logging/type",
+							APIPath:  "google/logging/type",
 						},
 					},
 				},
@@ -775,7 +775,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Source: "conformance",
+							APIPath: "conformance",
 						},
 					},
 				},
