@@ -234,6 +234,28 @@ func TestPathTemplateBuilder(t *testing.T) {
 	}
 }
 
+func TestPathBindingHeuristic(t *testing.T) {
+	heuristic := &ResourceNameHeuristic{
+		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
+		PathTemplate: NewPathTemplate().
+			WithLiteral("projects").WithVariableNamed("project").
+			WithLiteral("zones").WithVariableNamed("zone").
+			WithLiteral("instances").WithVariableNamed("instance"),
+	}
+	binding := &PathBinding{
+		Verb:                  "GET",
+		ResourceNameHeuristic: heuristic,
+	}
+
+	if binding.Verb != "GET" {
+		t.Errorf("expected GET, got %s", binding.Verb)
+	}
+
+	if binding.ResourceNameHeuristic.FieldPaths[0][0] != "project" {
+		t.Errorf("expected project, got %s", binding.ResourceNameHeuristic.FieldPaths[0][0])
+	}
+}
+
 func TestIsSimpleMethod(t *testing.T) {
 	somePagination := &Field{}
 	someOperationInfo := &OperationInfo{}
