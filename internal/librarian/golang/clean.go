@@ -25,10 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-var (
-	nestedVersion = regexp.MustCompile(`^v(\d+)$`)
-)
-
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) (*config.Library, error) {
 	libraryDir := filepath.Join(library.Output, library.Name)
@@ -36,11 +32,15 @@ func Clean(library *config.Library) (*config.Library, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := clean(libraryDir, keepSet); err != nil {
+	var nestedModule string
+	if library.Go != nil {
+		nestedModule = library.Go.NestedModule
+	}
+	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
 		return nil, err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := clean(snippetDir, nil); err != nil {
+	if err := clean(snippetDir, nestedModule, nil); err != nil {
 		return nil, err
 	}
 	return library, nil
@@ -79,16 +79,13 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	return keepSet, nil
 }
 
-// clean traverses the specified directory and removes files that are not present in the keepSet.
-// It also skips directories that match the nestedVersion regex pattern.
-func clean(dir string, keepSet map[string]bool) error {
+func clean(dir, nestedModule string, keepSet map[string]bool) error {
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			// Skip the nested version, e.g., v2.
-			if nestedVersion.MatchString(d.Name()) {
+			if d.Name() == nestedModule {
 				return fs.SkipDir
 			}
 			return nil
