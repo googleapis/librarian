@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -179,7 +180,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
 	}
-	return fillDefaults(lib, defaults), nil
+	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
 
 // mergeMaps merges key-values of src and dst maps.
@@ -192,4 +193,13 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 		maps.Copy(res, dst)
 	}
 	return res
+}
+
+func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
+	switch language {
+	case languageGo:
+		return golang.Fill(lib), nil
+	default:
+		return lib, nil
+	}
 }
