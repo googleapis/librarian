@@ -86,7 +86,7 @@ func TestFill(t *testing.T) {
 			},
 		},
 		{
-			name: "skip non cloud api",
+			name: "skip non cloud api with nil Go module",
 			library: &config.Library{
 				Name: "ai",
 				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
@@ -95,6 +95,33 @@ func TestFill(t *testing.T) {
 				Name: "ai",
 				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
 				Go:   &config.GoModule{},
+			},
+		},
+		{
+			name: "skip non cloud api with Go module",
+			library: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/ai/generativelanguage/v1",
+							ClientDirectory: "generativelanguage",
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/ai/generativelanguage/v1",
+							ClientDirectory: "generativelanguage",
+						},
+					},
+				},
 			},
 		},
 		{
