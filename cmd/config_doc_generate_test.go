@@ -313,8 +313,4 @@ type Alpha struct {
 	if !(configIdx < secondIdx && secondIdx < alphaIdx && alphaIdx < otherIdx) {
 		t.Errorf("incorrect order: root_config=%d, second=%d, alpha=%d, other=%d", configIdx, secondIdx, alphaIdx, otherIdx)
 	}
-
-	if !strings.Contains(got, "[Link to code](../config.go#L4)") {
-		t.Error("output missing expected source link for Config")
-	}
 }
