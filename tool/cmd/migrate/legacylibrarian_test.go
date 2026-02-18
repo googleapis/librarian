@@ -116,6 +116,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
+					Keep:         []string{"CHANGES.md", "go.mod", "go.sum"},
 					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
@@ -234,9 +235,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
+					Keep:         []string{"CHANGES.md", "go.mod", "go.sum"},
 					Output:       ".",
-					TagFormat:    defaultTagFormat,
 					ReleaseLevel: "ga",
+					TagFormat:    defaultTagFormat,
 				},
 				Libraries: []*config.Library{
 					{

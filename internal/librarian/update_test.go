@@ -194,8 +194,8 @@ func TestUpdateCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "all",
-			args: []string{"librarian", "update", "--all"},
+			name: "multiple sources",
+			args: []string{"librarian", "update", "discovery", "googleapis"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
 				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
@@ -260,14 +260,9 @@ func TestUpdateCommand_Errors(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "no args",
+			name:    "no sources provided",
 			args:    []string{"librarian", "update"},
-			wantErr: errMissingSourceOrAllFlag,
-		},
-		{
-			name:    "both source and all flag",
-			args:    []string{"librarian", "update", "--all", "googleapis"},
-			wantErr: errBothSourceAndAllFlag,
+			wantErr: errNoSourcesProvided,
 		},
 		{
 			name:    "unknown source",

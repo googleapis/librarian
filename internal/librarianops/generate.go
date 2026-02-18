@@ -48,13 +48,12 @@ directory (repo name is inferred from the directory basename).
 For each repository, librarianops will:
   1. Clone the repository to a temporary directory (or use existing directory with -C)
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
-  3. Resolve librarian version from @main and update version field in librarian.yaml
-  4. Run librarian tidy
-  5. Run librarian update --all
-  6. Run librarian generate --all
-  7. Run cargo update --workspace (google-cloud-rust only)
-  8. Commit changes
-  9. Create a pull request`,
+  3. Run librarian tidy
+  4. Run librarian update for configured sources (discovery, googleapis)
+  5. Run librarian generate --all
+  6. Run cargo update --workspace (google-cloud-rust only)
+  7. Commit changes
+  8. Create a pull request`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "C",
@@ -115,17 +114,23 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 	if err != nil {
 		return err
 	}
-	if err := updateLibrarianVersion(version, repoDir); err != nil {
-		return err
-	}
 	if repoName != repoFake {
 		if err := runLibrarianWithVersion(ctx, version, verbose, "tidy"); err != nil {
 			return err
 		}
 	}
 	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, verbose, "update", "--all"); err != nil {
+		configPath := filepath.Join(repoDir, "librarian.yaml")
+		cfg, err := yaml.Read[config.Config](configPath)
+		if err != nil {
 			return err
+		}
+		sources := sourcesToUpdate(cfg)
+		if len(sources) > 0 {
+			args := append([]string{"update"}, sources...)
+			if err := runLibrarianWithVersion(ctx, version, verbose, args...); err != nil {
+				return err
+			}
 		}
 	}
 	if err := runLibrarianWithVersion(ctx, version, verbose, "generate", "--all"); err != nil {
@@ -203,20 +208,24 @@ func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
 	return mod.Version, nil
 }
 
-func updateLibrarianVersion(version, repoDir string) error {
-	configPath := filepath.Join(repoDir, "librarian.yaml")
-	cfg, err := yaml.Read[config.Config](configPath)
-	if err != nil {
-		return err
-	}
-	cfg.Version = version
-	return yaml.Write(configPath, cfg)
-}
-
 func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {
 	if verbose {
 		args = append([]string{"-v"}, args...)
 	}
 	return command.Run(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
+}
+
+func sourcesToUpdate(cfg *config.Config) []string {
+	if cfg.Sources == nil {
+		return nil
+	}
+	var sources []string
+	if cfg.Sources.Discovery != nil {
+		sources = append(sources, "discovery")
+	}
+	if cfg.Sources.Googleapis != nil {
+		sources = append(sources, "googleapis")
+	}
+	return sources
 }

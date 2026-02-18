@@ -533,6 +533,7 @@ var APIs = []API{
 	{Path: "google/shopping/type", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
 	{Path: "google/spanner/admin/database/v1"},
 	{Path: "google/spanner/admin/instance/v1"},
+	{Path: "google/spanner/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
 	{Path: "google/storage/control/v2"},
 	{Path: "google/storage/v2", Transports: map[string]Transport{LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC}},
 	{Path: "google/storagetransfer/v1"},

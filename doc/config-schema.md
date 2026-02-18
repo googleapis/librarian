@@ -62,6 +62,7 @@ This document describes the schema for the librarian.yaml.
 [Link to code](../internal/config/config.go#L124)
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `keep` | list of string | Keep lists files and directories to preserve during regeneration. |
 | `output` | string | Output is the directory where code is written. For example, for Rust this is src/generated. |
 | `release_level` | string | ReleaseLevel is either "stable" or "preview". |
 | `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
@@ -71,7 +72,7 @@ This document describes the schema for the librarian.yaml.
 
 ## Library Configuration
 
-[Link to code](../internal/config/config.go#L148)
+[Link to code](../internal/config/config.go#L150)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the library name, such as "secretmanager" or "storage". |
@@ -84,8 +85,7 @@ This document describes the schema for the librarian.yaml.
 | `release_level` | string | ReleaseLevel is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
 | `roots` | list of string | Roots specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | SkipGenerate disables code generation for this library. |
-| `skip_publish` | bool | SkipPublish disables publishing for this library. |
-| `skip_release` | bool | SkipRelease disables releasing for this library. |
+| `skip_release` | bool | SkipRelease disables release for this library. |
 | `specification_format` | string | SpecificationFormat specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Veneer indicates this library has handwritten code. A veneer may contain generated libraries. |
@@ -96,14 +96,14 @@ This document describes the schema for the librarian.yaml.
 
 ## API Configuration
 
-[Link to code](../internal/config/config.go#L220)
+[Link to code](../internal/config/config.go#L219)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Path specifies which googleapis Path to generate from (for generated libraries). |
 
 ## DartPackage Configuration
 
-[Link to code](../internal/config/language.go#L284)
+[Link to code](../internal/config/language.go#L301)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `api_keys_environment_variables` | string | APIKeysEnvironmentVariables is a comma-separated list of environment variable names that can contain API keys (e.g., "GOOGLE_API_KEY,GEMINI_API_KEY"). |
@@ -126,36 +126,38 @@ This document describes the schema for the librarian.yaml.
 
 ## GoAPI Configuration
 
-[Link to code](../internal/config/language.go#L27)
+[Link to code](../internal/config/language.go#L30)
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string |  |
-| `client_directory` | string |  |
-| `disable_gapic` | bool |  |
-| `import_path` | string |  |
-| `nested_protos` | list of string |  |
-| `proto_package` | string |  |
+| `client_directory` | string | ClientDirectory is the directory where the client is generated, relative to Library.Output. |
+| `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. |
+| `import_path` | string | ImportPath is the Go import path for the API. |
+| `nested_protos` | list of string | NestedProtos is a list of nested proto files. |
+| `no_rest_numeric_enums` | bool | NoRESTNumericEnums determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
+| `path` | string | Path is the source path. |
+| `proto_package` | string | ProtoPackage is the proto package name. |
 
 ## GoModule Configuration
 
 [Link to code](../internal/config/language.go#L20)
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `delete_generation_output_paths` | list of string |  |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) |  |
-| `module_path_version` | string |  |
+| `delete_generation_output_paths` | list of string | DeleteGenerationOutputPaths is a list of paths to delete before generation. |
+| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | GoAPIs is a list of Go-specific API configurations. |
+| `module_path_version` | string | ModulePathVersion is the version of the Go module path. |
 
 ## PythonPackage Configuration
 
-[Link to code](../internal/config/language.go#L269)
+[Link to code](../internal/config/language.go#L282)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
+| `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
 
 ## RustCrate Configuration
 
-[Link to code](../internal/config/language.go#L135)
+[Link to code](../internal/config/language.go#L148)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
@@ -182,7 +184,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDefault Configuration
 
-[Link to code](../internal/config/language.go#L37)
+[Link to code](../internal/config/language.go#L50)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `package_dependencies` | list of [RustPackageDependency](#rustpackagedependency-configuration) (optional) | PackageDependencies is a list of default package dependencies. These are inherited by all libraries. If a library defines its own package_dependencies, the library-specific ones take precedence over these defaults for dependencies with the same name. |
@@ -192,7 +194,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDiscovery Configuration
 
-[Link to code](../internal/config/language.go#L251)
+[Link to code](../internal/config/language.go#L264)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
@@ -200,7 +202,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustDocumentationOverride Configuration
 
-[Link to code](../internal/config/language.go#L230)
+[Link to code](../internal/config/language.go#L243)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified element ID (e.g., .google.cloud.dialogflow.v2.Message.field). |
@@ -209,7 +211,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustModule Configuration
 
-[Link to code](../internal/config/language.go#L57)
+[Link to code](../internal/config/language.go#L70)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
@@ -238,7 +240,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPackageDependency Configuration
 
-[Link to code](../internal/config/language.go#L202)
+[Link to code](../internal/config/language.go#L215)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Name is the dependency name. It is listed first so it appears at the top of each dependency entry in YAML. |
@@ -251,7 +253,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPaginationOverride Configuration
 
-[Link to code](../internal/config/language.go#L242)
+[Link to code](../internal/config/language.go#L255)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | string | ID is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
@@ -259,7 +261,7 @@ This document describes the schema for the librarian.yaml.
 
 ## RustPoller Configuration
 
-[Link to code](../internal/config/language.go#L260)
+[Link to code](../internal/config/language.go#L273)
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `prefix` | string | Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |

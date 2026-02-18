@@ -155,33 +155,52 @@ func TestGenerateCommand_Errors(t *testing.T) {
 	}
 }
 
-func TestUpdateLibrarianVersion(t *testing.T) {
-	repoDir := t.TempDir()
-	configPath := filepath.Join(repoDir, "librarian.yaml")
-	initialConfig := &config.Config{
-		Language: "rust",
-		Version:  sample.LibrarianVersion,
-	}
-	if err := yaml.Write(configPath, initialConfig); err != nil {
-		t.Fatal(err)
-	}
-
-	newVersion := "v0.2.0"
-	if err := updateLibrarianVersion(newVersion, repoDir); err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := yaml.Read[config.Config](configPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := &config.Config{
-		Language: "rust",
-		Version:  newVersion,
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+func TestSourcesToUpdate(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Config
+		want []string
+	}{
+		{
+			name: "both sources",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Discovery:  &config.Source{Commit: "abc"},
+					Googleapis: &config.Source{Commit: "def"},
+				},
+			},
+			want: []string{"discovery", "googleapis"},
+		},
+		{
+			name: "only googleapis",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "def"},
+				},
+			},
+			want: []string{"googleapis"},
+		},
+		{
+			name: "only discovery",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Discovery: &config.Source{Commit: "abc"},
+				},
+			},
+			want: []string{"discovery"},
+		},
+		{
+			name: "no sources configured",
+			cfg:  &config.Config{},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sourcesToUpdate(test.cfg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -126,6 +126,7 @@ func TestFind(t *testing.T) {
 				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
 				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
 				ServiceName:   "aiplatform.googleapis.com",
+				ShortName:     "aiplatform",
 				Title:         "Vertex AI API",
 				Transports:    map[string]Transport{"python": "grpc"},
 			},
@@ -149,10 +150,11 @@ func TestFind(t *testing.T) {
 			name: "discovery",
 			api:  "discoveries/compute.v1.json",
 			want: &API{
-				Path:          "google/cloud/compute/v1",
 				Discovery:     "discoveries/compute.v1.json",
+				Path:          "google/cloud/compute/v1",
 				ServiceConfig: "google/cloud/compute/v1/compute_v1.yaml",
 				ServiceName:   "compute.googleapis.com",
+				ShortName:     "compute",
 				Title:         "Google Compute Engine API",
 				Transports:    map[string]Transport{"csharp": "rest", "go": "rest", "java": "rest", "php": "rest"},
 			},
@@ -285,6 +287,17 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				DocumentationURI: "override doc uri",
 				NewIssueURI:      "override new issue uri",
 				ShortName:        "override short name",
+			},
+		},
+		{
+			name: "default short name",
+			api:  &API{},
+			cfg: &Service{
+				Name: "accessapproval.googleapis.com",
+			},
+			want: &API{
+				ServiceName: "accessapproval.googleapis.com",
+				ShortName:   "accessapproval",
 			},
 		},
 	} {

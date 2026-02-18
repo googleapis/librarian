@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
@@ -32,27 +33,21 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	}
 
 	src := addLibraryRoots(library, sources)
-	if library.DescriptionOverride != "" {
-		src["description-override"] = library.DescriptionOverride
-	}
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	api, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
+	svcConfig, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
 	if err != nil {
 		return nil, err
-	}
-	if api.Title != "" {
-		src["title-override"] = api.Title
 	}
 
 	var specSource string
 	switch specFormat {
 	case config.SpecDiscovery:
-		specSource = api.Discovery
+		specSource = svcConfig.Discovery
 	case config.SpecOpenAPI:
-		specSource = api.OpenAPI
+		specSource = svcConfig.OpenAPI
 	default:
 		specSource = ch.Path
 	}
@@ -62,13 +57,17 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 		SpecificationFormat: specFormat,
 		SpecificationSource: specSource,
 		Source:              src,
-		ServiceConfig:       api.ServiceConfig,
+		ServiceConfig:       svcConfig.ServiceConfig,
 		Codec:               buildCodec(library),
+		Override: api.ModelOverride{
+			Description: library.DescriptionOverride,
+			Title:       svcConfig.Title,
+		},
 	}
 
 	if library.Rust != nil {
 		if len(library.Rust.SkippedIds) > 0 {
-			src["skipped-ids"] = strings.Join(library.Rust.SkippedIds, ",")
+			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
 		if len(library.Rust.DocumentationOverrides) > 0 {
 			modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
@@ -114,7 +113,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if library.ReleaseLevel != "" {
 		codec["release-level"] = library.ReleaseLevel
 	}
-	if library.SkipPublish {
+	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}
 	if extraModules := extraModulesFromKeep(library.Keep); len(extraModules) > 0 {
@@ -222,22 +221,14 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 
 func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
-	if len(module.IncludedIds) > 0 {
-		src["included-ids"] = strings.Join(module.IncludedIds, ",")
-	}
-	if len(module.SkippedIds) > 0 {
-		src["skipped-ids"] = strings.Join(module.SkippedIds, ",")
-	}
-	if module.IncludeList != "" {
-		src["include-list"] = module.IncludeList
-	}
+	var title string
 	if module.Source != "" && src["roots"] == "googleapis" {
 		api, err := serviceconfig.Find(sources.Googleapis, module.Source, serviceconfig.LangRust)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.Source, err)
 		}
 		if api != nil && api.Title != "" {
-			src["title-override"] = api.Title
+			title = api.Title
 		}
 	}
 
@@ -252,6 +243,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}
+	if module.IncludeList != "" {
+		src["include-list"] = module.IncludeList
+	}
 	modelCfg := &parser.ModelConfig{
 		Language:            language,
 		SpecificationFormat: specificationFormat,
@@ -259,6 +253,11 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		SpecificationSource: module.Source,
 		Source:              src,
 		Codec:               buildModuleCodec(library, module),
+		Override: api.ModelOverride{
+			Title:       title,
+			IncludedIDs: module.IncludedIds,
+			SkippedIDs:  module.SkippedIds,
+		},
 	}
 	if len(module.DocumentationOverrides) > 0 {
 		modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
@@ -267,6 +266,15 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 				ID:      override.ID,
 				Match:   override.Match,
 				Replace: override.Replace,
+			}
+		}
+	}
+	if len(library.Rust.PaginationOverrides) > 0 {
+		modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+		for i, override := range library.Rust.PaginationOverrides {
+			modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+				ID:        override.ID,
+				ItemField: override.ItemField,
 			}
 		}
 	}

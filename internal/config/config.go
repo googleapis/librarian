@@ -122,6 +122,8 @@ type Source struct {
 
 // Default contains default settings for all libraries.
 type Default struct {
+	// Keep lists files and directories to preserve during regeneration.
+	Keep []string `yaml:"keep,omitempty"`
 	// Output is the directory where code is written. For example, for Rust
 	// this is src/generated.
 	Output string `yaml:"output,omitempty"`
@@ -183,10 +185,7 @@ type Library struct {
 	// SkipGenerate disables code generation for this library.
 	SkipGenerate bool `yaml:"skip_generate,omitempty"`
 
-	// SkipPublish disables publishing for this library.
-	SkipPublish bool `yaml:"skip_publish,omitempty"`
-
-	// SkipRelease disables releasing for this library.
+	// SkipRelease disables release for this library.
 	SkipRelease bool `yaml:"skip_release,omitempty"`
 
 	// SpecificationFormat specifies the API specification format. Valid values
