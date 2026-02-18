@@ -177,7 +177,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	opts := []string{
 		"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI),
 		"metadata",
-		"rest-numeric-enums",
+	}
+	if goAPI == nil || !goAPI.NoRESTNumericEnums {
+		opts = append(opts, "rest-numeric-enums")
 	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
@@ -215,18 +217,6 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
 		importPath, modulePathVersion, version, clientDir)
-}
-
-func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
-	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
-		}
-	}
-	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
