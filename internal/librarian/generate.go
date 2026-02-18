@@ -80,29 +80,9 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 }
 
 func generateLibraries(ctx context.Context, all bool, cfg *config.Config, libraryName string) error {
-	// Fetch sources.
-	var googleapisDir string
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return errors.New("must specify --googleapis flag")
-	}
-	if cfg.Sources.Googleapis.Dir != "" {
-		googleapisDir = cfg.Sources.Googleapis.Dir
-	} else {
-		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
-		if err != nil {
-			return fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
-		}
-		googleapisDir = dir
-	}
-
-	var rustSources *source.Sources
-	if cfg.Language == languageRust || cfg.Language == languageDart {
-		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
-		if err != nil {
-			return err
-		}
-		rustSources = sources
-		rustSources.Googleapis = googleapisDir
+	googleapisDir, rustDartSources, err := LoadSources(ctx, cfg)
+	if err != nil {
+		return err
 	}
 
 	// Prepare and clean libraries sequentially.
@@ -134,7 +114,7 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
 		g.Go(func() error {
-			return generate(gctx, cfg.Language, lib, googleapisDir, rustSources)
+			return generate(gctx, cfg.Language, lib, googleapisDir, rustDartSources)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -148,6 +128,34 @@ func generateLibraries(ctx context.Context, all bool, cfg *config.Config, librar
 		}
 	}
 	return postGenerate(ctx, cfg.Language)
+}
+
+// LoadSources fetches and loads the sources required for generation.
+func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sources, error) {
+	var googleapisDir string
+	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
+		return "", nil, errors.New("must specify --googleapis flag")
+	}
+	if cfg.Sources.Googleapis.Dir != "" {
+		googleapisDir = cfg.Sources.Googleapis.Dir
+	} else {
+		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
+		}
+		googleapisDir = dir
+	}
+
+	var rustDartSources *source.Sources
+	if cfg.Language == languageRust || cfg.Language == languageDart {
+		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
+		if err != nil {
+			return "", nil, err
+		}
+		rustDartSources = sources
+		rustDartSources.Googleapis = googleapisDir
+	}
+	return googleapisDir, rustDartSources, nil
 }
 
 // postGenerate performs repository-level actions after all individual
