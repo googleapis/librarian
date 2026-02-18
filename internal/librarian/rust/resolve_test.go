@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-func TestResolveDependencies(t *testing.T) {
+func TestResolveDependencies_Success(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
@@ -37,11 +37,10 @@ func TestResolveDependencies(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		lib     *config.Library
-		cfg     *config.Config
-		want    []*config.RustPackageDependency
-		wantErr bool
+		name string
+		lib  *config.Library
+		cfg  *config.Config
+		want []*config.RustPackageDependency
 	}{
 		{
 			name: "resolve from other libraries",
@@ -143,25 +142,22 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.cfg.Libraries = append(test.cfg.Libraries, test.lib)
 			_, err := ResolveDependencies(t.Context(), test.cfg, test.lib, sources)
-			if (err != nil) != test.wantErr {
-				t.Errorf("ResolveDependencies() error = %v, wantErr %v", err, test.wantErr)
-				return
+			if err != nil {
+				t.Fatalf("ResolveDependencies() error = %v", err)
 			}
-			if err == nil {
-				gotLib := test.lib
-				var got []*config.RustPackageDependency
-				if gotLib.Rust != nil {
-					got = gotLib.Rust.PackageDependencies
-				}
-				sort.Slice(got, func(i, j int) bool {
-					return got[i].Source < got[j].Source
-				})
-				sort.Slice(test.want, func(i, j int) bool {
-					return test.want[i].Source < test.want[j].Source
-				})
-				if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(config.RustPackageDependency{})); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
+			gotLib := test.lib
+			var got []*config.RustPackageDependency
+			if gotLib.Rust != nil {
+				got = gotLib.Rust.PackageDependencies
+			}
+			sort.Slice(got, func(i, j int) bool {
+				return got[i].Source < got[j].Source
+			})
+			sort.Slice(test.want, func(i, j int) bool {
+				return test.want[i].Source < test.want[j].Source
+			})
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(config.RustPackageDependency{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
