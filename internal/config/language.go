@@ -24,6 +24,8 @@ type GoModule struct {
 	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
+
+	NestedModule string `yaml:"nested_module,omitempty"`
 }
 
 // GoAPI represents configuration for a single API within a Go module.
