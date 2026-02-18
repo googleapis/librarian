@@ -49,21 +49,51 @@ func TestFill(t *testing.T) {
 		{
 			name: "fill default import client directory",
 			library: &config.Library{
+				Name: "bigquery",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/bigquery/analyticshub/v1",
+					},
+					{
+						Path: "google/cloud/bigquery/biglake/v1",
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "bigquery",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/bigquery/analyticshub/v1",
+					},
+					{
+						Path: "google/cloud/bigquery/biglake/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/cloud/bigquery/analyticshub/v1",
+							ClientDirectory: "analyticshub",
+							ImportPath:      "bigquery/analyticshub",
+						},
+						{
+							Path:            "google/cloud/bigquery/biglake/v1",
+							ClientDirectory: "biglake",
+							ImportPath:      "bigquery/biglake",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "skip non cloud api",
+			library: &config.Library{
 				Name: "ai",
 				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
 			},
 			want: &config.Library{
 				Name: "ai",
 				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/cloud/ai/generativelanguage/v1",
-							ImportPath:      "ai/generativelanguage",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
 			},
 		},
 		{
