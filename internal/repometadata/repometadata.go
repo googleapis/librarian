@@ -111,7 +111,7 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		APIShortname:         api.ShortName,
 		ClientDocumentation:  clientDocURL,
 		DefaultVersion:       defaultVersion,
-		DistributionName:     buildDistributionName(library, api.Path, api.ShortName, language),
+		DistributionName:     buildDistributionName(api, library, language),
 		IssueTracker:         api.NewIssueURI,
 		Language:             language,
 		LibraryType:          "GAPIC_AUTO",
@@ -149,12 +149,14 @@ func buildClientDocURL(api *serviceconfig.API, library *config.Library, language
 	}
 }
 
-func buildDistributionName(library *config.Library, apiPath, serviceName, language string) string {
+func buildDistributionName(api *serviceconfig.API, library *config.Library, language string) string {
 	switch language {
 	case serviceconfig.LangGo:
-		return goDistributionName(library, apiPath, serviceName)
-	default:
+		return goDistributionName(library, api.Path, api.ShortName)
+	case serviceconfig.LangPython, serviceconfig.LangRust:
 		return library.Name
+	default:
+		return ""
 	}
 }
 
