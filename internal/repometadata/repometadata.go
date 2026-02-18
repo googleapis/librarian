@@ -149,6 +149,7 @@ func buildClientDocURL(api *serviceconfig.API, library *config.Library, language
 	}
 }
 
+// buildDistributionName builds the distribution name based on language.
 func buildDistributionName(api *serviceconfig.API, library *config.Library, language string) string {
 	switch language {
 	case serviceconfig.LangGo:

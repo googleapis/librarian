@@ -32,6 +32,7 @@ func goClientDocURL(library *config.Library, apiPath string) string {
 	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
 }
 
+// goDistributionName builds the distribution name for Go SDK.
 func goDistributionName(library *config.Library, apiPath, serviceName string) string {
 	version := filepath.Base(apiPath)
 	clientDir := clientDirectory(library, apiPath)
