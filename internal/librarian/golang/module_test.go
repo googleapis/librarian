@@ -107,9 +107,7 @@ func TestFill(t *testing.T) {
 					GoAPIs: []*config.GoAPI{
 						{
 							Path:               "google/cloud/example/v1",
-							ImportPath:         "example",
-							ClientDirectory:    "example",
-							NoRESTNumericEnums: true,
+							NoRESTNumericEnums: true, // this value will be kept.
 						},
 					},
 				},
@@ -123,7 +121,6 @@ func TestFill(t *testing.T) {
 						{
 							Path:               "google/cloud/example/v1",
 							ImportPath:         "example",
-							ClientDirectory:    "example",
 							NoRESTNumericEnums: true,
 						},
 					},
