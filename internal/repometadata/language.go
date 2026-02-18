@@ -32,6 +32,7 @@ func goClientDocURL(library *config.Library, apiPath string) string {
 	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/4090): remove this function to reduce code duplication.
 func clientDirectory(library *config.Library, apiPath string) string {
 	if library.Go == nil || library.Go.GoAPIs == nil {
 		return ""
