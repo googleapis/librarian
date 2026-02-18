@@ -24,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestCleanGo_Success(t *testing.T) {
+func TestClean_Success(t *testing.T) {
 	root := t.TempDir()
 	libraryName := "testlib"
 	for _, test := range []struct {
