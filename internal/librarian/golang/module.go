@@ -14,7 +14,40 @@
 
 package golang
 
-import "github.com/googleapis/librarian/internal/config"
+import (
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+)
+
+// Fill populates empty Go-specific fields from the api path.
+// Non-default configurations read from librarian.yaml will NOT be overridden.
+func Fill(library *config.Library) *config.Library {
+	if library.Go == nil {
+		library.Go = &config.GoModule{}
+	}
+	var goAPIs []*config.GoAPI
+	for _, api := range library.APIs {
+		if !strings.HasPrefix(api.Path, "google/cloud") {
+			continue
+		}
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			goAPI = &config.GoAPI{}
+		}
+		importPath, clientDir := findGoPath(api.Path)
+		if goAPI.ImportPath == "" {
+			goAPI.ImportPath = importPath
+		}
+		if goAPI.ClientDirectory == "" {
+			goAPI.ClientDirectory = clientDir
+		}
+		goAPIs = append(goAPIs, goAPI)
+	}
+	library.Go.GoAPIs = goAPIs
+
+	return library
+}
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
@@ -26,4 +59,12 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 		}
 	}
 	return nil
+}
+
+func findGoPath(apiPath string) (string, string) {
+	dirs := strings.Split(apiPath, "/")
+	if len(dirs) == 5 {
+		return dirs[2], dirs[3]
+	}
+	return dirs[2], ""
 }

@@ -97,41 +97,6 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 	return lib
 }
 
-// fillRust populates empty Go-specific fields in lib from the api path.
-// Non-default configurations read from librarian.yaml will NOT be overridden.
-func fillGo(lib *config.Library) *config.Library {
-	if lib.Go == nil {
-		lib.Go = &config.GoModule{}
-	}
-	var goAPIs []*config.GoAPI
-	for _, api := range lib.APIs {
-		if !strings.HasPrefix(api.Path, "google/cloud") {
-			continue
-		}
-		var goAPI *config.GoAPI
-		for _, g := range lib.Go.GoAPIs {
-			if g.Path == api.Path {
-				goAPI = g
-				break
-			}
-		}
-		if goAPI == nil {
-			goAPI = &config.GoAPI{}
-		}
-		importPath, clientDir := findGoPath(api.Path)
-		if goAPI.ImportPath == "" {
-			goAPI.ImportPath = importPath
-		}
-		if goAPI.ClientDirectory == "" {
-			goAPI.ClientDirectory = clientDir
-		}
-		goAPIs = append(goAPIs, goAPI)
-	}
-	lib.Go.GoAPIs = goAPIs
-
-	return lib
-}
-
 // mergeDartDependencies merges library dependencies with default dependencies.
 // Duplicate dependencies in defaults will be ignored.
 func mergeDartDependencies(libDeps, defaultDeps string) string {
@@ -227,12 +192,4 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 		maps.Copy(res, dst)
 	}
 	return res
-}
-
-func findGoPath(apiPath string) (string, string) {
-	dirs := strings.Split(apiPath, "/")
-	if len(dirs) == 5 {
-		return dirs[2], dirs[3]
-	}
-	return dirs[2], ""
 }
