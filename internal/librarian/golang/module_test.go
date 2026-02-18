@@ -31,15 +31,15 @@ func TestFill(t *testing.T) {
 			name: "fill default import path",
 			library: &config.Library{
 				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager"}},
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &config.Library{
 				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager"}},
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:       "google/cloud/secretmanager",
+							Path:       "google/cloud/secretmanager/v1",
 							ImportPath: "secretmanager",
 						},
 					},
