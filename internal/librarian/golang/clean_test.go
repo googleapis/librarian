@@ -37,18 +37,33 @@ func TestClean_Success(t *testing.T) {
 		wantSnippets []string
 	}{
 		{
-			name:         "removes all except keep list",
-			outputFiles:  []string{"file1.go", "file2.go", "go.mod"},
+			name: "removes all files",
+			outputFiles: []string{
+				"auxiliary.go",
+				"auxiliary_go123.go",
+				"doc.go",
+				"library_client.go",
+				"library_client_example_go123_test.go",
+				"library_client_example_test.go",
+				"gapic_metadata.json",
+				"helpers.go",
+				"nested/content.pb.go",
+				"non-generated.go",
+			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{"file1.go"},
-			wantOutput:   []string{"file1.go"},
+			keep:         []string{},
+			wantOutput:   []string{"non-generated.go"},
 		},
 		{
-			name:         "remove all files",
-			outputFiles:  []string{"file1.go", "file2.go"},
+			name: "remove all files except keep list",
+			outputFiles: []string{
+				"auxiliary.go",
+				"auxiliary_go123.go",
+				"doc.go",
+			},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{},
-			wantOutput:   []string{},
+			keep:         []string{"doc.go"},
+			wantOutput:   []string{"doc.go"},
 		},
 		{
 			name:         "nested module",

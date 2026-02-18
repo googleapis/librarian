@@ -27,15 +27,16 @@ import (
 
 var (
 	generatedRegex = []*regexp.Regexp{
-		regexp.MustCompile(`^auxiliary\.go$`),
-		regexp.MustCompile(`^auxiliary_go123\.go$`),
-		regexp.MustCompile(`^doc\.go$`),
+		regexp.MustCompile(`auxiliary\.go$`),
+		regexp.MustCompile(`auxiliary_go123\.go$`),
+		regexp.MustCompile(`doc\.go$`),
 		regexp.MustCompile(`.*_client\.go$`),
 		regexp.MustCompile(`.*_client_example_go123_test\.go$`),
 		regexp.MustCompile(`.*_client_example_test\.go$`),
-		regexp.MustCompile(`^gapic_metadata\.json$`),
-		regexp.MustCompile(`^helpers\.go$`),
+		regexp.MustCompile(`gapic_metadata\.json$`),
+		regexp.MustCompile(`helpers\.go$`),
 		regexp.MustCompile(`.*\.pb\.go$`),
+		regexp.MustCompile(`.*/internal/generated/snippets/.*$`),
 	}
 )
 
@@ -112,7 +113,7 @@ func clean(dir, nestedModule string, keepSet map[string]bool) error {
 		}
 		isGenerated := false
 		for _, re := range generatedRegex {
-			if re.MatchString(d.Name()) {
+			if re.MatchString(path) {
 				isGenerated = true
 				break
 			}
