@@ -29,23 +29,28 @@ func IdentifyTargetResources(model *API) {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if binding.PathTemplate == nil {
-					continue
-				}
-
-				// Priority 1: Explicit Identification
-				// Matches google.api.resource_reference annotations.
-				if target := identifyExplicitTarget(method, binding); target != nil {
-					binding.TargetResource = target
-					continue
-				}
-
-				// Priority 2: Heuristic Identification
-				// Uses path segment patterns to guess the resource.
-				// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
+				identifyTargetResourceForBinding(method, binding)
 			}
 		}
 	}
+}
+
+// identifyTargetResourceForBinding processes a single path binding to identify its target resource.
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding) {
+	if binding.PathTemplate == nil {
+		return
+	}
+
+	// Priority 1: Explicit Identification
+	// Matches google.api.resource_reference annotations.
+	if target := identifyExplicitTarget(method, binding); target != nil {
+		binding.TargetResource = target
+		return
+	}
+
+	// Priority 2: Heuristic Identification
+	// Uses path segment patterns to guess the resource.
+	// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
 }
 
 func identifyExplicitTarget(_ *Method, _ *PathBinding) *TargetResource {
