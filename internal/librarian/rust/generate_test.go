@@ -55,12 +55,12 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 			Modules: []*config.RustModule{
 				{
-					Source:   "google/cloud/secretmanager/v1",
+					APIPath:  "google/cloud/secretmanager/v1",
 					Output:   module1Dir,
 					Template: "grpc-client",
 				},
 				{
-					Source:   "google/cloud/secretmanager/v1",
+					APIPath:  "google/cloud/secretmanager/v1",
 					Output:   module2Dir,
 					Template: "grpc-client",
 				},
