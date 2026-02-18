@@ -89,11 +89,12 @@ func TestFill(t *testing.T) {
 			name: "skip non cloud api",
 			library: &config.Library{
 				Name: "ai",
-				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
+				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
 			},
 			want: &config.Library{
 				Name: "ai",
-				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
+				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Go:   &config.GoModule{},
 			},
 		},
 		{
