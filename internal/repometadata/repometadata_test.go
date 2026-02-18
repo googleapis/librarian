@@ -226,8 +226,8 @@ func TestBuildClientDocURL(t *testing.T) {
 		{
 			name: "python",
 			api: &serviceconfig.API{
-				Path:        "google/cloud/secretmanager/v1",
-				ServiceName: "secretmanager.googleapis.com",
+				Path:      "google/cloud/secretmanager/v1",
+				ShortName: "secretmanager",
 			},
 			language: "python",
 			want:     "https://cloud.google.com/python/docs/reference/secretmanager/latest",
@@ -235,8 +235,8 @@ func TestBuildClientDocURL(t *testing.T) {
 		{
 			name: "rust",
 			api: &serviceconfig.API{
-				Path:        "google/cloud/secretmanager/v1",
-				ServiceName: "secretmanager.googleapis.com",
+				Path:      "google/cloud/secretmanager/v1",
+				ShortName: "secretmanager",
 			},
 			language: "rust",
 			want:     "https://docs.rs/google-cloud-secretmanager/latest",
@@ -244,8 +244,8 @@ func TestBuildClientDocURL(t *testing.T) {
 		{
 			name: "unknown language",
 			api: &serviceconfig.API{
-				Path:        "google/cloud/secretmanager/v1",
-				ServiceName: "secretmanager.googleapis.com",
+				Path:      "google/cloud/secretmanager/v1",
+				ShortName: "secretmanager",
 			},
 			language: "vb",
 			want:     "",
@@ -256,8 +256,7 @@ func TestBuildClientDocURL(t *testing.T) {
 				Name: "secretmanager",
 			},
 			api: &serviceconfig.API{
-				Path:        "google/cloud/secretmanager/v1",
-				ServiceName: "secretmanager.googleapis.com",
+				Path: "google/cloud/secretmanager/v1",
 			},
 			language: "go",
 			want:     "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
