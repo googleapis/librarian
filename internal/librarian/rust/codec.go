@@ -21,7 +21,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -89,14 +88,14 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 			}
 		}
 		if library.Rust.Discovery != nil {
-			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
+			pollers := make([]*api.Poller, len(library.Rust.Discovery.Pollers))
 			for i, poller := range library.Rust.Discovery.Pollers {
-				pollers[i] = &sidekickconfig.Poller{
+				pollers[i] = &api.Poller{
 					Prefix:   poller.Prefix,
 					MethodID: poller.MethodID,
 				}
 			}
-			modelCfg.Discovery = &sidekickconfig.Discovery{
+			modelCfg.Discovery = &api.Discovery{
 				OperationID: library.Rust.Discovery.OperationID,
 				Pollers:     pollers,
 			}

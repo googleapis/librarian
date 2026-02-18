@@ -19,7 +19,6 @@ import (
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // ModelConfig holds the configuration necessary to parse an API specification.
@@ -48,7 +47,7 @@ type ModelConfig struct {
 	PaginationOverrides []api.PaginationOverride
 
 	// Discovery poller configurations
-	Discovery *config.Discovery
+	Discovery *api.Discovery
 
 	// Model overrides
 	Override api.ModelOverride
