@@ -24,7 +24,7 @@ type GoModule struct {
 	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
-
+	// NestedModule is the name of a nested module directory to skip during cleaning.
 	NestedModule string `yaml:"nested_module,omitempty"`
 }
 
