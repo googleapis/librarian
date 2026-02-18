@@ -47,7 +47,7 @@ func TestFill(t *testing.T) {
 			},
 		},
 		{
-			name: "fill default import client directory",
+			name: "fill default import path and client directory",
 			library: &config.Library{
 				Name: "bigquery",
 				APIs: []*config.API{
