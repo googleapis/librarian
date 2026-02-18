@@ -20,7 +20,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/googleapis/librarian/internal/config"
 )

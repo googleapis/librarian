@@ -32,6 +32,7 @@ func TestClean_Success(t *testing.T) {
 		outputFiles  []string
 		snippetFiles []string
 		keep         []string
+		nestedModule string
 		wantOutput   []string
 		wantSnippets []string
 	}{
@@ -50,12 +51,13 @@ func TestClean_Success(t *testing.T) {
 			wantOutput:   []string{},
 		},
 		{
-			name:         "nested version",
-			outputFiles:  []string{"file1.go", "file2.go", "v2/nested_file.go"},
-			snippetFiles: []string{"v2/snippet.go"},
+			name:         "nested module",
+			outputFiles:  []string{"file1.go", "file2.go", "nested/nested_file.go"},
+			snippetFiles: []string{"nested/snippet.go"},
 			keep:         []string{},
-			wantOutput:   []string{"v2/nested_file.go"},
-			wantSnippets: []string{"internal/generated/snippets/testlib/v2/snippet.go"},
+			nestedModule: "nested",
+			wantOutput:   []string{"nested/nested_file.go"},
+			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -65,6 +67,9 @@ func TestClean_Success(t *testing.T) {
 				Name:   libraryName,
 				Output: filepath.Join(root),
 				Keep:   test.keep,
+				Go: &config.GoModule{
+					NestedModule: test.nestedModule,
+				},
 			}
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
