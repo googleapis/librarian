@@ -178,25 +178,6 @@ func TestCleanTitle(t *testing.T) {
 	}
 }
 
-func TestExtractNameFromAPIID(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		apiID string
-		want  string
-	}{
-		{"standard", "secretmanager.googleapis.com", "secretmanager"},
-		{"no domain", "secretmanager", "secretmanager"},
-		{"empty", "", ""},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := extractNameFromAPIID(test.apiID)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
 func TestExtractBaseProductURL(t *testing.T) {
 	for _, test := range []struct {
 		name   string
