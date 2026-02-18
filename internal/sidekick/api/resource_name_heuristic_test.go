@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestIsHeuristicEligible(t *testing.T) {
+func TestIsResourceRenameHeuristicEligible(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		serviceID string
@@ -54,6 +54,26 @@ func TestIsHeuristicEligible(t *testing.T) {
 		{
 			name:      "pubsub is not eligible",
 			serviceID: ".google.cloud.pubsub.v1.Publisher",
+			want:      false,
+		},
+		{
+			name:      "compute exact match is eligible",
+			serviceID: ".google.cloud.compute",
+			want:      true,
+		},
+		{
+			name:      "sql exact match is eligible",
+			serviceID: ".google.cloud.sql",
+			want:      true,
+		},
+		{
+			name:      "too short service id is not eligible",
+			serviceID: ".google.cloud",
+			want:      false,
+		},
+		{
+			name:      "non-eligible service with enough parts",
+			serviceID: ".google.cloud.other.v1",
 			want:      false,
 		},
 		{
