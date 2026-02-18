@@ -457,3 +457,118 @@ func TestGetTransport(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildGAPICOpts_Success(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		apiPath       string
+		library       *config.Library
+		goAPI         *config.GoAPI
+		googleapisDir string
+		want          []string
+	}{
+		{
+			name:    "basic case with service and grpc configs",
+			apiPath: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
+			name:    "empty Go API",
+			apiPath: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+			},
+			goAPI:         &config.GoAPI{},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
+			name:    "no rest numeric enums",
+			apiPath: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+			},
+			goAPI: &config.GoAPI{
+				NoRESTNumericEnums: true,
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
+			name:    "beta release level from version",
+			apiPath: "google/cloud/secretmanager/v1",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "0.2.3",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"release-level=beta",
+			},
+		},
+		{
+			name:    "transport override",
+			apiPath: "google/cloud/gkehub/v1",
+			library: &config.Library{
+				Name:    "gkehub",
+				Version: "1.2.3",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/gkehub/apiv1;gkehub",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/gkehub/v1/gkehub_v1.yaml"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := buildGAPICOpts(test.apiPath, test.library, test.goAPI, test.googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

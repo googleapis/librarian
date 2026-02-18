@@ -137,14 +137,13 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 
 // buildClientDocURL builds the client documentation URL based on language.
 func buildClientDocURL(api *serviceconfig.API, library *config.Library, language string) string {
-	shortname := extractShortname(api.ServiceName)
 	switch language {
 	case serviceconfig.LangGo:
 		return goClientDocURL(library, api.Path)
 	case serviceconfig.LangPython:
-		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", shortname)
+		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", api.ShortName)
 	case serviceconfig.LangRust:
-		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", shortname)
+		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", api.ShortName)
 	default:
 		return ""
 	}
@@ -167,13 +166,4 @@ func cleanTitle(title string) string {
 	title = strings.TrimSpace(title)
 	title = strings.TrimSuffix(title, " API")
 	return strings.TrimSpace(title)
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/4083), remove this function since
-// short name is part of serviceconfig.API.
-// extractShortname extracts the short name from the API service name.
-// Example: "secretmanager.googleapis.com" -> "secretmanager".
-func extractShortname(serviceName string) string {
-	name, _, _ := strings.Cut(serviceName, ".")
-	return name
 }

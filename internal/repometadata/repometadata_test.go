@@ -179,25 +179,6 @@ func TestCleanTitle(t *testing.T) {
 	}
 }
 
-func TestExtractShortname(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		apiID string
-		want  string
-	}{
-		{"standard", "secretmanager.googleapis.com", "secretmanager"},
-		{"no domain", "secretmanager", "secretmanager"},
-		{"empty", "", ""},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := extractShortname(test.apiID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestExtractBaseProductURL(t *testing.T) {
 	for _, test := range []struct {
 		name   string
