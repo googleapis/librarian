@@ -30,7 +30,7 @@ func Fill(library *config.Library) *config.Library {
 	var goAPIs []*config.GoAPI
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
-		if !strings.HasPrefix(api.Path, "google/cloud") {
+		if !strings.HasPrefix(api.Path, "google/cloud/") {
 			// Do nothing for non cloud API.
 			if goAPI != nil {
 				goAPIs = append(goAPIs, goAPI)
@@ -75,6 +75,9 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 // google/cloud/{dir}/{nested}/{version}.
 func defaultImportPathAndClientDir(apiPath string) (string, string) {
 	dirs := strings.Split(apiPath, "/")
+	if len(dirs) < 4 {
+		return "", ""
+	}
 	if len(dirs) == 5 {
 		return fmt.Sprintf("%s/%s", dirs[2], dirs[3]), dirs[3]
 	}
