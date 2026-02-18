@@ -59,8 +59,7 @@ This document describes the schema for the {{.Title}}.
 {{range .Structs}}
 ## {{.Title}}
 
-{{if .SourceLink}}[Link to code]({{.SourceLink}})
-{{end}}{{if .Doc}}{{.Doc}}
+{{if .Doc}}{{.Doc}}
 {{end}}| Field | Type | Description |
 | :--- | :--- | :--- |
 {{range .Fields}}| {{.Name}} | {{.Type}} | {{.Description}} |
@@ -72,10 +71,9 @@ type pageData struct {
 }
 
 type structData struct {
-	Title      string
-	SourceLink string
-	Doc        string
-	Fields     []fieldData
+	Title  string
+	Doc    string
+	Fields []fieldData
 }
 
 type fieldData struct {
@@ -231,7 +229,7 @@ func (d *docData) generate(output io.Writer) error {
 	}
 	// Collect all struct data first
 	for _, k := range append(d.configKeys, d.otherKeys...) {
-		sd, err := d.collectStructData(k, d.sources[k])
+		sd, err := d.collectStructData(k)
 		if err != nil {
 			return err
 		}
@@ -241,16 +239,15 @@ func (d *docData) generate(output io.Writer) error {
 }
 
 // collectStructData prepares the metadata for a single Go struct.
-func (d *docData) collectStructData(name string, sourceLink string) (structData, error) {
+func (d *docData) collectStructData(name string) (structData, error) {
 	st := d.structs[name]
 	title := name + titleSuffix
 	if name == d.rootStruct {
 		title = d.rootHeading + titleSuffix
 	}
 	structData := structData{
-		Title:      title,
-		SourceLink: sourceLink,
-		Doc:        d.docs[name],
+		Title: title,
+		Doc:   d.docs[name],
 	}
 	for _, field := range st.Fields.List {
 		if len(field.Names) == 0 {
