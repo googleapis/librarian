@@ -929,6 +929,9 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
+	// ResourceNameHeuristic contains the results of the resource name identification heuristic, if any.
+	// This helps identify which resource this path is likely targeting.
+	ResourceNameHeuristic *ResourceNameHeuristic
 	// Language specific annotations.
 	Codec any
 }
@@ -1513,4 +1516,15 @@ type ResourceReference struct {
 // IsResourceReference returns true if the field is annotated with google.api.resource_reference.
 func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
+}
+
+// ResourceNameHeuristic contains the results of the resource name identification heuristic.
+// It provides the sequences of fields used by language-specific generators to inject tracing attributes.
+type ResourceNameHeuristic struct {
+	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
+	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
+	FieldPaths [][]string
+	// PathTemplate is the template for the resource name.
+	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
+	PathTemplate *PathTemplate
 }

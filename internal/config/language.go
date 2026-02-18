@@ -137,8 +137,8 @@ type RustModule struct {
 	// SpecificationFormat overrides the library-level specification format.
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Source is the proto path to generate from (e.g., "google/storage/v2").
-	Source string `yaml:"source"`
+	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
+	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
 	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".

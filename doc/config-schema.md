@@ -236,7 +236,7 @@ This document describes the schema for the librarian.yaml.
 | `service_config` | string | ServiceConfig is the path to the service config file. |
 | `skipped_ids` | list of string | SkippedIds is a list of proto IDs to skip in generation. |
 | `specification_format` | string | SpecificationFormat overrides the library-level specification format. |
-| `source` | string | Source is the proto path to generate from (e.g., "google/storage/v2"). |
+| `api_path` | string | APIPath is the proto path to generate from (e.g., "google/storage/v2"). |
 | `template` | string | Template specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
 
 ## RustPackageDependency Configuration
