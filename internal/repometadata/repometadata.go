@@ -111,7 +111,7 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		APIShortname:         api.ShortName,
 		ClientDocumentation:  clientDocURL,
 		DefaultVersion:       defaultVersion,
-		DistributionName:     library.Name,
+		DistributionName:     buildDistributionName(library, api.Path, api.ShortName, language),
 		IssueTracker:         api.NewIssueURI,
 		Language:             language,
 		LibraryType:          "GAPIC_AUTO",
@@ -146,6 +146,15 @@ func buildClientDocURL(api *serviceconfig.API, library *config.Library, language
 		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", api.ShortName)
 	default:
 		return ""
+	}
+}
+
+func buildDistributionName(library *config.Library, apiPath, serviceName, language string) string {
+	switch language {
+	case serviceconfig.LangGo:
+		return goDistributionName(library, apiPath, serviceName)
+	default:
+		return library.Name
 	}
 }
 
