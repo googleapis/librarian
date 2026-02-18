@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -340,6 +341,69 @@ func TestDefaultOutput(t *testing.T) {
 			got := defaultOutput(test.language, test.libName, test.api, test.defaultOut)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadSources(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+		wantDir string
+		wantSrc *source.Sources
+	}{
+		{
+			name:    "nil sources",
+			cfg:     &config.Config{},
+			wantErr: true,
+		},
+		{
+			name: "nil googleapis",
+			cfg: &config.Config{
+				Sources: &config.Sources{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "googleapis dir set",
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+				},
+			},
+			wantDir: "/tmp/googleapis",
+		},
+		{
+			name: "rust with sources",
+			cfg: &config.Config{
+				Language: "rust",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+					Discovery:  &config.Source{Dir: "/tmp/discovery"},
+				},
+			},
+			wantDir: "/tmp/googleapis",
+			wantSrc: &source.Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotDir, gotSrc, err := LoadSources(t.Context(), test.cfg)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("LoadSources() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if gotDir != test.wantDir {
+				t.Errorf("googleapisDir mismatch: got %q, want %q", gotDir, test.wantDir)
+			}
+			if diff := cmp.Diff(test.wantSrc, gotSrc); diff != "" {
+				t.Errorf("sources mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
