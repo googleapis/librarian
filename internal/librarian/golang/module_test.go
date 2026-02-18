@@ -46,6 +46,59 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "fill default import client directory",
+			library: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
+			},
+			want: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{{Path: "google/cloud/ai/generativelanguage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/cloud/ai/generativelanguage/v1",
+							ImportPath:      "ai/generativelanguage",
+							ClientDirectory: "generativelanguage",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "defaults do not override library config",
+			library: &config.Library{
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"example"},
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:               "google/cloud/example/v1",
+							ImportPath:         "example",
+							ClientDirectory:    "example",
+							NoRESTNumericEnums: true,
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"example"},
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:               "google/cloud/example/v1",
+							ImportPath:         "example",
+							ClientDirectory:    "example",
+							NoRESTNumericEnums: true,
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := Fill(test.library)

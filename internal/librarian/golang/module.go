@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -37,7 +38,7 @@ func Fill(library *config.Library) *config.Library {
 				Path: api.Path,
 			}
 		}
-		importPath, clientDir := findGoPath(api.Path)
+		importPath, clientDir := defaultImportPathAndClientDir(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
 		}
@@ -63,10 +64,10 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-func findGoPath(apiPath string) (string, string) {
+func defaultImportPathAndClientDir(apiPath string) (string, string) {
 	dirs := strings.Split(apiPath, "/")
 	if len(dirs) == 5 {
-		return dirs[2], dirs[3]
+		return fmt.Sprintf("%s/%s", dirs[2], dirs[3]), dirs[3]
 	}
 	return dirs[2], ""
 }
