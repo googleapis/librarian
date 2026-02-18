@@ -67,11 +67,11 @@ func TestClean_Success(t *testing.T) {
 		},
 		{
 			name:         "nested module",
-			outputFiles:  []string{"file1.go", "file2.go", "nested/nested_file.go"},
+			outputFiles:  []string{"nested/doc.go.go"},
 			snippetFiles: []string{"nested/snippet.go"},
 			keep:         []string{},
 			nestedModule: "nested",
-			wantOutput:   []string{"nested/nested_file.go"},
+			wantOutput:   []string{"nested/doc.go.go"},
 			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
 		},
 	} {
