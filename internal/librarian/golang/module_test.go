@@ -21,6 +21,41 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestFill(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *config.Library
+	}{
+		{
+			name: "fill default import path",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager"}},
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:       "google/cloud/secretmanager",
+							ImportPath: "secretmanager",
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := Fill(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFindGoAPI(t *testing.T) {
 	for _, test := range []struct {
 		name    string

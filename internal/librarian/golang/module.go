@@ -33,7 +33,9 @@ func Fill(library *config.Library) *config.Library {
 		}
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			goAPI = &config.GoAPI{}
+			goAPI = &config.GoAPI{
+				Path: api.Path,
+			}
 		}
 		importPath, clientDir := findGoPath(api.Path)
 		if goAPI.ImportPath == "" {
