@@ -102,6 +102,9 @@ func deriveLibraryName(language, api string) string {
 	}
 }
 
+// addLibrary adds a new library to the config based on the provided APIs.
+// It returns the name of the new library, the updated config, and an error
+// if the library already exists.
 func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
 	name := deriveLibraryName(cfg.Language, apis[0])
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {

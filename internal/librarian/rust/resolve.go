@@ -50,7 +50,7 @@ func findExternalPackages(lib *config.Library, sources *source.Sources) (map[str
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 	// Identify the packages owned by the current library.
-	ownedPackages := map[string]bool{}
+	ownedPackages := make(map[string]bool)
 	for _, api := range lib.APIs {
 		ownedPackages[toPackageName(api.Path)] = true
 	}
@@ -97,6 +97,9 @@ func findExternalPackages(lib *config.Library, sources *source.Sources) (map[str
 	return externalPackages, nil
 }
 
+// resolveExternalPackages maps external Protobuf packages to Rust crates by searching
+// for matching libraries in the configuration. It adds any missing dependencies
+// to the library's Rust package dependencies.
 func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPackages map[string]bool) *config.Config {
 	if len(externalPackages) == 0 {
 		return cfg
@@ -120,7 +123,7 @@ func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPa
 			if len(other.APIs) > 0 {
 				apiPathMatches = toPackageName(other.APIs[0].Path) == pkg
 			}
-			libNameMatches := derivePackageName(other.Name) == pkg
+			libNameMatches := toPackageName(DeriveAPIPath(other.Name)) == pkg
 			if apiPathMatches || libNameMatches {
 				lib.Rust.PackageDependencies = append(lib.Rust.PackageDependencies, &config.RustPackageDependency{
 					Name:    other.Name,
@@ -147,12 +150,6 @@ func isDependencyPresent(pkg string, lib *config.Library, cfg *config.Config) bo
 		return true
 	}
 	return false
-}
-
-// derivePackageName derives a Protobuf package name from a library name.
-// For example: google-cloud-secretmanager-v1 -> google.cloud.secretmanager.v1.
-func derivePackageName(name string) string {
-	return toPackageName(DeriveAPIPath(name))
 }
 
 // toPackageName converts an API path to a Protobuf package name.
