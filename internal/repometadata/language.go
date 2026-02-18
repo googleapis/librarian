@@ -32,6 +32,16 @@ func goClientDocURL(library *config.Library, apiPath string) string {
 	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
 }
 
+// goDistributionName builds the distribution name for Go SDK.
+func goDistributionName(library *config.Library, apiPath, serviceName string) string {
+	version := filepath.Base(apiPath)
+	clientDir := clientDirectory(library, apiPath)
+	if clientDir != "" {
+		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
+	}
+	return fmt.Sprintf("cloud.google.com/go/%s/api%s", serviceName, version)
+}
+
 // TODO(https://github.com/googleapis/librarian/issues/4090): remove this function to reduce code duplication.
 func clientDirectory(library *config.Library, apiPath string) string {
 	if library.Go == nil || library.Go.GoAPIs == nil {

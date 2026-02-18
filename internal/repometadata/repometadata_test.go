@@ -270,3 +270,54 @@ func TestBuildClientDocURL(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildDistributionName(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		api      *serviceconfig.API
+		library  *config.Library
+		language string
+		want     string
+	}{
+		{
+			name: "go",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			api: &serviceconfig.API{
+				Path:      "google/cloud/secretmanager/v1",
+				ShortName: "secretmanager",
+			},
+			language: "go",
+			want:     "cloud.google.com/go/secretmanager/apiv1",
+		},
+		{
+			name: "python",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			language: "python",
+			want:     "secretmanager",
+		},
+		{
+			name: "rust",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			language: "rust",
+			want:     "secretmanager",
+		},
+		{
+			name:     "unknown language",
+			language: "vb",
+			want:     "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildDistributionName(test.api, test.library, test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
