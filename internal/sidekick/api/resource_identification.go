@@ -53,7 +53,72 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding) {
 	// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
 }
 
-func identifyExplicitTarget(_ *Method, _ *PathBinding) *TargetResource {
-	// TODO(#4099): Implement IdentifyTargetResources for consistent explicit resource identification in the sidekick parser.
-	return nil
+func identifyExplicitTarget(method *Method, binding *PathBinding) *TargetResource {
+	var fieldPaths [][]string
+	if method.InputType == nil {
+		return nil
+	}
+
+	// Collect variable segments from the path template
+	for _, segment := range binding.PathTemplate.Segments {
+		if segment.Variable == nil {
+			continue
+		}
+
+		fieldPath := segment.Variable.FieldPath
+		field := findField(method.InputType, fieldPath)
+
+		if field == nil {
+			return nil
+		}
+
+		if !field.IsResourceReference() {
+			return nil
+		}
+
+		fieldPaths = append(fieldPaths, fieldPath)
+	}
+
+	if len(fieldPaths) == 0 {
+		return nil
+	}
+
+	return &TargetResource{
+		FieldPaths:   fieldPaths,
+		PathTemplate: binding.PathTemplate,
+	}
+}
+
+// findField traverses the (nested) message structure to find a field by its field path.
+func findField(msg *Message, path []string) *Field {
+	if len(path) == 0 {
+		return nil
+	}
+
+	current := msg
+	var field *Field
+
+	for i, name := range path {
+		found := false
+		for _, f := range current.Fields {
+			if f.Name == name {
+				field = f
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return nil
+		}
+
+		if i < len(path)-1 {
+			if field.MessageType == nil {
+				return nil
+			}
+			current = field.MessageType
+		}
+	}
+
+	return field
 }
