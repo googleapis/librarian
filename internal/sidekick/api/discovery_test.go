@@ -39,26 +39,33 @@ func TestLroServices(t *testing.T) {
 }
 
 func TestPathParameters(t *testing.T) {
-	for _, test := range []struct {
+	tests := []struct {
+		name string
 		input *Poller
 		want  []string
 	}{
 		{
+			name: "multiple parameters",
 			input: &Poller{Prefix: "projects/{project}/zones/{zone}"},
 			want:  []string{"project", "zone"},
 		},
 		{
+			name: "no parameters",
 			input: &Poller{Prefix: "abc/def"},
 			want:  nil,
 		},
 		{
+			name: "single parameter",
 			input: &Poller{Prefix: "a/{b}"},
 			want:  []string{"b"},
 		},
-	} {
-		got := test.input.PathParameters()
-		if diff := cmp.Diff(test.want, got); diff != "" {
-			t.Errorf("PathParameters(%q) mismatch (-want +got):\n%s", test.input.Prefix, diff)
-		}
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.input.PathParameters()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("PathParameters(%q) mismatch (-want +got):\n%s", test.input.Prefix, diff)
+			}
+		})
 	}
 }
