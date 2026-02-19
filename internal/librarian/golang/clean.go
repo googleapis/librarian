@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
+package golang
 
 import (
 	"errors"
@@ -20,17 +20,29 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
-// checkAndClean removes all files in dir except those in keep. The keep list
-// should contain paths relative to dir. It returns an error if any file
-// in keep does not exist.
-func checkAndClean(dir string, keep []string) error {
-	keepSet, err := check(dir, keep)
+// Clean cleans up a Go library and its associated snippets.
+func Clean(library *config.Library) (*config.Library, error) {
+	libraryDir := filepath.Join(library.Output, library.Name)
+	keepSet, err := check(libraryDir, library.Keep)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return clean(dir, keepSet)
+	var nestedModule string
+	if library.Go != nil {
+		nestedModule = library.Go.NestedModule
+	}
+	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
+		return nil, err
+	}
+	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if err := clean(snippetDir, nestedModule, nil); err != nil {
+		return nil, err
+	}
+	return library, nil
 }
 
 // check validates the given directory and returns a set of files to keep.
@@ -66,13 +78,17 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	return keepSet, nil
 }
 
-// clean removes files from dir that are not in keepSet.
-func clean(dir string, keepSet map[string]bool) error {
+// clean recursively removes files in dir that are not in keepSet.
+// If nestedModule is non-empty, any directory with that name is skipped.
+func clean(dir, nestedModule string, keepSet map[string]bool) error {
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
+			if d.Name() == nestedModule {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		rel, err := filepath.Rel(dir, path)
