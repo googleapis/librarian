@@ -336,7 +336,13 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no APIs configured")
 	}
-	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	readmePath := filepath.Join(moduleRoot, "README.md")
+	if _, err := os.Stat(readmePath); err == nil {
+		// README.md exists, which means it was in the keep list,
+		// skip generation in this case.
+		return nil
+	}
+	f, err := os.Create(readmePath)
 	if err != nil {
 		return err
 	}
