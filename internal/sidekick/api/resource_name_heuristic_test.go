@@ -84,24 +84,42 @@ func TestIsResourceRenameHeuristicEligible(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := IsHeuristicEligible(test.serviceID)
-			if got != test.want {
-				t.Errorf("IsHeuristicEligible(%q) = %v, want %v", test.serviceID, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("IsHeuristicEligible(%q) mismatch (-want +got):\n%s", test.serviceID, diff)
 			}
 		})
 	}
 }
 
-func TestBaseVocabulary(t *testing.T) {
-	got := BaseVocabulary()
-	want := map[string]bool{
-		"projects":        true,
-		"locations":       true,
-		"folders":         true,
-		"organizations":   true,
-		"billingAccounts": true,
-	}
+func TestIsCollectionIdentifier(t *testing.T) {
+	for _, test := range []struct {
+		segment string
+		want    bool
+	}{
+		// Base vocabulary
+		{"projects", true},
+		{"locations", true},
+		{"folders", true},
+		{"organizations", true},
+		{"billingAccounts", true},
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		// Standard plural heuristic
+		{"instances", true},
+		{"disks", true},
+		{"clusters", true},
+		{"backups", true},
+
+		// Ignored / Invalid
+		{"v1", false},    // Version
+		{"other", false}, // Random noun not ending in s
+		{"s", false},     // Too short
+		{"", false},      // Empty
+	} {
+		t.Run(test.segment, func(t *testing.T) {
+			got := isCollectionIdentifier(test.segment)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("isCollectionIdentifier(%q) mismatch (-want +got):\n%s", test.segment, diff)
+			}
+		})
 	}
 }
