@@ -28,6 +28,93 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
+// TestGenerateLibraries performs simple testing that multiple libraries can
+// be generated. Only the presence of a single expected file per library is
+// performed; TestGenerate is responsible for more detailed testing of
+// per-library generation.
+func TestGenerateLibraries(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	outDir := t.TempDir()
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name:          "google-cloud-secretmanager-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			Transport:     "grpc",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+		{
+			Name:          "google-cloud-configdelivery-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/configdelivery/v1",
+				},
+			},
+		},
+	}
+	for _, library := range libraries {
+		library.Output = outDir
+	}
+	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	// Just check that a README.md file has been created for each library.
+	for _, library := range libraries {
+		expectedReadme := filepath.Join(library.Output, library.Name, "README.md")
+		_, err := os.Stat(expectedReadme)
+		if err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedReadme, err)
+		}
+	}
+}
+
+func TestGenerateLibraries_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	outDir := t.TempDir()
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name:          "no-apis",
+			Output:        outDir,
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			Transport:     "grpc",
+		},
+	}
+	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
+	wantErrMessage := "no apis configured for library \"no-apis\""
+	if gotErr == nil {
+		t.Fatalf("expected error with message %s", wantErrMessage)
+	}
+	if diff := cmp.Diff(wantErrMessage, gotErr.Error()); diff != "" {
+		t.Errorf("error mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
@@ -159,7 +246,7 @@ func TestGenerate(t *testing.T) {
 				Go:           test.goModule,
 			}
 
-			if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			if err := generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 			if err := Format(t.Context(), library); err != nil {

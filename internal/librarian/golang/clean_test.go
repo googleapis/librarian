@@ -78,7 +78,7 @@ func TestClean_Success(t *testing.T) {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
 
-			_, err := Clean(lib)
+			err := Clean(lib)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -131,7 +131,7 @@ func TestCleanGo_Error(t *testing.T) {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
 
-			_, err := Clean(lib)
+			err := Clean(lib)
 			if err == nil {
 				t.Error(err)
 				return
