@@ -336,7 +336,18 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no APIs configured")
 	}
-	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	readmePath := filepath.Join(moduleRoot, "README.md")
+	// Skip generating README if it's in the keep list.
+	// Handwritten/veneer libraries should have the top-level README in the keep list.
+	// TODO(https://github.com/googleapis/librarian/issues/4113): investigate the difference between
+	// GAPIC and handwritten libraries.
+	for _, k := range library.Keep {
+		path := filepath.Join(moduleRoot, k)
+		if path == readmePath {
+			return nil
+		}
+	}
+	f, err := os.Create(readmePath)
 	if err != nil {
 		return err
 	}
