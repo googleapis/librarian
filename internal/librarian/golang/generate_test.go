@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -344,6 +345,33 @@ func TestGenerateREADME(t *testing.T) {
 	}
 	if !strings.Contains(s, "cloud.google.com/go/secretmanager") {
 		t.Errorf("want module path in README, got:\n%s", s)
+	}
+}
+
+func TestGenerateREADME_Skipped(t *testing.T) {
+	dir := t.TempDir()
+	moduleRoot := filepath.Join(dir, "secretmanager")
+	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: dir,
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Keep:   []string{"README.md"},
+	}
+
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		t.Fatal(err)
+	}
+	// README doesn't exist because the generation is skipped.
+	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("want README.md to not exist, got: %v", err)
 	}
 }
 
