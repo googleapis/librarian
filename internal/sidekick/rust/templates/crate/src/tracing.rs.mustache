@@ -51,48 +51,37 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 impl<T> super::stub::{{Codec.Name}} for {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
+
     {{#Codec.DetailedTracingAttributes}}
-    #[cfg(google_cloud_unstable_tracing)]
-    async fn {{Codec.Name}}(
-        &self,
-        req: {{InputType.Codec.QualifiedName}},
-        options: crate::RequestOptions,
-    ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
-        use tracing::Instrument;
-        use gaxi::observability::ResultExt as _;
-        let span = gaxi::client_request_span!(
-            "client::{{Codec.ServiceNameToPascal}}",
-            "{{Codec.Name}}",
-            &info::INSTRUMENTATION_CLIENT_INFO
-        );
-
-        self.inner.{{Codec.Name}}(req, options)
-            .instrument(span.clone())
-            .await
-            .record_in_span(&span)
-    }
-
-    #[cfg(not(google_cloud_unstable_tracing))]
+    #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
+    {{/Codec.DetailedTracingAttributes}}
+    {{^Codec.DetailedTracingAttributes}}
     #[tracing::instrument(ret)]
+    {{/Codec.DetailedTracingAttributes}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        {
+            use tracing::Instrument;
+            use gaxi::observability::ResultExt as _;
+            let span = gaxi::client_request_span!(
+                "client::{{Codec.ServiceNameToPascal}}",
+                "{{Codec.Name}}",
+                &info::INSTRUMENTATION_CLIENT_INFO
+            );
+            self.inner.{{Codec.Name}}(req, options)
+                .instrument(span.clone())
+                .await
+                .record_in_span(&span)
+        }
+        #[cfg(not(google_cloud_unstable_tracing))]
+        {{/Codec.DetailedTracingAttributes }}
         self.inner.{{Codec.Name}}(req, options).await
     }
-    {{/Codec.DetailedTracingAttributes }}
-    {{^Codec.DetailedTracingAttributes }}
-    #[tracing::instrument(ret)]
-    async fn {{Codec.Name}}(
-        &self,
-        req: {{InputType.Codec.QualifiedName}},
-        options: crate::RequestOptions,
-    ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
-        self.inner.{{Codec.Name}}(req, options).await
-    }
-
-    {{/Codec.DetailedTracingAttributes }}
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
 
