@@ -419,6 +419,54 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	}
 }
 
+func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
+	library := &config.Library{
+		Name:    "bigquery",
+		Version: "1.2.3",
+		Go: &config.GoModule{
+			NestedModule: "v2",
+		},
+	}
+
+	tmpDir := t.TempDir()
+	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "bigquery", "v2", "apiv2")
+	err := os.MkdirAll(metadataDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.bigquery.v2.json")
+	data := `{ 
+ "clientLibrary": {
+    "name": "cloud.google.com/go/bigquery/v2/apiv2",
+    "version": "1.2.2",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.cloud.bigquery.v2",
+        "version": "v2"
+      }
+    ]
+ }
+}
+`
+	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+		return
+	}
+	if err := updateSnippetMetadata(library, tmpDir); err != nil {
+		t.Fatal(err)
+	}
+
+	content, err := os.ReadFile(metadataFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(content)
+	// Skipped because the snippet file lives in the nested module.
+	if !strings.Contains(s, "1.2.2") {
+		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	}
+}
+
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
