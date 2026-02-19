@@ -251,7 +251,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
 				},
-				CommentOverrides: []sidekickconfig.DocumentationOverride{
+				CommentOverrides: []api.DocumentationOverride{
 					{
 						ID:      ".google.cloud.secretmanager.v1.Secret.name",
 						Match:   "secret name",
@@ -636,7 +636,7 @@ func TestModuleToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				CommentOverrides: []sidekickconfig.DocumentationOverride{
+				CommentOverrides: []api.DocumentationOverride{
 					{
 						ID:      ".google.cloud.storage.v1.Bucket.name",
 						Match:   "bucket name",
@@ -868,7 +868,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			var commentOverrides []sidekickconfig.DocumentationOverride
+			var commentOverrides []api.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
 				got, err := moduleToModelConfig(test.library, module, sources)
 				if err != nil {
