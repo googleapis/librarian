@@ -30,6 +30,7 @@ func TestGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		defaultVersion string
+		language       string
 		library        *config.Library
 		want           RepoMetadata
 	}{
@@ -40,6 +41,7 @@ func TestGenerate(t *testing.T) {
 				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				ReleaseLevel: "stable",
 			},
+			language: "python",
 			want: RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
@@ -65,6 +67,7 @@ func TestGenerate(t *testing.T) {
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 			},
 			defaultVersion: "v1",
+			language:       "python",
 			want: RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
@@ -82,6 +85,23 @@ func TestGenerate(t *testing.T) {
 				APIDescription:       "Stores, manages, and secures access to application secrets.",
 			},
 		},
+		{
+			name: "Go specific metadata",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			language: "go",
+			want: RepoMetadata{
+				APIShortname:        "secretmanager",
+				ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
+				ClientLibraryType:   "generated",
+				Description:         "Secret Manager API",
+				DistributionName:    "cloud.google.com/go/secretmanager/apiv1",
+				Language:            "go",
+				LibraryType:         "GAPIC_AUTO",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -90,7 +110,7 @@ func TestGenerate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := FromLibrary(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
+			if err := FromLibrary(test.library, test.language, "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
 				t.Fatal(err)
 			}
 

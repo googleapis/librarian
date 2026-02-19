@@ -122,7 +122,7 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 
 	switch language {
 	case serviceconfig.LangGo:
-		metadata = buildGoMetadata(metadata, api.Description)
+		metadata = buildGoMetadata(metadata, api.Title)
 	default:
 		metadata.APIDescription = apiDescription
 		metadata.APIID = api.ServiceName
