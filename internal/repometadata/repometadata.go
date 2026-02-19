@@ -122,6 +122,10 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		Repo:                 repo,
 	}
 
+	return write(metadata, outputDir)
+}
+
+func write(metadata *RepoMetadata, outputDir string) error {
 	data, err := json.MarshalIndent(metadata, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
