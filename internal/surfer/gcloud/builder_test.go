@@ -134,9 +134,12 @@ func TestNewParam(t *testing.T) {
 }
 
 func TestShouldSkipParam(t *testing.T) {
-	createMethod := sample.MethodCreate()
-	listMethod := sample.MethodListSecretVersions()
-	updateMethod := sample.MethodUpdate()
+	createMethod := sample.Method("..Service.CreateSecret")
+	listMethod := sample.Method("..Service.ListVersion")
+	updateMethod := sample.Method("..Service.UpdateSecret")
+
+	createLRO := sample.VisionAIMethod("..Service.CreateApplication")
+	deleteLRO := sample.VisionAIMethod("..Service.DeleteApplication")
 
 	for _, test := range []struct {
 		name   string
@@ -149,6 +152,24 @@ func TestShouldSkipParam(t *testing.T) {
 			field:  api.NewTestField("secret_id"),
 			method: createMethod,
 			want:   false,
+		},
+		{
+			name:   "Primary Resource ID (Create LRO)",
+			field:  api.NewTestField("application_id"),
+			method: createLRO,
+			want:   false,
+		},
+		{
+			name:   "Name Field (Primary)",
+			field:  api.NewTestField("name"),
+			method: deleteLRO,
+			want:   false, // It is the primary resource identifier, so shouldSkipParam returns false.
+		},
+		{
+			name:   "Parent Field (Primary)",
+			field:  api.NewTestField("parent"),
+			method: listMethod,
+			want:   false, // IsPrimaryResource returns true for collection-based list method's parent
 		},
 		{
 			name:   "Parent Field",
@@ -273,6 +294,45 @@ func TestNewOutputConfig_Error(t *testing.T) {
 			t.Parallel()
 			if got := newOutputConfig(test.method, &api.API{}); got != nil {
 				t.Errorf("newOutputConfig() = %v, want nil", got)
+			}
+		})
+	}
+}
+
+func TestNewAsync(t *testing.T) {
+	createLRO := sample.VisionAIMethod("..Service.CreateApplication")
+	deleteLRO := sample.VisionAIMethod("..Service.DeleteApplication")
+
+	service := &api.Service{
+		DefaultHost: "visionai.googleapis.com",
+	}
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   *Async
+	}{
+		{
+			name:   "Create returns Resource",
+			method: createLRO,
+			want: &Async{
+				Collection:            []string{"visionai.projects.locations.operations"},
+				ExtractResourceResult: true, // Output is Application, which matches the resource being operated on
+			},
+		},
+		{
+			name:   "Delete returns Empty",
+			method: deleteLRO,
+			want: &Async{
+				Collection:            []string{"visionai.projects.locations.operations"},
+				ExtractResourceResult: false, // Output is google.protobuf.Empty
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := newAsync(test.method, test.method.Model, &Config{}, service)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
