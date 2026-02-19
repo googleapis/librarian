@@ -14,6 +14,11 @@
 
 package api
 
+import (
+	"fmt"
+	"slices"
+)
+
 // IdentifyTargetResources populates the TargetResource field in PathBinding
 // for all methods in the API.
 //
@@ -22,104 +27,105 @@ package api
 //     with fields present in the PathTemplate.
 //  2. Heuristic Identification: For allow-listed services, uses path segment
 //     patterns to identify resources when annotations are missing.
-func IdentifyTargetResources(model *API) {
+func IdentifyTargetResources(model *API) error {
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			if method.PathInfo == nil {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				identifyTargetResourceForBinding(method, binding)
+				if err := identifyTargetResourceForBinding(method, binding); err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding) {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding) error {
 	if binding.PathTemplate == nil {
-		return
+		return nil
 	}
 
 	// Priority 1: Explicit Identification
 	// Matches google.api.resource_reference annotations.
-	if target := identifyExplicitTarget(method, binding); target != nil {
+	target, err := identifyExplicitTarget(method, binding)
+	if err != nil {
+		return err
+	}
+	if target != nil {
 		binding.TargetResource = target
-		return
+		return nil
 	}
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
 	// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
+	return nil
 }
 
-func identifyExplicitTarget(method *Method, binding *PathBinding) *TargetResource {
+func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
 	var fieldPaths [][]string
 	if method.InputType == nil {
-		return nil
+		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
 	}
 
-	// Collect variable segments from the path template
+	// Collect field paths corresponding to variable segments in the path template
 	for _, segment := range binding.PathTemplate.Segments {
 		if segment.Variable == nil {
 			continue
 		}
 
 		fieldPath := segment.Variable.FieldPath
-		field := findField(method.InputType, fieldPath)
-
+		field, err := findField(method.InputType, fieldPath)
+		if err != nil {
+			return nil, err
+		}
 		if field == nil {
-			return nil
+			return nil, fmt.Errorf("consistency error: field %v not found in message %q", fieldPath, method.InputType.Name)
 		}
-
 		if !field.IsResourceReference() {
-			return nil
+			return nil, nil
 		}
-
 		fieldPaths = append(fieldPaths, fieldPath)
 	}
 
 	if len(fieldPaths) == 0 {
-		return nil
+		return nil, nil
 	}
-
 	return &TargetResource{
 		FieldPaths:   fieldPaths,
 		PathTemplate: binding.PathTemplate,
-	}
+	}, nil
 }
 
 // findField traverses the (nested) message structure to find a field by its field path.
-func findField(msg *Message, path []string) *Field {
+func findField(msg *Message, path []string) (*Field, error) {
 	if len(path) == 0 {
-		return nil
+		return nil, fmt.Errorf("consistency error: empty field path in msg: %s", msg.ID)
 	}
 
 	current := msg
 	var field *Field
 
-	findInFields := func(fields []*Field, name string) *Field {
-		for _, f := range fields {
-			if f.Name == name {
-				return f
-			}
-		}
-		return nil
-	}
-
 	for i, name := range path {
-		field = findInFields(current.Fields, name)
-		if field == nil {
-			return nil
+		idx := slices.IndexFunc(current.Fields, func(f *Field) bool {
+			return f.Name == name
+		})
+		if idx == -1 {
+			return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, current.Name)
 		}
+		field = current.Fields[idx]
 
 		if i < len(path)-1 {
 			if field.MessageType == nil {
-				return nil
+				return nil, fmt.Errorf("consistency error: field %s in message %s has no MessageType", field.Name, current.Name)
 			}
 			current = field.MessageType
 		}
 	}
 
-	return field
+	return field, nil
 }
