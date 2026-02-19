@@ -21,8 +21,7 @@ import (
 )
 
 // setupTestModel helper creates a minimal API model for testing resource identification.
-func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API, *PathBinding) {
-	pathTemplate := &PathTemplate{Segments: path}
+func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Field) (*API, *PathBinding) {
 	binding := &PathBinding{PathTemplate: pathTemplate}
 	method := &Method{
 		Name: "TestMethod",
@@ -47,7 +46,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		serviceID string
-		path      []PathSegment
+		path      *PathTemplate
 		fields    []*Field
 		want      *TargetResource
 	}{
@@ -55,8 +54,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			name:      "explicit: standard resource reference",
 			serviceID: "any.service",
 			path: NewPathTemplate().
-				WithLiteral("projects").WithVariableNamed("project").
-				Segments,
+				WithLiteral("projects").WithVariableNamed("project"),
 			fields: []*Field{
 				{
 					Name:              "project",
@@ -73,8 +71,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			serviceID: "any.service",
 			path: NewPathTemplate().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("locations").WithVariableNamed("location").
-				Segments,
+				WithLiteral("locations").WithVariableNamed("location"),
 			fields: []*Field{
 				{
 					Name:              "project",
@@ -95,8 +92,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			name:      "explicit: nested field reference",
 			serviceID: "any.service",
 			path: NewPathTemplate().
-				WithLiteral("projects").WithVariableNamed("parent", "project").
-				Segments,
+				WithLiteral("projects").WithVariableNamed("parent", "project"),
 			fields: []*Field{
 				{
 					Name:  "parent",
@@ -133,15 +129,14 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		serviceID string
-		path      []PathSegment
+		path      *PathTemplate
 		fields    []*Field
 	}{
 		{
 			name:      "Explicit: missing reference returns nil",
 			serviceID: "any.service",
 			path: NewPathTemplate().
-				WithLiteral("projects").WithVariableNamed("project").
-				Segments,
+				WithLiteral("projects").WithVariableNamed("project"),
 			fields: []*Field{
 				{Name: "project", Typez: STRING_TYPE}, // No ResourceReference
 			},
@@ -151,8 +146,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 			serviceID: "any.service",
 			path: NewPathTemplate().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("glossaries").WithVariableNamed("glossary").
-				Segments,
+				WithLiteral("glossaries").WithVariableNamed("glossary"),
 			fields: []*Field{
 				{
 					Name:              "project",
