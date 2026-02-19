@@ -420,22 +420,25 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 }
 
 func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
-	library := &config.Library{
-		Name:    "bigquery",
-		Version: "1.2.3",
-		Go: &config.GoModule{
-			NestedModule: "v2",
-		},
-	}
-
-	tmpDir := t.TempDir()
-	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "bigquery", "v2", "apiv2")
-	err := os.MkdirAll(metadataDir, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.bigquery.v2.json")
-	data := `{ 
+	for _, test := range []struct {
+		name     string
+		library  *config.Library
+		dir      string
+		fileName string
+		data     string
+	}{
+		{
+			name: "skipped due to nested module",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				Go: &config.GoModule{
+					NestedModule: "v2",
+				},
+			},
+			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
+			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
+			data: `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/bigquery/v2/apiv2",
     "version": "$VERSION",
@@ -448,22 +451,55 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
     ]
  }
 }
-`
-	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := updateSnippetMetadata(library, tmpDir); err != nil {
-		t.Fatal(err)
-	}
+`,
+		},
+		{
+			name: "skipped due to non-snippets file name",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+			},
+			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "apiv1"),
+			fileName: "non_metadata.google.cloud.bigquery.v1.json",
+			data: `{ 
+ "clientLibrary": {
+    "name": "cloud.google.com/go/bigquery/apiv1",
+    "version": "$VERSION",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.cloud.bigquery.v1",
+        "version": "v1"
+      }
+    ]
+ }
+}
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755)
+			if err != nil {
+				t.Fatal(err)
+			}
+			metadataFile := filepath.Join(tmpDir, test.dir, test.fileName)
+			if err := os.WriteFile(metadataFile, []byte(test.data), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := updateSnippetMetadata(test.library, tmpDir); err != nil {
+				t.Fatal(err)
+			}
 
-	content, err := os.ReadFile(metadataFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(content)
-	// Skipped because the snippet file lives in the nested module.
-	if !strings.Contains(s, "$VERSION") {
-		t.Errorf("want version in snippet metadata, got:\n%s", s)
+			content, err := os.ReadFile(metadataFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(content)
+			if !strings.Contains(s, "$VERSION") {
+				t.Errorf("want version in snippet metadata, got:\n%s", s)
+			}
+		})
 	}
 }
 
