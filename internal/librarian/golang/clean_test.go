@@ -115,8 +115,7 @@ func TestClean_Success(t *testing.T) {
 	}
 }
 
-func TestCleanGo_Error(t *testing.T) {
-	root := t.TempDir()
+func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
@@ -134,6 +133,7 @@ func TestCleanGo_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
