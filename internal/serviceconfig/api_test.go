@@ -73,6 +73,16 @@ func TestGetTransport(t *testing.T) {
 			lang: "python",
 			want: "grpc+rest",
 		},
+		{
+			name: "all language transport",
+			sc: &API{
+				Transports: map[string]Transport{
+					"all": GRPC,
+				},
+			},
+			lang: "go",
+			want: "grpc",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.Transport(test.lang)
