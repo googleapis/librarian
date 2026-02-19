@@ -21,7 +21,7 @@ import (
 )
 
 // setupTestModel helper creates a minimal API model for testing resource identification.
-func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API, *PathBinding, *PathTemplate) {
+func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API, *PathBinding) {
 	pathTemplate := &PathTemplate{Segments: path}
 	binding := &PathBinding{PathTemplate: pathTemplate}
 	method := &Method{
@@ -40,7 +40,7 @@ func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API
 	model := &API{
 		Services: []*Service{service},
 	}
-	return model, binding, pathTemplate
+	return model, binding
 }
 
 func TestIdentifyTargetResources(t *testing.T) {
@@ -118,7 +118,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model, binding, _ := setupTestModel(test.serviceID, test.path, test.fields)
+			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource
@@ -168,7 +168,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model, binding, _ := setupTestModel(test.serviceID, test.path, test.fields)
+			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource
