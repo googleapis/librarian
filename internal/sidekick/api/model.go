@@ -1213,14 +1213,6 @@ func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
 }
 
-// PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
-type PaginationInfo struct {
-	// The field that gives us the next page token.
-	NextPageToken *Field
-	// PageableItem is the field to be paginated over.
-	PageableItem *Field
-}
-
 // Enum defines a message used in request/response handling.
 type Enum struct {
 	// Documentation for the message.
