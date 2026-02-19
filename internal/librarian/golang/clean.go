@@ -42,24 +42,24 @@ var (
 )
 
 // Clean cleans up a Go library and its associated snippets.
-func Clean(library *config.Library) (*config.Library, error) {
+func Clean(library *config.Library) error {
 	libraryDir := filepath.Join(library.Output, library.Name)
 	keepSet, err := check(libraryDir, library.Keep)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	var nestedModule string
 	if library.Go != nil {
 		nestedModule = library.Go.NestedModule
 	}
 	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
-		return nil, err
+		return err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
 	if err := clean(snippetDir, nestedModule, nil); err != nil {
-		return nil, err
+		return err
 	}
-	return library, nil
+	return nil
 }
 
 // check validates the given directory and returns a set of files to keep.

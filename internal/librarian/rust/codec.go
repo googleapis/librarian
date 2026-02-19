@@ -80,9 +80,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 			}
 		}
 		if len(library.Rust.PaginationOverrides) > 0 {
-			modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+			modelCfg.PaginationOverrides = make([]api.PaginationOverride, len(library.Rust.PaginationOverrides))
 			for i, override := range library.Rust.PaginationOverrides {
-				modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+				modelCfg.PaginationOverrides[i] = api.PaginationOverride{
 					ID:        override.ID,
 					ItemField: override.ItemField,
 				}
@@ -270,9 +270,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		}
 	}
 	if len(library.Rust.PaginationOverrides) > 0 {
-		modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+		modelCfg.PaginationOverrides = make([]api.PaginationOverride, len(library.Rust.PaginationOverrides))
 		for i, override := range library.Rust.PaginationOverrides {
-			modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+			modelCfg.PaginationOverrides[i] = api.PaginationOverride{
 				ID:        override.ID,
 				ItemField: override.ItemField,
 			}

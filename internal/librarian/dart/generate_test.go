@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,6 +26,89 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/source"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
+
+// TestGenerateLibraries performs simple testing that multiple libraries can
+// be generated. Only the presence of a single expected file per library is
+// performed; TestGenerate is responsible for more detailed testing of
+// per-library generation.
+func TestGenerateLibraries(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "dart")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	libraries := []*config.Library{
+		{
+			Name:          "google_cloud_rpc",
+			APIs:          []*config.API{{Path: "google/rpc"}},
+			CopyrightYear: "2025",
+			Dart: &config.DartPackage{
+				IssueTrackerURL: "https://placeholder",
+				Packages: map[string]string{
+					"package:google_cloud_protobuf": "^0.5.0",
+				},
+			},
+		},
+		{
+			Name:          "google_type",
+			APIs:          []*config.API{{Path: "google/type"}},
+			CopyrightYear: "2025",
+			Dart: &config.DartPackage{
+				IssueTrackerURL: "https://placeholder",
+				Packages: map[string]string{
+					"package:google_cloud_protobuf": "^0.5.0",
+				},
+			},
+		},
+	}
+	for _, library := range libraries {
+		library.Output = filepath.Join(outDir, "generated", library.Name)
+	}
+	sources := &source.Sources{
+		Googleapis: googleapisDir,
+	}
+	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
+		t.Fatal(err)
+	}
+	// Just check that a pubspec.yaml has been created for each library.
+	for _, library := range libraries {
+		expectedPubspec := filepath.Join(library.Output, "pubspec.yaml")
+		_, err := os.Stat(expectedPubspec)
+		if err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedPubspec, err)
+		}
+	}
+}
+
+func TestGenerateLibraries_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "dart")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	libraries := []*config.Library{
+		{
+			Name:                "broken",
+			SpecificationFormat: "invalid",
+			Output:              filepath.Join(outDir, "broken"),
+			APIs:                []*config.API{{Path: "broken"}},
+		},
+	}
+	sources := &source.Sources{
+		Googleapis: googleapisDir,
+	}
+	gotErr := GenerateLibraries(t.Context(), libraries, sources)
+	wantErr := errInvalidSpecificationFormat
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
 
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
@@ -66,7 +150,7 @@ func TestGenerate(t *testing.T) {
 	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {
