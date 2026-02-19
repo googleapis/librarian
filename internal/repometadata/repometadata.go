@@ -47,11 +47,13 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	// ClientLibraryType is the type of library (e.g., "generated").
 	ClientLibraryType string `json:"client_library_type,omitempty"`
 
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
 
+	// Description is the description of the API.
 	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
