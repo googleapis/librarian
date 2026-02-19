@@ -160,7 +160,7 @@ func MethodListSecretVersions() *api.Method {
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					Verb: http.MethodPost,
+					Verb: http.MethodGet,
 					PathTemplate: api.NewPathTemplate().
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -250,11 +250,12 @@ func ListSecretVersionsResponse() *api.Message {
 		Package: Package,
 		Fields: []*api.Field{
 			{
-				Name:     "versions",
-				JSONName: "versions",
-				Typez:    api.MESSAGE_TYPE,
-				TypezID:  SecretVersion().ID,
-				Repeated: true,
+				Name:        "versions",
+				JSONName:    "versions",
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     SecretVersion().ID,
+				MessageType: SecretVersion(),
+				Repeated:    true,
 			},
 		},
 	}
