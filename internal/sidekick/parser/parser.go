@@ -79,7 +79,9 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	api.IdentifyTargetResources(model)
+	if err := api.IdentifyTargetResources(model); err != nil {
+		return nil, err
+	}
 	if err := api.SkipModelElements(model, cfg.Override); err != nil {
 		return nil, err
 	}
