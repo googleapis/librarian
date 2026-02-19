@@ -122,17 +122,7 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		Repo:                 repo,
 	}
 
-	data, err := json.MarshalIndent(metadata, "", "    ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
-	metadataPath := filepath.Join(outputDir, ".repo-metadata.json")
-	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write metadata file: %w", err)
-	}
-
-	return nil
+	return write(metadata, outputDir)
 }
 
 // buildClientDocURL builds the client documentation URL based on language.
@@ -178,4 +168,19 @@ func cleanTitle(title string) string {
 	title = strings.TrimSpace(title)
 	title = strings.TrimSuffix(title, " API")
 	return strings.TrimSpace(title)
+}
+
+// write writes the given RepoMetadata into outputDir/.repo-metadata.json.
+func write(metadata *RepoMetadata, outputDir string) error {
+	data, err := json.MarshalIndent(metadata, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	metadataPath := filepath.Join(outputDir, ".repo-metadata.json")
+	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write metadata file: %w", err)
+	}
+
+	return nil
 }

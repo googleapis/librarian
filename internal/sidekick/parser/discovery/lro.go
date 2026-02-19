@@ -19,10 +19,9 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func lroAnnotations(model *api.API, discoveryConfig *config.Discovery) error {
+func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 	if discoveryConfig == nil {
 		return nil
 	}
@@ -72,7 +71,7 @@ func lroAnnotations(model *api.API, discoveryConfig *config.Discovery) error {
 	return nil
 }
 
-func lroFindPoller(method *api.Method, model *api.API, discoveryConfig *config.Discovery) (*api.Method, []string) {
+func lroFindPoller(method *api.Method, model *api.API, discoveryConfig *api.Discovery) (*api.Method, []string) {
 	var flatPath []string
 	for _, binding := range method.PathInfo.Bindings {
 		flatPath = append(flatPath, binding.PathTemplate.FlatPath())

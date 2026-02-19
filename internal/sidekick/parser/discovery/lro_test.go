@@ -20,13 +20,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestLroAnnotations(t *testing.T) {
-	discoveryConfig := &config.Discovery{
+	discoveryConfig := &api.Discovery{
 		OperationID: "..Operation",
-		Pollers: []*config.Poller{
+		Pollers: []*api.Poller{
 			{Prefix: "compute/v1/projects/{project}/zones/{zone}", MethodID: "..zoneOperations.get"},
 			{Prefix: "compute/v1/projects/{project}/regions/{region}", MethodID: "..regionOperations.get"},
 		},
@@ -109,9 +108,9 @@ func TestLroAnnotations(t *testing.T) {
 }
 
 func TestLroAnnotationsError(t *testing.T) {
-	discoveryConfig := &config.Discovery{
+	discoveryConfig := &api.Discovery{
 		OperationID: "..Operation",
-		Pollers: []*config.Poller{
+		Pollers: []*api.Poller{
 			{Prefix: "p/{project}/l/{zone}", MethodID: "..Operations.get_1"},
 			{Prefix: "p/{project}/l/{region}", MethodID: "..Operations.get_2"},
 		},

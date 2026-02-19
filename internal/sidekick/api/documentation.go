@@ -17,12 +17,22 @@ package api
 import (
 	"fmt"
 	"strings"
-
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
+// DocumentationOverride describes overrides for the documentation of a single element.
+//
+// This should be used sparingly. Generally we should prefer updating the
+// comments upstream, and then getting a new version of the services'
+// specification. The exception may be when the fixes take a long time, or are
+// specific to one language.
+type DocumentationOverride struct {
+	ID      string
+	Match   string
+	Replace string
+}
+
 // PatchDocumentation overrides the documentation of the API model with the provided overrides.
-func PatchDocumentation(model *API, overrides []config.DocumentationOverride) error {
+func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 	for _, override := range overrides {
 		id := override.ID
 		if msg, ok := model.State.MessageByID[id]; ok {
@@ -72,7 +82,7 @@ func PatchDocumentation(model *API, overrides []config.DocumentationOverride) er
 	return nil
 }
 
-func patchFieldDocs(msg *Message, fieldName string, override *config.DocumentationOverride) error {
+func patchFieldDocs(msg *Message, fieldName string, override *DocumentationOverride) error {
 	for _, field := range msg.Fields {
 		if field.Name != fieldName {
 			continue
@@ -85,7 +95,7 @@ func patchFieldDocs(msg *Message, fieldName string, override *config.Documentati
 	return fmt.Errorf("cannot find field %s in message %s to apply comment override", fieldName, msg.ID)
 }
 
-func patchEnumValueDocs(enu *Enum, name string, override *config.DocumentationOverride) error {
+func patchEnumValueDocs(enu *Enum, name string, override *DocumentationOverride) error {
 	for _, v := range enu.Values {
 		if v.Name != name {
 			continue
@@ -98,7 +108,7 @@ func patchEnumValueDocs(enu *Enum, name string, override *config.DocumentationOv
 	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, enu.ID)
 }
 
-func patchMethodDocs(svc *Service, name string, override *config.DocumentationOverride) error {
+func patchMethodDocs(svc *Service, name string, override *DocumentationOverride) error {
 	for _, m := range svc.Methods {
 		if m.Name != name {
 			continue
@@ -111,7 +121,7 @@ func patchMethodDocs(svc *Service, name string, override *config.DocumentationOv
 	return fmt.Errorf("cannot find field %s in message %s to apply comment override", name, svc.ID)
 }
 
-func patchElementDocs(documentation *string, override *config.DocumentationOverride) error {
+func patchElementDocs(documentation *string, override *DocumentationOverride) error {
 	new := strings.ReplaceAll(*documentation, strings.ReplaceAll(override.Match, "\r\n", "\n"), override.Replace)
 	if *documentation == new {
 		return fmt.Errorf("comment override for %s did not match", override.ID)

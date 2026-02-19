@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (
@@ -71,7 +70,7 @@ func TestPatchCommentsMessage(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Message0",
 			Match:   Match,
@@ -141,7 +140,7 @@ func TestPatchCommentsMessageNotFound(t *testing.T) {
 		"NotAThing",
 	}
 	for _, id := range missing {
-		overrides := []config.DocumentationOverride{
+		overrides := []DocumentationOverride{
 			{
 				ID:      id,
 				Match:   Match,
@@ -166,7 +165,7 @@ func TestPatchCommentsNoMatch(t *testing.T) {
 		".test.Service0.Method0",
 	}
 	for _, id := range missing {
-		overrides := []config.DocumentationOverride{
+		overrides := []DocumentationOverride{
 			{
 				ID:      id,
 				Match:   "NOT A STRING WE WILL FIND",
@@ -192,7 +191,7 @@ func TestPatchCommentsField(t *testing.T) {
 		Fields:  []*Field{f0},
 	}
 	model := NewTestAPI([]*Message{m0}, []*Enum{}, []*Service{})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Message0.field_name",
 			Match:   Match,
@@ -216,7 +215,7 @@ func TestPatchCommentsEnum(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Enum0",
 			Match:   Match,
@@ -246,7 +245,7 @@ func TestPatchCommentsEnumValue(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{e0}, []*Service{})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Enum0.ENUM_VALUE",
 			Match:   Match,
@@ -270,7 +269,7 @@ func TestPatchCommentsService(t *testing.T) {
 		Documentation: Input,
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Service0",
 			Match:   Match,
@@ -299,7 +298,7 @@ func TestPatchCommentsMethod(t *testing.T) {
 		Methods: []*Method{m0},
 	}
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{s0})
-	overrides := []config.DocumentationOverride{
+	overrides := []DocumentationOverride{
 		{
 			ID:      ".test.Service0.Method",
 			Match:   Match,
