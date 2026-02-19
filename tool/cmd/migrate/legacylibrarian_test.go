@@ -143,6 +143,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
+					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
 				},
 			},
 		},
@@ -179,6 +180,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
+					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
 				},
 				Libraries: []*config.Library{
 					{

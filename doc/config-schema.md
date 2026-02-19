@@ -63,6 +63,7 @@ This document describes the schema for the librarian.yaml.
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
+| `python` | [PythonDefault](#pythondefault-configuration) (optional) | Python contains Python-specific default configuration. |
 
 ## Library Configuration
 
@@ -136,10 +137,17 @@ This document describes the schema for the librarian.yaml.
 | `module_path_version` | string | ModulePathVersion is the version of the Go module path. |
 | `nested_module` | string | NestedModule is the name of a nested module directory. |
 
+## PythonDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `common_gapic_paths` | list of string | CommonGAPICPaths contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). If a library defines its own common_gapic_paths, they will be appended to the defaults. |
+
 ## PythonPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| (embedded) | [PythonDefault](#pythondefault-configuration) |  |
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 | `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
