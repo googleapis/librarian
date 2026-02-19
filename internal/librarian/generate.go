@@ -161,7 +161,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 				return err
 			}
 		case languageGo:
-			if err := cleanGo(library); err != nil {
+			if err := golang.Clean(library); err != nil {
 				return err
 			}
 		case languageRust:
