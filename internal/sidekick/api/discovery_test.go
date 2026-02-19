@@ -40,22 +40,22 @@ func TestLroServices(t *testing.T) {
 
 func TestPathParameters(t *testing.T) {
 	tests := []struct {
-		name string
+		name  string
 		input *Poller
 		want  []string
 	}{
 		{
-			name: "multiple parameters",
+			name:  "multiple parameters",
 			input: &Poller{Prefix: "projects/{project}/zones/{zone}"},
 			want:  []string{"project", "zone"},
 		},
 		{
-			name: "no parameters",
+			name:  "no parameters",
 			input: &Poller{Prefix: "abc/def"},
 			want:  nil,
 		},
 		{
-			name: "single parameter",
+			name:  "single parameter",
 			input: &Poller{Prefix: "a/{b}"},
 			want:  []string{"b"},
 		},
