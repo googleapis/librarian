@@ -25,7 +25,7 @@ import (
 )
 
 func TestClean_Success(t *testing.T) {
-	root := t.TempDir()
+	t.Parallel()
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
@@ -37,30 +37,53 @@ func TestClean_Success(t *testing.T) {
 		wantSnippets []string
 	}{
 		{
-			name:         "removes all except keep list",
-			outputFiles:  []string{"file1.go", "file2.go", "go.mod"},
+			name: "removes all generated files",
+			outputFiles: []string{
+				"apiv1/.repo-metadata.json",
+				"apiv1/auxiliary.go",
+				"apiv1/auxiliary_go123.go",
+				"apiv1/doc.go",
+				"apiv1/library_client.go",
+				"apiv1/library_client_example_go123_test.go",
+				"apiv1/library_client_example_test.go",
+				"apiv1/gapic_metadata.json",
+				"apiv1/helpers.go",
+				"apiv1/librarypb/content.pb.go",
+				"apiv1/non-generated.go",
+				"doc.go",
+			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{"file1.go"},
-			wantOutput:   []string{"file1.go"},
+			keep:         []string{},
+			wantOutput: []string{
+				"apiv1/non-generated.go",
+				// skipped because the file doesn't live in a versioned directory.
+				"doc.go",
+			},
 		},
 		{
-			name:         "remove all files",
-			outputFiles:  []string{"file1.go", "file2.go"},
+			name: "remove all generated files except keep list",
+			outputFiles: []string{
+				"apiv1/auxiliary.go",
+				"apiv1/auxiliary_go123.go",
+				"nested/apiv1/doc.go",
+			},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{},
-			wantOutput:   []string{},
+			keep:         []string{"apiv1/auxiliary_go123.go"},
+			wantOutput:   []string{"apiv1/auxiliary_go123.go"},
 		},
 		{
 			name:         "nested module",
-			outputFiles:  []string{"file1.go", "file2.go", "nested/nested_file.go"},
+			outputFiles:  []string{"nested/apiv1beta1/doc.go"},
 			snippetFiles: []string{"nested/snippet.go"},
 			keep:         []string{},
 			nestedModule: "nested",
-			wantOutput:   []string{"nested/nested_file.go"},
+			wantOutput:   []string{"nested/apiv1beta1/doc.go"},
 			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
@@ -98,8 +121,7 @@ func TestClean_Success(t *testing.T) {
 	}
 }
 
-func TestCleanGo_Error(t *testing.T) {
-	root := t.TempDir()
+func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
@@ -117,6 +139,7 @@ func TestCleanGo_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
