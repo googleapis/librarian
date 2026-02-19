@@ -237,10 +237,6 @@ func TestPathTemplateBuilder(t *testing.T) {
 func TestPathBindingHeuristic(t *testing.T) {
 	heuristic := &TargetResource{
 		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
-		PathTemplate: NewPathTemplate().
-			WithLiteral("projects").WithVariableNamed("project").
-			WithLiteral("zones").WithVariableNamed("zone").
-			WithLiteral("instances").WithVariableNamed("instance"),
 	}
 	binding := &PathBinding{
 		Verb:           "GET",

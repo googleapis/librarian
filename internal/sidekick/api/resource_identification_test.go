@@ -16,8 +16,159 @@ package api
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
+// setupTestModel helper creates a minimal API model for testing resource identification.
+func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Field) (*API, *PathBinding) {
+	binding := &PathBinding{PathTemplate: pathTemplate}
+	method := &Method{
+		Name: "TestMethod",
+		InputType: &Message{
+			Fields: fields,
+		},
+		PathInfo: &PathInfo{
+			Bindings: []*PathBinding{binding},
+		},
+	}
+	service := &Service{
+		ID:      serviceID,
+		Methods: []*Method{method},
+	}
+	model := &API{
+		Services: []*Service{service},
+	}
+	return model, binding
+}
+
 func TestIdentifyTargetResources(t *testing.T) {
-	// TODO(#4099): Implement IdentifyTargetResources for consistent explicit resource identification in the sidekick parser.
+	for _, test := range []struct {
+		name      string
+		serviceID string
+		path      *PathTemplate
+		fields    []*Field
+		want      *TargetResource
+	}{
+		{
+			name:      "explicit: standard resource reference",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project"),
+			fields: []*Field{
+				{
+					Name:              "project",
+					Typez:             STRING_TYPE,
+					ResourceReference: &ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
+				},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}},
+			},
+		},
+		{
+			name:      "explicit: multiple resource references",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("locations").WithVariableNamed("location"),
+			fields: []*Field{
+				{
+					Name:              "project",
+					Typez:             STRING_TYPE,
+					ResourceReference: &ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
+				},
+				{
+					Name:              "location",
+					Typez:             STRING_TYPE, // Often locations are string IDs
+					ResourceReference: &ResourceReference{Type: "locations.googleapis.com/Location"},
+				},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"location"}},
+			},
+		},
+		{
+			name:      "explicit: nested field reference",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("parent", "project"),
+			fields: []*Field{
+				{
+					Name:  "parent",
+					Typez: MESSAGE_TYPE,
+					MessageType: &Message{
+						Fields: []*Field{
+							{
+								Name:              "project",
+								Typez:             STRING_TYPE,
+								ResourceReference: &ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
+							},
+						},
+					},
+				},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"parent", "project"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
+			IdentifyTargetResources(model)
+
+			got := binding.TargetResource
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIdentifyTargetResources_NoMatch(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		serviceID string
+		path      *PathTemplate
+		fields    []*Field
+	}{
+		{
+			name:      "Explicit: missing reference returns nil",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE}, // No ResourceReference
+			},
+		},
+		{
+			name:      "Explicit: partial reference returns nil",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("glossaries").WithVariableNamed("glossary"),
+			fields: []*Field{
+				{
+					Name:              "project",
+					Typez:             STRING_TYPE,
+					ResourceReference: &ResourceReference{Type: "cloudresourcemanager.googleapis.com/Project"},
+				},
+				{
+					Name:  "glossary",
+					Typez: STRING_TYPE,
+					// No ResourceReference on the second variable
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
+			IdentifyTargetResources(model)
+
+			got := binding.TargetResource
+			if got != nil {
+				t.Errorf("IdentifyTargetResources() = %v, want nil", got)
+			}
+		})
+	}
 }

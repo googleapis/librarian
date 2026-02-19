@@ -21,7 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -509,9 +508,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{
 					Title: "Google Compute Engine API",
 				},
-				Discovery: &sidekickconfig.Discovery{
+				Discovery: &api.Discovery{
 					OperationID: ".google.cloud.compute.v1.Operation",
-					Pollers: []*sidekickconfig.Poller{
+					Pollers: []*api.Poller{
 						{
 							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
 							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
