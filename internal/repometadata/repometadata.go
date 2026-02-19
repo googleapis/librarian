@@ -100,7 +100,7 @@ func FromLibrary(library *config.Library, language, repo, googleapisDir, default
 
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, defaultVersion, outputDir string) error {
-	clientDocURL := buildClientDocURL(language, extractNameFromAPIID(api.ServiceName))
+	clientDocURL := buildClientDocURL(api, library, language)
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
 		apiDescription = library.DescriptionOverride
@@ -111,7 +111,7 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		APIShortname:         api.ShortName,
 		ClientDocumentation:  clientDocURL,
 		DefaultVersion:       defaultVersion,
-		DistributionName:     library.Name,
+		DistributionName:     buildDistributionName(api, library, language),
 		IssueTracker:         api.NewIssueURI,
 		Language:             language,
 		LibraryType:          "GAPIC_AUTO",
@@ -136,12 +136,26 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 }
 
 // buildClientDocURL builds the client documentation URL based on language.
-func buildClientDocURL(language, serviceName string) string {
+func buildClientDocURL(api *serviceconfig.API, library *config.Library, language string) string {
 	switch language {
-	case "python":
-		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", serviceName)
-	case "rust":
-		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", serviceName)
+	case serviceconfig.LangGo:
+		return goClientDocURL(library, api.Path)
+	case serviceconfig.LangPython:
+		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", api.ShortName)
+	case serviceconfig.LangRust:
+		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", api.ShortName)
+	default:
+		return ""
+	}
+}
+
+// buildDistributionName builds the distribution name based on language.
+func buildDistributionName(api *serviceconfig.API, library *config.Library, language string) string {
+	switch language {
+	case serviceconfig.LangGo:
+		return goDistributionName(library, api.Path, api.ShortName)
+	case serviceconfig.LangPython, serviceconfig.LangRust:
+		return library.Name
 	default:
 		return ""
 	}
@@ -164,11 +178,4 @@ func cleanTitle(title string) string {
 	title = strings.TrimSpace(title)
 	title = strings.TrimSuffix(title, " API")
 	return strings.TrimSpace(title)
-}
-
-// extractNameFromAPIID extracts the service name from the API ID.
-// Example: "secretmanager.googleapis.com" -> "secretmanager".
-func extractNameFromAPIID(apiID string) string {
-	name, _, _ := strings.Cut(apiID, ".")
-	return name
 }

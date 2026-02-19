@@ -929,6 +929,9 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
+	// TargetResource contains the results of the resource name identification.
+	// This helps identify which resource this path is likely targeting.
+	TargetResource *TargetResource
 	// Language specific annotations.
 	Codec any
 }
@@ -1208,14 +1211,6 @@ type Message struct {
 // HasFields returns true if the message has fields.
 func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
-}
-
-// PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
-type PaginationInfo struct {
-	// The field that gives us the next page token.
-	NextPageToken *Field
-	// PageableItem is the field to be paginated over.
-	PageableItem *Field
 }
 
 // Enum defines a message used in request/response handling.
@@ -1513,4 +1508,15 @@ type ResourceReference struct {
 // IsResourceReference returns true if the field is annotated with google.api.resource_reference.
 func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
+}
+
+// TargetResource contains the results of the resource name identification.
+// It provides the sequences of fields used by language-specific generators to inject tracing attributes.
+type TargetResource struct {
+	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
+	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
+	FieldPaths [][]string
+	// PathTemplate is the template for the resource name.
+	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
+	PathTemplate *PathTemplate
 }

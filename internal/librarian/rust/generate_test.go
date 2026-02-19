@@ -55,12 +55,12 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 			Modules: []*config.RustModule{
 				{
-					Source:   "google/cloud/secretmanager/v1",
+					APIPath:  "google/cloud/secretmanager/v1",
 					Output:   module1Dir,
 					Template: "grpc-client",
 				},
 				{
-					Source:   "google/cloud/secretmanager/v1",
+					APIPath:  "google/cloud/secretmanager/v1",
 					Output:   module2Dir,
 					Template: "grpc-client",
 				},
@@ -70,7 +70,7 @@ func TestGenerateVeneer(t *testing.T) {
 	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -113,7 +113,7 @@ func TestSkipGenerateVeneer(t *testing.T) {
 	sources := &source.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -175,6 +175,157 @@ func TestKeepVeneer(t *testing.T) {
 	want := []string{"Cargo.toml", "src/lib.rs"}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestGenerateLibraries performs simple testing that multiple libraries can
+// be generated. Only the presence of a single expected file per library is
+// performed; TestGenerate is responsible for more detailed testing of
+// per-library generation.
+func TestGenerateLibraries(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "rustfmt")
+	testhelper.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "cargo")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	workspaceDir := t.TempDir()
+	cargoToml, err := os.ReadFile(filepath.Join("testdata", "Cargo.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Mock validate to speed up the test.
+	oldValidate := validate
+	validate = func(ctx context.Context, outputDir string) error { return nil }
+	t.Cleanup(func() { validate = oldValidate })
+
+	libraries := []*config.Library{
+		{
+			Name:          "google-cloud-secretmanager-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					PackageDependencies: []*config.RustPackageDependency{
+						{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+						{Name: "iam_v1", Package: "google-cloud-iam-v1", Source: "google.iam.v1"},
+						{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+						{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+						{Name: "google-cloud-type", Package: "google-cloud-type", Source: "google.type"},
+					},
+				},
+			},
+		},
+		{
+			Name:          "google-cloud-configdelivery-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/configdelivery/v1",
+				},
+			},
+			Rust: &config.RustCrate{
+				RustDefault: config.RustDefault{
+					PackageDependencies: []*config.RustPackageDependency{
+						{Name: "wkt", Package: "google-cloud-wkt", Source: "google.protobuf"},
+						{Name: "location", Package: "google-cloud-location", Source: "google.cloud.location"},
+						{Name: "google-cloud-api", Package: "google-cloud-api", Source: "google.api"},
+						{Name: "google-cloud-longrunning", Package: "google-cloud-longrunning", Source: "google.longrunning"},
+						{Name: "google-cloud-rpc", Package: "google-cloud-rpc", Source: "google.rpc"},
+					},
+				},
+			},
+		},
+	}
+	sources := &source.Sources{
+		Googleapis: googleapisDir,
+	}
+	t.Chdir(workspaceDir)
+	for _, library := range libraries {
+		library.Output = filepath.Join("generated", library.Name)
+	}
+
+	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
+		t.Fatal(err)
+	}
+	// Just check that a Cargo.toml has been created for each library.
+	for _, library := range libraries {
+		expectedPubspec := filepath.Join(library.Output, "Cargo.toml")
+		_, err := os.Stat(expectedPubspec)
+		if err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedPubspec, err)
+		}
+	}
+}
+
+func TestGenerateLibraries_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "rustfmt")
+	testhelper.RequireCommand(t, "taplo")
+	testhelper.RequireCommand(t, "cargo")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	workspaceDir := t.TempDir()
+	cargoToml, err := os.ReadFile(filepath.Join("testdata", "Cargo.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workspaceDir, "Cargo.toml"), cargoToml, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Mock validate to speed up the test.
+	oldValidate := validate
+	validate = func(ctx context.Context, outputDir string) error { return nil }
+	t.Cleanup(func() { validate = oldValidate })
+
+	libraries := []*config.Library{
+		{
+			Name:                "broken",
+			Version:             "0.1.0",
+			Output:              filepath.Join("generated", "broken"),
+			ReleaseLevel:        "preview",
+			CopyrightYear:       "2025",
+			SpecificationFormat: "invalid",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+	}
+	sources := &source.Sources{
+		Googleapis: googleapisDir,
+	}
+	t.Chdir(workspaceDir)
+
+	gotErr := GenerateLibraries(t.Context(), libraries, sources)
+	wantErrMessage := "unknown specification format \"invalid\""
+	if gotErr == nil {
+		t.Fatalf("expected error with message %s", wantErrMessage)
+	}
+	if diff := cmp.Diff(wantErrMessage, gotErr.Error()); diff != "" {
+		t.Errorf("error mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -259,7 +410,7 @@ func TestGenerate(t *testing.T) {
 			sources := &source.Sources{
 				Googleapis: googleapisDir,
 			}
-			if err := Generate(t.Context(), library, sources); err != nil {
+			if err := generate(t.Context(), library, sources); err != nil {
 				t.Fatal(err)
 			}
 

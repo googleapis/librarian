@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibraries(t *testing.T) {
 	const (
 		libraryName = "test-library"
 		outputDir   = "output"
@@ -35,7 +35,7 @@ func TestGenerate(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generate(t.Context(), "fake", library, "", nil); err != nil {
+	if err := generateLibraries(t.Context(), "fake", []*config.Library{library}, "", nil); err != nil {
 		t.Fatal(err)
 	}
 

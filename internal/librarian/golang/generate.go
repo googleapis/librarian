@@ -45,8 +45,18 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
-// Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+// GenerateLibraries generates all the given libraries in sequence.
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+	for _, library := range libraries {
+		if err := generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// generate generates a Go client library.
+func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
@@ -217,18 +227,6 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
 		importPath, modulePathVersion, version, clientDir)
-}
-
-func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
-	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
-		}
-	}
-	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.

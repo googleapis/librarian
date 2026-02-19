@@ -63,7 +63,7 @@ libraries:
     veneer: true
     rust:
       modules:
-        - source: google/storage/v2
+        - api_path: google/storage/v2
           service_config: google/storage/v2/storage_v2.yaml
           output: src/storage/src/generated/gapic
           template: grpc-client
@@ -72,6 +72,6 @@ libraries:
           included_ids:
             - .google.storage.v2.Storage.GetBucket
             - .google.storage.v2.Storage.ListBuckets
-        - source: google/storage/v2
+        - api_path: google/storage/v2
           output: src/storage/src/generated/protos/storage
           template: prost

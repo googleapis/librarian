@@ -288,7 +288,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
 				},
-				PaginationOverrides: []sidekickconfig.PaginationOverride{
+				PaginationOverrides: []api.PaginationOverride{
 					{
 						ID:        ".google.cloud.secretmanager.v1.Secret.ListSecrets",
 						ItemField: "secrets",
@@ -721,7 +721,7 @@ func TestModuleToModelConfig(t *testing.T) {
 					Modules: []*config.RustModule{
 						{
 							Template: "prost",
-							Source:   "google/logging/type",
+							APIPath:  "google/logging/type",
 						},
 					},
 				},
@@ -775,7 +775,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Source: "conformance",
+							APIPath: "conformance",
 						},
 					},
 				},
@@ -815,7 +815,7 @@ func TestModuleToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				PaginationOverrides: []sidekickconfig.PaginationOverride{
+				PaginationOverrides: []api.PaginationOverride{
 					{
 						ID:        ".google.cloud.example.v1.Example.ListExamples",
 						ItemField: "examples",
@@ -850,7 +850,7 @@ func TestModuleToModelConfig(t *testing.T) {
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
 				},
-				PaginationOverrides: []sidekickconfig.PaginationOverride{
+				PaginationOverrides: []api.PaginationOverride{
 					{
 						ID:        ".google.cloud.example.v1.Example.ListExamples",
 						ItemField: "examples",

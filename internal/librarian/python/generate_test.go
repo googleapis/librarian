@@ -476,7 +476,7 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 func TestRunPostProcessor(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
-	requirePythonModule(t, "synthtool")
+	requireSynthtool(t)
 
 	repoRoot := t.TempDir()
 	outDir := t.TempDir()
@@ -513,6 +513,88 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
+// TestGenerateLibraries performs simple testing that multiple libraries can
+// be generated. Only the presence of a single expected file per library is
+// performed; TestGenerate is responsible for more detailed testing of
+// per-library generation.
+func TestGenerateLibraries(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Python code generation")
+	}
+
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	requireSynthtool(t)
+	repoRoot := t.TempDir()
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name: "secretmanager",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+		{
+			Name: "configdelivery",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/configdelivery/v1",
+				},
+			},
+		},
+	}
+	for _, library := range libraries {
+		library.Output = filepath.Join(outdir, "packages", library.Name)
+	}
+	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	for _, library := range libraries {
+		expectedRepoMetadata := filepath.Join(library.Output, ".repo-metadata.json")
+		_, err := os.Stat(expectedRepoMetadata)
+		if err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedRepoMetadata, err)
+		}
+	}
+}
+
+func TestGenerateLibraries_Error(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Python code generation")
+	}
+
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	requireSynthtool(t)
+	repoRoot := t.TempDir()
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name:   "no-apis",
+			Output: filepath.Join(outdir, "packages", "no-apis"),
+		},
+	}
+	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
+	wantErr := errNoApis
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -523,7 +605,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
-	requirePythonModule(t, "synthtool")
+	requireSynthtool(t)
 	repoRoot := t.TempDir()
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
 	if err != nil {
@@ -539,7 +621,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	if err := Generate(t.Context(), library, googleapisDir); err != nil {
+	if err := generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {
@@ -576,7 +658,8 @@ func TestDefaultLibraryName(t *testing.T) {
 	}
 }
 
-func requirePythonModule(t *testing.T, module string) {
+func requireSynthtool(t *testing.T) {
+	module := "synthtool"
 	t.Helper()
 	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))
 	if err := cmd.Run(); err != nil {

@@ -24,6 +24,8 @@ type GoModule struct {
 	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
+	// NestedModule is the name of a nested module directory.
+	NestedModule string `yaml:"nested_module,omitempty"`
 }
 
 // GoAPI represents configuration for a single API within a Go module.
@@ -135,8 +137,8 @@ type RustModule struct {
 	// SpecificationFormat overrides the library-level specification format.
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Source is the proto path to generate from (e.g., "google/storage/v2").
-	Source string `yaml:"source"`
+	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
+	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
 	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
