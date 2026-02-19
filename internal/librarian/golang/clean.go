@@ -27,16 +27,16 @@ import (
 
 var (
 	generatedRegex = []*regexp.Regexp{
-		regexp.MustCompile(`\.repo-metadata\.json$`),
-		regexp.MustCompile(`auxiliary\.go$`),
-		regexp.MustCompile(`auxiliary_go123\.go$`),
-		regexp.MustCompile(`doc\.go$`),
-		regexp.MustCompile(`.*_client\.go$`),
-		regexp.MustCompile(`.*_client_example_go123_test\.go$`),
-		regexp.MustCompile(`.*_client_example_test\.go$`),
-		regexp.MustCompile(`gapic_metadata\.json$`),
-		regexp.MustCompile(`helpers\.go$`),
-		regexp.MustCompile(`.*\.pb\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/\.repo-metadata\.json$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary_go123\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/doc\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/.*_client\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_go123_test\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_test\.go$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/gapic_metadata\.json$`),
+		regexp.MustCompile(`.*/apiv(\d+).*/helpers\.go$`),
+		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
 		regexp.MustCompile(`.*/internal/generated/snippets/.*$`),
 	}
 )
