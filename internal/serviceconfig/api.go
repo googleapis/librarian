@@ -124,6 +124,9 @@ func (api *API) Transport(language string) string {
 	if trans, ok := api.Transports[language]; ok {
 		return string(trans)
 	}
+	if trans, ok := api.Transports[LangAll]; ok {
+		return string(trans)
+	}
 
 	return string(GRPCRest)
 }
