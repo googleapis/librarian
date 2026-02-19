@@ -57,14 +57,32 @@ func addCommand() *cli.Command {
 }
 
 func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
-	cfg, err := addLibrary(cfg, apis...)
+	name, cfg, err := addLibrary(cfg, apis...)
 	if err != nil {
 		return err
 	}
-	if err := RunTidyOnConfig(ctx, cfg); err != nil {
+	cfg, err = resolveDependencies(ctx, cfg, name)
+	if err != nil {
 		return err
 	}
-	return nil
+	return RunTidyOnConfig(ctx, cfg)
+}
+
+func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
+	switch cfg.Language {
+	case languageRust:
+		lib, err := FindLibrary(cfg, name)
+		if err != nil {
+			return nil, err
+		}
+		_, sources, err := LoadSources(ctx, cfg)
+		if err != nil {
+			return nil, err
+		}
+		return rust.ResolveDependencies(ctx, cfg, lib, sources)
+	default:
+		return cfg, nil
+	}
 }
 
 // deriveLibraryName derives a library name from an API path.
@@ -84,13 +102,16 @@ func deriveLibraryName(language, api string) string {
 	}
 }
 
-func addLibrary(cfg *config.Config, apis ...string) (*config.Config, error) {
+// addLibrary adds a new library to the config based on the provided APIs.
+// It returns the name of the new library, the updated config, and an error
+// if the library already exists.
+func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
 	name := deriveLibraryName(cfg.Language, apis[0])
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		return lib.Name == name
 	})
 	if exists {
-		return nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 
 	lib := &config.Library{
@@ -106,5 +127,5 @@ func addLibrary(cfg *config.Config, apis ...string) (*config.Config, error) {
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
-	return cfg, nil
+	return name, cfg, nil
 }

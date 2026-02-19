@@ -145,7 +145,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 // command line options.
 func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string, all bool, libraryName string) ([]*config.Library, error) {
 	if !all {
-		library, err := findLibrary(cfg, libraryName)
+		library, err := FindLibrary(cfg, libraryName)
 		if err != nil {
 			return nil, err
 		}
@@ -223,19 +223,6 @@ func postBump(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-// findLibrary returns a library with the given name from the config.
-func findLibrary(c *config.Config, name string) (*config.Library, error) {
-	if c.Libraries == nil {
-		return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
-	}
-	for _, library := range c.Libraries {
-		if library.Name == name {
-			return library, nil
-		}
-	}
-	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
-}
-
 func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
 	// If a version override has been specified, use it - but
 	// check that it's not a regression or a no-op.
@@ -277,7 +264,7 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 	if err != nil {
 		return "", err
 	}
-	branchLibCfg, err := findLibrary(branchLibrarianCfg, libName)
+	branchLibCfg, err := FindLibrary(branchLibrarianCfg, libName)
 	if err != nil {
 		return "", err
 	}
@@ -292,7 +279,7 @@ func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libNa
 func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error) {
 	results := []string{}
 	for _, candidate := range cfgAfter.Libraries {
-		candidateBefore, err := findLibrary(cfgBefore, candidate.Name)
+		candidateBefore, err := FindLibrary(cfgBefore, candidate.Name)
 		if err != nil {
 			// Any error other than "not found" is effectively fatal.
 			if !errors.Is(err, ErrLibraryNotFound) {
@@ -382,7 +369,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 			return err
 		}
 	} else {
-		lib, err := findLibrary(cfg, libraryName)
+		lib, err := FindLibrary(cfg, libraryName)
 		if err != nil {
 			return err
 		}
