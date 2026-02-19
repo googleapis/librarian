@@ -86,6 +86,7 @@ func VisionAIAPI() *api.API {
 		UpdateApplicationRequest(),
 		DeleteApplicationRequest(),
 		Application(),
+		Operation(),
 	}
 
 	model := api.NewTestAPI(messages, nil, []*api.Service{svc})
@@ -94,7 +95,39 @@ func VisionAIAPI() *api.API {
 	model.PackageName = "google.cloud.visionai.v1"
 	model.Description = "Vision AI App Platform"
 
+	_ = api.CrossReference(model)
 	return model
+}
+
+// Operation returns a sample LRO Operation message.
+func Operation() *api.Message {
+	return &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+		Fields: []*api.Field{
+			{
+				Name:  "name",
+				Typez: api.STRING_TYPE,
+			},
+			{
+				Name:  "done",
+				Typez: api.BOOL_TYPE,
+			},
+		},
+	}
+}
+
+// Method returns a fully wired method from the standard Secret Manager API sample.
+func Method(id string) *api.Method {
+	model := SecretManagerAPI()
+	return model.State.MethodByID[id]
+}
+
+// VisionAIMethod returns a fully wired method from the Vision AI API sample.
+func VisionAIMethod(id string) *api.Method {
+	model := VisionAIAPI()
+	return model.State.MethodByID[id]
 }
 
 // API returns the default sample API (Secret Manager) for backwards compatibility.
@@ -115,6 +148,22 @@ func Service() *api.Service {
 		},
 		Package: Package,
 	}
+}
+
+// withSecretManagerModel wires the method to the fully resolved SecretManagerAPI model.
+func withSecretManagerModel(methodID string, fallback *api.Method) *api.Method {
+	if m, ok := SecretManagerAPI().State.MethodByID[methodID]; ok {
+		return m
+	}
+	return fallback
+}
+
+// withVisionAIModel wires the method to the fully resolved VisionAIAPI model.
+func withVisionAIModel(methodID string, fallback *api.Method) *api.Method {
+	if m, ok := VisionAIAPI().State.MethodByID[methodID]; ok {
+		return m
+	}
+	return fallback
 }
 
 // MethodCreate returns a sample create method.
