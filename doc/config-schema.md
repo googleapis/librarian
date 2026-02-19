@@ -134,11 +134,7 @@ This document describes the schema for the librarian.yaml.
 | `delete_generation_output_paths` | list of string | DeleteGenerationOutputPaths is a list of paths to delete before generation. |
 | `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | GoAPIs is a list of Go-specific API configurations. |
 | `module_path_version` | string | ModulePathVersion is the version of the Go module path. |
-<<<<<<< HEAD
-| `nested_module` | string | NestedModule is the name of a nested module directory to skip during cleaning. |
-=======
 | `nested_module` | string | NestedModule is the name of a nested module directory. |
->>>>>>> main
 
 ## PythonPackage Configuration
 
