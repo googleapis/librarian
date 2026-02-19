@@ -38,10 +38,11 @@ type RepoConfig struct {
 
 // RepoConfigModule represents a module in repo-config.yaml.
 type RepoConfigModule struct {
-	Name                        string           `yaml:"name"`
-	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
-	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
 	APIs                        []*RepoConfigAPI `yaml:"apis,omitempty"`
+	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
+	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
+	Name                        string           `yaml:"name"`
+	NestedModule                string           `yaml:"nested_module,omitempty"`
 }
 
 // RepoConfigAPI represents an API in repo-config.yaml.
@@ -214,9 +215,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libraryNames[id] {
 			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
 		}
-		if keep, ok := addKeep[id]; ok {
-			library.Keep = append(library.Keep, keep...)
-		}
 		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
@@ -248,6 +246,9 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				DeleteGenerationOutputPaths: libGoModule.DeleteGenerationOutputPaths,
 				GoAPIs:                      goAPIs,
 				ModulePathVersion:           libGoModule.ModulePathVersion,
+			}
+			if nested, ok := nestedMods[id]; ok {
+				goModule.NestedModule = nested
 			}
 
 			if !isEmptyGoModule(goModule) {
