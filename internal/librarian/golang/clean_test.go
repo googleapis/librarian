@@ -54,18 +54,22 @@ func TestClean_Success(t *testing.T) {
 			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
 			keep:         []string{},
-			wantOutput:   []string{"apiv1/non-generated.go", "doc.go"},
+			wantOutput: []string{
+				"apiv1/non-generated.go",
+				// skipped because the file doesn't live in a versioned directory.
+				"doc.go",
+			},
 		},
 		{
 			name: "remove all generated files except keep list",
 			outputFiles: []string{
-				"library/apiv1/auxiliary.go",
-				"library/apiv1/auxiliary_go123.go",
-				"library/apiv1/doc.go",
+				"apiv1/auxiliary.go",
+				"apiv1/auxiliary_go123.go",
+				"nested/apiv1/doc.go",
 			},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"library/apiv1/doc.go"},
-			wantOutput:   []string{"library/apiv1/doc.go"},
+			keep:         []string{"apiv1/auxiliary_go123.go"},
+			wantOutput:   []string{"apiv1/auxiliary_go123.go"},
 		},
 		{
 			name:         "nested module",
