@@ -38,6 +38,9 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 	return resolveExternalPackages(cfg, lib, externalPackages), nil
 }
 
+// findExternalPackages identifies Protobuf packages that are used by the library
+// but not defined within it. It parses the library's APIs into a model,
+// finds all transitive dependencies, and returns the set of external Protobuf packages.
 func findExternalPackages(lib *config.Library, sources *source.Sources) (map[string]bool, error) {
 	// Only resolve dependencies for the first API in the library.
 	// This is consistent with how the Rust generator works.
