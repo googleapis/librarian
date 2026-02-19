@@ -48,12 +48,14 @@ type RepoMetadata struct {
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
 	// ClientLibraryType is the type of library (e.g., "generated").
+	// A Go-specific field.
 	ClientLibraryType string `json:"client_library_type,omitempty"`
 
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
 
 	// Description is the description of the API.
+	// A Go-specific field, the value is the title of the API.
 	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
