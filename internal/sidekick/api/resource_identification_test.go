@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 // setupTestModel helper creates a minimal API model for testing resource identification.
@@ -45,13 +44,6 @@ func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API
 }
 
 func TestIdentifyTargetResources(t *testing.T) {
-	lit := func(s string) PathSegment {
-		return PathSegment{Literal: &s}
-	}
-	var_seg := func(fieldPath ...string) PathSegment {
-		return PathSegment{Variable: &PathVariable{FieldPath: fieldPath}}
-	}
-
 	for _, test := range []struct {
 		name      string
 		serviceID string
@@ -62,9 +54,9 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: standard resource reference",
 			serviceID: "any.service",
-			path: []PathSegment{
-				lit("projects"), var_seg("project"),
-			},
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				Segments,
 			fields: []*Field{
 				{
 					Name:              "project",
@@ -79,10 +71,10 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: multiple resource references",
 			serviceID: "any.service",
-			path: []PathSegment{
-				lit("projects"), var_seg("project"),
-				lit("locations"), var_seg("location"),
-			},
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("locations").WithVariableNamed("location").
+				Segments,
 			fields: []*Field{
 				{
 					Name:              "project",
@@ -102,9 +94,9 @@ func TestIdentifyTargetResources(t *testing.T) {
 		{
 			name:      "explicit: nested field reference",
 			serviceID: "any.service",
-			path: []PathSegment{
-				lit("projects"), var_seg("parent", "project"),
-			},
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("parent", "project").
+				Segments,
 			fields: []*Field{
 				{
 					Name:  "parent",
@@ -126,29 +118,18 @@ func TestIdentifyTargetResources(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model, binding, pathTemplate := setupTestModel(test.serviceID, test.path, test.fields)
+			model, binding, _ := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(TargetResource{}, "PathTemplate")); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			// Check if PathTemplate reference is correct (should be the same object)
-			if got != nil && got.PathTemplate != pathTemplate {
-				t.Errorf("PathTemplate reference mismatch")
 			}
 		})
 	}
 }
 
 func TestIdentifyTargetResources_NoMatch(t *testing.T) {
-	lit := func(s string) PathSegment {
-		return PathSegment{Literal: &s}
-	}
-	var_seg := func(fieldPath ...string) PathSegment {
-		return PathSegment{Variable: &PathVariable{FieldPath: fieldPath}}
-	}
-
 	for _, test := range []struct {
 		name      string
 		serviceID string
@@ -158,9 +139,9 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		{
 			name:      "Explicit: missing reference returns nil",
 			serviceID: "any.service",
-			path: []PathSegment{
-				lit("projects"), var_seg("project"),
-			},
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				Segments,
 			fields: []*Field{
 				{Name: "project", Typez: STRING_TYPE}, // No ResourceReference
 			},
@@ -168,10 +149,10 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		{
 			name:      "Explicit: partial reference returns nil",
 			serviceID: "any.service",
-			path: []PathSegment{
-				lit("projects"), var_seg("project"),
-				lit("glossaries"), var_seg("glossary"),
-			},
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("glossaries").WithVariableNamed("glossary").
+				Segments,
 			fields: []*Field{
 				{
 					Name:              "project",

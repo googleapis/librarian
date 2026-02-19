@@ -96,8 +96,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 		return nil, nil
 	}
 	return &TargetResource{
-		FieldPaths:   fieldPaths,
-		PathTemplate: binding.PathTemplate,
+		FieldPaths: fieldPaths,
 	}, nil
 }
 

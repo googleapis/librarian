@@ -1524,7 +1524,4 @@ type TargetResource struct {
 	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
 	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
 	FieldPaths [][]string
-	// PathTemplate is the template for the resource name.
-	// It uses AIP-122 style placeholders, e.g., "projects/{projects}/zones/{zones}/instances/{instance}".
-	PathTemplate *PathTemplate
 }
