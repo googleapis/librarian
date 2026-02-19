@@ -308,12 +308,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 }
 
 func TestBuildGoLibraries(t *testing.T) {
-	addKeep = map[string][]string{
-		"testLib": {
-			"file-to-keep-1.go",
-			"file-to-keep-2.go",
-		},
-	}
 	for _, test := range []struct {
 		name  string
 		input *MigrationInput
@@ -476,13 +470,12 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			// addKeep is override at the top of this test.
-			name: "additional keep files",
+			name: "bigquery",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
-							ID: "testLib",
+							ID: "bigquery",
 						},
 					},
 				},
@@ -492,10 +485,19 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name: "testLib",
-					Keep: []string{
-						"file-to-keep-1.go",
-						"file-to-keep-2.go",
+					Name: "bigquery",
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/analyticshub/v1"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/dataexchange/v1beta1"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/datapolicies/v1beta1"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/migration/v2"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/migration/v2alpha"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/storage/v1"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/storage/v1beta1"},
+							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/storage/v1beta2"},
+						},
+						NestedModule: "v2",
 					},
 				},
 			},
