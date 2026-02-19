@@ -27,6 +27,7 @@ import (
 
 var (
 	generatedRegex = []*regexp.Regexp{
+		regexp.MustCompile(`\.repo-metadata\.json$`),
 		regexp.MustCompile(`auxiliary\.go$`),
 		regexp.MustCompile(`auxiliary_go123\.go$`),
 		regexp.MustCompile(`doc\.go$`),

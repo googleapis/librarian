@@ -39,6 +39,7 @@ func TestClean_Success(t *testing.T) {
 		{
 			name: "removes all files",
 			outputFiles: []string{
+				".repo-metadata.json",
 				"auxiliary.go",
 				"auxiliary_go123.go",
 				"doc.go",
