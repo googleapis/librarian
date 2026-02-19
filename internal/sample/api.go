@@ -403,3 +403,185 @@ func SecretPayload() *api.Message {
 		},
 	}
 }
+
+// MethodCreateApplicationLRO returns a sample create method that returns a long-running operation.
+func MethodCreateApplicationLRO() *api.Method {
+	return &api.Method{
+		Name:          "CreateApplication",
+		Documentation: "Creates a new Application in a given project and location.",
+		ID:            "..Service.CreateApplication",
+		InputTypeID:   "..Service.CreateApplicationRequest",
+		InputType:     CreateApplicationRequest(),
+		OutputTypeID:  ".google.longrunning.Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodPost,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()).
+						WithLiteral("applications"),
+					QueryParameters: map[string]bool{},
+				},
+			},
+			BodyFieldPath: "application",
+		},
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: Application().ID,
+			MetadataTypeID: "..OperationMetadata",
+		},
+	}
+}
+
+// MethodUpdateApplicationLRO returns a sample update method that returns a long-running operation.
+func MethodUpdateApplicationLRO() *api.Method {
+	return &api.Method{
+		Name:          "UpdateApplication",
+		Documentation: "Updates the parameters of a single Application.",
+		ID:            "..Service.UpdateApplication",
+		InputTypeID:   "..Service.UpdateApplicationRequest",
+		InputType:     UpdateApplicationRequest(),
+		OutputTypeID:  ".google.longrunning.Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodPatch,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("application", "name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("applications").WithMatch()),
+					QueryParameters: map[string]bool{},
+				},
+			},
+			BodyFieldPath: "application",
+		},
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: Application().ID,
+			MetadataTypeID: "..OperationMetadata",
+		},
+	}
+}
+
+// MethodDeleteApplicationLRO returns a sample delete method that returns a long-running operation.
+func MethodDeleteApplicationLRO() *api.Method {
+	return &api.Method{
+		Name:          "DeleteApplication",
+		Documentation: "Deletes a single Application.",
+		ID:            "..Service.DeleteApplication",
+		InputTypeID:   "..Service.DeleteApplicationRequest",
+		InputType:     DeleteApplicationRequest(),
+		OutputTypeID:  ".google.longrunning.Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodDelete,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("applications").WithMatch()),
+					QueryParameters: map[string]bool{},
+				},
+			},
+		},
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: ".google.protobuf.Empty",
+			MetadataTypeID: "..OperationMetadata",
+		},
+	}
+}
+
+// CreateApplicationRequest returns a sample create application request.
+func CreateApplicationRequest() *api.Message {
+	return &api.Message{
+		Name:          "CreateApplicationRequest",
+		ID:            "..Service.CreateApplicationRequest",
+		Documentation: "Request message for CreateApplication",
+		Package:       Package,
+		Fields: []*api.Field{
+			{
+				Name:     "parent",
+				JSONName: "parent",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:        "application",
+				JSONName:    "application",
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     Application().ID,
+				MessageType: Application(),
+			},
+		},
+	}
+}
+
+// UpdateApplicationRequest returns a sample update application request.
+func UpdateApplicationRequest() *api.Message {
+	return &api.Message{
+		Name:          "UpdateApplicationRequest",
+		ID:            "..Service.UpdateApplicationRequest",
+		Documentation: "Request message for UpdateApplication",
+		Package:       Package,
+		Fields: []*api.Field{
+			{
+				Name:        "application",
+				JSONName:    "application",
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     Application().ID,
+				MessageType: Application(),
+			},
+			{
+				Name:     "update_mask",
+				JSONName: "updateMask",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  ".google.protobuf.FieldMask",
+				Optional: true,
+			},
+		},
+	}
+}
+
+// DeleteApplicationRequest returns a sample delete application request.
+func DeleteApplicationRequest() *api.Message {
+	return &api.Message{
+		Name:          "DeleteApplicationRequest",
+		ID:            "..Service.DeleteApplicationRequest",
+		Documentation: "Request message for DeleteApplication",
+		Package:       Package,
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				Typez:    api.STRING_TYPE,
+			},
+		},
+	}
+}
+
+// Application returns a sample application.
+func Application() *api.Message {
+	return &api.Message{
+		Name:    "Application",
+		ID:      "..Application",
+		Package: Package,
+		Resource: &api.Resource{
+			Type:     "example.googleapis.com/Application",
+			Plural:   "applications",
+			Singular: "application",
+			Patterns: []api.ResourcePattern{
+				{
+					*api.NewPathSegment().WithLiteral("projects"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+					*api.NewPathSegment().WithLiteral("locations"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
+					*api.NewPathSegment().WithLiteral("applications"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("application").WithMatch()),
+				},
+			},
+		},
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				Typez:    api.STRING_TYPE,
+			},
+		},
+	}
+}
