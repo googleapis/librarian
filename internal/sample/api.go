@@ -40,20 +40,66 @@ const (
 	Package = "google.cloud.secretmanager.v1"
 )
 
-// API returns a sample API.
-func API() *api.API {
-	return &api.API{
-		Name:        APIName,
-		Title:       APITitle,
-		PackageName: APIPackageName,
-		Description: APIDescription,
-		Services:    []*api.Service{Service()},
-		Messages: []*api.Message{
-			Replication(),
-			Automatic(),
-		},
-		Enums: []*api.Enum{EnumState()},
+// SecretManagerAPI returns a sample Secret Manager API.
+func SecretManagerAPI() *api.API {
+	svc := Service()
+	messages := []*api.Message{
+		Replication(),
+		Automatic(),
+		CustomerManagedEncryption(),
+		SecretPayload(),
+		Secret(),
+		SecretVersion(),
+		CreateRequest(),
+		UpdateRequest(),
+		ListSecretVersionsRequest(),
+		ListSecretVersionsResponse(),
 	}
+	enums := []*api.Enum{EnumState()}
+
+	model := api.NewTestAPI(messages, enums, []*api.Service{svc})
+	model.Name = APIName
+	model.Title = APITitle
+	model.PackageName = APIPackageName
+	model.Description = APIDescription
+
+	_ = api.CrossReference(model)
+	return model
+}
+
+// VisionAIAPI returns a sample Vision AI API.
+func VisionAIAPI() *api.API {
+	svc := &api.Service{
+		Name:          "AppPlatform",
+		Documentation: "Service describing handlers for resources",
+		DefaultHost:   "visionai.googleapis.com",
+		Package:       "google.cloud.visionai.v1",
+		Methods: []*api.Method{
+			MethodCreateApplicationLRO(),
+			MethodUpdateApplicationLRO(),
+			MethodDeleteApplicationLRO(),
+		},
+	}
+
+	messages := []*api.Message{
+		CreateApplicationRequest(),
+		UpdateApplicationRequest(),
+		DeleteApplicationRequest(),
+		Application(),
+	}
+
+	model := api.NewTestAPI(messages, nil, []*api.Service{svc})
+	model.Name = "visionai"
+	model.Title = "Vision AI API"
+	model.PackageName = "google.cloud.visionai.v1"
+	model.Description = "Vision AI App Platform"
+
+	return model
+}
+
+// API returns the default sample API (Secret Manager) for backwards compatibility.
+func API() *api.API {
+	return SecretManagerAPI()
 }
 
 // Service returns a sample service.
