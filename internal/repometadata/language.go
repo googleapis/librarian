@@ -22,6 +22,12 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func buildGoMetadata(metadata *RepoMetadata, description string) *RepoMetadata {
+	metadata.ClientLibraryType = "generated"
+	metadata.Description = description
+	return metadata
+}
+
 // goClientDocURL builds the client documentation URL for Go SDK.
 func goClientDocURL(library *config.Library, apiPath string) string {
 	suffix := fmt.Sprintf("api%s", filepath.Base(apiPath))

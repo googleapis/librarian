@@ -47,8 +47,12 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	ClientLibraryType string `json:"client_library_type,omitempty"`
+
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
+
+	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
@@ -106,20 +110,26 @@ func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, de
 		apiDescription = library.DescriptionOverride
 	}
 	metadata := &RepoMetadata{
-		APIDescription:       apiDescription,
-		APIID:                api.ServiceName,
-		APIShortname:         api.ShortName,
-		ClientDocumentation:  clientDocURL,
-		DefaultVersion:       defaultVersion,
-		DistributionName:     buildDistributionName(api, library, language),
-		IssueTracker:         api.NewIssueURI,
-		Language:             language,
-		LibraryType:          "GAPIC_AUTO",
-		Name:                 api.ShortName,
-		NamePretty:           cleanTitle(api.Title),
-		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
-		ReleaseLevel:         library.ReleaseLevel,
-		Repo:                 repo,
+		APIShortname:        api.ShortName,
+		ClientDocumentation: clientDocURL,
+		DistributionName:    buildDistributionName(api, library, language),
+		Language:            language,
+		LibraryType:         "GAPIC_AUTO",
+		ReleaseLevel:        library.ReleaseLevel,
+	}
+
+	switch language {
+	case serviceconfig.LangGo:
+		metadata = buildGoMetadata(metadata, api.Description)
+	default:
+		metadata.APIDescription = apiDescription
+		metadata.APIID = api.ServiceName
+		metadata.DefaultVersion = defaultVersion
+		metadata.IssueTracker = api.NewIssueURI
+		metadata.Name = api.ShortName
+		metadata.NamePretty = cleanTitle(api.Title)
+		metadata.ProductDocumentation = extractBaseProductURL(api.DocumentationURI)
+		metadata.Repo = repo
 	}
 
 	return write(metadata, outputDir)
