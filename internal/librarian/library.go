@@ -217,3 +217,16 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return lib, nil
 	}
 }
+
+// FindLibrary returns a library with the given name from the config.
+func FindLibrary(c *config.Config, name string) (*config.Library, error) {
+	if c.Libraries == nil {
+		return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
+	}
+	for _, library := range c.Libraries {
+		if library.Name == name {
+			return library, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
+}

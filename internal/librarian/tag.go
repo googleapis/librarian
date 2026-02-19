@@ -91,7 +91,7 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 
 	tagFormat := releaseCommitCfg.Default.TagFormat
 	for _, libraryToTag := range librariesToTag {
-		lib, err := findLibrary(releaseCommitCfg, libraryToTag)
+		lib, err := FindLibrary(releaseCommitCfg, libraryToTag)
 		if err != nil {
 			return err
 		}
