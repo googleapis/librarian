@@ -438,7 +438,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	data := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/bigquery/v2/apiv2",
-    "version": "1.2.2",
+    "version": "$VERSION",
     "language": "GO",
     "apis": [
       {
@@ -450,7 +450,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 }
 `
 	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
-		return
+		t.Fatal(err)
 	}
 	if err := updateSnippetMetadata(library, tmpDir); err != nil {
 		t.Fatal(err)
@@ -462,7 +462,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	}
 	s := string(content)
 	// Skipped because the snippet file lives in the nested module.
-	if !strings.Contains(s, "1.2.2") {
+	if !strings.Contains(s, "$VERSION") {
 		t.Errorf("want version in snippet metadata, got:\n%s", s)
 	}
 }
