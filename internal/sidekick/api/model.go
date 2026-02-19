@@ -929,9 +929,9 @@ type PathBinding struct {
 	PathTemplate *PathTemplate
 	// Query parameter fields.
 	QueryParameters map[string]bool
-	// ResourceNameHeuristic contains the results of the resource name identification heuristic, if any.
+	// TargetResource contains the results of the resource name identification.
 	// This helps identify which resource this path is likely targeting.
-	ResourceNameHeuristic *ResourceNameHeuristic
+	TargetResource *TargetResource
 	// Language specific annotations.
 	Codec any
 }
@@ -1211,14 +1211,6 @@ type Message struct {
 // HasFields returns true if the message has fields.
 func (m *Message) HasFields() bool {
 	return len(m.Fields) != 0
-}
-
-// PaginationInfo contains information related to pagination aka [AIP-4233](https://google.aip.dev/client-libraries/4233).
-type PaginationInfo struct {
-	// The field that gives us the next page token.
-	NextPageToken *Field
-	// PageableItem is the field to be paginated over.
-	PageableItem *Field
 }
 
 // Enum defines a message used in request/response handling.
@@ -1518,9 +1510,9 @@ func (f *Field) IsResourceReference() bool {
 	return f.ResourceReference != nil
 }
 
-// ResourceNameHeuristic contains the results of the resource name identification heuristic.
+// TargetResource contains the results of the resource name identification.
 // It provides the sequences of fields used by language-specific generators to inject tracing attributes.
-type ResourceNameHeuristic struct {
+type TargetResource struct {
 	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
 	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
 	FieldPaths [][]string
