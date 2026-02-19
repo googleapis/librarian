@@ -488,6 +488,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "bigquery",
+					Keep: []string{"README.md"},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{NoRESTNumericEnums: true, Path: "google/cloud/bigquery/analyticshub/v1"},

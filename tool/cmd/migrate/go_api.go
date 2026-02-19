@@ -80,6 +80,12 @@ var (
 		},
 	}
 
+	addKeep = map[string][]string{
+		"bigquery": {
+			"README.md",
+		},
+	}
+
 	libraryOverrides = map[string]*config.Library{
 		"ai": {
 			ReleaseLevel: "beta",
