@@ -24,16 +24,6 @@ import (
 )
 
 func TestNewParam(t *testing.T) {
-	// Helper to create a basic field
-	makeField := func(name string, typez api.Typez) *api.Field {
-		return &api.Field{
-			Name:     name,
-			JSONName: name, // simplify default
-			Typez:    typez,
-			Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_OPTIONAL},
-		}
-	}
-
 	for _, test := range []struct {
 		name     string
 		field    *api.Field
@@ -44,13 +34,13 @@ func TestNewParam(t *testing.T) {
 	}{
 		{
 			name:     "String Field",
-			field:    makeField("description", api.STRING_TYPE),
+			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "description",
-			method:   &api.Method{Name: "CreateInstance"},
+			method:   api.NewTestMethod("CreateInstance"),
 			want: Param{
 				ArgName:  "description",
 				APIField: "description",
-				Type:     "str", // String is default/empty
+				Type:     "str",
 				HelpText: "Value for the `description` field.",
 				Required: false,
 				Repeated: false,
@@ -58,9 +48,9 @@ func TestNewParam(t *testing.T) {
 		},
 		{
 			name:     "Long Field",
-			field:    makeField("capacity_gib", api.INT64_TYPE),
+			field:    api.NewTestField("capacity_gib").WithType(api.INT64_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "capacityGib",
-			method:   &api.Method{Name: "CreateInstance"},
+			method:   api.NewTestMethod("CreateInstance"),
 			want: Param{
 				ArgName:  "capacity-gib",
 				APIField: "capacityGib",
@@ -71,15 +61,10 @@ func TestNewParam(t *testing.T) {
 			},
 		},
 		{
-			name: "Repeated Field",
-			field: &api.Field{
-				Name:     "labels",
-				JSONName: "labels",
-				Typez:    api.STRING_TYPE,
-				Repeated: true,
-			},
+			name:     "Repeated Field",
+			field:    api.NewTestField("labels").WithType(api.STRING_TYPE).WithRepeated(),
 			apiField: "labels",
-			method:   &api.Method{Name: "CreateInstance"},
+			method:   api.NewTestMethod("CreateInstance"),
 			want: Param{
 				ArgName:  "labels",
 				APIField: "labels",
@@ -90,15 +75,10 @@ func TestNewParam(t *testing.T) {
 			},
 		},
 		{
-			name: "Required Field",
-			field: &api.Field{
-				Name:     "name",
-				JSONName: "name",
-				Typez:    api.STRING_TYPE,
-				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
-			},
+			name:     "Required Field",
+			field:    api.NewTestField("name").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_REQUIRED),
 			apiField: "name",
-			method:   &api.Method{Name: "CreateInstance"},
+			method:   api.NewTestMethod("CreateInstance"),
 			want: Param{
 				ArgName:  "name",
 				APIField: "name",
@@ -109,15 +89,10 @@ func TestNewParam(t *testing.T) {
 			},
 		},
 		{
-			name: "Clearable Map (Update)",
-			field: &api.Field{
-				Name:     "labels",
-				JSONName: "labels",
-				Typez:    api.STRING_TYPE,
-				Map:      true,
-			},
+			name:     "Clearable Map (Update)",
+			field:    api.NewTestField("labels").WithType(api.STRING_TYPE).WithMap(),
 			apiField: "labels",
-			method:   &api.Method{Name: "UpdateInstance"},
+			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
 			want: Param{
 				ArgName:   "labels",
 				APIField:  "labels",
@@ -131,15 +106,10 @@ func TestNewParam(t *testing.T) {
 			},
 		},
 		{
-			name: "Clearable Repeated Field (Update)",
-			field: &api.Field{
-				Name:     "access_points",
-				JSONName: "accessPoints",
-				Typez:    api.STRING_TYPE,
-				Repeated: true,
-			},
+			name:     "Clearable Repeated Field (Update)",
+			field:    api.NewTestField("access_points").WithType(api.STRING_TYPE).WithRepeated(),
 			apiField: "accessPoints",
-			method:   &api.Method{Name: "UpdateInstance"},
+			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
 			want: Param{
 				ArgName:   "access-points",
 				APIField:  "accessPoints",
@@ -156,9 +126,101 @@ func TestNewParam(t *testing.T) {
 				t.Errorf("newParam() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			// Ignore fields that are hard to mock or irrelevant for basic mapping test
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
 				t.Errorf("newParam() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestShouldSkipParam(t *testing.T) {
+	createMethod := sample.MethodCreate()
+	listMethod := sample.MethodListSecretVersions()
+	updateMethod := sample.MethodUpdate()
+
+	for _, test := range []struct {
+		name   string
+		field  *api.Field
+		method *api.Method
+		want   bool
+	}{
+		{
+			name:   "Primary Resource ID (Create)",
+			field:  api.NewTestField("secret_id"),
+			method: createMethod,
+			want:   false,
+		},
+		{
+			name:   "Parent Field",
+			field:  api.NewTestField("parent"),
+			method: createMethod,
+			want:   true,
+		},
+		{
+			name:   "Name Field (Not Primary)",
+			field:  api.NewTestField("name"),
+			method: createMethod,
+			want:   true,
+		},
+		{
+			name:   "Update Mask",
+			field:  api.NewTestField("update_mask"),
+			method: updateMethod,
+			want:   true,
+		},
+		{
+			name:   "Page Size (List)",
+			field:  api.NewTestField("page_size"),
+			method: listMethod,
+			want:   true,
+		},
+		{
+			name:   "Page Token (List)",
+			field:  api.NewTestField("page_token"),
+			method: listMethod,
+			want:   true,
+		},
+		{
+			name:   "Filter (List)",
+			field:  api.NewTestField("filter"),
+			method: listMethod,
+			want:   true,
+		},
+		{
+			name:   "Order By (List)",
+			field:  api.NewTestField("order_by"),
+			method: listMethod,
+			want:   true,
+		},
+		{
+			name:   "Output Only Field",
+			field:  api.NewTestField("output_only").WithBehavior(api.FIELD_BEHAVIOR_OUTPUT_ONLY),
+			method: createMethod,
+			want:   true,
+		},
+		{
+			name:   "Immutable Field (Update)",
+			field:  api.NewTestField("immutable").WithBehavior(api.FIELD_BEHAVIOR_IMMUTABLE),
+			method: updateMethod,
+			want:   true,
+		},
+		{
+			name:   "Immutable Field (Create - Not Skipped)",
+			field:  api.NewTestField("immutable").WithBehavior(api.FIELD_BEHAVIOR_IMMUTABLE),
+			method: createMethod,
+			want:   false,
+		},
+		{
+			name:   "Regular Field",
+			field:  api.NewTestField("description"),
+			method: createMethod,
+			want:   false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldSkipParam(test.field, test.method)
+			if got != test.want {
+				t.Errorf("shouldSkipParam() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -194,13 +256,8 @@ func TestNewOutputConfig_Error(t *testing.T) {
 		method *api.Method
 	}{
 		{
-			name: "not a list method",
-			method: &api.Method{
-				Name: "CreateInstance",
-				PathInfo: &api.PathInfo{
-					Bindings: []*api.PathBinding{{Verb: "POST"}},
-				},
-			},
+			name:   "not a list method",
+			method: sample.MethodCreate(),
 		},
 		{
 			name: "missing output type",
