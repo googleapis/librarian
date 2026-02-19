@@ -21,6 +21,29 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
+// setupTestModel helper creates a minimal API model for testing resource identification.
+func setupTestModel(serviceID string, path []PathSegment, fields []*Field) (*API, *PathBinding, *PathTemplate) {
+	pathTemplate := &PathTemplate{Segments: path}
+	binding := &PathBinding{PathTemplate: pathTemplate}
+	method := &Method{
+		Name: "TestMethod",
+		InputType: &Message{
+			Fields: fields,
+		},
+		PathInfo: &PathInfo{
+			Bindings: []*PathBinding{binding},
+		},
+	}
+	service := &Service{
+		ID:      serviceID,
+		Methods: []*Method{method},
+	}
+	model := &API{
+		Services: []*Service{service},
+	}
+	return model, binding, pathTemplate
+}
+
 func TestIdentifyTargetResources(t *testing.T) {
 	lit := func(s string) PathSegment {
 		return PathSegment{Literal: &s}
@@ -103,30 +126,12 @@ func TestIdentifyTargetResources(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			pathTemplate := &PathTemplate{Segments: test.path}
-			binding := &PathBinding{PathTemplate: pathTemplate}
-			method := &Method{
-				Name: "TestMethod",
-				InputType: &Message{
-					Fields: test.fields,
-				},
-				PathInfo: &PathInfo{
-					Bindings: []*PathBinding{binding},
-				},
-			}
-			service := &Service{
-				ID:      test.serviceID,
-				Methods: []*Method{method},
-			}
-			model := &API{
-				Services: []*Service{service},
-			}
-
+			model, binding, pathTemplate := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(TargetResource{}, "PathTemplate")); diff != "" {
-				t.Errorf("IdentifyTargetResources() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			// Check if PathTemplate reference is correct (should be the same object)
 			if got != nil && got.PathTemplate != pathTemplate {
@@ -182,25 +187,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			pathTemplate := &PathTemplate{Segments: test.path}
-			binding := &PathBinding{PathTemplate: pathTemplate}
-			method := &Method{
-				Name: "TestMethod",
-				InputType: &Message{
-					Fields: test.fields,
-				},
-				PathInfo: &PathInfo{
-					Bindings: []*PathBinding{binding},
-				},
-			}
-			service := &Service{
-				ID:      test.serviceID,
-				Methods: []*Method{method},
-			}
-			model := &API{
-				Services: []*Service{service},
-			}
-
+			model, binding, _ := setupTestModel(test.serviceID, test.path, test.fields)
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource

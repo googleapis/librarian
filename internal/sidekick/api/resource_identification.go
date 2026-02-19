@@ -98,17 +98,18 @@ func findField(msg *Message, path []string) *Field {
 	current := msg
 	var field *Field
 
-	for i, name := range path {
-		found := false
-		for _, f := range current.Fields {
+	findInFields := func(fields []*Field, name string) *Field {
+		for _, f := range fields {
 			if f.Name == name {
-				field = f
-				found = true
-				break
+				return f
 			}
 		}
+		return nil
+	}
 
-		if !found {
+	for i, name := range path {
+		field = findInFields(current.Fields, name)
+		if field == nil {
 			return nil
 		}
 
