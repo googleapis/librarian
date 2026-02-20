@@ -67,6 +67,7 @@ type MigrationInput struct {
 	repoConfig      *RepoConfig
 	lang            string
 	repoPath        string
+	googleapisDir   string
 }
 
 var (
@@ -171,6 +172,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		input.googleapisDir = src.Dir
 		cfg.Default.Keep = []string{"CHANGES.md", "go.mod", "go.sum"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
@@ -294,6 +296,30 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				library.Go = goModule
 			}
 		}
+		// Read Go GAPIC configurations from BUILD.bazel.
+		for _, api := range library.APIs {
+			buildDir := filepath.Join(input.googleapisDir, api.Path)
+			info, err := parseBazel(buildDir)
+			if err != nil {
+				return nil, err
+			}
+			if info == nil || isEmptyGoGAPICInfo(info) {
+				continue
+			}
+			goAPI, index := findGoAPI(library, api.Path)
+			if index == -1 {
+				goAPI = &config.GoAPI{Path: api.Path}
+			}
+			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			if index == -1 {
+				library.Go.GoAPIs = append(library.Go.GoAPIs, goAPI)
+			} else {
+				library.Go.GoAPIs[index] = goAPI
+			}
+		}
 
 		libraries = append(libraries, library)
 	}
@@ -323,6 +349,12 @@ func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 
 func isEmptyGoModule(mod *config.GoModule) bool {
 	return reflect.DeepEqual(mod, &config.GoModule{})
+}
+
+func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
+	return reflect.DeepEqual(info, &goGAPICInfo{
+		NoRESTNumericEnums: false,
+	})
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
@@ -404,4 +436,16 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 	return &goGAPICInfo{
 		NoRESTNumericEnums: noREST,
 	}, nil
+}
+
+func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
+	if library.Go == nil {
+		return nil, -1
+	}
+	for i, ga := range library.Go.GoAPIs {
+		if ga.Path == apiPath {
+			return ga, i
+		}
+	}
+	return nil, -1
 }
