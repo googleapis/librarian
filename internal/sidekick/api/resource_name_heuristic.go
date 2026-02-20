@@ -49,21 +49,10 @@ func isBaseVocabulary(segment string) bool {
 	return baseVocabulary[segment]
 }
 
-// singularExceptions is a set of common segments that end in 's' but are not collections.
-var singularExceptions = map[string]bool{
-	"address":  true,
-	"status":   true,
-	"ingress":  true,
-	"egress":   true,
-	"access":   true,
-	"analysis": true,
-}
-
 // isCollectionIdentifier returns true if the segment is likely a collection ID.
 // It checks in the following order:
 // 1. Base vocabulary (projects, locations, etc.)
-// 2. Known resource plurals (from the API model)
-// 3. Fallback heuristic: ends in 's', len > 2, and not in the exception list.
+// 2. Known resource plurals (from the API model).
 func isCollectionIdentifier(segment string, knownPlurals map[string]bool) bool {
 	if isBaseVocabulary(segment) {
 		return true
@@ -71,8 +60,5 @@ func isCollectionIdentifier(segment string, knownPlurals map[string]bool) bool {
 	if knownPlurals != nil && knownPlurals[segment] {
 		return true
 	}
-	if singularExceptions[segment] {
-		return false
-	}
-	return len(segment) > 2 && strings.HasSuffix(segment, "s")
+	return false
 }

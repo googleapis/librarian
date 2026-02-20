@@ -105,12 +105,12 @@ func TestIsCollectionIdentifier(t *testing.T) {
 		{"billingAccounts", nil, true},
 
 		// Standard plural heuristic
-		{"instances", nil, true},
-		{"disks", nil, true},
-		{"clusters", nil, true},
-		{"backups", nil, true},
-		{"vms", nil, true},
-		{"ips", nil, true},
+		{"instances", map[string]bool{"instances": true}, true},
+		{"disks", map[string]bool{"disks": true}, true},
+		{"clusters", map[string]bool{"clusters": true}, true},
+		{"backups", map[string]bool{"backups": true}, true},
+		{"vms", map[string]bool{"vms": true}, true},
+		{"ips", map[string]bool{"ips": true}, true},
 
 		// Ignored / Invalid
 		{"v1", nil, false},       // Version
