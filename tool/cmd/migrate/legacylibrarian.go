@@ -263,9 +263,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				GoAPIs:                      goAPIs,
 				ModulePathVersion:           libGoModule.ModulePathVersion,
 			}
-			if nested, ok := nestedMods[id]; ok {
-				goModule.NestedModule = nested
-			}
 
 			if !isEmptyGoModule(goModule) {
 				library.Go = goModule
@@ -300,6 +297,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			} else {
 				library.Go.GoAPIs[index] = goAPI
 			}
+		}
+
+		if nested, ok := nestedMods[id]; ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.NestedModule = nested
 		}
 
 		libraries = append(libraries, library)

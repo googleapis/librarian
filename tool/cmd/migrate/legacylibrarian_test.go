@@ -311,6 +311,14 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 }
 
 func TestBuildGoLibraries(t *testing.T) {
+	addKeep = map[string][]string{
+		"add-keep": {
+			"README.md",
+		},
+	}
+	nestedMods = map[string]string{
+		"add-nested-mod": "v2",
+	}
 	for _, test := range []struct {
 		name  string
 		input *MigrationInput
@@ -607,6 +615,50 @@ func TestBuildGoLibraries(t *testing.T) {
 								Path:               "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
+					},
+				},
+			},
+		},
+		{
+			name: "add keep",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "add-keep",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+			},
+			want: []*config.Library{
+				{
+					Name: "add-keep",
+					Keep: []string{"README.md"},
+				},
+			},
+		},
+		{
+			name: "additional nested module",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "add-nested-mod",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+			},
+			want: []*config.Library{
+				{
+					Name: "add-nested-mod",
+					Go: &config.GoModule{
+						NestedModule: "v2",
 					},
 				},
 			},
