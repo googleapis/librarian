@@ -717,3 +717,35 @@ func TestParseBazel_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestImportPathAndClientDir(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		str            string
+		wantImportPath string
+		wantClientDir  string
+	}{
+		{
+			name:           "nested directory",
+			str:            "cloud.google.com/go/ai/generativelanguage/apiv1;generativelanguage",
+			wantImportPath: "ai/generativelanguage",
+			wantClientDir:  "generativelanguage",
+		},
+		{
+			name:           "non nested directory",
+			str:            "cloud.google.com/go/accessapproval/apiv1;accessapproval",
+			wantImportPath: "accessapproval",
+			wantClientDir:  "accessapproval",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotImportPath, gotClientDir := importPathAndClientDir(test.str)
+			if diff := cmp.Diff(test.wantImportPath, gotImportPath); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantClientDir, gotClientDir); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

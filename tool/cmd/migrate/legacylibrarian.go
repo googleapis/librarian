@@ -430,13 +430,9 @@ func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 }
 
 func importPathAndClientDir(str string) (string, string) {
-	var clientDir string
 	strs := strings.Split(str, ";")
-	if len(strs) != 1 {
-		clientDir = strs[1]
-	}
 	path := strings.TrimPrefix(strs[0], "cloud.google.com/go/")
 	idx := strings.Index(path, "/apiv")
 	importPath := path[:idx]
-	return importPath, clientDir
+	return importPath, strs[1]
 }
