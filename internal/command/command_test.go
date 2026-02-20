@@ -16,8 +16,10 @@ package command
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -175,4 +177,42 @@ func captureStdout(t *testing.T, fn func()) string {
 		t.Fatal(err)
 	}
 	return buf.String()
+}
+
+func TestSetExecCommand(t *testing.T) {
+	tests := []struct {
+		name        string
+		command     []string
+		wantCommand []string
+	}{
+		{
+			name:        "command with args",
+			command:     []string{"my-command", "arg1", "arg2"},
+			wantCommand: []string{"my-command", "arg1", "arg2"},
+		},
+		{
+			name:        "command without args",
+			command:     []string{"my-other-command"},
+			wantCommand: []string{"my-other-command"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var executedCommand []string
+			SetExecCommand(func(ctx context.Context, name string, arg ...string) *exec.Cmd {
+				executedCommand = append([]string{name}, arg...)
+				return exec.CommandContext(ctx, "true")
+			})
+			t.Cleanup(ResetExecCommand)
+
+			if err := Run(t.Context(), test.command[0], test.command[1:]...); err != nil {
+				t.Fatalf("Run() with mock command failed: %v", err)
+			}
+
+			if diff := cmp.Diff(test.wantCommand, executedCommand); diff != "" {
+				t.Errorf("mock command executed with wrong arguments, diff (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
