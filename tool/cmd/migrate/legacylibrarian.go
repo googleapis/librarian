@@ -438,12 +438,8 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
 	}
 	rule := rules[0]
-	noREST := false
-	if rule.AttrLiteral("rest_numeric_enums") == "False" {
-		noREST = true
-	}
 	return &goGAPICInfo{
-		NoRESTNumericEnums: noREST,
+		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
 	}, nil
 }
 
