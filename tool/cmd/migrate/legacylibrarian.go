@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -74,33 +73,6 @@ type MigrationInput struct {
 }
 
 var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-
 	libraryOverrides = map[string]*config.Library{
 		"ai": {
 			ReleaseLevel: "beta",
@@ -245,7 +217,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				return mod.Name
 			})
 	}
-	maps.Copy(idToGoModule, addGoModules)
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -310,6 +281,8 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			if index == -1 {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
+			goAPI.ClientDirectory = info.ClientDirectory
+			goAPI.ImportPath = info.ImportPath
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
@@ -384,7 +357,7 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 // parseBazel parses the BUILD.bazel file in the given directory to extract information from
 // the go_gapic_library rule.
 func parseBazel(dir string) (*goGAPICInfo, error) {
-	cloud_api := strings.Contains(dir, "google/cloud/")
+	cloudAPI := strings.Contains(dir, "google/cloud/")
 	path := filepath.Join(dir, "BUILD.bazel")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -404,8 +377,8 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 	rule := rules[0]
 	var importPath string
 	var clientDir string
-	if !cloud_api {
-		importPath, clientDir = importPathAndClientDir(rule.AttrLiteral("importpath"))
+	if !cloudAPI {
+		importPath, clientDir = importPathAndClientDir(rule.AttrString("importpath"))
 	}
 	return &goGAPICInfo{
 		ClientDirectory:    clientDir,

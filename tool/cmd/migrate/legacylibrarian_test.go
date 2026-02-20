@@ -399,7 +399,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "additional go module",
+			name: "non cloud api",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
@@ -407,7 +407,6 @@ func TestBuildGoLibraries(t *testing.T) {
 							ID: "ai",
 							APIs: []*legacyconfig.API{
 								{Path: "google/ai/generativelanguage/v1"},
-								{Path: "google/ai/generativelanguage/v1alpha"},
 							},
 						},
 					},
@@ -415,34 +414,19 @@ func TestBuildGoLibraries(t *testing.T) {
 				librarianConfig: &legacyconfig.LibrarianConfig{},
 				repoConfig:      nil,
 				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
 			},
 			want: []*config.Library{
 				{
 					Name: "ai",
 					APIs: []*config.API{
 						{Path: "google/ai/generativelanguage/v1"},
-						{Path: "google/ai/generativelanguage/v1alpha"},
 					},
 					ReleaseLevel: "beta",
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
 								Path:            "google/ai/generativelanguage/v1",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1alpha",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta2",
 								ClientDirectory: "generativelanguage",
 								ImportPath:      "ai/generativelanguage",
 							},
