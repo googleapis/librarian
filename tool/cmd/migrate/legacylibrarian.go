@@ -359,9 +359,9 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 }
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return info == &goGAPICInfo{
+	return reflect.DeepEqual(info, &goGAPICInfo{
 		NoRESTNumericEnums: false,
-	}
+	})
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
