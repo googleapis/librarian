@@ -34,12 +34,11 @@ func TestCreateArchive(t *testing.T) {
 	opSys := runtime.GOOS
 	switch opSys {
 	case "darwin":
-		testhelper.RequireCommand(t, "gtar")
 		tarExe = "gtar"
 	default:
-		testhelper.RequireCommand(t, "tar")
 		tarExe = "tar"
 	}
+	testhelper.RequireCommand(t, tarExe)
 	dir := t.TempDir()
 	paths := []string{
 		"other.txt",
