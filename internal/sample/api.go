@@ -40,99 +40,20 @@ const (
 	Package = "google.cloud.secretmanager.v1"
 )
 
-// SecretManagerAPI returns a sample Secret Manager API.
-func SecretManagerAPI() *api.API {
-	svc := Service()
-	messages := []*api.Message{
-		Replication(),
-		Automatic(),
-		CustomerManagedEncryption(),
-		SecretPayload(),
-		Secret(),
-		SecretVersion(),
-		CreateRequest(),
-		UpdateRequest(),
-		ListSecretVersionsRequest(),
-		ListSecretVersionsResponse(),
-	}
-	enums := []*api.Enum{EnumState()}
-
-	model := api.NewTestAPI(messages, enums, []*api.Service{svc})
-	model.Name = APIName
-	model.Title = APITitle
-	model.PackageName = APIPackageName
-	model.Description = APIDescription
-
-	_ = api.CrossReference(model)
-	return model
-}
-
-// VisionAIAPI returns a sample Vision AI API.
-func VisionAIAPI() *api.API {
-	svc := &api.Service{
-		Name:          "AppPlatform",
-		Documentation: "Service describing handlers for resources",
-		DefaultHost:   "visionai.googleapis.com",
-		Package:       "google.cloud.visionai.v1",
-		Methods: []*api.Method{
-			MethodCreateApplicationLRO(),
-			MethodUpdateApplicationLRO(),
-			MethodDeleteApplicationLRO(),
-		},
-	}
-
-	messages := []*api.Message{
-		CreateApplicationRequest(),
-		UpdateApplicationRequest(),
-		DeleteApplicationRequest(),
-		Application(),
-		Operation(),
-	}
-
-	model := api.NewTestAPI(messages, nil, []*api.Service{svc})
-	model.Name = "visionai"
-	model.Title = "Vision AI API"
-	model.PackageName = "google.cloud.visionai.v1"
-	model.Description = "Vision AI App Platform"
-
-	_ = api.CrossReference(model)
-	return model
-}
-
-// Operation returns a sample LRO Operation message.
-func Operation() *api.Message {
-	return &api.Message{
-		Name:    "Operation",
-		ID:      ".google.longrunning.Operation",
-		Package: "google.longrunning",
-		Fields: []*api.Field{
-			{
-				Name:  "name",
-				Typez: api.STRING_TYPE,
-			},
-			{
-				Name:  "done",
-				Typez: api.BOOL_TYPE,
-			},
-		},
-	}
-}
-
-// Method returns a fully wired method from the standard Secret Manager API sample.
-func Method(id string) *api.Method {
-	model := SecretManagerAPI()
-	return model.State.MethodByID[id]
-}
-
-// VisionAIMethod returns a fully wired method from the Vision AI API sample.
-func VisionAIMethod(id string) *api.Method {
-	model := VisionAIAPI()
-	return model.State.MethodByID[id]
-}
-
-// API returns the default sample API (Secret Manager) for backwards compatibility.
+// API returns a sample API.
 func API() *api.API {
-	return SecretManagerAPI()
+	return &api.API{
+		Name:        APIName,
+		Title:       APITitle,
+		PackageName: APIPackageName,
+		Description: APIDescription,
+		Services:    []*api.Service{Service()},
+		Messages: []*api.Message{
+			Replication(),
+			Automatic(),
+		},
+		Enums: []*api.Enum{EnumState()},
+	}
 }
 
 // Service returns a sample service.
@@ -148,22 +69,6 @@ func Service() *api.Service {
 		},
 		Package: Package,
 	}
-}
-
-// withSecretManagerModel wires the method to the fully resolved SecretManagerAPI model.
-func withSecretManagerModel(methodID string, fallback *api.Method) *api.Method {
-	if m, ok := SecretManagerAPI().State.MethodByID[methodID]; ok {
-		return m
-	}
-	return fallback
-}
-
-// withVisionAIModel wires the method to the fully resolved VisionAIAPI model.
-func withVisionAIModel(methodID string, fallback *api.Method) *api.Method {
-	if m, ok := VisionAIAPI().State.MethodByID[methodID]; ok {
-		return m
-	}
-	return fallback
 }
 
 // MethodCreate returns a sample create method.
@@ -255,7 +160,7 @@ func MethodListSecretVersions() *api.Method {
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					Verb: http.MethodGet,
+					Verb: http.MethodPost,
 					PathTemplate: api.NewPathTemplate().
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -345,12 +250,11 @@ func ListSecretVersionsResponse() *api.Message {
 		Package: Package,
 		Fields: []*api.Field{
 			{
-				Name:        "versions",
-				JSONName:    "versions",
-				Typez:       api.MESSAGE_TYPE,
-				TypezID:     SecretVersion().ID,
-				MessageType: SecretVersion(),
-				Repeated:    true,
+				Name:     "versions",
+				JSONName: "versions",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  SecretVersion().ID,
+				Repeated: true,
 			},
 		},
 	}
@@ -499,14 +403,67 @@ func SecretPayload() *api.Message {
 	}
 }
 
-// MethodCreateApplicationLRO returns a sample create method that returns a long-running operation.
-func MethodCreateApplicationLRO() *api.Method {
+// ParallelstoreAPI returns a sample Parallelstore API.
+func ParallelstoreAPI() *api.API {
+	svc := &api.Service{
+		Name:          "Parallelstore",
+		Documentation: "Cloud Parallelstore API.",
+		DefaultHost:   "parallelstore.googleapis.com",
+		Package:       "google.cloud.parallelstore.v1",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore",
+		Methods: []*api.Method{
+			MethodCreateInstance(),
+			MethodUpdateInstance(),
+			MethodDeleteInstance(),
+			MethodListInstances(),
+		},
+	}
+
+	messages := []*api.Message{
+		Instance(),
+		CreateInstanceRequest(),
+		UpdateInstanceRequest(),
+		DeleteInstanceRequest(),
+		ListInstancesRequest(),
+		ListInstancesResponse(),
+		Operation(),
+	}
+
+	model := api.NewTestAPI(messages, nil, []*api.Service{svc})
+	model.Name = "parallelstore"
+	model.Title = "Cloud Parallelstore API"
+	model.PackageName = "google.cloud.parallelstore.v1"
+	model.Description = "Cloud Parallelstore API."
+
+	_ = api.CrossReference(model)
+	return model
+}
+
+// Operation returns a sample LRO Operation message.
+func Operation() *api.Message {
+	return &api.Message{
+		Name:    "Operation",
+		ID:      ".google.longrunning.Operation",
+		Package: "google.longrunning",
+		Fields: []*api.Field{
+			{Name: "name", Typez: api.STRING_TYPE},
+			{Name: "done", Typez: api.BOOL_TYPE},
+		},
+	}
+}
+
+// Method returns a fully wired method from the standard Parallelstore API sample.
+func Method(id string) *api.Method {
+	model := ParallelstoreAPI()
+	return model.State.MethodByID[id]
+}
+
+func MethodCreateInstance() *api.Method {
 	return &api.Method{
-		Name:          "CreateApplication",
-		Documentation: "Creates a new Application in a given project and location.",
-		ID:            "..Service.CreateApplication",
-		InputTypeID:   "..Service.CreateApplicationRequest",
-		InputType:     CreateApplicationRequest(),
+		Name:          "CreateInstance",
+		Documentation: "Creates a Parallelstore instance in a given project and location.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.CreateInstance",
+		InputTypeID:   CreateInstanceRequest().ID,
 		OutputTypeID:  ".google.longrunning.Operation",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -515,27 +472,24 @@ func MethodCreateApplicationLRO() *api.Method {
 					PathTemplate: api.NewPathTemplate().
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()).
-						WithLiteral("applications"),
-					QueryParameters: map[string]bool{},
+						WithLiteral("instances"),
 				},
 			},
-			BodyFieldPath: "application",
+			BodyFieldPath: "instance",
 		},
 		OperationInfo: &api.OperationInfo{
-			ResponseTypeID: Application().ID,
-			MetadataTypeID: "..OperationMetadata",
+			ResponseTypeID: Instance().ID,
+			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
 		},
 	}
 }
 
-// MethodUpdateApplicationLRO returns a sample update method that returns a long-running operation.
-func MethodUpdateApplicationLRO() *api.Method {
+func MethodUpdateInstance() *api.Method {
 	return &api.Method{
-		Name:          "UpdateApplication",
-		Documentation: "Updates the parameters of a single Application.",
-		ID:            "..Service.UpdateApplication",
-		InputTypeID:   "..Service.UpdateApplicationRequest",
-		InputType:     UpdateApplicationRequest(),
+		Name:          "UpdateInstance",
+		Documentation: "Updates the parameters of a single instance.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.UpdateInstance",
+		InputTypeID:   UpdateInstanceRequest().ID,
 		OutputTypeID:  ".google.longrunning.Operation",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -543,27 +497,24 @@ func MethodUpdateApplicationLRO() *api.Method {
 					Verb: http.MethodPatch,
 					PathTemplate: api.NewPathTemplate().
 						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("application", "name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("applications").WithMatch()),
-					QueryParameters: map[string]bool{},
+						WithVariable(api.NewPathVariable("instance", "name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()),
 				},
 			},
-			BodyFieldPath: "application",
+			BodyFieldPath: "instance",
 		},
 		OperationInfo: &api.OperationInfo{
-			ResponseTypeID: Application().ID,
-			MetadataTypeID: "..OperationMetadata",
+			ResponseTypeID: Instance().ID,
+			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
 		},
 	}
 }
 
-// MethodDeleteApplicationLRO returns a sample delete method that returns a long-running operation.
-func MethodDeleteApplicationLRO() *api.Method {
+func MethodDeleteInstance() *api.Method {
 	return &api.Method{
-		Name:          "DeleteApplication",
-		Documentation: "Deletes a single Application.",
-		ID:            "..Service.DeleteApplication",
-		InputTypeID:   "..Service.DeleteApplicationRequest",
-		InputType:     DeleteApplicationRequest(),
+		Name:          "DeleteInstance",
+		Documentation: "Deletes a single instance.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.DeleteInstance",
+		InputTypeID:   DeleteInstanceRequest().ID,
 		OutputTypeID:  ".google.longrunning.Operation",
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
@@ -571,57 +522,74 @@ func MethodDeleteApplicationLRO() *api.Method {
 					Verb: http.MethodDelete,
 					PathTemplate: api.NewPathTemplate().
 						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("applications").WithMatch()),
-					QueryParameters: map[string]bool{},
+						WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()),
 				},
 			},
 		},
 		OperationInfo: &api.OperationInfo{
 			ResponseTypeID: ".google.protobuf.Empty",
-			MetadataTypeID: "..OperationMetadata",
+			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
 		},
 	}
 }
 
-// CreateApplicationRequest returns a sample create application request.
-func CreateApplicationRequest() *api.Message {
+func MethodListInstances() *api.Method {
+	return &api.Method{
+		Name:          "ListInstances",
+		Documentation: "Lists Instances in a given project and location.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.ListInstances",
+		InputTypeID:   ListInstancesRequest().ID,
+		OutputTypeID:  ListInstancesResponse().ID,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodGet,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()).
+						WithLiteral("instances"),
+				},
+			},
+		},
+	}
+}
+
+func CreateInstanceRequest() *api.Message {
 	return &api.Message{
-		Name:          "CreateApplicationRequest",
-		ID:            "..Service.CreateApplicationRequest",
-		Documentation: "Request message for CreateApplication",
-		Package:       Package,
+		Name:    "CreateInstanceRequest",
+		ID:      ".google.cloud.parallelstore.v1.CreateInstanceRequest",
+		Package: "google.cloud.parallelstore.v1",
 		Fields: []*api.Field{
 			{
 				Name:     "parent",
 				JSONName: "parent",
 				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					ChildType: "parallelstore.googleapis.com/Instance",
+				},
 			},
 			{
-				Name:        "application",
-				JSONName:    "application",
+				Name:     "instance_id",
+				JSONName: "instanceId",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:        "instance",
+				JSONName:    "instance",
 				Typez:       api.MESSAGE_TYPE,
-				TypezID:     Application().ID,
-				MessageType: Application(),
+				TypezID:     Instance().ID,
+				MessageType: Instance(),
 			},
 		},
 	}
 }
 
-// UpdateApplicationRequest returns a sample update application request.
-func UpdateApplicationRequest() *api.Message {
+func UpdateInstanceRequest() *api.Message {
 	return &api.Message{
-		Name:          "UpdateApplicationRequest",
-		ID:            "..Service.UpdateApplicationRequest",
-		Documentation: "Request message for UpdateApplication",
-		Package:       Package,
+		Name:    "UpdateInstanceRequest",
+		ID:      ".google.cloud.parallelstore.v1.UpdateInstanceRequest",
+		Package: "google.cloud.parallelstore.v1",
 		Fields: []*api.Field{
-			{
-				Name:        "application",
-				JSONName:    "application",
-				Typez:       api.MESSAGE_TYPE,
-				TypezID:     Application().ID,
-				MessageType: Application(),
-			},
 			{
 				Name:     "update_mask",
 				JSONName: "updateMask",
@@ -629,45 +597,94 @@ func UpdateApplicationRequest() *api.Message {
 				TypezID:  ".google.protobuf.FieldMask",
 				Optional: true,
 			},
-		},
-	}
-}
-
-// DeleteApplicationRequest returns a sample delete application request.
-func DeleteApplicationRequest() *api.Message {
-	return &api.Message{
-		Name:          "DeleteApplicationRequest",
-		ID:            "..Service.DeleteApplicationRequest",
-		Documentation: "Request message for DeleteApplication",
-		Package:       Package,
-		Fields: []*api.Field{
 			{
-				Name:     "name",
-				JSONName: "name",
-				Typez:    api.STRING_TYPE,
+				Name:        "instance",
+				JSONName:    "instance",
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     Instance().ID,
+				MessageType: Instance(),
 			},
 		},
 	}
 }
 
-// Application returns a sample application.
-func Application() *api.Message {
+func DeleteInstanceRequest() *api.Message {
 	return &api.Message{
-		Name:    "Application",
-		ID:      "..Application",
-		Package: Package,
+		Name:    "DeleteInstanceRequest",
+		ID:      ".google.cloud.parallelstore.v1.DeleteInstanceRequest",
+		Package: "google.cloud.parallelstore.v1",
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type: "parallelstore.googleapis.com/Instance",
+				},
+			},
+		},
+	}
+}
+
+func ListInstancesRequest() *api.Message {
+	return &api.Message{
+		Name:    "ListInstancesRequest",
+		ID:      ".google.cloud.parallelstore.v1.ListInstancesRequest",
+		Package: "google.cloud.parallelstore.v1",
+		Fields: []*api.Field{
+			{
+				Name:     "parent",
+				JSONName: "parent",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type:      "locations.googleapis.com/Location",
+					ChildType: "parallelstore.googleapis.com/Instance",
+				},
+			},
+			{Name: "page_size", JSONName: "pageSize", Typez: api.INT32_TYPE},
+			{Name: "page_token", JSONName: "pageToken", Typez: api.STRING_TYPE},
+			{Name: "filter", JSONName: "filter", Typez: api.STRING_TYPE},
+			{Name: "order_by", JSONName: "orderBy", Typez: api.STRING_TYPE},
+		},
+	}
+}
+
+func ListInstancesResponse() *api.Message {
+	return &api.Message{
+		Name:    "ListInstancesResponse",
+		ID:      ".google.cloud.parallelstore.v1.ListInstancesResponse",
+		Package: "google.cloud.parallelstore.v1",
+		Fields: []*api.Field{
+			{
+				Name:        "instances",
+				JSONName:    "instances",
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     Instance().ID,
+				MessageType: Instance(),
+				Repeated:    true,
+			},
+			{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.STRING_TYPE},
+		},
+	}
+}
+
+func Instance() *api.Message {
+	return &api.Message{
+		Name:    "Instance",
+		ID:      ".google.cloud.parallelstore.v1.Instance",
+		Package: "google.cloud.parallelstore.v1",
 		Resource: &api.Resource{
-			Type:     "example.googleapis.com/Application",
-			Plural:   "applications",
-			Singular: "application",
+			Type:     "parallelstore.googleapis.com/Instance",
+			Plural:   "instances",
+			Singular: "instance",
 			Patterns: []api.ResourcePattern{
 				{
 					*api.NewPathSegment().WithLiteral("projects"),
 					*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
 					*api.NewPathSegment().WithLiteral("locations"),
 					*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-					*api.NewPathSegment().WithLiteral("applications"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("application").WithMatch()),
+					*api.NewPathSegment().WithLiteral("instances"),
+					*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
 				},
 			},
 		},
@@ -676,6 +693,24 @@ func Application() *api.Message {
 				Name:     "name",
 				JSONName: "name",
 				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "description",
+				JSONName: "description",
+				Typez:    api.STRING_TYPE,
+			},
+			{
+				Name:     "capacity_gib",
+				JSONName: "capacityGib",
+				Typez:    api.INT64_TYPE,
+			},
+			{
+				Name:     "network",
+				JSONName: "network",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type: "compute.googleapis.com/Network",
+				},
 			},
 		},
 	}
