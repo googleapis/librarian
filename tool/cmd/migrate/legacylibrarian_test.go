@@ -721,6 +721,12 @@ func TestImportPathAndClientDir(t *testing.T) {
 			wantImportPath: "accessapproval",
 			wantClientDir:  "accessapproval",
 		},
+		{
+			name:           "no api version",
+			str:            "cloud.google.com/go/longrunning/autogen;longrunning",
+			wantImportPath: "longrunning/autogen",
+			wantClientDir:  "longrunning",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotImportPath, gotClientDir := importPathAndClientDir(test.str)
