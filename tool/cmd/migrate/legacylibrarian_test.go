@@ -661,6 +661,36 @@ func TestLibraryWithAliasshim_Error(t *testing.T) {
 	}
 }
 
+func TestParseBazel_Success(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dir  string
+		want *goGAPICInfo
+	}{
+		{
+			name: "success",
+			dir:  "testdata/parse-bazel/success",
+			want: &goGAPICInfo{
+				NoRESTNumericEnums: true,
+			},
+		},
+		{
+			name: "no GAPIC rules",
+			dir:  "testdata/parse-bazel/no-gapic-rule",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseBazel(test.dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestParseBazel_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
@@ -669,7 +699,7 @@ func TestParseBazel_Error(t *testing.T) {
 	}{
 		{
 			name:       "multiple GAPIC rules",
-			dir:        "testdata/parse-bazel-error/multiple-gapic-rules",
+			dir:        "testdata/parse-bazel/error",
 			wantErrMsg: "multiple go_gapic_library rules",
 		},
 		{
