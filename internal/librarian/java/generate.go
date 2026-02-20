@@ -41,16 +41,6 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	return nil
 }
 
-// FormatLibraries formats all given libraries in sequence.
-func FormatLibraries(ctx context.Context, libraries []*config.Library) error {
-	for _, library := range libraries {
-		if err := Format(ctx, library); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Format formats a Java client library using google-java-format.
 func Format(ctx context.Context, library *config.Library) error {
 	return nil
