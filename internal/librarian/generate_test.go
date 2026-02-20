@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -272,6 +273,54 @@ libraries:
 				}
 			}
 		})
+	}
+}
+
+func TestGenerate_Java(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	// Create a fake protoc that just exits successfully.
+	protocDir := filepath.Join(tempDir, "bin")
+	if err := os.MkdirAll(protocDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	protocPath := filepath.Join(protocDir, "protoc")
+	if err := os.WriteFile(protocPath, []byte("#!/bin/bash\nexit 0\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", protocDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
+	})
+
+	configContent := fmt.Sprintf(`language: java
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: secretmanager
+    output: out
+    apis:
+      - path: google/cloud/secretmanager/v1
+`, googleapisDir)
+
+	if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// We expect this to fail because there's no actual .srcjar to unzip,
+	// but it SHOULD pass the "language does not support generation" check.
+	err := Run(t.Context(), "librarian", "generate", "secretmanager")
+
+	if err == nil {
+		// If it somehow succeeded without any output, that's fine for this test.
+		return
+	}
+
+	if strings.Contains(err.Error(), "does not support generation") {
+		t.Errorf("expected Java to be supported, but got: %v", err)
 	}
 }
 

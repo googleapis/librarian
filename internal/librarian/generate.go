@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sidekick/source"
@@ -160,6 +161,10 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			if err := checkAndClean(library.Output, library.Keep); err != nil {
 				return err
 			}
+		case languageJava:
+			if err := java.Clean(library); err != nil {
+				return err
+			}
 		case languagePython:
 			if err := python.CleanLibrary(library); err != nil {
 				return err
@@ -193,6 +198,8 @@ func generateLibraries(ctx context.Context, language string, libraries []*config
 		return python.GenerateLibraries(ctx, libraries, googleapisDir)
 	case languageGo:
 		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
+	case languageJava:
+		return java.GenerateLibraries(ctx, libraries, googleapisDir)
 	case languageRust:
 		return rust.GenerateLibraries(ctx, libraries, src)
 	default:
@@ -225,6 +232,10 @@ func formatLibraries(ctx context.Context, language string, libraries []*config.L
 			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 			// generation and formatting for Python.
 			return nil
+		case languageJava:
+			if err := java.Format(ctx, library); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("language %q does not support formatting", language)
 		}
