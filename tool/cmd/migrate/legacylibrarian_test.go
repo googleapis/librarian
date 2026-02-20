@@ -495,7 +495,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "example-library",
-					APIs: []*config.API{{Path: "google/cloud/bigquery/no-gapic"}},
+					APIs: []*config.API{{Path: "google/cloud/no-gapic"}},
 				},
 			},
 		},
