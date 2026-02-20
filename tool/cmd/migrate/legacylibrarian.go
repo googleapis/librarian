@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"maps"
 	"os"
@@ -24,12 +25,17 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+type goGAPICInfo struct {
+	NoRESTNumericEnums bool
+}
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
 type RepoConfig struct {
@@ -371,4 +377,31 @@ func aliasshim(repoPath string) ([]string, error) {
 		return nil
 	})
 	return files, err
+}
+
+func parseBazel(dir string) (*goGAPICInfo, error) {
+	path := filepath.Join(dir, "BUILD.bazel")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+	rules := file.Rules("go_gapic_library")
+	if len(rules) == 0 {
+		return nil, nil
+	}
+	if len(rules) > 1 {
+		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
+	}
+	rule := rules[0]
+	noREST := false
+	if rule.AttrLiteral("rest_numeric_enums") == "False" {
+		noREST = true
+	}
+	return &goGAPICInfo{
+		NoRESTNumericEnums: noREST,
+	}, nil
 }
