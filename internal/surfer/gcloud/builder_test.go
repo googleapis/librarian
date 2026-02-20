@@ -505,6 +505,79 @@ func TestAddFlattenedParams(t *testing.T) {
 	}
 }
 
+func TestNewResourceReferenceSpec(t *testing.T) {
+	service := sample.ParallelstoreAPI().Services[0]
+
+	model := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type: "compute.googleapis.com/Network",
+				Patterns: []api.ResourcePattern{
+					{
+						*api.NewPathSegment().WithLiteral("projects"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+						*api.NewPathSegment().WithLiteral("global"),
+						*api.NewPathSegment().WithLiteral("networks"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("network").WithMatch()),
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  *ResourceSpec
+	}{
+		{
+			name:  "Handles valid resource reference",
+			field: api.NewTestField("network").WithResourceReference("compute.googleapis.com/Network"),
+			want: &ResourceSpec{
+				Name:                  "network",
+				PluralName:            "networks", // inferred
+				Collection:            "parallelstore.projects.networks",
+				DisableAutoCompleters: true,
+				Attributes: []Attribute{
+					{ParameterName: "projectsId", AttributeName: "project", Help: "The project id of the {resource} resource.", Property: "core/project"},
+					{ParameterName: "networksId", AttributeName: "network", Help: "The network id of the {resource} resource."},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := newResourceReferenceSpec(test.field, model, &Config{}, service)
+			if err != nil {
+				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newResourceReferenceSpec() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewResourceReferenceSpec_Error(t *testing.T) {
+	service := sample.ParallelstoreAPI().Services[0]
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+	}{
+		{
+			name:  "Fails for missing resource definition",
+			field: api.NewTestField("unknown").WithResourceReference("unknown.googleapis.com/Unknown"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := newResourceReferenceSpec(test.field, sample.ParallelstoreAPI(), &Config{}, service)
+			if err == nil {
+				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestNewCollectionPath(t *testing.T) {
 	service := &api.Service{
 		DefaultHost: "test.googleapis.com",
