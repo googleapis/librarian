@@ -413,6 +413,8 @@ func aliasshim(repoPath string) ([]string, error) {
 	return files, err
 }
 
+// parseBazel parses the BUILD.bazel file in the given directory to extract information from
+// the go_gapic_library rule.
 func parseBazel(dir string) (*goGAPICInfo, error) {
 	path := filepath.Join(dir, "BUILD.bazel")
 	data, err := os.ReadFile(path)
