@@ -378,6 +378,7 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 	var importPath string
 	var clientDir string
 	if !cloudAPI {
+		// Cloud APIs are excluded because these values are derived from API path.
 		importPath, clientDir = importPathAndClientDir(rule.AttrString("importpath"))
 	}
 	return &goGAPICInfo{
