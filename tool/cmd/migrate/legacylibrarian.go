@@ -314,6 +314,8 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
 			}
+			// Append an entry if no exists; otherwise update the
+			// value in place.
 			if index == -1 {
 				library.Go.GoAPIs = append(library.Go.GoAPIs, goAPI)
 			} else {
