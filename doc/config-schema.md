@@ -62,6 +62,7 @@ This document describes the schema for the librarian.yaml.
 | `tag_format` | string | TagFormat is the template for git tags, such as "{name}/v{version}". |
 | `transport` | string | Transport is the transport protocol, such as "grpc+rest" or "grpc". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific default configuration. |
+| `java` | [JavaDefault](#javadefault-configuration) (optional) | Java contains Java-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Rust contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Python contains Python-specific default configuration. |
 
@@ -85,6 +86,7 @@ This document describes the schema for the librarian.yaml.
 | `veneer` | bool | Veneer indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Dart contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Go contains Go-specific library configuration. |
+| `java` | [JavaPackage](#javapackage-configuration) (optional) | Java contains Java-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Python contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Rust contains Rust-specific library configuration. |
 
@@ -136,6 +138,24 @@ This document describes the schema for the librarian.yaml.
 | `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | GoAPIs is a list of Go-specific API configurations. |
 | `module_path_version` | string | ModulePathVersion is the version of the Go module path. |
 | `nested_module` | string | NestedModule is the name of a nested module directory. |
+
+## JavaAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string |  |
+
+## JavaDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `generator_jar` | string | GeneratorJar is the path to the gapic-generator-java JAR file. If set, a temporary protoc-gen-java_gapic wrapper will be created. |
+| `grpc_plugin` | string | GRPCPlugin is the path to the protoc-gen-java_grpc plugin. If set, a temporary protoc-gen-java_grpc wrapper will be created. |
+
+## JavaPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
 
 ## PythonDefault Configuration
 

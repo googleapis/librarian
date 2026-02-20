@@ -48,6 +48,33 @@ type GoAPI struct {
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 }
 
+// JavaAPI represents configuration for a single API within a Java library.
+type JavaAPI struct {
+	Path string `yaml:"path,omitempty"`
+}
+
+// JavaDefault represents the Java-specific default configuration.
+type JavaDefault struct {
+	// FormatterJar is the path to the google-java-format JAR file.
+	FormatterJar string `yaml:"formatter_jar,omitempty"`
+
+	// GeneratorJar is the path to the gapic-generator-java JAR file.
+	// If set, a temporary protoc-gen-java_gapic wrapper will be created.
+	GeneratorJar string `yaml:"generator_jar,omitempty"`
+
+	// GRPCPlugin is the path to the protoc-gen-java_grpc plugin.
+	// If set, a temporary protoc-gen-java_grpc wrapper will be created.
+	GRPCPlugin string `yaml:"grpc_plugin,omitempty"`
+}
+
+// JavaPackage represents the Java-specific configuration for a library.
+type JavaPackage struct {
+	JavaDefault `yaml:",inline"`
+
+	// SkipFormat disables Java code formatting for this library.
+	SkipFormat bool `yaml:"skip_format,omitempty"`
+}
+
 // RustDefault contains Rust-specific default configuration.
 type RustDefault struct {
 	// PackageDependencies is a list of default package dependencies. These

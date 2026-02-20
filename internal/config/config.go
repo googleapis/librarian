@@ -142,6 +142,9 @@ type Default struct {
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
+	// Java contains Java-specific default configuration.
+	Java *JavaDefault `yaml:"java,omitempty"`
+
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
 
@@ -210,6 +213,9 @@ type Library struct {
 
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
+
+	// Java contains Java-specific library configuration.
+	Java *JavaPackage `yaml:"java,omitempty"`
 
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`

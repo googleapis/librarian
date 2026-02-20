@@ -49,6 +49,25 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Python != nil {
 		return fillPython(lib, d)
 	}
+	if d.Java != nil {
+		return fillJava(lib, d)
+	}
+	return lib
+}
+
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaPackage{}
+	}
+	if lib.Java.FormatterJar == "" {
+		lib.Java.FormatterJar = d.Java.FormatterJar
+	}
+	if lib.Java.GeneratorJar == "" {
+		lib.Java.GeneratorJar = d.Java.GeneratorJar
+	}
+	if lib.Java.GRPCPlugin == "" {
+		lib.Java.GRPCPlugin = d.Java.GRPCPlugin
+	}
 	return lib
 }
 
