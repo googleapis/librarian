@@ -158,7 +158,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [JavaDefault](#javadefault-configuration) |  |
-| `skip_format` | bool | SkipFormat disables Java code formatting for this library. |
 
 ## PythonDefault Configuration
 

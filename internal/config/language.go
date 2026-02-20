@@ -70,9 +70,6 @@ type JavaDefault struct {
 // JavaPackage represents the Java-specific configuration for a library.
 type JavaPackage struct {
 	JavaDefault `yaml:",inline"`
-
-	// SkipFormat disables Java code formatting for this library.
-	SkipFormat bool `yaml:"skip_format,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.
