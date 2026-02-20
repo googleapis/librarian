@@ -19,6 +19,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -29,7 +30,16 @@ import (
 )
 
 func TestCreateArchive(t *testing.T) {
-	testhelper.RequireCommand(t, "tar")
+	var tarExe string
+	opSys := runtime.GOOS
+	switch opSys {
+	case "darwin":
+		testhelper.RequireCommand(t, "gtar")
+		tarExe = "gtar"
+	default:
+		testhelper.RequireCommand(t, "tar")
+		tarExe = "tar"
+	}
 	dir := t.TempDir()
 	paths := []string{
 		"other.txt",
@@ -52,7 +62,7 @@ func TestCreateArchive(t *testing.T) {
 	sourceDir := filepath.Join(dir, "docs")
 	targetFile := filepath.Join(dir, "target.tar.gz")
 
-	if err := CreateArchive(t.Context(), "tar", sourceDir, targetFile); err != nil {
+	if err := CreateArchive(t.Context(), tarExe, sourceDir, targetFile); err != nil {
 		t.Fatal(err)
 	}
 
