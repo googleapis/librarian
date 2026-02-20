@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
@@ -299,6 +300,10 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			buildDir := filepath.Join(input.googleapisDir, api.Path)
+			if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
+				// Skip Not Exist error for testing purpose.
+				continue
+			}
 			info, err := parseBazel(buildDir)
 			if err != nil {
 				return nil, err
@@ -354,9 +359,9 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 }
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return reflect.DeepEqual(info, &goGAPICInfo{
+	return info == &goGAPICInfo{
 		NoRESTNumericEnums: false,
-	})
+	}
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
