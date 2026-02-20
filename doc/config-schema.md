@@ -149,6 +149,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `formatter_jar` | string | FormatterJar is the path to the google-java-format JAR file. |
 | `generator_jar` | string | GeneratorJar is the path to the gapic-generator-java JAR file. If set, a temporary protoc-gen-java_gapic wrapper will be created. |
 | `grpc_plugin` | string | GRPCPlugin is the path to the protoc-gen-java_grpc plugin. If set, a temporary protoc-gen-java_grpc wrapper will be created. |
 
@@ -156,6 +157,8 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| (embedded) | [JavaDefault](#javadefault-configuration) |  |
+| `skip_format` | bool | SkipFormat disables Java code formatting for this library. |
 
 ## PythonDefault Configuration
 
