@@ -108,9 +108,12 @@ func TestIsCollectionIdentifier(t *testing.T) {
 		{"disks", true},
 		{"clusters", true},
 		{"backups", true},
+		{"vms", true},
+		{"ips", true},
 
 		// Ignored / Invalid
 		{"v1", false},    // Version
+		{"us", false},    // Region
 		{"other", false}, // Random noun not ending in s
 		{"s", false},     // Too short
 		{"", false},      // Empty

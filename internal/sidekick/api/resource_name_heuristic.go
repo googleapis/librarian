@@ -51,10 +51,10 @@ func isBaseVocabulary(segment string) bool {
 
 // isCollectionIdentifier returns true if the segment is likely a collection ID.
 // This includes strict base vocabulary matches OR heuristic plural nouns (ending in 's').
-// Single letter segments (like 'v1' or param 's') are not considered collections.
+// Short segments (like 'v1', 'us', or 's') are not considered collections.
 func isCollectionIdentifier(segment string) bool {
 	if isBaseVocabulary(segment) {
 		return true
 	}
-	return len(segment) > 1 && strings.HasSuffix(segment, "s")
+	return len(segment) > 2 && strings.HasSuffix(segment, "s")
 }
