@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -471,6 +472,145 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse BUILD.bazel with no GAPIC rule",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "example-library",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/no-gapic",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "example-library",
+					APIs: []*config.API{{Path: "google/cloud/no-gapic"}},
+				},
+			},
+		},
+		{
+			name: "parse BUILD.bazel with no Go API",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigquery",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/bigquery/analyticshub/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigquery",
+					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								Path:               "google/cloud/bigquery/analyticshub/v1",
+								NoRESTNumericEnums: true,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse BUILD.bazel with empty Go API",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigquery",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/bigquery/biglake/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig:      nil,
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigquery",
+					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+				},
+			},
+		},
+		{
+			name: "parse BUILD.bazel with Go API merge",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigquery",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/bigquery/analyticshub/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigquery",
+							APIs: []*RepoConfigAPI{
+								{
+									ClientDirectory: "analyticshub",
+									Path:            "google/cloud/bigquery/analyticshub/v1",
+									ImportPath:      "bigquery/analyticshub",
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigquery",
+					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								ClientDirectory:    "analyticshub",
+								ImportPath:         "bigquery/analyticshub",
+								NoRESTNumericEnums: true,
+								Path:               "google/cloud/bigquery/analyticshub/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
@@ -572,5 +712,64 @@ func TestLibraryWithAliasshim_Error(t *testing.T) {
 	_, err := libraryWithAliasshim("testdata/non-existent-repo")
 	if err == nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParseBazel_Success(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		dir  string
+		want *goGAPICInfo
+	}{
+		{
+			name: "success",
+			dir:  "testdata/parse-bazel/success",
+			want: &goGAPICInfo{
+				NoRESTNumericEnums: true,
+			},
+		},
+		{
+			name: "no GAPIC rules",
+			dir:  "testdata/parse-bazel/no-gapic-rule",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseBazel(test.dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseBazel_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		dir        string
+		wantErrMsg string
+	}{
+		{
+			name:       "multiple GAPIC rules",
+			dir:        "testdata/parse-bazel/error",
+			wantErrMsg: "multiple go_gapic_library rules",
+		},
+		{
+			name:       "no BUILD.bazel",
+			dir:        "non-existent-dir",
+			wantErrMsg: "no such file or directory",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parseBazel(test.dir)
+			if err == nil {
+				t.Fatalf("parseBazel(%q): expected error", test.dir)
+			}
+			if !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("mismatch (-want +got):\n%s\n%s", test.wantErrMsg, err.Error())
+			}
+		})
 	}
 }

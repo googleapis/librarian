@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io/fs"
 	"maps"
 	"os"
@@ -24,12 +26,17 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+type goGAPICInfo struct {
+	NoRESTNumericEnums bool
+}
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
 type RepoConfig struct {
@@ -61,6 +68,7 @@ type MigrationInput struct {
 	repoConfig      *RepoConfig
 	lang            string
 	repoPath        string
+	googleapisDir   string
 }
 
 var (
@@ -165,6 +173,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		input.googleapisDir = src.Dir
 		cfg.Default.Keep = []string{"CHANGES.md", "go.mod", "go.sum"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
@@ -288,6 +297,36 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				library.Go = goModule
 			}
 		}
+		// Read Go GAPIC configurations from BUILD.bazel.
+		for _, api := range library.APIs {
+			buildDir := filepath.Join(input.googleapisDir, api.Path)
+			if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
+				// Skip Not Exist error for testing purpose.
+				continue
+			}
+			info, err := parseBazel(buildDir)
+			if err != nil {
+				return nil, err
+			}
+			if info == nil || isEmptyGoGAPICInfo(info) {
+				continue
+			}
+			goAPI, index := findGoAPI(library, api.Path)
+			if index == -1 {
+				goAPI = &config.GoAPI{Path: api.Path}
+			}
+			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			// Append an entry if no exists; otherwise update the
+			// value in place.
+			if index == -1 {
+				library.Go.GoAPIs = append(library.Go.GoAPIs, goAPI)
+			} else {
+				library.Go.GoAPIs[index] = goAPI
+			}
+		}
 
 		libraries = append(libraries, library)
 	}
@@ -317,6 +356,12 @@ func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 
 func isEmptyGoModule(mod *config.GoModule) bool {
 	return reflect.DeepEqual(mod, &config.GoModule{})
+}
+
+func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
+	return reflect.DeepEqual(info, &goGAPICInfo{
+		NoRESTNumericEnums: false,
+	})
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
@@ -371,4 +416,44 @@ func aliasshim(repoPath string) ([]string, error) {
 		return nil
 	})
 	return files, err
+}
+
+// parseBazel parses the BUILD.bazel file in the given directory to extract information from
+// the go_gapic_library rule.
+func parseBazel(dir string) (*goGAPICInfo, error) {
+	path := filepath.Join(dir, "BUILD.bazel")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+	rules := file.Rules("go_gapic_library")
+	if len(rules) == 0 {
+		return nil, nil
+	}
+	if len(rules) > 1 {
+		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
+	}
+	rule := rules[0]
+	return &goGAPICInfo{
+		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
+	}, nil
+}
+
+// findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
+// It returns the GoAPI pointer and its index in the GoAPIs slice if found, otherwise it returns
+// nil and -1.
+func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
+	if library.Go == nil {
+		return nil, -1
+	}
+	for i, ga := range library.Go.GoAPIs {
+		if ga.Path == apiPath {
+			return ga, i
+		}
+	}
+	return nil, -1
 }
