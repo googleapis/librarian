@@ -1,0 +1,1599 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+- languages:
+    - python
+  path: google/ads/admanager/v1
+  transports:
+    all: rest
+- languages:
+    - go
+    - python
+  path: google/ads/datamanager/v1
+- languages:
+    - go
+    - python
+  path: google/ai/generativelanguage/v1
+- languages:
+    - go
+    - python
+  path: google/ai/generativelanguage/v1alpha
+- languages:
+    - dart
+    - go
+    - python
+  path: google/ai/generativelanguage/v1beta
+- languages:
+    - go
+    - python
+  path: google/ai/generativelanguage/v1beta2
+- languages:
+    - python
+  path: google/ai/generativelanguage/v1beta3
+- languages:
+    - go
+    - python
+  path: google/analytics/admin/v1alpha
+- languages:
+    - python
+  path: google/analytics/admin/v1beta
+- languages:
+    - python
+  path: google/analytics/data/v1alpha
+- languages:
+    - python
+  path: google/analytics/data/v1beta
+- path: google/api
+- path: google/api/apikeys/v2
+- path: google/api/cloudquotas/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/api/cloudquotas/v1beta
+- path: google/api/servicecontrol/v1
+- path: google/api/servicecontrol/v2
+- path: google/api/servicemanagement/v1
+- path: google/api/serviceusage/v1
+- languages:
+    - python
+  path: google/appengine/logging/v1
+  transports:
+    python: grpc
+- path: google/appengine/v1
+- languages:
+    - python
+  path: google/apps/card/v1
+  transports:
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/apps/events/subscriptions/v1
+- languages:
+    - go
+    - python
+  path: google/apps/events/subscriptions/v1beta
+- languages:
+    - go
+    - python
+  path: google/apps/meet/v2
+- languages:
+    - go
+    - python
+  path: google/apps/meet/v2beta
+- path: google/apps/script/type
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/calendar
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/docs
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/drive
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/gmail
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/sheets
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/apps/script/type/slides
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- languages:
+    - go
+    - python
+  path: google/area120/tables/v1alpha1
+- path: google/bigtable/admin/v2
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/chat/v1
+- path: google/cloud/accessapproval/v1
+- path: google/cloud/advisorynotifications/v1
+- path: google/cloud/aiplatform/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/aiplatform/v1/schema/predict/instance
+  service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
+  transports:
+    python: grpc
+- path: google/cloud/aiplatform/v1/schema/predict/params
+  service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
+  transports:
+    python: grpc
+- path: google/cloud/aiplatform/v1/schema/predict/prediction
+  service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
+  transports:
+    python: grpc
+- path: google/cloud/aiplatform/v1/schema/trainingjob/definition
+  service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
+  transports:
+    python: grpc
+- languages:
+    - dart
+    - go
+    - python
+  path: google/cloud/aiplatform/v1beta1
+  service_config: google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/alloydb/connectors/v1
+  transports:
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/alloydb/connectors/v1alpha
+  transports:
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/alloydb/connectors/v1beta
+  transports:
+    python: grpc+rest
+- path: google/cloud/alloydb/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/alloydb/v1alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/alloydb/v1beta
+- path: google/cloud/apigateway/v1
+- path: google/cloud/apigeeconnect/v1
+  transports:
+    csharp: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/apigeeregistry/v1
+  transports:
+    csharp: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/apihub/v1
+  transports:
+    csharp: rest
+    go: rest
+    java: rest
+    nodejs: rest
+    php: rest
+    python: grpc+rest
+    ruby: rest
+- path: google/cloud/apiregistry/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/apiregistry/v1beta
+- path: google/cloud/apphub/v1
+- path: google/cloud/asset/v1
+- languages:
+    - python
+  path: google/cloud/asset/v1p1beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/asset/v1p2beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/asset/v1p5beta1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/cloud/assuredworkloads/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/assuredworkloads/v1beta1
+- languages:
+    - python
+  path: google/cloud/audit
+- path: google/cloud/auditmanager/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/automl/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/automl/v1beta1
+- path: google/cloud/backupdr/v1
+- path: google/cloud/baremetalsolution/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/batch/v1
+- languages:
+    - python
+  path: google/cloud/batch/v1alpha
+- path: google/cloud/beyondcorp/appconnections/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/beyondcorp/appconnectors/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/beyondcorp/appgateways/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/beyondcorp/clientconnectorservices/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/beyondcorp/clientgateways/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/biglake/v1
+- path: google/cloud/bigquery/analyticshub/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/biglake/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/biglake/v1alpha1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/cloud/bigquery/connection/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/dataexchange/v1beta1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+- path: google/cloud/bigquery/datapolicies/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/datapolicies/v1beta1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+- path: google/cloud/bigquery/datapolicies/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/datapolicies/v2beta1
+- path: google/cloud/bigquery/datatransfer/v1
+- languages:
+    - python
+  path: google/cloud/bigquery/logging/v1
+  transports:
+    python: grpc
+- path: google/cloud/bigquery/migration/v2
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc+rest
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/migration/v2alpha
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+- path: google/cloud/bigquery/reservation/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/storage/v1
+  transports:
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/storage/v1alpha
+  transports:
+    all: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/storage/v1beta
+  transports:
+    all: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/bigquery/storage/v1beta2
+  transports:
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+- path: google/cloud/bigquery/v2
+  transports:
+    go: grpc+rest
+    nodejs: grpc+rest
+    python: rest
+- languages:
+    - go
+    - python
+  path: google/cloud/billing/budgets/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/billing/budgets/v1beta1
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/billing/v1
+- path: google/cloud/binaryauthorization/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/binaryauthorization/v1beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/capacityplanner/v1beta
+- path: google/cloud/certificatemanager/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/channel/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- path: google/cloud/chronicle/v1
+- path: google/cloud/cloudcontrolspartner/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/cloudcontrolspartner/v1beta
+- path: google/cloud/clouddms/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/cloudsecuritycompliance/v1
+- path: google/cloud/commerce/consumer/procurement/v1
+- languages:
+    - python
+  path: google/cloud/commerce/consumer/procurement/v1alpha1
+- path: google/cloud/common
+  transports:
+    python: grpc
+- discovery: discoveries/compute.v1.json
+  path: google/cloud/compute/v1
+  transports:
+    csharp: rest
+    go: rest
+    java: rest
+    php: rest
+- languages:
+    - go
+    - python
+  path: google/cloud/compute/v1beta
+  transports:
+    go: rest
+    java: rest
+- path: google/cloud/confidentialcomputing/v1
+- path: google/cloud/config/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/configdelivery/v1
+- languages:
+    - python
+  path: google/cloud/configdelivery/v1alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/configdelivery/v1beta
+- path: google/cloud/connectors/v1
+- path: google/cloud/contactcenterinsights/v1
+- languages:
+    - python
+  path: google/cloud/contentwarehouse/v1
+- languages:
+    - python
+  path: google/cloud/databasecenter/v1beta
+- path: google/cloud/datacatalog/lineage/v1
+- path: google/cloud/datacatalog/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/datacatalog/v1beta1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- path: google/cloud/dataform/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/dataform/v1beta1
+- path: google/cloud/datafusion/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/datalabeling/v1beta1
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/dataplex/v1
+- path: google/cloud/dataproc/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/dataqna/v1alpha
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/cloud/datastream/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/datastream/v1alpha1
+- path: google/cloud/deploy/v1
+- path: google/cloud/developerconnect/v1
+- path: google/cloud/devicestreaming/v1
+- path: google/cloud/dialogflow/cx/v3
+- languages:
+    - go
+    - python
+  path: google/cloud/dialogflow/cx/v3beta1
+- path: google/cloud/dialogflow/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/dialogflow/v2beta1
+- path: google/cloud/discoveryengine/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/discoveryengine/v1alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/discoveryengine/v1beta
+- discovery: discoveries/dns.v1.json
+  path: google/cloud/dns/v1
+- path: google/cloud/documentai/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/documentai/v1beta3
+- path: google/cloud/domains/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/domains/v1beta1
+- path: google/cloud/edgecontainer/v1
+- path: google/cloud/edgenetwork/v1
+- languages:
+    - python
+  path: google/cloud/enterpriseknowledgegraph/v1
+  transports:
+    csharp: grpc+rest
+    java: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/cloud/essentialcontacts/v1
+- path: google/cloud/eventarc/publishing/v1
+- path: google/cloud/eventarc/v1
+- path: google/cloud/filestore/v1
+- path: google/cloud/financialservices/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/functions/v1
+- path: google/cloud/functions/v2
+- languages:
+    - python
+  path: google/cloud/gdchardwaremanagement/v1alpha
+- languages:
+    - python
+  path: google/cloud/geminidataanalytics/v1alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/geminidataanalytics/v1beta
+- path: google/cloud/gkebackup/v1
+- path: google/cloud/gkeconnect/gateway/v1
+  transports:
+    all: rest
+- languages:
+    - go
+    - python
+  path: google/cloud/gkeconnect/gateway/v1beta1
+  transports:
+    all: rest
+- path: google/cloud/gkehub/v1
+- path: google/cloud/gkehub/v1/configmanagement
+  title: GKE Hub Types
+  transports:
+    python: grpc
+- path: google/cloud/gkehub/v1/multiclusteringress
+  title: GKE Hub Types
+  transports:
+    python: grpc
+- path: google/cloud/gkehub/v1/rbacrolebindingactuation
+  title: GKE Hub Types
+  transports:
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/gkehub/v1beta1
+- path: google/cloud/gkemulticloud/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc+rest
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/gkerecommender/v1
+- path: google/cloud/gsuiteaddons/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/hypercomputecluster/v1beta
+- path: google/cloud/iap/v1
+- path: google/cloud/ids/v1
+- path: google/cloud/kms/inventory/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/kms/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/language/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/language/v1beta2
+- path: google/cloud/language/v2
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/licensemanager/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/lifesciences/v2beta
+- path: google/cloud/location
+  transports:
+    ruby: grpc+rest
+- path: google/cloud/locationfinder/v1
+- path: google/cloud/lustre/v1
+- path: google/cloud/maintenance/api/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/maintenance/api/v1beta
+- path: google/cloud/managedidentities/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/managedkafka/schemaregistry/v1
+  transports:
+    go: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/managedkafka/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/mediatranslation/v1beta1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/memcache/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/memcache/v1beta2
+- path: google/cloud/memorystore/v1
+  transports:
+    all: rest
+- languages:
+    - go
+    - python
+  path: google/cloud/memorystore/v1beta
+  transports:
+    all: rest
+- path: google/cloud/metastore/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/metastore/v1alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/metastore/v1beta
+- path: google/cloud/migrationcenter/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/modelarmor/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/modelarmor/v1beta
+- path: google/cloud/netapp/v1
+- path: google/cloud/networkconnectivity/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/networkconnectivity/v1alpha1
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/networkmanagement/v1
+- path: google/cloud/networksecurity/v1
+  transports:
+    csharp: grpc
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- languages:
+    - python
+  path: google/cloud/networksecurity/v1alpha1
+- languages:
+    - go
+    - python
+  path: google/cloud/networksecurity/v1beta1
+- path: google/cloud/networkservices/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/notebooks/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/notebooks/v1beta1
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/notebooks/v2
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/optimization/v1
+- path: google/cloud/oracledatabase/v1
+- path: google/cloud/orchestration/airflow/service/v1
+- languages:
+    - python
+  path: google/cloud/orchestration/airflow/service/v1beta1
+- path: google/cloud/orgpolicy/v1
+  title: Organization Policy Types
+- path: google/cloud/orgpolicy/v2
+- path: google/cloud/osconfig/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/osconfig/v1alpha
+- path: google/cloud/oslogin/common
+  title: Cloud OS Login Common Types
+  transports:
+    python: grpc
+- path: google/cloud/oslogin/v1
+- path: google/cloud/parallelstore/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/parallelstore/v1beta
+- path: google/cloud/parametermanager/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/phishingprotection/v1beta1
+- path: google/cloud/policysimulator/v1
+- path: google/cloud/policytroubleshooter/iam/v3
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/policytroubleshooter/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/privatecatalog/v1beta1
+- path: google/cloud/privilegedaccessmanager/v1
+- path: google/cloud/rapidmigrationassessment/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/recaptchaenterprise/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/recommendationengine/v1beta1
+- path: google/cloud/recommender/logging/v1
+- path: google/cloud/recommender/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/recommender/v1beta1
+- path: google/cloud/redis/cluster/v1
+- languages:
+    - python
+  path: google/cloud/redis/cluster/v1beta1
+- path: google/cloud/redis/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/redis/v1beta1
+- path: google/cloud/resourcemanager/v3
+- path: google/cloud/retail/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/retail/v2alpha
+- languages:
+    - go
+    - python
+  path: google/cloud/retail/v2beta
+- path: google/cloud/run/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/saasplatform/saasservicemgmt/v1beta1
+- path: google/cloud/scheduler/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/scheduler/v1beta1
+- open_api: testdata/secretmanager_openapi_v1.json
+  path: google/cloud/secretmanager/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/secretmanager/v1beta2
+- languages:
+    - python
+  path: google/cloud/secrets/v1beta1
+- path: google/cloud/securesourcemanager/v1
+- path: google/cloud/security/privateca/v1
+- languages:
+    - python
+  path: google/cloud/security/privateca/v1beta1
+- path: google/cloud/security/publicca/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/security/publicca/v1beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/securitycenter/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/securitycenter/v1beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/securitycenter/v1p1beta1
+- path: google/cloud/securitycenter/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/securitycentermanagement/v1
+- path: google/cloud/securityposture/v1
+- path: google/cloud/servicedirectory/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/servicedirectory/v1beta1
+- path: google/cloud/servicehealth/v1
+- path: google/cloud/shell/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/speech/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/speech/v1p1beta1
+- path: google/cloud/speech/v2
+- path: google/cloud/sql/v1
+  transports:
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- path: google/cloud/storagebatchoperations/v1
+- path: google/cloud/storageinsights/v1
+- path: google/cloud/support/v2
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/support/v2beta
+- path: google/cloud/talent/v4
+- languages:
+    - go
+    - python
+  path: google/cloud/talent/v4beta1
+- path: google/cloud/tasks/v2
+- languages:
+    - go
+    - python
+  path: google/cloud/tasks/v2beta2
+- languages:
+    - go
+    - python
+  path: google/cloud/tasks/v2beta3
+- path: google/cloud/telcoautomation/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- languages:
+    - python
+  path: google/cloud/telcoautomation/v1alpha1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- path: google/cloud/texttospeech/v1
+- languages:
+    - python
+  path: google/cloud/texttospeech/v1beta1
+- path: google/cloud/timeseriesinsights/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/tpu/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/tpu/v2
+- languages:
+    - python
+  path: google/cloud/tpu/v2alpha1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/cloud/translate/v3
+- languages:
+    - python
+  path: google/cloud/translate/v3beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/vectorsearch/v1beta
+- path: google/cloud/video/livestream/v1
+- path: google/cloud/video/stitcher/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: google/cloud/video/transcoder/v1
+- path: google/cloud/videointelligence/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/videointelligence/v1beta2
+- languages:
+    - python
+  path: google/cloud/videointelligence/v1p1beta1
+- languages:
+    - python
+  path: google/cloud/videointelligence/v1p2beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/videointelligence/v1p3beta1
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- path: google/cloud/vision/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/vision/v1p1beta1
+- languages:
+    - python
+  path: google/cloud/vision/v1p2beta1
+- languages:
+    - python
+  path: google/cloud/vision/v1p3beta1
+- languages:
+    - python
+  path: google/cloud/vision/v1p4beta1
+- languages:
+    - go
+    - python
+  path: google/cloud/visionai/v1
+- languages:
+    - python
+  path: google/cloud/visionai/v1alpha1
+- path: google/cloud/vmmigration/v1
+- path: google/cloud/vmwareengine/v1
+- path: google/cloud/vpcaccess/v1
+- path: google/cloud/webrisk/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/webrisk/v1beta1
+- path: google/cloud/websecurityscanner/v1
+- languages:
+    - python
+  path: google/cloud/websecurityscanner/v1alpha
+- languages:
+    - python
+  path: google/cloud/websecurityscanner/v1beta
+- path: google/cloud/workflows/executions/v1
+  transports:
+    go: grpc
+    java: grpc+rest
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/cloud/workflows/executions/v1beta
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc
+- path: google/cloud/workflows/v1
+- languages:
+    - go
+    - python
+  path: google/cloud/workflows/v1beta
+- path: google/cloud/workstations/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc+rest
+- languages:
+    - python
+  path: google/cloud/workstations/v1beta
+- path: google/container/v1
+- languages:
+    - python
+  path: google/container/v1beta1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/dataflow/v1beta3
+- path: google/datastore/admin/v1
+- path: google/devtools/artifactregistry/v1
+- languages:
+    - go
+    - python
+  path: google/devtools/artifactregistry/v1beta2
+- path: google/devtools/cloudbuild/v1
+- path: google/devtools/cloudbuild/v2
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/devtools/cloudprofiler/v2
+- path: google/devtools/cloudtrace/v1
+  title: Cloud Trace API
+- path: google/devtools/cloudtrace/v2
+  title: Cloud Trace API
+- path: google/devtools/containeranalysis/v1
+  transports:
+    csharp: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- languages:
+    - python
+  path: google/devtools/source/v1
+  transports:
+    python: grpc
+- path: google/firestore/admin/v1
+- path: google/firestore/v1
+  title: Cloud Firestore API
+- languages:
+    - python
+  path: google/geo/type
+  transports:
+    python: grpc
+- path: google/iam/admin/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/iam/credentials/v1
+- path: google/iam/v1
+  transports:
+    go: grpc+rest
+    ruby: grpc+rest
+- languages:
+    - python
+  path: google/iam/v1/logging
+  transports:
+    python: grpc
+- path: google/iam/v2
+- languages:
+    - python
+  path: google/iam/v2beta
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc+rest
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- path: google/iam/v3
+- languages:
+    - go
+    - python
+  path: google/iam/v3beta
+- path: google/identity/accesscontextmanager/type
+  title: Access Context Manager Types
+- path: google/identity/accesscontextmanager/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    ruby: grpc+rest
+- path: google/logging/type
+  title: Logging types
+- path: google/logging/v2
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/longrunning
+  transports:
+    go: grpc+rest
+    php: grpc+rest
+- languages:
+    - go
+    - python
+  path: google/maps/addressvalidation/v1
+  transports:
+    csharp: grpc
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/maps/areainsights/v1
+- languages:
+    - go
+    - python
+  path: google/maps/fleetengine/delivery/v1
+- languages:
+    - go
+    - python
+  path: google/maps/fleetengine/v1
+  transports:
+    csharp: grpc+rest
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc+rest
+- languages:
+    - python
+  path: google/maps/mapsplatformdatasets/v1
+- languages:
+    - go
+    - python
+  path: google/maps/places/v1
+- languages:
+    - go
+    - python
+  path: google/maps/routeoptimization/v1
+- languages:
+    - go
+    - python
+  path: google/maps/routing/v2
+- languages:
+    - go
+    - python
+  path: google/maps/solar/v1
+- languages:
+    - python
+  path: google/marketingplatform/admin/v1alpha
+- path: google/monitoring/dashboard/v1
+- path: google/monitoring/metricsscope/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/monitoring/v3
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+    ruby: grpc
+- path: google/privacy/dlp/v2
+- languages:
+    - rust
+    - dart
+  path: google/protobuf
+- path: google/pubsub/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/rpc
+- path: google/rpc/context
+  title: RPC Audit and Logging Attributes
+- languages:
+    - go
+    - python
+  path: google/shopping/css/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/accounts/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/accounts/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/conversions/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/conversions/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/datasources/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/datasources/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/inventories/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/inventories/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/issueresolution/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/issueresolution/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/lfp/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/lfp/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/notifications/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/notifications/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/ordertracking/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/ordertracking/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/products/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/products/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/productstudio/v1alpha
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/promotions/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/promotions/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/quota/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/quota/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/reports/v1
+- languages:
+    - python
+  path: google/shopping/merchant/reports/v1alpha
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/reports/v1beta
+- languages:
+    - python
+  path: google/shopping/merchant/reviews/v1
+- languages:
+    - go
+    - python
+  path: google/shopping/merchant/reviews/v1beta
+- languages:
+    - go
+    - python
+  path: google/shopping/type
+  transports:
+    python: grpc+rest
+- path: google/spanner/admin/database/v1
+- path: google/spanner/admin/instance/v1
+- path: google/spanner/v1
+  transports:
+    go: grpc+rest
+    java: grpc+rest
+    nodejs: grpc+rest
+    php: grpc+rest
+    python: grpc+rest
+- path: google/storage/control/v2
+- path: google/storage/v2
+  transports:
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc
+- path: google/storagetransfer/v1
+- path: google/type
+- path: grafeas/v1
+  transports:
+    csharp: grpc
+    go: grpc
+    java: grpc
+    nodejs: grpc
+    php: grpc+rest
+    python: grpc+rest
+    ruby: grpc
+- path: schema/google/showcase/v1beta1
+  service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
+- languages:
+    - dart
+  path: src/google/protobuf

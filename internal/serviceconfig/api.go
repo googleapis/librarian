@@ -16,6 +16,13 @@
 
 package serviceconfig
 
+import (
+	_ "embed"
+	"fmt"
+
+	"github.com/googleapis/librarian/internal/yaml"
+)
+
 const (
 	// LangAll is the identifier for all languages.
 	LangAll = "all"
@@ -37,16 +44,6 @@ const (
 	LangRuby = "ruby"
 	// LangRust is the language identifier for Rust.
 	LangRust = "rust"
-
-	titleAppsScriptTypes           = "Google Apps Script Types"
-	titleAccessContextManagerTypes = "Access Context Manager Types"
-	titleCloudTraceAPI             = "Cloud Trace API"
-	titleFirestoreAPI              = "Cloud Firestore API"
-	titleGKEHubTypes               = "GKE Hub Types"
-	titleLoggingTypes              = "Logging types"
-
-	serviceConfigAIPlatformSchema  = "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml"
-	serviceConfigAIPlatformV1Beta1 = "google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml"
 )
 
 // Transport defines the supported transport protocol.
@@ -65,16 +62,16 @@ const (
 // API describes an API path and its availability across languages.
 type API struct {
 	// Description provides the information for describing an API.
-	Description string
+	Description string `yaml:"description,omitempty"`
 
 	// Discovery is the file path to a discovery document in
 	// github.com/googleapis/discovery-artifact-manager.
 	// Used by sidekick languages (Rust, Dart) as an alternative to proto files.
-	Discovery string
+	Discovery string `yaml:"discovery,omitempty"`
 
 	// DocumentationURI overrides the product documentation URI from the service
 	// config's publishing section.
-	DocumentationURI string
+	DocumentationURI string `yaml:"documentation_uri,omitempty"`
 
 	// Languages restricts which languages can generate client libraries for this API.
 	// Empty means all languages can use this API.
@@ -83,38 +80,38 @@ type API struct {
 	//   - Newer languages (Rust, Dart) skip older beta versions when stable versions exist
 	//   - Python has historical legacy APIs not available to other languages
 	//   - Some APIs (like DIREGAPIC protos) are only used by specific languages
-	Languages []string
+	Languages []string `yaml:"languages,omitempty"`
 
 	// NewIssueURI overrides the new issue URI from the service config's
 	// publishing section.
-	NewIssueURI string
+	NewIssueURI string `yaml:"new_issue_uri,omitempty"`
 
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
-	OpenAPI string
+	OpenAPI string `yaml:"open_api,omitempty"`
 
 	// Path is the proto directory path in github.com/googleapis/googleapis.
 	// If ServiceConfig is empty, the service config is assumed to live at this path.
-	Path string
+	Path string `yaml:"path,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
 	// publishing section.
-	ShortName string
+	ShortName string `yaml:"short_name,omitempty"`
 
 	// ServiceConfig is the service config file path override.
 	// If empty, the service config is discovered in the directory specified by Path.
-	ServiceConfig string
+	ServiceConfig string `yaml:"service_config,omitempty"`
 
 	// ServiceName is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`.
-	ServiceName string
+	ServiceName string `yaml:"service_name,omitempty"`
 
 	// Title overrides the API title from the service config.
-	Title string
+	Title string `yaml:"title,omitempty"`
 
 	// Transports defines the supported transports per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
-	Transports map[string]Transport
+	Transports map[string]Transport `yaml:"transports,omitempty"`
 }
 
 // Transport gets transport for a given language.
@@ -132,417 +129,19 @@ func (api *API) Transport(language string) string {
 	return string(GRPCRest)
 }
 
-// APIs defines API paths that require explicit configurations.
-// APIs not in this list are implicitly allowed if
-// they start with "google/cloud/".
-var APIs = []API{
-	{Path: "google/ads/admanager/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangAll: Rest}},
-	{Path: "google/ads/datamanager/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/ai/generativelanguage/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/ai/generativelanguage/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/ai/generativelanguage/v1beta", Languages: []string{LangDart, LangGo, LangPython}},
-	{Path: "google/ai/generativelanguage/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/ai/generativelanguage/v1beta3", Languages: []string{LangPython}},
-	{Path: "google/analytics/admin/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/analytics/admin/v1beta", Languages: []string{LangPython}},
-	{Path: "google/analytics/data/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/analytics/data/v1beta", Languages: []string{LangPython}},
-	{Path: "google/api"},
-	{Path: "google/api/apikeys/v2"},
-	{Path: "google/api/cloudquotas/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/api/cloudquotas/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/api/servicecontrol/v1"},
-	{Path: "google/api/servicecontrol/v2"},
-	{Path: "google/api/servicemanagement/v1"},
-	{Path: "google/api/serviceusage/v1"},
-	{Path: "google/appengine/logging/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/appengine/v1"},
-	{Path: "google/apps/card/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/apps/events/subscriptions/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/apps/events/subscriptions/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/apps/meet/v2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/apps/meet/v2beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/apps/script/type", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/calendar", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/docs", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/drive", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/gmail", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/sheets", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/apps/script/type/slides", Title: titleAppsScriptTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/area120/tables/v1alpha1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/bigtable/admin/v2", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/chat/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/accessapproval/v1"},
-	{Path: "google/cloud/advisorynotifications/v1"},
-	{Path: "google/cloud/aiplatform/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/aiplatform/v1/schema/predict/instance", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/aiplatform/v1/schema/predict/params", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/aiplatform/v1/schema/predict/prediction", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/aiplatform/v1/schema/trainingjob/definition", ServiceConfig: serviceConfigAIPlatformSchema, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/aiplatform/v1beta1", ServiceConfig: serviceConfigAIPlatformV1Beta1, Languages: []string{LangDart, LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/alloydb/connectors/v1", Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/cloud/alloydb/connectors/v1alpha", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/cloud/alloydb/connectors/v1beta", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/cloud/alloydb/v1"},
-	{Path: "google/cloud/alloydb/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/alloydb/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/apigateway/v1"},
-	{Path: "google/cloud/apigeeconnect/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/apigeeregistry/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/apihub/v1", Transports: map[string]Transport{LangCsharp: Rest, LangGo: Rest, LangJava: Rest, LangNodejs: Rest, LangPhp: Rest, LangPython: GRPCRest, LangRuby: Rest}},
-	{Path: "google/cloud/apiregistry/v1"},
-	{Path: "google/cloud/apiregistry/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/apphub/v1"},
-	{Path: "google/cloud/asset/v1"},
-	{Path: "google/cloud/asset/v1p1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/asset/v1p2beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/asset/v1p5beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/assuredworkloads/v1"},
-	{Path: "google/cloud/assuredworkloads/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/audit", Languages: []string{LangPython}},
-	{Path: "google/cloud/auditmanager/v1"},
-	{Path: "google/cloud/automl/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/automl/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/backupdr/v1"},
-	{Path: "google/cloud/baremetalsolution/v2"},
-	{Path: "google/cloud/batch/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/batch/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/cloud/beyondcorp/appconnections/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/beyondcorp/appconnectors/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/beyondcorp/appgateways/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/beyondcorp/clientconnectorservices/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/beyondcorp/clientgateways/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/biglake/v1"},
-	{Path: "google/cloud/bigquery/analyticshub/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/bigquery/biglake/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/bigquery/biglake/v1alpha1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/bigquery/connection/v1"},
-	{Path: "google/cloud/bigquery/dataexchange/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/datapolicies/v1"},
-	{Path: "google/cloud/bigquery/datapolicies/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/datapolicies/v2"},
-	{Path: "google/cloud/bigquery/datapolicies/v2beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/bigquery/datatransfer/v1"},
-	{Path: "google/cloud/bigquery/logging/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/migration/v2", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPCRest, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/bigquery/migration/v2alpha", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/reservation/v1"},
-	{Path: "google/cloud/bigquery/storage/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/storage/v1alpha", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangAll: GRPC}},
-	{Path: "google/cloud/bigquery/storage/v1beta", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangAll: GRPC}},
-	{Path: "google/cloud/bigquery/storage/v1beta2", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/bigquery/v2", Transports: map[string]Transport{LangGo: GRPCRest, LangNodejs: GRPCRest, LangPython: Rest}},
-	{Path: "google/cloud/billing/budgets/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/billing/budgets/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/billing/v1"},
-	{Path: "google/cloud/binaryauthorization/v1"},
-	{Path: "google/cloud/binaryauthorization/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/capacityplanner/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/certificatemanager/v1"},
-	{Path: "google/cloud/channel/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/chronicle/v1"},
-	{Path: "google/cloud/cloudcontrolspartner/v1"},
-	{Path: "google/cloud/cloudcontrolspartner/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/clouddms/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/cloudsecuritycompliance/v1"},
-	{Path: "google/cloud/commerce/consumer/procurement/v1"},
-	{Path: "google/cloud/commerce/consumer/procurement/v1alpha1", Languages: []string{LangPython}},
-	{Path: "google/cloud/common", Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/compute/v1", Discovery: "discoveries/compute.v1.json", Transports: map[string]Transport{LangCsharp: Rest, LangGo: Rest, LangJava: Rest, LangPhp: Rest}},
-	{Path: "google/cloud/compute/v1beta", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: Rest, LangJava: Rest}},
-	{Path: "google/cloud/confidentialcomputing/v1"},
-	{Path: "google/cloud/config/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/configdelivery/v1"},
-	{Path: "google/cloud/configdelivery/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/cloud/configdelivery/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/connectors/v1"},
-	{Path: "google/cloud/contactcenterinsights/v1"},
-	{Path: "google/cloud/contentwarehouse/v1", Languages: []string{LangPython}},
-	{Path: "google/cloud/databasecenter/v1beta", Languages: []string{LangPython}},
-	{Path: "google/cloud/datacatalog/lineage/v1"},
-	{Path: "google/cloud/datacatalog/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/datacatalog/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/dataform/v1"},
-	{Path: "google/cloud/dataform/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/datafusion/v1"},
-	{Path: "google/cloud/datalabeling/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/dataplex/v1"},
-	{Path: "google/cloud/dataproc/v1"},
-	{Path: "google/cloud/dataqna/v1alpha", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/datastream/v1"},
-	{Path: "google/cloud/datastream/v1alpha1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/deploy/v1"},
-	{Path: "google/cloud/developerconnect/v1"},
-	{Path: "google/cloud/devicestreaming/v1"},
-	{Path: "google/cloud/dialogflow/cx/v3"},
-	{Path: "google/cloud/dialogflow/cx/v3beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/dialogflow/v2"},
-	{Path: "google/cloud/dialogflow/v2beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/discoveryengine/v1"},
-	{Path: "google/cloud/discoveryengine/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/discoveryengine/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/dns/v1", Discovery: "discoveries/dns.v1.json"},
-	{Path: "google/cloud/documentai/v1"},
-	{Path: "google/cloud/documentai/v1beta3", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/domains/v1"},
-	{Path: "google/cloud/domains/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/edgecontainer/v1"},
-	{Path: "google/cloud/edgenetwork/v1"},
-	{Path: "google/cloud/enterpriseknowledgegraph/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangJava: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/essentialcontacts/v1"},
-	{Path: "google/cloud/eventarc/publishing/v1"},
-	{Path: "google/cloud/eventarc/v1"},
-	{Path: "google/cloud/filestore/v1"},
-	{Path: "google/cloud/financialservices/v1"},
-	{Path: "google/cloud/functions/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/functions/v2"},
-	{Path: "google/cloud/gdchardwaremanagement/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/cloud/geminidataanalytics/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/cloud/geminidataanalytics/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/gkebackup/v1"},
-	{Path: "google/cloud/gkeconnect/gateway/v1", Transports: map[string]Transport{LangAll: Rest}},
-	{Path: "google/cloud/gkeconnect/gateway/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangAll: Rest}},
-	{Path: "google/cloud/gkehub/v1"},
-	{Path: "google/cloud/gkehub/v1/configmanagement", Title: titleGKEHubTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/gkehub/v1/multiclusteringress", Title: titleGKEHubTypes, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/gkehub/v1/rbacrolebindingactuation", Title: titleGKEHubTypes, Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/cloud/gkehub/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/gkemulticloud/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPCRest, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/gkerecommender/v1"},
-	{Path: "google/cloud/gsuiteaddons/v1"},
-	{Path: "google/cloud/hypercomputecluster/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/iap/v1"},
-	{Path: "google/cloud/ids/v1"},
-	{Path: "google/cloud/kms/inventory/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/kms/v1"},
-	{Path: "google/cloud/language/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/language/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/language/v2", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/licensemanager/v1"},
-	{Path: "google/cloud/lifesciences/v2beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/location", Transports: map[string]Transport{LangRuby: GRPCRest}},
-	{Path: "google/cloud/locationfinder/v1"},
-	{Path: "google/cloud/lustre/v1"},
-	{Path: "google/cloud/maintenance/api/v1"},
-	{Path: "google/cloud/maintenance/api/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/managedidentities/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/managedkafka/schemaregistry/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/managedkafka/v1"},
-	{Path: "google/cloud/mediatranslation/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/memcache/v1"},
-	{Path: "google/cloud/memcache/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/memorystore/v1", Transports: map[string]Transport{LangAll: Rest}},
-	{Path: "google/cloud/memorystore/v1beta", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangAll: Rest}},
-	{Path: "google/cloud/metastore/v1"},
-	{Path: "google/cloud/metastore/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/metastore/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/migrationcenter/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/modelarmor/v1"},
-	{Path: "google/cloud/modelarmor/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/netapp/v1"},
-	{Path: "google/cloud/networkconnectivity/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/networkconnectivity/v1alpha1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/networkmanagement/v1"},
-	{Path: "google/cloud/networksecurity/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/networksecurity/v1alpha1", Languages: []string{LangPython}},
-	{Path: "google/cloud/networksecurity/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/networkservices/v1"},
-	{Path: "google/cloud/notebooks/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/notebooks/v1beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/notebooks/v2", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/optimization/v1"},
-	{Path: "google/cloud/oracledatabase/v1"},
-	{Path: "google/cloud/orchestration/airflow/service/v1"},
-	{Path: "google/cloud/orchestration/airflow/service/v1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/orgpolicy/v1", Title: "Organization Policy Types"},
-	{Path: "google/cloud/orgpolicy/v2"},
-	{Path: "google/cloud/osconfig/v1"},
-	{Path: "google/cloud/osconfig/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/oslogin/common", Title: "Cloud OS Login Common Types", Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/cloud/oslogin/v1"},
-	{Path: "google/cloud/parallelstore/v1"},
-	{Path: "google/cloud/parallelstore/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/parametermanager/v1"},
-	{Path: "google/cloud/phishingprotection/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/policysimulator/v1"},
-	{Path: "google/cloud/policytroubleshooter/iam/v3", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/policytroubleshooter/v1"},
-	{Path: "google/cloud/privatecatalog/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/privilegedaccessmanager/v1"},
-	{Path: "google/cloud/rapidmigrationassessment/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/recaptchaenterprise/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/recommendationengine/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/recommender/logging/v1"},
-	{Path: "google/cloud/recommender/v1"},
-	{Path: "google/cloud/recommender/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/redis/cluster/v1"},
-	{Path: "google/cloud/redis/cluster/v1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/redis/v1"},
-	{Path: "google/cloud/redis/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/resourcemanager/v3"},
-	{Path: "google/cloud/retail/v2"},
-	{Path: "google/cloud/retail/v2alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/retail/v2beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/run/v2"},
-	{Path: "google/cloud/saasplatform/saasservicemgmt/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/scheduler/v1"},
-	{Path: "google/cloud/scheduler/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/secretmanager/v1", OpenAPI: "testdata/secretmanager_openapi_v1.json"},
-	{Path: "google/cloud/secretmanager/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/secrets/v1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/securesourcemanager/v1"},
-	{Path: "google/cloud/security/privateca/v1"},
-	{Path: "google/cloud/security/privateca/v1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/security/publicca/v1"},
-	{Path: "google/cloud/security/publicca/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/securitycenter/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/securitycenter/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/securitycenter/v1p1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/securitycenter/v2"},
-	{Path: "google/cloud/securitycentermanagement/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/securityposture/v1"},
-	{Path: "google/cloud/servicedirectory/v1"},
-	{Path: "google/cloud/servicedirectory/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/servicehealth/v1"},
-	{Path: "google/cloud/shell/v1"},
-	{Path: "google/cloud/speech/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/speech/v1p1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/speech/v2"},
-	{Path: "google/cloud/sql/v1", Transports: map[string]Transport{LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/storagebatchoperations/v1"},
-	{Path: "google/cloud/storageinsights/v1"},
-	{Path: "google/cloud/support/v2", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/cloud/support/v2beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/talent/v4"},
-	{Path: "google/cloud/talent/v4beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/tasks/v2"},
-	{Path: "google/cloud/tasks/v2beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/tasks/v2beta3", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/telcoautomation/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/telcoautomation/v1alpha1", Languages: []string{LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/texttospeech/v1"},
-	{Path: "google/cloud/texttospeech/v1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/timeseriesinsights/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/tpu/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/tpu/v2"},
-	{Path: "google/cloud/tpu/v2alpha1", Languages: []string{LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/cloud/translate/v3"},
-	{Path: "google/cloud/translate/v3beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/vectorsearch/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/video/livestream/v1"},
-	{Path: "google/cloud/video/stitcher/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/cloud/video/transcoder/v1"},
-	{Path: "google/cloud/videointelligence/v1"},
-	{Path: "google/cloud/videointelligence/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/videointelligence/v1p1beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/videointelligence/v1p2beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/videointelligence/v1p3beta1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/vision/v1"},
-	{Path: "google/cloud/vision/v1p1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/vision/v1p2beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/vision/v1p3beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/vision/v1p4beta1", Languages: []string{LangPython}},
-	{Path: "google/cloud/visionai/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/visionai/v1alpha1", Languages: []string{LangPython}},
-	{Path: "google/cloud/vmmigration/v1"},
-	{Path: "google/cloud/vmwareengine/v1"},
-	{Path: "google/cloud/vpcaccess/v1"},
-	{Path: "google/cloud/webrisk/v1"},
-	{Path: "google/cloud/webrisk/v1beta1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/websecurityscanner/v1"},
-	{Path: "google/cloud/websecurityscanner/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/cloud/websecurityscanner/v1beta", Languages: []string{LangPython}},
-	{Path: "google/cloud/workflows/executions/v1", Transports: map[string]Transport{LangGo: GRPC, LangJava: GRPCRest, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/cloud/workflows/executions/v1beta", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/cloud/workflows/v1"},
-	{Path: "google/cloud/workflows/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/cloud/workstations/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/cloud/workstations/v1beta", Languages: []string{LangPython}},
-	{Path: "google/container/v1"},
-	{Path: "google/container/v1beta1", Languages: []string{LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/dataflow/v1beta3", Languages: []string{LangGo, LangPython}},
-	{Path: "google/datastore/admin/v1"},
-	{Path: "google/devtools/artifactregistry/v1"},
-	{Path: "google/devtools/artifactregistry/v1beta2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/devtools/cloudbuild/v1"},
-	{Path: "google/devtools/cloudbuild/v2", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/devtools/cloudprofiler/v2"},
-	{Path: "google/devtools/cloudtrace/v1", Title: titleCloudTraceAPI},
-	{Path: "google/devtools/cloudtrace/v2", Title: titleCloudTraceAPI},
-	{Path: "google/devtools/containeranalysis/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/devtools/source/v1", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/firestore/admin/v1"},
-	{Path: "google/firestore/v1", Title: titleFirestoreAPI},
-	{Path: "google/geo/type", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/iam/admin/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/iam/credentials/v1"},
-	{Path: "google/iam/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/iam/v1/logging", Languages: []string{LangPython}, Transports: map[string]Transport{LangPython: GRPC}},
-	{Path: "google/iam/v2"},
-	{Path: "google/iam/v2beta", Languages: []string{LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPCRest, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/iam/v3"},
-	{Path: "google/iam/v3beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/identity/accesscontextmanager/type", Title: titleAccessContextManagerTypes},
-	{Path: "google/identity/accesscontextmanager/v1", Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangRuby: GRPCRest}},
-	{Path: "google/logging/type", Title: titleLoggingTypes},
-	{Path: "google/logging/v2", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/longrunning", Transports: map[string]Transport{LangGo: GRPCRest, LangPhp: GRPCRest}},
-	{Path: "google/maps/addressvalidation/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "google/maps/areainsights/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/maps/fleetengine/delivery/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/maps/fleetengine/v1", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangCsharp: GRPCRest, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPCRest}},
-	{Path: "google/maps/mapsplatformdatasets/v1", Languages: []string{LangPython}},
-	{Path: "google/maps/places/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/maps/routeoptimization/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/maps/routing/v2", Languages: []string{LangGo, LangPython}},
-	{Path: "google/maps/solar/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/marketingplatform/admin/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/monitoring/dashboard/v1"},
-	{Path: "google/monitoring/metricsscope/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/monitoring/v3", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC, LangRuby: GRPC}},
-	{Path: "google/privacy/dlp/v2"},
-	{Path: "google/protobuf", Languages: []string{LangRust, LangDart}},
-	{Path: "google/pubsub/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/rpc"},
-	{Path: "google/rpc/context", Title: "RPC Audit and Logging Attributes"},
-	{Path: "google/shopping/css/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/accounts/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/accounts/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/conversions/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/conversions/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/datasources/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/datasources/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/inventories/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/inventories/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/issueresolution/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/issueresolution/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/lfp/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/lfp/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/notifications/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/notifications/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/ordertracking/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/ordertracking/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/products/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/products/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/productstudio/v1alpha", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/promotions/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/promotions/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/quota/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/quota/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/reports/v1", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/reports/v1alpha", Languages: []string{LangPython}},
-	{Path: "google/shopping/merchant/reports/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/merchant/reviews/v1", Languages: []string{LangPython}},
-	{Path: "google/shopping/merchant/reviews/v1beta", Languages: []string{LangGo, LangPython}},
-	{Path: "google/shopping/type", Languages: []string{LangGo, LangPython}, Transports: map[string]Transport{LangPython: GRPCRest}},
-	{Path: "google/spanner/admin/database/v1"},
-	{Path: "google/spanner/admin/instance/v1"},
-	{Path: "google/spanner/v1", Transports: map[string]Transport{LangGo: GRPCRest, LangJava: GRPCRest, LangNodejs: GRPCRest, LangPhp: GRPCRest, LangPython: GRPCRest}},
-	{Path: "google/storage/control/v2"},
-	{Path: "google/storage/v2", Transports: map[string]Transport{LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPC}},
-	{Path: "google/storagetransfer/v1"},
-	{Path: "google/type"},
-	{Path: "grafeas/v1", Transports: map[string]Transport{LangCsharp: GRPC, LangGo: GRPC, LangJava: GRPC, LangNodejs: GRPC, LangPhp: GRPCRest, LangPython: GRPCRest, LangRuby: GRPC}},
-	{Path: "schema/google/showcase/v1beta1", ServiceConfig: "schema/google/showcase/v1beta1/showcase_v1beta1.yaml"},
-	{Path: "src/google/protobuf", Languages: []string{LangDart}},
+var (
+	//go:embed apis.yaml
+	apiYaml []byte
+	// APIs defines API paths that require explicit configurations.
+	// APIs not in this list are implicitly allowed if
+	// they start with "google/cloud/".
+	APIs = unmarshalAPIsOrPanic()
+)
+
+func unmarshalAPIsOrPanic() []API {
+	apis, err := yaml.Unmarshal[[]API](apiYaml)
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal api.yaml: %v", err))
+	}
+	return *apis
 }
