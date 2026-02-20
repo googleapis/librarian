@@ -93,33 +93,51 @@ func TestIsResourceRenameHeuristicEligible(t *testing.T) {
 
 func TestIsCollectionIdentifier(t *testing.T) {
 	for _, test := range []struct {
-		segment string
-		want    bool
+		segment      string
+		knownPlurals map[string]bool
+		want         bool
 	}{
 		// Base vocabulary
-		{"projects", true},
-		{"locations", true},
-		{"folders", true},
-		{"organizations", true},
-		{"billingAccounts", true},
+		{"projects", nil, true},
+		{"locations", nil, true},
+		{"folders", nil, true},
+		{"organizations", nil, true},
+		{"billingAccounts", nil, true},
 
 		// Standard plural heuristic
-		{"instances", true},
-		{"disks", true},
-		{"clusters", true},
-		{"backups", true},
-		{"vms", true},
-		{"ips", true},
+		{"instances", nil, true},
+		{"disks", nil, true},
+		{"clusters", nil, true},
+		{"backups", nil, true},
+		{"vms", nil, true},
+		{"ips", nil, true},
 
 		// Ignored / Invalid
-		{"v1", false},    // Version
-		{"us", false},    // Region
-		{"other", false}, // Random noun not ending in s
-		{"s", false},     // Too short
-		{"", false},      // Empty
+		{"v1", nil, false},       // Version
+		{"us", nil, false},       // Region
+		{"address", nil, false},  // Singular exception
+		{"status", nil, false},   // Singular exception
+		{"ingress", nil, false},  // Singular exception
+		{"egress", nil, false},   // Singular exception
+		{"access", nil, false},   // Singular exception
+		{"analysis", nil, false}, // Singular exception
+		{"other", nil, false},    // Random noun not ending in s
+		{"s", nil, false},        // Too short
+		{"", nil, false},         // Empty
+
+		// Known Plurals (Explicit Match)
+		{"fish", map[string]bool{"fish": true}, true},     // Doesn't end in s, but known
+		{"people", map[string]bool{"people": true}, true}, // Irregular plural
+		{"data", map[string]bool{"data": true}, true},     // Mass noun
+		{"status", map[string]bool{"status": true}, true}, // Exception override
+
+		// Known Plurals (No Match / False Cases)
+		{"fish", nil, false},                                  // Not known, no 's' suffix -> false
+		{"fish", map[string]bool{"sharks": true}, false},      // Map populated, but key missing -> false
+		{"status", map[string]bool{"instances": true}, false}, // Exception applies if not in map -> false
 	} {
 		t.Run(test.segment, func(t *testing.T) {
-			got := isCollectionIdentifier(test.segment)
+			got := isCollectionIdentifier(test.segment, test.knownPlurals)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("isCollectionIdentifier(%q) mismatch (-want +got):\n%s", test.segment, diff)
 			}
