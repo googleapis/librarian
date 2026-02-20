@@ -134,12 +134,10 @@ func TestNewParam(t *testing.T) {
 }
 
 func TestShouldSkipParam(t *testing.T) {
-	createMethod := sample.Method("..Service.CreateSecret")
-	listMethod := sample.Method("..Service.ListVersion")
-	updateMethod := sample.Method("..Service.UpdateSecret")
-
-	createLRO := sample.VisionAIMethod("..Service.CreateApplication")
-	deleteLRO := sample.VisionAIMethod("..Service.DeleteApplication")
+	createMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance")
+	listMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.ListInstances")
+	updateMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.UpdateInstance")
+	deleteMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.DeleteInstance")
 
 	for _, test := range []struct {
 		name   string
@@ -149,20 +147,14 @@ func TestShouldSkipParam(t *testing.T) {
 	}{
 		{
 			name:   "Primary Resource ID (Create)",
-			field:  api.NewTestField("secret_id"),
+			field:  api.NewTestField("instance_id"),
 			method: createMethod,
-			want:   false,
-		},
-		{
-			name:   "Primary Resource ID (Create LRO)",
-			field:  api.NewTestField("application_id"),
-			method: createLRO,
 			want:   false,
 		},
 		{
 			name:   "Name Field (Primary)",
 			field:  api.NewTestField("name"),
-			method: deleteLRO,
+			method: deleteMethod,
 			want:   false, // It is the primary resource identifier, so shouldSkipParam returns false.
 		},
 		{
@@ -255,9 +247,9 @@ func TestNewOutputConfig(t *testing.T) {
 	}{
 		{
 			name:   "standard list method",
-			method: sample.MethodListSecretVersions(),
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.ListInstances"),
 			want: &OutputConfig{
-				Format: "table(\nname,\nstate)",
+				Format: "table(\nname,\ndescription,\ncapacityGib,\nnetwork)",
 			},
 		},
 	} {
@@ -278,7 +270,7 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	}{
 		{
 			name:   "not a list method",
-			method: sample.MethodCreate(),
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance"),
 		},
 		{
 			name: "missing output type",
@@ -299,13 +291,99 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	}
 }
 
-func TestNewAsync(t *testing.T) {
-	createLRO := sample.VisionAIMethod("..Service.CreateApplication")
-	deleteLRO := sample.VisionAIMethod("..Service.DeleteApplication")
+func TestNewPrimaryResourceParam(t *testing.T) {
+	createMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance")
+	listMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.ListInstances")
 
-	service := &api.Service{
-		DefaultHost: "visionai.googleapis.com",
+	service := sample.ParallelstoreAPI().Services[0]
+
+	for _, test := range []struct {
+		name   string
+		field  *api.Field
+		method *api.Method
+		want   Param
+	}{
+		{
+			name:   "Create Instance (Positional)",
+			field:  api.NewTestField("instance_id"),
+			method: createMethod,
+			want: Param{
+				HelpText:          "The instance to create.",
+				IsPositional:      true,
+				IsPrimaryResource: true,
+				Required:          true,
+				RequestIDField:    "instanceId",
+				ResourceSpec: &ResourceSpec{
+					Name:                  "instance",
+					PluralName:            "instances",
+					Collection:            "parallelstore.projects.locations.instances",
+					DisableAutoCompleters: false,
+					Attributes: []Attribute{
+						{
+							ParameterName: "projectsId",
+							AttributeName: "project",
+							Help:          "The project id of the {resource} resource.",
+							Property:      "core/project",
+						},
+						{
+							ParameterName: "locationsId",
+							AttributeName: "location",
+							Help:          "The location id of the {resource} resource.",
+						},
+						{
+							ParameterName: "instancesId",
+							AttributeName: "instance",
+							Help:          "The instance id of the {resource} resource.",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:   "List Instances (Not Positional, Parent)",
+			field:  api.NewTestField("parent"),
+			method: listMethod,
+			want: Param{
+				HelpText:          "The project and location for which to retrieve locations information.",
+				IsPositional:      false,
+				IsPrimaryResource: true,
+				Required:          true,
+				ResourceSpec: &ResourceSpec{
+					Name:                  "location",
+					PluralName:            "locations",
+					Collection:            "parallelstore.projects.locations",
+					DisableAutoCompleters: false,
+					Attributes: []Attribute{
+						{
+							ParameterName: "projectsId",
+							AttributeName: "project",
+							Help:          "The project id of the {resource} resource.",
+							Property:      "core/project",
+						},
+						{
+							ParameterName: "locationsId",
+							AttributeName: "location",
+							Help:          "The location id of the {resource} resource.",
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := newPrimaryResourceParam(test.field, test.method, test.method.Model, &Config{}, service)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
+}
+
+func TestNewAsync(t *testing.T) {
+	createLRO := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance")
+	deleteLRO := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.DeleteInstance")
+
+	service := sample.ParallelstoreAPI().Services[0]
 
 	for _, test := range []struct {
 		name   string
@@ -316,15 +394,15 @@ func TestNewAsync(t *testing.T) {
 			name:   "Create returns Resource",
 			method: createLRO,
 			want: &Async{
-				Collection:            []string{"visionai.projects.locations.operations"},
-				ExtractResourceResult: true, // Output is Application, which matches the resource being operated on
+				Collection:            []string{"parallelstore.projects.locations.operations"},
+				ExtractResourceResult: true, // Output is Instance, which matches the resource being operated on
 			},
 		},
 		{
 			name:   "Delete returns Empty",
 			method: deleteLRO,
 			want: &Async{
-				Collection:            []string{"visionai.projects.locations.operations"},
+				Collection:            []string{"parallelstore.projects.locations.operations"},
 				ExtractResourceResult: false, // Output is google.protobuf.Empty
 			},
 		},
@@ -333,6 +411,95 @@ func TestNewAsync(t *testing.T) {
 			got := newAsync(test.method, test.method.Model, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddFlattenedParams(t *testing.T) {
+	createMethod := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance")
+	service := sample.ParallelstoreAPI().Services[0]
+
+	for _, test := range []struct {
+		name    string
+		field   *api.Field
+		prefix  string
+		want    []Param
+		wantErr bool
+	}{
+		{
+			name:   "Skips skipped fields",
+			field:  api.NewTestField("name"), // primary resource name in create is skipped (handled as instance_id)
+			prefix: "name",
+			want:   nil,
+		},
+		{
+			name:   "Handles Primary Resource",
+			field:  api.NewTestField("instance_id"),
+			prefix: "instanceId",
+			want: []Param{
+				{
+					HelpText:          "The instance to create.",
+					IsPositional:      true,
+					IsPrimaryResource: true,
+					Required:          true,
+					RequestIDField:    "instanceId",
+					ResourceSpec: &ResourceSpec{
+						Name:                  "instance",
+						PluralName:            "instances",
+						Collection:            "parallelstore.projects.locations.instances",
+						DisableAutoCompleters: false,
+						Attributes: []Attribute{
+							{ParameterName: "projectsId", AttributeName: "project", Help: "The project id of the {resource} resource.", Property: "core/project"},
+							{ParameterName: "locationsId", AttributeName: "location", Help: "The location id of the {resource} resource."},
+							{ParameterName: "instancesId", AttributeName: "instance", Help: "The instance id of the {resource} resource."},
+						},
+					},
+				},
+			},
+		},
+		// TODO(flattened_nested_arg_name_collision.md): Uncomment once newParam is fixed to namespace flattened fields.
+		/*
+			{
+				name: "Handles Nested Message",
+				field: &api.Field{
+					Name:     "network",
+					JSONName: "network",
+					Typez:    api.MESSAGE_TYPE,
+					MessageType: &api.Message{
+						Fields: []*api.Field{
+							{
+								Name:     "subnetwork",
+								JSONName: "subnetwork",
+								Typez:    api.STRING_TYPE,
+								// No fields, empty struct
+							},
+						},
+					},
+				},
+				prefix: "network",
+				want: []Param{
+					{
+						ArgName:  "network-subnetwork",
+						APIField: "network.subnetwork",
+						Type:     "str",
+						HelpText: "Value for the `network-subnetwork` field.",
+					},
+				},
+			},
+		*/
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			args := &Arguments{}
+			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, createMethod.Model, service, createMethod)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("addFlattenedParams() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(Param{})); diff != "" {
+				t.Errorf("addFlattenedParams() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
