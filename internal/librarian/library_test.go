@@ -179,6 +179,55 @@ func TestFillDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "java defaults",
+			defaults: &config.Default{
+				Java: &config.JavaDefault{
+					FormatterJar: "default-formatter.jar",
+					GeneratorJar: "default-generator.jar",
+					GRPCPlugin:   "default-grpc-plugin",
+				},
+			},
+			lib: &config.Library{Name: "test-lib"},
+			want: &config.Library{
+				Name: "test-lib",
+				Java: &config.JavaPackage{
+					JavaDefault: config.JavaDefault{
+						FormatterJar: "default-formatter.jar",
+						GeneratorJar: "default-generator.jar",
+						GRPCPlugin:   "default-grpc-plugin",
+					},
+				},
+			},
+		},
+		{
+			name: "java defaults do not override library params",
+			defaults: &config.Default{
+				Java: &config.JavaDefault{
+					FormatterJar: "default-formatter.jar",
+					GeneratorJar: "default-generator.jar",
+					GRPCPlugin:   "default-grpc-plugin",
+				},
+			},
+			lib: &config.Library{
+				Name: "test-lib",
+				Java: &config.JavaPackage{
+					JavaDefault: config.JavaDefault{
+						FormatterJar: "custom-formatter.jar",
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "test-lib",
+				Java: &config.JavaPackage{
+					JavaDefault: config.JavaDefault{
+						FormatterJar: "custom-formatter.jar",
+						GeneratorJar: "default-generator.jar",
+						GRPCPlugin:   "default-grpc-plugin",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)
