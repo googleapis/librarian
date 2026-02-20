@@ -42,42 +42,6 @@ var (
 				},
 			},
 		},
-		"bigquery": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:               "google/cloud/bigquery/analyticshub/v1",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/dataexchange/v1beta1",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/datapolicies/v1beta1",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/migration/v2",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/migration/v2alpha",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/storage/v1",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/storage/v1beta1",
-					NoRESTNumericEnums: true,
-				},
-				{
-					Path:               "google/cloud/bigquery/storage/v1beta2",
-					NoRESTNumericEnums: true,
-				},
-			},
-		},
 	}
 
 	addKeep = map[string][]string{

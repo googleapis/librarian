@@ -363,6 +363,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
+// Skip nested module if exists.
 func updateSnippetMetadata(library *config.Library, output string) error {
 	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
@@ -373,7 +374,13 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			}
 			return err
 		}
-		if d.IsDir() || !strings.HasPrefix(d.Name(), "snippet_metadata") {
+		if d.IsDir() {
+			if library.Go != nil && d.Name() == library.Go.NestedModule {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
 			return nil
 		}
 		read, err := os.ReadFile(path)
