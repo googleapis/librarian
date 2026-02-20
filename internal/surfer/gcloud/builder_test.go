@@ -842,3 +842,173 @@ func TestNewCollectionPath(t *testing.T) {
 		})
 	}
 }
+
+func TestFindHelpTextRule(t *testing.T) {
+	method := sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance")
+
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		want      *HelpTextRule
+	}{
+		{
+			name:      "No APIs in config",
+			overrides: &Config{},
+			want:      nil,
+		},
+		{
+			name: "No HelpText in config",
+			overrides: &Config{
+				APIs: []API{{}},
+			},
+			want: nil,
+		},
+		{
+			name: "No matching rule",
+			overrides: &Config{
+				APIs: []API{
+					{
+						HelpText: &HelpTextRules{
+							MethodRules: []*HelpTextRule{
+								{Selector: "some.other.Method"},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "Matching rule found",
+			overrides: &Config{
+				APIs: []API{
+					{
+						HelpText: &HelpTextRules{
+							MethodRules: []*HelpTextRule{
+								{
+									Selector: "google.cloud.parallelstore.v1.Parallelstore.CreateInstance",
+									HelpText: &HelpTextElement{
+										Brief: "Override Brief",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &HelpTextRule{
+				Selector: "google.cloud.parallelstore.v1.Parallelstore.CreateInstance",
+				HelpText: &HelpTextElement{
+					Brief: "Override Brief",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findHelpTextRule(method, test.overrides)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findHelpTextRule() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindFieldHelpTextRule(t *testing.T) {
+	field := api.NewTestField("instance_id")
+
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		want      *HelpTextRule
+	}{
+		{
+			name:      "No APIs in config",
+			overrides: &Config{},
+			want:      nil,
+		},
+		{
+			name: "No HelpText in config",
+			overrides: &Config{
+				APIs: []API{{}},
+			},
+			want: nil,
+		},
+		{
+			name: "No matching rule",
+			overrides: &Config{
+				APIs: []API{
+					{
+						HelpText: &HelpTextRules{
+							FieldRules: []*HelpTextRule{
+								{Selector: "some.other.Field"},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "Matching rule found",
+			overrides: &Config{
+				APIs: []API{
+					{
+						HelpText: &HelpTextRules{
+							FieldRules: []*HelpTextRule{
+								{
+									Selector: ".test.instance_id",
+									HelpText: &HelpTextElement{
+										Brief: "Override Field Brief",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &HelpTextRule{
+				Selector: ".test.instance_id",
+				HelpText: &HelpTextElement{
+					Brief: "Override Field Brief",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := findFieldHelpTextRule(field, test.overrides)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findFieldHelpTextRule() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAPIVersion(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		want      string
+	}{
+		{
+			name:      "No APIs in config",
+			overrides: &Config{},
+			want:      "",
+		},
+		{
+			name: "API version found",
+			overrides: &Config{
+				APIs: []API{
+					{APIVersion: "v2beta1"},
+				},
+			},
+			want: "v2beta1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := apiVersion(test.overrides)
+			if got != test.want {
+				t.Errorf("apiVersion() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
