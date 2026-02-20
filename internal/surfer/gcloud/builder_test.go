@@ -23,6 +23,44 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+func TestNewArguments(t *testing.T) {
+	service := sample.ParallelstoreAPI().Services[0]
+
+	for _, test := range []struct {
+		name    string
+		method  *api.Method
+		want    int // We'll just assert the number of arguments generated to ensure it iterates.
+		wantErr bool
+	}{
+		{
+			name:   "Delete Instance (only name field)",
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.DeleteInstance"),
+			want:   1, // Only the primary resource parameter (name) should be added.
+		},
+		{
+			name: "Method with no InputType",
+			method: &api.Method{
+				Name:      "EmptyMethod",
+				InputType: nil,
+			},
+			want: 0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := newArguments(test.method, &Config{}, sample.ParallelstoreAPI(), service)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("newArguments() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if len(got.Params) != test.want {
+				t.Errorf("newArguments() generated %d params, want %d", len(got.Params), test.want)
+			}
+		})
+	}
+}
+
 func TestNewParam(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -374,6 +412,50 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			got := newPrimaryResourceParam(test.field, test.method, test.method.Model, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewRequest(t *testing.T) {
+	service := sample.ParallelstoreAPI().Services[0]
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   *Request
+	}{
+		{
+			name:   "Standard Create",
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.CreateInstance"),
+			want: &Request{
+				Collection: []string{"parallelstore.projects.locations.instances"},
+				APIVersion: "", // TODO(infer_api_version_from_package.md): expected "v1"
+			},
+		},
+		{
+			name:   "Custom Method with Verb",
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.ImportData"),
+			want: &Request{
+				Collection: []string{"parallelstore.projects.locations.instances"},
+				Method:     "importData",
+				APIVersion: "", // TODO(infer_api_version_from_package.md): expected "v1"
+			},
+		},
+		{
+			name:   "Custom Method without Verb (falls back to camelCase name)",
+			method: sample.Method(".google.cloud.parallelstore.v1.Parallelstore.ExportData"),
+			want: &Request{
+				Collection: []string{"parallelstore.projects.locations.instances"},
+				Method:     "exportData",
+				APIVersion: "", // TODO(infer_api_version_from_package.md): expected "v1"
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := newRequest(test.method, &Config{}, sample.ParallelstoreAPI(), service)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -415,6 +415,8 @@ func ParallelstoreAPI() *api.API {
 			MethodCreateInstance(),
 			MethodUpdateInstance(),
 			MethodDeleteInstance(),
+			MethodImportData(),
+			MethodExportData(),
 			MethodListInstances(),
 		},
 	}
@@ -424,6 +426,8 @@ func ParallelstoreAPI() *api.API {
 		CreateInstanceRequest(),
 		UpdateInstanceRequest(),
 		DeleteInstanceRequest(),
+		ImportDataRequest(),
+		ExportDataRequest(),
 		ListInstancesRequest(),
 		ListInstancesResponse(),
 		Operation(),
@@ -529,6 +533,92 @@ func MethodDeleteInstance() *api.Method {
 		OperationInfo: &api.OperationInfo{
 			ResponseTypeID: ".google.protobuf.Empty",
 			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
+		},
+	}
+}
+
+func MethodImportData() *api.Method {
+	return &api.Method{
+		Name:          "ImportData",
+		Documentation: "Imports data from Cloud Storage to Parallelstore instance.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.ImportData",
+		InputTypeID:   ImportDataRequest().ID,
+		OutputTypeID:  ".google.longrunning.Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodPost,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()).
+						WithVerb("importData"),
+				},
+			},
+		},
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: ".google.cloud.parallelstore.v1.ImportDataResponse",
+			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
+		},
+	}
+}
+
+func MethodExportData() *api.Method {
+	return &api.Method{
+		Name:          "ExportData",
+		Documentation: "Exports data from Parallelstore to Cloud Storage.",
+		ID:            ".google.cloud.parallelstore.v1.Parallelstore.ExportData",
+		InputTypeID:   ExportDataRequest().ID,
+		OutputTypeID:  ".google.longrunning.Operation",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					Verb: http.MethodPost,
+					PathTemplate: api.NewPathTemplate().
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()).
+						WithVerb("exportData"),
+				},
+			},
+		},
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: ".google.cloud.parallelstore.v1.ExportDataResponse",
+			MetadataTypeID: ".google.cloud.parallelstore.v1.OperationMetadata",
+		},
+	}
+}
+
+func ImportDataRequest() *api.Message {
+	return &api.Message{
+		Name:    "ImportDataRequest",
+		ID:      ".google.cloud.parallelstore.v1.ImportDataRequest",
+		Package: Package,
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type: "parallelstore.googleapis.com/Instance",
+				},
+			},
+		},
+	}
+}
+
+func ExportDataRequest() *api.Message {
+	return &api.Message{
+		Name:    "ExportDataRequest",
+		ID:      ".google.cloud.parallelstore.v1.ExportDataRequest",
+		Package: Package,
+		Fields: []*api.Field{
+			{
+				Name:     "name",
+				JSONName: "name",
+				Typez:    api.STRING_TYPE,
+				ResourceReference: &api.ResourceReference{
+					Type: "parallelstore.googleapis.com/Instance",
+				},
+			},
 		},
 	}
 }
