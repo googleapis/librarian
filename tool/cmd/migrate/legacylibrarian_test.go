@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -657,5 +658,34 @@ func TestLibraryWithAliasshim_Error(t *testing.T) {
 	_, err := libraryWithAliasshim("testdata/non-existent-repo")
 	if err == nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParseBazel_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		dir        string
+		wantErrMsg string
+	}{
+		{
+			name:       "multiple GAPIC rules",
+			dir:        "testdata/parse-bazel-error/multiple-gapic-rules",
+			wantErrMsg: "multiple go_gapic_library rules",
+		},
+		{
+			name:       "no BUILD.bazel",
+			dir:        "non-existent-dir",
+			wantErrMsg: "no such file or directory",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parseBazel(test.dir)
+			if err == nil {
+				t.Fatalf("parseBazel(%q): expected error", test.dir)
+			}
+			if !strings.Contains(err.Error(), test.wantErrMsg) {
+				t.Errorf("mismatch (-want +got):\n%s\n%s", test.wantErrMsg, err.Error())
+			}
+		})
 	}
 }
