@@ -443,6 +443,9 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 	}, nil
 }
 
+// findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
+// It returns the GoAPI pointer and its index in the GoAPIs slice if found, otherwise it returns
+// nil and -1.
 func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 	if library.Go == nil {
 		return nil, -1
