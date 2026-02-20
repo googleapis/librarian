@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
@@ -34,6 +35,8 @@ import (
 )
 
 type goGAPICInfo struct {
+	ClientDirectory    string
+	ImportPath         string
 	NoRESTNumericEnums bool
 }
 
@@ -381,6 +384,7 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 // parseBazel parses the BUILD.bazel file in the given directory to extract information from
 // the go_gapic_library rule.
 func parseBazel(dir string) (*goGAPICInfo, error) {
+	cloud_api := strings.Contains(dir, "google/cloud/")
 	path := filepath.Join(dir, "BUILD.bazel")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -398,7 +402,14 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
 	}
 	rule := rules[0]
+	var importPath string
+	var clientDir string
+	if !cloud_api {
+		importPath, clientDir = importPathAndClientDir(rule.AttrLiteral("importpath"))
+	}
 	return &goGAPICInfo{
+		ClientDirectory:    clientDir,
+		ImportPath:         importPath,
 		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
 	}, nil
 }
@@ -416,4 +427,16 @@ func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 		}
 	}
 	return nil, -1
+}
+
+func importPathAndClientDir(str string) (string, string) {
+	var clientDir string
+	strs := strings.Split(str, ";")
+	if len(strs) != 1 {
+		clientDir = strs[1]
+	}
+	path := strings.TrimPrefix(strs[0], "cloud.google.com/go/")
+	idx := strings.Index(path, "/apiv")
+	importPath := path[:idx]
+	return importPath, clientDir
 }
