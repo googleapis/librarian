@@ -143,7 +143,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string |  |
+| `path` | string | Path is the source path for the API. |
 
 ## JavaDefault Configuration
 

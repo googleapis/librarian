@@ -50,6 +50,7 @@ type GoAPI struct {
 
 // JavaAPI represents configuration for a single API within a Java library.
 type JavaAPI struct {
+	// Path is the source path for the API.
 	Path string `yaml:"path,omitempty"`
 }
 
