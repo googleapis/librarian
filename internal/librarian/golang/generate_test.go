@@ -758,6 +758,25 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "no metadata",
+			apiPath: "google/cloud/gkehub/v1",
+			library: &config.Library{
+				Name:    "gkehub",
+				Version: "1.2.3",
+			},
+			goAPI: &config.GoAPI{
+				NoMetadata: true,
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/gkehub/apiv1;gkehub",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/gkehub/v1/gkehub_v1.yaml"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
