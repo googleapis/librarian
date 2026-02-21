@@ -211,10 +211,10 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
 	version := filepath.Base(apiPath)
-	if !strings.HasPrefix(version, "v") {
-		version = ""
-	} else {
+	if versionRegex.MatchString(version) {
 		version = fmt.Sprintf("/api%s", version)
+	} else {
+		version = ""
 	}
 	clientDir := library.Name
 	if goAPI != nil && goAPI.ClientDirectory != "" {
