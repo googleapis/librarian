@@ -33,7 +33,7 @@ var (
 	//go:embed template/_internal_version.go.txt
 	internalVersionTmpl string
 
-	versionRegex = regexp.MustCompile(`.*/v\d+`)
+	versionRegex = regexp.MustCompile(`.*/v(\d+)$`)
 )
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
