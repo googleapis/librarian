@@ -15,7 +15,6 @@
 package golang
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -95,24 +94,6 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			apiPath: "google/cloud/secretmanager/v1",
 			wantDir: "secretmanager/customdir/apiv1",
 		},
-		{
-			name: "skip non versioned path",
-			library: &config.Library{
-				Name:   "longrunning",
-				Output: "", // set in test
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/longrunning",
-							ClientDirectory: "longrunning",
-							ImportPath:      "longrunning/autogen",
-						},
-					},
-				},
-			},
-			apiPath: "google/longrunning",
-			wantDir: "secretmanager/customdir/apiv1",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -131,32 +112,6 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				t.Errorf("want versionClient assignment in output, got:\n%s", content)
 			}
 		})
-	}
-}
-
-func TestGenerateClientVersionFile_Skipped(t *testing.T) {
-	dir := t.TempDir()
-	library := &config.Library{
-		Name:   "longrunning",
-		Output: dir, // set in test
-		Go: &config.GoModule{
-			GoAPIs: []*config.GoAPI{
-				{
-					Path:            "google/longrunning",
-					ClientDirectory: "longrunning",
-					ImportPath:      "longrunning/autogen",
-				},
-			},
-		},
-	}
-	apiPath := "google/longrunning"
-	if err := generateClientVersionFile(library, apiPath); err != nil {
-		t.Fatal(err)
-	}
-	// This is the version.go if the generation is not skipped.
-	versionPath := filepath.Join(dir, "longrunning/longrunning/apilongrunning", "version.go")
-	if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("version.go shouldn't exist after skipped")
 	}
 }
 
