@@ -61,6 +61,10 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
+	if !versionRegex.MatchString(apiPath) {
+		// Skip non versioned path.
+		return nil
+	}
 	dir, clientDir := resolveClientPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
