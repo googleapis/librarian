@@ -651,7 +651,7 @@ func TestParseBazel_Success(t *testing.T) {
 	}{
 		{
 			name: "success",
-			dir:  "testdata/parse-bazel/success",
+			dir:  "testdata/parse-bazel/success/google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
 				NoRESTNumericEnums: true,
 			},
