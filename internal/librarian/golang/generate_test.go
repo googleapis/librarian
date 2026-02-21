@@ -758,6 +758,31 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "generator features",
+			apiPath: "google/cloud/bigquery/v2",
+			library: &config.Library{
+				Name:    "bigquery/v2",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/v2"}},
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory:          "bigquery",
+				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
+				ImportPath:               "bigquery/v2",
+				Path:                     "google/cloud/bigquery/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/bigquery/v2/apiv2;bigquery",
+				"metadata",
+				"rest-numeric-enums",
+				"F_wrapper_types_for_page_size",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

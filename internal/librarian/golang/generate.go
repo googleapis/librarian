@@ -191,6 +191,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
+	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {
+		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
+	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
 	}
