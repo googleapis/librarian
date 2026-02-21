@@ -45,7 +45,8 @@ type GoAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 	// ProtoPackage is the proto package name.
-	ProtoPackage  string `yaml:"proto_package,omitempty"`
+	ProtoPackage string `yaml:"proto_package,omitempty"`
+	// VersionSuffix is an optional suffix appended to the version part of the GAPIC import path.
 	VersionSuffix string `yaml:"version_suffix,omitempty"`
 }
 
