@@ -44,9 +44,21 @@ var baseVocabulary = map[string]bool{
 	"billingAccounts": true,
 }
 
-// BaseVocabulary returns the set of literal segments that are common
-// across Google Cloud APIs and should always be considered valid tokens.
-// The returned map is read-only and should not be modified.
-func BaseVocabulary() map[string]bool {
-	return baseVocabulary
+// isBaseVocabulary checks if a segment is part of the common resource vocabulary.
+func isBaseVocabulary(segment string) bool {
+	return baseVocabulary[segment]
+}
+
+// isCollectionIdentifier returns true if the segment is likely a collection ID.
+// It checks in the following order:
+// 1. Base vocabulary (projects, locations, etc.)
+// 2. Known resource plurals (from the API model).
+func isCollectionIdentifier(segment string, knownPlurals map[string]bool) bool {
+	if isBaseVocabulary(segment) {
+		return true
+	}
+	if knownPlurals != nil && knownPlurals[segment] {
+		return true
+	}
+	return false
 }

@@ -84,24 +84,63 @@ func TestIsResourceRenameHeuristicEligible(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := IsHeuristicEligible(test.serviceID)
-			if got != test.want {
-				t.Errorf("IsHeuristicEligible(%q) = %v, want %v", test.serviceID, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("IsHeuristicEligible(%q) mismatch (-want +got):\n%s", test.serviceID, diff)
 			}
 		})
 	}
 }
 
-func TestBaseVocabulary(t *testing.T) {
-	got := BaseVocabulary()
-	want := map[string]bool{
-		"projects":        true,
-		"locations":       true,
-		"folders":         true,
-		"organizations":   true,
-		"billingAccounts": true,
-	}
+func TestIsCollectionIdentifier(t *testing.T) {
+	for _, test := range []struct {
+		segment      string
+		knownPlurals map[string]bool
+		want         bool
+	}{
+		// Base vocabulary
+		{"projects", nil, true},
+		{"locations", nil, true},
+		{"folders", nil, true},
+		{"organizations", nil, true},
+		{"billingAccounts", nil, true},
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		// Standard plural heuristic
+		{"instances", map[string]bool{"instances": true}, true},
+		{"disks", map[string]bool{"disks": true}, true},
+		{"clusters", map[string]bool{"clusters": true}, true},
+		{"backups", map[string]bool{"backups": true}, true},
+		{"vms", map[string]bool{"vms": true}, true},
+		{"ips", map[string]bool{"ips": true}, true},
+
+		// Ignored / Invalid
+		{"v1", nil, false},       // Version
+		{"us", nil, false},       // Region
+		{"address", nil, false},  // Singular exception
+		{"status", nil, false},   // Singular exception
+		{"ingress", nil, false},  // Singular exception
+		{"egress", nil, false},   // Singular exception
+		{"access", nil, false},   // Singular exception
+		{"analysis", nil, false}, // Singular exception
+		{"other", nil, false},    // Random noun not ending in s
+		{"s", nil, false},        // Too short
+		{"", nil, false},         // Empty
+
+		// Known Plurals (Explicit Match)
+		{"fish", map[string]bool{"fish": true}, true},     // Doesn't end in s, but known
+		{"people", map[string]bool{"people": true}, true}, // Irregular plural
+		{"data", map[string]bool{"data": true}, true},     // Mass noun
+		{"status", map[string]bool{"status": true}, true}, // Exception override
+
+		// Known Plurals (No Match / False Cases)
+		{"fish", nil, false},                                  // Not known, no 's' suffix -> false
+		{"fish", map[string]bool{"sharks": true}, false},      // Map populated, but key missing -> false
+		{"status", map[string]bool{"instances": true}, false}, // Exception applies if not in map -> false
+	} {
+		t.Run(test.segment, func(t *testing.T) {
+			got := isCollectionIdentifier(test.segment, test.knownPlurals)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("isCollectionIdentifier(%q) mismatch (-want +got):\n%s", test.segment, diff)
+			}
+		})
 	}
 }
