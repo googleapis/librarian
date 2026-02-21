@@ -117,28 +117,61 @@ func TestGenerateClientVersionFile(t *testing.T) {
 }
 
 func TestGenerateClientVersionFile_Skipped(t *testing.T) {
-	dir := t.TempDir()
-	library := &config.Library{
-		Name:   "longrunning",
-		Output: dir, // set in test
-		Go: &config.GoModule{
-			GoAPIs: []*config.GoAPI{
-				{
-					Path:            "google/longrunning",
-					ClientDirectory: "longrunning",
-					ImportPath:      "longrunning/autogen",
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		apiPath string
+		wantDir string
+	}{
+		{
+			name: "non versioned api path",
+			library: &config.Library{
+				Name:   "longrunning",
+				Output: "", // set in test
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/longrunning",
+							ClientDirectory: "longrunning",
+							ImportPath:      "longrunning/autogen",
+						},
+					},
 				},
 			},
+			apiPath: "google/longrunning",
+			wantDir: "longrunning/longrunning/apilongrunning",
 		},
-	}
-	apiPath := "google/longrunning"
-	if err := generateClientVersionFile(library, apiPath); err != nil {
-		t.Fatal(err)
-	}
-	// This is the version.go if the generation is not skipped.
-	versionPath := filepath.Join(dir, "longrunning/longrunning/apilongrunning", "version.go")
-	if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("version.go shouldn't exist after skipped")
+		{
+			name: "contains versioned path in the middle",
+			library: &config.Library{
+				Name:   "longrunning",
+				Output: "", // set in test
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/longrunning/v1/longrunning",
+							ClientDirectory: "longrunning",
+							ImportPath:      "longrunning/autogen",
+						},
+					},
+				},
+			},
+			apiPath: "google/longrunning/v1/longrunning",
+			wantDir: "longrunning/longrunning/apilongrunning",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.library.Output = dir
+			if err := generateClientVersionFile(test.library, test.apiPath); err != nil {
+				t.Fatal(err)
+			}
+			// This is the version.go if the generation is not skipped.
+			versionPath := filepath.Join(dir, test.wantDir, "version.go")
+			if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("version.go shouldn't exist after skipped")
+			}
+		})
 	}
 }
 
