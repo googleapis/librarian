@@ -20,29 +20,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sync"
 )
 
-var (
-	mu          sync.Mutex
-	execCommand = exec.CommandContext
-)
-
-// SetExecCommand sets the function used to create commands.
-// It is intended for testing purposes only.
-func SetExecCommand(f func(context.Context, string, ...string) *exec.Cmd) {
-	mu.Lock()
-	defer mu.Unlock()
-	execCommand = f
-}
-
-// ResetExecCommand resets the function used to create commands to the default.
-// It is intended for testing purposes only.
-func ResetExecCommand() {
-	mu.Lock()
-	defer mu.Unlock()
-	execCommand = exec.CommandContext
-}
+var execCommand = exec.CommandContext
 
 // Verbose controls whether commands are printed to stderr before execution.
 //
