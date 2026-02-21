@@ -36,7 +36,7 @@ type GoAPI struct {
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
-	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features"`
+	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
