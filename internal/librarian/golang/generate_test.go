@@ -532,7 +532,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 		{
 			name:    "customize import path and client directory",
-			apiPath: "google/ai/generativelanguage/v1",
+			apiPath: "google/ai/generativelanguage/v1alpha",
 			library: &config.Library{
 				Name: "ai",
 			},
@@ -540,7 +540,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 				ClientDirectory: "generativelanguage",
 				ImportPath:      "ai/generativelanguage",
 			},
-			want: "cloud.google.com/go/ai/generativelanguage/apiv1;generativelanguage",
+			want: "cloud.google.com/go/ai/generativelanguage/apiv1alpha;generativelanguage",
 		},
 		{
 			name:    "no version suffix",
