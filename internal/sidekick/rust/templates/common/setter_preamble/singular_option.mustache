@@ -58,9 +58,9 @@ limitations under the License.
 {{^Codec.IsWktNullValue}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
-{{#EnumType.Codec.ValuesForExamples}}
-/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_or_clear_{{FieldCodec.SetterName}}(Some({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}));
-{{/EnumType.Codec.ValuesForExamples}}
+{{#EnumType.ValuesForExamples}}
+/// let x{{Index}} = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}));
+{{/EnumType.ValuesForExamples}}
 /// let x_none = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{EnumType.Codec.Name}}>);
 {{/Codec.IsWktNullValue}}
 {{/IsEnum}}

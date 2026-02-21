@@ -32,12 +32,12 @@ limitations under the License.
 {{/Codec.OtherFieldsInGroup}}
 {{/Codec.IsWktNullValue}}
 {{^Codec.IsWktNullValue}}
-{{#EnumType.Codec.ValuesForExamples}}
-/// assert!(x{{Index}}.{{FieldCodec.FieldName}}().is_some());
+{{#EnumType.ValuesForExamples}}
+/// assert!(x{{Index}}.{{Codec.FieldName}}().is_some());
 {{#Codec.OtherFieldsInGroup}}
 /// assert!(x{{Index}}.{{Codec.FieldName}}().is_none());
 {{/Codec.OtherFieldsInGroup}}
-{{/EnumType.Codec.ValuesForExamples}}
+{{/EnumType.ValuesForExamples}}
 {{/Codec.IsWktNullValue}}
 {{/IsEnum}}
 {{^IsEnum}}
