@@ -281,8 +281,15 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			if index == -1 {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
-			goAPI.ClientDirectory = info.ClientDirectory
-			goAPI.ImportPath = info.ImportPath
+			// Do not override values from other configuration files.
+			if goAPI.ClientDirectory == "" {
+				goAPI.ClientDirectory = info.ClientDirectory
+			}
+			if goAPI.ImportPath == "" {
+				goAPI.ImportPath = info.ImportPath
+			}
+			// REST-numeric-enums can only be retrieved from BUILD.bazel,
+			// so it's fine to override.
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
