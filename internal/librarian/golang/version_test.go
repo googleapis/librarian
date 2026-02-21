@@ -63,6 +63,7 @@ func TestGenerateInternalVersionFile(t *testing.T) {
 }
 
 func TestGenerateClientVersionFile(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -97,6 +98,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			test.library.Output = dir
 
