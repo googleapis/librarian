@@ -599,7 +599,6 @@ func TestOneOfAnnotations(t *testing.T) {
 		NameInExamples:      "google_cloud_test::model::message::Type",
 		FieldType:           "crate::model::message::Type",
 		DocLines:            []string{"/// Say something clever about this oneof."},
-		ExampleField:        singular,
 	}
 	if diff := cmp.Diff(wantOneOfCodec, group.Codec, cmpopts.IgnoreFields(api.OneOf{}, "Codec")); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
@@ -748,7 +747,6 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		NameInExamples:      "google_cloud_test::model::message::NestedThingOneOf",
 		FieldType:           "crate::model::message::NestedThingOneOf",
 		DocLines:            []string{"/// Say something clever about this oneof."},
-		ExampleField:        singular,
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
 		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
@@ -794,7 +792,6 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		NameInExamples:      "google_cloud_test::model::message::Message",
 		FieldType:           "crate::model::message::Message",
 		DocLines:            []string{"/// Say something clever about this oneof."},
-		ExampleField:        singular,
 		AliasInExamples:     "MessageOneOf",
 		EnumNameInExamples:  "MessageOneOf",
 	}
@@ -843,6 +840,7 @@ func TestEnumAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
@@ -854,11 +852,6 @@ func TestEnumAnnotations(t *testing.T) {
 		DocLines:       []string{"/// The enum is documented."},
 		UniqueNames:    []*api.EnumValue{v0, v1, v2, v3, v4},
 		NameInExamples: "google_cloud_test_v1::model::TestEnum",
-		ValuesForExamples: []*enumValueForExamples{
-			{EnumValue: v0, Index: 0},
-			{EnumValue: v1, Index: 1},
-			{EnumValue: v3, Index: 2},
-		},
 	}
 	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
 		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
@@ -946,6 +939,7 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	api.CrossReference(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	annotateModel(model, codec)
 
@@ -956,10 +950,6 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 		RelativeName:   "TestEnum",
 		UniqueNames:    []*api.EnumValue{v0, v2},
 		NameInExamples: "google_cloud_test_v1::model::TestEnum",
-		ValuesForExamples: []*enumValueForExamples{
-			{EnumValue: v0, Index: 0},
-			{EnumValue: v2, Index: 1},
-		},
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
@@ -1886,211 +1876,6 @@ func TestSetterSampleAnnotations(t *testing.T) {
 	}
 	if messageField.MessageType != message {
 		t.Errorf("mismatch in message_field.MessageType")
-	}
-}
-
-func TestEnumAnnotationsValuesForExamples(t *testing.T) {
-	v_good1 := &api.EnumValue{Name: "GOOD_1", Number: 1}
-	v_good2 := &api.EnumValue{Name: "GOOD_2", Number: 2}
-	v_good3 := &api.EnumValue{Name: "GOOD_3", Number: 3}
-	v_good4 := &api.EnumValue{Name: "GOOD_4", Number: 4}
-	v_bad_deprecated := &api.EnumValue{Name: "BAD_DEPRECATED", Number: 5, Deprecated: true}
-	v_bad_default := &api.EnumValue{Name: "BAD_DEFAULT", Number: 0}
-
-	testCases := []struct {
-		name         string
-		values       []*api.EnumValue
-		wantExamples []*enumValueForExamples
-	}{
-		{
-			name:   "more than 3 good values",
-			values: []*api.EnumValue{v_good1, v_good2, v_good3, v_good4},
-			wantExamples: []*enumValueForExamples{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
-				{EnumValue: v_good3, Index: 2},
-			},
-		},
-		{
-			name:   "less than 3 good values",
-			values: []*api.EnumValue{v_good1, v_good2, v_bad_deprecated},
-			wantExamples: []*enumValueForExamples{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
-			},
-		},
-		{
-			name:   "no good values",
-			values: []*api.EnumValue{v_bad_default, v_bad_deprecated},
-			wantExamples: []*enumValueForExamples{
-				{EnumValue: v_bad_default, Index: 0},
-				{EnumValue: v_bad_deprecated, Index: 1},
-			},
-		},
-		{
-			name:         "no values",
-			values:       []*api.EnumValue{},
-			wantExamples: []*enumValueForExamples{},
-		},
-		{
-			name:   "mixed good and bad values",
-			values: []*api.EnumValue{v_bad_default, v_good1, v_bad_deprecated, v_good2},
-			wantExamples: []*enumValueForExamples{
-				{EnumValue: v_good1, Index: 0},
-				{EnumValue: v_good2, Index: 1},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			enum := &api.Enum{
-				Name:    "TestEnum",
-				ID:      ".test.v1.TestEnum",
-				Package: "test.v1",
-				Values:  tc.values,
-			}
-			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
-			if err := api.CrossReference(model); err != nil {
-				t.Fatalf("CrossReference() failed: %v", err)
-			}
-			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
-			annotateModel(model, codec)
-
-			got := enum.Codec.(*enumAnnotation).ValuesForExamples
-			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-				t.Errorf("mismatch in ValuesForExamples (-want, +got)\n:%s", diff)
-			}
-		})
-	}
-}
-
-func TestOneOfExampleFieldSelection(t *testing.T) {
-	deprecated := &api.Field{
-		Name:       "deprecated_field",
-		ID:         ".test.Message.deprecated_field",
-		Typez:      api.STRING_TYPE,
-		IsOneOf:    true,
-		Deprecated: true,
-	}
-	mapMessage := &api.Message{
-		Name:  "$map<string, string>",
-		ID:    "$map<string, string>",
-		IsMap: true,
-		Fields: []*api.Field{
-			{Name: "key", ID: "$map<string, string>.key", Typez: api.STRING_TYPE},
-			{Name: "value", ID: "$map<string, string>.value", Typez: api.STRING_TYPE},
-		},
-	}
-	mapField := &api.Field{
-		Name:    "map_field",
-		ID:      ".test.Message.map_field",
-		Typez:   api.MESSAGE_TYPE,
-		TypezID: "$map<string, string>",
-		IsOneOf: true,
-		Map:     true,
-	}
-	repeated := &api.Field{
-		Name:     "repeated_field",
-		ID:       ".test.Message.repeated_field",
-		Typez:    api.STRING_TYPE,
-		Repeated: true,
-		IsOneOf:  true,
-	}
-	scalar := &api.Field{
-		Name:    "scalar_field",
-		ID:      ".test.Message.scalar_field",
-		Typez:   api.INT32_TYPE,
-		IsOneOf: true,
-	}
-	messageField := &api.Field{
-		Name:    "message_field",
-		ID:      ".test.Message.message_field",
-		Typez:   api.MESSAGE_TYPE,
-		TypezID: ".test.OneMessage",
-		IsOneOf: true,
-	}
-	anotherMessageField := &api.Field{
-		Name:    "another_message_field",
-		ID:      ".test.Message.another_message_field",
-		Typez:   api.MESSAGE_TYPE,
-		TypezID: ".test.AnotherMessage",
-		IsOneOf: true,
-	}
-
-	testCases := []struct {
-		name   string
-		fields []*api.Field
-		want   *api.Field
-	}{
-		{
-			name:   "all types",
-			fields: []*api.Field{deprecated, mapField, repeated, scalar, messageField},
-			want:   scalar,
-		},
-		{
-			name:   "no primitives",
-			fields: []*api.Field{deprecated, mapField, repeated, messageField},
-			want:   messageField,
-		},
-		{
-			name:   "only scalars and messages",
-			fields: []*api.Field{messageField, scalar, anotherMessageField},
-			want:   scalar,
-		},
-		{
-			name:   "no scalars",
-			fields: []*api.Field{deprecated, mapField, repeated},
-			want:   repeated,
-		},
-		{
-			name:   "only map and deprecated",
-			fields: []*api.Field{deprecated, mapField},
-			want:   mapField,
-		},
-		{
-			name:   "only deprecated",
-			fields: []*api.Field{deprecated},
-			want:   deprecated,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			group := &api.OneOf{
-				Name:   "test_oneof",
-				ID:     ".test.Message.test_oneof",
-				Fields: tc.fields,
-			}
-			message := &api.Message{
-				Name:    "Message",
-				ID:      ".test.Message",
-				Package: "test",
-				Fields:  tc.fields,
-				OneOfs:  []*api.OneOf{group},
-			}
-			oneMesage := &api.Message{
-				Name:    "OneMessage",
-				ID:      ".test.OneMessage",
-				Package: "test",
-			}
-			anotherMessage := &api.Message{
-				Name:    "AnotherMessage",
-				ID:      ".test.AnotherMessage",
-				Package: "test",
-			}
-			model := api.NewTestAPI([]*api.Message{message, oneMesage, anotherMessage, mapMessage}, []*api.Enum{}, []*api.Service{})
-			api.CrossReference(model)
-			codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
-			if _, err := annotateModel(model, codec); err != nil {
-				t.Fatal(err)
-			}
-
-			got := group.Codec.(*oneOfAnnotation).ExampleField
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("mismatch in ExampleField (-want, +got)\n:%s", diff)
-			}
-		})
 	}
 }
 
