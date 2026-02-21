@@ -38,6 +38,9 @@ type GoAPI struct {
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`
+	// HasMetadata indicates whether a gapic_metadata.json should be generated.
+	// This is typically true.
+	HasMetadata bool `yaml:"has_metadata,omitempty"`
 	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
 	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
 	// to generate numeric enums
