@@ -1228,6 +1228,9 @@ type Enum struct {
 	// The unique integer values, some enums have multiple aliases for the
 	// same number (e.g. `enum X { a = 0, b = 0, c = 1 }`).
 	UniqueNumberValues []*EnumValue
+	// ValuesForExamples contains a subset of values suitable for use in generated samples.
+	// e.g. non-deprecated, non-zero values.
+	ValuesForExamples []*SampleValue
 	// Parent returns the ancestor of this node, if any.
 	Parent *Message
 	// The Protobuf package this enum belongs to.
@@ -1252,6 +1255,14 @@ type EnumValue struct {
 	Parent *Enum
 	// Language specific annotations.
 	Codec any
+}
+
+// SampleValue represents a value used in a sample.
+type SampleValue struct {
+	// The enum value.
+	EnumValue *EnumValue
+	// The index of the value in the sample list (0-based).
+	Index int
 }
 
 // Field defines a field in a Message.
@@ -1456,6 +1467,10 @@ type OneOf struct {
 	Documentation string
 	// Fields associated with the one-of.
 	Fields []*Field
+	// The best field to show in a oneof related samples.
+	// Non deprecated fields are preferred, then scalar, repeated, map fields
+	// in that order.
+	ExampleField *Field
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }

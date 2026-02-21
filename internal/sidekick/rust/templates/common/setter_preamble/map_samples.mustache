@@ -60,9 +60,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{#Codec.ValueField.EnumType.ValuesForExamples}}
 ///     ("key{{Index}}", {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
-{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{/Codec.ValueField.EnumType.ValuesForExamples}}
 /// ]);
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
@@ -123,9 +123,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{#Codec.ValueField.EnumType.ValuesForExamples}}
 ///     (true, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
-{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{/Codec.ValueField.EnumType.ValuesForExamples}}
 /// ]);
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
@@ -186,9 +186,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{#Codec.ValueField.EnumType.ValuesForExamples}}
 ///     ({{Index}}, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
-{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{/Codec.ValueField.EnumType.ValuesForExamples}}
 /// ]);
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
@@ -249,9 +249,9 @@ limitations under the License.
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Codec.ValueField.EnumType.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}([
-{{#Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{#Codec.ValueField.EnumType.ValuesForExamples}}
 ///     ({{Index}}_u32, {{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}}),
-{{/Codec.ValueField.EnumType.Codec.ValuesForExamples}}
+{{/Codec.ValueField.EnumType.ValuesForExamples}}
 /// ]);
 {{/Codec.ValueField.IsEnum}}
 {{#Codec.ValueField.IsObject}}
