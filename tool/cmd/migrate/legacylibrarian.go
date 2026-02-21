@@ -410,6 +410,10 @@ func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 	return nil, -1
 }
 
+// importPathAndClientDir parses the importpath attribute from a go_gapic_library rule.
+// The input string is expected to be in the format "import_path;client_dir".
+// It returns the base import path (without the "cloud.google.com/go/" prefix and version suffix) and
+// the client directory.
 func importPathAndClientDir(str string) (string, string) {
 	strs := strings.Split(str, ";")
 	importPath := strings.TrimPrefix(strs[0], "cloud.google.com/go/")
