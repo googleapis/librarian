@@ -127,6 +127,7 @@ This document describes the schema for the librarian.yaml.
 | `no_rest_numeric_enums` | bool | NoRESTNumericEnums determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Path is the source path. |
 | `proto_package` | string | ProtoPackage is the proto package name. |
+| `version_suffix` | string | VersionSuffix is an optional suffix appended to the version part of the GAPIC import path. |
 
 ## GoModule Configuration
 
