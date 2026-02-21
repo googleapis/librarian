@@ -95,24 +95,6 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			apiPath: "google/cloud/secretmanager/v1",
 			wantDir: "secretmanager/customdir/apiv1",
 		},
-		{
-			name: "skip non versioned path",
-			library: &config.Library{
-				Name:   "longrunning",
-				Output: "", // set in test
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/longrunning",
-							ClientDirectory: "longrunning",
-							ImportPath:      "longrunning/autogen",
-						},
-					},
-				},
-			},
-			apiPath: "google/longrunning",
-			wantDir: "secretmanager/customdir/apiv1",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()

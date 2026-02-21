@@ -23,7 +23,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -44,7 +43,6 @@ var (
 	readmeTmpl string
 
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
-	versionRegex     = regexp.MustCompile(`.*/v\d+`)
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
@@ -213,11 +211,6 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
 	version := filepath.Base(apiPath)
-	if !strings.HasPrefix(version, "v") {
-		version = ""
-	} else {
-		version = fmt.Sprintf("/api%s", version)
-	}
 	clientDir := library.Name
 	if goAPI != nil && goAPI.ClientDirectory != "" {
 		clientDir = goAPI.ClientDirectory
@@ -232,7 +225,7 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
-	return fmt.Sprintf("cloud.google.com/go/%s%s%s;%s",
+	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
 		importPath, modulePathVersion, version, clientDir)
 }
 

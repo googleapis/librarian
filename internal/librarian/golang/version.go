@@ -18,6 +18,7 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
+	"regexp"
 	"text/template"
 	"time"
 
@@ -31,6 +32,8 @@ var (
 
 	//go:embed template/_internal_version.go.txt
 	internalVersionTmpl string
+
+	versionRegex = regexp.MustCompile(`.*/v\d+`)
 )
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
@@ -62,7 +65,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
 	if !versionRegex.MatchString(apiPath) {
-		// Skip non versioned path.
+		// Skip non versioned API path.
 		return nil
 	}
 	dir, clientDir := resolveClientPath(library, apiPath)
