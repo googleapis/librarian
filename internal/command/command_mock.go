@@ -16,56 +16,68 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
 )
 
 // MockCommander tracks executed commands and provisions simulated errors.
+// It is fully safe for parallel test execution.
 type MockCommander struct {
+	mu          sync.Mutex // Protects GotCommands during concurrent test steps
 	GotCommands [][]string
 	MockErrors  map[string]error // Use for specific command errors
 	DefaultErr  error            // Use if you want all commands to fail with this error
 }
 
-var mu sync.Mutex
+type contextKey struct{}
 
-// SetupMock injects the MockCommander into the package's execution path.
-// It returns a restore function designed to be passed directly to t.Cleanup().
-func (m *MockCommander) SetupMock() func() {
-	mu.Lock()
-	defer mu.Unlock()
+var (
+	installOnce sync.Once
+	realExec    = exec.CommandContext // Keep a reference to the real execution function
+)
 
-	// Save the original execution function
-	oldExec := execCommand
-
-	// Inject the mock closure directly
-	execCommand = func(ctx context.Context, name string, arg ...string) *exec.Cmd {
-		cmd := append([]string{name}, arg...)
-		m.GotCommands = append(m.GotCommands, cmd)
-
-		key := strings.Join(cmd, " ")
-
-		// Check for a specific error in the map first, fallback to DefaultErr
-		var err error
-		if specificErr, ok := m.MockErrors[key]; ok {
-			err = specificErr
-		} else if m.DefaultErr != nil {
-			err = m.DefaultErr
+// InjectContext attaches the MockCommander to the context.
+// It ensures a global context-aware router is installed exactly once,
+// safely allowing t.Parallel() tests to run simultaneously without cross-talk.
+func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
+	installOnce.Do(func() {
+		// Replace the package-level execCommand with a router.
+		// sync.Once makes this completely thread-safe, no mutex needed!
+		execCommand = func(execCtx context.Context, name string, arg ...string) *exec.Cmd {
+			// If the context contains a mock instance, route to it.
+			if mocker, ok := execCtx.Value(contextKey{}).(*MockCommander); ok {
+				return mocker.executeMock(execCtx, name, arg...)
+			}
+			// Otherwise, fall back to real execution.
+			return realExec(execCtx, name, arg...)
 		}
+	})
 
-		// Return the dummy command
-		if err != nil {
-			return exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf("echo %q >&2; exit 1", err.Error()))
-		}
-		return exec.CommandContext(ctx, "true")
+	return context.WithValue(ctx, contextKey{}, m)
+}
+
+// executeMock contains the isolated logic for a specific test's MockCommander instance.
+func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...string) *exec.Cmd {
+	cmd := append([]string{name}, arg...)
+
+	m.mu.Lock()
+	m.GotCommands = append(m.GotCommands, cmd)
+	m.mu.Unlock()
+
+	key := strings.Join(cmd, " ")
+
+	// Check for a specific error in the map first, fallback to DefaultErr
+	var err error
+	if specificErr, ok := m.MockErrors[key]; ok {
+		err = specificErr
+	} else if m.DefaultErr != nil {
+		err = m.DefaultErr
 	}
 
-	// Return the cleanup closure
-	return func() {
-		mu.Lock()
-		defer mu.Unlock()
-		execCommand = oldExec
+	// Return the dummy command
+	if err != nil {
+		return exec.CommandContext(ctx, "sh", "-c", "printf '%s\n' \"$1\" >&2; exit 1", "sh", err.Error())
 	}
+	return exec.CommandContext(ctx, "true")
 }

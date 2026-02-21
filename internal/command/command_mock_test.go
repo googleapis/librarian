@@ -16,14 +16,15 @@ package command
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestMockCommander(t *testing.T) {
+func TestMockCommander_Success(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name     string
 		runCmd   string
@@ -44,22 +45,24 @@ func TestMockCommander(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mocker := &MockCommander{}
-			t.Cleanup(mocker.SetupMock())
-
-			err := Run(t.Context(), tc.runCmd, tc.runArgs...)
+			ctx := mocker.InjectContext(t.Context())
+			err := Run(ctx, tc.runCmd, tc.runArgs...)
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(tc.wantCmds, mocker.GotCommands); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("GotCommands mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
 func TestMockCommander_Failure(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		name       string
 		mockErrors map[string]error
@@ -92,13 +95,16 @@ func TestMockCommander_Failure(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			mocker := &MockCommander{
 				MockErrors: tc.mockErrors,
 				DefaultErr: tc.defaultErr,
 			}
-			t.Cleanup(mocker.SetupMock())
 
-			err := Run(t.Context(), tc.runCmd, tc.runArgs...)
+			ctx := mocker.InjectContext(t.Context())
+
+			err := Run(ctx, tc.runCmd, tc.runArgs...)
 			if err == nil {
 				t.Fatalf("Run() unexpectedly succeeded, want err containing %q", tc.wantErr)
 			}
@@ -113,17 +119,15 @@ func TestMockCommander_Failure(t *testing.T) {
 	}
 }
 
-func TestMockCommander_CleanupRestoresOriginal(t *testing.T) {
-	origExecAddr := reflect.ValueOf(execCommand).Pointer()
+func TestMockCommander_FallbackToReal(t *testing.T) {
+	t.Parallel()
 	mocker := &MockCommander{}
-	cleanup := mocker.SetupMock()
-	mockedExecAddr := reflect.ValueOf(execCommand).Pointer()
-	if origExecAddr == mockedExecAddr {
-		t.Fatal("SetupMock() failed to replace the internal execCommand")
+	_ = mocker.InjectContext(t.Context())
+	out, err := Output(t.Context(), "echo", "real fallback")
+	if err != nil {
+		t.Fatalf("Output() unexpectedly failed during real fallback: %v", err)
 	}
-	cleanup()
-	restoredExecAddr := reflect.ValueOf(execCommand).Pointer()
-	if origExecAddr != restoredExecAddr {
-		t.Fatal("Cleanup closure failed to restore the original execCommand")
+	if !strings.Contains(out, "real fallback") {
+		t.Errorf("Output() = %q, want it to contain %q", out, "real fallback")
 	}
 }
