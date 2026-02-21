@@ -65,7 +65,7 @@ func isCollectionIdentifier(segment string, knownPlurals map[string]bool) bool {
 
 // BuildKnownPlurals collects all plural forms of resource names from the API model.
 func BuildKnownPlurals(model *API) map[string]bool {
-	knownPlurals := make(map[string]bool)
+	knownPlurals := make(map[string]bool, len(model.ResourceDefinitions))
 	for _, res := range model.ResourceDefinitions {
 		if res.Plural != "" {
 			knownPlurals[res.Plural] = true
