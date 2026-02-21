@@ -33,7 +33,7 @@ var (
 	//go:embed template/_internal_version.go.txt
 	internalVersionTmpl string
 
-	versionRegex = regexp.MustCompile(`.*/v(\d+)`)
+	versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
 )
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
@@ -64,7 +64,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	if !versionRegex.MatchString(apiPath) {
+	if !versionRegex.MatchString(filepath.Base(apiPath)) {
 		// Skip non versioned API path.
 		return nil
 	}
