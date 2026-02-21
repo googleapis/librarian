@@ -554,6 +554,18 @@ func TestBuildGAPICImportPath(t *testing.T) {
 			},
 			want: "cloud.google.com/go/longrunning/autogen;longrunning",
 		},
+		{
+			name:    "no version suffix with version in the middle",
+			apiPath: "google/longrunning/v1/longrunning",
+			library: &config.Library{
+				Name: "longrunning",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "longrunning",
+				ImportPath:      "longrunning/autogen",
+			},
+			want: "cloud.google.com/go/longrunning/autogen;longrunning",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGAPICImportPath(test.apiPath, test.library, test.goAPI)
