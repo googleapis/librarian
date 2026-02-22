@@ -75,7 +75,7 @@ func TestMockCommander_Failure(t *testing.T) {
 		{
 			name: "specific command error triggers",
 			mockErrors: map[string]error{
-				"git clone repo": fmt.Errorf("repository not found"),
+				FormatCmd("git", "clone", "repo"): fmt.Errorf("repository not found"),
 			},
 			runCmd:   "git",
 			runArgs:  []string{"clone", "repo"},
@@ -85,7 +85,7 @@ func TestMockCommander_Failure(t *testing.T) {
 		{
 			name: "default error triggers when specific is missing",
 			mockErrors: map[string]error{
-				"git clone repo": fmt.Errorf("repository not found"),
+				FormatCmd("git", "clone", "repo"): fmt.Errorf("repository not found"),
 			},
 			defaultErr: fmt.Errorf("network offline"),
 			runCmd:     "curl",

@@ -17,7 +17,6 @@ package command
 import (
 	"context"
 	"os/exec"
-	"strings"
 	"sync"
 )
 
@@ -62,8 +61,7 @@ func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
 // executeMock contains the isolated logic for a specific test's MockCommander instance.
 func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	cmd := append([]string{name}, arg...)
-
-	key := strings.Join(cmd, " ")
+	key := FormatCmd(name, arg...)
 
 	m.mu.Lock()
 	m.GotCommands = append(m.GotCommands, cmd)
@@ -82,4 +80,9 @@ func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...str
 		return exec.CommandContext(ctx, "sh", "-c", "printf '%s\n' \"$1\" >&2; exit 1", "sh", err.Error())
 	}
 	return exec.CommandContext(ctx, "true")
+}
+
+// FormatCmd generates an unambiguous string representation of a command.
+func FormatCmd(name string, arg ...string) string {
+	return exec.Command(name, arg...).String()
 }
