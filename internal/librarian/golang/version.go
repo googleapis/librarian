@@ -108,6 +108,15 @@ func clientDirectory(library *config.Library, apiPath string) string {
 	return ""
 }
 
+// extractMiddleDir returns the directory path between the library name and the client directory within the API path.
+//
+// Returns an empty string if one of the scenario happens:
+//
+// 1. libraryName is not part of apiPath.
+//
+// 2. clientDir is not part of apiPath.
+//
+// 3. no nested directories between libraryName and clientDir.
 func extractMiddleDir(libraryName, clientDir, apiPath string) string {
 	dirs := strings.Split(apiPath, "/")
 	nameIdx := slices.Index(dirs, libraryName)
