@@ -16,7 +16,6 @@ package command
 
 import (
 	"context"
-	"os"
 	"os/exec"
 	"runtime"
 	"sync"
@@ -82,7 +81,7 @@ func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...str
 		if runtime.GOOS == "windows" {
 			// Use PowerShell to securely write to stderr and exit.
 			// The error is passed via an environment variable to prevent script injection.
-mockCmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-NonInteractive", "-Command", "& { [Console]::Error.WriteLine($args[0]); exit 1 }", err.Error())
+			mockCmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-NonInteractive", "-Command", "& { [Console]::Error.WriteLine($args[0]); exit 1 }", err.Error())
 			return mockCmd
 		}
 		// Unix fallback
