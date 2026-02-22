@@ -24,10 +24,13 @@ import (
 // MockCommander tracks executed commands and provisions simulated errors.
 // It is fully safe for parallel test execution.
 type MockCommander struct {
-	mu          sync.Mutex // Protects GotCommands during concurrent test steps
+	mu sync.Mutex // Protects GotCommands, MockErrors, and DefaultErr during concurrent execution
+	// GotCommands tracks the commands that were executed through this mock.
 	GotCommands [][]string
-	MockErrors  map[string]error // Use for specific command errors
-	DefaultErr  error            // Use if you want all commands to fail with this error
+	// MockErrors maps a command string (joined by spaces) to an error to return.
+	MockErrors map[string]error
+	// DefaultErr is a fallback error for any command not found in MockErrors.
+	DefaultErr error
 }
 
 type contextKey struct{}
@@ -43,7 +46,6 @@ var (
 func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
 	installOnce.Do(func() {
 		// Replace the package-level execCommand with a router.
-		// sync.Once makes this completely thread-safe, no mutex needed!
 		execCommand = func(execCtx context.Context, name string, arg ...string) *exec.Cmd {
 			// If the context contains a mock instance, route to it.
 			if mocker, ok := execCtx.Value(contextKey{}).(*MockCommander); ok {
@@ -61,11 +63,10 @@ func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
 func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	cmd := append([]string{name}, arg...)
 
+	key := strings.Join(cmd, " ")
+
 	m.mu.Lock()
 	m.GotCommands = append(m.GotCommands, cmd)
-	m.mu.Unlock()
-
-	key := strings.Join(cmd, " ")
 
 	// Check for a specific error in the map first, fallback to DefaultErr
 	var err error
@@ -74,6 +75,7 @@ func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...str
 	} else if m.DefaultErr != nil {
 		err = m.DefaultErr
 	}
+	m.mu.Unlock()
 
 	// Return the dummy command
 	if err != nil {
