@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -244,10 +243,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			})
 	}
 	maps.Copy(idToGoModule, addGoModules)
-	libraryNames, err := libraryWithAliasshim(input.repoPath)
-	if err != nil {
-		return nil, err
-	}
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -258,9 +253,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = append(library.Keep, libState.PreserveRegex...)
-		if libraryNames[id] {
-			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
-		}
 		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
@@ -384,38 +376,6 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	}
 
 	return yaml.Read[RepoConfig](configFile)
-}
-
-// libraryWithAliasshim traverses the repoPath to find repoPath/{libraryName}/aliasshim/aliasshim.go.
-// Returns all name of the library in a map for faster look up.
-func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
-	files, err := aliasshim(repoPath)
-	if err != nil {
-		return nil, err
-	}
-	names := make(map[string]bool)
-	for _, file := range files {
-		parentDir := filepath.Dir(filepath.Dir(file))
-		names[filepath.Base(parentDir)] = true
-	}
-	return names, nil
-}
-
-func aliasshim(repoPath string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(repoPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if d.Name() == "aliasshim.go" {
-			files = append(files, path)
-		}
-		return nil
-	})
-	return files, err
 }
 
 // parseBazel parses the BUILD.bazel file in the given directory to extract information from

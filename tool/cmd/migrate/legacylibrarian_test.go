@@ -452,27 +452,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "fill keep list",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "accessapproval",
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-			},
-			want: []*config.Library{
-				{
-					Name: "accessapproval",
-					Keep: []string{"aliasshim/aliasshim.go"},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with no GAPIC rule",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
@@ -677,41 +656,6 @@ func TestReadRepoConfig(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func TestLibraryWithAliasshim_Success(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		repoPath string
-		want     map[string]bool
-	}{
-		{
-			name:     "success",
-			repoPath: "testdata/library-with-aliasshim/success",
-			want: map[string]bool{
-				"accessapproval": true,
-				"beyondcorp":     true,
-				"clouddms":       true,
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := libraryWithAliasshim(test.repoPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestLibraryWithAliasshim_Error(t *testing.T) {
-	_, err := libraryWithAliasshim("testdata/non-existent-repo")
-	if err == nil {
-		t.Fatal(err)
 	}
 }
 
