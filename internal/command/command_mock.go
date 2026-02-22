@@ -16,21 +16,28 @@ package command
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"sync"
 )
 
-// MockCommander tracks executed commands and provisions simulated errors.
-// It is fully safe for parallel test execution.
+// MockResult defines the exact output and exit status of a mocked command.
+type MockResult struct {
+	Stdout   string
+	Stderr   string
+	ExitCode int
+	Error    error // Convenience: If set, overrides Stderr and sets ExitCode to 1
+}
+
+// MockCommander tracks executed commands and provisions simulated outputs.
+// It is fully safe for parallel test execution and cross-platform runs.
 type MockCommander struct {
-	mu sync.Mutex // Protects GotCommands, MockErrors, and DefaultErr during concurrent execution
-	// GotCommands tracks the commands that were executed through this mock.
+	mu          sync.Mutex
 	GotCommands [][]string
-	// MockErrors maps a command string (joined by spaces) to an error to return.
-	MockErrors map[string]error
-	// DefaultErr is a fallback error for any command not found in MockErrors.
-	DefaultErr error
+	MockResults map[string]MockResult // Replaces MockErrors to allow stdout/stderr mocking
+	Default     MockResult            // Fallback if a command isn't explicitly mocked
 }
 
 type contextKey struct{}
@@ -40,18 +47,19 @@ var (
 	realExec    = exec.CommandContext // Keep a reference to the real execution function
 )
 
+// FormatCmd generates an unambiguous string representation of a command.
+func FormatCmd(name string, arg ...string) string {
+	return exec.Command(name, arg...).String()
+}
+
 // InjectContext attaches the MockCommander to the context.
-// It ensures a global context-aware router is installed exactly once,
-// safely allowing t.Parallel() tests to run simultaneously without cross-talk.
+// It ensures a global context-aware router is installed exactly once.
 func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
 	installOnce.Do(func() {
-		// Replace the package-level execCommand with a router.
 		execCommand = func(execCtx context.Context, name string, arg ...string) *exec.Cmd {
-			// If the context contains a mock instance, route to it.
 			if mocker, ok := execCtx.Value(contextKey{}).(*MockCommander); ok {
 				return mocker.executeMock(execCtx, name, arg...)
 			}
-			// Otherwise, fall back to real execution.
 			return realExec(execCtx, name, arg...)
 		}
 	})
@@ -59,7 +67,6 @@ func (m *MockCommander) InjectContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, contextKey{}, m)
 }
 
-// executeMock contains the isolated logic for a specific test's MockCommander instance.
 func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...string) *exec.Cmd {
 	cmd := append([]string{name}, arg...)
 	key := FormatCmd(name, arg...)
@@ -67,34 +74,41 @@ func (m *MockCommander) executeMock(ctx context.Context, name string, arg ...str
 	m.mu.Lock()
 	m.GotCommands = append(m.GotCommands, cmd)
 
-	// Check for a specific error in the map first, fallback to DefaultErr
-	var err error
-	if specificErr, ok := m.MockErrors[key]; ok {
-		err = specificErr
-	} else if m.DefaultErr != nil {
-		err = m.DefaultErr
+	result, ok := m.MockResults[key]
+	if !ok {
+		result = m.Default
 	}
 	m.mu.Unlock()
 
-	// Return the dummy command based on the operating system
-	if err != nil {
-		if runtime.GOOS == "windows" {
-			// Use PowerShell to securely write to stderr and exit.
-			// The error is passed via an environment variable to prevent script injection.
-			mockCmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-NonInteractive", "-Command", "& { [Console]::Error.WriteLine($args[0]); exit 1 }", err.Error())
-			return mockCmd
+	// Apply the convenience Error field if it was provided
+	if result.Error != nil {
+		if result.Stderr == "" {
+			result.Stderr = result.Error.Error() + "\n"
 		}
-		// Unix fallback
-		return exec.CommandContext(ctx, "sh", "-c", "printf '%s\n' \"$1\" >&2; exit 1", "sh", err.Error())
+		if result.ExitCode == 0 {
+			result.ExitCode = 1
+		}
 	}
+
+	exitCodeStr := strconv.Itoa(result.ExitCode)
+	var mockCmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
-		return exec.CommandContext(ctx, "cmd", "/c", "exit 0")
+		// Safe PowerShell execution using environment variables
+		mockCmd = exec.CommandContext(ctx, "powershell", "-NoProfile", "-NonInteractive", "-Command",
+			"[Console]::Out.Write($env:MOCK_STDOUT); [Console]::Error.Write($env:MOCK_STDERR); exit $env:MOCK_EXIT_CODE")
+	} else {
+		// Safe Unix execution using environment variables (printf '%s' prevents backslash interpretation)
+		mockCmd = exec.CommandContext(ctx, "sh", "-c",
+			`printf '%s' "$MOCK_STDOUT"; printf '%s' "$MOCK_STDERR" >&2; exit "$MOCK_EXIT_CODE"`)
 	}
-	return exec.CommandContext(ctx, "true")
-}
 
-// FormatCmd generates an unambiguous string representation of a command.
-func FormatCmd(name string, arg ...string) string {
-	return exec.Command(name, arg...).String()
+	// Attach the mocked outputs as environment variables to completely prevent shell injection
+	mockCmd.Env = append(os.Environ(),
+		"MOCK_STDOUT="+result.Stdout,
+		"MOCK_STDERR="+result.Stderr,
+		"MOCK_EXIT_CODE="+exitCodeStr,
+	)
+
+	return mockCmd
 }

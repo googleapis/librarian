@@ -22,35 +22,56 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestMockCommander_Success(t *testing.T) {
+func TestMockCommander(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name     string
-		runCmd   string
-		runArgs  []string
-		wantCmds [][]string
+		name        string
+		mockResults map[string]MockResult
+		runCmd      string
+		runArgs     []string
+		wantCmds    [][]string
+		wantOut     string
 	}{
 		{
-			name:     "single command",
+			name:     "single command defaults to success",
 			runCmd:   "echo",
 			runArgs:  []string{"hello world"},
 			wantCmds: [][]string{{"echo", "hello world"}},
+			wantOut:  "",
 		},
 		{
-			name:     "multiple arguments",
+			name:     "multiple arguments default to success",
 			runCmd:   "ls",
 			runArgs:  []string{"-l", "-a"},
 			wantCmds: [][]string{{"ls", "-l", "-a"}},
+			wantOut:  "",
+		},
+		{
+			name: "successfully returns configured stdout",
+			mockResults: map[string]MockResult{
+				FormatCmd("gh", "pr", "view"): {Stdout: `{"state": "OPEN"}`},
+			},
+			runCmd:   "gh",
+			runArgs:  []string{"pr", "view"},
+			wantCmds: [][]string{{"gh", "pr", "view"}},
+			wantOut:  `{"state": "OPEN"}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			mocker := &MockCommander{}
+
+			mocker := &MockCommander{MockResults: tc.mockResults}
 			ctx := mocker.InjectContext(t.Context())
-			err := Run(ctx, tc.runCmd, tc.runArgs...)
+
+			// Using Output instead of Run to verify stdout interception
+			out, err := Output(ctx, tc.runCmd, tc.runArgs...)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			if out != tc.wantOut {
+				t.Errorf("Output() = %q, want %q", out, tc.wantOut)
 			}
 
 			if diff := cmp.Diff(tc.wantCmds, mocker.GotCommands); diff != "" {
@@ -64,18 +85,18 @@ func TestMockCommander_Failure(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name       string
-		mockErrors map[string]error
-		defaultErr error
-		runCmd     string
-		runArgs    []string
-		wantErr    string
-		wantCmds   [][]string
+		name        string
+		mockResults map[string]MockResult
+		defaultRes  MockResult
+		runCmd      string
+		runArgs     []string
+		wantErr     string
+		wantCmds    [][]string
 	}{
 		{
 			name: "specific command error triggers",
-			mockErrors: map[string]error{
-				FormatCmd("git", "clone", "repo"): fmt.Errorf("repository not found"),
+			mockResults: map[string]MockResult{
+				FormatCmd("git", "clone", "repo"): {Error: fmt.Errorf("repository not found")},
 			},
 			runCmd:   "git",
 			runArgs:  []string{"clone", "repo"},
@@ -84,22 +105,32 @@ func TestMockCommander_Failure(t *testing.T) {
 		},
 		{
 			name: "default error triggers when specific is missing",
-			mockErrors: map[string]error{
-				FormatCmd("git", "clone", "repo"): fmt.Errorf("repository not found"),
+			mockResults: map[string]MockResult{
+				FormatCmd("git", "clone", "repo"): {Error: fmt.Errorf("repository not found")},
 			},
-			defaultErr: fmt.Errorf("network offline"),
+			defaultRes: MockResult{Error: fmt.Errorf("network offline")},
 			runCmd:     "curl",
 			runArgs:    []string{"http://example.com"},
 			wantErr:    "network offline",
 			wantCmds:   [][]string{{"curl", "http://example.com"}},
+		},
+		{
+			name: "explicit exit code and stderr",
+			mockResults: map[string]MockResult{
+				FormatCmd("make", "build"): {ExitCode: 2, Stderr: "compilation failed"},
+			},
+			runCmd:   "make",
+			runArgs:  []string{"build"},
+			wantErr:  "compilation failed",
+			wantCmds: [][]string{{"make", "build"}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			mocker := &MockCommander{
-				MockErrors: tc.mockErrors,
-				DefaultErr: tc.defaultErr,
+				MockResults: tc.mockResults,
+				Default:     tc.defaultRes,
 			}
 
 			ctx := mocker.InjectContext(t.Context())
