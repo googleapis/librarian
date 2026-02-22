@@ -144,3 +144,41 @@ func TestIsCollectionIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildKnownPlurals(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		resources []*Resource
+		want      map[string]bool
+	}{
+		{
+			name: "from resource definitions",
+			resources: []*Resource{
+				{Plural: "definitions"},
+			},
+			want: map[string]bool{"definitions": true},
+		},
+		{
+			name: "multiple resources",
+			resources: []*Resource{
+				{Plural: "items"},
+				{Plural: "elements"},
+			},
+			want: map[string]bool{"items": true, "elements": true},
+		},
+		{
+			name: "empty model",
+			want: map[string]bool{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := &API{
+				ResourceDefinitions: test.resources,
+			}
+			got := BuildKnownPlurals(model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("BuildKnownPlurals() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
