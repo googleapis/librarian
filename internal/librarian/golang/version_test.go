@@ -260,3 +260,67 @@ func TestResolveClientPath(t *testing.T) {
 		})
 	}
 }
+
+func TestVersionRegexMatch(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{
+			name:    "v1",
+			version: "v1",
+			want:    true,
+		},
+		{
+			name:    "v1p1",
+			version: "v1p1",
+			want:    true,
+		},
+		{
+			name:    "v1p1alpha",
+			version: "v1p1alpha",
+			want:    true,
+		},
+		{
+			name:    "v1p1alpha1",
+			version: "v1p1alpha1",
+			want:    true,
+		},
+		{
+			name:    "v1alpha1",
+			version: "v1alpha1",
+			want:    true,
+		},
+		{
+			name:    "v1p10beta",
+			version: "v1p10beta",
+			want:    true,
+		},
+		{
+			name:    "v1p10beta2",
+			version: "v1p10beta2",
+			want:    true,
+		},
+		{
+			name:    "v1beta20",
+			version: "v1beta20",
+			want:    true,
+		},
+		{
+			name:    "v1beta20-abc",
+			version: "v1beta20-abc",
+		},
+		{
+			name:    "v1ab1beta20",
+			version: "v1ab1beta20",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := versionRegex.MatchString(test.version)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
