@@ -186,6 +186,28 @@ func TestResolveClientPath(t *testing.T) {
 			wantVersionPath: "ai/customdir/apiv1",
 			wantClientDir:   "customdir",
 		},
+		{
+			name: "nested api path",
+			library: &config.Library{
+				Name: "shopping",
+				APIs: []*config.API{
+					{
+						Path: "google/shopping/merchant/accounts/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/shopping/merchant/accounts/v1",
+							ClientDirectory: "accounts",
+						},
+					},
+				},
+			},
+			apiPath:         "google/shopping/merchant/accounts/v1",
+			wantVersionPath: "shopping/merchant/accounts/apiv1",
+			wantClientDir:   "accounts",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)

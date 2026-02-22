@@ -18,6 +18,8 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"text/template"
 	"time"
 
@@ -93,7 +95,8 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 func resolveClientPath(library *config.Library, apiPath string) (string, string) {
 	version := filepath.Base(apiPath)
 	clientDir := clientDirectory(library, apiPath)
-	return filepath.Join(library.Output, library.Name, clientDir, "api"+version), clientDir
+	middle := extractMiddleDir(library.Name, clientDir, apiPath)
+	return filepath.Join(library.Output, library.Name, middle, clientDir, "api"+version), clientDir
 }
 
 func clientDirectory(library *config.Library, apiPath string) string {
@@ -103,6 +106,16 @@ func clientDirectory(library *config.Library, apiPath string) string {
 	}
 	// Return an empty client directory if we can't find one.
 	return ""
+}
+
+func extractMiddleDir(libraryName, clientDir, apiPath string) string {
+	dirs := strings.Split(apiPath, "/")
+	nameIdx := slices.Index(dirs, libraryName)
+	clientIdx := slices.Index(dirs, clientDir)
+	if nameIdx == -1 || clientIdx == -1 || nameIdx+1 == clientIdx {
+		return ""
+	}
+	return filepath.Join(dirs[nameIdx+1 : clientIdx]...)
 }
 
 // writeLicenseHeader writes the license header as Go comments to the given file.
