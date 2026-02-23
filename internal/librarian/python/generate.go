@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -169,17 +170,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 func stageProtoFiles(googleapisDir, targetDir string, relativeProtoPaths []string) error {
 	for _, proto := range relativeProtoPaths {
 		sourceProtoFile := filepath.Join(googleapisDir, proto)
-		content, err := os.ReadFile(sourceProtoFile)
-		if err != nil {
-			return fmt.Errorf("reading proto file %s failed: %w", sourceProtoFile, err)
-		}
 		targetProtoFile := filepath.Join(targetDir, proto)
 		dir := filepath.Dir(targetProtoFile)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("creating directory %s failed: %w", dir, err)
 		}
-		if err := os.WriteFile(targetProtoFile, content, 0644); err != nil {
-			return fmt.Errorf("writing proto file %s failed: %w", targetProtoFile, err)
+		if err := filesystem.CopyFile(sourceProtoFile, targetProtoFile); err != nil {
+			return fmt.Errorf("copying proto file %s failed: %w", sourceProtoFile, err)
 		}
 	}
 	return nil
@@ -355,7 +352,7 @@ func DefaultOutputByName(name, defaultOutput string) string {
 // "google-cloud-secretmanager".
 func DefaultLibraryName(api string) string {
 	path := api
-	if v := filepath.Base(api); len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+	if serviceconfig.IsVersion(filepath.Base(api)) {
 		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
 		path = filepath.Dir(api)
 	}

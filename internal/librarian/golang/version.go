@@ -18,7 +18,6 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 	"text/template"
@@ -34,8 +33,6 @@ var (
 
 	//go:embed template/_internal_version.go.txt
 	internalVersionTmpl string
-
-	versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
 )
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
