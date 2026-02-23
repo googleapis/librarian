@@ -1576,6 +1576,7 @@
   path: google/shopping/type
   transports:
     python: grpc+rest
+- path: google/spanner/adapter/v1
 - path: google/spanner/admin/database/v1
 - path: google/spanner/admin/instance/v1
 - path: google/spanner/v1
@@ -1594,6 +1595,9 @@
     php: grpc+rest
     python: grpc
 - path: google/storagetransfer/v1
+- languages:
+    - go
+  path: google/streetview/publish/v1
 - path: google/type
 - path: grafeas/v1
   transports:
