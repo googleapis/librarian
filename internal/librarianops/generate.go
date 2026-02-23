@@ -28,11 +28,6 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-const (
-	branchPrefix = "librarianops-generateall-"
-	commitTitle  = "chore: run librarian update and generate --all"
-)
-
 func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
@@ -145,9 +140,7 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 		if err := pushBranch(ctx); err != nil {
 			return err
 		}
-		if err := createPR(ctx, repoName, version); err != nil {
-			return err
-		}
+		createPR(ctx, repoName, version)
 	}
 	return nil
 }
@@ -164,7 +157,7 @@ func pushBranch(_ context.Context) error {
 	return nil
 }
 
-func createPR(_ context.Context, repoName, librarianVersion string) error {
+func createPR(_ context.Context, repoName, librarianVersion string) {
 	sources := "googleapis"
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
@@ -174,7 +167,6 @@ func createPR(_ context.Context, repoName, librarianVersion string) error {
 
 Update %s to the latest commit and regenerate all client libraries.`, librarianVersion, sources)
 	fmt.Printf("Creating PR with title:\n%s\nand body:\n%s\n", title, body)
-	return nil
 }
 
 func runCargoUpdate(ctx context.Context) error {
