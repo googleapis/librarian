@@ -214,6 +214,11 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
 	version := filepath.Base(apiPath)
+	if versionRegex.MatchString(version) {
+		version = fmt.Sprintf("/api%s", version)
+	} else {
+		version = ""
+	}
 	if goAPI != nil && goAPI.VersionSuffix != "" {
 		version = fmt.Sprintf("%s/%s", version, goAPI.VersionSuffix)
 	}
@@ -231,7 +236,7 @@ func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
-	return fmt.Sprintf("cloud.google.com/go/%s%s/api%s;%s",
+	return fmt.Sprintf("cloud.google.com/go/%s%s%s;%s",
 		importPath, modulePathVersion, version, clientDir)
 }
 
