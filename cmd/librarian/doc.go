@@ -169,12 +169,12 @@ USAGE:
 
 OPTIONS:
 
-	--execute             fully publish (default is to only perform a dry run)
-	--library string      library to find a release commit for; default finds latest release commit for any library
-	--dry-run             print commands without executing (legacy Rust-only flag)
-	--dry-run-keep-going  print commands without executing, don't stop on error (legacy Rust-only flag)
-	--skip-semver-checks  skip semantic versioning checks (legacy Rust-only flag)
-	--help, -h            show help
+	--execute                fully publish (default is to only perform a dry run)
+	--release-commit string  the release commit to publish; default finds latest release commit
+	--dry-run                print commands without executing (legacy Rust-only flag)
+	--dry-run-keep-going     print commands without executing, don't stop on error (legacy Rust-only flag)
+	--skip-semver-checks     skip semantic versioning checks (legacy Rust-only flag)
+	--help, -h               show help
 
 GLOBAL OPTIONS:
 
@@ -192,8 +192,8 @@ USAGE:
 
 OPTIONS:
 
-	--library string  library to find a release commit for; default finds latest release commit for any library
-	--help, -h        show help
+	--release-commit string  the release commit to tag; default finds latest release commit
+	--help, -h               show help
 
 GLOBAL OPTIONS:
 

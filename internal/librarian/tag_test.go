@@ -32,7 +32,7 @@ func TestTag(t *testing.T) {
 	for _, test := range []struct {
 		name           string
 		setup          func(cfg *config.Config)
-		library        string
+		releaseCommit  string
 		taggedRevision string
 		wantTags       []string
 	}{
@@ -73,7 +73,7 @@ func TestTag(t *testing.T) {
 				cfg.Libraries[1].Version = "1.3.0"
 				writeConfigAndCommit(t, cfg)
 			},
-			library:        sample.Lib1Name,
+			releaseCommit:  "HEAD~",
 			taggedRevision: "HEAD~",
 			wantTags:       []string{sample.Lib1Name + "/v1.1.0"},
 		},
@@ -85,7 +85,7 @@ func TestTag(t *testing.T) {
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
 
-			if err := tag(t.Context(), cfg, test.library); err != nil {
+			if err := tag(t.Context(), cfg, test.releaseCommit); err != nil {
 				t.Fatal(err)
 			}
 
@@ -112,10 +112,10 @@ func TestTag_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
-		name    string
-		setup   func(cfg *config.Config)
-		library string
-		wantErr error
+		name          string
+		setup         func(cfg *config.Config)
+		releaseCommit string
+		wantErr       error
 	}{
 		{
 			name: "custom tool specified for git and doesn't exist",
@@ -150,13 +150,21 @@ func TestTag_Error(t *testing.T) {
 			wantErr: errReleaseCommitNotFound,
 		},
 		{
-			name: "no release commit for specified library",
+			name: "specified release commit is not a release commit",
+			setup: func(cfg *config.Config) {
+				writeFileAndCommit(t, "README.txt", []byte("Just a readme"), "Modified config")
+			},
+			releaseCommit: "HEAD",
+			wantErr:       errNoLibrariesAtReleaseCommit,
+		},
+		{
+			name: "specified release commit is invalid",
 			setup: func(cfg *config.Config) {
 				cfg.Libraries[1].Version = "1.3.0"
 				writeConfigAndCommit(t, cfg)
 			},
-			library: sample.Lib1Name,
-			wantErr: errReleaseCommitNotFound,
+			releaseCommit: "not-a-commit",
+			// Can't easily check this error
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -165,7 +173,7 @@ func TestTag_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
-			err := tag(t.Context(), cfg, test.library)
+			err := tag(t.Context(), cfg, test.releaseCommit)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -189,7 +197,7 @@ func TestTagCommand(t *testing.T) {
 	cfg.Libraries[1].Version = "1.3.0"
 	writeConfigAndCommit(t, cfg)
 
-	if err := Run(t.Context(), "librarian", "tag", "--library", sample.Lib1Name); err != nil {
+	if err := Run(t.Context(), "librarian", "tag", "--release-commit", "HEAD~"); err != nil {
 		t.Fatal(err)
 	}
 
