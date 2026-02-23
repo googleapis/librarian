@@ -15,7 +15,6 @@
 package repometadata
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -28,10 +27,9 @@ import (
 
 func TestGenerate(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		defaultVersion string
-		library        *config.Library
-		want           RepoMetadata
+		name    string
+		library *config.Library
+		want    *RepoMetadata
 	}{
 		{
 			name: "no overrides",
@@ -40,15 +38,13 @@ func TestGenerate(t *testing.T) {
 				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				ReleaseLevel: "stable",
 			},
-			want: RepoMetadata{
+			want: &RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             "python",
-				LibraryType:          "GAPIC_AUTO",
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -64,17 +60,13 @@ func TestGenerate(t *testing.T) {
 				APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 			},
-			defaultVersion: "v1",
-			want: RepoMetadata{
+			want: &RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-				DefaultVersion:       "v1",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             "python",
-				LibraryType:          "GAPIC_AUTO",
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -90,18 +82,13 @@ func TestGenerate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := FromLibrary(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, outDir); err != nil {
-				t.Fatal(err)
+			cfg := &config.Config{
+				Language: serviceconfig.LangPython,
+				Repo:     "googleapis/google-cloud-python",
 			}
 
-			// Read back the generated metadata
-			data, err := os.ReadFile(filepath.Join(outDir, ".repo-metadata.json"))
+			got, err := FromLibrary(cfg, test.library, "../testdata/googleapis")
 			if err != nil {
-				t.Fatal(err)
-			}
-
-			var got RepoMetadata
-			if err := json.Unmarshal(data, &got); err != nil {
 				t.Fatal(err)
 			}
 
@@ -114,10 +101,9 @@ func TestGenerate(t *testing.T) {
 
 func TestGenerate_Error(t *testing.T) {
 	for _, test := range []struct {
-		name           string
-		defaultVersion string
-		library        *config.Library
-		wantErr        error
+		name    string
+		library *config.Library
+		wantErr error
 	}{
 		{
 			name: "no APIs",
@@ -147,8 +133,7 @@ func TestGenerate_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			gotErr := FromLibrary(test.library, "python", "googleapis/google-cloud-python", "../testdata/googleapis", test.defaultVersion, tmpDir)
+			_, gotErr := FromLibrary(&config.Config{}, test.library, "../testdata/googleapis")
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -215,134 +200,72 @@ func TestExtractBaseProductURL(t *testing.T) {
 	}
 }
 
-func TestBuildClientDocURL(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		api      *serviceconfig.API
-		library  *config.Library
-		language string
-		want     string
-	}{
-		{
-			name: "python",
-			api: &serviceconfig.API{
-				Path:      "google/cloud/secretmanager/v1",
-				ShortName: "secretmanager",
-			},
-			language: "python",
-			want:     "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-		},
-		{
-			name: "rust",
-			api: &serviceconfig.API{
-				Path:      "google/cloud/secretmanager/v1",
-				ShortName: "secretmanager",
-			},
-			language: "rust",
-			want:     "https://docs.rs/google-cloud-secretmanager/latest",
-		},
-		{
-			name: "unknown language",
-			api: &serviceconfig.API{
-				Path:      "google/cloud/secretmanager/v1",
-				ShortName: "secretmanager",
-			},
-			language: "vb",
-			want:     "",
-		},
-		{
-			name: "go",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			language: "go",
-			want:     "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := buildClientDocURL(test.api, test.library, test.language)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestBuildDistributionName(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		api      *serviceconfig.API
-		library  *config.Library
-		language string
-		want     string
-	}{
-		{
-			name: "go",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			api: &serviceconfig.API{
-				Path:      "google/cloud/secretmanager/v1",
-				ShortName: "secretmanager",
-			},
-			language: "go",
-			want:     "cloud.google.com/go/secretmanager/apiv1",
-		},
-		{
-			name: "python",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			language: "python",
-			want:     "secretmanager",
-		},
-		{
-			name: "rust",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			language: "rust",
-			want:     "secretmanager",
-		},
-		{
-			name:     "unknown language",
-			language: "vb",
-			want:     "",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := buildDistributionName(test.api, test.library, test.language)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestWrite(t *testing.T) {
+// TestWriteAndRead tests the happy path for both the Write and Read functions.
+// While it's odd to test two functions in one test, separating the tests would
+// basically involve copy-pasting the production code for the "other" function
+// into each separate test.
+func TestWriteAndRead(t *testing.T) {
 	want := &RepoMetadata{
 		Name:       "test-library",
 		NamePretty: "Test Library",
 		Language:   "go",
 	}
 	tmpDir := t.TempDir()
-	if err := write(want, tmpDir); err != nil {
+	if err := want.Write(tmpDir); err != nil {
 		t.Fatal(err)
 	}
-	wantPath := filepath.Join(tmpDir, ".repo-metadata.json")
-	gotData, err := os.ReadFile(wantPath)
+	got, err := Read(tmpDir)
 	if err != nil {
-		t.Fatalf("failed to read generated file: %v", err)
-	}
-
-	var got *RepoMetadata
-	if err := json.Unmarshal(gotData, &got); err != nil {
-		t.Fatalf("failed to unmarshal generated JSON: %v", err)
+		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWrite_Error(t *testing.T) {
+	metadata := &RepoMetadata{
+		Name: "library",
+	}
+	dir := t.TempDir()
+	gotErr := metadata.Write(filepath.Join(dir, "non-existent"))
+	wantErr := os.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("Write() error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
+
+func TestRead_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		setup   func(*testing.T, string)
+		wantErr error
+	}{
+		{
+			name: "not JSON",
+			setup: func(t *testing.T, dir string) {
+				if err := os.WriteFile(filepath.Join(dir, repoMetadataFile), []byte("not json"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			// We can't specify the exact error here.
+		},
+		{
+			name:    "no file",
+			setup:   func(t *testing.T, dir string) {},
+			wantErr: os.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setup(t, dir)
+			_, gotErr := Read(dir)
+			if gotErr == nil {
+				t.Fatal("expected error; got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("Read() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
 	}
 }
