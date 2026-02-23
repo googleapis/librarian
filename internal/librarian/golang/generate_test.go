@@ -759,6 +759,25 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 			},
 		},
 		{
+			name:    "no metadata",
+			apiPath: "google/cloud/gkehub/v1",
+			library: &config.Library{
+				Name:    "gkehub",
+				Version: "1.2.3",
+			},
+			goAPI: &config.GoAPI{
+				NoMetadata: true,
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/gkehub/apiv1;gkehub",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/gkehub/v1/gkehub_v1.yaml"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
 			name:    "generator features",
 			apiPath: "google/cloud/bigquery/v2",
 			library: &config.Library{

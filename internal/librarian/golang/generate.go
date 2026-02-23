@@ -184,9 +184,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		return nil, err
 	}
 
-	opts := []string{
-		"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI),
-		"metadata",
+	opts := []string{"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI)}
+	if goAPI == nil || !goAPI.NoMetadata {
+		opts = append(opts, "metadata")
 	}
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")

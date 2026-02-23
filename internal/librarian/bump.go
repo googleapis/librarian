@@ -105,15 +105,12 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	gitExe := "git"
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
 	if cfg.Release == nil {
 		return errReleaseConfigEmpty
+	}
+	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+		return err
 	}
 	if cfg.Language == languageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
