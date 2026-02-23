@@ -63,11 +63,11 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string) error {
 		return err
 	}
 	if releaseCommit == "" {
-		var err error
-		releaseCommit, err = findLatestReleaseCommitHash(ctx, gitExe)
+		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx, gitExe)
 		if err != nil {
 			return err
 		}
+		releaseCommit = latestReleaseCommit
 	}
 	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, librarianConfigPath)
 	if err != nil {
