@@ -18,6 +18,10 @@ package java
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -43,7 +47,39 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 
 // Format formats a Java client library using google-java-format.
 func Format(ctx context.Context, library *config.Library) error {
+	files, err := collectJavaFiles(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to find java files for formatting: %w", err)
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	args := append([]string{"--replace"}, files...)
+	cmd := exec.CommandContext(ctx, "google-java-format", args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("formatting failed: %w", err)
+	}
 	return nil
+}
+
+func collectJavaFiles(root string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || filepath.Ext(path) != ".java" {
+			return nil
+		}
+		// exclude samples/snippets/generated
+		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	return files, err
 }
 
 // Clean removes files in the library's output directory that are not in the keep list.

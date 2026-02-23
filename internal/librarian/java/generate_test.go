@@ -15,9 +15,13 @@
 package java
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestGenerateLibraries(t *testing.T) {
@@ -60,10 +64,89 @@ func TestGenerateLibraries_Error(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	library := &config.Library{Name: "test-lib"}
+	t.Parallel()
+	testhelper.RequireCommand(t, "google-java-format")
 
-	if err := Format(t.Context(), library); err != nil {
-		t.Errorf("Format() error = %v, want nil", err)
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, root string)
+		wantErr bool
+	}{
+		{
+			name: "successful format",
+			setup: func(t *testing.T, root string) {
+				if err := os.WriteFile(filepath.Join(root, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no files found",
+			setup:   func(t *testing.T, root string) {},
+			wantErr: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			test.setup(t, tmpDir)
+			err := Format(t.Context(), &config.Library{Output: tmpDir})
+			if (err != nil) != test.wantErr {
+				t.Errorf("Format() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestCollectJavaFiles(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+
+	// Create a mix of files
+	filesToCreate := []string{
+		"Root.java",
+		"subdir/Nested.java",
+		"subdir/NotJava.txt",
+		"samples/snippets/generated/Ignored.java",
+		"another/dir/More.java",
+	}
+
+	for _, f := range filesToCreate {
+		path := filepath.Join(tmpDir, f)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	want := []string{
+		filepath.Join(tmpDir, "Root.java"),
+		filepath.Join(tmpDir, "subdir", "Nested.java"),
+		filepath.Join(tmpDir, "another", "dir", "More.java"),
+	}
+
+	got, err := collectJavaFiles(tmpDir)
+	if err != nil {
+		t.Fatalf("collectJavaFiles() error = %v", err)
+	}
+
+	// Sort both for comparison
+	sort := func(s []string) {
+		for i := 0; i < len(s); i++ {
+			for j := i + 1; j < len(s); j++ {
+				if s[i] > s[j] {
+					s[i], s[j] = s[j], s[i]
+				}
+			}
+		}
+	}
+	sort(got)
+	sort(want)
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
 	}
 }
 
