@@ -16,7 +16,8 @@ package main
 
 import (
 	"context"
-	"io/fs"
+	"errors"
+	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
@@ -24,12 +25,17 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+type goGAPICInfo struct {
+	NoRESTNumericEnums bool
+}
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
 type RepoConfig struct {
@@ -61,6 +67,7 @@ type MigrationInput struct {
 	repoConfig      *RepoConfig
 	lang            string
 	repoPath        string
+	googleapisDir   string
 }
 
 var (
@@ -165,6 +172,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.ReleaseLevel = "stable"
 		cfg.Default.Transport = "grpc+rest"
 	} else {
+		input.googleapisDir = src.Dir
 		cfg.Default.Keep = []string{"CHANGES.md", "go.mod", "go.sum"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
@@ -235,10 +243,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			})
 	}
 	maps.Copy(idToGoModule, addGoModules)
-	libraryNames, err := libraryWithAliasshim(input.repoPath)
-	if err != nil {
-		return nil, err
-	}
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -249,9 +253,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			library.APIs = toAPIs(libState.APIs)
 		}
 		library.Keep = append(library.Keep, libState.PreserveRegex...)
-		if libraryNames[id] {
-			library.Keep = append(library.Keep, "aliasshim/aliasshim.go")
-		}
 		slices.Sort(library.Keep)
 
 		libCfg, ok := idToLibraryConfig[id]
@@ -288,6 +289,36 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				library.Go = goModule
 			}
 		}
+		// Read Go GAPIC configurations from BUILD.bazel.
+		for _, api := range library.APIs {
+			buildDir := filepath.Join(input.googleapisDir, api.Path)
+			if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
+				// Skip Not Exist error for testing purpose.
+				continue
+			}
+			info, err := parseBazel(buildDir)
+			if err != nil {
+				return nil, err
+			}
+			if info == nil || isEmptyGoGAPICInfo(info) {
+				continue
+			}
+			goAPI, index := findGoAPI(library, api.Path)
+			if index == -1 {
+				goAPI = &config.GoAPI{Path: api.Path}
+			}
+			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			// Append an entry if no exists; otherwise update the
+			// value in place.
+			if index == -1 {
+				library.Go.GoAPIs = append(library.Go.GoAPIs, goAPI)
+			} else {
+				library.Go.GoAPIs[index] = goAPI
+			}
+		}
 
 		libraries = append(libraries, library)
 	}
@@ -319,6 +350,12 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 	return reflect.DeepEqual(mod, &config.GoModule{})
 }
 
+func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
+	return reflect.DeepEqual(info, &goGAPICInfo{
+		NoRESTNumericEnums: false,
+	})
+}
+
 func readState(path string) (*legacyconfig.LibrarianState, error) {
 	stateFile := filepath.Join(path, librarianDir, librarianStateFile)
 	return yaml.Read[legacyconfig.LibrarianState](stateFile)
@@ -341,34 +378,42 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	return yaml.Read[RepoConfig](configFile)
 }
 
-// libraryWithAliasshim traverses the repoPath to find repoPath/{libraryName}/aliasshim/aliasshim.go.
-// Returns all name of the library in a map for faster look up.
-func libraryWithAliasshim(repoPath string) (map[string]bool, error) {
-	files, err := aliasshim(repoPath)
+// parseBazel parses the BUILD.bazel file in the given directory to extract information from
+// the go_gapic_library rule.
+func parseBazel(dir string) (*goGAPICInfo, error) {
+	path := filepath.Join(dir, "BUILD.bazel")
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	names := make(map[string]bool)
-	for _, file := range files {
-		parentDir := filepath.Dir(filepath.Dir(file))
-		names[filepath.Base(parentDir)] = true
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
 	}
-	return names, nil
+	rules := file.Rules("go_gapic_library")
+	if len(rules) == 0 {
+		return nil, nil
+	}
+	if len(rules) > 1 {
+		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
+	}
+	rule := rules[0]
+	return &goGAPICInfo{
+		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
+	}, nil
 }
 
-func aliasshim(repoPath string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(repoPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+// findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
+// It returns the GoAPI pointer and its index in the GoAPIs slice if found, otherwise it returns
+// nil and -1.
+func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
+	if library.Go == nil {
+		return nil, -1
+	}
+	for i, ga := range library.Go.GoAPIs {
+		if ga.Path == apiPath {
+			return ga, i
 		}
-		if d.IsDir() {
-			return nil
-		}
-		if d.Name() == "aliasshim.go" {
-			files = append(files, path)
-		}
-		return nil
-	})
-	return files, err
+	}
+	return nil, -1
 }

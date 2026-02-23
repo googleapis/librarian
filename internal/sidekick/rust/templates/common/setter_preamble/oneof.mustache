@@ -21,7 +21,7 @@ limitations under the License.
 ///
 /// # Example
 /// ```ignore,no_run
-{{#Codec.ExampleField}}
+{{#ExampleField}}
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{Group.Codec.NameInExamples}}{{#Group.Codec.AliasInExamples}} as {{.}}{{/Group.Codec.AliasInExamples}};
@@ -62,10 +62,10 @@ limitations under the License.
 {{^Codec.IsWktNullValue}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// use {{EnumType.Codec.NameInExamples}};
-{{#EnumType.Codec.ValuesForExamples}}
-/// let x{{Index}} = {{FieldParent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
-///     {{{Group.Codec.NameInExamples}}}::{{FieldCodec.BranchName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}})));
-{{/EnumType.Codec.ValuesForExamples}}
+{{#EnumType.ValuesForExamples}}
+/// let x{{Index}} = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
+///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{EnumValue.Codec.EnumType}}::{{EnumValue.Codec.VariantName}})));
+{{/EnumType.ValuesForExamples}}
 {{/Codec.IsWktNullValue}}
 {{/IsEnum}}
 {{#IsObject}}
@@ -76,6 +76,6 @@ limitations under the License.
 /// let x = {{Parent.Codec.Name}}::new().set_{{Group.Codec.SetterName}}(Some(
 ///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{Codec.MessageNameInExamples}}::default().into())));
 {{/IsObject}}
-{{/Codec.ExampleField}}
+{{/ExampleField}}
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}
