@@ -1291,6 +1291,9 @@
 - path: google/devtools/containeranalysis/v1beta1
   languages:
     - go
+- path: google/devtools/clouderrorreporting/v1beta1
+  languages:
+    - go
 - languages:
     - python
   path: google/devtools/source/v1
