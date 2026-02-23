@@ -1282,6 +1282,9 @@
   title: Cloud Trace API
 - path: google/devtools/cloudtrace/v2
   title: Cloud Trace API
+- path: google/devtools/clouderrorreporting/v1beta1
+  languages:
+    - go
 - path: google/devtools/containeranalysis/v1
   transports:
     csharp: grpc+rest
@@ -1290,9 +1293,6 @@
     php: grpc+rest
     python: grpc+rest
 - path: google/devtools/containeranalysis/v1beta1
-  languages:
-    - go
-- path: google/devtools/clouderrorreporting/v1beta1
   languages:
     - go
 - languages:
