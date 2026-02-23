@@ -1288,6 +1288,9 @@
     nodejs: grpc+rest
     php: grpc+rest
     python: grpc+rest
+- path: google/devtools/containeranalysis/v1beta1
+  languages:
+    - go
 - languages:
     - python
   path: google/devtools/source/v1
