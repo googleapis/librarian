@@ -205,6 +205,147 @@ func TestUnzip(t *testing.T) {
 	}
 }
 
+func TestMoveAndMerge_ReadDirError(t *testing.T) {
+	t.Parallel()
+	if err := MoveAndMerge("/non/existent/path", t.TempDir()); err == nil {
+		t.Error("MoveAndMerge() expected error for non-existent source, got nil")
+	}
+}
+
+func TestMoveAndMerge_RenameError(t *testing.T) {
+	t.Parallel()
+	src := t.TempDir()
+	dst := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a directory with the same name in destination
+	if err := os.Mkdir(filepath.Join(dst, "file"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := MoveAndMerge(src, dst); err == nil {
+		t.Error("MoveAndMerge() expected error when renaming file to directory, got nil")
+	}
+}
+
+func TestMoveAndMerge_RecursiveError(t *testing.T) {
+	t.Parallel()
+	src := t.TempDir()
+	dst := t.TempDir()
+
+	// Create src/dir/file
+	if err := os.MkdirAll(filepath.Join(src, "dir"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(src, "dir", "file"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create dst/dir
+	if err := os.MkdirAll(filepath.Join(dst, "dir"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Make src/dir unreadable to cause ReadDir failure inside MoveAndMerge
+	if err := os.Chmod(filepath.Join(src, "dir"), 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(filepath.Join(src, "dir"), 0755) // cleanup for TempDir
+
+	if err := MoveAndMerge(src, dst); err == nil {
+		t.Error("MoveAndMerge() expected error for recursive failure, got nil")
+	}
+}
+
+func TestCopyFile_Error(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	if err := CopyFile("/non/existent/src", filepath.Join(tmp, "dst")); err == nil {
+		t.Error("CopyFile() expected error for non-existent source, got nil")
+	}
+
+	src := filepath.Join(tmp, "src")
+	if err := os.WriteFile(src, []byte("test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Try to create file in a non-existent directory
+	if err := CopyFile(src, "/non/existent/dir/dst"); err == nil {
+		t.Error("CopyFile() expected error for invalid destination, got nil")
+	}
+}
+
+func TestUnzip_Error(t *testing.T) {
+	t.Parallel()
+	if err := Unzip("/non/existent/zip", t.TempDir()); err == nil {
+		t.Error("Unzip() expected error for non-existent zip, got nil")
+	}
+}
+
+func TestUnzip_MkdirAllError(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	zipPath := filepath.Join(tmp, "test.zip")
+	destDir := filepath.Join(tmp, "dest")
+
+	// Create a file where a directory should be
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(destDir, "file"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a zip with a file that would need to create a directory where "file" is
+	f, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	w, err := zw.Create("file/inner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Write([]byte("content"))
+	zw.Close()
+	f.Close()
+
+	if err := Unzip(zipPath, destDir); err == nil {
+		t.Error("Unzip() expected error for MkdirAll failure, got nil")
+	}
+}
+
+func TestUnzip_OpenFileError(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	zipPath := filepath.Join(tmp, "test.zip")
+	destDir := filepath.Join(tmp, "dest")
+
+	// Create a directory where a file should be
+	if err := os.MkdirAll(filepath.Join(destDir, "file"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a zip with a file named "file"
+	f, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zw := zip.NewWriter(f)
+	w, err := zw.Create("file")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Write([]byte("content"))
+	zw.Close()
+	f.Close()
+
+	if err := Unzip(zipPath, destDir); err == nil {
+		t.Error("Unzip() expected error for OpenFile failure, got nil")
+	}
+}
+
 func TestUnzip_Permissions(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
