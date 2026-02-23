@@ -141,9 +141,6 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 			return err
 		}
 	}
-	if err := commitChanges(ctx); err != nil {
-		return err
-	}
 	if repoName != repoFake {
 		if err := pushBranch(ctx); err != nil {
 			return err
@@ -159,23 +156,15 @@ func cloneRepo(ctx context.Context, repoDir, repoName string) error {
 	return command.Run(ctx, "gh", "repo", "clone", fmt.Sprintf("googleapis/%s", repoName), repoDir)
 }
 
-func createBranch(ctx context.Context, now time.Time) error {
-	branchName := fmt.Sprintf("%s%s", branchPrefix, now.Format("2006-01-02"))
-	return command.Run(ctx, "git", "checkout", "-b", branchName)
+func createBranch(_ context.Context, _ time.Time) error {
+	return nil
 }
 
-func commitChanges(ctx context.Context) error {
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
-		return err
-	}
-	return command.Run(ctx, "git", "commit", "-m", commitTitle)
+func pushBranch(_ context.Context) error {
+	return nil
 }
 
-func pushBranch(ctx context.Context) error {
-	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
-}
-
-func createPR(ctx context.Context, repoName, librarianVersion string) error {
+func createPR(_ context.Context, repoName, librarianVersion string) error {
 	sources := "googleapis"
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
@@ -184,7 +173,8 @@ func createPR(ctx context.Context, repoName, librarianVersion string) error {
 	body := fmt.Sprintf(`Update librarian version to @main (%s).
 
 Update %s to the latest commit and regenerate all client libraries.`, librarianVersion, sources)
-	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
+	fmt.Printf("Creating PR with title:\n%s\nand body:\n%s\n", title, body)
+	return nil
 }
 
 func runCargoUpdate(ctx context.Context) error {

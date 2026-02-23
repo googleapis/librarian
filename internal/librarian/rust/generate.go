@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
@@ -83,19 +82,20 @@ func generate(ctx context.Context, library *config.Library, sources *source.Sour
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.
 func UpdateWorkspace(ctx context.Context) error {
-	return command.Run(ctx, "cargo", "update", "--workspace")
+	//return command.Run(ctx, "cargo", "update", "--workspace")
+	return nil
 }
 
 // Format formats a generated Rust library. Must be called sequentially;
 // parallel calls cause race conditions as cargo fmt runs cargo metadata,
 // which competes for locks on the workspace Cargo.toml and Cargo.lock.
 func Format(ctx context.Context, library *config.Library) error {
-	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
-		return err
-	}
-	if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
-		return err
-	}
+	//if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
+	//	return err
+	//}
+	//if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

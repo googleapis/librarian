@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	sidekickdart "github.com/googleapis/librarian/internal/sidekick/dart"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -59,9 +58,9 @@ func generate(ctx context.Context, library *config.Library, sources *source.Sour
 
 // Format formats a generated Dart library.
 func Format(ctx context.Context, library *config.Library) error {
-	if err := command.Run(ctx, "dart", "format", library.Output); err != nil {
-		return err
-	}
+	//if err := command.Run(ctx, "dart", "format", library.Output); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
