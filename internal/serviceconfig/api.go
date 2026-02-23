@@ -131,7 +131,7 @@ func (api *API) Transport(language string) string {
 
 var (
 	//go:embed sdk.yaml
-	apiYaml []byte
+	sdkYaml []byte
 	// APIs defines API paths that require explicit configurations.
 	// APIs not in this list are implicitly allowed if
 	// they start with "google/cloud/".
@@ -148,9 +148,9 @@ var (
 )
 
 func unmarshalAPIsOrPanic() []API {
-	apis, err := yaml.Unmarshal[[]API](apiYaml)
+	apis, err := yaml.Unmarshal[[]API](sdkYaml)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal api.yaml: %v", err))
+		panic(fmt.Sprintf("failed to unmarshal sdk.yaml: %v", err))
 	}
 	return *apis
 }
