@@ -122,6 +122,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `client_directory` | string | ClientDirectory is the directory where the client is generated, relative to Library.Output. |
 | `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. |
+| `enabled_generator_features` | list of string | EnabledGeneratorFeatures provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | ImportPath is the Go import path for the API. |
 | `nested_protos` | list of string | NestedProtos is a list of nested proto files. |
 | `no_metadata` | bool | NoMetadata indicates whether to skip generating gapic_metadata.json. This is typically false. |
