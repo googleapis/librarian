@@ -130,11 +130,20 @@ func (api *API) Transport(language string) string {
 }
 
 var (
-	//go:embed apis.yaml
+	//go:embed sdk.yaml
 	apiYaml []byte
 	// APIs defines API paths that require explicit configurations.
 	// APIs not in this list are implicitly allowed if
 	// they start with "google/cloud/".
+	// This is unmarshaled from sdk.yaml, which is embedded into the librarian
+	// executable. The file can be edited by hand or via tooling. To change
+	// the file in tooling:
+	// 1. Access serviceconfig.APIs to implicitly load the existing file
+	// 2. Modify the data in memory
+	// 3. Call yaml.Write("internal/serviceconfig/sdk.yaml", serviceconfig.APIs)
+	//    within the tool.
+	// 4. Run `go tool yamlfmt .` from the root of the repository to reformat
+	//    the file as per repository conventions.
 	APIs = unmarshalAPIsOrPanic()
 )
 
