@@ -53,23 +53,71 @@ func isBaseVocabulary(segment string) bool {
 // It checks in the following order:
 // 1. Base vocabulary (projects, locations, etc.)
 // 2. Known resource plurals (from the API model).
-func isCollectionIdentifier(segment string, knownPlurals map[string]bool) bool {
+func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	if isBaseVocabulary(segment) {
 		return true
 	}
-	if knownPlurals != nil && knownPlurals[segment] {
+	if vocabulary != nil && vocabulary[segment] {
 		return true
 	}
 	return false
 }
 
-// BuildKnownPlurals collects all plural forms of resource names from the API model.
-func BuildKnownPlurals(model *API) map[string]bool {
-	knownPlurals := make(map[string]bool, len(model.ResourceDefinitions))
+// isStandardMethod returns true if the method name indicates a standard
+// RESTful operation as per AIP guidelines.
+func isStandardMethod(name string) bool {
+	return strings.HasPrefix(name, "Get") ||
+		strings.HasPrefix(name, "List") ||
+		strings.HasPrefix(name, "Create") ||
+		strings.HasPrefix(name, "Update") ||
+		strings.HasPrefix(name, "Delete")
+}
+
+// BuildHeuristicVocabulary collects known resource target names from the model.
+// It learns from both explicit ResourceDefinitions and by analyzing the
+// HTTP path templates of standard methods.
+func BuildHeuristicVocabulary(model *API) map[string]bool {
+	vocab := make(map[string]bool, len(model.ResourceDefinitions))
+
+	// 1. Collect from explicit definitions (if any)
 	for _, res := range model.ResourceDefinitions {
 		if res.Plural != "" {
-			knownPlurals[res.Plural] = true
+			vocab[res.Plural] = true
 		}
 	}
-	return knownPlurals
+
+	// 2. Discover from standard method paths
+	for _, service := range model.Services {
+		for _, method := range service.Methods {
+			if !isStandardMethod(method.Name) || method.PathInfo == nil {
+				continue
+			}
+			for _, binding := range method.PathInfo.Bindings {
+				extractLiteralsFromPath(binding.PathTemplate, vocab)
+			}
+		}
+	}
+	return vocab
+}
+
+// extractLiteralsFromPath parses a path template and adds any string literals
+// (both top-level and nested inside variables) to the provided vocabulary set.
+func extractLiteralsFromPath(tmpl *PathTemplate, vocab map[string]bool) {
+	if tmpl == nil {
+		return
+	}
+	for _, seg := range tmpl.Segments {
+		// Add regular literals (e.g. /projects/...)
+		if seg.Literal != nil && *seg.Literal != "" {
+			vocab[*seg.Literal] = true
+		}
+		// Add literals nested inside variables (e.g. /{name=projects/*/instances/*})
+		if seg.Variable != nil {
+			for _, subSeg := range seg.Variable.Segments {
+				if subSeg != "" && subSeg != SingleSegmentWildcard && subSeg != MultiSegmentWildcard {
+					vocab[subSeg] = true
+				}
+			}
+		}
+	}
 }

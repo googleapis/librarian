@@ -28,8 +28,8 @@ import (
 //  2. Heuristic Identification: For allow-listed services, uses path segment
 //     patterns to identify resources when annotations are missing.
 func IdentifyTargetResources(model *API) error {
-	// Build the set of known plural resource names for the heuristic.
-	knownPlurals := BuildKnownPlurals(model)
+	// Build the set of known resource names for the heuristic.
+	vocabulary := BuildHeuristicVocabulary(model)
 
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
@@ -37,7 +37,7 @@ func IdentifyTargetResources(model *API) error {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding, knownPlurals); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, vocabulary); err != nil {
 					return err
 				}
 			}
@@ -47,7 +47,7 @@ func IdentifyTargetResources(model *API) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding, knownPlurals map[string]bool) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -65,7 +65,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, know
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
-	target, err = identifyHeuristicTarget(method, binding, knownPlurals)
+	target, err = identifyHeuristicTarget(method, binding, vocabulary)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, know
 	return nil
 }
 
-func identifyHeuristicTarget(method *Method, binding *PathBinding, knownPlurals map[string]bool) (*TargetResource, error) {
+func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
 	if !IsHeuristicEligible(method.Service.ID) {
 		return nil, nil
 	}
@@ -94,15 +94,12 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, knownPlurals 
 		}
 
 		// Check if the preceding literal is a valid collection identifier.
-		if isCollectionIdentifier(*prev.Literal, knownPlurals) {
+		if isCollectionIdentifier(*prev.Literal, vocabulary) {
 			fieldPath := curr.Variable.FieldPath
 			// Verify the field exists in the input message.
-			field, err := findField(method.InputType, fieldPath)
+			_, err := findField(method.InputType, fieldPath)
 			if err != nil {
 				return nil, err
-			}
-			if field == nil {
-				continue
 			}
 			fieldPaths = append(fieldPaths, fieldPath)
 		}
