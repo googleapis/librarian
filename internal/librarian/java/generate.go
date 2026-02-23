@@ -16,16 +16,15 @@
 package java
 
 import (
-	"archive/zip"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -65,7 +64,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
-	version := extractVersion(api.Path)
+	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("failed to extract version from api path %q", api.Path)
 	}
@@ -93,7 +92,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("%s: %w", cmd.String(), err)
 	}
 
-	return postProcess(outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos)
+	return postProcess(outdir, library.Name, version, googleapisDir, gapicDir, protos)
 }
 
 func constructProtocCommand(ctx context.Context, api *config.API, googleapisDir string, protocOptions []string) (*exec.Cmd, []string, error) {
@@ -115,11 +114,11 @@ func constructProtocCommand(ctx context.Context, api *config.API, googleapisDir 
 	return cmd, protos, nil
 }
 
-func postProcess(outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string) error {
+func postProcess(outdir, libraryName, version, googleapisDir, gapicDir string, protos []string) error {
 	// Unzip the temp-codegen.srcjar.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
-		if err := unzip(srcjarPath, gapicDir); err != nil {
+		if err := filesystem.Unzip(srcjarPath, gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
@@ -189,64 +188,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	return args, nil
 }
 
-func extractVersion(path string) string {
-	parts := strings.Split(path, "/")
-	for i := len(parts) - 1; i >= 0; i-- {
-		if strings.HasPrefix(parts[i], "v") {
-			return parts[i]
-		}
-	}
-	return ""
-}
-
-func unzip(src, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
-
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", fpath)
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, copyErr := io.Copy(outFile, rc)
-		rc.Close()
-		closeErr := outFile.Close()
-
-		if copyErr != nil {
-			return copyErr
-		}
-		if closeErr != nil {
-			return closeErr
-		}
-	}
-	return nil
-}
-
 func restructureOutput(outputDir, libraryID, version, googleapisDir string, protos []string) error {
 	gapicSrcDir := filepath.Join(outputDir, version, "gapic", "src", "main")
 	gapicTestDir := filepath.Join(outputDir, version, "gapic", "src", "test")
@@ -290,7 +231,7 @@ func restructureOutput(outputDir, libraryID, version, googleapisDir string, prot
 	}
 	for src, dest := range moves {
 		if _, err := os.Stat(src); err == nil {
-			if err := moveAndMerge(src, dest); err != nil {
+			if err := filesystem.MoveAndMerge(src, dest); err != nil {
 				return err
 			}
 		}
@@ -319,49 +260,8 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 			return err
 		}
 
-		if err := copyFile(proto, target); err != nil {
+		if err := filesystem.CopyFile(proto, target); err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-func copyFile(src, dest string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	return err
-}
-
-func moveAndMerge(sourceDir, targetDir string) error {
-	entries, err := os.ReadDir(sourceDir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		oldPath := filepath.Join(sourceDir, entry.Name())
-		newPath := filepath.Join(targetDir, entry.Name())
-		if entry.IsDir() {
-			if err := os.MkdirAll(newPath, 0755); err != nil {
-				return err
-			}
-			if err := moveAndMerge(oldPath, newPath); err != nil {
-				return err
-			}
-		} else {
-			if err := os.Rename(oldPath, newPath); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

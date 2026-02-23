@@ -27,26 +27,6 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
-func TestExtractVersion(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		path string
-		want string
-	}{
-		{"google/cloud/secretmanager/v1", "v1"},
-		{"google/cloud/secretmanager/v1beta2", "v1beta2"},
-		{"google/cloud/v2/secretmanager", "v2"},
-		{"google/cloud/secretmanager", ""},
-	} {
-		t.Run(test.path, func(t *testing.T) {
-			got := extractVersion(test.path)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("extractVersion(%q) returned diff (-want +got): %s", test.path, diff)
-			}
-		})
-	}
-}
-
 func TestCreateProtocOptions(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
