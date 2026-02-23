@@ -186,6 +186,94 @@ func TestResolveClientPath(t *testing.T) {
 			wantVersionPath: "ai/customdir/apiv1",
 			wantClientDir:   "customdir",
 		},
+		{
+			name: "non nested api path with client directory",
+			library: &config.Library{
+				Name: "ai",
+				APIs: []*config.API{
+					{
+						Path: "google/ai/generativelanguage/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/ai/generativelanguage/v1",
+							ClientDirectory: "generativelanguage",
+						},
+					},
+				},
+			},
+			apiPath:         "google/ai/generativelanguage/v1",
+			wantVersionPath: "ai/generativelanguage/apiv1",
+			wantClientDir:   "generativelanguage",
+		},
+		{
+			name: "nested api path",
+			library: &config.Library{
+				Name: "shopping",
+				APIs: []*config.API{
+					{
+						Path: "google/shopping/merchant/accounts/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/shopping/merchant/accounts/v1",
+							ClientDirectory: "accounts",
+						},
+					},
+				},
+			},
+			apiPath:         "google/shopping/merchant/accounts/v1",
+			wantVersionPath: "shopping/merchant/accounts/apiv1",
+			wantClientDir:   "accounts",
+		},
+		{
+			name: "nested api path with different client directory",
+			library: &config.Library{
+				Name: "example",
+				APIs: []*config.API{
+					{
+						Path: "google/example/nested-1/nested-2/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/example/nested-1/nested-2/v1",
+							ClientDirectory: "customdir",
+						},
+					},
+				},
+			},
+			apiPath:         "google/example/nested-1/nested-2/v1",
+			wantVersionPath: "example/customdir/apiv1",
+			wantClientDir:   "customdir",
+		},
+		{
+			name: "nested api path with different library name",
+			library: &config.Library{
+				Name: "library-name",
+				APIs: []*config.API{
+					{
+						Path: "google/another-example/nested-1/nested-2/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:            "google/another-example/nested-1/customdir/v1",
+							ClientDirectory: "customdir",
+						},
+					},
+				},
+			},
+			apiPath:         "google/another-example/nested-1/customdir/v1",
+			wantVersionPath: "library-name/customdir/apiv1",
+			wantClientDir:   "customdir",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)

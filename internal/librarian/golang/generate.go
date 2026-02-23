@@ -184,12 +184,15 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		return nil, err
 	}
 
-	opts := []string{
-		"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI),
-		"metadata",
+	opts := []string{"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI)}
+	if goAPI == nil || !goAPI.NoMetadata {
+		opts = append(opts, "metadata")
 	}
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
+	}
+	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {
+		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
 	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
@@ -211,6 +214,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
 	version := filepath.Base(apiPath)
+	if goAPI != nil && goAPI.VersionSuffix != "" {
+		version = fmt.Sprintf("%s/%s", version, goAPI.VersionSuffix)
+	}
 	clientDir := library.Name
 	if goAPI != nil && goAPI.ClientDirectory != "" {
 		clientDir = goAPI.ClientDirectory

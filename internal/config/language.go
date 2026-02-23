@@ -34,10 +34,16 @@ type GoAPI struct {
 	ClientDirectory string `yaml:"client_directory,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
+	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
+	// at the API level.
+	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
 	NestedProtos []string `yaml:"nested_protos,omitempty"`
+	// NoMetadata indicates whether to skip generating gapic_metadata.json.
+	// This is typically false.
+	NoMetadata bool `yaml:"no_metadata,omitempty"`
 	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
 	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
 	// to generate numeric enums
@@ -46,6 +52,8 @@ type GoAPI struct {
 	Path string `yaml:"path,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
+	// VersionSuffix is an optional suffix appended to the version part of the GAPIC import path.
+	VersionSuffix string `yaml:"version_suffix,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.
