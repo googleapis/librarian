@@ -22,13 +22,14 @@ import (
 var versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
 
 // ExtractVersion extracts the version from the given API path.
-// It searches for the last path component that matches the version pattern (e.g., v1, v1beta1).
+// It only checks the last path component (the leaf directory).
 func ExtractVersion(path string) string {
-	parts := strings.Split(path, "/")
-	for i := len(parts) - 1; i >= 0; i-- {
-		if IsVersion(parts[i]) {
-			return parts[i]
-		}
+	v := path
+	if i := strings.LastIndex(path, "/"); i >= 0 {
+		v = path[i+1:]
+	}
+	if IsVersion(v) {
+		return v
 	}
 	return ""
 }
