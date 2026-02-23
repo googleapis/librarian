@@ -124,6 +124,7 @@ This document describes the schema for the librarian.yaml.
 | `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. |
 | `import_path` | string | ImportPath is the Go import path for the API. |
 | `nested_protos` | list of string | NestedProtos is a list of nested proto files. |
+| `no_metadata` | bool | NoMetadata indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_rest_numeric_enums` | bool | NoRESTNumericEnums determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Path is the source path. |
 | `proto_package` | string | ProtoPackage is the proto package name. |
