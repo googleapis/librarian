@@ -66,6 +66,10 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI != nil && goAPI.DisableGAPIC {
+		return nil
+	}
 	dir, clientDir := resolveClientPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
