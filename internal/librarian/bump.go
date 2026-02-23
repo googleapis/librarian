@@ -194,10 +194,11 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 		return err
 	}
 	output := libraryOutput(cfg.Language, lib, cfg.Default)
+	lib.Version = version
 
 	switch cfg.Language {
 	case languageFake:
-		return fakeBumpLibrary(lib, version)
+		return fakeBumpLibrary(output, version)
 	case languagePython:
 		return python.Bump(output, version)
 	default:
@@ -420,7 +421,8 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	case languageRust:
 		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
 	case languageFake:
-		return fakeBumpLibrary(lib, version)
+		lib.Version = version
+		return fakeBumpLibrary(output, version)
 	default:
 		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
 	}
