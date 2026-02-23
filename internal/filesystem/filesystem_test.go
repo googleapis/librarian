@@ -100,7 +100,10 @@ func TestMoveAndMerge(t *testing.T) {
 			t.Errorf("expected %s to be gone from source", entry.Name())
 		}
 		if entry.Name() == "dir1" {
-			subEntries, _ := os.ReadDir(filepath.Join(src, "dir1"))
+			subEntries, err := os.ReadDir(filepath.Join(src, "dir1"))
+			if err != nil {
+				t.Fatalf("ReadDir failed: %v", err)
+			}
 			if len(subEntries) != 0 {
 				t.Errorf("expected merged directory dir1 to be empty, but it has %d entries", len(subEntries))
 			}
@@ -214,7 +217,13 @@ func TestUnzip_Permissions(t *testing.T) {
 	}
 	zw := zip.NewWriter(f)
 
-	// Create an executable file in the zip
+	// Create a directory and an executable file in the zip
+	hDir := &zip.FileHeader{Name: "dir/"}
+	hDir.SetMode(0755)
+	if _, err := zw.CreateHeader(hDir); err != nil {
+		t.Fatal(err)
+	}
+
 	h := &zip.FileHeader{Name: "exec.sh"}
 	h.SetMode(0755)
 	w, err := zw.CreateHeader(h)
@@ -229,7 +238,15 @@ func TestUnzip_Permissions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	info, err := os.Stat(filepath.Join(destDir, "exec.sh"))
+	info, err := os.Stat(filepath.Join(destDir, "dir"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm()&0111 == 0 {
+		t.Errorf("expected directory to be traversable, got %v", info.Mode().Perm())
+	}
+
+	info, err = os.Stat(filepath.Join(destDir, "exec.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}

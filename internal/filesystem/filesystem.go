@@ -85,11 +85,11 @@ func Unzip(src, dest string) error {
 		}
 
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
+			os.MkdirAll(fpath, 0755)
 			continue
 		}
 
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
 			return err
 		}
 
@@ -105,14 +105,17 @@ func Unzip(src, dest string) error {
 		}
 
 		_, copyErr := io.Copy(outFile, rc)
-		rc.Close()
-		closeErr := outFile.Close()
+		srcCloseErr := rc.Close()
+		dstCloseErr := outFile.Close()
 
 		if copyErr != nil {
 			return copyErr
 		}
-		if closeErr != nil {
-			return closeErr
+		if srcCloseErr != nil {
+			return srcCloseErr
+		}
+		if dstCloseErr != nil {
+			return dstCloseErr
 		}
 	}
 	return nil
