@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -345,6 +346,15 @@ func TestBumpLibrary(t *testing.T) {
 			}
 			if targetLibCfg.Version != test.wantVersion {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
+			}
+			output := libraryOutput(test.cfg.Language, targetLibCfg, test.cfg.Default)
+			fakeVersionContent, err := os.ReadFile(filepath.Join(output, fakeVersionFile))
+			wantVersionContent := fmt.Sprintf("version=%s", test.wantVersion)
+			if err != nil {
+				t.Fatalf("couldn't read fake version file; error = %v", err)
+			}
+			if string(fakeVersionContent) != wantVersionContent {
+				t.Errorf("library %q fake version file mismatch: want %q, got %q", targetLibCfg.Name, wantVersionContent, string(fakeVersionContent))
 			}
 		})
 	}
