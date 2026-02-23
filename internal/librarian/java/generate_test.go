@@ -15,9 +15,12 @@
 package java
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -73,6 +76,50 @@ func TestCreateProtocOptions(t *testing.T) {
 	}
 }
 
+func TestConstructProtocCommand(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		wantErr bool
+	}{
+		{
+			name: "basic case",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+		},
+		{
+			name:    "no protos",
+			api:     &config.API{Path: "nonexistent"},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			protocOptions := []string{"--java_out=out"}
+			cmd, protos, err := constructProtocCommand(t.Context(), test.api, googleapisDir, protocOptions)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("constructProtocCommand() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+
+			if filepath.Base(cmd.Path) != "protoc" {
+				t.Errorf("expected command protoc, got %s", cmd.Path)
+			}
+
+			// Verify protos contains the expected files
+			expectedProtos := []string{
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+				filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+			}
+			if diff := cmp.Diff(expectedProtos, protos); diff != "" {
+				t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGenerateAPI(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -102,10 +149,98 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
+func TestGenerate_ErrorCases(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr string
+	}{
+		{
+			name:    "no apis",
+			library: &config.Library{Name: "test"},
+			wantErr: "no apis configured for library \"test\"",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := generate(t.Context(), test.library, googleapisDir)
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestGenerateLibraries_ErrorCase(t *testing.T) {
+	t.Parallel()
+	libraries := []*config.Library{
+		{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
+	}
+	err := GenerateLibraries(t.Context(), libraries, googleapisDir)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestPostProcess(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	libraryName := "secretmanager"
+	version := "v1"
+	gapicDir := filepath.Join(outdir, version, "gapic")
+	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a dummy srcjar (which is a zip)
+	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
+	f, err := zw.Create("src/main/java/com/google/cloud/secretmanager/v1/SomeFile.java")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
+		t.Fatal(err)
+	}
+	f2, err := zw.Create("src/test/java/com/google/cloud/secretmanager/v1/SomeTest.java")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f2.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
+	if err := postProcess(outdir, libraryName, version, googleapisDir, gapicDir, protos); err != nil {
+		t.Fatalf("postProcess failed: %v", err)
+	}
+
+	// Verify that the file from srcjar was unzipped and moved
+	unzippedPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
+	if _, err := os.Stat(unzippedPath); err != nil {
+		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
+	}
+	unzippedTestPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
+	if _, err := os.Stat(unzippedTestPath); err != nil {
+		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
+	}
+
+	// Verify that the version directory was cleaned up
+	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
+		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
+	}
+}
+
 func TestRestructureOutput(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-	googleapisDir := t.TempDir()
 
 	version := "v1"
 	libraryID := "secretmanager"
@@ -118,33 +253,22 @@ func TestRestructureOutput(t *testing.T) {
 		filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
 		filepath.Join(tmpDir, version, "proto"),
 	}
-
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
-
-	// Create dummy proto in googleapisDir
-	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
-	if err := os.MkdirAll(filepath.Dir(protoPath), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(protoPath, []byte("syntax = \"proto3\";"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	// Create a dummy sample file
 	sampleFile := filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	// Create a dummy reflect-config.json
 	reflectConfigPath := filepath.Join(tmpDir, version, "gapic", "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
 	if err := os.WriteFile(reflectConfigPath, []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
+	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
 	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, []string{protoPath}); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
@@ -155,17 +279,42 @@ func TestRestructureOutput(t *testing.T) {
 	if _, err := os.Stat(wantSamplePath); err != nil {
 		t.Errorf("expected sample file at %s, but it was not found: %v", wantSamplePath, err)
 	}
-
 	// Verify reflect-config.json location
 	wantReflectPath := filepath.Join(tmpDir, libraryName, "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
 	if _, err := os.Stat(wantReflectPath); err != nil {
 		t.Errorf("expected reflect-config.json at %s, but it was not found: %v", wantReflectPath, err)
 	}
-
 	// Verify proto file location
 	wantProtoPath := filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
+	}
+}
+
+func TestCopyProtos_Success(t *testing.T) {
+	t.Parallel()
+	destDir := t.TempDir()
+
+	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
+	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
+	protos := []string{proto1, commonResources}
+	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
+		t.Fatalf("copyProtos failed: %v", err)
+	}
+	// Verify proto1 was copied
+	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/secretmanager/v1/service.proto")); err != nil {
+		t.Errorf("expected proto1 to be copied: %v", err)
+	}
+	// Verify commonResources was NOT copied
+	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/common_resources.proto")); !os.IsNotExist(err) {
+		t.Errorf("expected commonResources to be skipped")
+	}
+}
+
+func TestCopyProtos_ErrorCase(t *testing.T) {
+	destDir := t.TempDir()
+	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
+		t.Error("expected error for proto not in googleapisDir, got nil")
 	}
 }
 
