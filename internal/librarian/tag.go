@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,8 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var errNoLibrariesAtReleaseCommit = errors.New("commit does not release any libraries")
+
 func tagCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tag",
@@ -33,8 +36,8 @@ func tagCommand() *cli.Command {
 		UsageText: "librarian tag",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "library",
-				Usage: "library to find a release commit for; default finds latest release commit for any library",
+				Name:  "release-commit",
+				Usage: "the release commit to tag; default finds latest release commit",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -42,7 +45,7 @@ func tagCommand() *cli.Command {
 			if err != nil {
 				return err
 			}
-			return tag(ctx, cfg, cmd.String("library"))
+			return tag(ctx, cfg, cmd.String("release-commit"))
 		},
 	}
 }
@@ -51,7 +54,7 @@ func tagCommand() *cli.Command {
 // at HEAD, just to find the git executable to use, after which it finds the
 // release commit to publish (unless already specified). The configuration at
 // the release commit is used for all further operations.
-func tag(ctx context.Context, cfg *config.Config, library string) error {
+func tag(ctx context.Context, cfg *config.Config, releaseCommit string) error {
 	gitExe := "git"
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
@@ -59,11 +62,14 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	releaseCommitHash, err := findLatestReleaseCommitHash(ctx, gitExe, library)
-	if err != nil {
-		return err
+	if releaseCommit == "" {
+		var err error
+		releaseCommit, err = findLatestReleaseCommitHash(ctx, gitExe)
+		if err != nil {
+			return err
+		}
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommitHash, librarianConfigPath)
+	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, librarianConfigPath)
 	if err != nil {
 		return err
 	}
@@ -74,9 +80,9 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 	// Load the immediately-preceding config so we can find all libraries that
 	// were released by that commit. (This duplicates work done in
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
-	// that if we want to be able to specify the release commit directly, we
-	// can skip findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommitHash+"~", librarianConfigPath)
+	// that if we specify the release commit directly, we can skip
+	// findLatestReleaseCommitHash entirely.)
+	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit+"~", librarianConfigPath)
 	if err != nil {
 		return err
 	}
@@ -88,6 +94,9 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 	if err != nil {
 		return err
 	}
+	if len(librariesToTag) == 0 {
+		return fmt.Errorf("error tagging %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
+	}
 
 	tagFormat := releaseCommitCfg.Default.TagFormat
 	for _, libraryToTag := range librariesToTag {
@@ -96,7 +105,7 @@ func tag(ctx context.Context, cfg *config.Config, library string) error {
 			return err
 		}
 		tagName := formatTagName(tagFormat, lib)
-		err = git.Tag(ctx, gitExe, tagName, releaseCommitHash)
+		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}

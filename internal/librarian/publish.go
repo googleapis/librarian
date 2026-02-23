@@ -37,8 +37,8 @@ func publishCommand() *cli.Command {
 				Usage: "fully publish (default is to only perform a dry run)",
 			},
 			&cli.StringFlag{
-				Name:  "library",
-				Usage: "library to find a release commit for; default finds latest release commit for any library",
+				Name:  "release-commit",
+				Usage: "the release commit to publish; default finds latest release commit",
 			},
 			&cli.BoolFlag{
 				Name:  "dry-run",
@@ -61,7 +61,7 @@ func publishCommand() *cli.Command {
 			if cfg.Language == languageRust {
 				return legacyRustPublish(ctx, cfg, cmd)
 			}
-			return publish(ctx, cfg, cmd.String("library"), cmd.Bool("execute"))
+			return publish(ctx, cfg, cmd.String("release-commit"), cmd.Bool("execute"))
 		},
 	}
 }
@@ -81,10 +81,10 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 // at HEAD, just to find the git executable to use, after which it finds the
 // release commit to publish. The configuration at the release commit is used
 // for all further operations (and the repo will be checked out at that commit).
-// The library flag allows a user to identify a specific release to publish, in
-// case of overlapping releases being performed. The execute flag says whether to
-// actually publish (true) or just perform a dry run (false).
-func publish(ctx context.Context, cfg *config.Config, library string, execute bool) error {
+// The releaseCommit flag allows a user to identify a specific release commit to
+// publish, in case of overlapping releases being performed. The execute flag
+// says whether to actually publish (true) or just perform a dry run (false).
+func publish(ctx context.Context, cfg *config.Config, releaseCommit string, execute bool) error {
 	gitExe := "git"
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
@@ -92,11 +92,14 @@ func publish(ctx context.Context, cfg *config.Config, library string, execute bo
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	releaseCommitHash, err := findLatestReleaseCommitHash(ctx, gitExe, library)
-	if err != nil {
-		return err
+	var err error
+	if releaseCommit == "" {
+		releaseCommit, err = findLatestReleaseCommitHash(ctx, gitExe)
+		if err != nil {
+			return err
+		}
 	}
-	if err := git.Checkout(ctx, gitExe, releaseCommitHash); err != nil {
+	if err := git.Checkout(ctx, gitExe, releaseCommit); err != nil {
 		return err
 	}
 	// Reload the config after checking out the release commit.
@@ -120,6 +123,9 @@ func publish(ctx context.Context, cfg *config.Config, library string, execute bo
 	librariesToPublish, err := findReleasedLibraries(cfgBeforeReleaseCommit, cfg)
 	if err != nil {
 		return err
+	}
+	if len(librariesToPublish) == 0 {
+		return fmt.Errorf("error publishing %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
 	}
 
 	switch cfg.Language {
