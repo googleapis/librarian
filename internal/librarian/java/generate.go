@@ -82,16 +82,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
-
 	cmd, protos, err := constructProtocCommand(ctx, api, googleapisDir, protocOptions)
 	if err != nil {
 		return err
 	}
-
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s: %w", cmd.String(), err)
 	}
-
 	return postProcess(outdir, library.Name, version, googleapisDir, gapicDir, protos)
 }
 
@@ -115,7 +112,7 @@ func constructProtocCommand(ctx context.Context, api *config.API, googleapisDir 
 }
 
 func postProcess(outdir, libraryName, version, googleapisDir, gapicDir string, protos []string) error {
-	// Unzip the temp-codegen.srcjar.
+	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
 		if err := filesystem.Unzip(srcjarPath, gapicDir); err != nil {
@@ -125,7 +122,7 @@ func postProcess(outdir, libraryName, version, googleapisDir, gapicDir string, p
 	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos); err != nil {
 		return fmt.Errorf("failed to restructure output: %w", err)
 	}
-	// Cleanup intermediate protoc output directory before restructuring
+	// Cleanup intermediate protoc output directory after restructuring
 	if err := os.RemoveAll(filepath.Join(outdir, version)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
 	}
@@ -188,6 +185,8 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	return args, nil
 }
 
+// restructureOutput moves the generated code from the temporary versioned directory
+// tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
 func restructureOutput(outputDir, libraryID, version, googleapisDir string, protos []string) error {
 	gapicSrcDir := filepath.Join(outputDir, version, "gapic", "src", "main")
 	gapicTestDir := filepath.Join(outputDir, version, "gapic", "src", "test")
@@ -254,12 +253,10 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 		if err != nil {
 			return err
 		}
-
 		target := filepath.Join(destDir, rel)
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return err
 		}
-
 		if err := filesystem.CopyFile(proto, target); err != nil {
 			return err
 		}
