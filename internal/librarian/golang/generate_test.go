@@ -814,6 +814,29 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "diregapic",
+			apiPath: "google/cloud/compute/v1",
+			library: &config.Library{
+				Name:    "compute",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
+			},
+			goAPI: &config.GoAPI{
+				HasDiregapic:       true,
+				NoRESTNumericEnums: true,
+				Path:               "google/cloud/compute/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/compute/apiv1;compute",
+				"metadata",
+				"diregapic",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
+				"transport=rest",
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
