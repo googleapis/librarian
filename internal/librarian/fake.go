@@ -24,10 +24,11 @@ import (
 )
 
 const fakePublishedFile = "PUBLISHED"
+const fakeVersionFile = "VERSION"
 
-func fakeBumpLibrary(lib *config.Library, nextVersion string) error {
-	lib.Version = nextVersion
-	return nil
+func fakeBumpLibrary(output, version string) error {
+	content := fmt.Sprintf("version=%s", version)
+	return os.WriteFile(filepath.Join(output, fakeVersionFile), []byte(content), 0644)
 }
 
 func fakeGenerateLibraries(libraries []*config.Library) error {
