@@ -17,6 +17,7 @@ package python
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -29,10 +30,22 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// Generate generates a Python client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+var errNoApis = errors.New("no apis configured for library")
+
+// GenerateLibraries generates all the given libraries in sequence.
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+	for _, library := range libraries {
+		if err := generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// generate generates a Python client library.
+func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return fmt.Errorf("error generating %s: %w", library.Name, errNoApis)
 	}
 
 	// Convert library.Output to absolute path since protoc runs from a

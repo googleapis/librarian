@@ -21,7 +21,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/source"
 )
@@ -70,9 +69,9 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 			modelCfg.Override.SkippedIDs = library.Rust.SkippedIds
 		}
 		if len(library.Rust.DocumentationOverrides) > 0 {
-			modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(library.Rust.DocumentationOverrides))
+			modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(library.Rust.DocumentationOverrides))
 			for i, override := range library.Rust.DocumentationOverrides {
-				modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+				modelCfg.CommentOverrides[i] = api.DocumentationOverride{
 					ID:      override.ID,
 					Match:   override.Match,
 					Replace: override.Replace,
@@ -80,23 +79,23 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 			}
 		}
 		if len(library.Rust.PaginationOverrides) > 0 {
-			modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+			modelCfg.PaginationOverrides = make([]api.PaginationOverride, len(library.Rust.PaginationOverrides))
 			for i, override := range library.Rust.PaginationOverrides {
-				modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+				modelCfg.PaginationOverrides[i] = api.PaginationOverride{
 					ID:        override.ID,
 					ItemField: override.ItemField,
 				}
 			}
 		}
 		if library.Rust.Discovery != nil {
-			pollers := make([]*sidekickconfig.Poller, len(library.Rust.Discovery.Pollers))
+			pollers := make([]*api.Poller, len(library.Rust.Discovery.Pollers))
 			for i, poller := range library.Rust.Discovery.Pollers {
-				pollers[i] = &sidekickconfig.Poller{
+				pollers[i] = &api.Poller{
 					Prefix:   poller.Prefix,
 					MethodID: poller.MethodID,
 				}
 			}
-			modelCfg.Discovery = &sidekickconfig.Discovery{
+			modelCfg.Discovery = &api.Discovery{
 				OperationID: library.Rust.Discovery.OperationID,
 				Pollers:     pollers,
 			}
@@ -260,9 +259,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		},
 	}
 	if len(module.DocumentationOverrides) > 0 {
-		modelCfg.CommentOverrides = make([]sidekickconfig.DocumentationOverride, len(module.DocumentationOverrides))
+		modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(module.DocumentationOverrides))
 		for i, override := range module.DocumentationOverrides {
-			modelCfg.CommentOverrides[i] = sidekickconfig.DocumentationOverride{
+			modelCfg.CommentOverrides[i] = api.DocumentationOverride{
 				ID:      override.ID,
 				Match:   override.Match,
 				Replace: override.Replace,
@@ -270,9 +269,9 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		}
 	}
 	if len(library.Rust.PaginationOverrides) > 0 {
-		modelCfg.PaginationOverrides = make([]sidekickconfig.PaginationOverride, len(library.Rust.PaginationOverrides))
+		modelCfg.PaginationOverrides = make([]api.PaginationOverride, len(library.Rust.PaginationOverrides))
 		for i, override := range library.Rust.PaginationOverrides {
-			modelCfg.PaginationOverrides[i] = sidekickconfig.PaginationOverride{
+			modelCfg.PaginationOverrides[i] = api.PaginationOverride{
 				ID:        override.ID,
 				ItemField: override.ItemField,
 			}

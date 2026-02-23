@@ -537,7 +537,7 @@ func openapiSecretManagerAPI(t *testing.T) *api.API {
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
-	updateMethodPagination(nil, test)
+	api.UpdateMethodPagination(nil, test)
 	return test
 }
 
@@ -948,7 +948,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
-	updateMethodPagination(nil, test)
+	api.UpdateMethodPagination(nil, test)
 
 	service, ok := test.State.ServiceByID["..Service"]
 	if !ok {

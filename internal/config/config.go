@@ -144,6 +144,9 @@ type Default struct {
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
+
+	// Python contains Python-specific default configuration.
+	Python *PythonDefault `yaml:"python,omitempty"`
 }
 
 // Library represents a library configuration.

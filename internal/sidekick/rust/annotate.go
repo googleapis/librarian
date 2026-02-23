@@ -466,10 +466,6 @@ type oneOfAnnotation struct {
 	EnumNameInExamples string
 	FieldType          string
 	DocLines           []string
-	// The best field to show in a oneof related samples.
-	// Non deprecated fields are preferred, then scalar, repeated, map fields
-	// in that order.
-	ExampleField *api.Field
 	// If set, this enum is only enabled when some features are enabled.
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -576,12 +572,6 @@ type enumAnnotation struct {
 	// There's a missmatch between the sidekick model representation of wkt::NullValue
 	// and the representation in Rust. We us this for sample generation.
 	IsWktNullValue bool
-	// These are some of the enum values that can be used in examples,
-	// accompanied by an index to facilitate generating code that can
-	// distinctly reference each value. These attempt to avoid deprecated
-	// and the default values. Contains at most 3 elements. Will be empty iff
-	// the enum has no values.
-	ValuesForExamples []*enumValueForExamples
 	// If set, this enum is only enabled when some features are enabled
 	FeatureGates   []string
 	FeatureGatesOp string
@@ -593,11 +583,6 @@ type enumValueAnnotation struct {
 	EnumType          string
 	DocLines          []string
 	SerializeAsString bool
-}
-
-type enumValueForExamples struct {
-	EnumValue *api.EnumValue
-	Index     int
 }
 
 // annotateModel creates a struct used as input for Mustache templates.
@@ -1299,41 +1284,6 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 	return nil
 }
 
-// sortOneOfFieldForExamples is used to select the "best" field for an example.
-//
-// Fields are lexicographically sorted by the tuple:
-//
-//	(f.Deprecated, f.Map, f.Repeated, f.Message != nil)
-//
-// Where `false` values are preferred over `true` values. That is, we prefer
-// fields that are **not** deprecated, but if both fields have the same
-// `Deprecated` value then we prefer the field that is **not** a map, and so on.
-//
-// The return value is either -1, 0, or 1 to use in the standard library sorting
-// functions.
-func sortOneOfFieldForExamples(f1, f2 *api.Field) int {
-	compare := func(a, b bool) int {
-		switch {
-		case a == b:
-			return 0
-		case a:
-			return -1
-		default:
-			return 1
-		}
-	}
-	if v := compare(f1.Deprecated, f2.Deprecated); v != 0 {
-		return v
-	}
-	if v := compare(f1.Map, f2.Map); v != 0 {
-		return v
-	}
-	if v := compare(f1.Repeated, f2.Repeated); v != 0 {
-		return v
-	}
-	return compare(f1.MessageType != nil, f2.MessageType != nil)
-}
-
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
 	scope, err := c.messageScopeName(message, "", model.PackageName)
 	if err != nil {
@@ -1347,7 +1297,6 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	bestField := slices.MaxFunc(oneof.Fields, sortOneOfFieldForExamples)
 	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
 	if err != nil {
 		return nil, err
@@ -1363,7 +1312,6 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		NameInExamples:      nameInExamples,
 		FieldType:           fmt.Sprintf("%s::%s", scope, enumName),
 		DocLines:            docLines,
-		ExampleField:        bestField,
 	}
 	// Note that this is different from OneOf name-overrides
 	// as those solve for fully qualified name clashes where a oneof
@@ -1573,37 +1521,13 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		}
 	}
 
-	// We try to pick some good enum values to show in examples.
-	// - We pick from the already computed unique values, even though that applies to BigQuery only.
-	// - We pick values that are not deprecated.
-	// - We don't pick the default value.
-	goodValues := language.FilterSlice(unique, func(ev *api.EnumValue) bool {
-		return !ev.Deprecated && ev.Number != 0
-	})
-	// If we couldn't find any good enum values for examples, then we pick from all enum values.
-	if len(goodValues) == 0 {
-		goodValues = unique
-	}
-	// We pick at most 3 values as samples do not need to be exhaustive.
-	goodValues = goodValues[:min(3, len(goodValues))]
-
-	i := -1
-	forExamples := language.MapSlice(goodValues, func(ev *api.EnumValue) *enumValueForExamples {
-		i++
-		return &enumValueForExamples{
-			EnumValue: ev,
-			Index:     i,
-		}
-	})
-
 	annotations := &enumAnnotation{
-		Name:              enumName(e),
-		ModuleName:        toSnake(enumName(e)),
-		QualifiedName:     qualifiedName,
-		RelativeName:      relativeName,
-		NameInExamples:    nameInExamples,
-		IsWktNullValue:    nameInExamples == "wkt::NullValue",
-		ValuesForExamples: forExamples,
+		Name:           enumName(e),
+		ModuleName:     toSnake(enumName(e)),
+		QualifiedName:  qualifiedName,
+		RelativeName:   relativeName,
+		NameInExamples: nameInExamples,
+		IsWktNullValue: nameInExamples == "wkt::NullValue",
 	}
 	e.Codec = annotations
 

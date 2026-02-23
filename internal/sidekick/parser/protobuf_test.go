@@ -1133,7 +1133,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	updateMethodPagination(nil, test)
+	api.UpdateMethodPagination(nil, test)
 	service, ok := test.State.ServiceByID[".test.TestService"]
 	if !ok {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")

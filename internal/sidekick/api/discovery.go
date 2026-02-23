@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package api
 
 import (
 	"strings"
@@ -25,7 +25,7 @@ type Discovery struct {
 	// The ID of the LRO operation type.
 	//
 	// For example: ".google.cloud.compute.v1.Operation".
-	OperationID string `toml:"operation-id"`
+	OperationID string
 
 	// Possible prefixes to match the LRO polling RPCs.
 	//
@@ -45,7 +45,7 @@ type Poller struct {
 	Prefix string
 
 	// The corresponding method ID.
-	MethodID string `toml:"method-id"`
+	MethodID string
 }
 
 // LroServices returns the set of Discovery LRO services.

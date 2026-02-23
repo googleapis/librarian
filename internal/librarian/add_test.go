@@ -193,7 +193,7 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := findLibrary(gotCfg, test.wantName)
+			got, err := FindLibrary(gotCfg, test.wantName)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -256,15 +256,18 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := addLibrary(cfg, test.apis...)
+			gotName, cfg, err := addLibrary(cfg, test.apis...)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if gotName != test.wantName {
+				t.Errorf("gotName = %q, want %q", gotName, test.wantName)
 			}
 			if len(cfg.Libraries) != 2 {
 				t.Errorf("libraries count = %d, want 2", len(cfg.Libraries))
 			}
 
-			found, err := findLibrary(cfg, test.wantName)
+			found, err := FindLibrary(cfg, test.wantName)
 			if err != nil {
 				t.Fatal(err)
 			}

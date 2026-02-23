@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,93 @@ import (
 )
 
 const googleapisDir = "../../testdata/googleapis"
+
+// TestGenerateLibraries performs simple testing that multiple libraries can
+// be generated. Only the presence of a single expected file per library is
+// performed; TestGenerate is responsible for more detailed testing of
+// per-library generation.
+func TestGenerateLibraries(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	outDir := t.TempDir()
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name:          "google-cloud-secretmanager-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			Transport:     "grpc",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+		{
+			Name:          "google-cloud-configdelivery-v1",
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/configdelivery/v1",
+				},
+			},
+		},
+	}
+	for _, library := range libraries {
+		library.Output = outDir
+	}
+	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	// Just check that a README.md file has been created for each library.
+	for _, library := range libraries {
+		expectedReadme := filepath.Join(library.Output, library.Name, "README.md")
+		_, err := os.Stat(expectedReadme)
+		if err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedReadme, err)
+		}
+	}
+}
+
+func TestGenerateLibraries_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	outDir := t.TempDir()
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	libraries := []*config.Library{
+		{
+			Name:          "no-apis",
+			Output:        outDir,
+			Version:       "0.1.0",
+			ReleaseLevel:  "preview",
+			CopyrightYear: "2025",
+			Transport:     "grpc",
+		},
+	}
+	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
+	wantErrMessage := "no apis configured for library \"no-apis\""
+	if gotErr == nil {
+		t.Fatalf("expected error with message %s", wantErrMessage)
+	}
+	if diff := cmp.Diff(wantErrMessage, gotErr.Error()); diff != "" {
+		t.Errorf("error mismatch (-want +got):\n%s", diff)
+	}
+}
 
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
@@ -159,7 +247,7 @@ func TestGenerate(t *testing.T) {
 				Go:           test.goModule,
 			}
 
-			if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			if err := generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 			if err := Format(t.Context(), library); err != nil {
@@ -260,6 +348,33 @@ func TestGenerateREADME(t *testing.T) {
 	}
 }
 
+func TestGenerateREADME_Skipped(t *testing.T) {
+	dir := t.TempDir()
+	moduleRoot := filepath.Join(dir, "secretmanager")
+	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: dir,
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Keep:   []string{"README.md"},
+	}
+
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		t.Fatal(err)
+	}
+	// README doesn't exist because the generation is skipped.
+	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("want README.md to not exist, got: %v", err)
+	}
+}
+
 func TestUpdateSnippetMetadata(t *testing.T) {
 	library := &config.Library{
 		Name:    "accessapproval",
@@ -301,6 +416,90 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	s := string(content)
 	if !strings.Contains(s, "1.2.3") {
 		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	}
+}
+
+func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		library  *config.Library
+		dir      string
+		fileName string
+		data     string
+	}{
+		{
+			name: "skipped due to nested module",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				Go: &config.GoModule{
+					NestedModule: "v2",
+				},
+			},
+			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
+			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
+			data: `{ 
+ "clientLibrary": {
+    "name": "cloud.google.com/go/bigquery/v2/apiv2",
+    "version": "$VERSION",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.cloud.bigquery.v2",
+        "version": "v2"
+      }
+    ]
+ }
+}
+`,
+		},
+		{
+			name: "skipped due to non-snippets file name",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+			},
+			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "apiv1"),
+			fileName: "non_metadata.google.cloud.bigquery.v1.json",
+			data: `{ 
+ "clientLibrary": {
+    "name": "cloud.google.com/go/bigquery/apiv1",
+    "version": "$VERSION",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.cloud.bigquery.v1",
+        "version": "v1"
+      }
+    ]
+ }
+}
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755)
+			if err != nil {
+				t.Fatal(err)
+			}
+			metadataFile := filepath.Join(tmpDir, test.dir, test.fileName)
+			if err := os.WriteFile(metadataFile, []byte(test.data), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := updateSnippetMetadata(test.library, tmpDir); err != nil {
+				t.Fatal(err)
+			}
+
+			content, err := os.ReadFile(metadataFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(content)
+			if !strings.Contains(s, "$VERSION") {
+				t.Errorf("want version in snippet metadata, got:\n%s", s)
+			}
+		})
 	}
 }
 

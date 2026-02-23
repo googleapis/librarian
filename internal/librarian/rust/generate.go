@@ -28,10 +28,23 @@ import (
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
 	"github.com/googleapis/librarian/internal/sidekick/source"
+	"golang.org/x/sync/errgroup"
 )
 
-// Generate generates a Rust client library.
-func Generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
+// GenerateLibraries generates all the given libraries in parallel.
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *source.Sources) error {
+	// Generate all libraries in parallel.
+	g, gctx := errgroup.WithContext(ctx)
+	for _, lib := range libraries {
+		g.Go(func() error {
+			return generate(gctx, lib, sources)
+		})
+	}
+	return g.Wait()
+}
+
+// generate generates a Rust client library.
+func generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
 	if library.Veneer {
 		return generateVeneer(ctx, library, sources)
 	}

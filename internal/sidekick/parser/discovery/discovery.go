@@ -26,12 +26,11 @@ import (
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 )
 
 // NewAPI parses the discovery doc in `contents` and returns the corresponding `api.API` model.
-func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConfig *config.Discovery) (*api.API, error) {
+func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConfig *api.Discovery) (*api.API, error) {
 	doc, err := newDiscoDocument(contents)
 	if err != nil {
 		return nil, err

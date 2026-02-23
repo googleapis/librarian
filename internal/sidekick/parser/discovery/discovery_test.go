@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const computeDiscoveryFile = "../../../testdata/discovery/compute.v1.json"
@@ -234,7 +233,7 @@ func ComputeDisco(t *testing.T, sc *serviceconfig.Service) (*api.API, error) {
 	return NewAPI(sc, contents, nil)
 }
 
-func ComputeDiscoWithLros(t *testing.T, discoveryConfig *config.Discovery) (*api.API, error) {
+func ComputeDiscoWithLros(t *testing.T, discoveryConfig *api.Discovery) (*api.API, error) {
 	t.Helper()
 	contents, err := os.ReadFile(computeDiscoveryFile)
 	if err != nil {

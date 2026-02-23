@@ -19,7 +19,6 @@ import (
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // ModelConfig holds the configuration necessary to parse an API specification.
@@ -44,11 +43,11 @@ type ModelConfig struct {
 	Codec map[string]string
 
 	// Documentation/pagination overrides
-	CommentOverrides    []config.DocumentationOverride
-	PaginationOverrides []config.PaginationOverride
+	CommentOverrides    []api.DocumentationOverride
+	PaginationOverrides []api.PaginationOverride
 
 	// Discovery poller configurations
-	Discovery *config.Discovery
+	Discovery *api.Discovery
 
 	// Model overrides
 	Override api.ModelOverride
@@ -75,12 +74,14 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err != nil {
 		return nil, err
 	}
-	updateMethodPagination(cfg.PaginationOverrides, model)
+	api.UpdateMethodPagination(cfg.PaginationOverrides, model)
 	api.LabelRecursiveFields(model)
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	api.IdentifyTargetResources(model)
+	if err := api.IdentifyTargetResources(model); err != nil {
+		return nil, err
+	}
 	if err := api.SkipModelElements(model, cfg.Override); err != nil {
 		return nil, err
 	}

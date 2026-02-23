@@ -321,3 +321,28 @@ func TestBuildDistributionName(t *testing.T) {
 		})
 	}
 }
+
+func TestWrite(t *testing.T) {
+	want := &RepoMetadata{
+		Name:       "test-library",
+		NamePretty: "Test Library",
+		Language:   "go",
+	}
+	tmpDir := t.TempDir()
+	if err := write(want, tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	wantPath := filepath.Join(tmpDir, ".repo-metadata.json")
+	gotData, err := os.ReadFile(wantPath)
+	if err != nil {
+		t.Fatalf("failed to read generated file: %v", err)
+	}
+
+	var got *RepoMetadata
+	if err := json.Unmarshal(gotData, &got); err != nil {
+		t.Fatalf("failed to unmarshal generated JSON: %v", err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

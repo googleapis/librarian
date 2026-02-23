@@ -45,8 +45,18 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
-// Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+// GenerateLibraries generates all the given libraries in sequence.
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+	for _, library := range libraries {
+		if err := generate(ctx, library, googleapisDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// generate generates a Go client library.
+func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
@@ -326,7 +336,18 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no APIs configured")
 	}
-	f, err := os.Create(filepath.Join(moduleRoot, "README.md"))
+	readmePath := filepath.Join(moduleRoot, "README.md")
+	// Skip generating README if it's in the keep list.
+	// Handwritten/veneer libraries should have the top-level README in the keep list.
+	// TODO(https://github.com/googleapis/librarian/issues/4113): investigate the difference between
+	// GAPIC and handwritten libraries.
+	for _, k := range library.Keep {
+		path := filepath.Join(moduleRoot, k)
+		if path == readmePath {
+			return nil
+		}
+	}
+	f, err := os.Create(readmePath)
 	if err != nil {
 		return err
 	}
@@ -342,6 +363,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
+// Skip nested module if exists.
 func updateSnippetMetadata(library *config.Library, output string) error {
 	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
@@ -352,7 +374,13 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			}
 			return err
 		}
-		if d.IsDir() || !strings.HasPrefix(d.Name(), "snippet_metadata") {
+		if d.IsDir() {
+			if library.Go != nil && d.Name() == library.Go.NestedModule {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
 			return nil
 		}
 		read, err := os.ReadFile(path)
