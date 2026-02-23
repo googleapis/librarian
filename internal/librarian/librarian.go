@@ -33,6 +33,7 @@ const (
 	languageDart        = "dart"
 	languageFake        = "fake"
 	languageGo          = "go"
+	languageJava        = "java"
 	languageRust        = "rust"
 	languagePython      = "python"
 )
