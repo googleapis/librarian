@@ -125,6 +125,18 @@ func TestFormat(t *testing.T) {
 	}
 }
 
+func TestFormat_LookPathError(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmpDir, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", "")
+	err := Format(t.Context(), &config.Library{Output: tmpDir})
+	if err == nil {
+		t.Fatal("Format() error = nil, want error")
+	}
+}
+
 func TestCollectJavaFiles(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
@@ -158,21 +170,6 @@ func TestCollectJavaFiles(t *testing.T) {
 	sort.Strings(want)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestFormat_LookPathError(t *testing.T) {
-	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	origPath := os.Getenv("PATH")
-	t.Setenv("PATH", "") // Clear PATH to ensure tool is not found
-	defer os.Setenv("PATH", origPath)
-
-	err := Format(t.Context(), &config.Library{Output: tmpDir})
-	if err == nil {
-		t.Fatal("Format() error = nil, want error")
 	}
 }
 
