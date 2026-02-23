@@ -24,10 +24,10 @@ import (
 
 // uploadToGithub creates a branch, commits changes, pushes the changes, and creates a PR with the given details.
 func uploadToGithub(ctx context.Context, githubDetails GithubDetails) error {
-	if err := createBranch(ctx, githubDetails.branchName); err != nil {
+	if err := createBranch(ctx, githubDetails.BranchName); err != nil {
 		return err
 	}
-	if err := commitChanges(ctx, githubDetails.prTitle); err != nil {
+	if err := commitChanges(ctx, githubDetails.PrTitle); err != nil {
 		return err
 	}
 	if err := pushChanges(ctx); err != nil {
@@ -64,11 +64,11 @@ func pushChanges(ctx context.Context) error {
 
 // GithubDetails contains the details for the github changes to be made.
 type GithubDetails struct {
-	prTitle    string
-	prBody     string
-	branchName string
+	PrTitle    string
+	PrBody     string
+	BranchName string
 }
 
 func createPR(ctx context.Context, githubDetails GithubDetails) error {
-	return command.Run(ctx, "gh", "pr", "create", "--title", githubDetails.prTitle, "--body", githubDetails.prBody)
+	return command.Run(ctx, "gh", "pr", "create", "--title", githubDetails.PrTitle, "--body", githubDetails.PrBody)
 }

@@ -39,9 +39,9 @@ func TestUploadToGithub(t *testing.T) {
 		{
 			name: "standard success",
 			details: GithubDetails{
-				prTitle:    wantTitle,
-				prBody:     wantBody,
-				branchName: wantBranch,
+				PrTitle:    wantTitle,
+				PrBody:     wantBody,
+				BranchName: wantBranch,
 			},
 			wantCmds: [][]string{
 				{"git", "checkout", "-b", wantBranch},
@@ -55,11 +55,11 @@ func TestUploadToGithub(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mocker := &command.MockCommander{
 				MockResults: map[string]command.MockResult{
-					command.FormatCmd("git", "checkout", "-b", tc.details.branchName):                                   {},
+					command.FormatCmd("git", "checkout", "-b", tc.details.BranchName):                                   {},
 					command.FormatCmd("git", "add", "."):                                                                {},
-					command.FormatCmd("git", "commit", "-m", tc.details.prTitle):                                        {},
+					command.FormatCmd("git", "commit", "-m", tc.details.PrTitle):                                        {},
 					command.FormatCmd("git", "push", "-u", "origin", "HEAD"):                                            {},
-					command.FormatCmd("gh", "pr", "create", "--title", tc.details.prTitle, "--body", tc.details.prBody): {},
+					command.FormatCmd("gh", "pr", "create", "--title", tc.details.PrTitle, "--body", tc.details.PrBody): {},
 				},
 			}
 			ctx := mocker.InjectContext(t.Context())
@@ -134,7 +134,7 @@ func TestUploadToGithub_Error(t *testing.T) {
 			mocker := &command.MockCommander{MockResults: tc.mockResults}
 			ctx := mocker.InjectContext(t.Context())
 
-			err := uploadToGithub(ctx, GithubDetails{prTitle: title, branchName: branch})
+			err := uploadToGithub(ctx, GithubDetails{PrTitle: title, BranchName: branch})
 
 			if err == nil {
 				t.Fatal("expected error, got nil")
@@ -356,7 +356,7 @@ func TestCreatePR(t *testing.T) {
 	}{
 		{
 			name:    "minimal pr",
-			details: GithubDetails{prTitle: "T", prBody: "B"},
+			details: GithubDetails{PrTitle: "T", PrBody: "B"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -367,7 +367,7 @@ func TestCreatePR(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			want := [][]string{{"gh", "pr", "create", "--title", tc.details.prTitle, "--body", tc.details.prBody}}
+			want := [][]string{{"gh", "pr", "create", "--title", tc.details.PrTitle, "--body", tc.details.PrBody}}
 			if diff := cmp.Diff(want, mocker.GotCommands); diff != "" {
 				t.Errorf("command mismatch (-want +got):\n%s", diff)
 			}

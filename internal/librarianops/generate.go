@@ -163,9 +163,9 @@ func createGithubDetails(repoName string) GithubDetails {
 	body := fmt.Sprintf(`
 Update %s to the latest commit and regenerate all client libraries.`, sources)
 	return GithubDetails{
-		prTitle:    title,
-		prBody:     body,
-		branchName: branchPrefix,
+		PrTitle:    title,
+		PrBody:     body,
+		BranchName: generateBranchName(branchPrefix, time.Now()),
 	}
 }
 
