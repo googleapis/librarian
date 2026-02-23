@@ -345,7 +345,7 @@ func TestNewOutputConfig(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
