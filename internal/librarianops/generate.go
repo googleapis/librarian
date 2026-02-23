@@ -94,7 +94,7 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 				err = cerr
 			}
 		}()
-		if err := cloneRepo(ctx, repoDir, repoName); err != nil {
+		if err := cloneRepoInDir(ctx, repoName, repoDir); err != nil {
 			return err
 		}
 	}
@@ -106,8 +106,7 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 		return fmt.Errorf("failed to change directory to %q: %w", repoDir, err)
 	}
 	defer os.Chdir(originalWD)
-
-	if err := createBranch(ctx, time.Now()); err != nil {
+	if err := createBranch(ctx, generateBranchName(branchPrefix, time.Now())); err != nil {
 		return err
 	}
 	version, err := getLibrarianVersionAtMain(ctx)
@@ -141,50 +140,33 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 			return err
 		}
 	}
-	if err := commitChanges(ctx); err != nil {
+	if err := commitChanges(ctx, commitTitle); err != nil {
 		return err
 	}
 	if repoName != repoFake {
-		if err := pushBranch(ctx); err != nil {
+		if err := pushChanges(ctx); err != nil {
 			return err
 		}
-		if err := createPR(ctx, repoName, version); err != nil {
+		if err := createPR(ctx, createGithubDetails(repoName)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func cloneRepo(ctx context.Context, repoDir, repoName string) error {
-	return command.Run(ctx, "gh", "repo", "clone", fmt.Sprintf("googleapis/%s", repoName), repoDir)
-}
-
-func createBranch(ctx context.Context, now time.Time) error {
-	branchName := fmt.Sprintf("%s%s", branchPrefix, now.Format("2006-01-02"))
-	return command.Run(ctx, "git", "checkout", "-b", branchName)
-}
-
-func commitChanges(ctx context.Context) error {
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
-		return err
-	}
-	return command.Run(ctx, "git", "commit", "-m", commitTitle)
-}
-
-func pushBranch(ctx context.Context) error {
-	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
-}
-
-func createPR(ctx context.Context, repoName, librarianVersion string) error {
+func createGithubDetails(repoName string) GithubDetails {
 	sources := "googleapis"
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
 	}
-	title := fmt.Sprintf("chore: update librarian, %s, and regenerate", sources)
-	body := fmt.Sprintf(`Update librarian version to @main (%s).
-
-Update %s to the latest commit and regenerate all client libraries.`, librarianVersion, sources)
-	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
+	title := fmt.Sprintf("chore: update %s and regenerate", sources)
+	body := fmt.Sprintf(`
+Update %s to the latest commit and regenerate all client libraries.`, sources)
+	return GithubDetails{
+		prTitle:    title,
+		prBody:     body,
+		branchName: branchPrefix,
+	}
 }
 
 func runCargoUpdate(ctx context.Context) error {
