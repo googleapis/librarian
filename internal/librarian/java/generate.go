@@ -54,6 +54,11 @@ func Format(ctx context.Context, library *config.Library) error {
 	if len(files) == 0 {
 		return nil
 	}
+
+	if _, err := exec.LookPath("google-java-format"); err != nil {
+		return fmt.Errorf("google-java-format not found in PATH: %w", err)
+	}
+
 	args := append([]string{"--replace"}, files...)
 	cmd := exec.CommandContext(ctx, "google-java-format", args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
