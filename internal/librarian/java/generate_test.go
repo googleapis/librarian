@@ -64,13 +64,12 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	}
 }
 
-func TestFormat(t *testing.T) {
+func TestFormat_Success(t *testing.T) {
 	t.Parallel()
 	testhelper.RequireCommand(t, "google-java-format")
 	for _, test := range []struct {
-		name    string
-		setup   func(t *testing.T, root string)
-		wantErr bool
+		name  string
+		setup func(t *testing.T, root string)
 	}{
 		{
 			name: "successful format",
@@ -79,12 +78,10 @@ func TestFormat(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: false,
 		},
 		{
-			name:    "no files found",
-			setup:   func(t *testing.T, root string) {},
-			wantErr: false,
+			name:  "no files found",
+			setup: func(t *testing.T, root string) {},
 		},
 		{
 			name: "nested files in subdirectories",
@@ -97,7 +94,6 @@ func TestFormat(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: false,
 		},
 		{
 			name: "files in excluded samples path are ignored",
@@ -111,15 +107,13 @@ func TestFormat(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			test.setup(t, tmpDir)
-			err := Format(t.Context(), &config.Library{Output: tmpDir})
-			if (err != nil) != test.wantErr {
-				t.Errorf("Format() error = %v, wantErr %v", err, test.wantErr)
+			if err := Format(t.Context(), &config.Library{Output: tmpDir}); err != nil {
+				t.Errorf("Format() error = %v, want nil", err)
 			}
 		})
 	}
