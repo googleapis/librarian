@@ -39,7 +39,7 @@ func TestExtractVersion(t *testing.T) {
 		t.Run(test.path, func(t *testing.T) {
 			got := ExtractVersion(test.path)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ExtractVersion(%q) returned diff (-want +got): %s", test.path, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
