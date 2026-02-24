@@ -699,6 +699,108 @@ func TestDefaultLibraryName(t *testing.T) {
 	}
 }
 
+func TestCreateRepoMetadata(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *repometadata.RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1",
+			},
+		},
+		{
+			name: "all overrides present",
+			library: &config.Library{
+				Name:                "google-cloud-secret-manager",
+				ReleaseLevel:        "stable",
+				DescriptionOverride: "overridden description",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Python: &config.PythonPackage{
+					NamePrettyOverride:           "overridden name_pretty",
+					ProductDocumentationOverride: "overridden product_documentation",
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "overridden name_pretty",
+				ProductDocumentation: "overridden product_documentation",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "overridden description",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: serviceconfig.LangPython,
+				Repo:     "googleapis/google-cloud-python",
+			}
+			got, err := createRepoMetadata(cfg, test.library, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCreateRepoMetadata_Error(t *testing.T) {
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+	library := &config.Library{
+		Name:         "google-cloud-secret-manager",
+		ReleaseLevel: "stable",
+		APIs:         []*config.API{{Path: "android/notallowed/v1"}},
+	}
+	// We don't check what the error is here; there's only one place it can
+	// come, and it's not an error we create ourselves.
+	_, err := createRepoMetadata(cfg, library, googleapisDir)
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+}
+
 func requireSynthtool(t *testing.T) {
 	module := "synthtool"
 	t.Helper()

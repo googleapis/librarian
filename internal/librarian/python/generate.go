@@ -70,23 +70,13 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 		}
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3157):
-	// Copy files from .librarian/generator-input/client-post-processing
-	// for post processing, or reimplement.
-
-	repoMetadata, err := repometadata.FromLibrary(config, library, googleapisDir)
+	// Construct the repo metadata in memory, then write it to disk. This has
+	// to be before post-processing, as the data in .repo-metadata.json is used
+	// by the post-processor, primarily for documentation.
+	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
 	if err != nil {
 		return err
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudge here, as Generate should
-	// compute it. For now, use the last component of the first api path as
-	// the default version.
-	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
-	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
-	// library type.
-	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
-	repoMetadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", repoMetadata.APIShortname)
 	if err := repoMetadata.Write(library.Output); err != nil {
 		return err
 	}
@@ -108,6 +98,35 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	}
 
 	return nil
+}
+
+// createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
+// for the given library.
+func createRepoMetadata(config *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
+	// TODO(https://github.com/googleapis/librarian/issues/3157):
+	// Copy files from .librarian/generator-input/client-post-processing
+	// for post processing, or reimplement.
+	repoMetadata, err := repometadata.FromLibrary(config, library, googleapisDir)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// Remove the default version fudge here, as Generate should
+	// compute it. For now, use the last component of the first api path as
+	// the default version.
+	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
+	// library type.
+	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
+	repoMetadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", repoMetadata.APIShortname)
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
+	if library.Python != nil && library.Python.NamePrettyOverride != "" {
+		repoMetadata.NamePretty = library.Python.NamePrettyOverride
+	}
+	if library.Python != nil && library.Python.ProductDocumentationOverride != "" {
+		repoMetadata.ProductDocumentation = library.Python.ProductDocumentationOverride
+	}
+	return repoMetadata, nil
 }
 
 // generateAPI generates part of a library for a single api.

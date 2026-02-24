@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 var pythonDefaultCommonGAPICPaths = []string{
@@ -84,6 +85,7 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		library := &config.Library{
 			Name:    libState.ID,
 			Version: libState.Version,
+			Python:  &config.PythonPackage{},
 		}
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
@@ -117,6 +119,12 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 			continue
 		}
 
+		// Canonicalize to avoid odd empty collections etc.
+		library, err = canonicalizePythonLibrary(library)
+		if err != nil {
+			return nil, err
+		}
+
 		libraries = append(libraries, library)
 	}
 	return libraries, nil
@@ -129,9 +137,9 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 // instead of returning the a pointer to the library config; the caller should
 // then skip this library as it cannot yet be migrated.
 func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*config.Library, error) {
-	pythonConfig := &config.PythonPackage{
-		OptArgsByAPI: make(map[string][]string),
-	}
+	pythonConfig := library.Python
+	pythonConfig.OptArgsByAPI = make(map[string][]string)
+
 	allTransports := make(map[string]bool)
 	transportsByApi := make(map[string]string)
 
@@ -171,13 +179,6 @@ func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*conf
 			optArgs = append(optArgs, fmt.Sprintf("transport=%s", transportsByApi[api.Path]))
 			pythonConfig.OptArgsByAPI[api.Path] = optArgs
 		}
-	}
-
-	if len(pythonConfig.OptArgsByAPI) > 0 || len(pythonConfig.ProtoOnlyAPIs) > 0 {
-		if len(pythonConfig.OptArgsByAPI) == 0 {
-			pythonConfig.OptArgsByAPI = nil
-		}
-		library.Python = pythonConfig
 	}
 	return library, nil
 }
@@ -297,6 +298,7 @@ func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 // and applies the information within it to the specified library.
 func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Library) (*config.Library, error) {
 	defaultTitle := ""
+	defaultDocumentationURI := ""
 	// Load the service config file for the first API if there is one, and
 	// use that
 	if len(library.APIs) > 0 {
@@ -305,6 +307,7 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 			return nil, err
 		}
 		defaultTitle = apiInfo.Title
+		defaultDocumentationURI = apiInfo.DocumentationURI
 	}
 
 	// Load the current repo metadata and apply overrides for anything that
@@ -323,6 +326,16 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.APIDescription != defaultTitle {
 		library.DescriptionOverride = repoMetadata.APIDescription
 	}
+	if repoMetadata.NamePretty != defaultTitle {
+		library.Python.NamePrettyOverride = repoMetadata.NamePretty
+	}
+	if base, _, found := strings.Cut(defaultDocumentationURI, "/docs/"); found {
+		defaultDocumentationURI = base + "/"
+	}
+	if repoMetadata.ProductDocumentation != defaultDocumentationURI {
+		library.Python.ProductDocumentationOverride = repoMetadata.ProductDocumentation
+	}
+
 	return library, nil
 }
 
@@ -363,4 +376,33 @@ func parseBazelPythonInfo(googleapisDir, apiDir string) (*pythonGapicInfo, error
 		transport: transport,
 		optArgs:   optArgs,
 	}, nil
+}
+
+// canonicalizePythonLibrary sets empty collections in PythonPackage to nil,
+// and removes the PythonPackage entirely if there are no values.
+func canonicalizePythonLibrary(library *config.Library) (*config.Library, error) {
+	// Convert empty collections to nil
+	if len(library.Python.CommonGAPICPaths) == 0 {
+		library.Python.CommonGAPICPaths = nil
+	}
+	if len(library.Python.OptArgs) == 0 {
+		library.Python.OptArgs = nil
+	}
+	if len(library.Python.OptArgsByAPI) == 0 {
+		library.Python.OptArgsByAPI = nil
+	}
+	if len(library.Python.ProtoOnlyAPIs) == 0 {
+		library.Python.ProtoOnlyAPIs = nil
+	}
+	// If there are no overrides, remove the Python-specific config.
+	// Detecting this by serializing the configuration is more robust than
+	// checking each field.
+	pythonConfigBytes, err := yaml.Marshal(library.Python)
+	if err != nil {
+		return nil, err
+	}
+	if string(pythonConfigBytes) == "{}\n" {
+		library.Python = nil
+	}
+	return library, nil
 }
