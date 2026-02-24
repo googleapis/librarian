@@ -29,9 +29,9 @@ func TestGenerateRepoMetadata_Success(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	library := &config.Library{
-		Name:         "secretmanager",
-		Output:       tmpDir,
-		ReleaseLevel: "stable",
+		Name:    "secretmanager",
+		Output:  tmpDir,
+		Version: "1.2.3",
 	}
 	api := &serviceconfig.API{
 		ShortName: "secretmanager",

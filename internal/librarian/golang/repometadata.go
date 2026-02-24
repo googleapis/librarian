@@ -24,7 +24,20 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	releaseLevelStable  = "stable"
+	releaseLevelPreview = "preview"
+)
+
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
+	metadataReleaseLev := releaseLevelStable
+	level, err := releaseLevel(api.Path, library.Version)
+	if err != nil {
+		return err
+	}
+	if level != releaseLevelGA {
+		metadataReleaseLev = releaseLevelPreview
+	}
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
 		ClientDocumentation: clientDocURL(library, api.Path),
@@ -33,7 +46,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		DistributionName:    distributionName(library, api.Path, api.ShortName),
 		Language:            "go",
 		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        library.ReleaseLevel,
+		ReleaseLevel:        metadataReleaseLev,
 	}
 	dir, _ := resolveClientPath(library, api.Path)
 	return metadata.Write(dir)
