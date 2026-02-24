@@ -164,14 +164,14 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             use google_cloud_gax::options::internal::{RequestOptionsExt, PathTemplate};
             {{#Codec.HasResourceNameFields}}
             use google_cloud_gax::options::internal::ResourceName;
-            let options= Option::<&String>::None
+            let options = Option::<&String>::None
                 {{#Codec.ResourceNameFields}}
                 .or({{{Accessor}}})
                 {{/Codec.ResourceNameFields}}
                 .map(|v| ResourceName(format!("//{{DefaultHost}}/{v}")))
                 .into_iter()
                 .fold(options, |options, v| options.insert_extension(v));
-                {{/Codec.HasResourceNameFields}}
+            {{/Codec.HasResourceNameFields}}
             options.insert_extension(PathTemplate(_path_template))
         };
         {{/Codec.DetailedTracingAttributes}}
