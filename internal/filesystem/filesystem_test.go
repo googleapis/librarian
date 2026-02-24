@@ -48,18 +48,25 @@ func TestMoveAndMerge_Success(t *testing.T) {
 
 	// Verify destination: all files moved or merged.
 	checkDir := func(dir string, want map[string]string) {
+		t.Helper()
 		got := make(map[string]string)
 		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
 				return err
 			}
-			rel, _ := filepath.Rel(dir, path)
-			b, _ := os.ReadFile(path)
+			rel, err := filepath.Rel(dir, path)
+			if err != nil {
+				t.Fatalf("failed to get relative path for %s: %v", path, err)
+			}
+			b, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read file %s: %v", path, err)
+			}
 			got[rel] = string(b)
 			return nil
 		})
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("failed to walk directory %s: %v", dir, err)
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch in %s (-want +got):\n%s", dir, diff)
@@ -71,6 +78,7 @@ func TestMoveAndMerge_Success(t *testing.T) {
 		"dir1/existing.txt": "existing",
 		"dir2/file3.txt":    "file3",
 	})
+
 	// Verify source: all entries should be gone from the source directory.
 	entries, err := os.ReadDir(src)
 	if err != nil {
