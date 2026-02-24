@@ -219,7 +219,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
 	version := filepath.Base(apiPath)
-	if versionRegex.MatchString(version) {
+	if serviceconfig.IsVersion(version) {
 		version = fmt.Sprintf("/api%s", version)
 	} else {
 		version = ""

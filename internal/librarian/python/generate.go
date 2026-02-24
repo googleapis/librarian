@@ -359,7 +359,7 @@ func DefaultOutputByName(name, defaultOutput string) string {
 // "google-cloud-secretmanager".
 func DefaultLibraryName(api string) string {
 	path := api
-	if v := filepath.Base(api); len(v) > 1 && v[0] == 'v' && v[1] >= '0' && v[1] <= '9' {
+	if serviceconfig.IsVersion(filepath.Base(api)) {
 		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
 		path = filepath.Dir(api)
 	}
