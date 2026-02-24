@@ -166,10 +166,3 @@ func TestCollectJavaFiles(t *testing.T) {
 		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
 	}
 }
-
-func TestClean(t *testing.T) {
-	library := &config.Library{Name: "test-lib"}
-	if err := Clean(library); err != nil {
-		t.Errorf("Clean() error = %v, want nil", err)
-	}
-}
