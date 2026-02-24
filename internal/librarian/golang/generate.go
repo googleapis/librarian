@@ -28,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -79,7 +80,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if _, err := os.Stat(src); os.IsNotExist(err) {
 		return fmt.Errorf("directory not found: %s", src)
 	}
-	if err := move(src, outdir); err != nil {
+	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
@@ -267,7 +268,7 @@ func fixVersioning(outputDir, library, modPath string) error {
 	}
 
 	srcDir := filepath.Join(outputDir, name)
-	if err := move(filepath.Join(srcDir, version), srcDir); err != nil {
+	if err := filesystem.MoveAndMerge(filepath.Join(srcDir, version), srcDir); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(filepath.Join(srcDir, version)); err != nil {
@@ -277,35 +278,10 @@ func fixVersioning(outputDir, library, modPath string) error {
 	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
-		if err := move(snippetVersionDir, snippetDir); err != nil {
+		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
 			return err
 		}
 		if err := os.RemoveAll(snippetVersionDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func move(src, dst string) error {
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return err
-	}
-
-	for _, e := range entries {
-		srcPath := filepath.Join(src, e.Name())
-		dstPath := filepath.Join(dst, e.Name())
-		if e.IsDir() {
-			if _, err := os.Stat(dstPath); err == nil {
-				// Destination exists, merge contents.
-				if err := move(srcPath, dstPath); err != nil {
-					return err
-				}
-				continue
-			}
-		}
-		if err := os.Rename(srcPath, dstPath); err != nil {
 			return err
 		}
 	}
