@@ -532,7 +532,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 		{
 			name:    "customize import path and client directory",
-			apiPath: "google/ai/generativelanguage/v1",
+			apiPath: "google/ai/generativelanguage/v1alpha",
 			library: &config.Library{
 				Name: "ai",
 			},
@@ -540,7 +540,31 @@ func TestBuildGAPICImportPath(t *testing.T) {
 				ClientDirectory: "generativelanguage",
 				ImportPath:      "ai/generativelanguage",
 			},
-			want: "cloud.google.com/go/ai/generativelanguage/apiv1;generativelanguage",
+			want: "cloud.google.com/go/ai/generativelanguage/apiv1alpha;generativelanguage",
+		},
+		{
+			name:    "no version suffix",
+			apiPath: "google/longrunning",
+			library: &config.Library{
+				Name: "longrunning",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "longrunning",
+				ImportPath:      "longrunning/autogen",
+			},
+			want: "cloud.google.com/go/longrunning/autogen;longrunning",
+		},
+		{
+			name:    "no version suffix with version in the middle",
+			apiPath: "google/longrunning/v1/longrunning",
+			library: &config.Library{
+				Name: "longrunning",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "longrunning",
+				ImportPath:      "longrunning/autogen",
+			},
+			want: "cloud.google.com/go/longrunning/autogen;longrunning",
 		},
 		{
 			name:    "version suffix",
@@ -811,6 +835,23 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 				"F_wrapper_types_for_page_size",
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
+			name:    "no transport",
+			apiPath: "google/cloud/apigeeconnect/v1",
+			library: &config.Library{
+				Name:    "apigeeconnect",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/apigeeconnect/apiv1;apigeeconnect",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
 				"release-level=ga",
 			},
 		},
