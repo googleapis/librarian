@@ -838,6 +838,23 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "no transport",
+			apiPath: "google/cloud/apigeeconnect/v1",
+			library: &config.Library{
+				Name:    "apigeeconnect",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/apigeeconnect/apiv1;apigeeconnect",
+				"metadata",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
