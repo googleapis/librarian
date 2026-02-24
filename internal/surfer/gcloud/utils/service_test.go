@@ -35,6 +35,7 @@ func TestInferTrackFromPackage(t *testing.T) {
 		{"Other version", "google.cloud.parallelstore.v2", "ga"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := InferTrackFromPackage(test.pkg)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("InferTrackFromPackage mismatch (-want +got):\n%s", diff)
@@ -84,9 +85,10 @@ func TestGetServiceTitle(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := GetServiceTitle(test.model, test.shortServiceName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("GetServiceTitle mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
