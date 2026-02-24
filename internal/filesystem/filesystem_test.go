@@ -71,10 +71,13 @@ func TestMoveAndMerge_Success(t *testing.T) {
 		"dir1/existing.txt": "existing",
 		"dir2/file3.txt":    "file3",
 	})
-	// Verify source: files should be gone, but merged directories remain (empty).
-	checkDir(src, map[string]string{})
-	if _, err := os.Stat(filepath.Join(src, "dir1")); os.IsNotExist(err) {
-		t.Error("expected empty dir1 to remain in source")
+	// Verify source: all entries should be gone from the source directory.
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected source directory to be empty, but it has %d entries", len(entries))
 	}
 }
 
@@ -245,11 +248,8 @@ func createZip(t *testing.T, path string, files map[string]string, modes map[str
 		if err != nil {
 			t.Fatal(err)
 		}
-		// Only write content for files; directories in a ZIP are just headers.
-		if !h.FileInfo().IsDir() {
-			if _, err := w.Write([]byte(content)); err != nil {
-				t.Fatal(err)
-			}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

@@ -41,6 +41,10 @@ func MoveAndMerge(sourceDir, targetDir string) error {
 				if err := MoveAndMerge(oldPath, newPath); err != nil {
 					return err
 				}
+				// Remove the now-empty source directory after successful merge.
+				if err := os.Remove(oldPath); err != nil {
+					return err
+				}
 				continue
 			}
 		}
@@ -73,4 +77,3 @@ func CopyFile(src, dest string) error {
 func Unzip(ctx context.Context, src, dest string) error {
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
 }
-
