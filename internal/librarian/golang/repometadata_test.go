@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -195,6 +197,73 @@ func TestGoDistributionName(t *testing.T) {
 			got := distributionName(test.library, test.apiPath, test.serviceName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMetadataReleaseLevel(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *serviceconfig.API
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "stable",
+			api: &serviceconfig.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Version: "1.2.3",
+			},
+			want: "stable",
+		},
+		{
+			name: "preview",
+			api: &serviceconfig.API{
+				Path: "google/cloud/secretmanager/v1beta1",
+			},
+			library: &config.Library{
+				Version: "1.2.3",
+			},
+			want: "preview",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := metadataReleaseLevel(test.api, test.library)
+			if err != nil {
+				t.Fatalf("metadataReleaseLevel() unexpected error: %v", err)
+			}
+			if got != test.want {
+				t.Errorf("metadataReleaseLevel() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestMetadataReleaseLevel_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *serviceconfig.API
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "invalid version",
+			api: &serviceconfig.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Version: "invalid",
+			},
+			wantErr: semver.ErrInvalidVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := metadataReleaseLevel(test.api, test.library)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("metadataReleaseLevel() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
