@@ -9,8 +9,8 @@
   "language": "python",
   "library_type": "GAPIC_AUTO",
   "name": "workstations",
-  "name_pretty": "Cloud Workstations",
-  "product_documentation": "https://cloud.google.com/workstations/",
+  "name_pretty": "",
+  "product_documentation": "",
   "release_level": "preview",
   "repo": "googleapis/google-cloud-python"
 }
