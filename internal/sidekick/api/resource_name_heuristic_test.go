@@ -174,6 +174,22 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 					Methods: []*Method{
 						{
 							Name: "ListWidgets",
+							InputType: &Message{
+								Name: "ListWidgetsRequest",
+								Fields: []*Field{
+									{Name: "parent", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name: "ListWidgetsResponse",
+								Pagination: &PaginationInfo{
+									PageableItem: &Field{
+										MessageType: &Message{
+											Resource: &Resource{Type: "example.com/Widget"},
+										},
+									},
+								},
+							},
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
@@ -220,6 +236,16 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 					Methods: []*Method{
 						{
 							Name: "GetItem",
+							InputType: &Message{
+								Name: "GetItemRequest",
+								Fields: []*Field{
+									{Name: "name", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name:     "Item",
+								Resource: &Resource{Type: "example.com/Item", Singular: "item"},
+							},
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
@@ -242,6 +268,16 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 					Methods: []*Method{
 						{
 							Name: "GetInstance",
+							InputType: &Message{
+								Name: "GetInstanceRequest",
+								Fields: []*Field{
+									{Name: "name", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name:     "Instance",
+								Resource: &Resource{Type: "example.com/Instance", Singular: "instance"},
+							},
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
@@ -269,6 +305,14 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			model := &API{
 				ResourceDefinitions: test.resources,
 				Services:            test.services,
+				State: &APIState{
+					ResourceByType: make(map[string]*Resource),
+				},
+			}
+			for _, svc := range model.Services {
+				for _, m := range svc.Methods {
+					m.Model = model
+				}
 			}
 			got := BuildHeuristicVocabulary(model)
 			if diff := cmp.Diff(test.want, got); diff != "" {

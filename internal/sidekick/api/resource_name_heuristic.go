@@ -63,16 +63,6 @@ func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	return false
 }
 
-// isStandardMethod returns true if the method name indicates a standard
-// RESTful operation as per AIP guidelines.
-func isStandardMethod(name string) bool {
-	return strings.HasPrefix(name, "Get") ||
-		strings.HasPrefix(name, "List") ||
-		strings.HasPrefix(name, "Create") ||
-		strings.HasPrefix(name, "Update") ||
-		strings.HasPrefix(name, "Delete")
-}
-
 // BuildHeuristicVocabulary collects known resource target names from the model.
 // It learns from both explicit ResourceDefinitions and by analyzing the
 // HTTP path templates of standard methods.
@@ -89,7 +79,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 	// 2. Discover from standard method paths
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			if !isStandardMethod(method.Name) || method.PathInfo == nil {
+			if !method.IsAIPStandard() || method.PathInfo == nil {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
