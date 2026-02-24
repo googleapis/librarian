@@ -101,8 +101,7 @@ func resolveClientPath(library *config.Library, apiPath string) (string, string)
 	middle := extractMiddleDir(library.Name, clientDir, apiPath)
 	paths := []string{library.Output, library.Name, middle}
 	if !strings.Contains(library.Name, "/") {
-		// Do not add another directory if this is
-		// a nested major version.
+		// If the library name is not a nested major version, include the client directory.
 		paths = append(paths, clientDir)
 	}
 	paths = append(paths, "api"+version)
