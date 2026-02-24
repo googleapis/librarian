@@ -37,6 +37,9 @@ type GoAPI struct {
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
+	// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// This is typically false. Used for the GCE (compute) client.
+	HasDiregapic bool `yaml:"has_diregapic,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.

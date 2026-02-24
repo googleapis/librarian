@@ -33,9 +33,9 @@ import (
 var errNoApis = errors.New("no apis configured for library")
 
 // GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generate(ctx, library, googleapisDir); err != nil {
+		if err := generate(ctx, config, library, googleapisDir); err != nil {
 			return err
 		}
 	}
@@ -43,7 +43,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 }
 
 // generate generates a Python client library.
-func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("error generating %s: %w", library.Name, errNoApis)
 	}
@@ -74,17 +74,21 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	// Copy files from .librarian/generator-input/client-post-processing
 	// for post processing, or reimplement.
 
+	repoMetadata, err := repometadata.FromLibrary(config, library, googleapisDir)
+	if err != nil {
+		return err
+	}
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudget here, as Generate should
+	// Remove the default version fudge here, as Generate should
 	// compute it. For now, use the last component of the first api path as
 	// the default version.
-	defaultVersion := filepath.Base(library.APIs[0].Path)
-
-	// Generate .repo-metadata.json.
-	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
-	// hardcoding the language and repo name, instead getting it passed in.
-	if err := repometadata.FromLibrary(library, "python", "googleapis/google-cloud-python", googleapisDir, defaultVersion, outdir); err != nil {
-		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
+	// library type.
+	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
+	repoMetadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", repoMetadata.APIShortname)
+	if err := repoMetadata.Write(library.Output); err != nil {
+		return err
 	}
 
 	// Run post processor (synthtool)
