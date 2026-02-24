@@ -15,9 +15,11 @@
 package java
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -136,5 +138,51 @@ func TestClean(t *testing.T) {
 		if _, err := os.Stat(p); err != nil {
 			t.Errorf("expected path %s to be kept, but it was removed: %v", p, err)
 		}
+	}
+}
+
+func TestIsDirNotEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "generic error",
+			err:  errors.New("generic error"),
+			want: false,
+		},
+		{
+			name: "ENOTEMPTY",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY},
+			want: true,
+		},
+		{
+			name: "EEXIST",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EEXIST},
+			want: true,
+		},
+		{
+			name: "EACCES",
+			err:  &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.EACCES},
+			want: false,
+		},
+		{
+			name: "wrapped ENOTEMPTY",
+			err:  fmt.Errorf("failed: %w", &os.PathError{Op: "remove", Path: "/tmp", Err: syscall.ENOTEMPTY}),
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isDirNotEmpty(test.err)
+			if got != test.want {
+				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
+			}
+		})
 	}
 }

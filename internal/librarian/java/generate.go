@@ -17,11 +17,13 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -135,6 +137,5 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 
 // isDirNotEmpty returns true if err indicates the directory is not empty.
 func isDirNotEmpty(err error) bool {
-	_, ok := err.(*os.PathError)
-	return ok
+	return errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST)
 }
