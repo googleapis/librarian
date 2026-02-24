@@ -27,7 +27,7 @@ import (
 func TestMoveAndMerge_Success(t *testing.T) {
 	t.Parallel()
 	src, dst := t.TempDir(), t.TempDir()
-	// Setup: src contains files and dirs, dst has one collision.
+	// Setup: src contains files and dirs, dst has no collisions.
 	writeFile := func(dir, path, content string) {
 		p := filepath.Join(dir, path)
 		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
@@ -89,6 +89,20 @@ func TestMoveAndMerge_Success(t *testing.T) {
 	}
 }
 
+func TestMoveAndMerge_FileCollisionError(t *testing.T) {
+	t.Parallel()
+	src, dst := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(src, "file.txt"), []byte("src"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dst, "file.txt"), []byte("dst"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := MoveAndMerge(src, dst); err == nil {
+		t.Error("MoveAndMerge() expected error for file collision, got nil")
+	}
+}
+
 func TestMoveAndMerge_ReadDirError(t *testing.T) {
 	t.Parallel()
 	if err := MoveAndMerge("/non/existent/path", t.TempDir()); err == nil {
@@ -103,7 +117,7 @@ func TestMoveAndMerge_RenameError(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(src, "file"), []byte("data"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	// Create a directory with the same name in destination
+	// Create a directory with the same name as src file in destination
 	if err := os.Mkdir(filepath.Join(dst, "file"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -134,6 +148,21 @@ func TestMoveAndMerge_RecursiveError(t *testing.T) {
 	defer os.Chmod(filepath.Join(src, "dir"), 0755) // cleanup for TempDir
 	if err := MoveAndMerge(src, dst); err == nil {
 		t.Error("MoveAndMerge() expected error for recursive failure, got nil")
+	}
+}
+
+func TestMoveAndMerge_SameSourceAndTarget(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	subdir := filepath.Join(dir, "sub")
+	if err := os.Mkdir(subdir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "file.txt"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := MoveAndMerge(dir, dir); err == nil {
+		t.Error("MoveAndMerge() expected error when source and destination are the same, got nil")
 	}
 }
 

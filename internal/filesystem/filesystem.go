@@ -17,6 +17,7 @@ package filesystem
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -25,8 +26,9 @@ import (
 )
 
 // MoveAndMerge moves entries from sourceDir to targetDir.
-// If an entry is a directory and already exists in targetDir, it merges the contents recursively.
-// Otherwise, it renames the entry.
+// It merges directories recursively if they exist in both source and target.
+// If an entry in sourceDir is a file that already exists in targetDir, it returns an error
+// instead of overwriting it. It also returns an error if sourceDir and targetDir are the same.
 func MoveAndMerge(sourceDir, targetDir string) error {
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -47,6 +49,9 @@ func MoveAndMerge(sourceDir, targetDir string) error {
 				}
 				continue
 			}
+		}
+		if _, err := os.Stat(newPath); err == nil {
+			return fmt.Errorf("entry %q already exists in %q", entry.Name(), targetDir)
 		}
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return err
