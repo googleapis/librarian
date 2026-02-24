@@ -15,11 +15,82 @@
 package golang
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
+
+func TestGenerateRepoMetadata_Success(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	library := &config.Library{
+		Name:         "secretmanager",
+		Output:       tmpDir,
+		ReleaseLevel: "stable",
+	}
+	api := &serviceconfig.API{
+		ShortName: "secretmanager",
+		Title:     "Secret Manager API",
+		Path:      "google/cloud/secretmanager/v1",
+	}
+	path := filepath.Join(tmpDir, "secretmanager", "apiv1")
+	want := &repometadata.RepoMetadata{
+		APIShortname:        "secretmanager",
+		ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
+		ClientLibraryType:   "generated",
+		Description:         "Secret Manager API",
+		DistributionName:    "cloud.google.com/go/secretmanager/apiv1",
+		Language:            "go",
+		LibraryType:         repometadata.GAPICAutoLibraryType,
+		ReleaseLevel:        "stable",
+	}
+	if err := os.MkdirAll(path, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := generateRepoMetadata(api, library); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := repometadata.Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateRepoMetadata_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: tmpDir,
+	}
+	api := &serviceconfig.API{
+		ShortName: "secretmanager",
+		Path:      "google/cloud/secretmanager/v1",
+	}
+
+	dir, _ := resolveClientPath(library, api.Path)
+	// Create a file where the directory should be so Write fails.
+	if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dir, []byte("not a directory"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := generateRepoMetadata(api, library)
+	if err == nil {
+		t.Error("generateRepoMetadata() error = nil, want error")
+	}
+}
 
 func TestGoClientDocURL(t *testing.T) {
 	for _, test := range []struct {
