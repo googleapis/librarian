@@ -40,7 +40,7 @@ func TestGenerateRepoMetadata_Success(t *testing.T) {
 		Title:     "Secret Manager API",
 		Path:      "google/cloud/secretmanager/v1",
 	}
-	path := filepath.Join(tmpDir, "secretmanager", "apiv1")
+	metadataDir := filepath.Join(tmpDir, "secretmanager", "apiv1")
 	want := &repometadata.RepoMetadata{
 		APIShortname:        "secretmanager",
 		ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
@@ -51,14 +51,14 @@ func TestGenerateRepoMetadata_Success(t *testing.T) {
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        "stable",
 	}
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(metadataDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	if err := generateRepoMetadata(api, library); err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := repometadata.Read(path)
+	got, err := repometadata.Read(metadataDir)
 	if err != nil {
 		t.Fatal(err)
 	}
