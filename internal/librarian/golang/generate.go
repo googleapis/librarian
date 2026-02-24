@@ -112,13 +112,13 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-		if err := generateRepoMetadata(); err != nil {
+		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		if err := generateRepoMetadata(config, api, library); err != nil {
 			return err
 		}
 		if i != 0 {
 			continue
 		}
-		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
 		if err != nil {
 			return err
 		}

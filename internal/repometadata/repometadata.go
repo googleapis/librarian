@@ -52,8 +52,12 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	ClientLibraryType string `json:"client_library_type,omitempty"`
+
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
+
+	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
@@ -132,7 +136,7 @@ func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Libr
 		IssueTracker:         api.NewIssueURI,
 		Language:             config.Language,
 		Name:                 api.ShortName,
-		NamePretty:           cleanTitle(api.Title),
+		NamePretty:           CleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         library.ReleaseLevel,
 		Repo:                 config.Repo,
@@ -150,9 +154,9 @@ func extractBaseProductURL(docURI string) string {
 	return docURI
 }
 
-// cleanTitle removes "API" suffix from title to get name_pretty.
+// CleanTitle removes "API" suffix from title to get name_pretty.
 // Example: "Secret Manager API" -> "Secret Manager".
-func cleanTitle(title string) string {
+func CleanTitle(title string) string {
 	title = strings.TrimSpace(title)
 	title = strings.TrimSuffix(title, " API")
 	return strings.TrimSpace(title)

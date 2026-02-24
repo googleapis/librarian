@@ -14,10 +14,47 @@
 
 package golang
 
-func generateRepoMetadata() error {
-	return nil
+import (
+	"fmt"
+	"path"
+	"path/filepath"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+func generateRepoMetadata(config *config.Config, api *serviceconfig.API, library *config.Library) error {
+	metadata := &repometadata.RepoMetadata{
+		APIShortname:        api.ShortName,
+		ClientDocumentation: clientDocURL(library, api.Path),
+		ClientLibraryType:   "generated",
+		Description:         repometadata.CleanTitle(api.Title),
+		DistributionName:    distributionName(library, api.Path, api.ShortName),
+		Language:            config.Language,
+		LibraryType:         repometadata.GAPICAutoLibraryType,
+		ReleaseLevel:        library.ReleaseLevel,
+	}
+	dir, _ := resolveClientPath(library, api.Path)
+	return metadata.Write(dir)
 }
 
-func createRepoMetadata() {
+// clientDocURL builds the client documentation URL for Go SDK.
+func clientDocURL(library *config.Library, apiPath string) string {
+	suffix := fmt.Sprintf("api%s", filepath.Base(apiPath))
+	clientDir := clientDirectory(library, apiPath)
+	if clientDir != "" {
+		suffix = path.Join(clientDir, suffix)
+	}
+	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
+}
 
+// distributionName builds the distribution name for Go SDK.
+func distributionName(library *config.Library, apiPath, serviceName string) string {
+	version := filepath.Base(apiPath)
+	clientDir := clientDirectory(library, apiPath)
+	if clientDir != "" {
+		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
+	}
+	return fmt.Sprintf("cloud.google.com/go/%s/api%s", serviceName, version)
 }
