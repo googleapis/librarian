@@ -33,6 +33,7 @@ type GoAPI struct {
 	// ClientDirectory is the directory where the client is generated, relative to Library.Output.
 	ClientDirectory string `yaml:"client_directory,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
+	// Also known as proto-only client, which does not define a service in the proto files.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
