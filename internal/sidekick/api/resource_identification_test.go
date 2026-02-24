@@ -36,6 +36,7 @@ func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Fiel
 		ID:      serviceID,
 		Methods: []*Method{method},
 	}
+	method.Service = service
 	model := &API{
 		Services: []*Service{service},
 	}
@@ -168,6 +169,108 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 			got := binding.TargetResource
 			if got != nil {
 				t.Errorf("IdentifyTargetResources() = %v, want nil", got)
+			}
+		})
+	}
+}
+
+func TestIdentifyTargetResources_Heuristic(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		serviceID string
+		path      *PathTemplate
+		fields    []*Field
+		resources []*Resource
+		want      *TargetResource
+	}{
+		{
+			name:      "heuristic: compute instance",
+			serviceID: ".google.cloud.compute.v1.Instances", // eligible
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("zones").WithVariableNamed("zone").
+				WithLiteral("instances").WithVariableNamed("instance"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "zone", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
+			},
+			resources: []*Resource{
+				{Plural: "zones", Type: "compute.googleapis.com/Zone"},
+				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
+			},
+		},
+		{
+			name:      "heuristic: not eligible service",
+			serviceID: "any.service", // not eligible
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+			},
+			resources: nil,
+			want:      nil,
+		},
+		{
+			name:      "heuristic: skips unknown segments",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("unknown").WithVariableNamed("other"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "other", Typez: STRING_TYPE},
+			},
+			resources: nil,
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}},
+			},
+		},
+		{
+			name:      "heuristic: skips if input field missing",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project"),
+			fields: []*Field{}, // No fields
+			want:   nil,
+		},
+		{
+			name:      "heuristic: skips non-collection literal (e.g. users)",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("users").WithVariableNamed("user"), // "users" not in base vocab or known plurals
+			fields: []*Field{
+				{Name: "user", Typez: STRING_TYPE},
+			},
+			want: nil,
+		},
+		{
+			name:      "heuristic: non-string field is still identified (if valid)",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("instances").WithVariableNamed("instance_id"),
+			fields: []*Field{
+				{Name: "instance_id", Typez: INT64_TYPE}, // Unlikely but good test case
+			},
+			resources: []*Resource{
+				{Plural: "instances"},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"instance_id"}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
+			model.ResourceDefinitions = test.resources
+			IdentifyTargetResources(model)
+
+			got := binding.TargetResource
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
