@@ -26,6 +26,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -533,6 +535,11 @@ func TestGenerateLibraries(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
 	libraries := []*config.Library{
 		{
 			Name: "secretmanager",
@@ -554,7 +561,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(outdir, "packages", library.Name)
 	}
-	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, library := range libraries {
@@ -582,13 +589,18 @@ func TestGenerateLibraries_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
 	libraries := []*config.Library{
 		{
 			Name:   "no-apis",
 			Output: filepath.Join(outdir, "packages", "no-apis"),
 		},
 	}
-	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
+	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
 	wantErr := errNoApis
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
@@ -612,20 +624,49 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
 	library := &config.Library{
-		Name:   "secretmanager",
-		Output: outdir,
+		Name:                "google-cloud-secret-manager",
+		Output:              outdir,
+		ReleaseLevel:        "stable",
+		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 	}
-	if err := generate(t.Context(), library, googleapisDir); err != nil {
+	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(outdir, ".repo-metadata.json")); err != nil {
+	gotMetadata, err := repometadata.Read(outdir)
+	if err != nil {
 		t.Fatal(err)
+	}
+	wantMetadata := &repometadata.RepoMetadata{
+		// Fields set by repometadata.FromLibrary.
+		Name:                 "secretmanager",
+		NamePretty:           "Secret Manager",
+		ProductDocumentation: "https://cloud.google.com/secret-manager/",
+		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+		ReleaseLevel:         "stable",
+		Language:             "python",
+		Repo:                 "googleapis/google-cloud-python",
+		DistributionName:     "google-cloud-secret-manager",
+		APIID:                "secretmanager.googleapis.com",
+		APIShortname:         "secretmanager",
+		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		// Fields set by Generate.
+		LibraryType:         "GAPIC_AUTO",
+		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+		DefaultVersion:      "v1",
+	}
+	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
+		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
 	}
 }
 
