@@ -30,13 +30,9 @@ const (
 )
 
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
-	metadataReleaseLev := releaseLevelStable
-	level, err := releaseLevel(api.Path, library.Version)
+	level, err := metadataReleaseLevel(api, library)
 	if err != nil {
 		return err
-	}
-	if level != releaseLevelGA {
-		metadataReleaseLev = releaseLevelPreview
 	}
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
@@ -46,7 +42,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		DistributionName:    distributionName(library, api.Path, api.ShortName),
 		Language:            "go",
 		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        metadataReleaseLev,
+		ReleaseLevel:        level,
 	}
 	dir, _ := resolveClientPath(library, api.Path)
 	return metadata.Write(dir)
@@ -70,4 +66,16 @@ func distributionName(library *config.Library, apiPath, serviceName string) stri
 		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s/api%s", serviceName, version)
+}
+
+func metadataReleaseLevel(api *serviceconfig.API, library *config.Library) (string, error) {
+	metadataReleaseLev := releaseLevelStable
+	apiReleaseLevel, err := releaseLevel(api.Path, library.Version)
+	if err != nil {
+		return "", err
+	}
+	if apiReleaseLevel != releaseLevelGA {
+		metadataReleaseLev = releaseLevelPreview
+	}
+	return metadataReleaseLev, nil
 }
