@@ -80,6 +80,12 @@ func TestClean_Success(t *testing.T) {
 			wantOutput:   []string{"nested/apiv1beta1/doc.go"},
 			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
 		},
+		{
+			name:        "no snippets",
+			outputFiles: []string{"apiv1/auxiliary.go"},
+			keep:        []string{},
+			wantOutput:  []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -185,6 +191,9 @@ func createFiles(t *testing.T, base string, files []string) {
 // getFilesInDir is a test helper to get relative paths of files in a directory.
 func getFilesInDir(t *testing.T, dirPath, basePath string) []string {
 	t.Helper()
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		return nil
+	}
 	var files []string
 	err := filepath.WalkDir(dirPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
