@@ -273,8 +273,9 @@ func TestIsResourceMethod(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := IsResourceMethod(test.method); got != test.want {
-				t.Errorf("IsResourceMethod mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
+			got := IsResourceMethod(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("IsResourceMethod mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -308,8 +309,9 @@ func TestIsCollectionMethod(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := IsCollectionMethod(test.method); got != test.want {
-				t.Errorf("IsCollectionMethod mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
+			got := IsCollectionMethod(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("IsCollectionMethod mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
