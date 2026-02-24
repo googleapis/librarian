@@ -31,33 +31,14 @@ func TestExtractVersion(t *testing.T) {
 		{"google/ai/generativelanguage/v1alpha", "v1alpha"},
 		{"google/cloud/v2/secretmanager", ""}, // Only last component is checked
 		{"google/cloud/secretmanager", ""},
+		{"path/to/api/apiv1", ""},
+		{"path/to/api/v1-py", ""},
+		{"", ""},
 	} {
 		t.Run(test.path, func(t *testing.T) {
 			got := ExtractVersion(test.path)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("ExtractVersion(%q) returned diff (-want +got): %s", test.path, diff)
-			}
-		})
-	}
-}
-
-func TestIsVersion(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		s    string
-		want bool
-	}{
-		{"v1", true},
-		{"v1beta1", true},
-		{"v2alpha", true},
-		{"apiv1", false},
-		{"v1-py", false},
-		{"", false},
-	} {
-		t.Run(test.s, func(t *testing.T) {
-			got := IsVersion(test.s)
-			if got != test.want {
-				t.Errorf("IsVersion(%q) = %v, want %v", test.s, got, test.want)
 			}
 		})
 	}
