@@ -66,7 +66,10 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 			return err
 		}
 		if d.IsDir() {
-			rel, _ := filepath.Rel(root, path)
+			rel, err := filepath.Rel(root, path)
+			if err != nil {
+				return err
+			}
 			if keepSet[rel] {
 				return filepath.SkipDir
 			}
