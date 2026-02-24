@@ -17,6 +17,7 @@ package api
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // IdentifyTargetResources populates the TargetResource field in PathBinding
@@ -82,6 +83,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	}
 
 	var fieldPaths [][]string
+	var lastIndex int
 	segments := binding.PathTemplate.Segments
 
 	// Iterate starting from the second segment, looking for (literal, variable) pairs.
@@ -107,14 +109,21 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 			return nil, err
 		}
 		fieldPaths = append(fieldPaths, fieldPath)
+		lastIndex = i + 1
 	}
 
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
 
+	template, err := constructTemplate(method, segments[:lastIndex])
+	if err != nil {
+		return nil, err
+	}
+
 	return &TargetResource{
 		FieldPaths: fieldPaths,
+		Template:   template,
 	}, nil
 }
 
@@ -147,8 +156,13 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
+	template, err := constructTemplate(method, binding.PathTemplate.Segments)
+	if err != nil {
+		return nil, err
+	}
 	return &TargetResource{
 		FieldPaths: fieldPaths,
+		Template:   template,
 	}, nil
 }
 
@@ -179,4 +193,37 @@ func findField(msg *Message, path []string) (*Field, error) {
 	}
 
 	return field, nil
+}
+
+// constructTemplate reconstructs the canonical resource name template from path segments.
+func constructTemplate(method *Method, segments []PathSegment) (string, error) {
+	host, err := getServiceHost(method)
+	if err != nil {
+		return "", err
+	}
+
+	var sb strings.Builder
+	sb.WriteString("//")
+	sb.WriteString(host)
+
+	for _, seg := range segments {
+		sb.WriteString("/")
+		if seg.Literal != nil {
+			sb.WriteString(*seg.Literal)
+		} else if seg.Variable != nil {
+			// Use simple field path form {field}, ignoring internal patterns, handling both exploded paths and full name variables correctly.
+			fmt.Fprintf(&sb, "{%s}", strings.Join(seg.Variable.FieldPath, "."))
+		}
+	}
+	return sb.String(), nil
+}
+
+func getServiceHost(method *Method) (string, error) {
+	if method.Service != nil && method.Service.DefaultHost != "" {
+		return method.Service.DefaultHost, nil
+	}
+	if method.Model != nil && method.Model.Name != "" {
+		return method.Model.Name + ".googleapis.com", nil
+	}
+	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
 }
