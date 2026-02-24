@@ -94,15 +94,19 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		}
 
 		// Check if the preceding literal is a valid collection identifier.
-		if isCollectionIdentifier(*prev.Literal, vocabulary) {
-			fieldPath := curr.Variable.FieldPath
-			// Verify the field exists in the input message.
-			_, err := findField(method.InputType, fieldPath)
-			if err != nil {
-				return nil, err
-			}
-			fieldPaths = append(fieldPaths, fieldPath)
+		if !isCollectionIdentifier(*prev.Literal, vocabulary) {
+			// Once a path segment breaks the chain of valid (collection, ID) pairs,
+			// the resource identifier stops.
+			break
 		}
+
+		fieldPath := curr.Variable.FieldPath
+		// Verify the field exists in the input message.
+		_, err := findField(method.InputType, fieldPath)
+		if err != nil {
+			return nil, err
+		}
+		fieldPaths = append(fieldPaths, fieldPath)
 	}
 
 	if len(fieldPaths) == 0 {
