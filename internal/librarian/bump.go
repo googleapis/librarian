@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -309,12 +308,12 @@ func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error)
 }
 
 // findLatestReleaseCommitHash finds the latest (most recent) commit hash
-// which released the library named by libraryName, or which released any libraries
-// if libraryName is empty. (See findReleasedLibraries for the definition of what it
-// means for a commit to release a library.) Importantly, it does this *without*
-// using tags, as it's used in circumstances where the full release process has
-// not yet been completed (e.g. to find which commit *should* be tagged).
-func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string) (string, error) {
+// which released any libraries. (See findReleasedLibraries for the definition
+// of what it means for a commit to release a library.) Importantly, it does
+// this *without* using tags, as it's used in circumstances where the full
+// release process has not yet been completed (e.g. to find which commit
+// *should* be tagged).
+func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, error) {
 	commits, err := git.FindCommitsForPath(ctx, gitExe, librarianConfigPath)
 	if err != nil {
 		return "", err
@@ -342,7 +341,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string
 			if err != nil {
 				return "", err
 			}
-			if len(released) > 0 && (libraryName == "" || slices.Contains(released, libraryName)) {
+			if len(released) > 0 {
 				return candidateCommit, nil
 			}
 		}
