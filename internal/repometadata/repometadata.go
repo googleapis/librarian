@@ -169,7 +169,7 @@ func cleanTitle(title string) string {
 }
 
 // Write writes the given RepoMetadata into libraryOutputDir/.repo-metadata.json.
-func Write(metadata any, libraryOutputDir string) error {
+func (metadata *RepoMetadata) Write(libraryOutputDir string) error {
 	data, err := json.MarshalIndent(metadata, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)

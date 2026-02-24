@@ -36,7 +36,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		ReleaseLevel:        library.ReleaseLevel,
 	}
 	dir, _ := resolveClientPath(library, api.Path)
-	return repometadata.Write(metadata, dir)
+	return metadata.Write(dir)
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.
