@@ -142,7 +142,7 @@ func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Libr
 		IssueTracker:         api.NewIssueURI,
 		Language:             config.Language,
 		Name:                 api.ShortName,
-		NamePretty:           CleanTitle(api.Title),
+		NamePretty:           cleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         library.ReleaseLevel,
 		Repo:                 config.Repo,
@@ -160,9 +160,9 @@ func extractBaseProductURL(docURI string) string {
 	return docURI
 }
 
-// CleanTitle removes "API" suffix from title to get name_pretty.
+// cleanTitle removes "API" suffix from title to get name_pretty.
 // Example: "Secret Manager API" -> "Secret Manager".
-func CleanTitle(title string) string {
+func cleanTitle(title string) string {
 	title = strings.TrimSpace(title)
 	title = strings.TrimSuffix(title, " API")
 	return strings.TrimSpace(title)
