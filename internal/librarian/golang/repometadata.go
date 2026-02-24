@@ -24,19 +24,27 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+type RepoMetadata struct {
+	repometadata.RepoMetadata `json:",inline"`
+	ClientLibraryType         string `json:"client_library_type,omitempty"`
+	Description               string `json:"description,omitempty"`
+}
+
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
-	metadata := &repometadata.RepoMetadata{
-		APIShortname:        api.ShortName,
-		ClientDocumentation: clientDocURL(library, api.Path),
-		ClientLibraryType:   "generated",
-		Description:         repometadata.CleanTitle(api.Title),
-		DistributionName:    distributionName(library, api.Path, api.ShortName),
-		Language:            "go",
-		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        library.ReleaseLevel,
+	metadata := &RepoMetadata{
+		RepoMetadata: repometadata.RepoMetadata{
+			APIShortname:        api.ShortName,
+			ClientDocumentation: clientDocURL(library, api.Path),
+			DistributionName:    distributionName(library, api.Path, api.ShortName),
+			Language:            "go",
+			LibraryType:         repometadata.GAPICAutoLibraryType,
+			ReleaseLevel:        library.ReleaseLevel,
+		},
+		ClientLibraryType: "generated",
+		Description:       repometadata.CleanTitle(api.Title),
 	}
 	dir, _ := resolveClientPath(library, api.Path)
-	return metadata.Write(dir)
+	return repometadata.Write(metadata, dir)
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.

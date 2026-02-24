@@ -28,10 +28,12 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-const repoMetadataFile = ".repo-metadata.json"
+const (
+	repoMetadataFile = ".repo-metadata.json"
 
-// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
-const GAPICAutoLibraryType = "GAPIC_AUTO"
+	// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
+	GAPICAutoLibraryType = "GAPIC_AUTO"
+)
 
 var (
 	errNoAPIs          = errors.New("library has no APIs from which to get metadata")
@@ -167,13 +169,13 @@ func CleanTitle(title string) string {
 }
 
 // Write writes the given RepoMetadata into libraryOutputDir/.repo-metadata.json.
-func (metadata *RepoMetadata) Write(libraryOutputDir string) error {
+func Write(metadata any, libraryOutputDir string) error {
 	data, err := json.MarshalIndent(metadata, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	metadataPath := filepath.Join(libraryOutputDir, ".repo-metadata.json")
+	metadataPath := filepath.Join(libraryOutputDir, repoMetadataFile)
 	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)
 	}

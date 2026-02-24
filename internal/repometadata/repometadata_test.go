@@ -156,7 +156,7 @@ func TestCleanTitle(t *testing.T) {
 		{"empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := cleanTitle(test.title)
+			got := CleanTitle(test.title)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -211,7 +211,7 @@ func TestWriteAndRead(t *testing.T) {
 		Language:   "go",
 	}
 	tmpDir := t.TempDir()
-	if err := want.Write(tmpDir); err != nil {
+	if err := Write(want, tmpDir); err != nil {
 		t.Fatal(err)
 	}
 	got, err := Read(tmpDir)
@@ -228,7 +228,7 @@ func TestWrite_Error(t *testing.T) {
 		Name: "library",
 	}
 	dir := t.TempDir()
-	gotErr := metadata.Write(filepath.Join(dir, "non-existent"))
+	gotErr := Write(metadata, filepath.Join(dir, "non-existent"))
 	wantErr := os.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Write() error = %v, wantErr %v", gotErr, wantErr)

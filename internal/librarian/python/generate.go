@@ -77,7 +77,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	if err != nil {
 		return err
 	}
-	if err := repoMetadata.Write(library.Output); err != nil {
+	if err := repometadata.Write(repoMetadata, library.Output); err != nil {
 		return err
 	}
 
