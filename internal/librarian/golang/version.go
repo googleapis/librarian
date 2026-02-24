@@ -18,7 +18,6 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 	"text/template"
@@ -34,8 +33,6 @@ var (
 
 	//go:embed template/_internal_version.go.txt
 	internalVersionTmpl string
-
-	versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
 )
 
 func generateInternalVersionFile(moduleDir, version string) (err error) {
@@ -66,6 +63,12 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 }
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI != nil && goAPI.DisableGAPIC {
+		// If GAPIC is disabled, no client is generated, only proto files.
+		// Therefore, version.go does not need to be generated.
+		return nil
+	}
 	dir, clientDir := resolveClientPath(library, apiPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -99,7 +102,13 @@ func resolveClientPath(library *config.Library, apiPath string) (string, string)
 	version := filepath.Base(apiPath)
 	clientDir := clientDirectory(library, apiPath)
 	middle := extractMiddleDir(library.Name, clientDir, apiPath)
-	return filepath.Join(library.Output, library.Name, middle, clientDir, "api"+version), clientDir
+	paths := []string{library.Output, library.Name, middle}
+	if !strings.Contains(library.Name, "/") {
+		// If the library name is not a nested major version, include the client directory.
+		paths = append(paths, clientDir)
+	}
+	paths = append(paths, "api"+version)
+	return filepath.Join(paths...), clientDir
 }
 
 func clientDirectory(library *config.Library, apiPath string) string {

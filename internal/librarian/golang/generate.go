@@ -191,6 +191,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
+	if goAPI != nil && goAPI.HasDiregapic {
+		opts = append(opts, "diregapic")
+	}
 	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {
 		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
 	}
@@ -203,7 +206,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	opts = append(opts, "transport="+transport(sc))
+	if trans := transport(sc); trans != "" {
+		opts = append(opts, "transport="+trans)
+	}
 	level, err := releaseLevel(apiPath, library.Version)
 	if err != nil {
 		return nil, err
@@ -213,11 +218,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 }
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
-	version := filepath.Base(apiPath)
-	if versionRegex.MatchString(version) {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version != "" {
 		version = fmt.Sprintf("/api%s", version)
-	} else {
-		version = ""
 	}
 	if goAPI != nil && goAPI.VersionSuffix != "" {
 		version = fmt.Sprintf("%s/%s", version, goAPI.VersionSuffix)
