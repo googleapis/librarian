@@ -15,12 +15,14 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -29,11 +31,11 @@ func TestPublish(t *testing.T) {
 	// Each test starts (before setup) with Lib1Name with a version of 1.0.0 and
 	// Lib2Name with a version of 1.2.0.
 	for _, test := range []struct {
-		name    string
-		setup   func(cfg *config.Config)
-		library string
-		execute bool
-		want    string
+		name          string
+		setup         func(cfg *config.Config)
+		releaseCommit string
+		execute       bool
+		want          string
 	}{
 		{
 			name: "publish Lib1Name and Lib2Name",
@@ -63,15 +65,18 @@ func TestPublish(t *testing.T) {
 			want: fmt.Sprintf("libraries=%s; execute=false", sample.Lib1Name),
 		},
 		{
-			name: "publish Lib1Name, specified in flags, with a later release of Lib2Name ignored",
+			name: "publish Lib1Name due to release commit specified in flags, with a later release of Lib2Name ignored",
 			setup: func(cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommit(t, cfg)
 				cfg.Libraries[1].Version = "1.3.0"
 				writeConfigAndCommit(t, cfg)
 			},
-			library: sample.Lib1Name,
-			want:    fmt.Sprintf("libraries=%s; execute=false", sample.Lib1Name),
+			// Fortunately this doesn't have to be an actual commit, just a
+			// committish, so we don't need to know the hash of the HEAD~
+			// commit when creating the test data.
+			releaseCommit: "HEAD~",
+			want:          fmt.Sprintf("libraries=%s; execute=false", sample.Lib1Name),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -79,7 +84,7 @@ func TestPublish(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
-			if err := publish(t.Context(), cfg, test.library, test.execute); err != nil {
+			if err := publish(t.Context(), cfg, test.releaseCommit, test.execute); err != nil {
 				t.Fatal(err)
 			}
 			got, err := os.ReadFile(fakePublishedFile)
@@ -95,9 +100,10 @@ func TestPublish(t *testing.T) {
 
 func TestPublish_Error(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		setup   func(cfg *config.Config)
-		library string
+		name          string
+		setup         func(cfg *config.Config)
+		releaseCommit string
+		wantErr       error
 	}{
 		{
 			name: "custom tool specified for git and doesn't exist",
@@ -111,6 +117,7 @@ func TestPublish_Error(t *testing.T) {
 				}
 				writeConfigAndCommit(t, cfg)
 			},
+			// Can't easily check this error.
 		},
 		{
 			name: "repo is dirty",
@@ -122,6 +129,7 @@ func TestPublish_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			wantErr: git.ErrGitStatusUnclean,
 		},
 		{
 			name: "language isn't supported",
@@ -131,6 +139,7 @@ func TestPublish_Error(t *testing.T) {
 				cfg.Language = "unsupported-for-publish"
 				writeConfigAndCommit(t, cfg)
 			},
+			// Can't easily check this error.
 		},
 		{
 			name: "no release commit",
@@ -138,12 +147,19 @@ func TestPublish_Error(t *testing.T) {
 			},
 		},
 		{
-			name: "no release commit for specified library",
+			name: "specified release commit is invalid",
 			setup: func(cfg *config.Config) {
-				cfg.Libraries[1].Version = "1.3.0"
-				writeConfigAndCommit(t, cfg)
 			},
-			library: sample.Lib1Name,
+			releaseCommit: "not a commit",
+			// Can't easily check this error
+		},
+		{
+			name: "release commit does not release anything",
+			setup: func(cfg *config.Config) {
+				writeFileAndCommit(t, "README.txt", []byte("Just a readme"), "Modified config")
+			},
+			releaseCommit: "HEAD",
+			wantErr:       errNoLibrariesAtReleaseCommit,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -151,10 +167,14 @@ func TestPublish_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
-			err := publish(t.Context(), cfg, test.library, false)
+			err := publish(t.Context(), cfg, test.releaseCommit, false)
 			if err == nil {
-				t.Errorf("publish(): expected error, got none")
+				t.Fatal("expected error, got nil")
 			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("expected %v, got %v", test.wantErr, err)
+			}
+
 		})
 	}
 }
@@ -170,7 +190,7 @@ func TestPublishCommand(t *testing.T) {
 	cfg.Libraries[1].Version = "1.3.0"
 	writeConfigAndCommit(t, cfg)
 
-	if err := Run(t.Context(), "librarian", "publish", "--library", sample.Lib1Name, "--execute"); err != nil {
+	if err := Run(t.Context(), "librarian", "publish", "--release-commit", "HEAD~", "--execute"); err != nil {
 		t.Fatal(err)
 	}
 	want := fmt.Sprintf("libraries=%s; execute=true", sample.Lib1Name)

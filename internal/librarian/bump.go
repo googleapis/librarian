@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -105,15 +104,12 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	gitExe := "git"
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
 	if cfg.Release == nil {
 		return errReleaseConfigEmpty
+	}
+	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+		return err
 	}
 	if cfg.Language == languageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
@@ -197,10 +193,11 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 		return err
 	}
 	output := libraryOutput(cfg.Language, lib, cfg.Default)
+	lib.Version = version
 
 	switch cfg.Language {
 	case languageFake:
-		return fakeBumpLibrary(lib, version)
+		return fakeBumpLibrary(output, version)
 	case languagePython:
 		return python.Bump(output, version)
 	default:
@@ -311,12 +308,12 @@ func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error)
 }
 
 // findLatestReleaseCommitHash finds the latest (most recent) commit hash
-// which released the library named by libraryName, or which released any libraries
-// if libraryName is empty. (See findReleasedLibraries for the definition of what it
-// means for a commit to release a library.) Importantly, it does this *without*
-// using tags, as it's used in circumstances where the full release process has
-// not yet been completed (e.g. to find which commit *should* be tagged).
-func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string) (string, error) {
+// which released any libraries. (See findReleasedLibraries for the definition
+// of what it means for a commit to release a library.) Importantly, it does
+// this *without* using tags, as it's used in circumstances where the full
+// release process has not yet been completed (e.g. to find which commit
+// *should* be tagged).
+func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, error) {
 	commits, err := git.FindCommitsForPath(ctx, gitExe, librarianConfigPath)
 	if err != nil {
 		return "", err
@@ -344,7 +341,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe, libraryName string
 			if err != nil {
 				return "", err
 			}
-			if len(released) > 0 && (libraryName == "" || slices.Contains(released, libraryName)) {
+			if len(released) > 0 {
 				return candidateCommit, nil
 			}
 		}
@@ -423,7 +420,8 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	case languageRust:
 		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
 	case languageFake:
-		return fakeBumpLibrary(lib, version)
+		lib.Version = version
+		return fakeBumpLibrary(output, version)
 	default:
 		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
 	}

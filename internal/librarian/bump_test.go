@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -345,6 +346,15 @@ func TestBumpLibrary(t *testing.T) {
 			}
 			if targetLibCfg.Version != test.wantVersion {
 				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
+			}
+			output := libraryOutput(test.cfg.Language, targetLibCfg, test.cfg.Default)
+			fakeVersionContent, err := os.ReadFile(filepath.Join(output, fakeVersionFile))
+			if err != nil {
+				t.Fatalf("couldn't read fake version file; error = %v", err)
+			}
+			wantVersionContent := fmt.Sprintf("version=%s", test.wantVersion)
+			if string(fakeVersionContent) != wantVersionContent {
+				t.Errorf("library %q fake version file mismatch: want %q, got %q", targetLibCfg.Name, wantVersionContent, string(fakeVersionContent))
 			}
 		})
 	}
@@ -905,12 +915,11 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		setup           func(cfg *config.Config)
-		libraryName     string
 		wantCommitCount int
 		wantCommitIndex int // Commit index in the log: HEAD=0, HEAD~=1 etc
 	}{
 		{
-			name: "HEAD commit releases, match any release",
+			name: "HEAD commit releases",
 			setup: func(cfg *config.Config) {
 				// 2 commits in addition to the two in Setup:
 				// - Chore commit with a modified readme
@@ -923,7 +932,7 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 			wantCommitIndex: 0,
 		},
 		{
-			name: "HEAD~ commit, match any release",
+			name: "HEAD~ commit",
 			setup: func(cfg *config.Config) {
 				// 3 commits in addition to the two in Setup:
 				// - Chore commit with a modified readme
@@ -936,26 +945,6 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 			},
 			wantCommitCount: 5,
 			wantCommitIndex: 1,
-		},
-		{
-			name: "match specific library",
-			setup: func(cfg *config.Config) {
-				// 4 commits in addition to the two in Setup:
-				// - Chore commit with a modified readme
-				// - Release commit with the first library version bumped
-				// - Chore commit with another modified readme
-				// - Release commit with the second library version bumped
-				// (We're looking for the first library, so effectively HEAD~2)
-				writeReadmeAndCommit(t, "modified readme")
-				cfg.Libraries[0].Version = "1.1.0"
-				writeConfigAndCommit(t, cfg)
-				writeReadmeAndCommit(t, "modified readme again")
-				cfg.Libraries[1].Version = "1.3.0"
-				writeConfigAndCommit(t, cfg)
-			},
-			libraryName:     sample.Lib1Name,
-			wantCommitCount: 6,
-			wantCommitIndex: 2,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -978,7 +967,7 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 			if test.wantCommitCount != len(commits) {
 				t.Fatalf("expected setup to create %d commits; got %d", test.wantCommitCount, len(commits))
 			}
-			got, err := findLatestReleaseCommitHash(t.Context(), "git", test.libraryName)
+			got, err := findLatestReleaseCommitHash(t.Context(), "git")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -995,7 +984,6 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 	for _, test := range []struct {
 		name                      string
 		setup                     func(cfg *config.Config)
-		libraryName               string
 		wantReleaseCommitNotFound bool
 	}{
 		{
@@ -1005,24 +993,6 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 				cfg.Libraries[0].DescriptionOverride = "modified description"
 				writeConfigAndCommit(t, cfg)
 			},
-			wantReleaseCommitNotFound: true,
-		},
-		{
-			name: "no library with given name",
-			setup: func(cfg *config.Config) {
-				cfg.Libraries[0].Version = "1.1.0"
-				writeConfigAndCommit(t, cfg)
-			},
-			libraryName:               "nonexistent",
-			wantReleaseCommitNotFound: true,
-		},
-		{
-			name: "release, but not for the specified library",
-			setup: func(cfg *config.Config) {
-				cfg.Libraries[0].Version = "1.1.0"
-				writeConfigAndCommit(t, cfg)
-			},
-			libraryName:               sample.Lib2Name,
 			wantReleaseCommitNotFound: true,
 		},
 		{
@@ -1070,7 +1040,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 			test.setup(cfg)
-			got, err := findLatestReleaseCommitHash(t.Context(), "git", test.libraryName)
+			got, err := findLatestReleaseCommitHash(t.Context(), "git")
 			if err == nil {
 				t.Errorf("expected error; succeeded with hash %s", got)
 			}

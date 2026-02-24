@@ -28,13 +28,16 @@ import (
 //  2. Heuristic Identification: For allow-listed services, uses path segment
 //     patterns to identify resources when annotations are missing.
 func IdentifyTargetResources(model *API) error {
+	// Build the set of known plural resource names for the heuristic.
+	knownPlurals := BuildKnownPlurals(model)
+
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			if method.PathInfo == nil {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, knownPlurals); err != nil {
 					return err
 				}
 			}
@@ -44,7 +47,7 @@ func IdentifyTargetResources(model *API) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, knownPlurals map[string]bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -62,8 +65,56 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding) erro
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
-	// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
+	target, err = identifyHeuristicTarget(method, binding, knownPlurals)
+	if err != nil {
+		return err
+	}
+	if target != nil {
+		binding.TargetResource = target
+		return nil
+	}
 	return nil
+}
+
+func identifyHeuristicTarget(method *Method, binding *PathBinding, knownPlurals map[string]bool) (*TargetResource, error) {
+	if !IsHeuristicEligible(method.Service.ID) {
+		return nil, nil
+	}
+
+	var fieldPaths [][]string
+	segments := binding.PathTemplate.Segments
+
+	// Iterate starting from the second segment, looking for (literal, variable) pairs.
+	for i := 1; i < len(segments); i++ {
+		curr := segments[i]
+		prev := segments[i-1]
+
+		if curr.Variable == nil || prev.Literal == nil {
+			continue
+		}
+
+		// Check if the preceding literal is a valid collection identifier.
+		if isCollectionIdentifier(*prev.Literal, knownPlurals) {
+			fieldPath := curr.Variable.FieldPath
+			// Verify the field exists in the input message.
+			field, err := findField(method.InputType, fieldPath)
+			if err != nil {
+				return nil, err
+			}
+			if field == nil {
+				continue
+			}
+			fieldPaths = append(fieldPaths, fieldPath)
+		}
+	}
+
+	if len(fieldPaths) == 0 {
+		return nil, nil
+	}
+
+	return &TargetResource{
+		FieldPaths: fieldPaths,
+	}, nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
