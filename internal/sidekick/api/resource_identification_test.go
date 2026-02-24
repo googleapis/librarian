@@ -215,18 +215,44 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			want:      nil,
 		},
 		{
-			name:      "heuristic: skips unknown segments",
+			name:      "heuristic: stops at unknown segment",
 			serviceID: ".google.cloud.compute.v1.Instances",
 			path: NewPathTemplate().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("unknown").WithVariableNamed("other"),
+				WithLiteral("unknown").WithVariableNamed("other").
+				WithLiteral("instances").WithVariableNamed("instance"),
 			fields: []*Field{
 				{Name: "project", Typez: STRING_TYPE},
 				{Name: "other", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
 			},
-			resources: nil,
+			resources: []*Resource{
+				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}},
+			},
+		},
+		{
+			name:      "heuristic: stops at trailing action",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("zones").WithVariableNamed("zone").
+				WithLiteral("instances").WithVariableNamed("instance").
+				WithLiteral("start").WithVariableNamed("action_id"), // "start" is not a collection
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "zone", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
+				{Name: "action_id", Typez: STRING_TYPE},
+			},
+			resources: []*Resource{
+				{Plural: "zones", Type: "compute.googleapis.com/Zone"},
+				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
 			},
 		},
 		{
