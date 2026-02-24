@@ -210,7 +210,7 @@ func (d *docData) collectStructs(n ast.Node, relPath string, isConfig bool) (*do
 	}
 	d.structs[name] = st
 	if ts.Doc != nil {
-		d.docs[name] = cleanDoc(ts.Doc.Text())
+		d.docs[name] = cleanDoc(ts.Doc.Text(), name)
 	}
 	line := d.pkg.Fset.Position(ts.Pos()).Line
 	d.sources[name] = fmt.Sprintf("../%s#L%d", relPath, line)
@@ -266,7 +266,7 @@ func (d *docData) collectStructData(name string) (structData, error) {
 		typeName := getTypeName(field.Type)
 		description := ""
 		if field.Doc != nil {
-			description = cleanDoc(field.Doc.Text())
+			description = cleanDoc(field.Doc.Text(), field.Names[0].Name)
 		}
 		structData.Fields = append(structData.Fields, fieldData{
 			Name:        fmt.Sprintf("`%s`", fieldName),
@@ -336,9 +336,15 @@ func (d *docData) formatType(typeName string) string {
 
 // cleanDoc collapses standard word-wrapping into single spaces but preserves
 // paragraph breaks and list items by using <br> tags, which are required
-// for multi-line content within Markdown table cells.
-func cleanDoc(doc string) string {
-	lines := strings.Split(strings.TrimSpace(doc), "\n")
+// for multi-line content within Markdown table cells. It also removes the
+// provided name from the start of the documentation if present.
+func cleanDoc(doc string, name string) string {
+	doc = strings.TrimSpace(doc)
+	if name != "" && strings.HasPrefix(doc, name) {
+		doc = strings.TrimPrefix(doc, name)
+		doc = strings.TrimSpace(doc)
+	}
+	lines := strings.Split(doc, "\n")
 	var out strings.Builder
 	for i, line := range lines {
 		cleanedLine := strings.Join(strings.Fields(line), " ")
