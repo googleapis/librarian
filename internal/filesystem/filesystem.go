@@ -16,12 +16,12 @@
 package filesystem
 
 import (
-	"archive/zip"
-	"fmt"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/googleapis/librarian/internal/command"
 )
 
 // MoveAndMerge moves entries from sourceDir to targetDir.
@@ -58,65 +58,19 @@ func CopyFile(src, dest string) error {
 		return err
 	}
 	defer in.Close()
-
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	return err
-}
-
-// Unzip unzips the src archive into dest directory.
-func Unzip(src, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
+	if _, err = io.Copy(out, in); err != nil {
+		out.Close()
 		return err
 	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
-
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", fpath)
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, 0755)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, copyErr := io.Copy(outFile, rc)
-		srcCloseErr := rc.Close()
-		dstCloseErr := outFile.Close()
-
-		if copyErr != nil {
-			return copyErr
-		}
-		if srcCloseErr != nil {
-			return srcCloseErr
-		}
-		if dstCloseErr != nil {
-			return dstCloseErr
-		}
-	}
-	return nil
+	return out.Close()
 }
+
+// Unzip unzips the src archive into dest directory using the system unzip command.
+func Unzip(ctx context.Context, src, dest string) error {
+	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
+}
+

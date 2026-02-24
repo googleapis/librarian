@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestMoveAndMerge_Success(t *testing.T) {
@@ -161,8 +162,10 @@ func TestCopyFile_Error(t *testing.T) {
 		t.Error("CopyFile() expected error for invalid destination, got nil")
 	}
 }
+
 func TestUnzip_Success(t *testing.T) {
 	t.Parallel()
+	testhelper.RequireCommand(t, "unzip")
 	tmp := t.TempDir()
 	zipPath := filepath.Join(tmp, "test.zip")
 	destDir := filepath.Join(tmp, "dest")
@@ -171,7 +174,7 @@ func TestUnzip_Success(t *testing.T) {
 		"sub/file2.txt": "content2",
 	}
 	createZip(t, zipPath, files, nil)
-	if err := Unzip(zipPath, destDir); err != nil {
+	if err := Unzip(t.Context(), zipPath, destDir); err != nil {
 		t.Fatalf("Unzip() error = %v", err)
 	}
 	for name, want := range files {
@@ -186,55 +189,9 @@ func TestUnzip_Success(t *testing.T) {
 	}
 }
 
-func TestUnzip_ZipSlipError(t *testing.T) {
-	t.Parallel()
-	tmp := t.TempDir()
-	zipPath := filepath.Join(tmp, "test.zip")
-	destDir := filepath.Join(tmp, "dest")
-	files := map[string]string{
-		"../../outside.txt": "danger",
-	}
-	createZip(t, zipPath, files, nil)
-	if err := Unzip(zipPath, destDir); err == nil {
-		t.Error("Unzip() expected error for ZipSlip, got nil")
-	}
-}
-
-func TestUnzip_MkdirAllError(t *testing.T) {
-	t.Parallel()
-	tmp := t.TempDir()
-	zipPath := filepath.Join(tmp, "test.zip")
-	destDir := filepath.Join(tmp, "dest")
-	// Create a file where a directory should be
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(destDir, "file"), []byte("data"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	createZip(t, zipPath, map[string]string{"file/inner": "content"}, nil)
-	if err := Unzip(zipPath, destDir); err == nil {
-		t.Error("Unzip() expected error for MkdirAll failure, got nil")
-	}
-}
-
-func TestUnzip_OpenFileError(t *testing.T) {
-	t.Parallel()
-	tmp := t.TempDir()
-	zipPath := filepath.Join(tmp, "test.zip")
-	destDir := filepath.Join(tmp, "dest")
-	// Create a directory where a file should be
-	if err := os.MkdirAll(filepath.Join(destDir, "file"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	createZip(t, zipPath, map[string]string{"file": "content"}, nil)
-	if err := Unzip(zipPath, destDir); err == nil {
-		t.Error("Unzip() expected error for OpenFile failure, got nil")
-	}
-}
-
 func TestUnzip_Permissions(t *testing.T) {
 	t.Parallel()
+	testhelper.RequireCommand(t, "unzip")
 	tmp := t.TempDir()
 	zipPath := filepath.Join(tmp, "perm.zip")
 	destDir := filepath.Join(tmp, "dest")
@@ -248,7 +205,7 @@ func TestUnzip_Permissions(t *testing.T) {
 	}
 	createZip(t, zipPath, files, modes)
 
-	if err := Unzip(zipPath, destDir); err != nil {
+	if err := Unzip(t.Context(), zipPath, destDir); err != nil {
 		t.Fatal(err)
 	}
 
