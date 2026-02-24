@@ -30,6 +30,7 @@ import (
 
 const repoMetadataFile = ".repo-metadata.json"
 
+// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
 const GAPICAutoLibraryType = "GAPIC_AUTO"
 
 var (

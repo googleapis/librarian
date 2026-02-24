@@ -630,8 +630,10 @@ func TestGenerate(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:   "secretmanager",
-		Output: outdir,
+		Name:                "google-cloud-secret-manager",
+		Output:              outdir,
+		ReleaseLevel:        "stable",
+		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -642,8 +644,11 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	wantMetadata := &repometadata.RepoMetadata{
-		// Fields set by repometada.FromLibrary.
+		// Fields set by repometadata.FromLibrary.
 		Name:                 "secretmanager",
 		NamePretty:           "Secret Manager",
 		ProductDocumentation: "https://cloud.google.com/secret-manager/",
@@ -663,7 +668,6 @@ func TestGenerate(t *testing.T) {
 	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
 		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
 	}
-
 }
 
 func TestDefaultOutputByName(t *testing.T) {
