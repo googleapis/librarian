@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -112,6 +113,34 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				t.Errorf("want versionClient assignment in output, got:\n%s", content)
 			}
 		})
+	}
+}
+
+func TestGenerateClientVersionFile_Skipped(t *testing.T) {
+	dir := t.TempDir()
+	library := &config.Library{
+		Name:   "alloydb",
+		Output: dir,
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ClientDirectory: "connectors",
+					DisableGAPIC:    true,
+					Path:            "google/cloud/alloydb/connectors/v1",
+				},
+			},
+		},
+	}
+	apiPath := "google/cloud/alloydb/connectors/v1"
+
+	if err := generateClientVersionFile(library, apiPath); err != nil {
+		t.Fatal(err)
+	}
+
+	gotPath, _ := resolveClientPath(library, apiPath)
+	versionPath := filepath.Join(gotPath, "version.go")
+	if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("client version file should not exist")
 	}
 }
 
