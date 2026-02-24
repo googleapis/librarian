@@ -145,10 +145,11 @@ func TestIsCollectionIdentifier(t *testing.T) {
 	}
 }
 
-func TestBuildKnownPlurals(t *testing.T) {
+func TestBuildHeuristicVocabulary(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		resources []*Resource
+		services  []*Service
 		want      map[string]bool
 	}{
 		{
@@ -167,6 +168,135 @@ func TestBuildKnownPlurals(t *testing.T) {
 			want: map[string]bool{"items": true, "elements": true},
 		},
 		{
+			name: "from standard method path",
+			services: []*Service{
+				{
+					Methods: []*Method{
+						{
+							Name: "ListWidgets",
+							InputType: &Message{
+								Name: "ListWidgetsRequest",
+								Fields: []*Field{
+									{Name: "parent", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name: "ListWidgetsResponse",
+								Pagination: &PaginationInfo{
+									PageableItem: &Field{
+										MessageType: &Message{
+											Resource: &Resource{Type: "example.com/Widget"},
+										},
+									},
+								},
+							},
+							PathInfo: &PathInfo{
+								Bindings: []*PathBinding{
+									{
+										PathTemplate: NewPathTemplate().
+											WithLiteral("users").WithVariableNamed("user").
+											WithLiteral("widgets").WithVariableNamed("widget"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]bool{"users": true, "widgets": true},
+		},
+		{
+			name: "ignores non-standard method path",
+			services: []*Service{
+				{
+					Methods: []*Method{
+						{
+							Name: "ProcessData", // Not standard
+							PathInfo: &PathInfo{
+								Bindings: []*PathBinding{
+									{
+										PathTemplate: NewPathTemplate().
+											WithLiteral("internal").WithVariableNamed("id"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]bool{},
+		},
+		{
+			name: "combined resources and paths",
+			resources: []*Resource{
+				{Plural: "items"},
+			},
+			services: []*Service{
+				{
+					Methods: []*Method{
+						{
+							Name: "GetItem",
+							InputType: &Message{
+								Name: "GetItemRequest",
+								Fields: []*Field{
+									{Name: "name", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name:     "Item",
+								Resource: &Resource{Type: "example.com/Item", Singular: "item"},
+							},
+							PathInfo: &PathInfo{
+								Bindings: []*PathBinding{
+									{
+										PathTemplate: NewPathTemplate().
+											WithLiteral("users").WithVariableNamed("user").
+											WithLiteral("items").WithVariableNamed("item"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]bool{"items": true, "users": true},
+		},
+		{
+			name: "from nested variable template (e.g. {name=projects/*/instances/*})",
+			services: []*Service{
+				{
+					Methods: []*Method{
+						{
+							Name: "GetInstance",
+							InputType: &Message{
+								Name: "GetInstanceRequest",
+								Fields: []*Field{
+									{Name: "name", ResourceReference: &ResourceReference{Type: "*"}},
+								},
+							},
+							OutputType: &Message{
+								Name:     "Instance",
+								Resource: &Resource{Type: "example.com/Instance", Singular: "instance"},
+							},
+							PathInfo: &PathInfo{
+								Bindings: []*PathBinding{
+									{
+										PathTemplate: NewPathTemplate().
+											WithLiteral("v1").
+											WithVariable(&PathVariable{
+												FieldPath: []string{"name"},
+												Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
+											}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]bool{"v1": true, "projects": true, "instances": true},
+		},
+		{
 			name: "empty model",
 			want: map[string]bool{},
 		},
@@ -174,10 +304,19 @@ func TestBuildKnownPlurals(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			model := &API{
 				ResourceDefinitions: test.resources,
+				Services:            test.services,
+				State: &APIState{
+					ResourceByType: make(map[string]*Resource),
+				},
 			}
-			got := BuildKnownPlurals(model)
+			for _, svc := range model.Services {
+				for _, m := range svc.Methods {
+					m.Model = model
+				}
+			}
+			got := BuildHeuristicVocabulary(model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("BuildKnownPlurals() mismatch (-want +got):\n%s", diff)
+				t.Errorf("BuildHeuristicVocabulary() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
