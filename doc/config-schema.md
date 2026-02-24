@@ -121,7 +121,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_directory` | string | ClientDirectory is the directory where the client is generated, relative to Library.Output. |
-| `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. |
+| `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. |
 | `enabled_generator_features` | list of string | EnabledGeneratorFeatures provides a mechanism for enabling generator features at the API level. |
 | `has_diregapic` | bool | HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `import_path` | string | ImportPath is the Go import path for the API. |
