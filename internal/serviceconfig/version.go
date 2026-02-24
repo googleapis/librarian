@@ -19,7 +19,7 @@ import (
 	"regexp"
 )
 
-var versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
+var versionRegex = regexp.MustCompile(`^v\d+[a-z0-9]*$`)
 
 // ExtractVersion extracts the version from the given API path.
 // It only checks the last path component.

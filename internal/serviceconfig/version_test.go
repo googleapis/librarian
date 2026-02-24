@@ -29,6 +29,7 @@ func TestExtractVersion(t *testing.T) {
 		{"google/cloud/secretmanager/v1", "v1"},
 		{"google/cloud/secretmanager/v1beta2", "v1beta2"},
 		{"google/ai/generativelanguage/v1alpha", "v1alpha"},
+		{"google/cloud/secretmanager/v1p1beta1", "v1p1beta1"},
 		{"google/cloud/v2/secretmanager", ""}, // Only last component is checked
 		{"google/cloud/secretmanager", ""},
 		{"path/to/api/apiv1", ""},
