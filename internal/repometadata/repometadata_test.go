@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-func TestGenerate(t *testing.T) {
+func TestFromLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -99,7 +99,7 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerate_Error(t *testing.T) {
+func TestFromLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -118,7 +118,7 @@ func TestGenerate_Error(t *testing.T) {
 			library: &config.Library{
 				Name:         "google-cloud-secret-manager",
 				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "google/cloud/notallowed/v1"}},
+				APIs:         []*config.API{{Path: "android/notallowed/v1"}},
 			},
 			// Error returned by serviceconfig.Find isn't easily distinguished
 		},
