@@ -69,7 +69,7 @@ type RepoMetadata struct {
 	DistributionName string `json:"distribution_name,omitempty"`
 
 	// IssueTracker is the URL to the issue tracker.
-	IssueTracker string `json:"issue_tracker"`
+	IssueTracker string `json:"issue_tracker,omitempty"`
 
 	// Language is the programming language (e.g., "rust", "python", "go").
 	Language string `json:"language,omitempty"`
