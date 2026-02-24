@@ -194,6 +194,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							},
 						},
 						Python: &config.PythonPackage{
+							ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
+							NamePrettyOverride:           "Secret Manager",
 							OptArgsByAPI: map[string][]string{
 								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 							},
