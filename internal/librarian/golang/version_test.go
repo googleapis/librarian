@@ -274,6 +274,29 @@ func TestResolveClientPath(t *testing.T) {
 			wantVersionPath: "library-name/customdir/apiv1",
 			wantClientDir:   "customdir",
 		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Name: "bigquery/v2",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/bigquery/v2",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "bigquery",
+							ImportPath:      "bigquery/v2",
+							Path:            "google/cloud/bigquery/v2",
+						},
+					},
+				},
+			},
+			apiPath:         "google/cloud/bigquery/v2",
+			wantVersionPath: "bigquery/v2/apiv2",
+			wantClientDir:   "bigquery",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)
