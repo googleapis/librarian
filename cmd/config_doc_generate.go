@@ -29,6 +29,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -340,10 +342,7 @@ func (d *docData) formatType(typeName string) string {
 // provided name from the start of the documentation if present.
 func cleanDoc(doc string, name string) string {
 	doc = strings.TrimSpace(doc)
-	if name != "" && strings.HasPrefix(doc, name) {
-		doc = strings.TrimPrefix(doc, name)
-		doc = strings.TrimSpace(doc)
-	}
+	doc = trimName(doc, name)
 	lines := strings.Split(doc, "\n")
 	var out strings.Builder
 	for i, line := range lines {
@@ -366,4 +365,26 @@ func cleanDoc(doc string, name string) string {
 		out.WriteString(cleanedLine)
 	}
 	return out.String()
+}
+
+// trimName removes the provided name from the start of the documentation string
+// if it appears as a standalone word. It also capitalizes the first letter of
+// the resulting string.
+func trimName(doc, name string) string {
+	if name == "" || !strings.HasPrefix(doc, name) {
+		return doc
+	}
+	if len(doc) > len(name) {
+		r, _ := utf8.DecodeRuneInString(doc[len(name):])
+		if unicode.IsLetter(r) {
+			return doc
+		}
+	}
+	doc = strings.TrimPrefix(doc, name)
+	doc = strings.TrimSpace(doc)
+	if len(doc) > 0 {
+		r, size := utf8.DecodeRuneInString(doc)
+		doc = string(unicode.ToUpper(r)) + doc[size:]
+	}
+	return doc
 }

@@ -246,7 +246,13 @@ func TestCleanDoc(t *testing.T) {
 			name:    "doc repeating field name",
 			doc:     "Language is the language for this workspace.",
 			pkgName: "Language",
-			want:    "is the language for this workspace.",
+			want:    "Is the language for this workspace.",
+		},
+		{
+			name:    "doc prefix but not whole word",
+			doc:     "Language is the language for this workspace.",
+			pkgName: "Lang",
+			want:    "Language is the language for this workspace.",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
