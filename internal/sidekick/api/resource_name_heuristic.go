@@ -83,7 +83,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				extractLiteralsFromPath(binding.PathTemplate, vocab)
+				vocab = extractLiteralsFromPath(binding.PathTemplate, vocab)
 			}
 		}
 	}
@@ -92,9 +92,9 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 
 // extractLiteralsFromPath parses a path template and adds any string literals
 // (both top-level and nested inside variables) to the provided vocabulary set.
-func extractLiteralsFromPath(tmpl *PathTemplate, vocab map[string]bool) {
+func extractLiteralsFromPath(tmpl *PathTemplate, vocab map[string]bool) map[string]bool {
 	if tmpl == nil {
-		return
+		return vocab
 	}
 	for _, seg := range tmpl.Segments {
 		// Add regular literals (e.g. /projects/...)
@@ -110,4 +110,5 @@ func extractLiteralsFromPath(tmpl *PathTemplate, vocab map[string]bool) {
 			}
 		}
 	}
+	return vocab
 }
