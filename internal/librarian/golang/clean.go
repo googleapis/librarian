@@ -56,6 +56,9 @@ func Clean(library *config.Library) error {
 		return err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
+	if _, err := os.Stat(snippetDir); os.IsNotExist(err) {
+		return nil
+	}
 	if err := clean(snippetDir, nestedModule, nil); err != nil {
 		return err
 	}
