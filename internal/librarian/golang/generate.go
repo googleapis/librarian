@@ -113,14 +113,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 			return err
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		if err != nil {
+			return err
+		}
 		if err := generateRepoMetadata(api, library); err != nil {
 			return err
 		}
 		if i != 0 {
 			continue
-		}
-		if err != nil {
-			return err
 		}
 		if err := generateREADME(library, api, moduleRoot); err != nil {
 			return err
