@@ -24,14 +24,14 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-func generateRepoMetadata(config *config.Config, api *serviceconfig.API, library *config.Library) error {
+func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
 		ClientDocumentation: clientDocURL(library, api.Path),
 		ClientLibraryType:   "generated",
 		Description:         repometadata.CleanTitle(api.Title),
 		DistributionName:    distributionName(library, api.Path, api.ShortName),
-		Language:            config.Language,
+		Language:            "go",
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        library.ReleaseLevel,
 	}

@@ -46,9 +46,9 @@ var (
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generate(ctx, config, library, googleapisDir); err != nil {
+		if err := generate(ctx, library, googleapisDir); err != nil {
 			return err
 		}
 	}
@@ -56,7 +56,7 @@ func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*
 }
 
 // generate generates a Go client library.
-func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
@@ -113,7 +113,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 			return err
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
-		if err := generateRepoMetadata(config, api, library); err != nil {
+		if err := generateRepoMetadata(api, library); err != nil {
 			return err
 		}
 		if i != 0 {
