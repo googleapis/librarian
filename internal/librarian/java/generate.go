@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -60,9 +61,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	}
 
 	args := append([]string{"--replace"}, files...)
-	cmd := exec.CommandContext(ctx, "google-java-format", args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := command.Run(ctx, "google-java-format", args...); err != nil {
 		return fmt.Errorf("formatting failed: %w", err)
 	}
 	return nil
