@@ -211,6 +211,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			name:      "heuristic: compute instance",
 			serviceID: ".google.cloud.compute.v1.Instances", // eligible
 			path: NewPathTemplate().
+				WithLiteral("compute").WithLiteral("v1").
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("zones").WithVariableNamed("zone").
 				WithLiteral("instances").WithVariableNamed("instance"),
