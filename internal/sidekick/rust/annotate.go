@@ -19,7 +19,6 @@ import (
 	"cmp"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -1580,7 +1579,11 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	if m.PathInfo != nil {
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
-				annotation.ResourceNameTemplate = formatResourceNameTemplate(b.TargetResource.Template)
+				tmpl, err := formatResourceNameTemplateFromPath(m, b)
+				if err != nil {
+					return err
+				}
+				annotation.ResourceNameTemplate = tmpl
 				for _, path := range b.TargetResource.FieldPaths {
 					accSegments, err := makeAccessors(path, m)
 					if err != nil {
@@ -1597,13 +1600,33 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	return nil
 }
 
-// resourceNameVarPattern matches variable segments in a resource name template (e.g., "{project}", "{name=*}").
-var resourceNameVarPattern = regexp.MustCompile(`\{[^}]+\}`)
+// formatResourceNameTemplateFromPath constructs the Rust format string directly from the
+// parsed PathTemplate.
+func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
+	// Determine the service host (mirroring logic in api/resource_identification.go)
+	host := m.Model.Name + ".googleapis.com"
+	if m.Service != nil && m.Service.DefaultHost != "" {
+		host = m.Service.DefaultHost
+	}
 
-// formatResourceNameTemplate replaces all variable segments (e.g., "{project}", "{name=*}")
-// with "{}" to be used as a format string in Rust.
-func formatResourceNameTemplate(template string) string {
-	return resourceNameVarPattern.ReplaceAllString(template, "{}")
+	var sb strings.Builder
+	sb.WriteString("//")
+	sb.WriteString(host)
+
+	// We assume simple path templates where variables correspond to arguments.
+	if b.PathTemplate == nil {
+		return "", fmt.Errorf("missing path template for method %s", m.ID)
+	}
+
+	for _, seg := range b.PathTemplate.Segments {
+		sb.WriteByte('/')
+		if seg.Literal != nil {
+			sb.WriteString(*seg.Literal)
+		} else if seg.Variable != nil {
+			sb.WriteString("{}")
+		}
+	}
+	return sb.String(), nil
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

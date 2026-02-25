@@ -293,6 +293,13 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+			m.PathInfo.Bindings[0].PathTemplate = api.NewPathTemplate().
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("zones").
+				WithVariableNamed("zone").
+				WithLiteral("types").
+				WithVariableNamed("type")
 			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
 				Template:   template,
 				FieldPaths: fields,
@@ -301,7 +308,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	}
 
 	// Setup: Inject resource for the "move" method
-	injectTargetResource(".test.v1.ResourceService.move", "//test.googleapis.com/projects/{project}/zones/{zone}/types/{type}", [][]string{
+	injectTargetResource(".test.v1.ResourceService.move", "//Test.googleapis.com/projects/{project}/zones/{zone}/types/{type}", [][]string{
 		{"project"},
 		{"zone"},
 		{"type"},
@@ -322,7 +329,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			name: "WithTargetResource",
 			id:   ".test.v1.ResourceService.move",
 			want: &methodAnnotation{
-				ResourceNameTemplate: "//test.googleapis.com/projects/{}/zones/{}/types/{}",
+				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/zones/{}/types/{}",
 				ResourceNameArgs: []string{
 					"Some(&req).map(|m| &m.project).map(|s| s.as_str()).unwrap_or(\"\")",
 					"Some(&req).map(|m| &m.zone).map(|s| s.as_str()).unwrap_or(\"\")",
