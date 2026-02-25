@@ -102,9 +102,6 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"include-grpc-only-methods": "true",
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	_, err = annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
