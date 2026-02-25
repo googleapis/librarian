@@ -24,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestClean_Success(t *testing.T) {
+func TestClean(t *testing.T) {
 	t.Parallel()
 	libraryName := "testlib"
 	for _, test := range []struct {
