@@ -59,6 +59,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 						"docs/CHANGELOG.md",
 					},
 					Python: &config.PythonPackage{
+						MetadataNameOverride:         "secretmanager",
 						NamePrettyOverride:           "Secret Manager",
 						ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 						OptArgsByAPI: map[string][]string{

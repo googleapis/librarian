@@ -1,0 +1,12 @@
+type: google.api.Service
+config_version: 3
+name: meet.googleapis.com
+title: Google Meet API
+
+documentation:
+  summary: Create and manage meetings in Google Meet.
+
+publishing:
+  new_issue_uri: https://issuetracker.google.com/issues/new?component=1216362&template=1766418
+  documentation_uri: https://developers.google.com/meet/api/guides/overview
+  api_short_name: meet

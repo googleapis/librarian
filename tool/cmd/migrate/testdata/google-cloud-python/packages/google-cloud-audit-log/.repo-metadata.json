@@ -7,7 +7,7 @@
   "issue_tracker": "",
   "language": "python",
   "library_type": "OTHER",
-  "name": "auditlog",
+  "name": "google-cloud-audit-log",
   "name_pretty": "Audit Log API",
   "product_documentation": "https://cloud.google.com/logging/docs/audit",
   "release_level": "preview",

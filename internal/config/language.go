@@ -324,6 +324,12 @@ type PythonPackage struct {
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
 	// field.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
+
+	// MetadataNameOverride allows the name in .repo-metadata.json (which is
+	// also used as part of the client documentation URI) to be overridden. By
+	// default it's the package name, but older packages use the API short name
+	// instead.
+	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.
