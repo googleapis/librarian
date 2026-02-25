@@ -79,47 +79,37 @@ func TestCreateProtocOptions(t *testing.T) {
 	}
 }
 
-func TestConstructProtocCommand(t *testing.T) {
+func TestConstructProtocCommand_Success(t *testing.T) {
 	t.Parallel()
-	for _, test := range []struct {
-		name    string
-		api     *config.API
-		wantErr bool
-	}{
-		{
-			name: "basic case",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-		},
-		{
-			name:    "no protos",
-			api:     &config.API{Path: "nonexistent"},
-			wantErr: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			protocOptions := []string{"--java_out=out"}
-			cmd, protos, err := constructProtocCommand(t.Context(), test.api, googleapisDir, protocOptions)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("constructProtocCommand() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if test.wantErr {
-				return
-			}
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	protocOptions := []string{"--java_out=out"}
 
-			if filepath.Base(cmd.Path) != "protoc" {
-				t.Errorf("expected command protoc, got %s", cmd.Path)
-			}
+	cmd, protos, err := constructProtocCommand(t.Context(), api, googleapisDir, protocOptions)
+	if err != nil {
+		t.Fatalf("constructProtocCommand() unexpected error: %v", err)
+	}
 
-			// Verify protos contains the expected files
-			expectedProtos := []string{
-				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-				filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-				filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-			}
-			if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-				t.Errorf("mismatch in protos (-want +got):\n%s", diff)
-			}
-		})
+	if filepath.Base(cmd.Path) != "protoc" {
+		t.Errorf("expected command protoc, got %s", cmd.Path)
+	}
+
+	// Verify protos contains the expected files
+	expectedProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+	}
+	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
+		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+	}
+}
+
+func TestConstructProtocCommand_Error(t *testing.T) {
+	t.Parallel()
+	api := &config.API{Path: "nonexistent"}
+	protocOptions := []string{"--java_out=out"}
+	if _, _, err := constructProtocCommand(t.Context(), api, googleapisDir, protocOptions); err == nil {
+		t.Error("constructProtocCommand() expected error for nonexistent path, got nil")
 	}
 }
 
@@ -128,11 +118,9 @@ func TestGenerateAPI(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Java GAPIC code generation")
 	}
-
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
-
 	outdir := t.TempDir()
 	err := generateAPI(
 		t.Context(),
@@ -144,7 +132,6 @@ func TestGenerateAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	// Verify that the output was restructured.
 	restructuredPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java")
 	if _, err := os.Stat(restructuredPath); err != nil {
@@ -163,6 +150,17 @@ func TestGenerate_ErrorCases(t *testing.T) {
 			name:    "no apis",
 			library: &config.Library{Name: "test"},
 			wantErr: "no apis configured for library \"test\"",
+		},
+		{
+			name: "invalid version",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager"}, // Missing version
+				},
+			},
+			wantErr: "failed to extract version from api path",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -248,7 +246,6 @@ func TestRestructureOutput(t *testing.T) {
 	version := "v1"
 	libraryID := "secretmanager"
 	libraryName := "google-cloud-secretmanager"
-
 	// Create a dummy structure to mimic generator output
 	dirs := []string{
 		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
@@ -297,7 +294,6 @@ func TestRestructureOutput(t *testing.T) {
 func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
-
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
 	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
 	protos := []string{proto1, commonResources}

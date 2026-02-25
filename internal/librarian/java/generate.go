@@ -68,7 +68,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if version == "" {
 		return fmt.Errorf("failed to extract version from api path %q", api.Path)
 	}
-	// Output directories for Java as seen in v0.7.0
+	// Output directories for Java
 	gapicDir := filepath.Join(outdir, version, "gapic")
 	grpcDir := filepath.Join(outdir, version, "grpc")
 	protoDir := filepath.Join(outdir, version, "proto")
@@ -77,7 +77,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return err
 		}
 	}
-
 	protocOptions, err := createProtocOptions(api, library, googleapisDir, protoDir, grpcDir, gapicDir)
 	if err != nil {
 		return err
@@ -134,30 +133,29 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		// --java_out generates standard Protocol Buffer Java classes.
 		fmt.Sprintf("--java_out=%s", protoDir),
 	}
-
+	// TODO(https://github.com/googleapis/librarian/issues/4130):
+	// get transport from config
 	transport := library.Transport
 	if transport == "" {
 		transport = "grpc+rest" // Default to grpc+rest
 	}
-
 	// --java_grpc_out generates the gRPC service stubs.
 	// This is omitted if the transport is purely REST-based.
 	if transport != "rest" {
 		args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
 	}
-
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
-	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
+	// "metadata" enables the generation of GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
 
-	sc, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangJava)
 	if err != nil {
 		return nil, err
 	}
-	if sc != nil && sc.ServiceConfig != "" {
+	if apiCfg != nil && apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
-		gapicOpts = append(gapicOpts, fmt.Sprintf("api-service-config=%s", filepath.Join(googleapisDir, sc.ServiceConfig)))
+		gapicOpts = append(gapicOpts, fmt.Sprintf("api-service-config=%s", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
 	}
 
 	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
@@ -168,20 +166,18 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
 		gapicOpts = append(gapicOpts, fmt.Sprintf("grpc-service-config=%s", filepath.Join(googleapisDir, gc)))
 	}
-
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
 	gapicOpts = append(gapicOpts, fmt.Sprintf("transport=%s", transport))
-
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
-	// rather than strings, which is the standard for Google Cloud APIs.
+	// rather than strings.
+	// TODO(https://github.com/googleapis/librarian/issues/4130):
+	// assign this according to config
 	gapicOpts = append(gapicOpts, "rest-numeric-enums")
-
 	// --java_gapic_out invokes the GAPIC generator.
 	// The "metadata:" prefix is a parameter that tells the generator to include
 	// the metadata files mentioned above in the output srcjar/zip for GraalVM support.
 	args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
 	args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
-
 	return args, nil
 }
 
@@ -194,12 +190,13 @@ func restructureOutput(outputDir, libraryID, version, googleapisDir string, prot
 	resourceNameSrcDir := filepath.Join(outputDir, version, "gapic", "proto", "src", "main", "java")
 	samplesDir := filepath.Join(outputDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
 
-	// Adjusting libraryID for Java naming convention as seen in v0.7.0.
+	// Adjusting libraryID for Java naming convention.
 	// This logic derives destination directory names (e.g., google-cloud-secretmanager,
 	// proto-google-cloud-secretmanager-v1) from the 'name' field in librarian.yaml.
 	// This currently handles cases where the API path (e.g., google/cloud/secrets)
 	// differs from the desired library name (e.g., secretmanager).
-	// TODO: Consider making sub-module naming patterns customizable in librarian.yaml.
+	// TODO(https://github.com/googleapis/librarian/issues/4130):
+	// Consider making sub-module naming patterns customizable in librarian.yaml.
 	libraryName := libraryID
 	if !strings.HasPrefix(libraryName, "google-cloud-") {
 		libraryName = "google-cloud-" + libraryID
