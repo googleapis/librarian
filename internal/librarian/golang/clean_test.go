@@ -32,6 +32,7 @@ func TestClean(t *testing.T) {
 		outputFiles  []string
 		snippetFiles []string
 		keep         []string
+		libraryRoot  string
 		nestedModule string
 		wantOutput   []string
 		wantSnippets []string
@@ -54,6 +55,7 @@ func TestClean(t *testing.T) {
 			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
 			keep:         []string{},
+			libraryRoot:  t.TempDir(),
 			wantOutput: []string{
 				"apiv1/non-generated.go",
 				// skipped because the file doesn't live in a versioned directory.
@@ -69,6 +71,7 @@ func TestClean(t *testing.T) {
 			},
 			snippetFiles: []string{"snippet1.go"},
 			keep:         []string{"apiv1/auxiliary_go123.go"},
+			libraryRoot:  t.TempDir(),
 			wantOutput:   []string{"apiv1/auxiliary_go123.go"},
 		},
 		{
@@ -76,6 +79,7 @@ func TestClean(t *testing.T) {
 			outputFiles:  []string{"nested/apiv1beta1/doc.go"},
 			snippetFiles: []string{"nested/snippet.go"},
 			keep:         []string{},
+			libraryRoot:  t.TempDir(),
 			nestedModule: "nested",
 			wantOutput:   []string{"nested/apiv1beta1/doc.go"},
 			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
@@ -84,17 +88,25 @@ func TestClean(t *testing.T) {
 			name:        "no snippets",
 			outputFiles: []string{"apiv1/auxiliary.go"},
 			keep:        []string{},
+			libraryRoot: t.TempDir(),
 			wantOutput:  []string{},
+		},
+		{
+			name:         "removes all snippets in current directory",
+			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
+			keep:         []string{},
+			libraryRoot:  ".",
+			wantOutput:   []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			root := t.TempDir()
-			outputPath := filepath.Join(root, libraryName)
-			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
+			outputPath := filepath.Join(test.libraryRoot, libraryName)
+			snippetPath := filepath.Join(test.libraryRoot, "internal", "generated", "snippets", libraryName)
+			defer os.RemoveAll(filepath.Join(test.libraryRoot, "internal"))
 			lib := &config.Library{
 				Name:   libraryName,
-				Output: filepath.Join(root),
+				Output: filepath.Join(test.libraryRoot),
 				Keep:   test.keep,
 				Go: &config.GoModule{
 					NestedModule: test.nestedModule,
@@ -112,14 +124,14 @@ func TestClean(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotOutputFiles := getFilesInDir(t, outputPath, filepath.Join(root, libraryName))
+			gotOutputFiles := getFilesInDir(t, outputPath, filepath.Join(test.libraryRoot, libraryName))
 			slices.Sort(gotOutputFiles)
 			slices.Sort(test.wantOutput)
 			if !slices.Equal(gotOutputFiles, test.wantOutput) {
 				t.Errorf("output directory: got %v, want %v", gotOutputFiles, test.wantOutput)
 			}
 
-			gotSnippetFiles := getFilesInDir(t, snippetPath, root)
+			gotSnippetFiles := getFilesInDir(t, snippetPath, test.libraryRoot)
 			if !slices.Equal(gotSnippetFiles, test.wantSnippets) {
 				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, test.wantSnippets)
 			}
