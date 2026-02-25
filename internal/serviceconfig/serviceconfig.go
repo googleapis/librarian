@@ -191,8 +191,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		if api.DocumentationURI == "" {
 			api.DocumentationURI = publishing.GetDocumentationUri()
 		}
-		shortname := publishing.GetApiShortName()
-		if shortname != "" {
+		if shortname := publishing.GetApiShortName(); shortname != "" {
 			api.ShortName = shortname
 		}
 	}
