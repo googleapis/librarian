@@ -212,6 +212,7 @@
 - path: google/cloud/apigeeconnect/v1
   transports:
     csharp: grpc+rest
+    go: ""
     java: grpc+rest
     nodejs: grpc+rest
     php: grpc+rest
@@ -223,6 +224,7 @@
   path: google/cloud/apigeeregistry/v1
   transports:
     csharp: grpc+rest
+    go: ""
     java: grpc+rest
     nodejs: grpc+rest
     php: grpc+rest
@@ -290,6 +292,7 @@
 - path: google/cloud/beyondcorp/appconnections/v1
   transports:
     csharp: grpc
+    go: ""
     java: grpc
     nodejs: grpc+rest
     php: grpc+rest
@@ -298,6 +301,7 @@
 - path: google/cloud/beyondcorp/appconnectors/v1
   transports:
     csharp: grpc
+    go: ""
     java: grpc
     nodejs: grpc+rest
     php: grpc+rest
@@ -306,6 +310,7 @@
 - path: google/cloud/beyondcorp/appgateways/v1
   transports:
     csharp: grpc
+    go: ""
     java: grpc
     nodejs: grpc+rest
     php: grpc+rest
@@ -314,6 +319,7 @@
 - path: google/cloud/beyondcorp/clientconnectorservices/v1
   transports:
     csharp: grpc
+    go: ""
     java: grpc
     nodejs: grpc+rest
     php: grpc+rest
@@ -322,6 +328,7 @@
 - path: google/cloud/beyondcorp/clientgateways/v1
   transports:
     csharp: grpc
+    go: ""
     java: grpc
     nodejs: grpc+rest
     php: grpc+rest
@@ -1244,6 +1251,7 @@
     python: grpc+rest
     ruby: grpc+rest
 - languages:
+    - go
     - python
   path: google/cloud/workstations/v1beta
 - path: google/container/v1
@@ -1276,6 +1284,10 @@
     nodejs: grpc+rest
     php: grpc+rest
     python: grpc+rest
+- path: google/devtools/clouderrorreporting/v1beta1
+  languages:
+    - go
+    - python
 - path: google/devtools/cloudprofiler/v2
 - path: google/devtools/cloudtrace/v1
   title: Cloud Trace API
@@ -1288,6 +1300,9 @@
     nodejs: grpc+rest
     php: grpc+rest
     python: grpc+rest
+- path: google/devtools/containeranalysis/v1beta1
+  languages:
+    - go
 - languages:
     - python
   path: google/devtools/source/v1
@@ -1570,6 +1585,9 @@
   path: google/shopping/type
   transports:
     python: grpc+rest
+- languages:
+    - go
+  path: google/spanner/adapter/v1
 - path: google/spanner/admin/database/v1
 - path: google/spanner/admin/instance/v1
 - path: google/spanner/v1
@@ -1588,6 +1606,9 @@
     php: grpc+rest
     python: grpc
 - path: google/storagetransfer/v1
+- languages:
+    - go
+  path: google/streetview/publish/v1
 - path: google/type
 - path: grafeas/v1
   transports:

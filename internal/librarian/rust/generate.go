@@ -114,11 +114,13 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		}
 		switch modelConfig.Language {
 		case "rust":
-			err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
+			if module.Template == "prost" {
+				err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
+			} else {
+				err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
+			}
 		case "rust_storage":
 			return generateRustStorage(ctx, library, module.Output, sources)
-		case "rust+prost":
-			err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
 		default:
 			err = fmt.Errorf("language %q not supported", modelConfig.Language)
 		}

@@ -31,12 +31,17 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
+	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
+)
+
 var errNoApis = errors.New("no apis configured for library")
 
 // GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generate(ctx, library, googleapisDir); err != nil {
+		if err := generate(ctx, config, library, googleapisDir); err != nil {
 			return err
 		}
 	}
@@ -44,7 +49,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 }
 
 // generate generates a Python client library.
-func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("error generating %s: %w", library.Name, errNoApis)
 	}
@@ -71,21 +76,15 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3157):
-	// Copy files from .librarian/generator-input/client-post-processing
-	// for post processing, or reimplement.
-
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudget here, as Generate should
-	// compute it. For now, use the last component of the first api path as
-	// the default version.
-	defaultVersion := filepath.Base(library.APIs[0].Path)
-
-	// Generate .repo-metadata.json.
-	// TODO(https://github.com/googleapis/librarian/issues/3159): stop
-	// hardcoding the language and repo name, instead getting it passed in.
-	if err := repometadata.FromLibrary(library, "python", "googleapis/google-cloud-python", googleapisDir, defaultVersion, outdir); err != nil {
-		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	// Construct the repo metadata in memory, then write it to disk. This has
+	// to be before post-processing, as the data in .repo-metadata.json is used
+	// by the post-processor, primarily for documentation.
+	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
+	if err != nil {
+		return err
+	}
+	if err := repoMetadata.Write(library.Output); err != nil {
+		return err
 	}
 
 	// Run post processor (synthtool)
@@ -100,11 +99,51 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 
 	// Clean up files that shouldn't be in the final output.
-	if err := cleanUpFilesAfterPostProcessing(repoRoot); err != nil {
+	if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to cleanup after post processing: %w", err)
 	}
 
 	return nil
+}
+
+// createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
+// for the given library.
+func createRepoMetadata(config *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
+	// TODO(https://github.com/googleapis/librarian/issues/3157):
+	// Copy files from .librarian/generator-input/client-post-processing
+	// for post processing, or reimplement.
+	repoMetadata, err := repometadata.FromLibrary(config, library, googleapisDir)
+	if err != nil {
+		return nil, err
+	}
+	if library.Python != nil && library.Python.MetadataNameOverride != "" {
+		repoMetadata.Name = library.Python.MetadataNameOverride
+	} else {
+		repoMetadata.Name = library.Name
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/3146):
+	// Remove the default version fudge here, as Generate should
+	// compute it. For now, use the last component of the first api path as
+	// the default version.
+	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
+	// library type.
+	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
+	// Work out the right documentation URI based on whether this is a Cloud
+	// or non-Cloud API.
+	docTemplate := cloudGoogleComDocumentationTemplate
+	if !strings.HasPrefix(library.Name, "google-cloud") {
+		docTemplate = googleapisDevDocumentationTemplate
+	}
+	repoMetadata.ClientDocumentation = fmt.Sprintf(docTemplate, repoMetadata.Name)
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
+	if library.Python != nil && library.Python.NamePrettyOverride != "" {
+		repoMetadata.NamePretty = library.Python.NamePrettyOverride
+	}
+	if library.Python != nil && library.Python.ProductDocumentationOverride != "" {
+		repoMetadata.ProductDocumentation = library.Python.ProductDocumentationOverride
+	}
+	return repoMetadata, nil
 }
 
 // generateAPI generates part of a library for a single api.
@@ -277,6 +316,16 @@ func getStagingChildDirectory(apiPath string, isProtoOnly bool) string {
 
 // runPostProcessor runs the synthtool post processor on the output directory.
 func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
+	// The post-processor expects the string replacement scripts to be in the
+	// output directory, so we need to copy them there.
+	// TODO(https://github.com/googleapis/librarian/issues/3008): reimplement
+	// the string replacements in Go, and at that point stop copying the files.
+	scriptsOutput := filepath.Join(outDir, "scripts", "client-post-processing")
+	scriptsInput := filepath.Join(repoRoot, ".librarian", "generator-input", "client-post-processing")
+	if err := os.CopyFS(scriptsOutput, os.DirFS(scriptsInput)); err != nil {
+		return err
+	}
+
 	pythonCode := fmt.Sprintf(`
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
@@ -329,13 +378,18 @@ func copyReadmeToDocsDir(outdir string) error {
 
 // cleanUpFilesAfterPostProcessing cleans up files after post processing.
 // TODO(https://github.com/googleapis/librarian/issues/3210): generate
-// directly in place and remove this code entirely.
-func cleanUpFilesAfterPostProcessing(repoRoot string) error {
-	// Remove owl-bot-staging
+// directly in place and remove the owl-bot-staging directory entirely.
+// TODO(https://github.com/googleapis/librarian/issues/3008): perform string
+// replacements in Go code, so we don't need to copy files.
+func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
+	// Remove owl-bot-staging from the repo root.
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
-
+	// Remove the scripts directory from the package root.
+	if err := os.RemoveAll(filepath.Join(outdir, "scripts")); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove scripts: %w", err)
+	}
 	return nil
 }
 
@@ -352,7 +406,7 @@ func DefaultOutputByName(name, defaultOutput string) string {
 // "google-cloud-secretmanager".
 func DefaultLibraryName(api string) string {
 	path := api
-	if serviceconfig.IsVersion(filepath.Base(api)) {
+	if serviceconfig.ExtractVersion(api) != "" {
 		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
 		path = filepath.Dir(api)
 	}

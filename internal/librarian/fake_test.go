@@ -32,10 +32,13 @@ func TestGenerateLibraries(t *testing.T) {
 		Name:   libraryName,
 		Output: outputDir,
 	}
+	cfg := &config.Config{
+		Language: languageFake,
+	}
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generateLibraries(t.Context(), "fake", []*config.Library{library}, "", nil); err != nil {
+	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, "", nil); err != nil {
 		t.Fatal(err)
 	}
 

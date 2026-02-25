@@ -109,17 +109,23 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangGo)
-	if err != nil {
-		return err
-	}
-	if err := generateREADME(library, api, moduleRoot); err != nil {
-		return err
+		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		if err != nil {
+			return err
+		}
+		if err := generateRepoMetadata(api, library); err != nil {
+			return err
+		}
+		if i != 0 {
+			continue
+		}
+		if err := generateREADME(library, api, moduleRoot); err != nil {
+			return err
+		}
 	}
 	if err := updateSnippetMetadata(library, outdir); err != nil {
 		return err
@@ -192,6 +198,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
+	if goAPI != nil && goAPI.HasDiregapic {
+		opts = append(opts, "diregapic")
+	}
 	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {
 		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
 	}
@@ -204,7 +213,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// TODO(https://github.com/googleapis/librarian/issues/3775): assuming
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
-	opts = append(opts, "transport="+transport(sc))
+	if trans := transport(sc); trans != "" {
+		opts = append(opts, "transport="+trans)
+	}
 	level, err := releaseLevel(apiPath, library.Version)
 	if err != nil {
 		return nil, err
@@ -214,11 +225,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 }
 
 func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
-	version := filepath.Base(apiPath)
-	if serviceconfig.IsVersion(version) {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if version != "" {
 		version = fmt.Sprintf("/api%s", version)
-	} else {
-		version = ""
 	}
 	if goAPI != nil && goAPI.VersionSuffix != "" {
 		version = fmt.Sprintf("%s/%s", version, goAPI.VersionSuffix)

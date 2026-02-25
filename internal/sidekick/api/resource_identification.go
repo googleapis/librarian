@@ -17,6 +17,7 @@ package api
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // IdentifyTargetResources populates the TargetResource field in PathBinding
@@ -28,13 +29,16 @@ import (
 //  2. Heuristic Identification: For allow-listed services, uses path segment
 //     patterns to identify resources when annotations are missing.
 func IdentifyTargetResources(model *API) error {
+	// Build the set of known resource names for the heuristic.
+	vocabulary := BuildHeuristicVocabulary(model)
+
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			if method.PathInfo == nil {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, vocabulary); err != nil {
 					return err
 				}
 			}
@@ -44,7 +48,7 @@ func IdentifyTargetResources(model *API) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -62,8 +66,65 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding) erro
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
-	// TODO(#4100): Implement IdentifyTargetResources for allow-listed services using heuristic path segment patterns.
+	target, err = identifyHeuristicTarget(method, binding, vocabulary)
+	if err != nil {
+		return err
+	}
+	if target != nil {
+		binding.TargetResource = target
+		return nil
+	}
 	return nil
+}
+
+func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
+	if !IsHeuristicEligible(method.Service.ID) {
+		return nil, nil
+	}
+
+	var fieldPaths [][]string
+	var lastIndex int
+	segments := binding.PathTemplate.Segments
+
+	// Iterate starting from the second segment, looking for (literal, variable) pairs.
+	for i := 1; i < len(segments); i++ {
+		curr := segments[i]
+		prev := segments[i-1]
+
+		if curr.Variable == nil || prev.Literal == nil {
+			continue
+		}
+
+		// Check if the preceding literal is a valid collection identifier.
+		if !isCollectionIdentifier(*prev.Literal, vocabulary) {
+			// Once a path segment breaks the chain of valid (collection, ID) pairs,
+			// the resource identifier stops.
+			break
+		}
+
+		fieldPath := curr.Variable.FieldPath
+		// Verify the field exists in the input message.
+		_, err := findField(method.InputType, fieldPath)
+		if err != nil {
+			return nil, err
+		}
+		fieldPaths = append(fieldPaths, fieldPath)
+		lastIndex = i + 1
+	}
+
+	if len(fieldPaths) == 0 {
+		return nil, nil
+	}
+
+	template, err := constructTemplate(method, segments[:lastIndex])
+	if err != nil {
+		return nil, err
+	}
+
+	return &TargetResource{
+		FieldPaths: fieldPaths,
+		Template:   template,
+	}, nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
@@ -95,8 +156,13 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
+	template, err := constructTemplate(method, binding.PathTemplate.Segments)
+	if err != nil {
+		return nil, err
+	}
 	return &TargetResource{
 		FieldPaths: fieldPaths,
+		Template:   template,
 	}, nil
 }
 
@@ -127,4 +193,37 @@ func findField(msg *Message, path []string) (*Field, error) {
 	}
 
 	return field, nil
+}
+
+// constructTemplate reconstructs the canonical resource name template from path segments.
+func constructTemplate(method *Method, segments []PathSegment) (string, error) {
+	host, err := getServiceHost(method)
+	if err != nil {
+		return "", err
+	}
+
+	var sb strings.Builder
+	sb.WriteString("//")
+	sb.WriteString(host)
+
+	for _, seg := range segments {
+		sb.WriteString("/")
+		if seg.Literal != nil {
+			sb.WriteString(*seg.Literal)
+		} else if seg.Variable != nil {
+			// Use simple field path form {field}, ignoring internal patterns, handling both exploded paths and full name variables correctly.
+			fmt.Fprintf(&sb, "{%s}", strings.Join(seg.Variable.FieldPath, "."))
+		}
+	}
+	return sb.String(), nil
+}
+
+func getServiceHost(method *Method) (string, error) {
+	if method.Service != nil && method.Service.DefaultHost != "" {
+		return method.Service.DefaultHost, nil
+	}
+	if method.Model != nil && method.Model.Name != "" {
+		return method.Model.Name + ".googleapis.com", nil
+	}
+	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
 }

@@ -234,10 +234,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	language := "rust"
 	if module.Language != "" {
 		language = module.Language
-	} else if module.Template == "prost" {
-		language = "rust+prost"
 	}
-
 	specificationFormat := config.SpecProtobuf
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat

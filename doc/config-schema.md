@@ -121,8 +121,9 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_directory` | string | ClientDirectory is the directory where the client is generated, relative to Library.Output. |
-| `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. |
+| `disable_gapic` | bool | DisableGAPIC determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. |
 | `enabled_generator_features` | list of string | EnabledGeneratorFeatures provides a mechanism for enabling generator features at the API level. |
+| `has_diregapic` | bool | HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `import_path` | string | ImportPath is the Go import path for the API. |
 | `nested_protos` | list of string | NestedProtos is a list of nested proto files. |
 | `no_metadata` | bool | NoMetadata indicates whether to skip generating gapic_metadata.json. This is typically false. |
@@ -154,6 +155,9 @@ This document describes the schema for the librarian.yaml.
 | `opt_args` | list of string | OptArgs contains additional options passed to the generator, where the options are common to all apis. Example: ["warehouse-package-name=google-cloud-batch"] |
 | `opt_args_by_api` | map[string][]string | OptArgsByAPI contains additional options passed to the generator, where the options vary by api. In each entry, the key is the api (API path) and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 | `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
+| `name_pretty_override` | string | NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `product_documentation_override` | string | ProductDocumentationOverride allows the "product_documentation" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `metadata_name_override` | string | MetadataNameOverride allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
 
 ## RustCrate Configuration
 

@@ -89,7 +89,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s: %w", cmd.String(), err)
 	}
-	return postProcess(outdir, library.Name, version, googleapisDir, gapicDir, protos)
+	return postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, protos)
 }
 
 func constructProtocCommand(ctx context.Context, api *config.API, googleapisDir string, protocOptions []string) (*exec.Cmd, []string, error) {
@@ -111,11 +111,11 @@ func constructProtocCommand(ctx context.Context, api *config.API, googleapisDir 
 	return cmd, protos, nil
 }
 
-func postProcess(outdir, libraryName, version, googleapisDir, gapicDir string, protos []string) error {
+func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir string, protos []string) error {
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
-		if err := filesystem.Unzip(srcjarPath, gapicDir); err != nil {
+		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
@@ -266,11 +266,42 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 
 // Format formats a Java client library using google-java-format.
 func Format(ctx context.Context, library *config.Library) error {
+	files, err := collectJavaFiles(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to find java files for formatting: %w", err)
+	}
+	if len(files) == 0 {
+		return nil
+	}
+
+	if _, err := exec.LookPath("google-java-format"); err != nil {
+		return fmt.Errorf("google-java-format not found in PATH: %w", err)
+	}
+
+	args := append([]string{"--replace"}, files...)
+	cmd := exec.CommandContext(ctx, "google-java-format", args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("formatting failed: %w", err)
+	}
 	return nil
 }
 
-// Clean removes files in the library's output directory that are not in the keep list.
-// It targets patterns like proto-*, grpc-*, and the main GAPIC module.
-func Clean(library *config.Library) error {
-	return nil
+func collectJavaFiles(root string) ([]string, error) {
+	var files []string
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || filepath.Ext(path) != ".java" {
+			return nil
+		}
+		// exclude samples/snippets/generated
+		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) {
+			return nil
+		}
+		files = append(files, path)
+		return nil
+	})
+	return files, err
 }

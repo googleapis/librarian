@@ -15,26 +15,18 @@
 package serviceconfig
 
 import (
+	"path/filepath"
 	"regexp"
-	"strings"
 )
 
-var versionRegex = regexp.MustCompile(`^v\d+(?:(alpha|beta)\d*)?$`)
+var versionRegex = regexp.MustCompile(`^v\d+[a-z0-9]*$`)
 
 // ExtractVersion extracts the version from the given API path.
-// It only checks the last path component (the leaf directory).
+// It only checks the last path component.
 func ExtractVersion(path string) string {
-	v := path
-	if i := strings.LastIndex(path, "/"); i >= 0 {
-		v = path[i+1:]
-	}
-	if IsVersion(v) {
-		return v
+	version := filepath.Base(path)
+	if versionRegex.MatchString(version) {
+		return version
 	}
 	return ""
-}
-
-// IsVersion returns true if the given string is a valid API version.
-func IsVersion(s string) bool {
-	return versionRegex.MatchString(s)
 }

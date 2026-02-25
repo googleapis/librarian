@@ -28,6 +28,13 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	repoMetadataFile = ".repo-metadata.json"
+
+	// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
+	GAPICAutoLibraryType = "GAPIC_AUTO"
+)
+
 var (
 	errNoAPIs          = errors.New("library has no APIs from which to get metadata")
 	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
@@ -47,14 +54,22 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	// ClientLibraryType is the type of the client library (e.g. "generated").
+	// A Go specific field.
+	ClientLibraryType string `json:"client_library_type,omitempty"`
+
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
+
+	// Description is a short description of the API.
+	// A Go specific field.
+	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
 
 	// IssueTracker is the URL to the issue tracker.
-	IssueTracker string `json:"issue_tracker"`
+	IssueTracker string `json:"issue_tracker,omitempty"`
 
 	// Language is the programming language (e.g., "rust", "python", "go").
 	Language string `json:"language,omitempty"`
@@ -78,76 +93,59 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 }
 
-// FromLibrary generates the .repo-metadata.json file from config.Library.
-// It retrieves API information from the provided googleapisDir and constructs the metadata.
-func FromLibrary(library *config.Library, language, repo, googleapisDir, defaultVersion, outdir string) error {
+// FromLibrary creates a RepoMetadata from a specific library in a
+// configuration. It retrieves API information from the provided googleapisDir
+// and constructs common metadata. This function populates the following fields:
+// - APIDescription
+// - APIID
+// - APIShortName
+// - DistributionName
+// - IssueTracker
+// - Language
+// - Name
+// - NamePretty
+// - ProductDocumentation
+// - ReleaseLevel
+// - Repo
+//
+// Any other fields required by the caller's language should be populated by the
+// caller before writing to disk.
+func FromLibrary(config *config.Config, library *config.Library, googleapisDir string) (*RepoMetadata, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
+		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
 	}
 	firstAPIPath := library.APIs[0].Path
-	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, language)
+	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, config.Language)
 	if err != nil {
-		return fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
+		return nil, fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
 	}
 	if api.ServiceConfig == "" {
-		return fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
+		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
 	}
-	return FromAPI(api, library, language, repo, defaultVersion, outdir)
+	return fromAPI(config, api, library), nil
 }
 
-// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
-func FromAPI(api *serviceconfig.API, library *config.Library, language, repo, defaultVersion, outputDir string) error {
-	clientDocURL := buildClientDocURL(api, library, language)
+// fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
+func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
 		apiDescription = library.DescriptionOverride
 	}
-	metadata := &RepoMetadata{
+	return &RepoMetadata{
 		APIDescription:       apiDescription,
 		APIID:                api.ServiceName,
 		APIShortname:         api.ShortName,
-		ClientDocumentation:  clientDocURL,
-		DefaultVersion:       defaultVersion,
-		DistributionName:     buildDistributionName(api, library, language),
+		DistributionName:     library.Name,
 		IssueTracker:         api.NewIssueURI,
-		Language:             language,
-		LibraryType:          "GAPIC_AUTO",
+		Language:             config.Language,
 		Name:                 api.ShortName,
 		NamePretty:           cleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         library.ReleaseLevel,
-		Repo:                 repo,
-	}
-
-	return write(metadata, outputDir)
-}
-
-// buildClientDocURL builds the client documentation URL based on language.
-func buildClientDocURL(api *serviceconfig.API, library *config.Library, language string) string {
-	switch language {
-	case serviceconfig.LangGo:
-		return goClientDocURL(library, api.Path)
-	case serviceconfig.LangPython:
-		return fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", api.ShortName)
-	case serviceconfig.LangRust:
-		return fmt.Sprintf("https://docs.rs/google-cloud-%s/latest", api.ShortName)
-	default:
-		return ""
-	}
-}
-
-// buildDistributionName builds the distribution name based on language.
-func buildDistributionName(api *serviceconfig.API, library *config.Library, language string) string {
-	switch language {
-	case serviceconfig.LangGo:
-		return goDistributionName(library, api.Path, api.ShortName)
-	case serviceconfig.LangPython, serviceconfig.LangRust:
-		return library.Name
-	default:
-		return ""
+		Repo:                 config.Repo,
 	}
 }
 
@@ -170,17 +168,32 @@ func cleanTitle(title string) string {
 	return strings.TrimSpace(title)
 }
 
-// write writes the given RepoMetadata into outputDir/.repo-metadata.json.
-func write(metadata *RepoMetadata, outputDir string) error {
+// Write writes the given RepoMetadata into libraryOutputDir/.repo-metadata.json.
+func (metadata *RepoMetadata) Write(libraryOutputDir string) error {
 	data, err := json.MarshalIndent(metadata, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	metadataPath := filepath.Join(outputDir, ".repo-metadata.json")
+	metadataPath := filepath.Join(libraryOutputDir, repoMetadataFile)
 	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)
 	}
 
 	return nil
+}
+
+// Read reads the .repo-metadata.json file in the given directory and unmarshals
+// it as a RepoMetadata.
+func Read(libraryOutputDir string) (*RepoMetadata, error) {
+	data, err := os.ReadFile(filepath.Join(libraryOutputDir, repoMetadataFile))
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata *RepoMetadata
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return nil, err
+	}
+	return metadata, nil
 }

@@ -16,17 +16,19 @@
 package filesystem
 
 import (
-	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/googleapis/librarian/internal/command"
 )
 
 // MoveAndMerge moves entries from sourceDir to targetDir.
-// If an entry is a directory and already exists in targetDir, it merges the contents recursively.
-// Otherwise, it renames the entry.
+// It merges directories recursively if they exist in both source and target.
+// If an entry in sourceDir is a file that already exists in targetDir, it returns an error
+// instead of overwriting it. It also returns an error if sourceDir and targetDir are the same.
 func MoveAndMerge(sourceDir, targetDir string) error {
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -41,8 +43,15 @@ func MoveAndMerge(sourceDir, targetDir string) error {
 				if err := MoveAndMerge(oldPath, newPath); err != nil {
 					return err
 				}
+				// Remove the now-empty source directory after successful merge.
+				if err := os.Remove(oldPath); err != nil {
+					return err
+				}
 				continue
 			}
+		}
+		if _, err := os.Stat(newPath); err == nil {
+			return fmt.Errorf("entry %q already exists in %q", entry.Name(), targetDir)
 		}
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return err
@@ -58,62 +67,18 @@ func CopyFile(src, dest string) error {
 		return err
 	}
 	defer in.Close()
-
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	return err
-}
-
-// Unzip unzips the src archive into dest directory.
-func Unzip(src, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
+	if _, err = io.Copy(out, in); err != nil {
+		out.Close()
 		return err
 	}
-	defer r.Close()
+	return out.Close()
+}
 
-	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
-
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", fpath)
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, copyErr := io.Copy(outFile, rc)
-		rc.Close()
-		closeErr := outFile.Close()
-
-		if copyErr != nil {
-			return copyErr
-		}
-		if closeErr != nil {
-			return closeErr
-		}
-	}
-	return nil
+// Unzip unzips the src archive into dest directory using the system unzip command.
+func Unzip(ctx context.Context, src, dest string) error {
+	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
 }

@@ -33,10 +33,14 @@ type GoAPI struct {
 	// ClientDirectory is the directory where the client is generated, relative to Library.Output.
 	ClientDirectory string `yaml:"client_directory,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
+	// Also known as proto-only client, which does not define a service in the proto files.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
+	// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// This is typically false. Used for the GCE (compute) client.
+	HasDiregapic bool `yaml:"has_diregapic,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
@@ -308,6 +312,24 @@ type PythonPackage struct {
 	// ProtoOnlyAPIs contains the list of API paths which are proto-only, so
 	// should use regular protoc Python generation instead of GAPIC.
 	ProtoOnlyAPIs []string `yaml:"proto_only_apis,omitempty"`
+
+	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
+	// to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
+
+	// ProductDocumentationOverride allows the "product_documentation" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
+
+	// MetadataNameOverride allows the name in .repo-metadata.json (which is
+	// also used as part of the client documentation URI) to be overridden. By
+	// default it's the package name, but older packages use the API short name
+	// instead.
+	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.
