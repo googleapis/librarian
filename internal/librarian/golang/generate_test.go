@@ -274,10 +274,10 @@ func TestGenerate_NoAPI(t *testing.T) {
 	}
 	// Create a library directory and write a go file since the generation will skip.
 	if err := os.MkdirAll(filepath.Join(outDir, "auth"), 0755); err != nil {
-		return
+		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(outDir, "auth", "auth.go"), []byte("package main"), 0755); err != nil {
-		return
+		t.Fatal(err)
 	}
 	if err := generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
