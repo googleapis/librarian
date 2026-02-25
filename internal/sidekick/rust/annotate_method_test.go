@@ -301,7 +301,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	}
 
 	// Setup: Inject resource for the "move" method
-	injectTargetResource(".test.v1.ResourceService.move", "projects/{project}/zones/{zone}/types/{type}", [][]string{
+	injectTargetResource(".test.v1.ResourceService.move", "//test.googleapis.com/projects/{project}/zones/{zone}/types/{type}", [][]string{
 		{"project"},
 		{"zone"},
 		{"type"},
@@ -322,7 +322,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			name: "WithTargetResource",
 			id:   ".test.v1.ResourceService.move",
 			want: &methodAnnotation{
-				ResourceNameTemplate: "projects/{}/zones/{}/types/{}",
+				ResourceNameTemplate: "//test.googleapis.com/projects/{}/zones/{}/types/{}",
 				ResourceNameArgs: []string{
 					"Some(&req).map(|m| &m.project).map(|s| s.as_str()).unwrap_or(\"\")",
 					"Some(&req).map(|m| &m.zone).map(|s| s.as_str()).unwrap_or(\"\")",
