@@ -59,7 +59,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 // generate generates a Go client library.
 func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return nil
 	}
 
 	outdir, err := filepath.Abs(library.Output)
