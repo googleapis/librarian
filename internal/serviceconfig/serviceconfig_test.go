@@ -289,7 +289,7 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Title:            "override title",
 				DocumentationURI: "override doc uri",
 				NewIssueURI:      "override new issue uri",
-				ShortName:        "service config short name",
+				ShortName:        "override short name",
 			},
 		},
 		{
@@ -305,9 +305,7 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 		},
 		{
 			name: "shortname from service config",
-			api: &API{
-				ShortName: "short name from api",
-			},
+			api:  &API{},
 			cfg: &Service{
 				Publishing: &annotations.Publishing{
 					ApiShortName: "short name from service",
