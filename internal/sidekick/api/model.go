@@ -298,6 +298,32 @@ type Method struct {
 	SourceService *Service
 	// `SourceServiceID` is the original service ID for this method.
 	SourceServiceID string
+	// IsSimple is true if the method is not a streaming, pagination or LRO method.
+	IsSimple bool
+	// IsLRO is true if the method is a long-running operation.
+	IsLRO bool
+	// LongRunningResponseType is the response type of the long-running operation.
+	LongRunningResponseType *Message
+	// LongRunningReturnsEmpty is true if the long-running operation returns an empty response.
+	LongRunningReturnsEmpty bool
+	// IsList is true if the method is a list operation.
+	IsList bool
+	// IsStreaming is true if the method is client-side or server-side streaming.
+	IsStreaming bool
+	// IsAIPStandard is true if the method is one of the AIP standard methods.
+	IsAIPStandard bool
+	// AIPStandardGetInfo contains information relevant to get operations.
+	AIPStandardGetInfo *AIPStandardGetInfo
+	// AIPStandardDeleteInfo contains information relevant to delete operations.
+	AIPStandardDeleteInfo *AIPStandardDeleteInfo
+	// AIPStandardUndeleteInfo contains information relevant to undelete operations.
+	AIPStandardUndeleteInfo *AIPStandardUndeleteInfo
+	// AIPStandardCreateInfo contains information relevant to create operations.
+	AIPStandardCreateInfo *AIPStandardCreateInfo
+	// AIPStandardUpdateInfo contains information relevant to update operations.
+	AIPStandardUpdateInfo *AIPStandardUpdateInfo
+	// AIPStandardListInfo contains information relevant to list operations.
+	AIPStandardListInfo *AIPStandardListInfo
 	// Codec contains language specific annotations.
 	Codec any
 }
@@ -386,100 +412,12 @@ func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
-// IsSimple returns true if the method is not a streaming, pagination or LRO method.
-// IsSimple simplifies writing mustache templates, mostly for samples.
-func (m *Method) IsSimple() bool {
-	return m.Pagination == nil &&
-		!m.ClientSideStreaming && !m.ServerSideStreaming &&
-		m.OperationInfo == nil && m.DiscoveryLro == nil
-}
-
-// IsLRO returns true if the method is a long-running operation.
-func (m *Method) IsLRO() bool {
-	return m.OperationInfo != nil
-}
-
-// LongRunningResponseType returns the response type of the long-running operation.
-func (m *Method) LongRunningResponseType() *Message {
-	if m.OperationInfo == nil {
-		return nil
-	}
-	return m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
-}
-
-// LongRunningReturnsEmpty returns true if the long-running operation returns an empty response.
-func (m *Method) LongRunningReturnsEmpty() bool {
-	responseType := m.LongRunningResponseType()
-	return responseType != nil && responseType.ID == ".google.protobuf.Empty"
-}
-
-// IsList returns true if the method is a list operation.
-func (m *Method) IsList() bool {
-	return m.OutputType != nil && m.OutputType.Pagination != nil
-}
-
-// IsStreaming returns true if the method is client-side or server-side streaming.
-func (m *Method) IsStreaming() bool {
-	return m.ClientSideStreaming || m.ServerSideStreaming
-}
-
-// IsAIPStandard returns true if the method is one of the AIP standard methods.
-// IsAIPStandard simplifies writing mustache templates, mostly for samples.
-func (m *Method) IsAIPStandard() bool {
-	return m.AIPStandardGetInfo() != nil ||
-		m.AIPStandardDeleteInfo() != nil ||
-		m.AIPStandardUndeleteInfo() != nil ||
-		m.AIPStandardListInfo() != nil ||
-		m.AIPStandardCreateInfo() != nil ||
-		m.AIPStandardUpdateInfo() != nil
-}
-
 // AIPStandardGetInfo contains information relevant to get operations
 // that are like those defined by AIP-131.
 type AIPStandardGetInfo struct {
 	// ResourceNameRequestField is the field in the method input that contains the resource name
 	// of the resource that the get operation should fetch.
 	ResourceNameRequestField *Field
-}
-
-// AIPStandardGetInfo returns information relevant to a get operation that is like
-// a get operation as defined by AIP-131, if the method is such an operation.
-func (m *Method) AIPStandardGetInfo() *AIPStandardGetInfo {
-	// A get operation is always a simple operation that returns a resource.
-	if !m.IsSimple() || m.InputType == nil || m.ReturnsEmpty {
-		return nil
-	}
-	outputResource := m.standardMethodOutputResource()
-	if outputResource == nil {
-		return nil
-	}
-
-	// Standard get methods for resource "Foo" should be named "GetFoo".
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "get")
-	if !found || maybeSingular == "" {
-		return nil
-	}
-	// The request name should be "GetFooRequest".
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", maybeSingular) {
-		return nil
-	}
-
-	// If the resource has a singular name, it must match.
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
-		return nil
-	}
-
-	// The request needs to have a field for the resource name of the resource to obtain.
-	resourceField := findBestResourceFieldByType(m.InputType, m.Model.State.ResourceByType, outputResource.Type)
-
-	if resourceField == nil {
-		return nil
-	}
-
-	return &AIPStandardGetInfo{
-		ResourceNameRequestField: resourceField,
-	}
 }
 
 // AIPStandardDeleteInfo contains information relevant to delete operations
@@ -490,72 +428,12 @@ type AIPStandardDeleteInfo struct {
 	ResourceNameRequestField *Field
 }
 
-// AIPStandardDeleteInfo returns information relevant to a delete operation that is like
-// a delete operation as defined by AIP-135, if the method is such an operation.
-func (m *Method) AIPStandardDeleteInfo() *AIPStandardDeleteInfo {
-	// A delete operation is either simple or LRO.
-	if !m.IsSimple() && m.OperationInfo == nil {
-		return nil
-	}
-
-	// Standard delete methods for resource "Foo" should be named "DeleteFoo".
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "delete")
-	if !found || maybeSingular == "" {
-		return nil
-	}
-	// The request name should be "DeleteFooRequest".
-	if m.InputType == nil ||
-		strings.ToLower(m.InputType.Name) != fmt.Sprintf("delete%srequest", maybeSingular) {
-		return nil
-	}
-
-	// The request needs to have a field for the resource name of the resource to delete.
-	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model.State.ResourceByType, maybeSingular)
-	if resourceField == nil {
-		return nil
-	}
-
-	return &AIPStandardDeleteInfo{
-		ResourceNameRequestField: resourceField,
-	}
-}
-
 // AIPStandardUndeleteInfo contains information relevant to an undelete operation
 // as implied by AIP-135.
 type AIPStandardUndeleteInfo struct {
 	// ResourceNameRequestField is the field in the method input that contains the resource name
 	// of the resource that the undelete operation should restore.
 	ResourceNameRequestField *Field
-}
-
-// AIPStandardUndeleteInfo returns information relevant to an undelete operation that is like
-// an undelete operation as implied by AIP-135, if the method is such an operation.
-func (m *Method) AIPStandardUndeleteInfo() *AIPStandardUndeleteInfo {
-	// An undelete operation is either simple or LRO.
-	if !m.IsSimple() && m.OperationInfo == nil {
-		return nil
-	}
-
-	// Standard undelete methods for resource "Foo" should be named "UndeleteFoo".
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "undelete")
-	if !found || maybeSingular == "" {
-		return nil
-	}
-	// The request name should be "UndeleteFooRequest".
-	if m.InputType == nil ||
-		strings.ToLower(m.InputType.Name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
-		return nil
-	}
-
-	// The request needs to have a field for the resource name of the resource to recover.
-	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model.State.ResourceByType, maybeSingular)
-	if resourceField == nil {
-		return nil
-	}
-
-	return &AIPStandardUndeleteInfo{
-		ResourceNameRequestField: resourceField,
-	}
 }
 
 // AIPStandardCreateInfo contains information relevant to create operations
@@ -572,63 +450,6 @@ type AIPStandardCreateInfo struct {
 	ResourceRequestField *Field
 }
 
-// AIPStandardCreateInfo returns information relevant to a create operation that is like
-// a create operation as defined by AIP-133, if the method is such an operation.
-func (m *Method) AIPStandardCreateInfo() *AIPStandardCreateInfo {
-	// A create operation is always a simple operation that returns a resource.
-	// Or an LRO that returns a resource.
-	if (!m.IsSimple() && !m.IsLRO()) || m.InputType == nil || m.ReturnsEmpty {
-		return nil
-	}
-	outputResource := m.standardMethodOutputResource()
-	if outputResource == nil {
-		return nil
-	}
-
-	// Standard create methods for resource "Foo" should be named "CreateFoo".
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "create")
-	if !found || maybeSingular == "" {
-		return nil
-	}
-
-	// The request name should be "CreateFooRequest".
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("create%srequest", maybeSingular) {
-		return nil
-	}
-
-	// If the resource has a singular name, it must match.
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
-		return nil
-	}
-
-	// The request needs to have a field for the parent.
-	parentField := findBestParentFieldByType(m.InputType, outputResource.Type)
-	if parentField == nil {
-		return nil
-	}
-
-	// The request needs to have a field for the resource.
-	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
-	}
-	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
-	if resourceField == nil {
-		return nil
-	}
-
-	// The request may have a field for the resource ID.
-	// AIP-133 says it should be named `<singular>_id`.
-	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
-
-	return &AIPStandardCreateInfo{
-		ParentRequestField:     parentField,
-		ResourceIDRequestField: resourceIDField,
-		ResourceRequestField:   resourceField,
-	}
-}
-
 // AIPStandardUpdateInfo contains information relevant to update operations
 // that are like those defined by AIP-134.
 type AIPStandardUpdateInfo struct {
@@ -639,106 +460,12 @@ type AIPStandardUpdateInfo struct {
 	UpdateMaskRequestField *Field
 }
 
-// AIPStandardUpdateInfo returns information relevant to an update operation that is like
-// an update operation as defined by AIP-134, if the method is such an operation.
-func (m *Method) AIPStandardUpdateInfo() *AIPStandardUpdateInfo {
-	if (!m.IsSimple() && !m.IsLRO()) || m.InputType == nil || m.ReturnsEmpty {
-		return nil
-	}
-	outputResource := m.standardMethodOutputResource()
-	if outputResource == nil {
-		return nil
-	}
-
-	// Standard update methods for resource "Foo" should be named "UpdateFoo".
-	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "update")
-	if !found || maybeSingular == "" {
-		return nil
-	}
-	// The request name should be "UpdateFooRequest".
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
-		return nil
-	}
-	// If the resource has a singular name, it must match.
-	if outputResource.Singular != "" &&
-		strings.ToLower(outputResource.Singular) != maybeSingular {
-		return nil
-	}
-
-	// The request needs to have a field for the resource.
-	var targetTypeID string
-	if outputResource.Self != nil {
-		targetTypeID = outputResource.Self.ID
-	}
-	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
-	if resourceField == nil {
-		return nil
-	}
-	// The request may have an update mask.
-	var updateMaskField *Field
-	for _, f := range m.InputType.Fields {
-		if f.Name == StandardFieldNameForUpdateMask && f.TypezID == ".google.protobuf.FieldMask" {
-			updateMaskField = f
-			break
-		}
-	}
-
-	return &AIPStandardUpdateInfo{
-		ResourceRequestField:   resourceField,
-		UpdateMaskRequestField: updateMaskField,
-	}
-}
-
 // AIPStandardListInfo contains information relevant to list operations
 // that are like those defined by AIP-132.
 type AIPStandardListInfo struct {
 	// ParentRequestField is the field in the method input that contains the parent resource name
 	// of the resources that the list operation should fetch.
 	ParentRequestField *Field
-}
-
-// AIPStandardListInfo returns information relevant to a list operation that is like
-// a list operation as defined by AIP-132, if the method is such an operation.
-func (m *Method) AIPStandardListInfo() *AIPStandardListInfo {
-	if !m.IsList() || m.InputType == nil {
-		return nil
-	}
-
-	// Standard list methods for resource "Foo" should be named "ListFoos".
-	maybePlural, found := strings.CutPrefix(strings.ToLower(m.Name), "list")
-	if !found || maybePlural == "" {
-		return nil
-	}
-
-	// The request name should be "ListFoosRequest".
-	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("list%srequest", maybePlural) {
-		return nil
-	}
-
-	// The response name should be "ListFoosResponse".
-	if strings.ToLower(m.OutputType.Name) != fmt.Sprintf("list%sresponse", maybePlural) {
-		return nil
-	}
-
-	// Identify the listed resource type.
-	pageableItem := m.OutputType.Pagination.PageableItem
-	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
-		// If we can't identify the resource, we can't match strictly.
-		// However, standard AIP-132 implies we should be able to.
-		return nil
-	}
-	resourceType := pageableItem.MessageType.Resource.Type
-
-	// The request needs to have a field for the parent.
-	parentField := findBestParentFieldByType(m.InputType, resourceType)
-
-	if parentField == nil {
-		return nil
-	}
-
-	return &AIPStandardListInfo{
-		ParentRequestField: parentField,
-	}
 }
 
 const (
@@ -758,145 +485,6 @@ const (
 	// in update operations as defined by AIP-134.
 	StandardFieldNameForUpdateMask = "update_mask"
 )
-
-// findBestResourceFieldByType finds the best field in the message that references
-// a resource of the given type.
-//
-// We prioritize the matches as follows:
-// 1. The field name is the standard field name for resource references and
-//   - references the generic resource type or
-//   - references the output resource type.
-//
-// 2. The field references the output resource type.
-func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
-	var bestField *Field
-	for _, field := range message.Fields {
-		if field.ResourceReference == nil {
-			continue
-		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
-			return field
-		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
-			continue
-		}
-		if resource.Type == targetType {
-			if field.Name == StandardFieldNameForResourceRef {
-				return field
-			}
-			bestField = field
-		}
-	}
-	return bestField
-}
-
-// findBestResourceFieldBySingular finds the best field in the message that references
-// a resource with the given singular name.
-//
-// We prioritize the matches as follows:
-// 1. The field name is the standard field name for resource references and
-//   - references the generic resource type or
-//   - the resource singular name matches maybeSingular or
-//   - the resource singular name is empty.
-//
-// 2. The resource singular name matches maybeSingular.
-func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
-	var bestField *Field
-	for _, field := range message.Fields {
-		if field.ResourceReference == nil {
-			continue
-		}
-		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
-			return field
-		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
-			continue
-		}
-		actualSingular := strings.ToLower(resource.Singular)
-		matchesTarget := actualSingular == targetSingular
-		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
-			return field
-		}
-		if matchesTarget {
-			bestField = field
-		}
-	}
-	return bestField
-}
-
-// findBestParentFieldByType finds the best field in the message that references
-// the parent of a resource of the given type.
-//
-// We prioritize the matches as follows:
-// 1. The field name is "parent".
-// 2. The field references the child type.
-func findBestParentFieldByType(message *Message, childType string) *Field {
-	var bestField *Field
-	for _, field := range message.Fields {
-		if field.Name == StandardFieldNameForParentResourceRef {
-			return field
-		}
-		if field.ResourceReference != nil && field.ResourceReference.ChildType == childType {
-			bestField = field
-		}
-	}
-	return bestField
-}
-
-// findBodyField finds the field that represents the body of the request.
-//
-// It looks for a field that matches the BodyFieldPath in PathInfo.
-// If not found (or BodyFieldPath is empty/*), it looks for a field with the
-// same type as the target resource.
-func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, singular string) *Field {
-	var resourceField *Field
-	bodyFieldPath := ""
-	if pathInfo != nil {
-		bodyFieldPath = pathInfo.BodyFieldPath
-	}
-
-	for _, f := range message.Fields {
-		// Check for BodyFieldPath match
-		if f.Name == bodyFieldPath {
-			return f
-		}
-		// Check for singular name AND type match
-		if f.Name == singular && f.TypezID == targetTypeID {
-			if resourceField == nil {
-				resourceField = f
-			}
-		}
-	}
-	return resourceField
-}
-
-// findResourceIDField finds the field that represents the resource ID.
-//
-// It looks for a field named `<singular>_id`.
-func findResourceIDField(message *Message, singular string) *Field {
-	expectedIDName := fmt.Sprintf("%s_id", singular)
-	for _, f := range message.Fields {
-		if f.Name == expectedIDName && f.Typez == STRING_TYPE {
-			return f
-		}
-	}
-	return nil
-}
-
-// standardMethodOutputResource returns the resource returned by a standard method.
-func (m *Method) standardMethodOutputResource() *Resource {
-	if m.OutputType != nil && m.OutputType.Resource != nil {
-		return m.OutputType.Resource
-	}
-	if m.OperationInfo != nil {
-		if lroResponse := m.LongRunningResponseType(); lroResponse != nil {
-			return lroResponse.Resource
-		}
-	}
-	return nil
-}
 
 // PathInfo contains normalized request path information.
 type PathInfo struct {

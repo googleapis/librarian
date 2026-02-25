@@ -312,6 +312,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			for _, svc := range model.Services {
 				for _, m := range svc.Methods {
 					m.Model = model
+					enrichMethodSamples(m)
 				}
 			}
 			got := BuildHeuristicVocabulary(model)

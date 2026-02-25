@@ -107,6 +107,10 @@ func enrichSamples(model *API) {
 			}
 		}
 	}
+
+	for _, m := range model.State.MethodByID {
+		enrichMethodSamples(m)
+	}
 }
 
 func enrichEnumSamples(e *Enum) {
@@ -207,4 +211,359 @@ func sortOneOfFieldForExamples(f1, f2 *Field) int {
 		return v
 	}
 	return compare(f1.MessageType != nil, f2.MessageType != nil)
+}
+
+func enrichMethodSamples(m *Method) {
+	m.IsSimple = m.Pagination == nil &&
+		!m.ClientSideStreaming && !m.ServerSideStreaming &&
+		m.OperationInfo == nil && m.DiscoveryLro == nil
+
+	m.IsLRO = m.OperationInfo != nil
+
+	if m.OperationInfo != nil && m.Model != nil && m.Model.State != nil {
+		m.LongRunningResponseType = m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+	}
+
+	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
+
+	m.IsList = m.OutputType != nil && m.OutputType.Pagination != nil
+
+	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
+
+	m.AIPStandardGetInfo = aipStandardGetInfo(m)
+	m.AIPStandardDeleteInfo = aipStandardDeleteInfo(m)
+	m.AIPStandardUndeleteInfo = aipStandardUndeleteInfo(m)
+	m.AIPStandardCreateInfo = aipStandardCreateInfo(m)
+	m.AIPStandardUpdateInfo = aipStandardUpdateInfo(m)
+	m.AIPStandardListInfo = aipStandardListInfo(m)
+
+	m.IsAIPStandard = m.AIPStandardGetInfo != nil ||
+		m.AIPStandardDeleteInfo != nil ||
+		m.AIPStandardUndeleteInfo != nil ||
+		m.AIPStandardListInfo != nil ||
+		m.AIPStandardCreateInfo != nil ||
+		m.AIPStandardUpdateInfo != nil
+}
+
+func aipStandardGetInfo(m *Method) *AIPStandardGetInfo {
+	if !m.IsSimple || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := standardMethodOutputResource(m)
+	if outputResource == nil {
+		return nil
+	}
+
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "get")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("get%srequest", maybeSingular) {
+		return nil
+	}
+
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
+		return nil
+	}
+
+	var resourceByType map[string]*Resource
+	if m.Model != nil && m.Model.State != nil {
+		resourceByType = m.Model.State.ResourceByType
+	}
+
+	resourceField := findBestResourceFieldByType(m.InputType, resourceByType, outputResource.Type)
+
+	if resourceField == nil {
+		return nil
+	}
+
+	return &AIPStandardGetInfo{
+		ResourceNameRequestField: resourceField,
+	}
+}
+
+func aipStandardDeleteInfo(m *Method) *AIPStandardDeleteInfo {
+	if !m.IsSimple && m.OperationInfo == nil {
+		return nil
+	}
+
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "delete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("delete%srequest", maybeSingular) {
+		return nil
+	}
+
+	var resourceByType map[string]*Resource
+	if m.Model != nil && m.Model.State != nil {
+		resourceByType = m.Model.State.ResourceByType
+	}
+
+	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+
+	return &AIPStandardDeleteInfo{
+		ResourceNameRequestField: resourceField,
+	}
+}
+
+func aipStandardUndeleteInfo(m *Method) *AIPStandardUndeleteInfo {
+	if !m.IsSimple && m.OperationInfo == nil {
+		return nil
+	}
+
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "undelete")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	if m.InputType == nil ||
+		strings.ToLower(m.InputType.Name) != fmt.Sprintf("undelete%srequest", maybeSingular) {
+		return nil
+	}
+
+	var resourceByType map[string]*Resource
+	if m.Model != nil && m.Model.State != nil {
+		resourceByType = m.Model.State.ResourceByType
+	}
+
+	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+
+	return &AIPStandardUndeleteInfo{
+		ResourceNameRequestField: resourceField,
+	}
+}
+
+func aipStandardCreateInfo(m *Method) *AIPStandardCreateInfo {
+	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := standardMethodOutputResource(m)
+	if outputResource == nil {
+		return nil
+	}
+
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "create")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("create%srequest", maybeSingular) {
+		return nil
+	}
+
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
+		return nil
+	}
+
+	parentField := findBestParentFieldByType(m.InputType, outputResource.Type)
+	if parentField == nil {
+		return nil
+	}
+
+	var targetTypeID string
+	if outputResource.Self != nil {
+		targetTypeID = outputResource.Self.ID
+	}
+	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+
+	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
+
+	return &AIPStandardCreateInfo{
+		ParentRequestField:     parentField,
+		ResourceIDRequestField: resourceIDField,
+		ResourceRequestField:   resourceField,
+	}
+}
+
+func aipStandardUpdateInfo(m *Method) *AIPStandardUpdateInfo {
+	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
+		return nil
+	}
+	outputResource := standardMethodOutputResource(m)
+	if outputResource == nil {
+		return nil
+	}
+
+	maybeSingular, found := strings.CutPrefix(strings.ToLower(m.Name), "update")
+	if !found || maybeSingular == "" {
+		return nil
+	}
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("update%srequest", maybeSingular) {
+		return nil
+	}
+	if outputResource.Singular != "" &&
+		strings.ToLower(outputResource.Singular) != maybeSingular {
+		return nil
+	}
+
+	var targetTypeID string
+	if outputResource.Self != nil {
+		targetTypeID = outputResource.Self.ID
+	}
+	resourceField := findBodyField(m.InputType, m.PathInfo, targetTypeID, maybeSingular)
+	if resourceField == nil {
+		return nil
+	}
+	var updateMaskField *Field
+	for _, f := range m.InputType.Fields {
+		if f.Name == StandardFieldNameForUpdateMask && f.TypezID == ".google.protobuf.FieldMask" {
+			updateMaskField = f
+			break
+		}
+	}
+
+	return &AIPStandardUpdateInfo{
+		ResourceRequestField:   resourceField,
+		UpdateMaskRequestField: updateMaskField,
+	}
+}
+
+func aipStandardListInfo(m *Method) *AIPStandardListInfo {
+	if !m.IsList || m.InputType == nil {
+		return nil
+	}
+
+	maybePlural, found := strings.CutPrefix(strings.ToLower(m.Name), "list")
+	if !found || maybePlural == "" {
+		return nil
+	}
+
+	if strings.ToLower(m.InputType.Name) != fmt.Sprintf("list%srequest", maybePlural) {
+		return nil
+	}
+
+	if strings.ToLower(m.OutputType.Name) != fmt.Sprintf("list%sresponse", maybePlural) {
+		return nil
+	}
+
+	pageableItem := m.OutputType.Pagination.PageableItem
+	if pageableItem == nil || pageableItem.MessageType == nil || pageableItem.MessageType.Resource == nil {
+		return nil
+	}
+	resourceType := pageableItem.MessageType.Resource.Type
+
+	parentField := findBestParentFieldByType(m.InputType, resourceType)
+
+	if parentField == nil {
+		return nil
+	}
+
+	return &AIPStandardListInfo{
+		ParentRequestField: parentField,
+	}
+}
+
+func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
+	var bestField *Field
+	for _, field := range message.Fields {
+		if field.ResourceReference == nil {
+			continue
+		}
+		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+			return field
+		}
+		resource, ok := resourcesByType[field.ResourceReference.Type]
+		if !ok {
+			continue
+		}
+		if resource.Type == targetType {
+			if field.Name == StandardFieldNameForResourceRef {
+				return field
+			}
+			bestField = field
+		}
+	}
+	return bestField
+}
+
+func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
+	var bestField *Field
+	for _, field := range message.Fields {
+		if field.ResourceReference == nil {
+			continue
+		}
+		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
+			return field
+		}
+		resource, ok := resourcesByType[field.ResourceReference.Type]
+		if !ok {
+			continue
+		}
+		actualSingular := strings.ToLower(resource.Singular)
+		matchesTarget := actualSingular == targetSingular
+		if field.Name == StandardFieldNameForResourceRef && (matchesTarget || actualSingular == "") {
+			return field
+		}
+		if matchesTarget {
+			bestField = field
+		}
+	}
+	return bestField
+}
+
+func findBestParentFieldByType(message *Message, childType string) *Field {
+	var bestField *Field
+	for _, field := range message.Fields {
+		if field.Name == StandardFieldNameForParentResourceRef {
+			return field
+		}
+		if field.ResourceReference != nil && field.ResourceReference.ChildType == childType {
+			bestField = field
+		}
+	}
+	return bestField
+}
+
+func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, singular string) *Field {
+	var resourceField *Field
+	bodyFieldPath := ""
+	if pathInfo != nil {
+		bodyFieldPath = pathInfo.BodyFieldPath
+	}
+
+	for _, f := range message.Fields {
+		if f.Name == bodyFieldPath {
+			return f
+		}
+		if f.Name == singular && f.TypezID == targetTypeID {
+			if resourceField == nil {
+				resourceField = f
+			}
+		}
+	}
+	return resourceField
+}
+
+func findResourceIDField(message *Message, singular string) *Field {
+	expectedIDName := fmt.Sprintf("%s_id", singular)
+	for _, f := range message.Fields {
+		if f.Name == expectedIDName && f.Typez == STRING_TYPE {
+			return f
+		}
+	}
+	return nil
+}
+
+func standardMethodOutputResource(m *Method) *Resource {
+	if m.OutputType != nil && m.OutputType.Resource != nil {
+		return m.OutputType.Resource
+	}
+	if m.OperationInfo != nil {
+		if lroResponse := m.LongRunningResponseType; lroResponse != nil {
+			return lroResponse.Resource
+		}
+	}
+	return nil
 }
