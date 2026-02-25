@@ -17,7 +17,6 @@ package utils
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -37,8 +36,8 @@ func TestInferTrackFromPackage(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := InferTrackFromPackage(test.pkg)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("InferTrackFromPackage mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -87,8 +86,8 @@ func TestGetServiceTitle(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := GetServiceTitle(test.model, test.shortServiceName)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetServiceTitle mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}

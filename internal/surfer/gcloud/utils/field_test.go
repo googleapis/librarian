@@ -17,7 +17,6 @@ package utils
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -42,8 +41,8 @@ func TestGetGcloudType(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := GetGcloudType(test.typez)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetGcloudType mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("GetGcloudType() = %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -66,8 +65,8 @@ func TestIsSafeName(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsSafeName(test.name)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsSafeName mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("IsSafeName() = %v, want %v", got, test.want)
 			}
 		})
 	}

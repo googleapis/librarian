@@ -37,8 +37,8 @@ func TestIsCreate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsCreate(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsCreate mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -59,8 +59,8 @@ func TestIsGet(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsGet(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsGet mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -81,8 +81,8 @@ func TestIsList(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsList(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsList mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -104,8 +104,8 @@ func TestIsUpdate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsUpdate(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsUpdate mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -126,8 +126,8 @@ func TestIsDelete(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsDelete(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsDelete mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -164,8 +164,8 @@ func TestGetCommandName(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetCommandName() error = %v", err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetCommandName mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -209,7 +209,7 @@ func TestFindResourceMessage(t *testing.T) {
 			t.Parallel()
 			got := FindResourceMessage(test.outputType)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("FindResourceMessage mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -274,8 +274,8 @@ func TestIsResourceMethod(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsResourceMethod(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsResourceMethod mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -310,8 +310,8 @@ func TestIsCollectionMethod(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsCollectionMethod(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsCollectionMethod mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -333,8 +333,8 @@ func TestIsStandardMethod(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := IsStandardMethod(test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsStandardMethod mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
