@@ -303,6 +303,18 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				ShortName:   "accessapproval",
 			},
 		},
+		{
+			name: "shortname from service config",
+			api:  &API{},
+			cfg: &Service{
+				Publishing: &annotations.Publishing{
+					ApiShortName: "short name from service",
+				},
+			},
+			want: &API{
+				ShortName: "short name from service",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := populateFromServiceConfig(test.api, test.cfg)
