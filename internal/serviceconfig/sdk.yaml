@@ -54,12 +54,12 @@
 - documentation_uri: https://developers.google.com/analytics/
   languages:
     - python
-  new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400%2B%20
+  new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
   path: google/analytics/data/v1alpha
 - documentation_uri: https://developers.google.com/analytics/
   languages:
     - python
-  new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400%2B%20
+  new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
   path: google/analytics/data/v1beta
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
@@ -921,9 +921,9 @@
     php: grpc+rest
     python: grpc
     ruby: grpc
-- documentation_uri: cloud.google.com/memorystore/docs/memcached/
+- documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
   path: google/cloud/memcache/v1
-- documentation_uri: cloud.google.com/memorystore/docs/memcached/
+- documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
   languages:
     - go
     - python
