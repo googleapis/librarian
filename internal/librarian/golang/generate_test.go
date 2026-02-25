@@ -124,7 +124,7 @@ func TestGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		libraryName  string
-		apiPath      string
+		apis         []*config.API
 		transport    string
 		releaseLevel string
 		goModule     *config.GoModule
@@ -134,7 +134,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "basic",
 			libraryName: "secretmanager",
-			apiPath:     "google/cloud/secretmanager/v1",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
@@ -149,7 +149,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "v2 module",
 			libraryName: "secretmanager",
-			apiPath:     "google/cloud/secretmanager/v1",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule:    &config.GoModule{ModulePathVersion: "v2"},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
@@ -161,7 +161,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "delete paths",
 			libraryName: "secretmanager",
-			apiPath:     "google/cloud/secretmanager/v1",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secretmanagerpb"},
 			},
@@ -175,7 +175,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:         "with transport and release level",
 			libraryName:  "secretmanager",
-			apiPath:      "google/cloud/secretmanager/v1",
+			apis:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			transport:    "grpc+rest",
 			releaseLevel: "ga",
 			want: []string{
@@ -185,7 +185,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "client directory",
 			libraryName: "secretmanager",
-			apiPath:     "google/cloud/secretmanager/v1",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -201,7 +201,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "disable gapic",
 			libraryName: "secretmanager",
-			apiPath:     "google/cloud/secretmanager/v1",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -220,7 +220,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "nested protos",
 			libraryName: "gkehub",
-			apiPath:     "google/cloud/gkehub/v1",
+			apis:        []*config.API{{Path: "google/cloud/gkehub/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -245,7 +245,7 @@ func TestGenerate(t *testing.T) {
 				Name:         test.libraryName,
 				Version:      "1.0.0",
 				Output:       outdir,
-				APIs:         []*config.API{{Path: test.apiPath}},
+				APIs:         test.apis,
 				Transport:    test.transport,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
