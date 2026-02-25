@@ -79,18 +79,28 @@ func TestCreateProtocOptions(t *testing.T) {
 	}
 }
 
-func TestConstructProtocCommand_Success(t *testing.T) {
+func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	t.Parallel()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	protocOptions := []string{"--java_out=out"}
 
-	cmd, protos, err := constructProtocCommand(t.Context(), api, googleapisDir, protocOptions)
+	args, protos, err := constructProtocCommandArgs(api, googleapisDir, protocOptions)
 	if err != nil {
-		t.Fatalf("constructProtocCommand() unexpected error: %v", err)
+		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
 
-	if filepath.Base(cmd.Path) != "protoc" {
-		t.Errorf("expected command protoc, got %s", cmd.Path)
+	expectedArgs := []string{
+		"protoc",
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+		"--java_out=out",
+	}
+
+	if diff := cmp.Diff(expectedArgs, args); diff != "" {
+		t.Errorf("mismatch in args (-want +got):\n%s", diff)
 	}
 
 	// Verify protos contains the expected files
@@ -102,16 +112,16 @@ func TestConstructProtocCommand_Success(t *testing.T) {
 	sort.Strings(expectedProtos)
 	sort.Strings(protos)
 	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
 	}
 }
 
-func TestConstructProtocCommand_Error(t *testing.T) {
+func TestConstructProtocCommandArgs_Error(t *testing.T) {
 	t.Parallel()
 	api := &config.API{Path: "nonexistent"}
 	protocOptions := []string{"--java_out=out"}
-	if _, _, err := constructProtocCommand(t.Context(), api, googleapisDir, protocOptions); err == nil {
-		t.Error("constructProtocCommand() expected error for nonexistent path, got nil")
+	if _, _, err := constructProtocCommandArgs(api, googleapisDir, protocOptions); err == nil {
+		t.Error("constructProtocCommandArgs() expected error for nonexistent path, got nil")
 	}
 }
 
@@ -313,6 +323,7 @@ func TestCopyProtos_Success(t *testing.T) {
 }
 
 func TestCopyProtos_ErrorCase(t *testing.T) {
+	t.Parallel()
 	destDir := t.TempDir()
 	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
