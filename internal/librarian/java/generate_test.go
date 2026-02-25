@@ -34,7 +34,6 @@ import (
 const googleapisDir = "../../testdata/googleapis"
 
 func TestCreateProtocOptions(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name     string
 		api      *config.API
@@ -67,6 +66,7 @@ func TestCreateProtocOptions(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := createProtocOptions(test.api, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
 			if (err != nil) != test.wantErr {
 				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
@@ -99,8 +99,10 @@ func TestConstructProtocCommand_Success(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
 	}
+	sort.Strings(expectedProtos)
+	sort.Strings(protos)
 	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -140,7 +142,6 @@ func TestGenerateAPI(t *testing.T) {
 }
 
 func TestGenerate_ErrorCases(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -164,6 +165,7 @@ func TestGenerate_ErrorCases(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := generate(t.Context(), test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
@@ -318,7 +320,6 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 }
 
 func TestFormat_Success(t *testing.T) {
-	t.Parallel()
 	testhelper.RequireCommand(t, "google-java-format")
 	for _, test := range []struct {
 		name  string
@@ -363,6 +364,7 @@ func TestFormat_Success(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			tmpDir := t.TempDir()
 			test.setup(t, tmpDir)
 			if err := Format(t.Context(), &config.Library{Output: tmpDir}); err != nil {

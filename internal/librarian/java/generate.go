@@ -215,8 +215,12 @@ func restructureOutput(outputDir, libraryID, version, googleapisDir string, prot
 		}
 	}
 	// Remove location classes and CommonResources to avoid conflicts.
-	os.RemoveAll(filepath.Join(protoSrcDir, "com", "google", "cloud", "location"))
-	os.Remove(filepath.Join(protoSrcDir, "google", "cloud", "CommonResources.java"))
+	if err := os.RemoveAll(filepath.Join(protoSrcDir, "com", "google", "cloud", "location")); err != nil {
+		return fmt.Errorf("failed to remove location classes: %w", err)
+	}
+	if err := os.Remove(filepath.Join(protoSrcDir, "google", "cloud", "CommonResources.java")); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove CommonResources.java: %w", err)
+	}
 	moves := map[string]string{
 		protoSrcDir: protoDestDir,
 		filepath.Join(outputDir, version, "grpc"): grpcDestDir,
