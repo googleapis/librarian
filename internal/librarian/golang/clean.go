@@ -98,6 +98,9 @@ func check(dir string, keep []string) (map[string]bool, error) {
 // clean recursively removes files in dir that are not in keepSet.
 // If nestedModule is non-empty, any directory with that name is skipped.
 func clean(dir, nestedModule string, keepSet map[string]bool) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return nil
+	}
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

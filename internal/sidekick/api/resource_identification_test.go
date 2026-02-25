@@ -38,8 +38,11 @@ func setupTestModel(serviceID string, pathTemplate *PathTemplate, fields []*Fiel
 	}
 	method.Service = service
 	model := &API{
+		Name:     "test-api",
 		Services: []*Service{service},
 	}
+	method.Model = model
+	service.Model = model
 	return model, binding
 }
 
@@ -65,6 +68,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}},
+				Template:   "//test-api.googleapis.com/projects/{project}",
 			},
 		},
 		{
@@ -87,6 +91,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"location"}},
+				Template:   "//test-api.googleapis.com/projects/{project}/locations/{location}",
 			},
 		},
 		{
@@ -111,6 +116,25 @@ func TestIdentifyTargetResources(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"parent", "project"}},
+				Template:   "//test-api.googleapis.com/projects/{parent.project}",
+			},
+		},
+		{
+			name:      "explicit: complex variable pattern treated as full name",
+			serviceID: "any.service",
+			path: NewPathTemplate().
+				WithLiteral("v1").
+				WithVariable(NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()),
+			fields: []*Field{
+				{
+					Name:              "name",
+					Typez:             STRING_TYPE,
+					ResourceReference: &ResourceReference{Type: "example.googleapis.com/Resource"},
+				},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"name"}},
+				Template:   "//test-api.googleapis.com/v1/{name}",
 			},
 		},
 	} {
@@ -201,6 +225,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
+				Template:   "//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}",
 			},
 		},
 		{
@@ -215,18 +240,46 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			want:      nil,
 		},
 		{
-			name:      "heuristic: skips unknown segments",
+			name:      "heuristic: stops at unknown segment",
 			serviceID: ".google.cloud.compute.v1.Instances",
 			path: NewPathTemplate().
 				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("unknown").WithVariableNamed("other"),
+				WithLiteral("unknown").WithVariableNamed("other").
+				WithLiteral("instances").WithVariableNamed("instance"),
 			fields: []*Field{
 				{Name: "project", Typez: STRING_TYPE},
 				{Name: "other", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
 			},
-			resources: nil,
+			resources: []*Resource{
+				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}},
+				Template:   "//test-api.googleapis.com/projects/{project}",
+			},
+		},
+		{
+			name:      "heuristic: stops at trailing action",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("zones").WithVariableNamed("zone").
+				WithLiteral("instances").WithVariableNamed("instance").
+				WithLiteral("start").WithVariableNamed("action_id"), // "start" is not a collection
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "zone", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
+				{Name: "action_id", Typez: STRING_TYPE},
+			},
+			resources: []*Resource{
+				{Plural: "zones", Type: "compute.googleapis.com/Zone"},
+				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
+				Template:   "//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}",
 			},
 		},
 		{
@@ -260,6 +313,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"instance_id"}},
+				Template:   "//test-api.googleapis.com/instances/{instance_id}",
 			},
 		},
 	} {

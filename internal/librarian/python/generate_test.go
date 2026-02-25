@@ -419,27 +419,68 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name        string
-		setup       func(t *testing.T, repoRoot string)
-		expectedErr bool
+		name  string
+		setup func(t *testing.T, repoRoot, outputDir string)
 	}{
 		{
-			name: "no staging dir",
-			setup: func(t *testing.T, repoRoot string) {
+			name: "no staging dir or scripts dir",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
 				// No setup needed
 			},
 		},
 		{
 			name: "staging dir exists",
-			setup: func(t *testing.T, repoRoot string) {
-				if err := os.MkdirAll(filepath.Join(repoRoot, "owl-bot-staging"), 0755); err != nil {
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
+				if err := os.MkdirAll(stagingDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(stagingDir, "test.txt"), []byte("test"), 0644); err != nil {
 					t.Fatal(err)
 				}
 			},
 		},
 		{
-			name: "error removing",
-			setup: func(t *testing.T, repoRoot string) {
+			name: "scripts dir exists",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				scriptsDir := filepath.Join(outputDir, "scripts")
+				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(scriptsDir, "test.txt"), []byte("test"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			outputDir := filepath.Join(repoRoot, "packages", "pkg")
+			test.setup(t, repoRoot, outputDir)
+			err := cleanUpFilesAfterPostProcessing(repoRoot, outputDir)
+			if err != nil {
+				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
+				t.Errorf("owl-bot-staging should have been removed")
+			}
+			if _, err := os.Stat(filepath.Join(outputDir, "scripts")); !os.IsNotExist(err) {
+				t.Errorf("scripts should have been removed")
+			}
+		})
+	}
+}
+
+func TestCleanUpFilesAfterPostProcessing_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, repoRoot, outputDir string)
+		wantErr error
+	}{
+		{
+			name: "error removing owl-bot-staging",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
 				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
 				if err := os.MkdirAll(stagingDir, 0755); err != nil {
 					t.Fatal(err)
@@ -456,20 +497,37 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 					os.Chmod(stagingDir, 0755)
 				})
 			},
-			expectedErr: true,
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "error removing scripts",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				scriptsDir := filepath.Join(outputDir, "scripts")
+				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				// Create a file in the directory
+				if err := os.WriteFile(filepath.Join(scriptsDir, "file"), []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+				// Make the directory read-only to cause an error
+				if err := os.Chmod(scriptsDir, 0400); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					os.Chmod(scriptsDir, 0755)
+				})
+			},
+			wantErr: os.ErrPermission,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
-			test.setup(t, repoRoot)
-			err := cleanUpFilesAfterPostProcessing(repoRoot)
-			if (err != nil) != test.expectedErr {
-				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v, wantErr %v", err, test.expectedErr)
-			}
-			if !test.expectedErr {
-				if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
-					t.Errorf("owl-bot-staging should have been removed")
-				}
+			outputDir := filepath.Join(repoRoot, "packages", "pkg")
+			test.setup(t, repoRoot, outputDir)
+			gotErr := cleanUpFilesAfterPostProcessing(repoRoot, outputDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("cleanUpFilesAfterPostProcessing() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -481,14 +539,18 @@ func TestRunPostProcessor(t *testing.T) {
 	requireSynthtool(t)
 
 	repoRoot := t.TempDir()
-	outDir := t.TempDir()
-
-	// Create minimal .repo-metadata.json that synthtool expects
-	if err := os.WriteFile(filepath.Join(outDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+	createReplacementScripts(t, repoRoot)
+	outdir := filepath.Join(repoRoot, "packages", "sample-package")
+	if err := os.MkdirAll(outdir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
-	err := runPostProcessor(t.Context(), repoRoot, outDir)
+	// Create minimal .repo-metadata.json that synthtool expects
+	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runPostProcessor(t.Context(), repoRoot, outdir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -503,6 +565,7 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
 	err := generateAPI(
 		t.Context(),
 		&config.API{Path: "google/cloud/secretmanager/v1"},
@@ -530,10 +593,7 @@ func TestGenerateLibraries(t *testing.T) {
 	testhelper.RequireCommand(t, "nox")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	createReplacementScripts(t, repoRoot)
 
 	cfg := &config.Config{
 		Language: serviceconfig.LangPython,
@@ -559,7 +619,7 @@ func TestGenerateLibraries(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = filepath.Join(outdir, "packages", library.Name)
+		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
@@ -584,6 +644,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "nox")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
 	if err != nil {
 		t.Fatal(err)
@@ -619,6 +680,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "nox")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
 	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
 	if err != nil {
 		t.Fatal(err)
@@ -638,6 +700,9 @@ func TestGenerate(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 			},
+		},
+		Python: &config.PythonPackage{
+			MetadataNameOverride: "secretmanager",
 		},
 	}
 	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
@@ -699,11 +764,163 @@ func TestDefaultLibraryName(t *testing.T) {
 	}
 }
 
+func TestCreateRepoMetadata(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *repometadata.RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "google-cloud-secret-manager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
+				DefaultVersion:       "v1",
+			},
+		},
+		{
+			name: "non-cloud API",
+			library: &config.Library{
+				Name:         "google-apps-meet",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/apps/meet/v2",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "google-apps-meet",
+				NamePretty:           "Google Meet",
+				ProductDocumentation: "https://developers.google.com/meet/api/guides/overview",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=1216362&template=1766418",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-apps-meet",
+				APIID:                "meet.googleapis.com",
+				APIShortname:         "meet",
+				APIDescription:       "Create and manage meetings in Google Meet.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://googleapis.dev/python/google-apps-meet/latest",
+				DefaultVersion:       "v2",
+			},
+		},
+		{
+			name: "all overrides present",
+			library: &config.Library{
+				Name:                "google-cloud-secret-manager",
+				ReleaseLevel:        "stable",
+				DescriptionOverride: "overridden description",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Python: &config.PythonPackage{
+					MetadataNameOverride:         "secretmanager",
+					NamePrettyOverride:           "overridden name_pretty",
+					ProductDocumentationOverride: "overridden product_documentation",
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "overridden name_pretty",
+				ProductDocumentation: "overridden product_documentation",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "overridden description",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: serviceconfig.LangPython,
+				Repo:     "googleapis/google-cloud-python",
+			}
+			got, err := createRepoMetadata(cfg, test.library, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCreateRepoMetadata_Error(t *testing.T) {
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+	library := &config.Library{
+		Name:         "google-cloud-secret-manager",
+		ReleaseLevel: "stable",
+		APIs:         []*config.API{{Path: "android/notallowed/v1"}},
+	}
+	// We don't check what the error is here; there's only one place it can
+	// come, and it's not an error we create ourselves.
+	_, err := createRepoMetadata(cfg, library, googleapisDir)
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+}
+
 func requireSynthtool(t *testing.T) {
 	module := "synthtool"
 	t.Helper()
 	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", module))
 	if err := cmd.Run(); err != nil {
 		t.Skipf("skipping test because Python module %s is not installed", module)
+	}
+}
+
+// createReplacementScripts creates a YAML file that looks like a replacement
+// script in the .librarian/generator-input/client-post-processing directory.
+func createReplacementScripts(t *testing.T, repoRoot string) {
+	dir := filepath.Join(repoRoot, ".librarian", "generator-input", "client-post-processing")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	yaml := `description: Sample string replacement file
+url: https://github.com/googleapis/librarian/issues/3157
+replacements:
+  - paths: [
+      packages/does-not-exist/setup.py,
+    ]
+    before: replace-me
+    after: replaced
+    count: 1`
+	if err := os.WriteFile(filepath.Join(dir, "sample.yaml"), []byte(yaml), 0644); err != nil {
+		t.Fatal(err)
 	}
 }

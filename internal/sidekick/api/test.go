@@ -213,6 +213,24 @@ func NewTestField(name string) *Field {
 	}
 }
 
+// WithType sets the type of the field.
+func (f *Field) WithType(t Typez) *Field {
+	f.Typez = t
+	return f
+}
+
+// WithRepeated marks the field as repeated.
+func (f *Field) WithRepeated() *Field {
+	f.Repeated = true
+	return f
+}
+
+// WithMap marks the field as a map.
+func (f *Field) WithMap() *Field {
+	f.Map = true
+	return f
+}
+
 // WithBehavior adds behavior(s) to the field.
 func (f *Field) WithBehavior(behaviors ...FieldBehavior) *Field {
 	f.Behavior = append(f.Behavior, behaviors...)
