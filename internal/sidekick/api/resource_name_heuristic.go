@@ -79,7 +79,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 	// 2. Discover from standard method paths
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			if !method.IsAIPStandard() || method.PathInfo == nil {
+			if !method.IsAIPStandard || method.PathInfo == nil {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
