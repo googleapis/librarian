@@ -94,7 +94,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	}
 
 	// Clean up files that shouldn't be in the final output.
-	if err := cleanUpFilesAfterPostProcessing(repoRoot); err != nil {
+	if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to cleanup after post processing: %w", err)
 	}
 
@@ -300,6 +300,16 @@ func getStagingChildDirectory(apiPath string, isProtoOnly bool) string {
 
 // runPostProcessor runs the synthtool post processor on the output directory.
 func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
+	// The post-processor expects the string replacement scripts to be in the
+	// output directory, so we need to copy them there.
+	// TODO(https://github.com/googleapis/librarian/issues/3008): reimplement
+	// the string replacements in Go, and at that point stop copying the files.
+	scriptsOutput := filepath.Join(outDir, "scripts", "client-post-processing")
+	scriptsInput := filepath.Join(repoRoot, ".librarian", "generator-input", "client-post-processing")
+	if err := os.CopyFS(scriptsOutput, os.DirFS(scriptsInput)); err != nil {
+		return err
+	}
+
 	pythonCode := fmt.Sprintf(`
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
@@ -352,13 +362,18 @@ func copyReadmeToDocsDir(outdir string) error {
 
 // cleanUpFilesAfterPostProcessing cleans up files after post processing.
 // TODO(https://github.com/googleapis/librarian/issues/3210): generate
-// directly in place and remove this code entirely.
-func cleanUpFilesAfterPostProcessing(repoRoot string) error {
-	// Remove owl-bot-staging
+// directly in place and remove the owl-bot-staging directory entirely.
+// TODO(https://github.com/googleapis/librarian/issues/3008): perform string
+// replacements in Go code, so we don't need to copy files.
+func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
+	// Remove owl-bot-staging from the repo root.
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
-
+	// Remove the scripts directory from the package root.
+	if err := os.RemoveAll(filepath.Join(outdir, "scripts")); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove scripts: %w", err)
+	}
 	return nil
 }
 
