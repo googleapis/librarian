@@ -28,10 +28,12 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-const repoMetadataFile = ".repo-metadata.json"
+const (
+	repoMetadataFile = ".repo-metadata.json"
 
-// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
-const GAPICAutoLibraryType = "GAPIC_AUTO"
+	// GAPICAutoLibraryType is the library_type to use for GAPIC libraries.
+	GAPICAutoLibraryType = "GAPIC_AUTO"
+)
 
 var (
 	errNoAPIs          = errors.New("library has no APIs from which to get metadata")
@@ -52,14 +54,22 @@ type RepoMetadata struct {
 	// ClientDocumentation is the URL to the client library documentation.
 	ClientDocumentation string `json:"client_documentation,omitempty"`
 
+	// ClientLibraryType is the type of the client library (e.g. "generated").
+	// A Go specific field.
+	ClientLibraryType string `json:"client_library_type,omitempty"`
+
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
+
+	// Description is a short description of the API.
+	// A Go specific field.
+	Description string `json:"description,omitempty"`
 
 	// DistributionName is the name of the library distribution package.
 	DistributionName string `json:"distribution_name,omitempty"`
 
 	// IssueTracker is the URL to the issue tracker.
-	IssueTracker string `json:"issue_tracker"`
+	IssueTracker string `json:"issue_tracker,omitempty"`
 
 	// Language is the programming language (e.g., "rust", "python", "go").
 	Language string `json:"language,omitempty"`
@@ -165,7 +175,7 @@ func (metadata *RepoMetadata) Write(libraryOutputDir string) error {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	metadataPath := filepath.Join(libraryOutputDir, ".repo-metadata.json")
+	metadataPath := filepath.Join(libraryOutputDir, repoMetadataFile)
 	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)
 	}

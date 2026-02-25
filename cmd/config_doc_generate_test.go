@@ -202,9 +202,10 @@ func TestFormatType(t *testing.T) {
 
 func TestCleanDoc(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		doc  string
-		want string
+		name    string
+		doc     string
+		pkgName string
+		want    string
 	}{
 		{
 			name: "simple doc",
@@ -241,9 +242,21 @@ func TestCleanDoc(t *testing.T) {
 			doc:  "Header.\n\n- Item 1\n- Item 2\n\nFooter.",
 			want: "Header.<br><br>- Item 1<br>- Item 2<br><br>Footer.",
 		},
+		{
+			name:    "doc repeating field name",
+			doc:     "Language is the language for this workspace.",
+			pkgName: "Language",
+			want:    "Is the language for this workspace.",
+		},
+		{
+			name:    "doc prefix but not whole word",
+			doc:     "Language is the language for this workspace.",
+			pkgName: "Lang",
+			want:    "Language is the language for this workspace.",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := cleanDoc(test.doc)
+			got := cleanDoc(test.doc, test.pkgName)
 			if got != test.want {
 				t.Errorf("cleanDoc() = %q, want %q", got, test.want)
 			}
