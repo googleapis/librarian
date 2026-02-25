@@ -94,9 +94,9 @@ func TestGenerateLibraries_Error(t *testing.T) {
 
 	libraries := []*config.Library{
 		{
-			Name:          "no-apis",
-			APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			Output:        "/invalid",
+			Name:          "non-existent-api",
+			APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
+			Output:        t.TempDir(),
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -104,8 +104,8 @@ func TestGenerateLibraries_Error(t *testing.T) {
 		},
 	}
 	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if !errors.Is(gotErr, syscall.EROFS) {
-		t.Fatalf("expected %v, got %v", syscall.EROFS, gotErr)
+	if !errors.Is(gotErr, syscall.ENOENT) {
+		t.Fatalf("expected %v, got %v", syscall.ENOENT, gotErr)
 	}
 }
 
