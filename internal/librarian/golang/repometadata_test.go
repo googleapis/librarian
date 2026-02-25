@@ -18,6 +18,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,7 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-func TestGenerateRepoMetadata_Success(t *testing.T) {
+func TestGenerateRepoMetadata(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	library := &config.Library{
@@ -69,28 +70,59 @@ func TestGenerateRepoMetadata_Success(t *testing.T) {
 }
 
 func TestGenerateRepoMetadata_Error(t *testing.T) {
-	tmpDir := t.TempDir()
-	library := &config.Library{
-		Name:   "secretmanager",
-		Output: tmpDir,
-	}
-	api := &serviceconfig.API{
-		ShortName: "secretmanager",
-		Path:      "google/cloud/secretmanager/v1",
-	}
+	for _, test := range []struct {
+		name    string
+		api     *serviceconfig.API
+		library *config.Library
+		setup   func(library *config.Library, api *serviceconfig.API, output string)
+		wantErr error
+	}{
+		{
+			name: "invalid version",
+			api: &serviceconfig.API{
+				ShortName: "secretmanager",
+				Path:      "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "invalid",
+			},
+			wantErr: semver.ErrInvalidVersion,
+		},
+		{
+			name: "invalid output directory",
+			api: &serviceconfig.API{
+				ShortName: "secretmanager",
+				Path:      "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+			},
+			setup: func(library *config.Library, api *serviceconfig.API, output string) {
+				dir, _ := resolveClientPath(library, api.Path)
+				// Create a file where the directory should be so Write fails.
+				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(dir, []byte("not a directory"), 0644); err != nil {
+					t.Fatal(err)
+				}
 
-	dir, _ := resolveClientPath(library, api.Path)
-	// Create a file where the directory should be so Write fails.
-	if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(dir, []byte("not a directory"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	err := generateRepoMetadata(api, library)
-	if err == nil {
-		t.Error("generateRepoMetadata() error = nil, want error")
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(test.library, test.api, tempDir)
+			}
+			err := generateRepoMetadata(test.api, test.library)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("metadataReleaseLevel() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
