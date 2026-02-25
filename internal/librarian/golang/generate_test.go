@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,8 +86,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_NoAPI(t *testing.T) {
-	outDir := t.TempDir()
+func TestGenerateLibraries_Error(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +95,8 @@ func TestGenerateLibraries_NoAPI(t *testing.T) {
 	libraries := []*config.Library{
 		{
 			Name:          "no-apis",
-			Output:        outDir,
+			APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			Output:        "/invalid",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -103,8 +104,8 @@ func TestGenerateLibraries_NoAPI(t *testing.T) {
 		},
 	}
 	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if gotErr != nil {
-		t.Fatal(err)
+	if !errors.Is(gotErr, syscall.EROFS) {
+		t.Fatalf("expected %v, got %v", syscall.EROFS, gotErr)
 	}
 }
 
