@@ -335,6 +335,9 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.ProductDocumentation != defaultDocumentationURI {
 		library.Python.ProductDocumentationOverride = repoMetadata.ProductDocumentation
 	}
+	if repoMetadata.Name != library.Name {
+		library.Python.MetadataNameOverride = repoMetadata.Name
+	}
 
 	return library, nil
 }
