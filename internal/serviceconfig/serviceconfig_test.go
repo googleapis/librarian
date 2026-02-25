@@ -279,13 +279,14 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Publishing: &annotations.Publishing{
 					DocumentationUri: "service config doc uri",
 					NewIssueUri:      "service config new issue uri",
+					ApiShortName:     "service config short name",
 				},
 			},
 			want: &API{
 				Title:            "override title",
 				DocumentationURI: "override doc uri",
 				NewIssueURI:      "override new issue uri",
-				ShortName:        "override short name",
+				ShortName:        "service config short name",
 			},
 		},
 		{
