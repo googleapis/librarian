@@ -278,3 +278,83 @@ func annotateMethodModel(t *testing.T) *api.API {
 	api.CrossReference(model)
 	return model
 }
+
+func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
+	model := annotateMethodModel(t)
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Helper to inject TargetResource
+	injectTargetResource := func(methodID string, template string, fields [][]string) {
+		m, ok := model.State.MethodByID[methodID]
+		if !ok {
+			t.Fatalf("missing method %s", methodID)
+		}
+		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
+			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
+				Template:   template,
+				FieldPaths: fields,
+			}
+		}
+	}
+
+	// Setup: Inject resource for the "move" method
+	injectTargetResource(".test.v1.ResourceService.move", "projects/{project}/zones/{zone}/types/{type}", [][]string{
+		{"project"},
+		{"zone"},
+		{"type"},
+	})
+
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+	_, err = annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		id   string
+		want *methodAnnotation
+	}{
+		{
+			name: "WithTargetResource",
+			id:   ".test.v1.ResourceService.move",
+			want: &methodAnnotation{
+				ResourceNameTemplate: "projects/{}/zones/{}/types/{}",
+				ResourceNameArgs: []string{
+					"Some(&req).map(|m| &m.project).map(|s| s.as_str()).unwrap_or(\"\")",
+					"Some(&req).map(|m| &m.zone).map(|s| s.as_str()).unwrap_or(\"\")",
+					"Some(&req).map(|m| &m.r#type).map(|s| s.as_str()).unwrap_or(\"\")",
+				},
+				HasResourceNameGeneration: true,
+			},
+		},
+		{
+			name: "WithoutTargetResource",
+			id:   ".test.v1.ResourceService.Delete",
+			want: &methodAnnotation{
+				HasResourceNameGeneration: false,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m, ok := model.State.MethodByID[tc.id]
+			if !ok {
+				t.Fatalf("missing method %s", tc.id)
+			}
+			got := m.Codec.(*methodAnnotation)
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(methodAnnotation{},
+				"Name", "NameNoMangling", "BuilderName", "Body", "DocLines",
+				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
+				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
+				"RoutingRequired", "DetailedTracingAttributes", "ResourceNameFields",
+				"HasResourceNameFields", "InternalBuilders")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}

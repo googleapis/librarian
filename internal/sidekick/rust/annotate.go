@@ -270,6 +270,9 @@ type methodAnnotation struct {
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
 	InternalBuilders          bool
+	ResourceNameTemplate      string
+	ResourceNameArgs          []string
+	HasResourceNameGeneration bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -1095,6 +1098,10 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		HasResourceNameFields:     len(resourceNameFields) > 0,
 		InternalBuilders:          c.internalBuilders,
 	}
+
+	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
+		return nil, err
+	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes
 		// a recommendation that is not applicable to generated code.
@@ -1564,6 +1571,54 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 	}
 	annotations.DocLines = lines
 	return nil
+}
+
+// annotateResourceNameGeneration populates the method annotation with a Rust format string (ResourceNameTemplate)
+// and a list of argument accessors (ResourceNameArgs) to generate the `resource_name()` helper.
+func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
+	if m.PathInfo != nil {
+		for _, b := range m.PathInfo.Bindings {
+			if b.TargetResource != nil {
+				annotation.ResourceNameTemplate = formatResourceNameTemplate(b.TargetResource.Template)
+				for _, path := range b.TargetResource.FieldPaths {
+					accSegments, err := makeAccessors(path, m)
+					if err != nil {
+						return err
+					}
+					fullAcc := "Some(&req)" + strings.Join(accSegments, "") + ".unwrap_or(\"\")"
+					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, fullAcc)
+				}
+				annotation.HasResourceNameGeneration = true
+				break
+			}
+		}
+	}
+	return nil
+}
+
+// formatResourceNameTemplate replaces all variable segments (e.g., "{project}", "{name=*}")
+// with "{}" to be used as a format string in Rust.
+func formatResourceNameTemplate(template string) string {
+	var b strings.Builder
+	b.Grow(len(template))
+	inVar := false
+	for i := 0; i < len(template); i++ {
+		c := template[i]
+		if c == '{' {
+			inVar = true
+			b.WriteByte(c)
+			continue
+		}
+		if c == '}' {
+			inVar = false
+			b.WriteByte(c)
+			continue
+		}
+		if !inVar {
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
