@@ -85,11 +85,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "protoc-gen-go")
-	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
-	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+func TestGenerateLibraries_NoAPI(t *testing.T) {
 	outDir := t.TempDir()
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
@@ -107,12 +103,8 @@ func TestGenerateLibraries_Error(t *testing.T) {
 		},
 	}
 	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	wantErrMessage := "no apis configured for library \"no-apis\""
-	if gotErr == nil {
-		t.Fatalf("expected error with message %s", wantErrMessage)
-	}
-	if diff := cmp.Diff(wantErrMessage, gotErr.Error()); diff != "" {
-		t.Errorf("error mismatch (-want +got):\n%s", diff)
+	if gotErr != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -272,7 +264,7 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_NoAPI(t *testing.T) {
+func TestGenerate_NoAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "goimports")
 	outDir := t.TempDir()
 	library := &config.Library{
