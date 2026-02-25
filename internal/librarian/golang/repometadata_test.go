@@ -100,6 +100,7 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 				Version: "1.2.3",
 			},
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
+				library.Output = output
 				dir, _ := resolveClientPath(library, api.Path)
 				// Create a file where the directory should be so Write fails.
 				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
