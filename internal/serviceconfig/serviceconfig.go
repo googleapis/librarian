@@ -177,9 +177,6 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 	if api.ServiceName == "" {
 		api.ServiceName = cfg.GetName()
 	}
-	if api.ShortName == "" {
-		api.ShortName = defaultShortName(api.ServiceName)
-	}
 	if api.Title == "" {
 		api.Title = cfg.GetTitle()
 	}
@@ -194,6 +191,9 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		if api.ShortName == "" {
 			api.ShortName = publishing.GetApiShortName()
 		}
+	}
+	if api.ShortName == "" {
+		api.ShortName = defaultShortName(api.ServiceName)
 	}
 	return api
 }
