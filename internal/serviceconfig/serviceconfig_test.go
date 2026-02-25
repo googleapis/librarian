@@ -279,7 +279,6 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 				Publishing: &annotations.Publishing{
 					DocumentationUri: "service config doc uri",
 					NewIssueUri:      "service config new issue uri",
-					ApiShortName:     "service config short name",
 				},
 			},
 			want: &API{
@@ -298,6 +297,20 @@ func TestPopulateFromServiceConfig(t *testing.T) {
 			want: &API{
 				ServiceName: "accessapproval.googleapis.com",
 				ShortName:   "accessapproval",
+			},
+		},
+		{
+			name: "shortname from service config",
+			api: &API{
+				ShortName: "short name from api",
+			},
+			cfg: &Service{
+				Publishing: &annotations.Publishing{
+					ApiShortName: "short name from service",
+				},
+			},
+			want: &API{
+				ShortName: "short name from service",
 			},
 		},
 	} {
