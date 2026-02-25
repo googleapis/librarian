@@ -104,6 +104,10 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 func constructProtocCommandArgs(api *config.API, googleapisDir string, protocOptions []string) ([]string, []string, error) {
 	apiDir := filepath.Join(googleapisDir, api.Path)
+	// TODO(https://github.com/googleapis/librarian/issues/4198):
+	// Consider recursive gathering and explicit sorting
+	// of proto files to match the behavior of the hermetic build, ensuring
+	// a deterministic order in the generated gapic_metadata.json.
 	protos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find protos: %w", err)
