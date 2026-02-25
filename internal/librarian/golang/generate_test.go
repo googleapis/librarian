@@ -272,6 +272,29 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+func TestGenerateLibraries_NoAPI(t *testing.T) {
+	testhelper.RequireCommand(t, "goimports")
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:    "auth",
+		Version: "1.0.0",
+		Output:  outDir,
+	}
+	// Create a library directory and write a go file since the generation will skip.
+	if err := os.MkdirAll(filepath.Join(outDir, "auth"), 0755); err != nil {
+		return
+	}
+	if err := os.WriteFile(filepath.Join(outDir, "auth", "auth.go"), []byte("package main"), 0755); err != nil {
+		return
+	}
+	if err := generate(t.Context(), library, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "goimports")
 	outDir := t.TempDir()
