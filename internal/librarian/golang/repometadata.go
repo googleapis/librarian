@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	releaseLevelStable  = "stable"
-	releaseLevelPreview = "preview"
+	repoMetadataReleaseLevelStable  = "stable"
+	repoMetadataReleaseLevelPreview = "preview"
 )
 
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
@@ -69,13 +69,14 @@ func distributionName(library *config.Library, apiPath, serviceName string) stri
 }
 
 func metadataReleaseLevel(api *serviceconfig.API, library *config.Library) (string, error) {
-	metadataReleaseLev := releaseLevelStable
 	apiReleaseLevel, err := releaseLevel(api.Path, library.Version)
 	if err != nil {
 		return "", err
 	}
-	if apiReleaseLevel != releaseLevelGA {
-		metadataReleaseLev = releaseLevelPreview
+	switch apiReleaseLevel {
+	case releaseLevelGA:
+		return repoMetadataReleaseLevelStable, nil
+	default:
+		return repoMetadataReleaseLevelPreview, nil
 	}
-	return metadataReleaseLev, nil
 }
