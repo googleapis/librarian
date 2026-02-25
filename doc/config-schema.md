@@ -157,6 +157,7 @@ This document describes the schema for the librarian.yaml.
 | `proto_only_apis` | list of string | ProtoOnlyAPIs contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
 | `name_pretty_override` | string | NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `product_documentation_override` | string | ProductDocumentationOverride allows the "product_documentation" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `metadata_name_override` | string | MetadataNameOverride allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
 
 ## RustCrate Configuration
 

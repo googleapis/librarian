@@ -31,6 +31,11 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
+	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
+)
+
 var errNoApis = errors.New("no apis configured for library")
 
 // GenerateLibraries generates all the given libraries in sequence.
@@ -111,6 +116,11 @@ func createRepoMetadata(config *config.Config, library *config.Library, googleap
 	if err != nil {
 		return nil, err
 	}
+	if library.Python != nil && library.Python.MetadataNameOverride != "" {
+		repoMetadata.Name = library.Python.MetadataNameOverride
+	} else {
+		repoMetadata.Name = library.Name
+	}
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Remove the default version fudge here, as Generate should
 	// compute it. For now, use the last component of the first api path as
@@ -119,7 +129,13 @@ func createRepoMetadata(config *config.Config, library *config.Library, googleap
 	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
 	// library type.
 	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
-	repoMetadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/python/docs/reference/%s/latest", repoMetadata.APIShortname)
+	// Work out the right documentation URI based on whether this is a Cloud
+	// or non-Cloud API.
+	docTemplate := cloudGoogleComDocumentationTemplate
+	if !strings.HasPrefix(library.Name, "google-cloud") {
+		docTemplate = googleapisDevDocumentationTemplate
+	}
+	repoMetadata.ClientDocumentation = fmt.Sprintf(docTemplate, repoMetadata.Name)
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
 	if library.Python != nil && library.Python.NamePrettyOverride != "" {
 		repoMetadata.NamePretty = library.Python.NamePrettyOverride

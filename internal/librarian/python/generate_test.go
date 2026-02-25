@@ -701,6 +701,9 @@ func TestGenerate(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 		},
+		Python: &config.PythonPackage{
+			MetadataNameOverride: "secretmanager",
+		},
 	}
 	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
@@ -779,7 +782,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				},
 			},
 			want: &repometadata.RepoMetadata{
-				Name:                 "secretmanager",
+				Name:                 "google-cloud-secret-manager",
 				NamePretty:           "Secret Manager",
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
@@ -791,8 +794,36 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				LibraryType:          "GAPIC_AUTO",
-				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
 				DefaultVersion:       "v1",
+			},
+		},
+		{
+			name: "non-cloud API",
+			library: &config.Library{
+				Name:         "google-apps-meet",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/apps/meet/v2",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "google-apps-meet",
+				NamePretty:           "Google Meet",
+				ProductDocumentation: "https://developers.google.com/meet/api/guides/overview",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=1216362&template=1766418",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-apps-meet",
+				APIID:                "meet.googleapis.com",
+				APIShortname:         "meet",
+				APIDescription:       "Create and manage meetings in Google Meet.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://googleapis.dev/python/google-apps-meet/latest",
+				DefaultVersion:       "v2",
 			},
 		},
 		{
@@ -807,6 +838,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 					},
 				},
 				Python: &config.PythonPackage{
+					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
 					ProductDocumentationOverride: "overridden product_documentation",
 				},
