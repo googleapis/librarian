@@ -86,9 +86,3 @@ func collectJavaFiles(root string) ([]string, error) {
 	})
 	return files, err
 }
-
-// Clean removes files in the library's output directory that are not in the keep list.
-// It targets patterns like proto-*, grpc-*, and the main GAPIC module.
-func Clean(library *config.Library) error {
-	return nil
-}

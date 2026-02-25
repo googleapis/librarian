@@ -1531,4 +1531,8 @@ type TargetResource struct {
 	// FieldPaths is a list of field name sequences that, when joined, form a resource name.
 	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
 	FieldPaths [][]string
+
+	// Template is the canonical HTTP path template for the resource.
+	// Example: "//compute.googleapis.com/projects/{project}/locations/{location}"
+	Template string
 }

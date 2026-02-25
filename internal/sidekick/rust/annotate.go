@@ -270,6 +270,9 @@ type methodAnnotation struct {
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
 	InternalBuilders          bool
+	ResourceNameTemplate      string
+	ResourceNameArgs          []string
+	HasResourceNameGeneration bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -1095,6 +1098,10 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		HasResourceNameFields:     len(resourceNameFields) > 0,
 		InternalBuilders:          c.internalBuilders,
 	}
+
+	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
+		return nil, err
+	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes
 		// a recommendation that is not applicable to generated code.
@@ -1564,6 +1571,62 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 	}
 	annotations.DocLines = lines
 	return nil
+}
+
+// annotateResourceNameGeneration populates the method annotation with a Rust format string (ResourceNameTemplate)
+// and a list of argument accessors (ResourceNameArgs) to generate the `resource_name()` helper.
+func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
+	if m.PathInfo != nil {
+		for _, b := range m.PathInfo.Bindings {
+			if b.TargetResource != nil {
+				tmpl, err := formatResourceNameTemplateFromPath(m, b)
+				if err != nil {
+					return err
+				}
+				annotation.ResourceNameTemplate = tmpl
+				for _, path := range b.TargetResource.FieldPaths {
+					accSegments, err := makeAccessors(path, m)
+					if err != nil {
+						return err
+					}
+					fullAcc := "Some(&req)" + strings.Join(accSegments, "") + ".unwrap_or(\"\")"
+					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, fullAcc)
+				}
+				annotation.HasResourceNameGeneration = true
+				break
+			}
+		}
+	}
+	return nil
+}
+
+// formatResourceNameTemplateFromPath constructs the Rust format string directly from the
+// parsed PathTemplate.
+func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
+	// Determine the service host (mirroring logic in api/resource_identification.go)
+	host := m.Model.Name + ".googleapis.com"
+	if m.Service != nil && m.Service.DefaultHost != "" {
+		host = m.Service.DefaultHost
+	}
+
+	var sb strings.Builder
+	sb.WriteString("//")
+	sb.WriteString(host)
+
+	// We assume simple path templates where variables correspond to arguments.
+	if b.PathTemplate == nil {
+		return "", fmt.Errorf("missing path template for method %s", m.ID)
+	}
+
+	for _, seg := range b.PathTemplate.Segments {
+		sb.WriteByte('/')
+		if seg.Literal != nil {
+			sb.WriteString(*seg.Literal)
+		} else if seg.Variable != nil {
+			sb.WriteString("{}")
+		}
+	}
+	return sb.String(), nil
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
