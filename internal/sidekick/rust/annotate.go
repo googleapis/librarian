@@ -19,6 +19,7 @@ import (
 	"cmp"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -1596,29 +1597,13 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	return nil
 }
 
+// resourceNameVarPattern matches variable segments in a resource name template (e.g., "{project}", "{name=*}").
+var resourceNameVarPattern = regexp.MustCompile(`\{[^}]+\}`)
+
 // formatResourceNameTemplate replaces all variable segments (e.g., "{project}", "{name=*}")
 // with "{}" to be used as a format string in Rust.
 func formatResourceNameTemplate(template string) string {
-	var b strings.Builder
-	b.Grow(len(template))
-	inVar := false
-	for i := 0; i < len(template); i++ {
-		c := template[i]
-		if c == '{' {
-			inVar = true
-			b.WriteByte(c)
-			continue
-		}
-		if c == '}' {
-			inVar = false
-			b.WriteByte(c)
-			continue
-		}
-		if !inVar {
-			b.WriteByte(c)
-		}
-	}
-	return b.String()
+	return resourceNameVarPattern.ReplaceAllString(template, "{}")
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
