@@ -37,7 +37,7 @@ var (
 		regexp.MustCompile(`.*/apiv(\d+).*/gapic_metadata\.json$`),
 		regexp.MustCompile(`.*/apiv(\d+).*/helpers\.go$`),
 		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
-		regexp.MustCompile(`.*internal/generated/snippets/.*$`),
+		regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
 	}
 )
 
