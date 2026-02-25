@@ -83,6 +83,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	}
 
 	var fieldPaths [][]string
+	var firstIndex = -1
 	var lastIndex int
 	segments := binding.PathTemplate.Segments
 
@@ -108,6 +109,9 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		if err != nil {
 			return nil, err
 		}
+		if firstIndex == -1 {
+			firstIndex = i - 1
+		}
 		fieldPaths = append(fieldPaths, fieldPath)
 		lastIndex = i + 1
 	}
@@ -116,7 +120,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		return nil, nil
 	}
 
-	template, err := constructTemplate(method, segments[:lastIndex])
+	template, err := constructTemplate(method, segments[firstIndex:lastIndex])
 	if err != nil {
 		return nil, err
 	}
