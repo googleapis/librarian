@@ -162,8 +162,7 @@ func TestClean_Error(t *testing.T) {
 
 			err := Clean(lib)
 			if err == nil {
-				t.Error(err)
-				return
+				t.Fatal("expected error")
 			}
 			if diff := cmp.Diff(test.wantErrMsg, err.Error()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
