@@ -42,6 +42,14 @@ var baseVocabulary = map[string]bool{
 	"folders":         true,
 	"organizations":   true,
 	"billingAccounts": true,
+
+	// Legacy Discovery
+	"zones":         true,
+	"regions":       true,
+	"networks":      true,
+	"instances":     true,
+	"machineTypes":  true,
+	"subnetworks":   true,
 }
 
 // isBaseVocabulary checks if a segment is part of the common resource vocabulary.
@@ -60,6 +68,10 @@ func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	if vocabulary != nil && vocabulary[segment] {
 		return true
 	}
+	// // Fallback: if the segment ends in 's' and stripping it matches the variable name exactly.
+	// if len(segment) > 1 && strings.HasSuffix(segment, "s") {
+	// 	return true
+	// }
 	return false
 }
 
