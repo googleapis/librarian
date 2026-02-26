@@ -59,7 +59,7 @@ func bumpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "bump",
 		Usage:     "update versions and prepare release artifacts",
-		UsageText: "librarian bump [library] [--all] [--version=<version>]",
+		UsageText: "librarian bump <library | --all> [flags]",
 		Description: `bump updates version numbers and prepares the files needed for a new release.
 
 If a library name is given, only that library is updated. The --all flag updates every

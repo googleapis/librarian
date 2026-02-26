@@ -47,7 +47,7 @@ func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
 		Usage:     "generate a client library",
-		UsageText: "librarian generate [library] [--all]",
+		UsageText: "librarian generate <library | --all> [flags]",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
