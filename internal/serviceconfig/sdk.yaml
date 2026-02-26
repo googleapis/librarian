@@ -1753,6 +1753,7 @@
 - languages:
     - dart
     - go
+    - java
     - python
     - rust
   open_api: testdata/secretmanager_openapi_v1.json

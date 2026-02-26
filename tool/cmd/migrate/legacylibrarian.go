@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -45,20 +46,22 @@ type RepoConfig struct {
 
 // RepoConfigModule represents a module in repo-config.yaml.
 type RepoConfigModule struct {
-	Name                        string           `yaml:"name"`
-	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
-	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
 	APIs                        []*RepoConfigAPI `yaml:"apis,omitempty"`
+	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
+	EnabledGeneratorFeatures    []string         `yaml:"enabled_generator_features,omitempty"`
+	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
+	Name                        string           `yaml:"name"`
 }
 
 // RepoConfigAPI represents an API in repo-config.yaml.
 type RepoConfigAPI struct {
-	Path            string   `yaml:"path"`
-	ClientDirectory string   `yaml:"client_directory,omitempty"`
-	DisableGAPIC    bool     `yaml:"disable_gapic,omitempty"`
-	ImportPath      string   `yaml:"import_path,omitempty"`
-	NestedProtos    []string `yaml:"nested_protos,omitempty"`
-	ProtoPackage    string   `yaml:"proto_package,omitempty"`
+	ClientDirectory          string   `yaml:"client_directory,omitempty"`
+	DisableGAPIC             bool     `yaml:"disable_gapic,omitempty"`
+	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
+	ImportPath               string   `yaml:"import_path,omitempty"`
+	NestedProtos             []string `yaml:"nested_protos,omitempty"`
+	Path                     string   `yaml:"path"`
+	ProtoPackage             string   `yaml:"proto_package,omitempty"`
 }
 
 // MigrationInput holds all intermediate configuration and state necessary for migration from legacy files.
@@ -269,17 +272,41 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		libGoModule, ok := idToGoModule[id]
 		if ok {
 			var goAPIs []*config.GoAPI
+			var enabledGenFeats []string
+			// EnabledGeneratorFeatures define in both library and API level in legacy librarian,
+			// We merge and dedup them into API level.
+			enabledGenFeats = append(enabledGenFeats, libGoModule.EnabledGeneratorFeatures...)
+			if len(enabledGenFeats) > 0 {
+				var modules []*RepoConfigAPI
+				for _, api := range library.APIs {
+					module := findModule(libGoModule, api.Path)
+					if module != nil {
+						continue
+					}
+					modules = append(modules, &RepoConfigAPI{
+						Path:                     api.Path,
+						EnabledGeneratorFeatures: enabledGenFeats,
+					})
+				}
+				libGoModule.APIs = append(libGoModule.APIs, modules...)
+			}
 			for _, api := range libGoModule.APIs {
+				enabledGenFeats = append(enabledGenFeats, api.EnabledGeneratorFeatures...)
+				slices.Sort(enabledGenFeats)
+				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
-					Path:            api.Path,
-					ClientDirectory: api.ClientDirectory,
-					DisableGAPIC:    api.DisableGAPIC,
-					ImportPath:      api.ImportPath,
-					NestedProtos:    api.NestedProtos,
-					ProtoPackage:    api.ProtoPackage,
+					ClientDirectory:          api.ClientDirectory,
+					DisableGAPIC:             api.DisableGAPIC,
+					EnabledGeneratorFeatures: enabledGenFeats,
+					ImportPath:               api.ImportPath,
+					NestedProtos:             api.NestedProtos,
+					Path:                     api.Path,
+					ProtoPackage:             api.ProtoPackage,
 				})
 			}
-
+			slices.SortFunc(goAPIs, func(a, b *config.GoAPI) int {
+				return cmp.Compare(a.Path, b.Path)
+			})
 			goModule := &config.GoModule{
 				DeleteGenerationOutputPaths: libGoModule.DeleteGenerationOutputPaths,
 				GoAPIs:                      goAPIs,
@@ -423,4 +450,13 @@ func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 		}
 	}
 	return nil, -1
+}
+
+func findModule(libGoModule *RepoConfigModule, apiPath string) *RepoConfigAPI {
+	for _, api := range libGoModule.APIs {
+		if api.Path == apiPath {
+			return api
+		}
+	}
+	return nil
 }

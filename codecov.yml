@@ -30,5 +30,4 @@ ignore:
   - internal/legacylibrarian/legacycontainer/java/pom
   - internal/legacylibrarian/legacycontainer/java/release
   - internal/legacylibrarian/legacyimages
-  # TODO(https://github.com/googleapis/librarian/issues/3632): improve coverage
   - internal/surfer/gcloud
