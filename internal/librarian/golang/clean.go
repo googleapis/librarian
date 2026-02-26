@@ -26,6 +26,12 @@ import (
 )
 
 var (
+	// generatedRegex defines patterns to identify files produced by the generator.
+	// These patterns are essential to ensure the 'Clean' operation only removes
+	// files that are known to be generated, protecting handwritten code or
+	// configuration that may reside in the same directory.
+	// TODO(https://github.com/googleapis/librarian/issues/4217): document each regex about
+	// what are matched and why it is necessary.
 	generatedRegex = []*regexp.Regexp{
 		regexp.MustCompile(`.*/apiv(\d+).*/\.repo-metadata\.json$`),
 		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary\.go$`),
@@ -37,7 +43,7 @@ var (
 		regexp.MustCompile(`.*/apiv(\d+).*/gapic_metadata\.json$`),
 		regexp.MustCompile(`.*/apiv(\d+).*/helpers\.go$`),
 		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
-		regexp.MustCompile(`.*/internal/generated/snippets/.*$`),
+		regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
 	}
 )
 

@@ -290,12 +290,12 @@ func TestToModelConfig(t *testing.T) {
 			name:    "empty library",
 			library: &config.Library{},
 			channel: &config.API{
-				Path: "google/api/apikeys/v2",
+				Path: "google/cloud/functions/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/api/apikeys/v2",
+				SpecificationSource: "google/cloud/functions/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -310,12 +310,12 @@ func TestToModelConfig(t *testing.T) {
 				DescriptionOverride: "this is a description override",
 			},
 			channel: &config.API{
-				Path: "google/api/apikeys/v2",
+				Path: "google/cloud/functions/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/api/apikeys/v2",
+				SpecificationSource: "google/cloud/functions/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -334,12 +334,12 @@ func TestToModelConfig(t *testing.T) {
 				},
 			},
 			channel: &config.API{
-				Path: "google/api/apikeys/v2",
+				Path: "google/cloud/functions/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/api/apikeys/v2",
+				SpecificationSource: "google/cloud/functions/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -378,12 +378,12 @@ func TestToModelConfig(t *testing.T) {
 				},
 			},
 			channel: &config.API{
-				Path: "google/api/apikeys/v2",
+				Path: "google/cloud/functions/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/api/apikeys/v2",
+				SpecificationSource: "google/cloud/functions/v2",
 				Source: map[string]string{
 					"googleapis-root": googleapisDir,
 					"roots":           "googleapis",
@@ -415,7 +415,7 @@ func TestToModelConfig(t *testing.T) {
 				SpecificationFormat: "openapi",
 			},
 			channel: &config.API{
-				Path: "google/api/apikeys/v2",
+				Path: "google/cloud/functions/v2",
 			},
 			googleapisDir: googleapisDir,
 			wantErr:       errInvalidSpecificationFormat,
