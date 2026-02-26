@@ -388,9 +388,6 @@ func canonicalizePythonLibrary(library *config.Library) (*config.Library, error)
 	if len(library.Python.CommonGAPICPaths) == 0 {
 		library.Python.CommonGAPICPaths = nil
 	}
-	if len(library.Python.OptArgs) == 0 {
-		library.Python.OptArgs = nil
-	}
 	if len(library.Python.OptArgsByAPI) == 0 {
 		library.Python.OptArgsByAPI = nil
 	}
