@@ -14,22 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 {{#IsAIPStandard}}
-{{#AIPStandardSampleInfo}}
-{{#InitFieldsFromParameter}}
-///         .set_{{Field.Codec.SetterName}}({{ParameterName}})
-{{/InitFieldsFromParameter}}
-{{#InitFieldsFromStringLiteral}}
+{{#SampleInfo}}
+{{#ResourceNameField}}
+///         .set_{{Codec.SetterName}}({{Codec.SetterName}})
+{{/ResourceNameField}}
+{{#ResourceIDField}}
 ///         .set_{{Codec.SetterName}}("{{Codec.SetterName}}_value")
-{{/InitFieldsFromStringLiteral}}
-{{#InitFieldsFromMessage}}
-///         .set_{{Field.Codec.SetterName}}(
-///             {{Field.MessageType.Codec.Name}}::new(){{#ParameterName}}.set_name({{ParameterName}}){{/ParameterName}}/* set fields */
+{{/ResourceIDField}}
+{{#MessageField}}
+///         .set_{{Codec.SetterName}}(
+///             {{MessageType.Codec.Name}}::new(){{#IsAIPStandardUpdate}}.set_name(name){{/IsAIPStandardUpdate}}/* set fields */
 ///         )
-{{/InitFieldsFromMessage}}
+{{/MessageField}}
 {{#UpdateMaskField}}
 ///         .set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated.field.path1", "updated.field.path2"]))
 {{/UpdateMaskField}}
-{{/AIPStandardSampleInfo}}
+{{/SampleInfo}}
 {{/IsAIPStandard}}
 {{^IsAIPStandard}}
 ///         /* set fields */

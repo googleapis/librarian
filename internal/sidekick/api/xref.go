@@ -230,24 +230,24 @@ func enrichMethodSamples(m *Method) {
 
 	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
 
-	if m.AIPStandardSampleInfo = aipStandardGetInfo(m); m.AIPStandardSampleInfo != nil {
+	if m.SampleInfo = aipStandardGetInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardGet = true
-	} else if m.AIPStandardSampleInfo = aipStandardDeleteInfo(m); m.AIPStandardSampleInfo != nil {
+	} else if m.SampleInfo = aipStandardDeleteInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardDelete = true
-	} else if m.AIPStandardSampleInfo = aipStandardUndeleteInfo(m); m.AIPStandardSampleInfo != nil {
+	} else if m.SampleInfo = aipStandardUndeleteInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardUndelete = true
-	} else if m.AIPStandardSampleInfo = aipStandardCreateInfo(m); m.AIPStandardSampleInfo != nil {
+	} else if m.SampleInfo = aipStandardCreateInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardCreate = true
-	} else if m.AIPStandardSampleInfo = aipStandardUpdateInfo(m); m.AIPStandardSampleInfo != nil {
+	} else if m.SampleInfo = aipStandardUpdateInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardUpdate = true
-	} else if m.AIPStandardSampleInfo = aipStandardListInfo(m); m.AIPStandardSampleInfo != nil {
+	} else if m.SampleInfo = aipStandardListInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardList = true
 	}
 
-	m.IsAIPStandard = m.AIPStandardSampleInfo != nil
+	m.IsAIPStandard = m.SampleInfo != nil
 }
 
-func aipStandardGetInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardGetInfo(m *Method) *SampleInfo {
 	if !m.IsSimple || m.InputType == nil || m.ReturnsEmpty {
 		return nil
 	}
@@ -280,15 +280,12 @@ func aipStandardGetInfo(m *Method) *AIPStandardSampleInfo {
 		return nil
 	}
 
-	return &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"resource_name"},
-		InitFieldsFromParameter: []*SampleParameterInit{
-			{Field: resourceField, ParameterName: "resource_name"},
-		},
+	return &SampleInfo{
+		ResourceNameField: resourceField,
 	}
 }
 
-func aipStandardDeleteInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardDeleteInfo(m *Method) *SampleInfo {
 	if !m.IsSimple && m.OperationInfo == nil {
 		return nil
 	}
@@ -312,15 +309,12 @@ func aipStandardDeleteInfo(m *Method) *AIPStandardSampleInfo {
 		return nil
 	}
 
-	return &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"resource_name"},
-		InitFieldsFromParameter: []*SampleParameterInit{
-			{Field: resourceField, ParameterName: "resource_name"},
-		},
+	return &SampleInfo{
+		ResourceNameField: resourceField,
 	}
 }
 
-func aipStandardUndeleteInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 	if !m.IsSimple && m.OperationInfo == nil {
 		return nil
 	}
@@ -344,15 +338,12 @@ func aipStandardUndeleteInfo(m *Method) *AIPStandardSampleInfo {
 		return nil
 	}
 
-	return &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"resource_name"},
-		InitFieldsFromParameter: []*SampleParameterInit{
-			{Field: resourceField, ParameterName: "resource_name"},
-		},
+	return &SampleInfo{
+		ResourceNameField: resourceField,
 	}
 }
 
-func aipStandardCreateInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardCreateInfo(m *Method) *SampleInfo {
 	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
 		return nil
 	}
@@ -391,22 +382,17 @@ func aipStandardCreateInfo(m *Method) *AIPStandardSampleInfo {
 
 	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
 
-	info := &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"parent"},
-		InitFieldsFromParameter: []*SampleParameterInit{
-			{Field: parentField, ParameterName: "parent"},
-		},
-		InitFieldsFromMessage: []*SampleMessageInit{
-			{Field: resourceField},
-		},
+	info := &SampleInfo{
+		ResourceNameField: parentField,
+		MessageField:      resourceField,
 	}
 	if resourceIDField != nil {
-		info.InitFieldsFromStringLiteral = []*Field{resourceIDField}
+		info.ResourceIDField = resourceIDField
 	}
 	return info
 }
 
-func aipStandardUpdateInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardUpdateInfo(m *Method) *SampleInfo {
 	if (!m.IsSimple && !m.IsLRO) || m.InputType == nil || m.ReturnsEmpty {
 		return nil
 	}
@@ -443,16 +429,13 @@ func aipStandardUpdateInfo(m *Method) *AIPStandardSampleInfo {
 		}
 	}
 
-	return &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"name"},
-		InitFieldsFromMessage: []*SampleMessageInit{
-			{Field: resourceField, ParameterName: "name"},
-		},
+	return &SampleInfo{
+		MessageField:    resourceField,
 		UpdateMaskField: updateMaskField,
 	}
 }
 
-func aipStandardListInfo(m *Method) *AIPStandardSampleInfo {
+func aipStandardListInfo(m *Method) *SampleInfo {
 	if !m.IsList || m.InputType == nil {
 		return nil
 	}
@@ -482,11 +465,8 @@ func aipStandardListInfo(m *Method) *AIPStandardSampleInfo {
 		return nil
 	}
 
-	return &AIPStandardSampleInfo{
-		SampleFunctionParameters: []string{"parent"},
-		InitFieldsFromParameter: []*SampleParameterInit{
-			{Field: parentField, ParameterName: "parent"},
-		},
+	return &SampleInfo{
+		ResourceNameField: parentField,
 	}
 }
 

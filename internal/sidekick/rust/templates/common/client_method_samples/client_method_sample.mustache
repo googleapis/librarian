@@ -26,15 +26,15 @@ limitations under the License.
 /// use google_cloud_gax::paginator::ItemPaginator as _;
 {{/IsList}}
 {{#IsAIPStandard}}
-{{#AIPStandardSampleInfo}}
+{{#SampleInfo}}
 {{#UpdateMaskField}}
 /// # extern crate wkt as google_cloud_wkt;
 /// use google_cloud_wkt::FieldMask;
 {{/UpdateMaskField}}
-{{#InitFieldsFromMessage}}
-/// use {{Service.Model.Codec.PackageNamespace}}::model::{{Field.MessageType.Codec.Name}};
-{{/InitFieldsFromMessage}}
-{{/AIPStandardSampleInfo}}
+{{#MessageField}}
+/// use {{Service.Model.Codec.PackageNamespace}}::model::{{MessageType.Codec.Name}};
+{{/MessageField}}
+{{/SampleInfo}}
 {{/IsAIPStandard}}
 /// use {{Service.Model.Codec.PackageNamespace}}::Result;
 /// async fn sample(

@@ -324,8 +324,9 @@ type Method struct {
 	IsAIPStandardUpdate bool
 	// IsAIPStandardList is true if the method is an AIP standard list method.
 	IsAIPStandardList bool
-	// AIPStandardSampleInfo contains sample generation information for AIP standard methods.
-	AIPStandardSampleInfo *AIPStandardSampleInfo
+	// SampleInfo may contain sample generation information for this method,
+	// usually if it is an AIP conforming metho.
+	SampleInfo *SampleInfo
 	// Codec contains language specific annotations.
 	Codec any
 }
@@ -414,34 +415,17 @@ func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
-// AIPStandardSampleInfo contains information for generating samples for AIP standard methods.
-type AIPStandardSampleInfo struct {
-	// SampleFunctionParameters is a list of string argument names that the generated sample function requires.
-	SampleFunctionParameters []string
-	// InitFieldsFromParameter contains fields that should be initialized from a sample function parameter.
-	InitFieldsFromParameter []*SampleParameterInit
-	// InitFieldsFromStringLiteral contains fields that should be initialized with a string literal.
-	InitFieldsFromStringLiteral []*Field
-	// InitFieldsFromMessage contains fields that should be initialized with a new message instance.
-	InitFieldsFromMessage []*SampleMessageInit
-	// UpdateMaskField is the update mask field, if any, that needs to be initialized.
+// SampleInfo contains sample generation information for a single method,
+// usually if it is an AIP conforming method.
+type SampleInfo struct {
+	// ResourceNameField is the field containing the resource name or parent resource name.
+	ResourceNameField *Field
+	// ResourceIDField is the field containing the resource ID, usually present in Create methods.
+	ResourceIDField *Field
+	// MessageField is the field containing the message body to be created or updated.
+	MessageField *Field
+	// UpdateMaskField is the field containing the update mask, present in Update methods.
 	UpdateMaskField *Field
-}
-
-// SampleParameterInit describes a field that should be initialized from a parameter.
-type SampleParameterInit struct {
-	// Field is the field to be initialized.
-	Field *Field
-	// ParameterName is the name of the parameter to use.
-	ParameterName string
-}
-
-// SampleMessageInit describes a field that should be initialized with a message.
-type SampleMessageInit struct {
-	// Field is the field to be initialized.
-	Field *Field
-	// ParameterName is the name of the parameter to set as the "name" field of the message, if any.
-	ParameterName string
 }
 
 const (
