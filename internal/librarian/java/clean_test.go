@@ -66,7 +66,7 @@ func TestClean(t *testing.T) {
 		Keep:   []string{"kept-file.txt", "kept-dir"},
 	}
 	if err := Clean(lib); err != nil {
-		t.Fatalf("Clean failed: %v", err)
+		t.Fatal(err)
 	}
 
 	// Verify cleaned paths

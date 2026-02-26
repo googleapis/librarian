@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,11 +87,6 @@ func TestGenerateLibraries(t *testing.T) {
 }
 
 func TestGenerateLibraries_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "protoc-gen-go")
-	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
-	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
-	outDir := t.TempDir()
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -98,8 +94,9 @@ func TestGenerateLibraries_Error(t *testing.T) {
 
 	libraries := []*config.Library{
 		{
-			Name:          "no-apis",
-			Output:        outDir,
+			Name:          "non-existent-api",
+			APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
+			Output:        t.TempDir(),
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -107,12 +104,8 @@ func TestGenerateLibraries_Error(t *testing.T) {
 		},
 	}
 	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	wantErrMessage := "no apis configured for library \"no-apis\""
-	if gotErr == nil {
-		t.Fatalf("expected error with message %s", wantErrMessage)
-	}
-	if diff := cmp.Diff(wantErrMessage, gotErr.Error()); diff != "" {
-		t.Errorf("error mismatch (-want +got):\n%s", diff)
+	if !errors.Is(gotErr, syscall.ENOENT) {
+		t.Fatalf("expected %v, got %v", syscall.ENOENT, gotErr)
 	}
 }
 
@@ -124,7 +117,7 @@ func TestGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		libraryName  string
-		apiPath      string
+		apis         []*config.API
 		transport    string
 		releaseLevel string
 		goModule     *config.GoModule
@@ -132,7 +125,9 @@ func TestGenerate(t *testing.T) {
 		removed      []string
 	}{
 		{
-			name: "basic",
+			name:        "basic",
+			libraryName: "secretmanager",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
@@ -145,8 +140,10 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			name:     "v2 module",
-			goModule: &config.GoModule{ModulePathVersion: "v2"},
+			name:        "v2 module",
+			libraryName: "secretmanager",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			goModule:    &config.GoModule{ModulePathVersion: "v2"},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 			},
@@ -155,7 +152,9 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			name: "delete paths",
+			name:        "delete paths",
+			libraryName: "secretmanager",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secretmanagerpb"},
 			},
@@ -168,6 +167,8 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:         "with transport and release level",
+			libraryName:  "secretmanager",
+			apis:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			transport:    "grpc+rest",
 			releaseLevel: "ga",
 			want: []string{
@@ -175,7 +176,9 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			name: "client directory",
+			name:        "client directory",
+			libraryName: "secretmanager",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -189,7 +192,9 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			name: "disable gapic",
+			name:        "disable gapic",
+			libraryName: "secretmanager",
+			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -208,7 +213,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "nested protos",
 			libraryName: "gkehub",
-			apiPath:     "google/cloud/gkehub/v1",
+			apis:        []*config.API{{Path: "google/cloud/gkehub/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
@@ -226,31 +231,24 @@ func TestGenerate(t *testing.T) {
 				"gkehub/multiclusteringress/apiv1/multiclusteringresspb/multiclusteringress.pb.go",
 			},
 		},
+		{
+			name:        "no api",
+			libraryName: "auth",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
-			libraryName := test.libraryName
-			if libraryName == "" {
-				libraryName = "secretmanager"
-			}
-			apiPath := test.apiPath
-			if apiPath == "" {
-				apiPath = "google/cloud/secretmanager/v1"
-			}
 			library := &config.Library{
-				Name:         libraryName,
+				Name:         test.libraryName,
 				Version:      "1.0.0",
 				Output:       outdir,
-				APIs:         []*config.API{{Path: apiPath}},
+				APIs:         test.apis,
 				Transport:    test.transport,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
 			}
 
 			if err := generate(t.Context(), library, googleapisDir); err != nil {
-				t.Fatal(err)
-			}
-			if err := Format(t.Context(), library); err != nil {
 				t.Fatal(err)
 			}
 
