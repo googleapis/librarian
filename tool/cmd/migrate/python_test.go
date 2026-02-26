@@ -128,7 +128,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "billing budgets (transport varies by API)",
+			name: "billing budgets (transport varies by API, need explicit default)",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
 				librarianState: &legacyconfig.LibrarianState{
@@ -153,6 +153,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 					},
 					DescriptionOverride: "The Cloud Billing Budget API stores Cloud Billing budgets, which define a budget plan and the rules to execute as spend is tracked against that plan.",
 					Python: &config.PythonPackage{
+						DefaultVersion:               "v1beta",
 						NamePrettyOverride:           "Cloud Billing Budget",
 						ProductDocumentationOverride: "https://cloud.google.com/billing/docs/how-to/budget-api-overview",
 						OptArgsByAPI: map[string][]string{

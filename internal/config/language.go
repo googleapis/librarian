@@ -297,15 +297,9 @@ type RustPoller struct {
 type PythonPackage struct {
 	PythonDefault `yaml:",inline"`
 
-	// OptArgs contains additional options passed to the generator, where
-	// the options are common to all apis.
-	// Example: ["warehouse-package-name=google-cloud-batch"]
-	OptArgs []string `yaml:"opt_args,omitempty"`
-
-	// OptArgsByAPI contains additional options passed to the generator,
-	// where the options vary by api. In each entry, the key is the api
-	// (API path) and the value is the list of options to pass when generating
-	// that API.
+	// OptArgsByAPI contains additional options passed to the generator.
+	// In each entry, the key is the API path and the value is the list of
+	// options to pass when generating that API.
 	// Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]}
 	OptArgsByAPI map[string][]string `yaml:"opt_args_by_api,omitempty"`
 
@@ -330,6 +324,10 @@ type PythonPackage struct {
 	// default it's the package name, but older packages use the API short name
 	// instead.
 	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
+
+	// DefaultVersion is the default version of the API to use. When omitted,
+	// the version in the first API path is used.
+	DefaultVersion string `yaml:"default_version,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.
