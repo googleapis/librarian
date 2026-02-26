@@ -678,6 +678,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
+	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
