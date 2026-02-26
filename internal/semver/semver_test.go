@@ -163,7 +163,7 @@ func TestParse(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			actual, err := Parse(test.version)
 			if err != nil {
-				t.Fatalf("Parse() failed: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, actual); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -661,7 +661,7 @@ func TestDeriveNextOptions_DeriveNextPreview(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			nextVersion, err := DeriveNextPreview(test.previewVersion, test.stableVersion, test.opts)
 			if err != nil {
-				t.Fatalf("DeriveNextPreview() returned an error: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, nextVersion); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

@@ -281,7 +281,7 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 			}
 			model := NewTestAPI([]*Message{}, []*Enum{enum}, []*Service{})
 			if err := CrossReference(model); err != nil {
-				t.Fatalf("CrossReference() failed: %v", err)
+				t.Fatal(err)
 			}
 
 			got := enum.ValuesForExamples

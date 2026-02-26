@@ -105,7 +105,7 @@ func TestGenerateCommand(t *testing.T) {
 
 				var buf bytes.Buffer
 				if _, err := io.Copy(&buf, r); err != nil {
-					t.Fatalf("failed to read from pipe: %v", err)
+					t.Fatal(err)
 				}
 				if runErr != nil {
 					t.Fatal(runErr)

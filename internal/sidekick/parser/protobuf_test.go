@@ -2172,7 +2172,7 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		got, err := parseResourcePatterns(patterns)
 		if err != nil {
-			t.Fatalf("parseResourcePatterns() returned an error: %v", err)
+			t.Fatal(err)
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -2212,7 +2212,7 @@ func TestProtobuf_SubdirRedundancy(t *testing.T) {
 	}
 	req, err := newCodeGeneratorRequest("testdata", options)
 	if err != nil {
-		t.Fatalf("newCodeGeneratorRequest() failed: %v", err)
+		t.Fatal(err)
 	}
 	if want, got := 1, len(req.FileToGenerate); want != got {
 		t.Fatalf("newCodeGeneratorRequest() returned %d files, want %d", got, want)

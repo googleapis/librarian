@@ -32,13 +32,13 @@ func TestReadGcloudConfig(t *testing.T) {
 
 	got, err := yaml.Marshal(cfg)
 	if err != nil {
-		t.Fatalf("failed to marshal struct to YAML: %v", err)
+		t.Fatal(err)
 	}
 
 	var index int
 	data, err := os.ReadFile("testdata/parallelstore/gcloud.yaml")
 	if err != nil {
-		t.Fatalf("failed to read temporary YAML file: %v", err)
+		t.Fatal(err)
 	}
 	lines := strings.Split(string(data), "\n")
 	for i, line := range lines {

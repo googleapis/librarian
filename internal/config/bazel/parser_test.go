@@ -70,7 +70,7 @@ go_proto_library()
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
 	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
-		t.Fatalf("failed to write test file: %v", err)
+		t.Fatal(err)
 	}
 
 	if _, err := Parse(buildPath); err == nil {
