@@ -133,7 +133,8 @@ func TestFromLibrary_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, gotErr := FromLibrary(&config.Config{}, test.library, "../testdata/googleapis")
+			cfg := &config.Config{Language: serviceconfig.LangPython}
+			_, gotErr := FromLibrary(cfg, test.library, "../testdata/googleapis")
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
 			}
