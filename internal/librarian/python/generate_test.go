@@ -98,20 +98,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with python opts",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secret-manager",
-				Python: &config.PythonPackage{
-					OptArgs: []string{"opt1", "opt2"},
-				},
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "with python opts by api",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -170,12 +156,14 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "rest-enumeric-enums is specified in OptArgs",
+			name: "rest-enumeric-enums is specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
-					OptArgs: []string{"rest-numeric-enums=False"},
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"rest-numeric-enums=False"},
+					},
 				},
 			},
 			expected: []string{

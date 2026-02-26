@@ -231,12 +231,7 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	// GAPIC library: generate full client library
 	opts := []string{"metadata"}
 
-	// Add Python-specific options
-	// First common options that apply to all apis
-	if library.Python != nil && len(library.Python.OptArgs) > 0 {
-		opts = append(opts, library.Python.OptArgs...)
-	}
-	// Then options that apply to this specific api
+	// Add Python-specific options that apply to this specific API.
 	if library.Python != nil && len(library.Python.OptArgsByAPI) > 0 {
 		apiOptArgs, ok := library.Python.OptArgsByAPI[api.Path]
 		if ok {
