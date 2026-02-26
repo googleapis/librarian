@@ -1893,6 +1893,9 @@
   path: google/spanner/adapter/v1
 - path: google/spanner/admin/database/v1
 - path: google/spanner/admin/instance/v1
+- languages:
+    - go
+  path: google/spanner/executor/v1
 - path: google/spanner/v1
   transports:
     go: grpc+rest
