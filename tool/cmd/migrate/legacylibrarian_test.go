@@ -720,3 +720,18 @@ func TestParseBazel_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestToAPIs(t *testing.T) {
+	legacyAPIs := []*legacyconfig.API{
+		{Path: "google/cloud/functions/v2"},
+		{Path: "google/cloud/functions/v1"},
+	}
+	want := []*config.API{
+		{Path: "google/cloud/functions/v1"},
+		{Path: "google/cloud/functions/v2"},
+	}
+	got := toAPIs(legacyAPIs)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

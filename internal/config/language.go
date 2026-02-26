@@ -330,6 +330,10 @@ type PythonPackage struct {
 	// default it's the package name, but older packages use the API short name
 	// instead.
 	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
+
+	// DefaultVersion is the default version of the API to use. When omitted,
+	// the version in the first API path is used.
+	DefaultVersion string `yaml:"default_version,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.

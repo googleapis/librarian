@@ -2,7 +2,7 @@
   "api_id": "",
   "api_shortname": "auditlog",
   "client_documentation": "https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log",
-  "default_version": "apiVersion",
+  "default_version": "",
   "distribution_name": "google-cloud-audit-log",
   "issue_tracker": "",
   "language": "python",

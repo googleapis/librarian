@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
@@ -343,6 +344,12 @@ func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 			Path: api.Path,
 		})
 	}
+	// Formatting the library will sort the APIs by path later anyway, so let's
+	// do that now. That way the migration code will observe the list of APIs
+	// in the same order that it will eventually be saved.
+	slices.SortFunc(apis, func(a, b *config.API) int {
+		return strings.Compare(a.Path, b.Path)
+	})
 	return apis
 }
 
