@@ -193,8 +193,8 @@ func deleteUnlessKept(lib *config.Library, path string) error {
 	return nil
 }
 
-// deriveGAPICGenerationInfo derives an apiInfo for  a single API within a library, using
-// the API path and the options from the configuration.
+// deriveGAPICGenerationInfo derives a gapicGenerationInfo for a single API within a library,
+// using the API path and the options from the configuration.
 func deriveGAPICGenerationInfo(api *config.API, lib *config.Library) (*gapicGenerationInfo, error) {
 	splitPath := strings.Split(api.Path, "/")
 	if len(splitPath) < 2 {
