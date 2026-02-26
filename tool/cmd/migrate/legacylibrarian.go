@@ -278,7 +278,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			for _, api := range libGoModule.APIs {
 				enabledGenFeats = append(enabledGenFeats, api.EnabledGeneratorFeatures...)
 				slices.Sort(enabledGenFeats)
-				slices.Compact(enabledGenFeats)
+				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
 					ClientDirectory:          api.ClientDirectory,
 					DisableGAPIC:             api.DisableGAPIC,

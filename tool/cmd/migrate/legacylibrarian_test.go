@@ -593,6 +593,64 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse enable generator features from repo config",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "secretmanager",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/secretmanager/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "secretmanager",
+							EnabledGeneratorFeatures: []string{
+								"feature-1",
+								"feature-2",
+							},
+							APIs: []*RepoConfigAPI{
+								{
+									EnabledGeneratorFeatures: []string{
+										"feature-3",
+										"feature-1",
+									},
+									Path: "google/cloud/secretmanager/v1",
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								EnabledGeneratorFeatures: []string{
+									"feature-1",
+									"feature-2",
+									"feature-3",
+								},
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
