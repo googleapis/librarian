@@ -77,8 +77,8 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 
 	src := filepath.Join(outdir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); os.IsNotExist(err) {
-		return fmt.Errorf("directory not found: %s", src)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("cannot access directory %q: %w", src, err)
 	}
 	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err
