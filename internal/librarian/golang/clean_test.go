@@ -24,8 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestClean_Success(t *testing.T) {
-	t.Parallel()
+func TestClean(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
@@ -33,6 +32,7 @@ func TestClean_Success(t *testing.T) {
 		snippetFiles []string
 		keep         []string
 		nestedModule string
+		setup        func(dir string)
 		wantOutput   []string
 		wantSnippets []string
 	}{
@@ -86,15 +86,26 @@ func TestClean_Success(t *testing.T) {
 			keep:        []string{},
 			wantOutput:  []string{},
 		},
+		{
+			name:         "snippets in current directory",
+			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
+			keep:         []string{},
+			setup: func(dir string) {
+				// Change the working directory to the same level of
+				// internal directory to verify clean function when
+				// there's no prefix in snippets directory.
+				t.Chdir(dir)
+			},
+			wantOutput: []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
 				Name:   libraryName,
-				Output: filepath.Join(root),
+				Output: root,
 				Keep:   test.keep,
 				Go: &config.GoModule{
 					NestedModule: test.nestedModule,
@@ -105,6 +116,9 @@ func TestClean_Success(t *testing.T) {
 			}
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
+			}
+			if test.setup != nil {
+				test.setup(root)
 			}
 
 			err := Clean(lib)
