@@ -13,24 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{#AIPStandardGetInfo}}
-///    client: &{{Service.Codec.Name}}, resource_name: &str
-{{/AIPStandardGetInfo}}
-{{#AIPStandardDeleteInfo}}
-///    client: &{{Service.Codec.Name}}, resource_name: &str
-{{/AIPStandardDeleteInfo}}
-{{#AIPStandardUndeleteInfo}}
-///    client: &{{Service.Codec.Name}}, resource_name: &str
-{{/AIPStandardUndeleteInfo}}
-{{#AIPStandardCreateInfo}}
-///    client: &{{Service.Codec.Name}}, parent: &str
-{{/AIPStandardCreateInfo}}
-{{#AIPStandardUpdateInfo}}
-///    client: &{{Service.Codec.Name}}, name: &str
-{{/AIPStandardUpdateInfo}}
-{{#AIPStandardListInfo}}
-///    client: &{{Service.Codec.Name}}, parent: &str
-{{/AIPStandardListInfo}}
+{{#IsAIPStandard}}
+{{#AIPStandardSampleInfo}}
+///    client: &{{Service.Codec.Name}}{{#SampleFunctionParameters}}, {{.}}: &str{{/SampleFunctionParameters}}
+{{/AIPStandardSampleInfo}}
+{{/IsAIPStandard}}
 {{^IsAIPStandard}}
 ///    client: &{{Service.Codec.Name}}
 {{/IsAIPStandard}}

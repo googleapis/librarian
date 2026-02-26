@@ -67,7 +67,7 @@ func IsCreate(m *api.Method) bool {
 // IsGet determines if the method is a standard Get method (AIP-131).
 func IsGet(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
-	if m.AIPStandardGetInfo != nil {
+	if m.IsAIPStandardGet {
 		return true
 	}
 	// Fallback heuristic
@@ -105,7 +105,7 @@ func IsUpdate(m *api.Method) bool {
 // IsDelete determines if the method is a standard Delete method (AIP-135).
 func IsDelete(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
-	if m.AIPStandardDeleteInfo != nil {
+	if m.IsAIPStandardDelete {
 		return true
 	}
 	// Fallback heuristic

@@ -312,18 +312,20 @@ type Method struct {
 	IsStreaming bool
 	// IsAIPStandard is true if the method is one of the AIP standard methods.
 	IsAIPStandard bool
-	// AIPStandardGetInfo contains information relevant to get operations.
-	AIPStandardGetInfo *AIPStandardGetInfo
-	// AIPStandardDeleteInfo contains information relevant to delete operations.
-	AIPStandardDeleteInfo *AIPStandardDeleteInfo
-	// AIPStandardUndeleteInfo contains information relevant to undelete operations.
-	AIPStandardUndeleteInfo *AIPStandardUndeleteInfo
-	// AIPStandardCreateInfo contains information relevant to create operations.
-	AIPStandardCreateInfo *AIPStandardCreateInfo
-	// AIPStandardUpdateInfo contains information relevant to update operations.
-	AIPStandardUpdateInfo *AIPStandardUpdateInfo
-	// AIPStandardListInfo contains information relevant to list operations.
-	AIPStandardListInfo *AIPStandardListInfo
+	// IsAIPStandardGet is true if the method is an AIP standard get method.
+	IsAIPStandardGet bool
+	// IsAIPStandardDelete is true if the method is an AIP standard delete method.
+	IsAIPStandardDelete bool
+	// IsAIPStandardUndelete is true if the method is an AIP standard undelete method.
+	IsAIPStandardUndelete bool
+	// IsAIPStandardCreate is true if the method is an AIP standard create method.
+	IsAIPStandardCreate bool
+	// IsAIPStandardUpdate is true if the method is an AIP standard update method.
+	IsAIPStandardUpdate bool
+	// IsAIPStandardList is true if the method is an AIP standard list method.
+	IsAIPStandardList bool
+	// AIPStandardSampleInfo contains sample generation information for AIP standard methods.
+	AIPStandardSampleInfo *AIPStandardSampleInfo
 	// Codec contains language specific annotations.
 	Codec any
 }
@@ -412,60 +414,34 @@ func (m *Method) HasAutoPopulatedFields() bool {
 	return len(m.AutoPopulated) != 0
 }
 
-// AIPStandardGetInfo contains information relevant to get operations
-// that are like those defined by AIP-131.
-type AIPStandardGetInfo struct {
-	// ResourceNameRequestField is the field in the method input that contains the resource name
-	// of the resource that the get operation should fetch.
-	ResourceNameRequestField *Field
+// AIPStandardSampleInfo contains information for generating samples for AIP standard methods.
+type AIPStandardSampleInfo struct {
+	// SampleFunctionParameters is a list of string argument names that the generated sample function requires.
+	SampleFunctionParameters []string
+	// InitFieldsFromParameter contains fields that should be initialized from a sample function parameter.
+	InitFieldsFromParameter []*SampleParameterInit
+	// InitFieldsFromStringLiteral contains fields that should be initialized with a string literal.
+	InitFieldsFromStringLiteral []*Field
+	// InitFieldsFromMessage contains fields that should be initialized with a new message instance.
+	InitFieldsFromMessage []*SampleMessageInit
+	// UpdateMaskField is the update mask field, if any, that needs to be initialized.
+	UpdateMaskField *Field
 }
 
-// AIPStandardDeleteInfo contains information relevant to delete operations
-// that are like those defined by AIP-135.
-type AIPStandardDeleteInfo struct {
-	// ResourceNameRequestField is the field in the method input that contains the resource name
-	// of the resource that the delete operation should delete.
-	ResourceNameRequestField *Field
+// SampleParameterInit describes a field that should be initialized from a parameter.
+type SampleParameterInit struct {
+	// Field is the field to be initialized.
+	Field *Field
+	// ParameterName is the name of the parameter to use.
+	ParameterName string
 }
 
-// AIPStandardUndeleteInfo contains information relevant to an undelete operation
-// as implied by AIP-135.
-type AIPStandardUndeleteInfo struct {
-	// ResourceNameRequestField is the field in the method input that contains the resource name
-	// of the resource that the undelete operation should restore.
-	ResourceNameRequestField *Field
-}
-
-// AIPStandardCreateInfo contains information relevant to create operations
-// that are like those defined by AIP-133.
-type AIPStandardCreateInfo struct {
-	// ParentRequestField is the field in the method input that contains the parent resource name
-	// where the resource is to be created.
-	ParentRequestField *Field
-	// ResourceIDRequestField is the field in the method input that contains the resource ID
-	// for the resource to be created. This field is optional in the AIP.
-	ResourceIDRequestField *Field
-	// ResourceRequestField is the field in the method input that contains the resource
-	// to be created.
-	ResourceRequestField *Field
-}
-
-// AIPStandardUpdateInfo contains information relevant to update operations
-// that are like those defined by AIP-134.
-type AIPStandardUpdateInfo struct {
-	// ResourceRequestField is the field in the method input that contains the resource
-	// to be updated.
-	ResourceRequestField *Field
-	// UpdateMaskRequestField is the field in the method input that contains the update mask.
-	UpdateMaskRequestField *Field
-}
-
-// AIPStandardListInfo contains information relevant to list operations
-// that are like those defined by AIP-132.
-type AIPStandardListInfo struct {
-	// ParentRequestField is the field in the method input that contains the parent resource name
-	// of the resources that the list operation should fetch.
-	ParentRequestField *Field
+// SampleMessageInit describes a field that should be initialized with a message.
+type SampleMessageInit struct {
+	// Field is the field to be initialized.
+	Field *Field
+	// ParameterName is the name of the parameter to set as the "name" field of the message, if any.
+	ParameterName string
 }
 
 const (
