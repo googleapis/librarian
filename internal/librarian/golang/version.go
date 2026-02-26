@@ -91,6 +91,9 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	if clientDir != "" {
 		pkg = clientDir
 	}
+	if goAPI != nil && goAPI.ClientPackageOverride != "" {
+		pkg = goAPI.ClientPackageOverride
+	}
 	return t.Execute(f, map[string]any{
 		"Package":    pkg,
 		"ModulePath": modulePath(library),
