@@ -108,24 +108,27 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 
 // createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
 // for the given library.
-func createRepoMetadata(config *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3157):
-	// Copy files from .librarian/generator-input/client-post-processing
-	// for post processing, or reimplement.
-	repoMetadata, err := repometadata.FromLibrary(config, library, googleapisDir)
+func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
+	// Just to avoid lots of checks for library.Python being nil.
+	packageOptions := library.Python
+	if packageOptions == nil {
+		packageOptions = &config.PythonPackage{}
+	}
+	repoMetadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return nil, err
 	}
-	if library.Python != nil && library.Python.MetadataNameOverride != "" {
-		repoMetadata.Name = library.Python.MetadataNameOverride
+	if packageOptions.MetadataNameOverride != "" {
+		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
 		repoMetadata.Name = library.Name
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/3146):
-	// Remove the default version fudge here, as Generate should
-	// compute it. For now, use the last component of the first api path as
-	// the default version.
+	// Use the version of the first-listed API path as the default version,
+	// unless it's overridden.
 	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	if packageOptions.DefaultVersion != "" {
+		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
+	}
 	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
 	// library type.
 	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
@@ -137,11 +140,11 @@ func createRepoMetadata(config *config.Config, library *config.Library, googleap
 	}
 	repoMetadata.ClientDocumentation = fmt.Sprintf(docTemplate, repoMetadata.Name)
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
-	if library.Python != nil && library.Python.NamePrettyOverride != "" {
-		repoMetadata.NamePretty = library.Python.NamePrettyOverride
+	if packageOptions.NamePrettyOverride != "" {
+		repoMetadata.NamePretty = packageOptions.NamePrettyOverride
 	}
-	if library.Python != nil && library.Python.ProductDocumentationOverride != "" {
-		repoMetadata.ProductDocumentation = library.Python.ProductDocumentationOverride
+	if packageOptions.ProductDocumentationOverride != "" {
+		repoMetadata.ProductDocumentation = packageOptions.ProductDocumentationOverride
 	}
 	return repoMetadata, nil
 }

@@ -3,7 +3,7 @@
   "api_id": "billingbudgets.googleapis.com",
   "api_shortname": "billingbudgets",
   "client_documentation": "https://cloud.google.com/python/docs/reference/google-cloud-billing-budgets/latest",
-  "default_version": "v1",
+  "default_version": "v1beta",
   "distribution_name": "google-cloud-billing-budgets",
   "issue_tracker": "https://issuetracker.google.com/savedsearches/559770",
   "language": "python",

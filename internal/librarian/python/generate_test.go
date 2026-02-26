@@ -765,9 +765,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Name:         "google-cloud-secret-manager",
 				ReleaseLevel: "stable",
 				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secrets/v1beta1"},
 				},
 			},
 			want: &repometadata.RepoMetadata{
@@ -822,11 +821,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ReleaseLevel:        "stable",
 				DescriptionOverride: "overridden description",
 				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secrets/v1beta1"},
 				},
 				Python: &config.PythonPackage{
+					DefaultVersion:               "v1beta1",
 					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
 					ProductDocumentationOverride: "overridden product_documentation",
@@ -846,6 +845,34 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIDescription:       "overridden description",
 				LibraryType:          "GAPIC_AUTO",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1beta1",
+			},
+		},
+		{
+			name: "default version",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "google-cloud-secret-manager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
 				DefaultVersion:       "v1",
 			},
 		},
