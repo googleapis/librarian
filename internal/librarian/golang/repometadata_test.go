@@ -266,7 +266,7 @@ func TestMetadataReleaseLevel(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := metadataReleaseLevel(test.api, test.library)
 			if err != nil {
-				t.Fatalf("metadataReleaseLevel() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 			if got != test.want {
 				t.Errorf("metadataReleaseLevel() = %v, want %v", got, test.want)

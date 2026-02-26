@@ -47,7 +47,7 @@ func TestCommandYAML(t *testing.T) {
 		t.Run(filename, func(t *testing.T) {
 			data, err := os.ReadFile(filename)
 			if err != nil {
-				t.Fatalf("failed to read file: %v", err)
+				t.Fatal(err)
 			}
 			data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 
@@ -57,17 +57,17 @@ func TestCommandYAML(t *testing.T) {
 
 			commands, err := yaml.Unmarshal[[]*Command](data)
 			if err != nil {
-				t.Fatalf("failed to unmarshal YAML: %v", err)
+				t.Fatal(err)
 			}
 
 			marshaled, err := yaml.Marshal(commands)
 			if err != nil {
-				t.Fatalf("failed to marshal struct to YAML: %v", err)
+				t.Fatal(err)
 			}
 
 			roundTripped, err := yaml.Unmarshal[[]*Command](marshaled)
 			if err != nil {
-				t.Fatalf("failed to unmarshal round-tripped YAML: %v", err)
+				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(commands, roundTripped); diff != "" {

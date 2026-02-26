@@ -72,7 +72,7 @@ func TestParseSegments(t *testing.T) {
 			got, err := ParseSegments(test.path)
 			if test.want != nil {
 				if err != nil {
-					t.Fatalf("expected no error, got: %v", err)
+					t.Fatal(err)
 				}
 				if got == nil {
 					t.Fatalf("expected path template for %s, got nil", test.path)

@@ -205,6 +205,28 @@ Example:
 err := Run(t.Context(), []string{"cmd", "-output", t.TempDir()})
 ```
 
+### Use `t.Fatal` or `t.Error` for simple error handling
+
+Avoid verbose or redundant failure messages. If an error occurs, pass it directly
+to `t.Fatal` or `t.Error`. The testing package automatically includes the file
+and line number, and well-constructed errors already provide their own context.
+
+**Good**:
+```go
+t.Fatal(err)
+```
+
+**Bad**:
+```go
+t.Fatalf("failed: %v", err)
+```
+
+Only use `t.Fatalf` if you need to provide extra context not present in the
+error, such as:
+```go
+t.Fatalf("failed to process user %d: %v", userID, err)
+```
+
 ### Use `cmp.Diff` for comparisons
 
 Use [`go-cmp`](https://pkg.go.dev/github.com/google/go-cmp/cmp) instead of
