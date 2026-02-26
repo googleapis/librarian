@@ -549,7 +549,7 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
 		t.Fatal(err)
 	}
-
+	createMinimalNoxFile(t, outdir)
 	err := runPostProcessor(t.Context(), repoRoot, outdir)
 	if err != nil {
 		t.Fatal(err)
@@ -678,10 +678,11 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
+	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -922,5 +923,19 @@ replacements:
     count: 1`
 	if err := os.WriteFile(filepath.Join(dir, "sample.yaml"), []byte(yaml), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// createMinimalNoxFile creates noxfile.py in the given output directory,
+// with an empty "format" session defined.
+func createMinimalNoxFile(t *testing.T, outDir string) {
+	content := `import nox
+nox.options.sessions = ["format"]
+@nox.session()
+def format(session):
+	print("This would format")
+`
+	if err := os.WriteFile(filepath.Join(outDir, "noxfile.py"), []byte(content), 0644); err != nil {
+		t.Fatalf("unable to create noxfile.py: %v", err)
 	}
 }
