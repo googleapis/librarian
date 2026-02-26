@@ -13,32 +13,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{#AIPStandardGetInfo}}
-///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
-{{/AIPStandardGetInfo}}
-{{#AIPStandardDeleteInfo}}
-///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
-{{/AIPStandardDeleteInfo}}
-{{#AIPStandardUndeleteInfo}}
-///         .set_{{ResourceNameRequestField.Codec.SetterName}}(resource_name)
-{{/AIPStandardUndeleteInfo}}
-{{#AIPStandardCreateInfo}}
-///         .set_{{ParentRequestField.Codec.SetterName}}(parent){{#ResourceIDRequestField}}.set_{{Codec.SetterName}}("{{Codec.SetterName}}_value"){{/ResourceIDRequestField}}
-///         .set_{{ResourceRequestField.Codec.SetterName}}(
-///             {{ResourceRequestField.MessageType.Codec.Name}}::new()/* set fields */
+{{#IsAIPStandard}}
+{{#AIPStandardSampleInfo}}
+{{#InitFieldsFromParameter}}
+///         .set_{{Field.Codec.SetterName}}({{ParameterName}})
+{{/InitFieldsFromParameter}}
+{{#InitFieldsFromStringLiteral}}
+///         .set_{{Codec.SetterName}}("{{Codec.SetterName}}_value")
+{{/InitFieldsFromStringLiteral}}
+{{#InitFieldsFromMessage}}
+///         .set_{{Field.Codec.SetterName}}(
+///             {{Field.MessageType.Codec.Name}}::new(){{#ParameterName}}.set_name({{ParameterName}}){{/ParameterName}}/* set fields */
 ///         )
-{{/AIPStandardCreateInfo}}
-{{#AIPStandardUpdateInfo}}
-///         .set_{{ResourceRequestField.Codec.SetterName}}(
-///             {{ResourceRequestField.MessageType.Codec.Name}}::new().set_name(name)/* set fields */
-///         )
-{{#UpdateMaskRequestField}}
+{{/InitFieldsFromMessage}}
+{{#UpdateMaskField}}
 ///         .set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated.field.path1", "updated.field.path2"]))
-{{/UpdateMaskRequestField}}
-{{/AIPStandardUpdateInfo}}
-{{#AIPStandardListInfo}}
-///         .set_{{ParentRequestField.Codec.SetterName}}(parent)
-{{/AIPStandardListInfo}}
+{{/UpdateMaskField}}
+{{/AIPStandardSampleInfo}}
+{{/IsAIPStandard}}
 {{^IsAIPStandard}}
 ///         /* set fields */
 {{/IsAIPStandard}}

@@ -301,6 +301,30 @@ func TestIncludeNestedMessages(t *testing.T) {
 	}
 }
 
+var methodIgnoreFields = []string{
+	"Model",
+	"Service",
+	"SourceService",
+	"InputType",
+	"OutputType",
+	"InputTypeID",
+	"OutputTypeID",
+	"IsSimple",
+	"IsLRO",
+	"LongRunningResponseType",
+	"LongRunningReturnsEmpty",
+	"IsList",
+	"IsStreaming",
+	"IsAIPStandard",
+	"IsAIPStandardGet",
+	"IsAIPStandardDelete",
+	"IsAIPStandardUndelete",
+	"IsAIPStandardCreate",
+	"IsAIPStandardUpdate",
+	"IsAIPStandardList",
+	"AIPStandardSampleInfo",
+}
+
 func TestIncludeMethods(t *testing.T) {
 	m := &Message{
 		Name: "Empty",
@@ -362,7 +386,7 @@ func TestIncludeMethods(t *testing.T) {
 			ID:   ".test.Service1.Method2",
 		},
 	}
-	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, "Model", "Service", "SourceService", "InputType", "OutputType", "InputTypeID", "OutputTypeID", "IsSimple", "IsLRO", "LongRunningResponseType", "LongRunningReturnsEmpty", "IsList", "IsStreaming", "IsAIPStandard", "AIPStandardGetInfo", "AIPStandardDeleteInfo", "AIPStandardUndeleteInfo", "AIPStandardCreateInfo", "AIPStandardUpdateInfo", "AIPStandardListInfo")); diff != "" {
+	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
 		t.Errorf("mismatch in methods (-want, +got)\n:%s", diff)
 	}
 }
