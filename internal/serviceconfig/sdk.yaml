@@ -1755,6 +1755,7 @@
     - go
     - python
     - rust
+    - java
   open_api: testdata/secretmanager_openapi_v1.json
   path: google/cloud/secretmanager/v1
 - languages:
