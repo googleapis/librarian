@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/utils"
 	"github.com/iancoleman/strcase"
 )
 
@@ -55,7 +54,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 
 	// Infer default release track from proto package.
 	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := utils.InferTrackFromPackage(method.Service.Package)
+	inferredTrack := inferTrackFromPackage(method.Service.Package)
 	cmd.ReleaseTracks = []string{strings.ToUpper(inferredTrack)}
 
 	// The core of the command generation happens here: we generate the arguments,
@@ -67,7 +66,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	cmd.Arguments = args
 	cmd.Request = newRequest(method, overrides, model, service)
 
-	if utils.IsList(method) {
+	if isList(method) {
 		// List commands should have an id_field to enable the --uri flag.
 		cmd.Response = &Response{
 			IDField: "name",
@@ -76,7 +75,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 		cmd.Output = newOutputConfig(method, model)
 	}
 
-	if utils.IsUpdate(method) {
+	if isUpdate(method) {
 		// Standard Update methods in gcloud use the Read-Modify-Update pattern.
 		cmd.Update = &UpdateConfig{
 			ReadModifyUpdate: true,
@@ -115,7 +114,7 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 // shouldSkipParam determines if a field should be excluded from the generated command arguments.
 func shouldSkipParam(field *api.Field, method *api.Method) bool {
 	// We don't skip the primary resource field, even if it's named "parent" or "name".
-	if utils.IsPrimaryResource(field, method) {
+	if isPrimaryResource(field, method) {
 		return false
 	}
 
@@ -135,7 +134,7 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 	}
 
 	// For List methods, standard pagination/filtering arguments are handled by gcloud.
-	if utils.IsList(method) {
+	if isList(method) {
 		switch field.Name {
 		case "page_size", "page_token", "filter", "order_by":
 			return true
@@ -148,7 +147,7 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 	}
 
 	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
-	if utils.IsUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if isUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
 		return true
 	}
 
@@ -166,7 +165,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 
 	// We check if the current field represents the primary resource of the command.
 	// This check happens at every level of nesting (e.g., `instance.name`).
-	if utils.IsPrimaryResource(field, method) {
+	if isPrimaryResource(field, method) {
 		param := newPrimaryResourceParam(field, method, model, overrides, service)
 		args.Params = append(args.Params, param)
 		return nil
@@ -242,11 +241,11 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 	} else {
 		// If it's a scalar type (string, int, bool, etc.), we map its proto type
 		// to the corresponding gcloud type.
-		param.Type = utils.GetGcloudType(field.Typez)
+		param.Type = getGcloudType(field.Typez)
 	}
 
 	// For Update commands, maps and repeated fields are often clearable.
-	if utils.IsUpdate(method) && param.Repeated {
+	if isUpdate(method) && param.Repeated {
 		param.Clearable = true
 	}
 
@@ -265,7 +264,7 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
 func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.API, _ *Config, service *api.Service) Param {
 	// We first need to get the full resource definition for the method.
-	resource := utils.GetResourceForMethod(method, model)
+	resource := getResourceForMethod(method, model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
@@ -273,48 +272,48 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 	}
 
 	// For List methods, the primary resource is the parent of the method's resource.
-	if utils.IsList(method) {
-		segments = utils.GetParentFromSegments(segments)
+	if isList(method) {
+		segments = getParentFromSegments(segments)
 	}
 
 	// We determine the singular name of the resource.
 	resourceName := strcase.ToSnake(strings.TrimSuffix(field.Name, "_id"))
-	if field.Name == "name" || utils.IsList(method) {
-		resourceName = utils.GetSingularFromSegments(segments)
+	if field.Name == "name" || isList(method) {
+		resourceName = getSingularFromSegments(segments)
 	}
 
 	// We generate a helpful help text.
 	var helpText string
 	switch {
-	case utils.IsCreate(method):
+	case isCreate(method):
 		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case utils.IsList(method):
-		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", utils.GetPluralFromSegments(segments))
+	case isList(method):
+		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", getPluralFromSegments(segments))
 	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
 	// We construct the gcloud collection path from the resource's pattern string.
-	collectionPath := utils.GetCollectionPathFromSegments(segments)
+	collectionPath := getCollectionPathFromSegments(segments)
 	hostParts := strings.Split(service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
 	// We assemble the final `Param` struct.
 	param := Param{
 		HelpText:          helpText,
-		IsPositional:      !utils.IsList(method),
+		IsPositional:      !isList(method),
 		IsPrimaryResource: true,
 		Required:          true,
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
-			PluralName:            utils.GetPluralFromSegments(segments),
+			PluralName:            getPluralFromSegments(segments),
 			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
 			DisableAutoCompleters: false,
 			Attributes:            newAttributesFromSegments(segments),
 		},
 	}
 
-	if utils.IsCreate(method) {
+	if isCreate(method) {
 		param.RequestIDField = strcase.ToLowerCamel(field.Name)
 	}
 
@@ -338,17 +337,17 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, servi
 			// and falling back to parsing the pattern otherwise.
 			pluralName := def.Plural
 			if pluralName == "" {
-				pluralName = utils.GetPluralFromSegments(segments)
+				pluralName = getPluralFromSegments(segments)
 			}
 
 			// We determine the singular name from the pattern.
-			name := utils.GetSingularFromSegments(segments)
+			name := getSingularFromSegments(segments)
 
 			// We construct the full gcloud collection path for the referenced resource
 			//assuming the current service is the current command.
 			hostParts := strings.Split(service.DefaultHost, ".")
 			shortServiceName := hostParts[0]
-			baseCollectionPath := utils.GetCollectionPathFromSegments(segments)
+			baseCollectionPath := getCollectionPathFromSegments(segments)
 			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
 
 			// We assemble and return the `ResourceSpec`.
@@ -420,9 +419,9 @@ func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
 	if len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
 		req.Method = *method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !utils.IsStandardMethod(method) {
+	} else if !isStandardMethod(method) {
 		// We treat any non-standard method as a custom method (AIP-136).
-		commandName, _ := utils.GetCommandName(method)
+		commandName, _ := getCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		req.Method = strcase.ToLowerCamel(commandName)
 	}
@@ -439,7 +438,7 @@ func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Servic
 	// Determine if the operation result should be extracted as the resource.
 	// This is true if the operation response type matches the method's resource type.
 	// We reuse the 'resource' variable looked up earlier.
-	resource := utils.GetResourceForMethod(method, model)
+	resource := getResourceForMethod(method, model)
 	if resource == nil {
 		return async
 	}
@@ -453,7 +452,7 @@ func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Servic
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := utils.GetSingularResourceNameForMethod(method, model)
+	singular := getSingularResourceNameForMethod(method, model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	} else {
@@ -477,7 +476,7 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 			continue
 		}
 
-		basePath := utils.ExtractPathFromSegments(binding.PathTemplate.Segments)
+		basePath := extractPathFromSegments(binding.PathTemplate.Segments)
 
 		if basePath == "" {
 			continue
@@ -507,11 +506,11 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 // newOutputConfig generates the output configuration for List commands.
 func newOutputConfig(method *api.Method, _ *api.API) *OutputConfig {
 	// We only generate output config for list methods.
-	if !utils.IsList(method) {
+	if !isList(method) {
 		return nil
 	}
 
-	resourceMsg := utils.FindResourceMessage(method.OutputType)
+	resourceMsg := findResourceMessage(method.OutputType)
 	if resourceMsg == nil {
 		return nil
 	}
@@ -533,7 +532,7 @@ func newFormat(message *api.Message) string {
 
 	for _, f := range message.Fields {
 		// Sanitize field name to prevent DSL injection.
-		if !utils.IsSafeName(f.JSONName) {
+		if !isSafeName(f.JSONName) {
 			continue
 		}
 

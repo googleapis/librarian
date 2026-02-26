@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"testing"
@@ -40,9 +40,9 @@ func TestGetGcloudType(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetGcloudType(test.typez)
+			got := getGcloudType(test.typez)
 			if got != test.want {
-				t.Errorf("GetGcloudType() = %q, want %q", got, test.want)
+				t.Errorf("getGcloudType(%v) = %q, want %q", test.typez, got, test.want)
 			}
 		})
 	}
@@ -64,9 +64,9 @@ func TestIsSafeName(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsSafeName(test.name)
+			got := isSafeName(test.name)
 			if got != test.want {
-				t.Errorf("IsSafeName() = %v, want %v", got, test.want)
+				t.Errorf("isSafeName(%q) = %v, want %v", test.name, got, test.want)
 			}
 		})
 	}
@@ -76,8 +76,8 @@ func TestGetGcloudType_Panic(t *testing.T) {
 	t.Parallel()
 	defer func() {
 		if r := recover(); r == nil {
-			t.Errorf("GetGcloudType() did not panic for unsupported type")
+			t.Errorf("getGcloudType() did not panic for unsupported type")
 		}
 	}()
-	GetGcloudType(api.Typez(999))
+	getGcloudType(api.Typez(999))
 }

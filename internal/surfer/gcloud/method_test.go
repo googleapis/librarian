@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"errors"
@@ -33,12 +33,11 @@ func TestIsCreate(t *testing.T) {
 		{"Verb Match", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, true},
 		{"Verb Mismatch", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsCreate(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isCreate(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -55,12 +54,11 @@ func TestIsGet(t *testing.T) {
 		{"Verb Match", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
 		{"Verb Mismatch", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsGet(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isGet(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -77,12 +75,11 @@ func TestIsList(t *testing.T) {
 		{"Verb Match", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
 		{"Verb Mismatch", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsList(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isList(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -100,12 +97,11 @@ func TestIsUpdate(t *testing.T) {
 		{"Verb Match PUT", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PUT"}}}}, true},
 		{"Verb Mismatch", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsUpdate(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isUpdate(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -122,12 +118,11 @@ func TestIsDelete(t *testing.T) {
 		{"Verb Match", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "DELETE"}}}}, true},
 		{"Verb Mismatch", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsDelete(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isDelete(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -157,12 +152,11 @@ func TestGetCommandName(t *testing.T) {
 		}, "export_data"},
 		{"Fallback to Name", &api.Method{Name: "ExportData"}, "export_data"},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := GetCommandName(test.method)
+			got, err := getCommandName(test.method)
 			if err != nil {
-				t.Fatalf("GetCommandName() error = %v", err)
+				t.Fatal(err)
 			}
 			if got != test.want {
 				t.Errorf("got %q, want %q", got, test.want)
@@ -207,7 +201,7 @@ func TestFindResourceMessage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := FindResourceMessage(test.outputType)
+			got := findResourceMessage(test.outputType)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -227,19 +221,18 @@ func TestGetCommandName_Error(t *testing.T) {
 			wantErr: errors.New("method cannot be nil"),
 		},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, gotErr := GetCommandName(test.method)
+			_, gotErr := getCommandName(test.method)
 			if test.wantErr != nil {
 				if gotErr == nil {
-					t.Fatalf("GetCommandName() returned nil error, want %v", test.wantErr)
+					t.Fatalf("getCommandName() returned nil error, want %v", test.wantErr)
 				}
 				if gotErr.Error() != test.wantErr.Error() {
-					t.Errorf("GetCommandName() error = %q, want %q", gotErr.Error(), test.wantErr.Error())
+					t.Errorf("getCommandName() error = %q, want %q", gotErr.Error(), test.wantErr.Error())
 				}
 			} else if gotErr != nil {
-				t.Errorf("GetCommandName() returned error %v, want nil", gotErr)
+				t.Errorf("getCommandName() returned error %v, want nil", gotErr)
 			}
 		})
 	}
@@ -270,12 +263,10 @@ func TestIsResourceMethod(t *testing.T) {
 		{"Nil PathTemplate", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: nil}}}}, false},
 		{"Empty Segments", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{}}}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsResourceMethod(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			if got := isResourceMethod(test.method); got != test.want {
+				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
 			}
 		})
 	}
@@ -306,12 +297,10 @@ func TestIsCollectionMethod(t *testing.T) {
 		{"Nil PathTemplate", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: nil}}}}, false},
 		{"Empty Segments", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{}}}}}}, false},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsCollectionMethod(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			if got := isCollectionMethod(test.method); got != test.want {
+				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
 			}
 		})
 	}
@@ -332,9 +321,9 @@ func TestIsStandardMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsStandardMethod(test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isStandardMethod(test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"fmt"
@@ -22,22 +22,22 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// GetCommandName maps an API method to a standard gcloud command name (in snake_case).
+// getCommandName maps an API method to a standard gcloud command name (in snake_case).
 // This name is typically used for the command's file name.
-func GetCommandName(method *api.Method) (string, error) {
+func getCommandName(method *api.Method) (string, error) {
 	if method == nil {
 		return "", fmt.Errorf("method cannot be nil")
 	}
 	switch {
-	case IsGet(method):
+	case isGet(method):
 		return "describe", nil
-	case IsList(method):
+	case isList(method):
 		return "list", nil
-	case IsCreate(method):
+	case isCreate(method):
 		return "create", nil
-	case IsUpdate(method):
+	case isUpdate(method):
 		return "update", nil
-	case IsDelete(method):
+	case isDelete(method):
 		return "delete", nil
 	default:
 		// For custom methods (AIP-136), we try to extract the custom verb from the HTTP path.
@@ -53,8 +53,8 @@ func GetCommandName(method *api.Method) (string, error) {
 	}
 }
 
-// IsCreate determines if the method is a standard Create method (AIP-133).
-func IsCreate(m *api.Method) bool {
+// isCreate determines if the method is a standard Create method (AIP-133).
+func isCreate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Create") {
 		return false
 	}
@@ -64,8 +64,8 @@ func IsCreate(m *api.Method) bool {
 	return true
 }
 
-// IsGet determines if the method is a standard Get method (AIP-131).
-func IsGet(m *api.Method) bool {
+// isGet determines if the method is a standard Get method (AIP-131).
+func isGet(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
 	if m.IsAIPStandardGet {
 		return true
@@ -80,8 +80,8 @@ func IsGet(m *api.Method) bool {
 	return true
 }
 
-// IsList determines if the method is a standard List method (AIP-132).
-func IsList(m *api.Method) bool {
+// isList determines if the method is a standard List method (AIP-132).
+func isList(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "List") {
 		return false
 	}
@@ -91,8 +91,8 @@ func IsList(m *api.Method) bool {
 	return true
 }
 
-// IsUpdate determines if the method is a standard Update method (AIP-134).
-func IsUpdate(m *api.Method) bool {
+// isUpdate determines if the method is a standard Update method (AIP-134).
+func isUpdate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Update") {
 		return false
 	}
@@ -102,8 +102,8 @@ func IsUpdate(m *api.Method) bool {
 	return true
 }
 
-// IsDelete determines if the method is a standard Delete method (AIP-135).
-func IsDelete(m *api.Method) bool {
+// isDelete determines if the method is a standard Delete method (AIP-135).
+func isDelete(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
 	if m.IsAIPStandardDelete {
 		return true
@@ -118,10 +118,10 @@ func IsDelete(m *api.Method) bool {
 	return true
 }
 
-// IsStandardMethod determines if the method is one of the standard AIP methods
+// isStandardMethod determines if the method is one of the standard AIP methods
 // (Get, List, Create, Update, Delete).
-func IsStandardMethod(m *api.Method) bool {
-	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
+func isStandardMethod(m *api.Method) bool {
+	return isGet(m) || isList(m) || isCreate(m) || isUpdate(m) || isDelete(m)
 }
 
 // getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
@@ -132,14 +132,14 @@ func getHTTPVerb(m *api.Method) string {
 	return ""
 }
 
-// IsResourceMethod determines if the method operates on a specific resource instance.
+// isResourceMethod determines if the method operates on a specific resource instance.
 // This includes standard Get, Update, Delete methods, and custom methods where the
 // HTTP path ends with a variable segment (e.g. `.../instances/{instance}`).
-func IsResourceMethod(m *api.Method) bool {
+func isResourceMethod(m *api.Method) bool {
 	switch {
-	case IsGet(m), IsUpdate(m), IsDelete(m):
+	case isGet(m), isUpdate(m), isDelete(m):
 		return true
-	case IsCreate(m), IsList(m):
+	case isCreate(m), isList(m):
 		return false
 	default:
 		// Fallback for custom methods
@@ -156,14 +156,14 @@ func IsResourceMethod(m *api.Method) bool {
 	}
 }
 
-// IsCollectionMethod determines if the method operates on a collection of resources.
+// isCollectionMethod determines if the method operates on a collection of resources.
 // This includes standard List and Create methods, and custom methods where the
 // HTTP path ends with a literal segment (e.g. `.../instances`).
-func IsCollectionMethod(m *api.Method) bool {
+func isCollectionMethod(m *api.Method) bool {
 	switch {
-	case IsList(m), IsCreate(m):
+	case isList(m), isCreate(m):
 		return true
-	case IsGet(m), IsUpdate(m), IsDelete(m):
+	case isGet(m), isUpdate(m), isDelete(m):
 		return false
 	default:
 		// Fallback for custom methods
@@ -180,9 +180,9 @@ func IsCollectionMethod(m *api.Method) bool {
 	}
 }
 
-// FindResourceMessage identifies the primary resource message within a List response.
+// findResourceMessage identifies the primary resource message within a List response.
 // Per AIP-132, this is usually the repeated field in the response message.
-func FindResourceMessage(outputType *api.Message) *api.Message {
+func findResourceMessage(outputType *api.Message) *api.Message {
 	if outputType == nil {
 		return nil
 	}

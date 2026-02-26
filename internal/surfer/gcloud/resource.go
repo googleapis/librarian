@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"fmt"
@@ -22,10 +22,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// GetPluralFromSegments infers the plural name of a resource from its structured path segments.
+// getPluralFromSegments infers the plural name of a resource from its structured path segments.
 // Per AIP-122, the plural is the literal segment before the final variable segment.
 // Example: `.../instances/{instance}` -> "instances".
-func GetPluralFromSegments(segments []api.PathSegment) string {
+func getPluralFromSegments(segments []api.PathSegment) string {
 	if len(segments) < 2 {
 		return ""
 	}
@@ -41,11 +41,11 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 	return *secondLastSegment.Literal
 }
 
-// GetParentFromSegments extracts the pattern segments for the parent resource.
+// getParentFromSegments extracts the pattern segments for the parent resource.
 // It assumes the standard resource pattern structure where the last two segments
 // are the literal plural noun and the variable singular noun of the child resource.
 // Example: `projects/.../locations/{location}/instances/{instance}` -> `projects/.../locations/{location}`.
-func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
+func getParentFromSegments(segments []api.PathSegment) []api.PathSegment {
 	if len(segments) < 2 {
 		return nil
 	}
@@ -57,11 +57,11 @@ func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
 	return nil
 }
 
-// GetSingularFromSegments infers the singular name of a resource from its structured path segments.
+// getSingularFromSegments infers the singular name of a resource from its structured path segments.
 // According to AIP-123, the last segment of a resource pattern MUST be a variable representing
 // the resource ID, and its name MUST be the singular form of the resource noun.
 // Example: `.../instances/{instance}` -> "instance".
-func GetSingularFromSegments(segments []api.PathSegment) string {
+func getSingularFromSegments(segments []api.PathSegment) string {
 	if len(segments) == 0 {
 		return ""
 	}
@@ -73,11 +73,11 @@ func GetSingularFromSegments(segments []api.PathSegment) string {
 	return last.Variable.FieldPath[len(last.Variable.FieldPath)-1]
 }
 
-// GetCollectionPathFromSegments constructs the base gcloud collection path from a
+// getCollectionPathFromSegments constructs the base gcloud collection path from a
 // structured resource pattern, according to AIP-122 conventions.
 // It joins the literal collection identifiers with dots.
 // Example: `projects/{project}/locations/{location}/instances/{instance}` -> `projects.locations.instances`.
-func GetCollectionPathFromSegments(segments []api.PathSegment) string {
+func getCollectionPathFromSegments(segments []api.PathSegment) string {
 	var collectionParts []string
 	for i := 0; i < len(segments)-1; i++ {
 		// A collection identifier is a literal segment followed by a variable segment.
@@ -89,14 +89,14 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	return strings.Join(collectionParts, ".")
 }
 
-// IsPrimaryResource determines if a field represents the primary resource of a method.
-func IsPrimaryResource(field *api.Field, method *api.Method) bool {
+// isPrimaryResource determines if a field represents the primary resource of a method.
+func isPrimaryResource(field *api.Field, method *api.Method) bool {
 	if method.InputType == nil {
 		return false
 	}
 	// For `Create` methods, the primary resource is identified by a field named
 	// in the format "{resource}_id" (e.g., "instance_id").
-	if IsCreate(method) {
+	if isCreate(method) {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
@@ -112,13 +112,13 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	// the primary resource scope is identified by the "parent" field.
 	// Note: Create is collection-based but uses the new resource ID (e.g. "instance_id")
 	// as the primary positional argument, so "parent" is not the primary resource arg.
-	if IsCollectionMethod(method) && !IsCreate(method) && field.Name == "parent" {
+	if isCollectionMethod(method) && !isCreate(method) && field.Name == "parent" {
 		return true
 	}
 
 	// For resource-based methods (Get, Delete, Update, and custom resource methods),
 	// the primary resource is identified by the "name" field.
-	if IsResourceMethod(method) && field.Name == "name" {
+	if isResourceMethod(method) && field.Name == "name" {
 		return true
 	}
 
@@ -143,9 +143,9 @@ func getResourceFromMethod(method *api.Method) (*api.Resource, error) {
 	return nil, fmt.Errorf("resource message not found in input type for method %q", method.Name)
 }
 
-// GetResourceForMethod finds the `api.Resource` definition associated with a method.
+// getResourceForMethod finds the `api.Resource` definition associated with a method.
 // This is a crucial function for linking a method to the resource it operates on.
-func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
+func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	if method.InputType == nil {
 		return nil
 	}
@@ -196,11 +196,11 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	return nil
 }
 
-// GetPluralResourceNameForMethod determines the plural name of a resource. It follows a clear
+// getPluralResourceNameForMethod determines the plural name of a resource. It follows a clear
 // hierarchy of truth: first, the explicit `plural` field in the resource
 // definition, and second, inference from the resource pattern.
-func GetPluralResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := GetResourceForMethod(method, model)
+func getPluralResourceNameForMethod(method *api.Method, model *api.API) string {
+	resource := getResourceForMethod(method, model)
 	if resource != nil {
 		// The `plural` field in the `(google.api.resource)` annotation is the
 		// most authoritative source.
@@ -210,34 +210,34 @@ func GetPluralResourceNameForMethod(method *api.Method, model *api.API) string {
 		// If the `plural` field is not present, we fall back to inferring the
 		// plural name from the resource's pattern string, as per AIP-122.
 		if len(resource.Patterns) > 0 {
-			return GetPluralFromSegments(resource.Patterns[0])
+			return getPluralFromSegments(resource.Patterns[0])
 		}
 	}
 	return ""
 }
 
-// GetSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
+// getSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
 // hierarchy of truth: first, the explicit `singular` field in the resource
 // definition, and second, inference from the resource pattern.
-func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := GetResourceForMethod(method, model)
+func getSingularResourceNameForMethod(method *api.Method, model *api.API) string {
+	resource := getResourceForMethod(method, model)
 	if resource != nil {
 		if resource.Singular != "" {
 			return resource.Singular
 		}
 		if len(resource.Patterns) > 0 {
-			return GetSingularFromSegments(resource.Patterns[0])
+			return getSingularFromSegments(resource.Patterns[0])
 		}
 	}
 	return ""
 }
 
-// ExtractPathFromSegments extracts the dot-separated collection path from path segments.
+// extractPathFromSegments extracts the dot-separated collection path from path segments.
 // It handles:
 // 1. Skipping API version prefixes (e.g., v1).
 // 2. Extracting internal structure from complex variables (e.g., {name=projects/*/locations/*}).
 // 3. Including all literal segments (e.g., instances in .../instances).
-func ExtractPathFromSegments(segments []api.PathSegment) string {
+func extractPathFromSegments(segments []api.PathSegment) string {
 	var parts []string
 	for i, seg := range segments {
 		if seg.Literal != nil {
