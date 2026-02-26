@@ -63,9 +63,10 @@ func TestGetPluralFromSegments(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := GetPluralFromSegments(test.segments)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetPluralFromSegments mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -106,6 +107,15 @@ func TestGetParentFromSegments(t *testing.T) {
 			name: "Too Short",
 			segments: []api.PathSegment{
 				*api.NewPathSegment().WithLiteral("projects"),
+			},
+			want: nil,
+		},
+		{
+			name: "Invalid Pattern (Ends in Literal)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+				*api.NewPathSegment().WithLiteral("locations"),
 			},
 			want: nil,
 		},
@@ -168,9 +178,10 @@ func TestGetSingularFromSegments(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := GetSingularFromSegments(test.segments)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetSingularFromSegments mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -235,9 +246,10 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := GetCollectionPathFromSegments(test.segments)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetCollectionPathFromSegments mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -289,9 +301,10 @@ func TestExtractPathFromSegments(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := ExtractPathFromSegments(test.segments)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ExtractPathFromSegments mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -390,9 +403,10 @@ func TestIsPrimaryResource(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := IsPrimaryResource(test.field, test.method)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("IsPrimaryResource mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -400,16 +414,14 @@ func TestIsPrimaryResource(t *testing.T) {
 
 func TestGetResourceForMethod(t *testing.T) {
 	instanceResource := &api.Resource{Type: "example.googleapis.com/Instance"}
-	model := &api.API{
-		ResourceDefinitions: []*api.Resource{
-			instanceResource,
-		},
-	}
+	otherResource := &api.Resource{Type: "example.googleapis.com/Other"}
 
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   *api.Resource
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		messages     []*api.Message
+		want         *api.Resource
 	}{
 		{
 			name: "Create Method - Resource in Message",
@@ -426,7 +438,8 @@ func TestGetResourceForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: instanceResource,
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
 		},
 		{
 			name: "Get Method - Resource Reference",
@@ -443,7 +456,8 @@ func TestGetResourceForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: instanceResource,
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
 		},
 		{
 			name: "List Method - Child Type Reference",
@@ -460,7 +474,8 @@ func TestGetResourceForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: instanceResource,
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
 		},
 		{
 			name: "Unknown Resource",
@@ -470,13 +485,51 @@ func TestGetResourceForMethod(t *testing.T) {
 					Fields: []*api.Field{{Name: "foo"}},
 				},
 			},
-			want: nil,
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         nil,
+		},
+		{
+			name: "Nil InputType",
+			method: &api.Method{
+				Name:      "NoInput",
+				InputType: nil,
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         nil,
+		},
+		{
+			name: "Resource on Message Directly",
+			method: &api.Method{
+				Name: "GetOther",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							Name: "name",
+							ResourceReference: &api.ResourceReference{
+								Type: "example.googleapis.com/Other",
+							},
+						},
+					},
+				},
+			},
+			messages: []*api.Message{
+				{
+					Name:     "OtherMessage",
+					Resource: otherResource,
+				},
+			},
+			want: otherResource,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+				Messages:            test.messages,
+			}
 			got := GetResourceForMethod(test.method, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetResourceForMethod mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -492,16 +545,12 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 			},
 		},
 	}
-	model := &api.API{
-		ResourceDefinitions: []*api.Resource{
-			instanceResource,
-		},
-	}
 
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   string
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		want         string
 	}{
 		{
 			name: "Inferred from Pattern",
@@ -518,7 +567,8 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: "instances",
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "instances",
 		},
 		{
 			name: "Explicit Plural",
@@ -535,22 +585,42 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: "books", // Assuming we mock a Book resource with Plural="books" below
+			resourceDefs: []*api.Resource{
+				instanceResource,
+				{
+					Type:   "example.googleapis.com/Book",
+					Plural: "books",
+				},
+			},
+			want: "books",
+		},
+		{
+			name: "Resource Not Found",
+			method: &api.Method{
+				Name: "ListUnknown",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							Name: "parent",
+							ResourceReference: &api.ResourceReference{
+								ChildType: "example.googleapis.com/Unknown",
+							},
+						},
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "",
 		},
 	} {
-		// Setup explicit plural for the second case
-		if test.name == "Explicit Plural" {
-			bookResource := &api.Resource{
-				Type:   "example.googleapis.com/Book",
-				Plural: "books",
-			}
-			model.ResourceDefinitions = append(model.ResourceDefinitions, bookResource)
-		}
-
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+			}
 			got := GetPluralResourceNameForMethod(test.method, model)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetPluralResourceNameForMethod mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -566,16 +636,12 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 			},
 		},
 	}
-	model := &api.API{
-		ResourceDefinitions: []*api.Resource{
-			instanceResource,
-		},
-	}
 
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   string
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		want         string
 	}{
 		{
 			name: "Inferred from Pattern",
@@ -592,7 +658,8 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: "instance",
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "instance",
 		},
 		{
 			name: "Explicit Singular",
@@ -609,22 +676,62 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 					},
 				},
 			},
-			want: "book", // Assuming we mock a Book resource with Singular="book" below
+			resourceDefs: []*api.Resource{
+				instanceResource,
+				{
+					Type:     "example.googleapis.com/Book",
+					Singular: "book",
+				},
+			},
+			want: "book",
+		},
+		{
+			name: "Resource Not Found",
+			method: &api.Method{
+				Name: "ListUnknown",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							Name: "parent",
+							ResourceReference: &api.ResourceReference{
+								ChildType: "example.googleapis.com/Unknown",
+							},
+						},
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "",
 		},
 	} {
-		// Setup explicit singular for the second case
-		if test.name == "Explicit Singular" {
-			bookResource := &api.Resource{
-				Type:     "example.googleapis.com/Book",
-				Singular: "book",
-			}
-			model.ResourceDefinitions = append(model.ResourceDefinitions, bookResource)
-		}
-
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+			}
 			got := GetSingularResourceNameForMethod(test.method, model)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("GetSingularResourceNameForMethod mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestGetResourceNameFromType(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		typeStr string
+		want    string
+	}{
+		{"Standard", "example.googleapis.com/Instance", "Instance"},
+		{"No Slash", "Instance", "Instance"},
+		{"Empty", "", ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := getResourceNameFromType(test.typeStr)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}

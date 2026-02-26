@@ -59,7 +59,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 // generate generates a Go client library.
 func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no apis configured for library %q", library.Name)
+		return nil
 	}
 
 	outdir, err := filepath.Abs(library.Output)
@@ -77,8 +77,8 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 
 	src := filepath.Join(outdir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); os.IsNotExist(err) {
-		return fmt.Errorf("directory not found: %s", src)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("cannot access directory %q: %w", src, err)
 	}
 	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err

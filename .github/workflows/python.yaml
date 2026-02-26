@@ -40,7 +40,7 @@ jobs:
         env:
           VERSION: 3.8.2
       - name: Install gapic-generator
-        run: pip install gapic-generator==1.28.3
+        run: pip install gapic-generator==1.30.9
       - name: Install synthtool
         run: |
           pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
@@ -48,6 +48,7 @@ jobs:
         run: |
           python -m pip install --upgrade setuptools pip wheel
           python -m pip install nox
+          python -m pip install ruff==0.14.14
       - name: Verify git is available
         run: git --version
       - name: Run internal/librarian/python tests

@@ -299,6 +299,7 @@ func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Library) (*config.Library, error) {
 	defaultTitle := ""
 	defaultDocumentationURI := ""
+	defaultDefaultVersion := ""
 	// Load the service config file for the first API if there is one, and
 	// use that
 	if len(library.APIs) > 0 {
@@ -308,6 +309,7 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		}
 		defaultTitle = apiInfo.Title
 		defaultDocumentationURI = apiInfo.DocumentationURI
+		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
 	}
 
 	// Load the current repo metadata and apply overrides for anything that
@@ -337,6 +339,9 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	}
 	if repoMetadata.Name != library.Name {
 		library.Python.MetadataNameOverride = repoMetadata.Name
+	}
+	if repoMetadata.DefaultVersion != defaultDefaultVersion {
+		library.Python.DefaultVersion = repoMetadata.DefaultVersion
 	}
 
 	return library, nil
@@ -387,9 +392,6 @@ func canonicalizePythonLibrary(library *config.Library) (*config.Library, error)
 	// Convert empty collections to nil
 	if len(library.Python.CommonGAPICPaths) == 0 {
 		library.Python.CommonGAPICPaths = nil
-	}
-	if len(library.Python.OptArgs) == 0 {
-		library.Python.OptArgs = nil
 	}
 	if len(library.Python.OptArgsByAPI) == 0 {
 		library.Python.OptArgsByAPI = nil

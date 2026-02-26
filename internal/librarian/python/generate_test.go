@@ -98,20 +98,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with python opts",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secret-manager",
-				Python: &config.PythonPackage{
-					OptArgs: []string{"opt1", "opt2"},
-				},
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "with python opts by api",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -170,12 +156,14 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "rest-enumeric-enums is specified in OptArgs",
+			name: "rest-enumeric-enums is specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
-					OptArgs: []string{"rest-numeric-enums=False"},
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"rest-numeric-enums=False"},
+					},
 				},
 			},
 			expected: []string{
@@ -549,7 +537,7 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
 		t.Fatal(err)
 	}
-
+	createMinimalNoxFile(t, outdir)
 	err := runPostProcessor(t.Context(), repoRoot, outdir)
 	if err != nil {
 		t.Fatal(err)
@@ -678,10 +666,11 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
+	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -776,9 +765,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Name:         "google-cloud-secret-manager",
 				ReleaseLevel: "stable",
 				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secrets/v1beta1"},
 				},
 			},
 			want: &repometadata.RepoMetadata{
@@ -833,11 +821,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ReleaseLevel:        "stable",
 				DescriptionOverride: "overridden description",
 				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secrets/v1beta1"},
 				},
 				Python: &config.PythonPackage{
+					DefaultVersion:               "v1beta1",
 					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
 					ProductDocumentationOverride: "overridden product_documentation",
@@ -857,6 +845,34 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIDescription:       "overridden description",
 				LibraryType:          "GAPIC_AUTO",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:       "v1beta1",
+			},
+		},
+		{
+			name: "default version",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "google-cloud-secret-manager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             "python",
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          "GAPIC_AUTO",
+				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
 				DefaultVersion:       "v1",
 			},
 		},
@@ -922,5 +938,19 @@ replacements:
     count: 1`
 	if err := os.WriteFile(filepath.Join(dir, "sample.yaml"), []byte(yaml), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// createMinimalNoxFile creates noxfile.py in the given output directory,
+// with an empty "format" session defined.
+func createMinimalNoxFile(t *testing.T, outDir string) {
+	content := `import nox
+nox.options.sessions = ["format"]
+@nox.session()
+def format(session):
+	print("This would format")
+`
+	if err := os.WriteFile(filepath.Join(outDir, "noxfile.py"), []byte(content), 0644); err != nil {
+		t.Fatalf("unable to create noxfile.py: %v", err)
 	}
 }

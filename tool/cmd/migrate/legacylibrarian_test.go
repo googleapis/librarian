@@ -593,6 +593,134 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse enable generator features from api level",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "secretmanager",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/secretmanager/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "secretmanager",
+							EnabledGeneratorFeatures: []string{
+								"feature-1",
+								"feature-2",
+							},
+							APIs: []*RepoConfigAPI{
+								{
+									EnabledGeneratorFeatures: []string{
+										"feature-3",
+										"feature-1",
+									},
+									Path: "google/cloud/secretmanager/v1",
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								EnabledGeneratorFeatures: []string{
+									"feature-1",
+									"feature-2",
+									"feature-3",
+								},
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse enable generator features from library level",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "secretmanager",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/secretmanager/v1",
+								},
+								{
+									Path: "google/cloud/secretmanager/v1beta1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "secretmanager",
+							EnabledGeneratorFeatures: []string{
+								"feature-1",
+								"feature-2",
+							},
+							APIs: []*RepoConfigAPI{
+								{
+									Path: "google/cloud/secretmanager/v1beta1",
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+						{Path: "google/cloud/secretmanager/v1beta1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								// This API is created because the enabled
+								// generator features are not empty.
+								EnabledGeneratorFeatures: []string{
+									"feature-1",
+									"feature-2",
+								},
+								Path: "google/cloud/secretmanager/v1",
+							},
+							{
+								// Enabled generator features merge into
+								// this API.
+								EnabledGeneratorFeatures: []string{
+									"feature-1",
+									"feature-2",
+								},
+								Path: "google/cloud/secretmanager/v1beta1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
@@ -718,5 +846,20 @@ func TestParseBazel_Error(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s\n%s", test.wantErrMsg, err.Error())
 			}
 		})
+	}
+}
+
+func TestToAPIs(t *testing.T) {
+	legacyAPIs := []*legacyconfig.API{
+		{Path: "google/cloud/functions/v2"},
+		{Path: "google/cloud/functions/v1"},
+	}
+	want := []*config.API{
+		{Path: "google/cloud/functions/v1"},
+		{Path: "google/cloud/functions/v2"},
+	}
+	got := toAPIs(legacyAPIs)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

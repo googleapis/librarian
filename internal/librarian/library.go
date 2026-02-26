@@ -177,10 +177,10 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if len(lib.APIs) == 0 {
-		lib.APIs = append(lib.APIs, &config.API{})
-	}
 	if !lib.Veneer {
+		if len(lib.APIs) == 0 {
+			lib.APIs = append(lib.APIs, &config.API{})
+		}
 		for _, api := range lib.APIs {
 			if api.Path == "" {
 				api.Path = deriveAPIPath(language, lib.Name)

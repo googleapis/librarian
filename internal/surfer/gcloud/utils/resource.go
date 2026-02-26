@@ -130,17 +130,11 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 // {Type} is the singular form of the resource noun.
 func getResourceNameFromType(typeStr string) string {
 	parts := strings.Split(typeStr, "/")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
+	return parts[len(parts)-1]
 }
 
 // getResourceFromMethod extracts the resource definition from a method's input message if it exists.
 func getResourceFromMethod(method *api.Method) (*api.Resource, error) {
-	if method.InputType == nil {
-		return nil, fmt.Errorf("method %q does not have an input type", method.Name)
-	}
 	for _, f := range method.InputType.Fields {
 		if f.MessageType != nil && f.MessageType.Resource != nil {
 			return f.MessageType.Resource, nil
