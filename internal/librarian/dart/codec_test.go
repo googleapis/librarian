@@ -433,7 +433,7 @@ func TestToModelConfig(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("toModelConfig() unexpected error: %v", err)
+				t.Error(err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {

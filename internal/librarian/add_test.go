@@ -110,7 +110,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Fatalf("runCreate() failed with unexpected error: %v", err)
+				t.Fatal(err)
 			}
 
 			gotCfg, err := yaml.Read[config.Config](librarianConfigPath)
