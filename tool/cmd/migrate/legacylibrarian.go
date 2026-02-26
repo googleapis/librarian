@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -275,6 +276,20 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			// EnabledGeneratorFeatures define in both library and API level in legacy librarian,
 			// We merge and dedup them into API level.
 			enabledGenFeats = append(enabledGenFeats, libGoModule.EnabledGeneratorFeatures...)
+			if len(enabledGenFeats) > 0 {
+				var modules []*RepoConfigAPI
+				for _, api := range library.APIs {
+					module := findModule(libGoModule, api.Path)
+					if module != nil {
+						continue
+					}
+					modules = append(modules, &RepoConfigAPI{
+						Path:                     api.Path,
+						EnabledGeneratorFeatures: enabledGenFeats,
+					})
+				}
+				libGoModule.APIs = append(libGoModule.APIs, modules...)
+			}
 			for _, api := range libGoModule.APIs {
 				enabledGenFeats = append(enabledGenFeats, api.EnabledGeneratorFeatures...)
 				slices.Sort(enabledGenFeats)
@@ -289,7 +304,9 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 					ProtoPackage:             api.ProtoPackage,
 				})
 			}
-
+			slices.SortFunc(goAPIs, func(a, b *config.GoAPI) int {
+				return cmp.Compare(a.Path, b.Path)
+			})
 			goModule := &config.GoModule{
 				DeleteGenerationOutputPaths: libGoModule.DeleteGenerationOutputPaths,
 				GoAPIs:                      goAPIs,
@@ -433,4 +450,13 @@ func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
 		}
 	}
 	return nil, -1
+}
+
+func findModule(libGoModule *RepoConfigModule, apiPath string) *RepoConfigAPI {
+	for _, api := range libGoModule.APIs {
+		if api.Path == apiPath {
+			return api
+		}
+	}
+	return nil
 }
