@@ -62,6 +62,8 @@
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
   path: google/analytics/data/v1beta
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+  languages:
+    - dart
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/api
 - documentation_uri: https://cloud.google.com/api-keys/docs
@@ -600,7 +602,9 @@
     - python
   new_issue_uri: https://issuetracker.google.com/issues/new?component=1396141
   path: google/cloud/commerce/consumer/procurement/v1alpha1
-- path: google/cloud/common
+- languages:
+    - dart
+  path: google/cloud/common
   transports:
     python: grpc
 - discovery: discoveries/compute.v1.json
@@ -782,6 +786,8 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   path: google/cloud/functions/v1
 - documentation_uri: https://cloud.google.com/functions/
+  languages:
+    - dart
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   path: google/cloud/functions/v2
 - languages:
@@ -864,7 +870,9 @@
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
   path: google/cloud/language/v1beta2
-- path: google/cloud/language/v2
+- languages:
+    - dart
+  path: google/cloud/language/v2
   transports:
     go: grpc+rest
     java: grpc+rest
@@ -879,6 +887,8 @@
     - python
   path: google/cloud/lifesciences/v2beta
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+  languages:
+    - dart
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/cloud/location
   transports:
@@ -1165,7 +1175,9 @@
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
   path: google/cloud/scheduler/v1beta1
-- open_api: testdata/secretmanager_openapi_v1.json
+- languages:
+    - dart
+  open_api: testdata/secretmanager_openapi_v1.json
   path: google/cloud/secretmanager/v1
 - languages:
     - go
@@ -1601,6 +1613,8 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
   path: google/iam/credentials/v1
 - documentation_uri: https://cloud.google.com/iam/docs/
+  languages:
+    - dart
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
   path: google/iam/v1
   transports:
@@ -1649,10 +1663,14 @@
     php: grpc+rest
     ruby: grpc+rest
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+  languages:
+    - dart
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/logging/type
   title: Logging types
-- path: google/logging/v2
+- languages:
+    - dart
+  path: google/logging/v2
   transports:
     csharp: grpc
     go: grpc+rest
@@ -1661,7 +1679,9 @@
     php: grpc+rest
     python: grpc
     ruby: grpc
-- path: google/longrunning
+- languages:
+    - dart
+  path: google/longrunning
   transports:
     go: grpc+rest
     php: grpc+rest
@@ -1762,6 +1782,8 @@
     php: grpc+rest
     python: grpc+rest
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+  languages:
+    - dart
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/rpc
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
@@ -1914,6 +1936,8 @@
     - go
   path: google/streetview/publish/v1
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+  languages:
+    - dart
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/type
 - documentation_uri: https://grafeas.io
@@ -1926,7 +1950,9 @@
     php: grpc+rest
     python: grpc+rest
     ruby: grpc
-- path: schema/google/showcase/v1beta1
+- languages:
+    - dart
+  path: schema/google/showcase/v1beta1
   service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
 - languages:
     - dart
