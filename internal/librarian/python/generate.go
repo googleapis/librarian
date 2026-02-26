@@ -337,6 +337,21 @@ python_mono_repo.owlbot_main(%q)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s: %w", cmd.String(), err)
 	}
+
+	// synthtool runs formatting, then applies string replacements. This leaves
+	// some files unformatted. We format again just to get everything straight.
+	// (Changing synthtool's ordering would require changes in the replacements
+	// as well... we can do all of that after migration, when we remove
+	// synthtool entirely - see
+	// https://github.com/googleapis/librarian/issues/3008)
+	noxCmd := exec.CommandContext(ctx, "nox", "-s", "format", "--no-venv", "--no-install")
+	noxCmd.Dir = outDir
+	noxCmd.Stdout = os.Stderr
+	noxCmd.Stderr = os.Stderr
+	if err := noxCmd.Run(); err != nil {
+		return fmt.Errorf("%s: %w", noxCmd.String(), err)
+	}
+
 	return nil
 }
 
