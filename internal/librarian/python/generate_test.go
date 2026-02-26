@@ -926,7 +926,7 @@ replacements:
 }
 
 // createMinimalNoxFile creates noxfile.py in the given output directory,
-// with an empty "format" session defined
+// with an empty "format" session defined.
 func createMinimalNoxFile(t *testing.T, outDir string) {
 	content := `import nox
 nox.options.sessions = ["format"]
