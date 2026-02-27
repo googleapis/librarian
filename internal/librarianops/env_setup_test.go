@@ -45,9 +45,8 @@ func TestSetupEnvironment_Success(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Set up a MockCommander where all commands succeed by default
-			mocker := &command.MockCommander{
-				Default: command.MockResult{ExitCode: 0},
+			mocker := &command.FakeCommander{
+				Default: command.FakeResult{ExitCode: 0},
 			}
 			ctx := mocker.InjectContext(context.Background())
 
@@ -88,14 +87,14 @@ func TestSetupEnvironment_Failure(t *testing.T) {
 		name        string
 		repoDir     string
 		repoName    string
-		mockResult  command.MockResult
+		fakeResult  command.FakeResult
 		wantErrText string
 	}{
 		{
 			name:     "clone_fails_cleans_up_tmp",
 			repoDir:  "",
 			repoName: "fail-repo",
-			mockResult: command.MockResult{
+			fakeResult: command.FakeResult{
 				ExitCode: 1,
 				Stderr:   "fatal: could not read Username",
 			},
@@ -113,9 +112,9 @@ func TestSetupEnvironment_Failure(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Set up the MockCommander to simulate the failure
-			mocker := &command.MockCommander{
-				Default: tc.mockResult,
+			// Set up the FakeCommander to simulate the failure
+			mocker := &command.FakeCommander{
+				Default: tc.fakeResult,
 			}
 			ctx := mocker.InjectContext(context.Background())
 
