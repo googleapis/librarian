@@ -32,19 +32,22 @@ var (
 	// configuration that may reside in the same directory.
 	// TODO(https://github.com/googleapis/librarian/issues/4217): document each regex about
 	// what are matched and why it is necessary.
-	generatedRegex = []*regexp.Regexp{
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?\.repo-metadata\.json$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?auxiliary\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?auxiliary_go123\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?doc\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client_example_go123_test\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client_example_test\.go$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?gapic_metadata\.json$`),
-		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?helpers\.go$`),
-		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
-		regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
-	}
+	generatedRegex = func() []*regexp.Regexp {
+		prefix := `.*/(?:apiv(\d+).*/)?`
+		return []*regexp.Regexp{
+			regexp.MustCompile(prefix + `\.repo-metadata\.json$`),
+			regexp.MustCompile(prefix + `auxiliary\.go$`),
+			regexp.MustCompile(prefix + `auxiliary_go123\.go$`),
+			regexp.MustCompile(prefix + `doc\.go$`),
+			regexp.MustCompile(prefix + `.*_client\.go$`),
+			regexp.MustCompile(prefix + `.*_client_example_go123_test\.go$`),
+			regexp.MustCompile(prefix + `.*_client_example_test\.go$`),
+			regexp.MustCompile(prefix + `gapic_metadata\.json$`),
+			regexp.MustCompile(prefix + `helpers\.go$`),
+			regexp.MustCompile(`.*pb/.*\.pb\.go$`),
+			regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
+		}
+	}()
 )
 
 // Clean cleans up a Go library and its associated snippets.
