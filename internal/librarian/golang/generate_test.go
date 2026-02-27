@@ -109,21 +109,62 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	libraries := []*config.Library{
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		wantErr   error
+	}{
 		{
-			Name:          "non-existent-api",
-			APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
-			Output:        t.TempDir(),
-			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
-			CopyrightYear: "2025",
-			Transport:     "grpc",
+			name: "non existent api path",
+			libraries: []*config.Library{
+				{
+					Name:          "non-existent-api",
+					APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
+					Output:        t.TempDir(),
+					Version:       "0.1.0",
+					ReleaseLevel:  "preview",
+					CopyrightYear: "2025",
+					Transport:     "grpc",
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								ClientDirectory: "non-existent",
+								ImportPath:      "non-existent/apiv1",
+								Path:            "google/cloud/non-existent/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: syscall.ENOENT,
 		},
-	}
-	gotErr := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if !errors.Is(gotErr, syscall.ENOENT) {
-		t.Fatalf("expected %v, got %v", syscall.ENOENT, gotErr)
+		{
+			name: "no go api",
+			libraries: []*config.Library{
+				{
+					Name:          "secretmanager",
+					APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Output:        t.TempDir(),
+					Version:       "0.1.0",
+					ReleaseLevel:  "preview",
+					CopyrightYear: "2025",
+					Transport:     "grpc",
+				},
+			},
+			wantErr: errGoAPINotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outdir := t.TempDir()
+			for _, library := range test.libraries {
+				library.Output = outdir
+			}
+
+			gotErr := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
 	}
 }
 
