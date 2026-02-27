@@ -36,8 +36,7 @@ const (
 )
 
 var (
-	errNoAPIs          = errors.New("library has no APIs from which to get metadata")
-	errNoServiceConfig = errors.New("library has no service config from which to get metadata")
+	errNoAPIs = errors.New("library has no APIs from which to get metadata")
 )
 
 // RepoMetadata represents the .repo-metadata.json file structure.
@@ -121,9 +120,6 @@ func FromLibrary(config *config.Config, library *config.Library, googleapisDir s
 	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, config.Language)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
-	}
-	if api.ServiceConfig == "" {
-		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoServiceConfig)
 	}
 	return fromAPI(config, api, library), nil
 }

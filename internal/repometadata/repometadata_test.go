@@ -74,6 +74,20 @@ func TestFromLibrary(t *testing.T) {
 				APIDescription:       "Stores, manages, and secures access to application secrets.",
 			},
 		},
+		{
+			name: "no service config",
+			library: &config.Library{
+				Name:         "google-longrunning",
+				ReleaseLevel: "stable",
+				APIs:         []*config.API{{Path: "google/longrunning"}},
+			},
+			want: &RepoMetadata{
+				ReleaseLevel:     "stable",
+				Language:         "python",
+				Repo:             "googleapis/google-cloud-python",
+				DistributionName: "google-longrunning",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -121,15 +135,6 @@ func TestFromLibrary_Error(t *testing.T) {
 				APIs:         []*config.API{{Path: "android/notallowed/v1"}},
 			},
 			// Error returned by serviceconfig.Find isn't easily distinguished
-		},
-		{
-			name: "no service config",
-			library: &config.Library{
-				Name:         "google-longrunning",
-				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "google/longrunning"}},
-			},
-			wantErr: errNoServiceConfig,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
