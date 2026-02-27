@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -36,6 +35,8 @@ import (
 )
 
 type goGAPICInfo struct {
+	ClientPackageName  string
+	ImportPath         string
 	NoRESTNumericEnums bool
 }
 
@@ -73,41 +74,6 @@ type MigrationInput struct {
 	repoPath        string
 	googleapisDir   string
 }
-
-var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-
-	libraryOverrides = map[string]*config.Library{
-		"ai": {
-			ReleaseLevel: "beta",
-		},
-	}
-)
 
 func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
 	librarianState, err := readState(repoPath)
@@ -246,7 +212,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				return mod.Name
 			})
 	}
-	maps.Copy(idToGoModule, addGoModules)
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -263,10 +228,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
-		}
-		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
-		if override, ok := libraryOverrides[id]; ok {
-			library.ReleaseLevel = override.ReleaseLevel
 		}
 
 		libGoModule, ok := idToGoModule[id]
@@ -319,12 +280,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
-			buildDir := filepath.Join(input.googleapisDir, api.Path)
-			if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
-				// Skip Not Exist error for testing purpose.
-				continue
-			}
-			info, err := parseBazel(buildDir)
+			info, err := parseBazel(input.googleapisDir, api.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -414,8 +370,12 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 
 // parseBazel parses the BUILD.bazel file in the given directory to extract information from
 // the go_gapic_library rule.
-func parseBazel(dir string) (*goGAPICInfo, error) {
-	path := filepath.Join(dir, "BUILD.bazel")
+func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
+	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		// Skip Not Exist error for testing purpose.
+		return nil, nil
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -432,9 +392,18 @@ func parseBazel(dir string) (*goGAPICInfo, error) {
 		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
 	}
 	rule := rules[0]
-	return &goGAPICInfo{
+	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
+	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
+	info := &goGAPICInfo{
 		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
-	}, nil
+	}
+	if importPath != defaultImportPath {
+		info.ImportPath = importPath
+	}
+	if clientPkg != defaultClientPkg {
+		info.ImportPath = clientPkg
+	}
+	return info, nil
 }
 
 // findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
@@ -459,4 +428,20 @@ func findModule(libGoModule *RepoConfigModule, apiPath string) *RepoConfigAPI {
 		}
 	}
 	return nil
+}
+
+func parseImportPathFromBuild(importPath string) (string, string) {
+	importPath = strings.TrimPrefix(importPath, "cloud.google.com/go/")
+	idx := strings.Index(importPath, ";")
+	return importPath[:idx], importPath[idx+1:]
+}
+
+func defaultImportPathFromAPI(apiPath string) (string, string) {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	importPath, version := apiPath[:idx], apiPath[idx+1:]
+	idx = strings.LastIndex(importPath, "/")
+	pkg := importPath[idx+1:]
+	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }

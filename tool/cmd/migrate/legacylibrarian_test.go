@@ -792,24 +792,26 @@ func TestReadRepoConfig(t *testing.T) {
 
 func TestParseBazel_Success(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		dir  string
-		want *goGAPICInfo
+		name          string
+		googleapisDir string
+		buildPath     string
+		want          *goGAPICInfo
 	}{
 		{
-			name: "success",
-			dir:  "testdata/parse-bazel/success",
+			name:          "success",
+			googleapisDir: "testdata/parse-bazel/success",
+			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
 				NoRESTNumericEnums: true,
 			},
 		},
 		{
-			name: "no GAPIC rules",
-			dir:  "testdata/parse-bazel/no-gapic-rule",
+			name:          "no GAPIC rules",
+			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseBazel(test.dir)
+			got, err := parseBazel(test.googleapisDir, test.buildPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -831,14 +833,9 @@ func TestParseBazel_Error(t *testing.T) {
 			dir:        "testdata/parse-bazel/error",
 			wantErrMsg: "multiple go_gapic_library rules",
 		},
-		{
-			name:       "no BUILD.bazel",
-			dir:        "non-existent-dir",
-			wantErrMsg: "no such file or directory",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := parseBazel(test.dir)
+			_, err := parseBazel("", test.dir)
 			if err == nil {
 				t.Fatalf("parseBazel(%q): expected error", test.dir)
 			}
