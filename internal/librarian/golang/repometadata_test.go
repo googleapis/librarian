@@ -138,54 +138,23 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 
 func TestGoClientDocURL(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		apiPath string
-		want    string
+		name       string
+		importPath string
+		want       string
 	}{
 		{
-			name: "go",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			apiPath: "google/cloud/secretmanager/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
+			name:       "basic",
+			importPath: "secretmanager/apiv1",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
 		},
 		{
-			name: "has client directory",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			apiPath: "google/ai/generativelanguage/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/generativelanguage/apiv1",
-		},
-		{
-			name: "client directory with another api path",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1beta1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			apiPath: "google/ai/generativelanguage/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/apiv1",
+			name:       "spanner",
+			importPath: "spanner/admin/database/apiv1",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/spanner/latest/admin/database/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := clientDocURL(test.library, test.apiPath)
+			got := clientDocURL(test.importPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
