@@ -44,6 +44,15 @@ var baseVocabulary = map[string]bool{
 	"billingAccounts": true,
 }
 
+var singularExceptions = map[string]bool{
+	"address":  true,
+	"status":   true,
+	"ingress":  true,
+	"egress":   true,
+	"access":   true,
+	"analysis": true,
+}
+
 // isBaseVocabulary checks if a segment is part of the common resource vocabulary.
 func isBaseVocabulary(segment string) bool {
 	return baseVocabulary[segment]
@@ -53,11 +62,15 @@ func isBaseVocabulary(segment string) bool {
 // It checks in the following order:
 // 1. Base vocabulary (projects, locations, etc.)
 // 2. Known resource plurals (from the API model).
+// 3. Fallback: if the segment ends in 's' and is not in the singular exceptions list.
 func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	if isBaseVocabulary(segment) {
 		return true
 	}
 	if vocabulary != nil && vocabulary[segment] {
+		return true
+	}
+	if len(segment) > 2 && strings.HasSuffix(segment, "s") && !singularExceptions[segment] {
 		return true
 	}
 	return false

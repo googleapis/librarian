@@ -292,12 +292,25 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			want:   nil,
 		},
 		{
-			name:      "heuristic: skips non-collection literal (e.g. users)",
+			name:      "heuristic: fallback matches literal ending in 's' (e.g. users)",
 			serviceID: ".google.cloud.compute.v1.Instances",
 			path: NewPathTemplate().
-				WithLiteral("users").WithVariableNamed("user"), // "users" not in base vocab or known plurals
+				WithLiteral("users").WithVariableNamed("user"), // matches fallback heuristic
 			fields: []*Field{
 				{Name: "user", Typez: STRING_TYPE},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"user"}},
+				Template:   "//test-api.googleapis.com/users/{user}",
+			},
+		},
+		{
+			name:      "heuristic: skips non-collection literal without 's'",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("metadata").WithVariableNamed("data"), // does not match fallback
+			fields: []*Field{
+				{Name: "data", Typez: STRING_TYPE},
 			},
 			want: nil,
 		},
