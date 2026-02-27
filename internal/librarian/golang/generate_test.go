@@ -721,6 +721,11 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Name:    "secretmanager",
 				Version: "0.2.3",
 			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "secretmanager",
+				ImportPath:      "secretmanager/apiv1",
+				Path:            "google/cloud/secretmanager/v1",
+			},
 			googleapisDir: googleapisDir,
 			want: []string{
 				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
