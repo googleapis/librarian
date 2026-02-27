@@ -798,7 +798,8 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/custom-import-path",
 			buildPath:     "google/longrunning",
 			want: &goGAPICInfo{
-				ImportPath:         "longrunning",
+				ClientPackageName:  "longrunning",
+				ImportPath:         "longrunning/autogen",
 				NoRESTNumericEnums: true,
 			},
 		},
