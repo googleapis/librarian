@@ -372,7 +372,7 @@ func TestIncludeMethods(t *testing.T) {
 	})
 
 	wantServices := []*Service{s1}
-	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, "Model"), cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
 		t.Errorf("mismatch in services (-want, +got)\n:%s", diff)
 	}
 
