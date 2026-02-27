@@ -633,10 +633,6 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	requireSynthtool(t)
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "secretmanager"))
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	cfg := &config.Config{
 		Language: serviceconfig.LangPython,
@@ -645,14 +641,44 @@ func TestGenerateLibraries_Error(t *testing.T) {
 
 	libraries := []*config.Library{
 		{
-			Name:   "no-apis",
-			Output: filepath.Join(outdir, "packages", "no-apis"),
+			Name:   "bad-output",
+			Output: "/../bad-output",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/configdelivery/v1",
+				},
+			},
 		},
 	}
 	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
-	wantErr := errNoApis
+	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
+
+// Note: this is separate to TestGenerate as there's so little that we want
+// to do here. Making TestGenerate table-driven in order to take two entirely
+// different paths doesn't feel useful.
+func TestGenerate_NoAPIs(t *testing.T) {
+	repoRoot := t.TempDir()
+	cfg := &config.Config{
+		Language: serviceconfig.LangPython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
+	library := &config.Library{
+		Name:   "no-apis",
+		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
+	}
+	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	// Validate that we haven't got as far as creating the output directory.
+	_, gotErr := os.Stat(library.Output)
+	wantErr := os.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("Stat() error after generating with no APIs = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
