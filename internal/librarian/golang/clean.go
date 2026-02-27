@@ -33,15 +33,15 @@ var (
 	// TODO(https://github.com/googleapis/librarian/issues/4217): document each regex about
 	// what are matched and why it is necessary.
 	generatedRegex = []*regexp.Regexp{
-		regexp.MustCompile(`.*/apiv(\d+).*/\.repo-metadata\.json$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary_go123\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/doc\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_go123_test\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_test\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/gapic_metadata\.json$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/helpers\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?\.repo-metadata\.json$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?auxiliary\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?auxiliary_go123\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?doc\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client_example_go123_test\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?.*_client_example_test\.go$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?gapic_metadata\.json$`),
+		regexp.MustCompile(`.*/(?:apiv(\d+).*/)?helpers\.go$`),
 		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
 		regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
 	}

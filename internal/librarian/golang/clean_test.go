@@ -98,6 +98,12 @@ func TestClean(t *testing.T) {
 			},
 			wantOutput: []string{},
 		},
+		{
+			name:        "non-versioned api path",
+			outputFiles: []string{"autogen/auxiliary.go"},
+			keep:        []string{},
+			wantOutput:  []string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
