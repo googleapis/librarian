@@ -504,94 +504,52 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		apiPath string
 		library *config.Library
 		goAPI   *config.GoAPI
 		want    string
 	}{
 		{
-			name:    "single version without customize client directory",
-			apiPath: "google/cloud/accessapproval/v1",
+			name: "no override",
 			library: &config.Library{
-				Name: "accessapproval",
-			},
-			want: "cloud.google.com/go/accessapproval/apiv1;accessapproval",
-		},
-		{
-			name:    "customize client directory",
-			apiPath: "google/ai/generativelanguage/v1",
-			library: &config.Library{
-				Name: "ai",
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "generativelanguage",
+				ClientDirectory: "secretmanager",
+				ImportPath:      "secretmanager/apiv1",
+				Path:            "google/cloud/secretmanager/v1",
 			},
-			want: "cloud.google.com/go/generativelanguage/apiv1;generativelanguage",
+			want: "cloud.google.com/go/secretmanager/apiv1;secretmanager",
 		},
 		{
-			name:    "customize import path and client directory",
-			apiPath: "google/ai/generativelanguage/v1alpha",
-			library: &config.Library{
-				Name: "ai",
-			},
-			goAPI: &config.GoAPI{
-				ClientDirectory: "generativelanguage",
-				ImportPath:      "ai/generativelanguage",
-			},
-			want: "cloud.google.com/go/ai/generativelanguage/apiv1alpha;generativelanguage",
-		},
-		{
-			name:    "no version suffix",
-			apiPath: "google/longrunning",
-			library: &config.Library{
-				Name: "longrunning",
-			},
-			goAPI: &config.GoAPI{
-				ClientDirectory: "longrunning",
-				ImportPath:      "longrunning/autogen",
-			},
-			want: "cloud.google.com/go/longrunning/autogen;longrunning",
-		},
-		{
-			name:    "no version suffix with version in the middle",
-			apiPath: "google/longrunning/v1/longrunning",
-			library: &config.Library{
-				Name: "longrunning",
-			},
-			goAPI: &config.GoAPI{
-				ClientDirectory: "longrunning",
-				ImportPath:      "longrunning/autogen",
-			},
-			want: "cloud.google.com/go/longrunning/autogen;longrunning",
-		},
-		{
-			name:    "version suffix",
-			apiPath: "google/monitoring/v3",
-			library: &config.Library{
-				Name: "monitoring",
-			},
-			goAPI: &config.GoAPI{
-				Path:          "google/monitoring/v3",
-				VersionSuffix: "v2",
-			},
-			want: "cloud.google.com/go/monitoring/apiv3/v2;monitoring",
-		},
-		{
-			name:    "client package override",
-			apiPath: "google/storage/v2",
+			name: "customize package override",
 			library: &config.Library{
 				Name: "storage",
 			},
 			goAPI: &config.GoAPI{
+				ClientDirectory:       "internal",
 				ClientPackageOverride: "storage",
-				ImportPath:            "storage/internal",
+				ImportPath:            "storage/internal/apiv2",
 				Path:                  "google/storage/v2",
 			},
 			want: "cloud.google.com/go/storage/internal/apiv2;storage",
 		},
+		{
+			name: "version suffix",
+			library: &config.Library{
+				Name: "monitoring",
+			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "monitoring",
+				ImportPath:      "monitoring/apiv3",
+				Path:            "google/monitoring/v3",
+				VersionSuffix:   "v2",
+			},
+			want: "cloud.google.com/go/monitoring/apiv3/v2;monitoring",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGAPICImportPath(test.apiPath, test.library, test.goAPI)
+			got := buildGAPICImportPath(test.library, test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
