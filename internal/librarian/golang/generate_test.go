@@ -57,6 +57,15 @@ func TestGenerateLibraries(t *testing.T) {
 					Path: "google/cloud/secretmanager/v1",
 				},
 			},
+			Go: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientDirectory: "secretmanager",
+						ImportPath:      "secretmanager/apiv1",
+						Path:            "google/cloud/secretmanager/v1",
+					},
+				},
+			},
 		},
 		{
 			Name:          "google-cloud-configdelivery-v1",
@@ -66,6 +75,15 @@ func TestGenerateLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{
 					Path: "google/cloud/configdelivery/v1",
+				},
+			},
+			Go: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientDirectory: "configdelivery",
+						ImportPath:      "configdelivery/apiv1",
+						Path:            "google/cloud/configdelivery/v1",
+					},
 				},
 			},
 		},
