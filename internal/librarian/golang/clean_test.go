@@ -50,14 +50,11 @@ func TestClean(t *testing.T) {
 				"apiv1/helpers.go",
 				"apiv1/librarypb/content.pb.go",
 				"apiv1/non-generated.go",
-				"doc.go",
 			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
 			keep:         []string{},
 			wantOutput: []string{
 				"apiv1/non-generated.go",
-				// skipped because the file doesn't live in a versioned directory.
-				"doc.go",
 			},
 		},
 		{
