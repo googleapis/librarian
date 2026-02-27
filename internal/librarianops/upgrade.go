@@ -18,12 +18,24 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
+
+// timeContextKey prevents collisions in the context.
+type timeContextKey struct{}
+
+// timeNow safely retrieves a mocked time from the context, falling back to the real time.
+func timeNow(ctx context.Context) time.Time {
+	if t, ok := ctx.Value(timeContextKey{}).(time.Time); ok {
+		return t
+	}
+	return time.Now()
+}
 
 func upgradeCommand() *cli.Command {
 	return &cli.Command{
@@ -45,12 +57,12 @@ For each repository, librarianops will:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			_, workDir, verbose, err := parseFlags(cmd)
+			repoName, workDir, verbose, err := parseFlags(cmd)
 			if err != nil {
 				return err
 			}
 			command.Verbose = verbose
-			_, err = runUpgrade(ctx, workDir)
+			_, err = runUpgrade(ctx, repoName, workDir)
 			return err
 		},
 	}
@@ -58,20 +70,26 @@ For each repository, librarianops will:
 
 // runUpgrade consists in getting the latest librarian version, updates the librarian.yaml file and run librarian generate.
 // It returns the new version, and an error if one occurred.
-func runUpgrade(ctx context.Context, repoDir string) (string, error) {
+func runUpgrade(ctx context.Context, repoName string, repoDir string) (string, error) {
 	version, err := getLibrarianVersionAtMain(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get latest librarian version: %w", err)
 	}
+	repoDir, cleanup, err := setupEnvironment(ctx, repoDir, repoName)
+	if err != nil {
+		return "", fmt.Errorf("failed to setup environment: %w", err)
+	}
+	defer cleanup()
 
 	if err := updateLibrarianVersion(version, repoDir); err != nil {
 		return "", fmt.Errorf("failed to update librarian version: %w", err)
 	}
-
 	if err := runLibrarianWithVersion(ctx, version, command.Verbose, "generate", "--all"); err != nil {
 		return "", fmt.Errorf("failed to run librarian generate: %w", err)
 	}
-
+	if err := uploadToGithub(ctx, createGithubDetailsForUpgrade(ctx, version)); err != nil {
+		return "", fmt.Errorf("failed to upload to github: %w", err)
+	}
 	return version, nil
 }
 
@@ -83,4 +101,12 @@ func updateLibrarianVersion(version, repoDir string) error {
 	}
 	cfg.Version = version
 	return yaml.Write(configPath, cfg)
+}
+
+func createGithubDetailsForUpgrade(ctx context.Context, librarianVersion string) GithubDetails {
+	return GithubDetails{
+		PrTitle:    fmt.Sprintf("chore: upgrade librarian to %s and run generate --all", librarianVersion),
+		PrBody:     fmt.Sprintf("This PR upgrades librarian to version %s and runs `librarian generate --all`.", librarianVersion),
+		BranchName: generateBranchName("librarianops-upgrade", timeNow(ctx)),
+	}
 }
