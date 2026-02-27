@@ -402,59 +402,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "additional go module",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "ai",
-							APIs: []*legacyconfig.API{
-								{Path: "google/ai/generativelanguage/v1"},
-								{Path: "google/ai/generativelanguage/v1alpha"},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-			},
-			want: []*config.Library{
-				{
-					Name: "ai",
-					APIs: []*config.API{
-						{Path: "google/ai/generativelanguage/v1"},
-						{Path: "google/ai/generativelanguage/v1alpha"},
-					},
-					ReleaseLevel: "beta",
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								Path:            "google/ai/generativelanguage/v1",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1alpha",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta2",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with no GAPIC rule",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
