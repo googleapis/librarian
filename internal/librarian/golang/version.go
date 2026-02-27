@@ -64,12 +64,14 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 
 func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
 	goAPI := findGoAPI(library, apiPath)
-	if goAPI != nil && goAPI.DisableGAPIC {
+	// goAPI should not be nil in production because they are filled with defaults
+	// for each API path of the library.
+	if goAPI == nil || goAPI.DisableGAPIC {
 		// If GAPIC is disabled, no client is generated, only proto files.
 		// Therefore, version.go does not need to be generated.
 		return nil
 	}
-	dir, clientDir := resolveClientPath(library, apiPath)
+	dir := filepath.Join(library.Output, goAPI.ImportPath, goAPI.VersionSuffix)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -88,10 +90,10 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
 	pkg := library.Name
-	if clientDir != "" {
-		pkg = clientDir
+	if goAPI.ClientDirectory != "" {
+		pkg = goAPI.ClientDirectory
 	}
-	if goAPI != nil && goAPI.ClientPackageOverride != "" {
+	if goAPI.ClientPackageOverride != "" {
 		pkg = goAPI.ClientPackageOverride
 	}
 	return t.Execute(f, map[string]any{

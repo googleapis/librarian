@@ -128,6 +128,15 @@ func TestGenerate(t *testing.T) {
 			name:        "basic",
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientDirectory: "secretmanager",
+						ImportPath:      "secretmanager/apiv1",
+						Path:            "google/cloud/secretmanager/v1",
+					},
+				},
+			},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
@@ -143,7 +152,16 @@ func TestGenerate(t *testing.T) {
 			name:        "v2 module",
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			goModule:    &config.GoModule{ModulePathVersion: "v2"},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientDirectory: "secretmanager",
+						ImportPath:      "secretmanager/apiv1",
+						Path:            "google/cloud/secretmanager/v1",
+					},
+				},
+				ModulePathVersion: "v2",
+			},
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
 			},
