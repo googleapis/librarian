@@ -42,7 +42,7 @@ func Fill(library *config.Library) *config.Library {
 				Path: api.Path,
 			}
 		}
-		importPath, clientDir := defaultImportPathAndClientDir(api.Path)
+		importPath, clientDir := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
 		}
@@ -68,18 +68,16 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-// defaultImportPathAndClientDir returns the default Go import path and client directory
+// defaultImportPathAndClientPkg returns the default Go import path and client package name
 // based on the provided API path.
 //
-// The API path is expected to be either google/cloud/{dir}/{version} or
-// google/cloud/{dir}/{nested}/{version}.
-func defaultImportPathAndClientDir(apiPath string) (string, string) {
-	dirs := strings.Split(apiPath, "/")
-	if len(dirs) < 4 {
-		return "", ""
-	}
-	if len(dirs) == 5 {
-		return fmt.Sprintf("%s/%s", dirs[2], dirs[3]), dirs[3]
-	}
-	return dirs[2], ""
+// The API path is expected to be google/cloud/{dir}/{0 or more nested directories}/{version}.
+func defaultImportPathAndClientPkg(apiPath string) (string, string) {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	importPath, version := apiPath[:idx], apiPath[idx+1:]
+	idx = strings.LastIndex(importPath, "/")
+	pkg := importPath[idx+1:]
+	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }

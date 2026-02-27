@@ -221,3 +221,35 @@ func TestFindGoAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultImportPathAndClientPkg(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		apiPath           string
+		wantImportPath    string
+		wantClientPkgName string
+	}{
+		{
+			name:              "secretmanager",
+			apiPath:           "google/cloud/secretmanager/v1",
+			wantImportPath:    "secretmanager/apiv1",
+			wantClientPkgName: "secretmanager",
+		},
+		{
+			name:              "shopping",
+			apiPath:           "google/shopping/merchant/quota/v1",
+			wantImportPath:    "shopping/merchant/quota/apiv1",
+			wantClientPkgName: "quota",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotImportPath, gotPkg := defaultImportPathAndClientPkg(test.apiPath)
+			if diff := cmp.Diff(test.wantImportPath, gotImportPath); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantClientPkgName, gotPkg); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
