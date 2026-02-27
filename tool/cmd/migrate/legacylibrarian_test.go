@@ -496,12 +496,8 @@ func TestBuildGoLibraries(t *testing.T) {
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
-							ID: "bigquery",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/bigquery/analyticshub/v1",
-								},
-							},
+							ID:   "bigquery",
+							APIs: []*legacyconfig.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
 						},
 					},
 				},
@@ -510,13 +506,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Modules: []*RepoConfigModule{
 						{
 							Name: "bigquery",
-							APIs: []*RepoConfigAPI{
-								{
-									ClientDirectory: "analyticshub",
-									Path:            "google/cloud/bigquery/analyticshub/v1",
-									ImportPath:      "bigquery/analyticshub",
-								},
-							},
+							APIs: []*RepoConfigAPI{{Path: "google/cloud/bigquery/analyticshub/v1"}},
 						},
 					},
 				},
@@ -530,8 +520,6 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								ClientDirectory:    "analyticshub",
-								ImportPath:         "bigquery/analyticshub",
 								NoRESTNumericEnums: true,
 								Path:               "google/cloud/bigquery/analyticshub/v1",
 							},

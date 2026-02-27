@@ -403,7 +403,7 @@ func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 		info.ImportPath = importPath
 	}
 	if clientPkg != defaultClientPkg {
-		info.ImportPath = clientPkg
+		info.ClientPackageName = clientPkg
 	}
 	return info, nil
 }
