@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -154,6 +153,7 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 			GoAPIs: []*config.GoAPI{
 				{
 					ClientDirectory: "connectors",
+					ImportPath:      "alloydb/connectors/apiv1",
 					DisableGAPIC:    true,
 					Path:            "google/cloud/alloydb/connectors/v1",
 				},
@@ -166,204 +166,9 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotPath, _ := resolveClientPath(library, apiPath)
+	gotPath := filepath.Join(library.Output, "alloydb/connectors/apiv1")
 	versionPath := filepath.Join(gotPath, "version.go")
 	if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatal("client version file should not exist")
-	}
-}
-
-func TestResolveClientPath(t *testing.T) {
-	for _, test := range []struct {
-		name            string
-		library         *config.Library
-		apiPath         string
-		wantVersionPath string
-		wantClientDir   string
-	}{
-		{
-			name: "from apiPath",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-					{
-						Path: "google/cloud/secretmanager/v1beta1",
-					},
-				},
-			},
-			apiPath:         "google/cloud/secretmanager/v1",
-			wantVersionPath: "secretmanager/apiv1",
-			wantClientDir:   "",
-		},
-		{
-			name: "non existing GoAPI",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path: "google/cloud/secretmanager/v1beta1",
-						},
-					},
-				},
-			},
-			apiPath:         "google/cloud/secretmanager/v1",
-			wantVersionPath: "secretmanager/apiv1",
-			wantClientDir:   "",
-		},
-		{
-			name: "from apiPath and client directory",
-			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/ai/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/cloud/ai/v1",
-							ClientDirectory: "customdir",
-						},
-						{
-							Path: "google/cloud/ai/v1beta1",
-						},
-					},
-				},
-			},
-			apiPath:         "google/cloud/ai/v1",
-			wantVersionPath: "ai/customdir/apiv1",
-			wantClientDir:   "customdir",
-		},
-		{
-			name: "non nested api path with client directory",
-			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{
-					{
-						Path: "google/ai/generativelanguage/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			apiPath:         "google/ai/generativelanguage/v1",
-			wantVersionPath: "ai/generativelanguage/apiv1",
-			wantClientDir:   "generativelanguage",
-		},
-		{
-			name: "nested api path",
-			library: &config.Library{
-				Name: "shopping",
-				APIs: []*config.API{
-					{
-						Path: "google/shopping/merchant/accounts/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/shopping/merchant/accounts/v1",
-							ClientDirectory: "accounts",
-						},
-					},
-				},
-			},
-			apiPath:         "google/shopping/merchant/accounts/v1",
-			wantVersionPath: "shopping/merchant/accounts/apiv1",
-			wantClientDir:   "accounts",
-		},
-		{
-			name: "nested api path with different client directory",
-			library: &config.Library{
-				Name: "example",
-				APIs: []*config.API{
-					{
-						Path: "google/example/nested-1/nested-2/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/example/nested-1/nested-2/v1",
-							ClientDirectory: "customdir",
-						},
-					},
-				},
-			},
-			apiPath:         "google/example/nested-1/nested-2/v1",
-			wantVersionPath: "example/customdir/apiv1",
-			wantClientDir:   "customdir",
-		},
-		{
-			name: "nested api path with different library name",
-			library: &config.Library{
-				Name: "library-name",
-				APIs: []*config.API{
-					{
-						Path: "google/another-example/nested-1/nested-2/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/another-example/nested-1/customdir/v1",
-							ClientDirectory: "customdir",
-						},
-					},
-				},
-			},
-			apiPath:         "google/another-example/nested-1/customdir/v1",
-			wantVersionPath: "library-name/customdir/apiv1",
-			wantClientDir:   "customdir",
-		},
-		{
-			name: "nested major version",
-			library: &config.Library{
-				Name: "bigquery/v2",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/bigquery/v2",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ClientDirectory: "bigquery",
-							ImportPath:      "bigquery/v2",
-							Path:            "google/cloud/bigquery/v2",
-						},
-					},
-				},
-			},
-			apiPath:         "google/cloud/bigquery/v2",
-			wantVersionPath: "bigquery/v2/apiv2",
-			wantClientDir:   "bigquery",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			gotVersionPath, gotClientDir := resolveClientPath(test.library, test.apiPath)
-			if diff := cmp.Diff(test.wantVersionPath, gotVersionPath); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(test.wantClientDir, gotClientDir); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
 	}
 }

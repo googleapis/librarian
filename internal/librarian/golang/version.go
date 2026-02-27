@@ -18,8 +18,6 @@ import (
 	_ "embed"
 	"os"
 	"path/filepath"
-	"slices"
-	"strings"
 	"text/template"
 	"time"
 
@@ -100,43 +98,6 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 		"Package":    pkg,
 		"ModulePath": modulePath(library),
 	})
-}
-
-// resolveClientPath constructs the full path for the API version and determines the client directory.
-func resolveClientPath(library *config.Library, apiPath string) (string, string) {
-	version := filepath.Base(apiPath)
-	clientDir := clientDirectory(library, apiPath)
-	middle := extractMiddleDir(library.Name, clientDir, apiPath)
-	paths := []string{library.Output, library.Name, middle}
-	if !strings.Contains(library.Name, "/") {
-		// If the library name is not a nested major version, include the client directory.
-		paths = append(paths, clientDir)
-	}
-	paths = append(paths, "api"+version)
-	return filepath.Join(paths...), clientDir
-}
-
-func clientDirectory(library *config.Library, apiPath string) string {
-	goAPI := findGoAPI(library, apiPath)
-	if goAPI != nil {
-		return goAPI.ClientDirectory
-	}
-	// Return an empty client directory if we can't find one.
-	return ""
-}
-
-// extractMiddleDir returns the directory path between the library name and the
-// client directory within the API path.
-// It returns an empty string if libraryName or clientDir are not found, or if
-// there are no directories between them.
-func extractMiddleDir(libraryName, clientDir, apiPath string) string {
-	dirs := strings.Split(apiPath, "/")
-	nameIdx := slices.Index(dirs, libraryName)
-	clientIdx := slices.Index(dirs, clientDir)
-	if nameIdx == -1 || clientIdx == -1 || clientIdx <= nameIdx+1 {
-		return ""
-	}
-	return filepath.Join(dirs[nameIdx+1 : clientIdx]...)
 }
 
 // writeLicenseHeader writes the license header as Go comments to the given file.
