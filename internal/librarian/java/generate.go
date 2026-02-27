@@ -172,7 +172,7 @@ func addMissingHeaders(dir string) error {
 	licenseText := b.String()
 
 	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || filepath.Ext(path) != ".java" {
+		if err != nil || !d.Type().IsRegular() || filepath.Ext(path) != ".java" {
 			return err
 		}
 		content, err := os.ReadFile(path)
