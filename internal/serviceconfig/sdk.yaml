@@ -2743,6 +2743,9 @@
   path: google/spanner/admin/instance/v1
 - languages:
     - go
+  path: google/spanner/executor/v1
+- languages:
+    - go
     - python
     - rust
   path: google/spanner/v1
