@@ -87,8 +87,11 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 			Version: libState.Version,
 			Python:  &config.PythonPackage{},
 		}
-		if libState.APIs != nil {
+		if len(libState.APIs) > 0 {
 			library.APIs = toAPIs(libState.APIs)
+		} else {
+			library.Output = filepath.Join("packages", library.Name)
+			library.Veneer = true
 		}
 		// Convert "preserve" regexes into "keep" paths, sorted for ease
 		// of testing.

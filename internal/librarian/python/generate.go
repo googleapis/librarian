@@ -17,7 +17,6 @@ package python
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -36,8 +35,6 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-var errNoApis = errors.New("no apis configured for library")
-
 // GenerateLibraries generates all the given libraries in sequence.
 func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
@@ -50,8 +47,9 @@ func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*
 
 // generate generates a Python client library.
 func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+	// If the library has no APIs, there's nothing to do.
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("error generating %s: %w", library.Name, errNoApis)
+		return nil
 	}
 
 	// Convert library.Output to absolute path since protoc runs from a
