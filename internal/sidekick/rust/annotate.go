@@ -80,6 +80,12 @@ type modelAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// The service to use for the package-level quickstart sample.
+	// Rust generation may decide not to generate some services,
+	// e.g. if the methods have no bindings. On occasion the service
+	// selected at the model level will be skipped for Rust generation
+	// so we need to choose a different one.
+	QuickstartService *api.Service
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -681,6 +687,17 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 		return defaultHost[:idx]
 	}()
+
+	var quickstartService *api.Service
+	if model.QuickstartService != nil {
+		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService }) {
+			quickstartService = model.QuickstartService
+		}
+	}
+	if quickstartService == nil && len(servicesSubset) > 0 {
+		quickstartService = servicesSubset[0]
+	}
+
 	ann := &modelAnnotations{
 		PackageName:      codec.packageName(model),
 		PackageNamespace: codec.rootModuleName(model),
@@ -709,6 +726,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
 		InternalBuilders:          codec.internalBuilders,
+		QuickstartService:         quickstartService,
 	}
 
 	codec.addFeatureAnnotations(model, ann)

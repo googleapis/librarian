@@ -185,6 +185,66 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestQuickstartServiceAnnotation(t *testing.T) {
+	t.Run("survives filtering", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+		// model.Services[0] is Service0, model.Services[1] is Service1
+		model.QuickstartService = model.Services[1]
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.QuickstartService == nil {
+			t.Fatal("QuickstartService should not be nil")
+		}
+		if got.QuickstartService != model.Services[1] {
+			t.Errorf("expected QuickstartService to be Service1, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("filtered out fallback", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+
+		// Create a service that has no methods with bindings, so it will be filtered out.
+		filteredService := &api.Service{
+			Name:    "FilteredService",
+			ID:      "..FilteredService",
+			Package: "test.v1",
+			Methods: []*api.Method{
+				{
+					Name: "noBindings",
+					ID:   "..FilteredService.noBindings",
+				},
+			},
+		}
+		model.Services = append(model.Services, filteredService)
+		for _, s := range model.Services {
+			s.Model = model
+		}
+		api.CrossReference(model)
+
+		// Set the filtered service as the global quickstart.
+		model.QuickstartService = filteredService
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.QuickstartService == nil {
+			t.Fatal("QuickstartService should not be nil")
+		}
+		// It should have fallen back to the first non-filtered service (Service0).
+		if got.QuickstartService != model.Services[0] {
+			t.Errorf("expected QuickstartService to fall back to Service0, got %v", got.QuickstartService.Name)
+		}
+	})
+}
+
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",
