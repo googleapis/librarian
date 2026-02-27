@@ -815,6 +815,11 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
 			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "apigeeconnect",
+				ImportPath:      "apigeeconnect/apiv1",
+				Path:            "google/cloud/apigeeconnect/v1",
+			},
 			googleapisDir: googleapisDir,
 			want: []string{
 				"go-gapic-package=cloud.google.com/go/apigeeconnect/apiv1;apigeeconnect",
