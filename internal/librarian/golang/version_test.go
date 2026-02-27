@@ -74,6 +74,15 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "", // set in test
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
+						},
+					},
+				},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			wantDir: "secretmanager/apiv1",
@@ -86,8 +95,9 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/customdir/apiv1",
 							Path:            "google/cloud/secretmanager/v1",
-							ClientDirectory: "customdir",
 						},
 					},
 				},
@@ -105,7 +115,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 						{
 							ClientPackageOverride: "storage",
 							ClientDirectory:       "internal",
-							ImportPath:            "storage/internal",
+							ImportPath:            "storage/internal/apiv2",
 							Path:                  "google/cloud/storage/v2",
 						},
 					},
