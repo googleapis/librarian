@@ -662,7 +662,7 @@ func TestGetTransport(t *testing.T) {
 	}
 }
 
-func TestBuildGAPICOpts_Success(t *testing.T) {
+func TestBuildGAPICOpts(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		apiPath       string
@@ -793,7 +793,7 @@ func TestBuildGAPICOpts_Success(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientDirectory:          "bigquery",
 				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
-				ImportPath:               "bigquery/v2",
+				ImportPath:               "bigquery/v2/apiv2",
 				Path:                     "google/cloud/bigquery/v2",
 			},
 			googleapisDir: googleapisDir,
