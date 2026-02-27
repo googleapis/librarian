@@ -201,6 +201,28 @@ func TestBuildPythonLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "veneer",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-api-core",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name:   "google-api-core",
+					Veneer: true,
+					Output: "packages/google-api-core",
+					Python: &config.PythonPackage{NamePrettyOverride: "Google API client core library"},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildPythonLibraries(test.input, "testdata/googleapis")
