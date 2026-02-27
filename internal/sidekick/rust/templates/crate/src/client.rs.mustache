@@ -27,17 +27,7 @@ limitations under the License.
 
 /// Implements a client for the {{Codec.APITitle}}.
 {{^Codec.HasVeneer}}
-///
-{{^Model.Codec.InternalBuilders}}
-/// # Example
-/// ```
-/// # async fn sample() -> google_cloud_gax::client_builder::Result<()> {
-/// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
-/// let client = {{Codec.Name}}::builder().build().await?;
-/// // use `client` to make requests to the {{Codec.APITitle}}.
-/// # Ok(()) }
-/// ```
-{{/Model.Codec.InternalBuilders}}
+{{> /templates/common/quickstart}}
 ///
 /// # Service Description
 ///
