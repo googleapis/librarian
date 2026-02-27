@@ -440,6 +440,9 @@ func defaultImportPathFromAPI(apiPath string) (string, string) {
 	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
 	apiPath = strings.TrimPrefix(apiPath, "google/")
 	idx := strings.LastIndex(apiPath, "/")
+	if idx == -1 {
+		return "", ""
+	}
 	importPath, version := apiPath[:idx], apiPath[idx+1:]
 	idx = strings.LastIndex(importPath, "/")
 	pkg := importPath[idx+1:]

@@ -790,7 +790,7 @@ func TestReadRepoConfig(t *testing.T) {
 	}
 }
 
-func TestParseBazel_Success(t *testing.T) {
+func TestParseBazel(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		googleapisDir string
@@ -802,6 +802,15 @@ func TestParseBazel_Success(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
+				NoRESTNumericEnums: true,
+			},
+		},
+		{
+			name:          "custom import path",
+			googleapisDir: "testdata/parse-bazel/custom-import-path",
+			buildPath:     "google/longrunning",
+			want: &goGAPICInfo{
+				ImportPath:         "longrunning",
 				NoRESTNumericEnums: true,
 			},
 		},
