@@ -57,6 +57,8 @@ func Generate(protoModulePath string) error {
 	outputPath := filepath.Join(protoModulePath, clirrIgnoreFile)
 	if _, err := os.Stat(outputPath); err == nil {
 		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check for %s: %w", outputPath, err)
 	}
 	protoPaths, err := findProtoPackages(protoModulePath)
 	if err != nil {
