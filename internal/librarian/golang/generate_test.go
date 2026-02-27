@@ -841,6 +841,11 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Name:    "gkehub",
 				Version: "1.2.3",
 			},
+			goAPI: &config.GoAPI{
+				ClientDirectory: "gkehub",
+				ImportPath:      "gkehub/apiv1",
+				Path:            "google/cloud/gkehub/v1",
+			},
 			googleapisDir: googleapisDir,
 			want: []string{
 				"go-gapic-package=cloud.google.com/go/gkehub/apiv1;gkehub",
