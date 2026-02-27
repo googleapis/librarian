@@ -28,7 +28,7 @@ func TestFill(t *testing.T) {
 		want    *config.Library
 	}{
 		{
-			name: "fill default import path",
+			name: "fill defaults for non-nested api",
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
@@ -39,15 +39,16 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:       "google/cloud/secretmanager/v1",
-							ImportPath: "secretmanager",
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "fill default import path and client directory",
+			name: "fill defaults for nested api",
 			library: &config.Library{
 				Name: "bigquery",
 				APIs: []*config.API{
@@ -72,60 +73,49 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/bigquery/analyticshub/v1",
 							ClientDirectory: "analyticshub",
-							ImportPath:      "bigquery/analyticshub",
+							ImportPath:      "bigquery/analyticshub/apiv1",
+							Path:            "google/cloud/bigquery/analyticshub/v1",
 						},
 						{
-							Path:            "google/cloud/bigquery/biglake/v1",
 							ClientDirectory: "biglake",
-							ImportPath:      "bigquery/biglake",
+							ImportPath:      "bigquery/biglake/apiv1",
+							Path:            "google/cloud/bigquery/biglake/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "skip non cloud api with nil Go module",
+			name: "do not override library configs",
 			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
-			},
-			want: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
-				Go:   &config.GoModule{},
-			},
-		},
-		{
-			name: "skip non cloud api with Go module",
-			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
+							ClientDirectory: "custom", // This value will be kept.
+							Path:            "google/cloud/example/v1",
 						},
 					},
 				},
 			},
 			want: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
+							ClientDirectory: "custom",
+							ImportPath:      "example/apiv1",
+							Path:            "google/cloud/example/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "defaults do not override library config",
+			name: "merge defaults",
 			library: &config.Library{
 				Name: "example",
 				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
@@ -146,9 +136,10 @@ func TestFill(t *testing.T) {
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:               "google/cloud/example/v1",
-							ImportPath:         "example",
+							ClientDirectory:    "example",
+							ImportPath:         "example/apiv1",
 							NoRESTNumericEnums: true,
+							Path:               "google/cloud/example/v1",
 						},
 					},
 				},
