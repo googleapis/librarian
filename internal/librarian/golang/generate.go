@@ -154,9 +154,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if goAPI == nil {
 		return fmt.Errorf("could not find Go API %q in library %q: %w", api.Path, library.Name, errGoAPINotFound)
 	}
-	var nestedProtos []string
-	nestedProtos = goAPI.NestedProtos
-
+	nestedProtos := goAPI.NestedProtos
 	args := []string{
 		"protoc",
 		"--experimental_allow_proto3_optional",

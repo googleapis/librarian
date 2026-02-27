@@ -162,7 +162,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 
 			gotErr := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
