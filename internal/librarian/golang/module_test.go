@@ -232,6 +232,12 @@ func TestDefaultImportPathAndClientPkg(t *testing.T) {
 			wantImportPath:    "shopping/merchant/quota/apiv1",
 			wantClientPkgName: "quota",
 		},
+		{
+			name:              "non-versioned api path",
+			apiPath:           "google/shopping/type",
+			wantImportPath:    "",
+			wantClientPkgName: "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotImportPath, gotPkg := defaultImportPathAndClientPkg(test.apiPath)

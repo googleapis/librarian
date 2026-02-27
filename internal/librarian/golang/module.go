@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"golang.org/x/mod/semver"
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -69,6 +70,9 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
 	apiPath = strings.TrimPrefix(apiPath, "google/")
 	idx := strings.LastIndex(apiPath, "/")
+	if idx == -1 || !semver.IsValid(apiPath[idx+1:]) {
+		return "", ""
+	}
 	importPath, version := apiPath[:idx], apiPath[idx+1:]
 	idx = strings.LastIndex(importPath, "/")
 	pkg := importPath[idx+1:]
