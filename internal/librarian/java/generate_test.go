@@ -201,7 +201,23 @@ func TestPostProcess(t *testing.T) {
 	libraryName := "secretmanager"
 	version := "v1"
 	gapicDir := filepath.Join(outdir, version, "gapic")
+	grpcDir := filepath.Join(outdir, version, "grpc")
+	protoDir := filepath.Join(outdir, version, "proto")
 	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(grpcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	grpcFile := filepath.Join(grpcDir, "GrpcFile.java")
+	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	protoFile := filepath.Join(protoDir, "ProtoFile.java")
+	if err := os.WriteFile(protoFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -209,18 +225,19 @@ func TestPostProcess(t *testing.T) {
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
-	f, err := zw.Create("src/main/java/com/google/cloud/secretmanager/v1/SomeFile.java")
+	mainFile, err := zw.Create("src/main/java/com/google/cloud/secretmanager/v1/SomeFile.java")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
+	content := "package com.google.cloud.secretmanager.v1;"
+	if _, err := mainFile.Write([]byte(content)); err != nil {
 		t.Fatal(err)
 	}
-	f2, err := zw.Create("src/test/java/com/google/cloud/secretmanager/v1/SomeTest.java")
+	testFile, err := zw.Create("src/test/java/com/google/cloud/secretmanager/v1/SomeTest.java")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f2.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
+	if _, err := testFile.Write([]byte(content)); err != nil {
 		t.Fatal(err)
 	}
 	if err := zw.Close(); err != nil {
@@ -231,15 +248,20 @@ func TestPostProcess(t *testing.T) {
 	}
 
 	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, protos); err != nil {
+	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
 	// Verify that the file from srcjar was unzipped and moved
 	unzippedPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
-	if _, err := os.Stat(unzippedPath); err != nil {
+	gotContent, err := os.ReadFile(unzippedPath)
+	if err != nil {
 		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
 	}
+	if !strings.HasPrefix(string(gotContent), "/*\n * Copyright") {
+		t.Errorf("expected header to be prepended to %s, got:\n%s", unzippedPath, string(gotContent))
+	}
+
 	unzippedTestPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
@@ -432,3 +454,64 @@ func TestCollectJavaFiles(t *testing.T) {
 		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestFixHeaders(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+
+	// Case 1: File without header
+	noHeaderPath := filepath.Join(tmpDir, "NoHeader.java")
+	noHeaderContent := "package com.example;\npublic class NoHeader {}"
+	if err := os.WriteFile(noHeaderPath, []byte(noHeaderContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Case 2: File with existing header (matching regex)
+	withHeaderPath := filepath.Join(tmpDir, "WithHeader.java")
+	withHeaderContent := "/*\n * Copyright 2024 Google LLC\n */\npackage com.example;\npublic class WithHeader {}"
+	if err := os.WriteFile(withHeaderPath, []byte(withHeaderContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Case 3: Non-java file
+	txtPath := filepath.Join(tmpDir, "test.txt")
+	txtContent := "some text"
+	if err := os.WriteFile(txtPath, []byte(txtContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := fixHeaders(tmpDir); err != nil {
+		t.Fatalf("fixHeaders failed: %v", err)
+	}
+
+	// Verify Case 1: Header should be prepended
+	gotNoHeader, err := os.ReadFile(noHeaderPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(gotNoHeader), "/*\n * Copyright") {
+		t.Errorf("expected header to be prepended to %s, got:\n%s", noHeaderPath, string(gotNoHeader))
+	}
+	if !strings.Contains(string(gotNoHeader), noHeaderContent) {
+		t.Errorf("expected original content to be preserved in %s", noHeaderPath)
+	}
+
+	// Verify Case 2: Header should NOT be prepended again
+	gotWithHeader, err := os.ReadFile(withHeaderPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotWithHeader) != withHeaderContent {
+		t.Errorf("expected %s to remain unchanged, but it was modified", withHeaderPath)
+	}
+
+	// Verify Case 3: Non-java file should NOT be modified
+	gotTxt, err := os.ReadFile(txtPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotTxt) != txtContent {
+		t.Errorf("expected %s to remain unchanged, got:\n%s", txtPath, string(gotTxt))
+	}
+}
+

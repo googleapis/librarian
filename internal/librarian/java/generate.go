@@ -21,11 +21,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -96,7 +100,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
-	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, protos); err != nil {
+	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
@@ -127,12 +131,17 @@ func constructProtocCommandArgs(api *config.API, googleapisDir string, protocOpt
 	return args, protos, nil
 }
 
-func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir string, protos []string) error {
+func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string) error {
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
 		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
+		}
+	}
+	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
+		if err := fixHeaders(dir); err != nil {
+			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
 	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos); err != nil {
@@ -143,6 +152,38 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
 	}
 	return nil
+}
+
+var headerRegex = regexp.MustCompile(`\* Copyright \d{4} Google LLC`)
+
+// fixHeaders prepends the license header to all Java files in the given directory
+// if they don't already have one.
+func fixHeaders(dir string) error {
+	year := time.Now().Year()
+	lines := license.Header(strconv.Itoa(year))
+	var b strings.Builder
+	b.WriteString("/*\n")
+	for _, line := range lines {
+		b.WriteString(" *")
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+	b.WriteString(" */\n")
+	licenseText := b.String()
+
+	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() || filepath.Ext(path) != ".java" {
+			return err
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if headerRegex.Match(content) {
+			return nil
+		}
+		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
+	})
 }
 
 func createProtocOptions(api *config.API, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
