@@ -322,7 +322,7 @@ var methodIgnoreFields = []string{
 	"IsAIPStandardCreate",
 	"IsAIPStandardUpdate",
 	"IsAIPStandardList",
-	"AIPStandardSampleInfo",
+	"SampleInfo",
 }
 
 func TestIncludeMethods(t *testing.T) {

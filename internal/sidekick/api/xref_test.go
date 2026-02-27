@@ -790,7 +790,7 @@ func TestAIPStandardGetInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid get operation with wildcard resource reference",
@@ -800,11 +800,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				OutputType: output,
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.wildcardResourceField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.wildcardResourceField,
 			},
 		},
 		{
@@ -815,11 +812,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				OutputType: output,
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameField,
 			},
 		},
 		{
@@ -832,11 +826,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				},
 				Model: f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameNoSingularField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameNoSingularField,
 			},
 		},
 		{
@@ -951,9 +942,9 @@ func TestAIPStandardGetInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -965,7 +956,7 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid simple delete with wildcard resource reference",
@@ -975,11 +966,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				ReturnsEmpty: true,
 				Model:        f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.wildcardResourceField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.wildcardResourceField,
 			},
 		},
 		{
@@ -990,11 +978,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				ReturnsEmpty: true,
 				Model:        f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameField,
 			},
 		},
 		{
@@ -1005,11 +990,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				ReturnsEmpty: true,
 				Model:        f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameNoSingularField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameNoSingularField,
 			},
 		},
 		{
@@ -1020,11 +1002,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				OperationInfo: &OperationInfo{},
 				Model:         f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameField,
 			},
 		},
 		{
@@ -1035,11 +1014,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				ReturnsEmpty: true,
 				Model:        f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceOtherNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceOtherNameField,
 			},
 		},
 		{
@@ -1094,9 +1070,9 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1108,7 +1084,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid simple undelete with wildcard resource reference",
@@ -1120,11 +1096,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				},
 				Model: f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.wildcardResourceField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.wildcardResourceField,
 			},
 		},
 		{
@@ -1137,11 +1110,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				},
 				Model: f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameField,
 			},
 		},
 		{
@@ -1154,11 +1124,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				},
 				Model: f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameNoSingularField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameNoSingularField,
 			},
 		},
 		{
@@ -1169,11 +1136,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				OperationInfo: &OperationInfo{},
 				Model:         f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceNameField,
 			},
 		},
 		{
@@ -1186,11 +1150,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				},
 				Model: f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"resource_name"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: f.resourceOtherNameField, ParameterName: "resource_name"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: f.resourceOtherNameField,
 			},
 		},
 		{
@@ -1245,9 +1206,9 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1278,7 +1239,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid create operation",
@@ -1295,15 +1256,10 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				OutputType: &Message{Resource: f.resource},
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"parent"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: parentField, ParameterName: "parent"},
-				},
-				InitFieldsFromStringLiteral: []*Field{idField},
-				InitFieldsFromMessage: []*SampleMessageInit{
-					{Field: resourceField},
-				},
+			want: &SampleInfo{
+				ResourceNameField: parentField,
+				ResourceIDField:   idField,
+				MessageField:      resourceField,
 			},
 		},
 		{
@@ -1320,14 +1276,9 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				OutputType: &Message{Resource: f.resource},
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"parent"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: parentField, ParameterName: "parent"},
-				},
-				InitFieldsFromMessage: []*SampleMessageInit{
-					{Field: resourceField},
-				},
+			want: &SampleInfo{
+				ResourceNameField: parentField,
+				MessageField:      resourceField,
 			},
 		},
 		{
@@ -1351,9 +1302,9 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1379,7 +1330,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid update operation",
@@ -1395,11 +1346,8 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				OutputType: &Message{Resource: f.resource},
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"name"},
-				InitFieldsFromMessage: []*SampleMessageInit{
-					{Field: resourceField, ParameterName: "name"},
-				},
+			want: &SampleInfo{
+				MessageField:    resourceField,
 				UpdateMaskField: updateMaskField,
 			},
 		},
@@ -1416,11 +1364,8 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				OutputType: &Message{Resource: f.resource},
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"name"},
-				InitFieldsFromMessage: []*SampleMessageInit{
-					{Field: resourceField, ParameterName: "name"},
-				},
+			want: &SampleInfo{
+				MessageField: resourceField,
 			},
 		},
 		{
@@ -1473,9 +1418,9 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1511,7 +1456,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 	testCases := []struct {
 		name   string
 		method *Method
-		want   *AIPStandardSampleInfo
+		want   *SampleInfo
 	}{
 		{
 			name: "valid list operation with parent field match by child_type",
@@ -1521,11 +1466,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				OutputType: listOutput,
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"parent"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: parentField, ParameterName: "parent"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: parentField,
 			},
 		},
 		{
@@ -1536,11 +1478,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				OutputType: listOutput,
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"parent"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: otherParentField, ParameterName: "parent"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: otherParentField,
 			},
 		},
 		{
@@ -1551,11 +1490,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				OutputType: listOutput,
 				Model:      f.model,
 			},
-			want: &AIPStandardSampleInfo{
-				SampleFunctionParameters: []string{"parent"},
-				InitFieldsFromParameter: []*SampleParameterInit{
-					{Field: plainParentField, ParameterName: "parent"},
-				},
+			want: &SampleInfo{
+				ResourceNameField: plainParentField,
 			},
 		},
 		{
@@ -1613,9 +1549,9 @@ func TestAIPStandardListInfo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			enrichMethodSamples(tc.method)
-			got := tc.method.AIPStandardSampleInfo
+			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("AIPStandardSampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
