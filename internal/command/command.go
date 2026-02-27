@@ -22,6 +22,8 @@ import (
 	"os/exec"
 )
 
+var execCommand = exec.CommandContext
+
 // Verbose controls whether commands are printed to stderr before execution.
 //
 // TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
@@ -63,7 +65,7 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 }
 
 func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, command, arg...)
+	cmd := execCommand(ctx, command, arg...)
 	if dir != "" {
 		cmd.Dir = dir
 	}
