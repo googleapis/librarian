@@ -864,7 +864,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				NoMetadata: true,
+				ClientDirectory: "gkehub",
+				ImportPath:      "gkehub/apiv1",
+				NoMetadata:      true,
+				Path:            "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -931,6 +934,8 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
 			},
 			goAPI: &config.GoAPI{
+				ClientDirectory:    "compute",
+				ImportPath:         "compute/apiv1",
 				HasDiregapic:       true,
 				NoRESTNumericEnums: true,
 				Path:               "google/cloud/compute/v1",
