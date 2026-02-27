@@ -87,6 +87,17 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name: "no go api",
+			api: &serviceconfig.API{
+				ShortName: "secretmanager",
+				Path:      "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			wantErr: errGoAPINotFound,
+		},
+		{
 			name: "invalid version",
 			api: &serviceconfig.API{
 				ShortName: "secretmanager",
@@ -95,6 +106,15 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "invalid",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
+						},
+					},
+				},
 			},
 			wantErr: semver.ErrInvalidVersion,
 		},
@@ -107,6 +127,15 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
+						},
+					},
+				},
 			},
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
 				library.Output = output

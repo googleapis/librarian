@@ -54,7 +54,6 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 // clientDocURL builds the client documentation URL for Go SDK.
 func clientDocURL(importPath string) string {
 	idx := strings.Index(importPath, "/")
-
 	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", importPath[:idx], importPath[idx+1:])
 }
 
