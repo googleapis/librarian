@@ -30,6 +30,10 @@ const (
 )
 
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
+	goAPI := findGoAPI(library, api.Path)
+	if goAPI == nil {
+		return errGoAPINotFound
+	}
 	level, err := metadataReleaseLevel(api, library)
 	if err != nil {
 		return err
@@ -39,14 +43,10 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		ClientDocumentation: clientDocURL(library, api.Path),
 		ClientLibraryType:   "generated",
 		Description:         api.Title,
-		DistributionName:    distributionName(library, api.Path, api.ShortName),
+		DistributionName:    distributionName(goAPI.ImportPath),
 		Language:            "go",
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        level,
-	}
-	goAPI := findGoAPI(library, api.Path)
-	if goAPI == nil {
-		return errGoAPINotFound
 	}
 	return metadata.Write(filepath.Join(library.Output, goAPI.ImportPath, goAPI.VersionSuffix))
 }
@@ -62,13 +62,8 @@ func clientDocURL(library *config.Library, apiPath string) string {
 }
 
 // distributionName builds the distribution name for Go SDK.
-func distributionName(library *config.Library, apiPath, serviceName string) string {
-	version := filepath.Base(apiPath)
-	clientDir := clientDirectory(library, apiPath)
-	if clientDir != "" {
-		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
-	}
-	return fmt.Sprintf("cloud.google.com/go/%s/api%s", serviceName, version)
+func distributionName(importPath string) string {
+	return fmt.Sprintf("cloud.google.com/go/%s", importPath)
 }
 
 func metadataReleaseLevel(api *serviceconfig.API, library *config.Library) (string, error) {
