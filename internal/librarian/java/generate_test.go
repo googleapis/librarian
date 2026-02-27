@@ -209,6 +209,7 @@ func TestPostProcess(t *testing.T) {
 	if err := os.MkdirAll(grpcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	content := "package com.google.cloud.secretmanager.v1;"
 	grpcFile := filepath.Join(grpcDir, "GrpcFile.java")
 	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
@@ -229,7 +230,6 @@ func TestPostProcess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := "package com.google.cloud.secretmanager.v1;"
 	if _, err := mainFile.Write([]byte(content)); err != nil {
 		t.Fatal(err)
 	}
@@ -252,14 +252,24 @@ func TestPostProcess(t *testing.T) {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
-	// Verify that the file from srcjar was unzipped and moved
+	// Verify that the file from srcjar was unzipped and moved, but NO header was added.
 	unzippedPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
 	gotContent, err := os.ReadFile(unzippedPath)
 	if err != nil {
 		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
 	}
-	if !strings.HasPrefix(string(gotContent), "/*\n * Copyright") {
-		t.Errorf("expected header to be prepended to %s, got:\n%s", unzippedPath, string(gotContent))
+	if strings.HasPrefix(string(gotContent), "/*\n * Copyright") {
+		t.Errorf("expected no header to be prepended to %s, but one was found", unzippedPath)
+	}
+
+	// Verify that the proto file HAS a header added.
+	protoDestPath := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "ProtoFile.java")
+	gotProtoContent, err := os.ReadFile(protoDestPath)
+	if err != nil {
+		t.Errorf("expected proto file at %s, but it was not found: %v", protoDestPath, err)
+	}
+	if !strings.HasPrefix(string(gotProtoContent), "/*\n * Copyright") {
+		t.Errorf("expected header to be prepended to %s, but it was not found", protoDestPath)
 	}
 
 	unzippedTestPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
@@ -455,63 +465,52 @@ func TestCollectJavaFiles(t *testing.T) {
 	}
 }
 
-func TestFixHeaders(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-
-	// Case 1: File without header
-	noHeaderPath := filepath.Join(tmpDir, "NoHeader.java")
-	noHeaderContent := "package com.example;\npublic class NoHeader {}"
-	if err := os.WriteFile(noHeaderPath, []byte(noHeaderContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Case 2: File with existing header (matching regex)
-	withHeaderPath := filepath.Join(tmpDir, "WithHeader.java")
-	withHeaderContent := "/*\n * Copyright 2024 Google LLC\n */\npackage com.example;\npublic class WithHeader {}"
-	if err := os.WriteFile(withHeaderPath, []byte(withHeaderContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Case 3: Non-java file
-	txtPath := filepath.Join(tmpDir, "test.txt")
-	txtContent := "some text"
-	if err := os.WriteFile(txtPath, []byte(txtContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fixHeaders(tmpDir); err != nil {
-		t.Fatalf("fixHeaders failed: %v", err)
-	}
-
-	// Verify Case 1: Header should be prepended
-	gotNoHeader, err := os.ReadFile(noHeaderPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.HasPrefix(string(gotNoHeader), "/*\n * Copyright") {
-		t.Errorf("expected header to be prepended to %s, got:\n%s", noHeaderPath, string(gotNoHeader))
-	}
-	if !strings.Contains(string(gotNoHeader), noHeaderContent) {
-		t.Errorf("expected original content to be preserved in %s", noHeaderPath)
-	}
-
-	// Verify Case 2: Header should NOT be prepended again
-	gotWithHeader, err := os.ReadFile(withHeaderPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(gotWithHeader) != withHeaderContent {
-		t.Errorf("expected %s to remain unchanged, but it was modified", withHeaderPath)
-	}
-
-	// Verify Case 3: Non-java file should NOT be modified
-	gotTxt, err := os.ReadFile(txtPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(gotTxt) != txtContent {
-		t.Errorf("expected %s to remain unchanged, got:\n%s", txtPath, string(gotTxt))
+func TestAddMissingHeaders(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		filename   string
+		content    string
+		wantHeader bool
+	}{
+		{
+			name:       "file without header",
+			filename:   "NoHeader.java",
+			content:    "package com.example;\npublic class NoHeader {}",
+			wantHeader: true,
+		},
+		{
+			name:       "file with existing header",
+			filename:   "WithHeader.java",
+			content:    "/*\n * Copyright 2024 Google LLC\n */\npackage com.example;\npublic class WithHeader {}",
+			wantHeader: true,
+		},
+		{
+			name:     "non-java file",
+			filename: "test.txt",
+			content:  "some text",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			path := filepath.Join(tmpDir, test.filename)
+			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := addMissingHeaders(tmpDir); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			hasHeader := strings.HasPrefix(string(got), "/*\n * Copyright")
+			if hasHeader != test.wantHeader {
+				t.Errorf("header presence = %v, want %v", hasHeader, test.wantHeader)
+			}
+			if !strings.Contains(string(got), test.content) {
+				t.Error("original content not preserved")
+			}
+		})
 	}
 }
-

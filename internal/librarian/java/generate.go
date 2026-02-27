@@ -139,8 +139,8 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
-		if err := fixHeaders(dir); err != nil {
+	for _, dir := range []string{grpcDir, protoDir} {
+		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
@@ -156,9 +156,9 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 
 var headerRegex = regexp.MustCompile(`\* Copyright \d{4} Google LLC`)
 
-// fixHeaders prepends the license header to all Java files in the given directory
+// addMissingHeaders prepends the license header to all Java files in the given directory
 // if they don't already have one.
-func fixHeaders(dir string) error {
+func addMissingHeaders(dir string) error {
 	year := time.Now().Year()
 	lines := license.Header(strconv.Itoa(year))
 	var b strings.Builder
