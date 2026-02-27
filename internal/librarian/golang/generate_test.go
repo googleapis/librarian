@@ -156,17 +156,13 @@ func TestGenerate(t *testing.T) {
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/apiv1",
+						ImportPath:      "secretmanager/v2/apiv1",
 						Path:            "google/cloud/secretmanager/v1",
 					},
 				},
-				ModulePathVersion: "v2",
 			},
 			want: []string{
-				"secretmanager/apiv1/secret_manager_client.go",
-			},
-			removed: []string{
-				"secretmanager/v2",
+				"secretmanager/v2/apiv1/secret_manager_client.go",
 			},
 		},
 		{
