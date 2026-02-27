@@ -668,6 +668,59 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "nested major version",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigquery/v2",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/bigquery/v2",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigquery/v2",
+							APIs: []*RepoConfigAPI{
+								{
+									Path: "google/cloud/bigquery/v2",
+									EnabledGeneratorFeatures: []string{
+										"F_wrapper_types_for_page_size",
+									},
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigquery/v2",
+					APIs: []*config.API{
+						{Path: "google/cloud/bigquery/v2"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
+								ImportPath:               "bigquery/v2/apiv2",
+								NoRESTNumericEnums:       true,
+								Path:                     "google/cloud/bigquery/v2",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
