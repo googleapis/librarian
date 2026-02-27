@@ -24,7 +24,6 @@ import (
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/utils"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/iancoleman/strcase"
 )
@@ -76,9 +75,9 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
 	}
 
-	track := strings.ToUpper(utils.InferTrackFromPackage(service.Package))
+	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:    utils.GetServiceTitle(model, shortServiceName),
+		ServiceTitle:    getServiceTitle(model, shortServiceName),
 		ClassNamePrefix: strcase.ToCamel(shortServiceName),
 		Tracks:          []string{track},
 	}
@@ -97,7 +96,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 		// For each method, we determine the plural name of the resource it operates on.
 		// This plural name (e.g., "instances") will serve as our collection ID.
 		// Example: For the `CreateInstance` method, this will return "instances".
-		collectionID := utils.GetPluralResourceNameForMethod(method, model)
+		collectionID := getPluralResourceNameForMethod(method, model)
 
 		// If a collection ID is found, we add the method to our map.
 		if collectionID != "" {
@@ -136,14 +135,14 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
 	}
 
-	singular := utils.GetSingularResourceNameForMethod(methods[0], model)
+	singular := getSingularResourceNameForMethod(methods[0], model)
 
 	// We determine the short service name from the default host to use as a fallback title.
 	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
 
-	track := strings.ToUpper(utils.InferTrackFromPackage(service.Package))
+	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:     utils.GetServiceTitle(model, shortServiceName),
+		ServiceTitle:     getServiceTitle(model, shortServiceName),
 		ResourceSingular: singular,
 		ClassNamePrefix:  strcase.ToCamel(collectionID),
 		Tracks:           []string{track},
@@ -164,7 +163,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	for _, method := range methods {
 		// We map the API method to a standard gcloud command name.
 		// Example: `CreateInstance` -> "create"
-		verb, err := utils.GetCommandName(method)
+		verb, err := getCommandName(method)
 		if err != nil {
 			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.

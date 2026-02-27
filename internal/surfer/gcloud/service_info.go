@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"strings"
@@ -21,10 +21,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// InferTrackFromPackage infers the release track from the proto package name.
+// inferTrackFromPackage infers the release track from the proto package name.
 // as mandated per AIP-185
 // e.g. "google.cloud.parallelstore.v1beta" -> "beta".
-func InferTrackFromPackage(pkg string) string {
+func inferTrackFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
 	version := parts[len(parts)-1]
 
@@ -42,9 +42,9 @@ func InferTrackFromPackage(pkg string) string {
 	return "ga"
 }
 
-// GetServiceTitle returns the service title for documentation.
+// getServiceTitle returns the service title for documentation.
 // It tries to use the API title, falling back to a CamelCase version of the short service name.
-func GetServiceTitle(model *api.API, shortServiceName string) string {
+func getServiceTitle(model *api.API, shortServiceName string) string {
 	if t := strings.TrimSuffix(model.Title, " API"); t != "" {
 		return t
 	}

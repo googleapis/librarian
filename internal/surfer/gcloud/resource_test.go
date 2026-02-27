@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package gcloud
 
 import (
 	"testing"
@@ -64,9 +64,9 @@ func TestGetPluralFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetPluralFromSegments(test.segments)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := getPluralFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -125,10 +125,9 @@ func TestGetParentFromSegments(t *testing.T) {
 			want:     nil,
 		},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetParentFromSegments(test.segments)
+			got := getParentFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -179,9 +178,9 @@ func TestGetSingularFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetSingularFromSegments(test.segments)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := getSingularFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -247,9 +246,9 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetCollectionPathFromSegments(test.segments)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := getCollectionPathFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -302,9 +301,9 @@ func TestExtractPathFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := ExtractPathFromSegments(test.segments)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := extractPathFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -404,9 +403,9 @@ func TestIsPrimaryResource(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsPrimaryResource(test.field, test.method)
-			if got != test.want {
-				t.Errorf("got %v, want %v", got, test.want)
+			got := isPrimaryResource(test.field, test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -527,7 +526,7 @@ func TestGetResourceForMethod(t *testing.T) {
 				ResourceDefinitions: test.resourceDefs,
 				Messages:            test.messages,
 			}
-			got := GetResourceForMethod(test.method, model)
+			got := getResourceForMethod(test.method, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -618,9 +617,9 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := GetPluralResourceNameForMethod(test.method, model)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := getPluralResourceNameForMethod(test.method, model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -709,9 +708,9 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := GetSingularResourceNameForMethod(test.method, model)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			got := getSingularResourceNameForMethod(test.method, model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -730,8 +729,8 @@ func TestGetResourceNameFromType(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := getResourceNameFromType(test.typeStr)
-			if got != test.want {
-				t.Errorf("got %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

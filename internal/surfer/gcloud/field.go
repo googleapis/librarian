@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package utils provides utility functions for the gcloud generator.
-package utils
+package gcloud
 
 import (
 	"fmt"
@@ -21,8 +20,8 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// GetGcloudType maps an API field type to the corresponding gcloud argparse type.
-func GetGcloudType(t api.Typez) string {
+// getGcloudType maps an API field type to the corresponding gcloud argparse type.
+func getGcloudType(t api.Typez) string {
 	switch t {
 	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
 		return "float"
@@ -43,9 +42,9 @@ func GetGcloudType(t api.Typez) string {
 	}
 }
 
-// IsSafeName checks if a name contains only safe characters (alphanumeric, underscores, dots).
+// isSafeName checks if a name contains only safe characters (alphanumeric, underscores, dots).
 // This prevents injection vulnerabilities when generating code or templates.
-func IsSafeName(name string) bool {
+func isSafeName(name string) bool {
 	for _, r := range name {
 		switch {
 		case r >= 'a' && r <= 'z':
