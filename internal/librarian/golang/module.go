@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"golang.org/x/mod/semver"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -70,7 +70,10 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
 	apiPath = strings.TrimPrefix(apiPath, "google/")
 	idx := strings.LastIndex(apiPath, "/")
-	if idx == -1 || !semver.IsValid(apiPath[idx+1:]) {
+	version := serviceconfig.ExtractVersion(apiPath)
+	if idx == -1 || version == "" {
+		// Do not guess non-versioned APIs, define the import path and
+		// client package name in Go API configuration.
 		return "", ""
 	}
 	importPath, version := apiPath[:idx], apiPath[idx+1:]
