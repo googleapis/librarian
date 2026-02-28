@@ -1,0 +1,115 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package golang
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+)
+
+func TestBump(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		initialFiles map[string]string
+		library      *config.Library
+		version      string
+		wantFiles    map[string]string
+	}{
+		{
+			name: "bump internal version",
+			initialFiles: map[string]string{
+				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
+		{
+			name: "ignore other files",
+			initialFiles: map[string]string{
+				"test-lib/version.go":                "package testlib\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/internal/other.go":         "package internal\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/other/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"test-lib/version.go":                "package testlib\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/internal/other.go":         "package internal\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/other/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
+		{
+			name: "bump snippet metadata",
+			initialFiles: map[string]string{
+				"internal/generated/snippets/test-lib/nested-1/nested-2/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"internal/generated/snippets/test-lib/nested-1/nested-2/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			// Create library directory and snippets directory
+			libraryDir := filepath.Join(output, test.library.Name)
+			if err := os.MkdirAll(libraryDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", libraryDir, err)
+			}
+			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
+			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", snippetsDir, err)
+			}
+
+			// Setup initial files
+			for path, content := range test.initialFiles {
+				fullPath := filepath.Join(output, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll(%q): %v", filepath.Dir(fullPath), err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile(%q): %v", fullPath, err)
+				}
+			}
+
+			err := Bump(test.library, output, test.version)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify files
+			for path, wantContent := range test.wantFiles {
+				fullPath := filepath.Join(output, path)
+				content, err := os.ReadFile(fullPath)
+				if err != nil {
+					t.Errorf("os.ReadFile(%q): %v", fullPath, err)
+					continue
+				}
+				got := string(content)
+				if diff := cmp.Diff(wantContent, got); diff != "" {
+					t.Errorf("mismatch for %q (-want +got):\n%s", path, diff)
+				}
+			}
+		})
+	}
+}
