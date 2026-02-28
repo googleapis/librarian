@@ -92,20 +92,20 @@ func TestBump(t *testing.T) {
 			output := t.TempDir()
 			libraryDir := filepath.Join(output, test.library.Name)
 			if err := os.MkdirAll(libraryDir, 0755); err != nil {
-				t.Fatalf("os.MkdirAll(%q): %v", libraryDir, err)
+				t.Fatal(err)
 			}
 			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
 			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
-				t.Fatalf("os.MkdirAll(%q): %v", snippetsDir, err)
+				t.Fatal(err)
 			}
 
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-					t.Fatalf("os.MkdirAll(%q): %v", filepath.Dir(fullPath), err)
+					t.Fatal(err)
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q): %v", fullPath, err)
+					t.Fatal(err)
 				}
 			}
 			err := Bump(test.library, output, test.version)
@@ -116,7 +116,7 @@ func TestBump(t *testing.T) {
 				fullPath := filepath.Join(output, path)
 				content, err := os.ReadFile(fullPath)
 				if err != nil {
-					t.Errorf("os.ReadFile(%q): %v", fullPath, err)
+					t.Error(err)
 					continue
 				}
 				got := string(content)
@@ -170,20 +170,20 @@ func TestBump_Error(t *testing.T) {
 			output := t.TempDir()
 			libraryDir := filepath.Join(output, test.library.Name)
 			if err := os.MkdirAll(libraryDir, 0755); err != nil {
-				t.Fatalf("os.MkdirAll(%q): %v", libraryDir, err)
+				t.Fatal(err)
 			}
 			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
 			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
-				t.Fatalf("os.MkdirAll(%q): %v", snippetsDir, err)
+				t.Fatal(err)
 			}
 
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-					t.Fatalf("os.MkdirAll(%q): %v", filepath.Dir(fullPath), err)
+					t.Fatal(err)
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
-					t.Fatalf("os.WriteFile(%q): %v", fullPath, err)
+					t.Fatal(err)
 				}
 			}
 
