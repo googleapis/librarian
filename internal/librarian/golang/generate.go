@@ -41,9 +41,9 @@ const (
 
 var (
 	//go:embed template/_README.md.txt
-	readmeTmpl string
-
+	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
+	errGoAPINotFound = errors.New("go API not found")
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
@@ -149,11 +149,10 @@ func Format(ctx context.Context, library *config.Library) error {
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	goAPI := findGoAPI(library, api.Path)
-	var nestedProtos []string
-	if goAPI != nil {
-		nestedProtos = goAPI.NestedProtos
+	if goAPI == nil {
+		return fmt.Errorf("could not find Go API %q in library %q: %w", api.Path, library.Name, errGoAPINotFound)
 	}
-
+	nestedProtos := goAPI.NestedProtos
 	args := []string{
 		"protoc",
 		"--experimental_allow_proto3_optional",
@@ -162,7 +161,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		"--go-grpc_out=" + outdir,
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
-	if goAPI == nil || !goAPI.DisableGAPIC {
+	if !goAPI.DisableGAPIC {
 		gapicOpts, err := buildGAPICOpts(api.Path, library, goAPI, googleapisDir)
 		if err != nil {
 			return err
@@ -191,7 +190,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		return nil, err
 	}
 
-	opts := []string{"go-gapic-package=" + buildGAPICImportPath(apiPath, library, goAPI)}
+	opts := []string{"go-gapic-package=" + buildGAPICImportPath(library, goAPI)}
 	if goAPI == nil || !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
@@ -224,33 +223,21 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	return opts, nil
 }
 
-func buildGAPICImportPath(apiPath string, library *config.Library, goAPI *config.GoAPI) string {
-	version := serviceconfig.ExtractVersion(apiPath)
-	if version != "" {
-		version = fmt.Sprintf("/api%s", version)
+func buildGAPICImportPath(library *config.Library, goAPI *config.GoAPI) string {
+	importPath := goAPI.ImportPath
+	if goAPI.VersionSuffix != "" {
+		importPath = fmt.Sprintf("%s/%s", importPath, goAPI.VersionSuffix)
 	}
-	if goAPI != nil && goAPI.VersionSuffix != "" {
-		version = fmt.Sprintf("%s/%s", version, goAPI.VersionSuffix)
-	}
-	clientPkg := library.Name
-	if goAPI != nil && goAPI.ClientDirectory != "" {
-		clientPkg = goAPI.ClientDirectory
-	}
-	if goAPI != nil && goAPI.ClientPackageOverride != "" {
+	clientPkg := goAPI.ClientDirectory
+	if goAPI.ClientPackageOverride != "" {
 		clientPkg = goAPI.ClientPackageOverride
 	}
-
-	importPath := clientPkg
-	if goAPI != nil && goAPI.ImportPath != "" {
-		importPath = goAPI.ImportPath
-	}
-
 	var modulePathVersion string
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
-	return fmt.Sprintf("cloud.google.com/go/%s%s%s;%s",
-		importPath, modulePathVersion, version, clientPkg)
+	return fmt.Sprintf("cloud.google.com/go/%s%s;%s",
+		importPath, modulePathVersion, clientPkg)
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.

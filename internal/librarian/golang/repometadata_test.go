@@ -35,6 +35,15 @@ func TestGenerateRepoMetadata(t *testing.T) {
 		Name:    "secretmanager",
 		Output:  tmpDir,
 		Version: "1.2.3",
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ClientDirectory: "secretmanager",
+					ImportPath:      "secretmanager/apiv1",
+					Path:            "google/cloud/secretmanager/v1",
+				},
+			},
+		},
 	}
 	api := &serviceconfig.API{
 		ShortName: "secretmanager",
@@ -78,6 +87,17 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name: "no go api",
+			api: &serviceconfig.API{
+				ShortName: "secretmanager",
+				Path:      "google/cloud/secretmanager/v1",
+			},
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			wantErr: errGoAPINotFound,
+		},
+		{
 			name: "invalid version",
 			api: &serviceconfig.API{
 				ShortName: "secretmanager",
@@ -86,6 +106,15 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "invalid",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
+						},
+					},
+				},
 			},
 			wantErr: semver.ErrInvalidVersion,
 		},
@@ -98,10 +127,19 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientDirectory: "secretmanager",
+							ImportPath:      "secretmanager/apiv1",
+							Path:            "google/cloud/secretmanager/v1",
+						},
+					},
+				},
 			},
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
 				library.Output = output
-				dir, _ := resolveClientPath(library, api.Path)
+				dir := filepath.Join(output, "secretmanager", "apiv1")
 				// Create a file where the directory should be so Write fails.
 				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
 					t.Fatal(err)
@@ -129,54 +167,23 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 
 func TestGoClientDocURL(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		apiPath string
-		want    string
+		name       string
+		importPath string
+		want       string
 	}{
 		{
-			name: "go",
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			apiPath: "google/cloud/secretmanager/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
+			name:       "basic",
+			importPath: "secretmanager/apiv1",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
 		},
 		{
-			name: "has client directory",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			apiPath: "google/ai/generativelanguage/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/generativelanguage/apiv1",
-		},
-		{
-			name: "client directory with another api path",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1beta1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			apiPath: "google/ai/generativelanguage/v1",
-			want:    "https://cloud.google.com/go/docs/reference/cloud.google.com/go/ai/latest/apiv1",
+			name:       "spanner",
+			importPath: "spanner/admin/database/apiv1",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/spanner/latest/admin/database/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := clientDocURL(test.library, test.apiPath)
+			got := clientDocURL(test.importPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -186,48 +193,18 @@ func TestGoClientDocURL(t *testing.T) {
 
 func TestGoDistributionName(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		library     *config.Library
-		apiPath     string
-		serviceName string
-		want        string
+		name       string
+		importPath string
+		want       string
 	}{
 		{
-			name: "has client directory",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
-						},
-					},
-				},
-			},
-			serviceName: "ai",
-			apiPath:     "google/ai/generativelanguage/v1",
-			want:        "cloud.google.com/go/ai/generativelanguage/apiv1",
-		},
-		{
-			name: "does not have client directory",
-			library: &config.Library{
-				Name: "ai",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path: "google/ai/generativelanguage/v1beta1",
-						},
-					},
-				},
-			},
-			serviceName: "ai",
-			apiPath:     "google/ai/generativelanguage/v1",
-			want:        "cloud.google.com/go/ai/apiv1",
+			name:       "basic",
+			importPath: "secretmanager/apiv1",
+			want:       "cloud.google.com/go/secretmanager/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := distributionName(test.library, test.apiPath, test.serviceName)
+			got := distributionName(test.importPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
