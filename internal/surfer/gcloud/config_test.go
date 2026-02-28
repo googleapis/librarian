@@ -36,7 +36,7 @@ func TestReadGcloudConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(cfg, roundTripped, cmpopts.EquateEmpty()); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
