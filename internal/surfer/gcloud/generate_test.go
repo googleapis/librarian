@@ -53,18 +53,6 @@ func TestGenerateService(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Empty DefaultHost",
-			service: &api.Service{
-				Name:        "parallelstore.googleapis.com",
-				DefaultHost: "",
-				Package:     "google.cloud.parallelstore.v1",
-			},
-			model: &api.API{
-				Title: "Parallelstore API",
-			},
-			wantErr: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -74,6 +62,23 @@ func TestGenerateService(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateServiceEmptyDefaultHostPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for empty DefaultHost")
+		}
+	}()
+	service := &api.Service{
+		Name:        "parallelstore.googleapis.com",
+		DefaultHost: "",
+		Package:     "google.cloud.parallelstore.v1",
+	}
+	model := &api.API{
+		Title: "Parallelstore API",
+	}
+	generateService(service, &Config{}, model, t.TempDir())
 }
 
 // TestGenerateResourceCommands verifies that command files are generated.

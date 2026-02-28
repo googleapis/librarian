@@ -525,7 +525,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 
 			got := newPrimaryResourceParam(test.field, test.method, model, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -576,7 +576,7 @@ func TestNewRequest(t *testing.T) {
 
 			got := newRequest(test.method, &Config{}, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -670,7 +670,7 @@ func TestNewAsync(t *testing.T) {
 
 			got := newAsync(test.method, model, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -678,6 +678,7 @@ func TestNewAsync(t *testing.T) {
 
 func TestAddFlattenedParams(t *testing.T) {
 	service := api.NewTestService("TestService")
+	service.DefaultHost = "test.googleapis.com"
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
 	createMethod := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
@@ -967,7 +968,7 @@ func TestNewCollectionPath(t *testing.T) {
 			t.Parallel()
 			got := newCollectionPath(test.method, service, test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

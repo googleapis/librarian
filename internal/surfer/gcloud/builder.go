@@ -166,8 +166,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 	// We check if the current field represents the primary resource of the command.
 	// This check happens at every level of nesting (e.g., `instance.name`).
 	if isPrimaryResource(field, method) {
-		param := newPrimaryResourceParam(field, method, model, overrides, service)
-		args.Params = append(args.Params, param)
+		args.Params = append(args.Params, newPrimaryResourceParam(field, method, model, overrides, service))
 		return nil
 	}
 
@@ -295,8 +294,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 
 	// We construct the gcloud collection path from the resource's pattern string.
 	collectionPath := getCollectionPathFromSegments(segments)
-	hostParts := strings.Split(service.DefaultHost, ".")
-	shortServiceName := hostParts[0]
+	svcName := shortServiceName(service)
 
 	// We assemble the final `Param` struct.
 	param := Param{
@@ -307,7 +305,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
 			PluralName:            getPluralFromSegments(segments),
-			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
+			Collection:            fmt.Sprintf("%s.%s", svcName, collectionPath),
 			DisableAutoCompleters: false,
 			Attributes:            newAttributesFromSegments(segments),
 		},
@@ -344,11 +342,10 @@ func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, servi
 			name := getSingularFromSegments(segments)
 
 			// We construct the full gcloud collection path for the referenced resource
-			//assuming the current service is the current command.
-			hostParts := strings.Split(service.DefaultHost, ".")
-			shortServiceName := hostParts[0]
+			// assuming the current service is the current command.
+			svcName := shortServiceName(service)
 			baseCollectionPath := getCollectionPathFromSegments(segments)
-			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
+			fullCollectionPath := fmt.Sprintf("%s.%s", svcName, baseCollectionPath)
 
 			// We assemble and return the `ResourceSpec`.
 			return &ResourceSpec{
@@ -410,9 +407,10 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 // newRequest creates the `Request` part of the command definition.
 func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.Service) *Request {
+	collections := newCollectionPath(method, service, false)
 	req := &Request{
 		APIVersion: apiVersion(overrides),
-		Collection: newCollectionPath(method, service, false),
+		Collection: collections,
 	}
 
 	// For custom methods (AIP-136), the `method` field in the request configuration
@@ -431,8 +429,9 @@ func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
 func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Service) *Async {
+	collections := newCollectionPath(method, service, true)
 	async := &Async{
-		Collection: newCollectionPath(method, service, true),
+		Collection: collections,
 	}
 
 	// Determine if the operation result should be extracted as the resource.
@@ -467,8 +466,7 @@ func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Servic
 // the method's HTTP annotation (PathInfo).
 func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) []string {
 	var collections []string
-	hostParts := strings.Split(service.DefaultHost, ".")
-	shortServiceName := hostParts[0]
+	svcName := shortServiceName(service)
 
 	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
 	for _, binding := range method.PathInfo.Bindings {
@@ -494,7 +492,7 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 			}
 		}
 
-		fullPath := fmt.Sprintf("%s.%s", shortServiceName, basePath)
+		fullPath := fmt.Sprintf("%s.%s", svcName, basePath)
 		collections = append(collections, fullPath)
 	}
 

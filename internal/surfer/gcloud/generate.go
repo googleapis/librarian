@@ -62,28 +62,25 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 	// The `shortServiceName` is derived from `service.DefaultHost` (e.g., "parallelstore.googleapis.com" -> "parallelstore").
 	// `service.DefaultHost`  matches the name field in the service config file
 	// (e.g., `default_host` for parallelstore is derived from `parallelstore_v1.yaml` name field).
-	shortServiceName, _, found := strings.Cut(service.DefaultHost, ".")
-	if !found {
-		return fmt.Errorf("failed to determine short service name for service %q: default_host is empty", service.Name)
-	}
+	svcName := shortServiceName(service)
 
 	// The final output will be placed in a directory structure like:
 	// `{outdir}/{shortServiceName}/`
-	surfaceDir := filepath.Join(output, shortServiceName)
+	surfaceDir := filepath.Join(output, svcName)
 
 	if err := os.MkdirAll(surfaceDir, 0755); err != nil {
-		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
+		return fmt.Errorf("failed to create surface directory for %q: %w", svcName, err)
 	}
 
 	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:    getServiceTitle(model, shortServiceName),
-		ClassNamePrefix: strcase.ToCamel(shortServiceName),
+		ServiceTitle:    getServiceTitle(model, svcName),
+		ClassNamePrefix: strcase.ToCamel(svcName),
 		Tracks:          []string{track},
 	}
 
 	if err := writeCommandGroupFile(surfaceDir, data); err != nil {
-		return fmt.Errorf("failed to write command group file for service %q: %w", shortServiceName, err)
+		return fmt.Errorf("failed to write command group file for service %q: %w", svcName, err)
 	}
 
 	// gcloud commands are resource-centric commands (e.g., `gcloud parallelstore instances create`),
@@ -138,11 +135,11 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	singular := getSingularResourceNameForMethod(methods[0], model)
 
 	// We determine the short service name from the default host to use as a fallback title.
-	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
+	svcName := shortServiceName(service)
 
 	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:     getServiceTitle(model, shortServiceName),
+		ServiceTitle:     getServiceTitle(model, svcName),
 		ResourceSingular: singular,
 		ClassNamePrefix:  strcase.ToCamel(collectionID),
 		Tracks:           []string{track},

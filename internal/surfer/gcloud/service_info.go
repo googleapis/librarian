@@ -15,11 +15,24 @@
 package gcloud
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
+
+// shortServiceName extracts the short service name from a service's DefaultHost.
+// For example, "parallelstore.googleapis.com" returns "parallelstore".
+// It panics if DefaultHost does not contain a dot, since that indicates a
+// programming error in the caller or corrupt input data.
+func shortServiceName(service *api.Service) string {
+	name, _, found := strings.Cut(service.DefaultHost, ".")
+	if !found {
+		panic(fmt.Sprintf("failed to determine short service name for service %q: default_host %q has no dot", service.Name, service.DefaultHost))
+	}
+	return name
+}
 
 // inferTrackFromPackage infers the release track from the proto package name.
 // as mandated per AIP-185
