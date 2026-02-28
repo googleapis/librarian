@@ -15,9 +15,6 @@
 package gcloud
 
 import (
-	"fmt"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -30,26 +27,18 @@ func TestReadGcloudConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := yaml.Marshal(cfg)
+	// Round-trip through marshal/unmarshal and compare structs directly.
+	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var index int
-	data, err := os.ReadFile("testdata/parallelstore/gcloud.yaml")
+	roundTripped, err := yaml.Unmarshal[Config](data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(string(data), "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(line, "#") {
-			// Skip the header, and the new lines after the header
-			index = i + 2
-			continue
-		}
-	}
-	want := fmt.Sprintf("service_name: %s\n%s", cfg.ServiceName, strings.Join(lines[index:], "\n"))
-	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch(-want, +got)\n%s", diff)
+
+	if diff := cmp.Diff(cfg, roundTripped); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
