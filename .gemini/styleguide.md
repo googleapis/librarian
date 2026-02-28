@@ -12,6 +12,8 @@ When reviewing or generating code, apply the following checks and references:
   guidance in [Go Test Comments](https://go.dev/wiki/TestComments).
 - **Enforce idiomatic Go:** Flag patterns that conflict with the recommendations
   in [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments).
+- **Write clear Markdown:** Follow the
+  [Google Markdown Style Guide](../doc/styleguide/markdown-style-guide.md).
 - **Write proper commit messages:** Follow the conventions in
   [`CONTRIBUTING.md` → Commit Messages](../CONTRIBUTING.md#commit-messages).
   Commit messages should be written in complete sentences and use the

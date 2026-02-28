@@ -19,10 +19,11 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // Fill populates empty Go-specific fields from the api path.
-// Library configs takes precedence.
+// Library configurations takes precedence.
 func Fill(library *config.Library) *config.Library {
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
@@ -30,19 +31,12 @@ func Fill(library *config.Library) *config.Library {
 	var goAPIs []*config.GoAPI
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
-		if !strings.HasPrefix(api.Path, "google/cloud/") {
-			// Do nothing for non cloud API.
-			if goAPI != nil {
-				goAPIs = append(goAPIs, goAPI)
-			}
-			continue
-		}
 		if goAPI == nil {
 			goAPI = &config.GoAPI{
 				Path: api.Path,
 			}
 		}
-		importPath, clientDir := defaultImportPathAndClientDir(api.Path)
+		importPath, clientDir := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
 		}
@@ -68,18 +62,22 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-// defaultImportPathAndClientDir returns the default Go import path and client directory
+// defaultImportPathAndClientPkg returns the default Go import path and client package name
 // based on the provided API path.
 //
-// The API path is expected to be either google/cloud/{dir}/{version} or
-// google/cloud/{dir}/{nested}/{version}.
-func defaultImportPathAndClientDir(apiPath string) (string, string) {
-	dirs := strings.Split(apiPath, "/")
-	if len(dirs) < 4 {
+// The API path is expected to be google/cloud/{dir}/{0 or more nested directories}/{version}.
+func defaultImportPathAndClientPkg(apiPath string) (string, string) {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	version := serviceconfig.ExtractVersion(apiPath)
+	if idx == -1 || version == "" {
+		// Do not guess non-versioned APIs, define the import path and
+		// client package name in Go API configuration.
 		return "", ""
 	}
-	if len(dirs) == 5 {
-		return fmt.Sprintf("%s/%s", dirs[2], dirs[3]), dirs[3]
-	}
-	return dirs[2], ""
+	importPath, version := apiPath[:idx], apiPath[idx+1:]
+	idx = strings.LastIndex(importPath, "/")
+	pkg := importPath[idx+1:]
+	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }

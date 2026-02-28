@@ -435,3 +435,11 @@ We only update dependencies for security vulnerabilities, bug fixes, or to add
 feature support. Security vulnerabilities are identified using Dependabot and
 govulncheck. Dependency updates for bug fixes or new features must be associated
 with an issue in this repository.
+
+### Presubmit Time Limit
+
+Presubmit jobs are expected to take less than 5 minutes. This keeps the feedback
+loop fast for contributors and reviewers. Tests that take longer than 5 minutes
+should run as postsubmit jobs (triggered only on push to main) instead. See the
+[Rust workflow's `integration` job](https://github.com/googleapis/librarian/blob/2e22539c6dbab1a786d51054136e28a7218d9d7e/.github/workflows/rust.yaml#L72)
+for an example.
