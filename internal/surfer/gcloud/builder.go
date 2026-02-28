@@ -582,11 +582,11 @@ func findHelpTextRule(method *api.Method, overrides *Config) *HelpTextRule {
 	if overrides.APIs == nil {
 		return nil
 	}
-	for _, api := range overrides.APIs {
-		if api.HelpText == nil {
+	for _, a := range overrides.APIs {
+		if a.HelpText == nil {
 			continue
 		}
-		for _, rule := range api.HelpText.MethodRules {
+		for _, rule := range a.HelpText.MethodRules {
 			if rule.Selector == strings.TrimPrefix(method.ID, ".") {
 				return rule
 			}
@@ -600,11 +600,11 @@ func findFieldHelpTextRule(field *api.Field, overrides *Config) *HelpTextRule {
 	if overrides.APIs == nil {
 		return nil
 	}
-	for _, api := range overrides.APIs {
-		if api.HelpText == nil {
+	for _, a := range overrides.APIs {
+		if a.HelpText == nil {
 			continue
 		}
-		for _, rule := range api.HelpText.FieldRules {
+		for _, rule := range a.HelpText.FieldRules {
 			if rule.Selector == field.ID {
 				return rule
 			}
