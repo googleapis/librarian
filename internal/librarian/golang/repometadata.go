@@ -16,8 +16,8 @@ package golang
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
@@ -30,42 +30,36 @@ const (
 )
 
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
+	goAPI := findGoAPI(library, api.Path)
+	if goAPI == nil {
+		return errGoAPINotFound
+	}
 	level, err := metadataReleaseLevel(api, library)
 	if err != nil {
 		return err
 	}
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
-		ClientDocumentation: clientDocURL(library, api.Path),
+		ClientDocumentation: clientDocURL(goAPI.ImportPath),
 		ClientLibraryType:   "generated",
 		Description:         api.Title,
-		DistributionName:    distributionName(library, api.Path, api.ShortName),
+		DistributionName:    distributionName(goAPI.ImportPath),
 		Language:            "go",
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        level,
 	}
-	dir, _ := resolveClientPath(library, api.Path)
-	return metadata.Write(dir)
+	return metadata.Write(filepath.Join(library.Output, goAPI.ImportPath, goAPI.VersionSuffix))
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.
-func clientDocURL(library *config.Library, apiPath string) string {
-	suffix := fmt.Sprintf("api%s", filepath.Base(apiPath))
-	clientDir := clientDirectory(library, apiPath)
-	if clientDir != "" {
-		suffix = path.Join(clientDir, suffix)
-	}
-	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", library.Name, suffix)
+func clientDocURL(importPath string) string {
+	idx := strings.Index(importPath, "/")
+	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", importPath[:idx], importPath[idx+1:])
 }
 
 // distributionName builds the distribution name for Go SDK.
-func distributionName(library *config.Library, apiPath, serviceName string) string {
-	version := filepath.Base(apiPath)
-	clientDir := clientDirectory(library, apiPath)
-	if clientDir != "" {
-		serviceName = fmt.Sprintf("%s/%s", serviceName, clientDir)
-	}
-	return fmt.Sprintf("cloud.google.com/go/%s/api%s", serviceName, version)
+func distributionName(importPath string) string {
+	return fmt.Sprintf("cloud.google.com/go/%s", importPath)
 }
 
 func metadataReleaseLevel(api *serviceconfig.API, library *config.Library) (string, error) {
