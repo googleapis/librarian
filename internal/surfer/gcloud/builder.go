@@ -407,10 +407,9 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 // newRequest creates the `Request` part of the command definition.
 func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.Service) *Request {
-	collections := newCollectionPath(method, service, false)
 	req := &Request{
 		APIVersion: apiVersion(overrides),
-		Collection: collections,
+		Collection: newCollectionPath(method, service, false),
 	}
 
 	// For custom methods (AIP-136), the `method` field in the request configuration
@@ -429,9 +428,8 @@ func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
 func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Service) *Async {
-	collections := newCollectionPath(method, service, true)
 	async := &Async{
-		Collection: collections,
+		Collection: newCollectionPath(method, service, true),
 	}
 
 	// Determine if the operation result should be extracted as the resource.

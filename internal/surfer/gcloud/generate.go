@@ -74,7 +74,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 
 	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:    getServiceTitle(model, svcName),
+		ServiceTitle:    sanitizeDocstring(getServiceTitle(model, svcName)),
 		ClassNamePrefix: strcase.ToCamel(svcName),
 		Tracks:          []string{track},
 	}
@@ -139,8 +139,8 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 
 	track := strings.ToUpper(inferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:     getServiceTitle(model, svcName),
-		ResourceSingular: singular,
+		ServiceTitle:     sanitizeDocstring(getServiceTitle(model, svcName)),
+		ResourceSingular: sanitizeDocstring(singular),
 		ClassNamePrefix:  strcase.ToCamel(collectionID),
 		Tracks:           []string{track},
 	}
@@ -212,6 +212,12 @@ func writeCommandGroupFile(dir string, data commandGroupData) error {
 	}
 	path := filepath.Join(dir, "__init__.py")
 	return os.WriteFile(path, buf.Bytes(), 0644)
+}
+
+// sanitizeDocstring removes double-quote characters to prevent
+// injection into Python triple-quoted docstrings.
+func sanitizeDocstring(s string) string {
+	return strings.ReplaceAll(s, `"`, "")
 }
 
 var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{

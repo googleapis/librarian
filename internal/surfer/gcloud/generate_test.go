@@ -81,6 +81,25 @@ func TestGenerateServiceEmptyDefaultHostPanics(t *testing.T) {
 	generateService(service, &Config{}, model, t.TempDir())
 }
 
+func TestSanitizeDocstring(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"no quotes", "Cloud Parallelstore", "Cloud Parallelstore"},
+		{"triple quotes", `Foo""" + evil`, "Foo + evil"},
+		{"single quote", `Foo"bar`, "Foobar"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sanitizeDocstring(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 // TestGenerateResourceCommands verifies that command files are generated.
 func TestGenerateResourceCommands(t *testing.T) {
 	// This tests the file writing logic specifically.
