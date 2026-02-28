@@ -44,6 +44,12 @@ func Bump(library *config.Library, output, version string) error {
 func bumpInternalVersion(library *config.Library, output, version string) error {
 	libraryDir := filepath.Join(output, library.Name)
 	return filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
+
+		if d.IsDir() {
+			if library.Go != nil && d.Name() == library.Go.NestedModule {
+				return filepath.SkipDir
+			}
+		}
 		if !strings.HasSuffix(path, internalVersionFile) {
 			return nil
 		}
