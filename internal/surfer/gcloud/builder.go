@@ -595,7 +595,7 @@ func findFieldHelpTextRule(field *api.Field, overrides *Config) *HelpTextRule {
 // the given selector. The rules function extracts the relevant rule slice from
 // each API's HelpTextRules.
 func findHelpTextRuleBySelector(selector string, overrides *Config, rules func(*HelpTextRules) []*HelpTextRule) *HelpTextRule {
-	if overrides.APIs == nil {
+    if overrides == nil || overrides.APIs == nil {
 		return nil
 	}
 	for _, api := range overrides.APIs {
