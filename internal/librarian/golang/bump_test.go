@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -71,7 +72,6 @@ func TestBump(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
-			// Create library directory and snippets directory
 			libraryDir := filepath.Join(output, test.library.Name)
 			if err := os.MkdirAll(libraryDir, 0755); err != nil {
 				t.Fatalf("os.MkdirAll(%q): %v", libraryDir, err)
@@ -81,7 +81,6 @@ func TestBump(t *testing.T) {
 				t.Fatalf("os.MkdirAll(%q): %v", snippetsDir, err)
 			}
 
-			// Setup initial files
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
@@ -91,13 +90,10 @@ func TestBump(t *testing.T) {
 					t.Fatalf("os.WriteFile(%q): %v", fullPath, err)
 				}
 			}
-
 			err := Bump(test.library, output, test.version)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			// Verify files
 			for path, wantContent := range test.wantFiles {
 				fullPath := filepath.Join(output, path)
 				content, err := os.ReadFile(fullPath)
@@ -109,6 +105,76 @@ func TestBump(t *testing.T) {
 				if diff := cmp.Diff(wantContent, got); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", path, diff)
 				}
+			}
+		})
+	}
+}
+
+func TestBump_Error(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		initialFiles map[string]string
+		library      *config.Library
+		version      string
+		setup        func(t *testing.T, dir string)
+		wantErr      error
+	}{
+		{
+			name: "internal version file is read-only",
+			initialFiles: map[string]string{
+				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			setup: func(t *testing.T, dir string) {
+				if err := os.Chmod(filepath.Join(dir, "test-lib", "internal", "version.go"), 0444); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "snippet metadata is read-only",
+			initialFiles: map[string]string{
+				"internal/generated/snippets/test-lib/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			setup: func(t *testing.T, dir string) {
+				if err := os.Chmod(filepath.Join(dir, "internal", "generated", "snippets", "test-lib", "snippet_metadata_foo.json"), 0444); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: os.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			libraryDir := filepath.Join(output, test.library.Name)
+			if err := os.MkdirAll(libraryDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", libraryDir, err)
+			}
+			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
+			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+				t.Fatalf("os.MkdirAll(%q): %v", snippetsDir, err)
+			}
+
+			for path, content := range test.initialFiles {
+				fullPath := filepath.Join(output, path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+					t.Fatalf("os.MkdirAll(%q): %v", filepath.Dir(fullPath), err)
+				}
+				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+					t.Fatalf("os.WriteFile(%q): %v", fullPath, err)
+				}
+			}
+
+			if test.setup != nil {
+				test.setup(t, output)
+			}
+			err := Bump(test.library, output, test.version)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Bump() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
