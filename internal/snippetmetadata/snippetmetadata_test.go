@@ -394,6 +394,34 @@ func TestFindAll_Error(t *testing.T) {
 	}
 }
 
+func TestShouldSkip(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		file    string
+		skipDir string
+		want    bool
+	}{
+		{
+			name:    "skip",
+			file:    "/temp/nested/nested-1/snippet_metadata.json",
+			skipDir: "nested",
+			want:    true,
+		},
+		{
+			name:    "do not skip",
+			file:    "/temp/nested/nested-1/snippet_metadata.json",
+			skipDir: "another-dir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldSkip(test.file, test.skipDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 // copyInputFileToTemp creates a temporary directory, copies the given file
 // into it (as snippet_metadata.json), and returns the path to the new file.
 func copyInputFileToTemp(t *testing.T, inputFile string) string {
