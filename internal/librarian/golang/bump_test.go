@@ -121,7 +121,7 @@ func TestBump(t *testing.T) {
 				}
 				got := string(content)
 				if diff := cmp.Diff(wantContent, got); diff != "" {
-					t.Errorf("mismatch for %q (-want +got):\n%s", path, diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
