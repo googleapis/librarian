@@ -22,18 +22,16 @@ import (
 )
 
 func TestReadGcloudConfig(t *testing.T) {
-	cfg, err := yaml.Read[Config]("testdata/parallelstore/gcloud.yaml")
+	want, err := yaml.Read[Config]("testdata/parallelstore/gcloud.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Round-trip through marshal/unmarshal and compare structs directly.
-	data, err := yaml.Marshal(cfg)
+	data, err := yaml.Marshal(want)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	roundTripped, err := yaml.Unmarshal[Config](data)
+	got, err := yaml.Unmarshal[Config](data)
 	if err != nil {
 		t.Fatal(err)
 	}
