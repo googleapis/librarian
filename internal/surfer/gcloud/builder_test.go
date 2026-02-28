@@ -53,7 +53,7 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newArguments(test.method, &Config{}, model, service)
+			got, err := newArguments(test.method, &Config{}, model, service, nil)
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
@@ -89,7 +89,7 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newArguments(test.method, &Config{}, model, service)
+			_, err := newArguments(test.method, &Config{}, model, service, nil)
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
 			}
@@ -197,7 +197,7 @@ func TestNewParam(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -349,9 +349,9 @@ func TestNewOutputConfig(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := newOutputConfig(test.method, &api.API{})
+			got := newOutputConfig(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -378,7 +378,7 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := newOutputConfig(test.method, &api.API{}); got != nil {
+			if got := newOutputConfig(test.method); got != nil {
 				t.Errorf("newOutputConfig() = %v, want nil", got)
 			}
 		})
@@ -523,9 +523,10 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got := newPrimaryResourceParam(test.field, test.method, model, &Config{}, service)
+			resource := getResourceForMethod(test.method, model)
+			got := newPrimaryResourceParam(test.field, test.method, service, resource)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -571,12 +572,11 @@ func TestNewRequest(t *testing.T) {
 			t.Parallel()
 			service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 			service.DefaultHost = "test.googleapis.com"
-			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newRequest(test.method, &Config{}, model, service)
+			got := newRequest(test.method, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -668,9 +668,10 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newAsync(test.method, model, &Config{}, service)
+			resource := getResourceForMethod(test.method, model)
+			got := newAsync(test.method, service, resource)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -755,12 +756,13 @@ func TestAddFlattenedParams(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			resource := getResourceForMethod(createMethod, model)
+			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod, resource)
 			if err != nil {
 				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
 			}
 			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
-				t.Errorf("addFlattenedParams() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -799,7 +801,8 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			resource := getResourceForMethod(createMethod, model)
+			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod, resource)
 			if err == nil {
 				t.Fatalf("addFlattenedParams() expected error, got nil")
 			}
@@ -849,12 +852,12 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newResourceReferenceSpec(test.field, model, &Config{}, service)
+			got, err := newResourceReferenceSpec(test.field, model, service)
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newResourceReferenceSpec() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -874,7 +877,7 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newResourceReferenceSpec(test.field, &api.API{}, &Config{}, service)
+			_, err := newResourceReferenceSpec(test.field, &api.API{}, service)
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}
@@ -967,7 +970,7 @@ func TestNewCollectionPath(t *testing.T) {
 			t.Parallel()
 			got := newCollectionPath(test.method, service, test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1017,7 +1020,7 @@ func TestFindHelpTextRule(t *testing.T) {
 			t.Parallel()
 			got := findHelpTextRule(method, test.overrides)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findHelpTextRule() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1067,7 +1070,7 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 			t.Parallel()
 			got := findFieldHelpTextRule(field, test.overrides)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findFieldHelpTextRule() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1226,7 +1229,7 @@ func TestNewCommand(t *testing.T) {
 			// to avoid asserting on deeply nested auto-generated boilerplate like Arguments.
 			opts := cmpopts.IgnoreFields(Command{}, "AutoGenerated", "ReleaseTracks", "Arguments", "Request", "HelpText")
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
-				t.Errorf("NewCommand() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1273,7 +1276,7 @@ func TestNewFormat(t *testing.T) {
 			t.Parallel()
 			got := newFormat(test.message)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newFormat() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

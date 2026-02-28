@@ -617,7 +617,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := getPluralResourceNameForMethod(test.method, model)
+			got := pluralResourceName(getResourceForMethod(test.method, model))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -708,7 +708,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := getSingularResourceNameForMethod(test.method, model)
+			got := singularResourceName(getResourceForMethod(test.method, model))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

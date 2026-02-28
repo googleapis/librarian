@@ -196,38 +196,34 @@ func getResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	return nil
 }
 
-// getPluralResourceNameForMethod determines the plural name of a resource. It follows a clear
-// hierarchy of truth: first, the explicit `plural` field in the resource
-// definition, and second, inference from the resource pattern.
-func getPluralResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := getResourceForMethod(method, model)
-	if resource != nil {
-		// The `plural` field in the `(google.api.resource)` annotation is the
-		// most authoritative source.
-		if resource.Plural != "" {
-			return resource.Plural
-		}
-		// If the `plural` field is not present, we fall back to inferring the
-		// plural name from the resource's pattern string, as per AIP-122.
-		if len(resource.Patterns) > 0 {
-			return getPluralFromSegments(resource.Patterns[0])
-		}
+// singularResourceName determines the singular name from a resource definition.
+// It follows a clear hierarchy of truth: first, the explicit `singular` field
+// in the resource definition, and second, inference from the resource pattern.
+func singularResourceName(resource *api.Resource) string {
+	if resource == nil {
+		return ""
+	}
+	if resource.Singular != "" {
+		return resource.Singular
+	}
+	if len(resource.Patterns) > 0 {
+		return getSingularFromSegments(resource.Patterns[0])
 	}
 	return ""
 }
 
-// getSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
-// hierarchy of truth: first, the explicit `singular` field in the resource
-// definition, and second, inference from the resource pattern.
-func getSingularResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := getResourceForMethod(method, model)
-	if resource != nil {
-		if resource.Singular != "" {
-			return resource.Singular
-		}
-		if len(resource.Patterns) > 0 {
-			return getSingularFromSegments(resource.Patterns[0])
-		}
+// pluralResourceName determines the plural name from a resource definition.
+// It follows a clear hierarchy of truth: first, the explicit `plural` field
+// in the resource definition, and second, inference from the resource pattern.
+func pluralResourceName(resource *api.Resource) string {
+	if resource == nil {
+		return ""
+	}
+	if resource.Plural != "" {
+		return resource.Plural
+	}
+	if len(resource.Patterns) > 0 {
+		return getPluralFromSegments(resource.Patterns[0])
 	}
 	return ""
 }

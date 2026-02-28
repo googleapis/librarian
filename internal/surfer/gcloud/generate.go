@@ -96,7 +96,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 		// For each method, we determine the plural name of the resource it operates on.
 		// This plural name (e.g., "instances") will serve as our collection ID.
 		// Example: For the `CreateInstance` method, this will return "instances".
-		collectionID := getPluralResourceNameForMethod(method, model)
+		collectionID := pluralResourceName(getResourceForMethod(method, model))
 
 		// If a collection ID is found, we add the method to our map.
 		if collectionID != "" {
@@ -135,7 +135,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
 	}
 
-	singular := getSingularResourceNameForMethod(methods[0], model)
+	singular := singularResourceName(getResourceForMethod(methods[0], model))
 
 	// We determine the short service name from the default host to use as a fallback title.
 	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
