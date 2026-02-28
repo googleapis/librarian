@@ -107,7 +107,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	if err := os.WriteFile(readmePath, []byte(readmeContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateAllLibraryVersions(dir, "1.20.0"); err != nil {
+	if err := UpdateAllLibraryVersions(dir, "", "1.20.0"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -129,7 +129,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(string(readmeContent), string(got)); diff != "" {
+	if diff := cmp.Diff(readmeContent, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -163,7 +163,7 @@ func TestUpdateAllLibraryVersions_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.setup(t, dir)
-			gotErr := UpdateAllLibraryVersions(dir, "1.20.0")
+			gotErr := UpdateAllLibraryVersions(dir, "", "1.20.0")
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("UpdateAllLibraryVersions error = %v, wantErr %v", gotErr, test.wantErr)
 			}

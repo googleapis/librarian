@@ -34,11 +34,15 @@ var (
 // Bump updates the version number in the library with the given output
 // directory.
 func Bump(library *config.Library, output, version string) error {
+	var skipDir string
+	if library.Go != nil {
+		skipDir = library.Go.NestedModule
+	}
 	if err := bumpInternalVersion(library, output, version); err != nil {
 		return err
 	}
 	snippetsDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
-	return snippetmetadata.UpdateAllLibraryVersions(snippetsDir, version)
+	return snippetmetadata.UpdateAllLibraryVersions(snippetsDir, skipDir, version)
 }
 
 func bumpInternalVersion(library *config.Library, output, version string) error {
