@@ -39,6 +39,10 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 		return err
 	}
 
+	if len(overrides.APIs) != 1 {
+		return fmt.Errorf("gcloud config must define exactly one API, got %d", len(overrides.APIs))
+	}
+
 	model, err := createAPIModel(googleapis, includeList)
 	if err != nil {
 		return err
@@ -50,14 +54,14 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 
 	for _, service := range model.Services {
 		// TODO(https://github.com/googleapis/librarian/issues/3291): Ensure output directories don't collide if multiple services share a name.
-		if err := generateService(service, overrides, model, output); err != nil {
+		if err := generateService(service, &overrides.APIs[0], model, output); err != nil {
 			return fmt.Errorf("failed to generate commands for service %q: %w", service.Name, err)
 		}
 	}
 	return nil
 }
 
-func generateService(service *api.Service, overrides *Config, model *api.API, output string) error {
+func generateService(service *api.Service, apiConfig *API, model *api.API, output string) error {
 	// Determine short service name for directory structure.
 	// The `shortServiceName` is derived from `service.DefaultHost` (e.g., "parallelstore.googleapis.com" -> "parallelstore").
 	// `service.DefaultHost`  matches the name field in the service config file
@@ -109,7 +113,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 	for collectionID, methods := range methodsByResource {
 		// The `generateResourceCommands` function will handle the creation of the
 		// directory structure and YAML files for this specific resource.
-		err := generateResourceCommands(collectionID, methods, surfaceDir, overrides, model, service)
+		err := generateResourceCommands(collectionID, methods, surfaceDir, apiConfig, model, service)
 		if err != nil {
 			return err
 		}
@@ -122,7 +126,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 //
 // For a given collectionID like "instances", this function will create a directory
 // `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
-func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *Config, model *api.API, service *api.Service) error {
+func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, apiConfig *API, model *api.API, service *api.Service) error {
 	if len(methods) == 0 {
 		return nil
 	}
@@ -172,7 +176,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 
 		// We construct the complete command definition from the API method.
 		// This involves generating all the arguments, help text, and request details.
-		cmd, err := NewCommand(method, overrides, model, service)
+		cmd, err := NewCommand(method, apiConfig, model, service)
 		if err != nil {
 			return err
 		}

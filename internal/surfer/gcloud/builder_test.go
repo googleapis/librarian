@@ -53,7 +53,7 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newArguments(test.method, &Config{}, model, service)
+			got, err := newArguments(test.method, &API{}, model, service)
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
@@ -89,7 +89,7 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newArguments(test.method, &Config{}, model, service)
+			_, err := newArguments(test.method, &API{}, model, service)
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
 			}
@@ -118,7 +118,7 @@ func TestNewParam(t *testing.T) {
 		field     *api.Field
 		apiField  string
 		method    *api.Method
-		overrides *Config
+		overrides *API
 		want      Param
 	}{
 		{
@@ -164,14 +164,10 @@ func TestNewParam(t *testing.T) {
 				f.ID = "test.foo"
 				return f
 			}(),
-			overrides: &Config{
-				APIs: []API{
-					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
-								{Selector: "test.foo", HelpText: &HelpTextElement{Brief: "Override Foo"}},
-							},
-						},
+			overrides: &API{
+				HelpText: &HelpTextRules{
+					FieldRules: []*HelpTextRule{
+						{Selector: "test.foo", HelpText: &HelpTextElement{Brief: "Override Foo"}},
 					},
 				},
 			},
@@ -189,7 +185,7 @@ func TestNewParam(t *testing.T) {
 			t.Parallel()
 			overrides := test.overrides
 			if overrides == nil {
-				overrides = &Config{}
+				overrides = &API{}
 			}
 			got, err := newParam(test.field, test.apiField, overrides, model, service, test.method)
 			if err != nil {
@@ -523,7 +519,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got := newPrimaryResourceParam(test.field, test.method, model, &Config{}, service)
+			got := newPrimaryResourceParam(test.field, test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
 			}
@@ -574,7 +570,7 @@ func TestNewRequest(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newRequest(test.method, &Config{}, model, service)
+			got := newRequest(test.method, &API{}, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
 			}
@@ -668,7 +664,7 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newAsync(test.method, model, &Config{}, service)
+			got := newAsync(test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
 			}
@@ -755,7 +751,7 @@ func TestAddFlattenedParams(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			err := addFlattenedParams(test.field, test.prefix, args, &API{}, model, service, createMethod)
 			if err != nil {
 				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
 			}
@@ -799,7 +795,7 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			err := addFlattenedParams(test.field, test.prefix, args, &API{}, model, service, createMethod)
 			if err == nil {
 				t.Fatalf("addFlattenedParams() expected error, got nil")
 			}
@@ -849,7 +845,7 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newResourceReferenceSpec(test.field, model, &Config{}, service)
+			got, err := newResourceReferenceSpec(test.field, model, service)
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
@@ -874,7 +870,7 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newResourceReferenceSpec(test.field, &api.API{}, &Config{}, service)
+			_, err := newResourceReferenceSpec(test.field, &api.API{}, service)
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}
@@ -979,27 +975,23 @@ func TestFindHelpTextRule(t *testing.T) {
 
 	for _, test := range []struct {
 		name      string
-		overrides *Config
+		overrides *API
 		want      *HelpTextRule
 	}{
 		{
-			name:      "No APIs in config",
-			overrides: &Config{},
+			name:      "No HelpText in config",
+			overrides: &API{},
 			want:      nil,
 		},
 		{
 			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
-					{
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
-								{
-									Selector: "google.cloud.test.v1.Service.CreateInstance",
-									HelpText: &HelpTextElement{
-										Brief: "Override Brief",
-									},
-								},
+			overrides: &API{
+				HelpText: &HelpTextRules{
+					MethodRules: []*HelpTextRule{
+						{
+							Selector: "google.cloud.test.v1.Service.CreateInstance",
+							HelpText: &HelpTextElement{
+								Brief: "Override Brief",
 							},
 						},
 					},
@@ -1029,27 +1021,23 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 
 	for _, test := range []struct {
 		name      string
-		overrides *Config
+		overrides *API
 		want      *HelpTextRule
 	}{
 		{
-			name:      "No APIs in config",
-			overrides: &Config{},
+			name:      "No HelpText in config",
+			overrides: &API{},
 			want:      nil,
 		},
 		{
 			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
-					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
-								{
-									Selector: ".google.cloud.test.v1.Request.instance_id",
-									HelpText: &HelpTextElement{
-										Brief: "Override Field Brief",
-									},
-								},
+			overrides: &API{
+				HelpText: &HelpTextRules{
+					FieldRules: []*HelpTextRule{
+						{
+							Selector: ".google.cloud.test.v1.Request.instance_id",
+							HelpText: &HelpTextElement{
+								Brief: "Override Field Brief",
 							},
 						},
 					},
@@ -1073,42 +1061,11 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 	}
 }
 
-func TestAPIVersion(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		overrides *Config
-		want      string
-	}{
-		{
-			name:      "No APIs in config",
-			overrides: &Config{},
-			want:      "",
-		},
-		{
-			name: "API version found",
-			overrides: &Config{
-				APIs: []API{
-					{APIVersion: "v2beta1"},
-				},
-			},
-			want: "v2beta1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got := apiVersion(test.overrides)
-			if got != test.want {
-				t.Errorf("apiVersion() = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
 func TestNewCommand(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		method    *api.Method
-		overrides *Config
+		apiConfig *API
 		want      *Command
 	}{
 		{
@@ -1133,11 +1090,7 @@ func TestNewCommand(t *testing.T) {
 				m.OutputType.Pagination = &api.PaginationInfo{PageableItem: m.OutputType.Fields[0]}
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
-					{RootIsHidden: false},
-				},
-			},
+			apiConfig: &API{RootIsHidden: false},
 			want: &Command{
 				Hidden:   false,
 				Response: &Response{IDField: "name"},
@@ -1163,17 +1116,13 @@ func TestNewCommand(t *testing.T) {
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
-					{
-						RootIsHidden: true,
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
-								{
-									Selector: "google.cloud.test.v1.Service.UpdateThing",
-									HelpText: &HelpTextElement{Brief: "Updated Brief"},
-								},
-							},
+			apiConfig: &API{
+				RootIsHidden: true,
+				HelpText: &HelpTextRules{
+					MethodRules: []*HelpTextRule{
+						{
+							Selector: "google.cloud.test.v1.Service.UpdateThing",
+							HelpText: &HelpTextElement{Brief: "Updated Brief"},
 						},
 					},
 				},
@@ -1199,9 +1148,9 @@ func TestNewCommand(t *testing.T) {
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "Thing", MetadataTypeID: "Metadata"}
 				return m
 			}(),
-			overrides: &Config{},
+			apiConfig: &API{},
 			want: &Command{
-				Hidden: true,
+				Hidden: false,
 				Async: &Async{
 					Collection:            []string{"test.projects.operations"},
 					ExtractResourceResult: false,
@@ -1217,7 +1166,7 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := NewCommand(test.method, test.overrides, model, service)
+			got, err := NewCommand(test.method, test.apiConfig, model, service)
 			if err != nil {
 				t.Fatalf("NewCommand() unexpected error = %v", err)
 			}

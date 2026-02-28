@@ -68,7 +68,7 @@ func TestGenerateService(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			err := generateService(test.service, &Config{}, test.model, tmpDir)
+			err := generateService(test.service, &API{}, test.model, tmpDir)
 			if (err != nil) != test.wantErr {
 				t.Errorf("generateService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -94,7 +94,7 @@ func TestGenerateResourceCommands(t *testing.T) {
 				}},
 			},
 		},
-	}, tmpDir, &Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
+	}, tmpDir, &API{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
 
 	if err != nil {
 		t.Fatalf("generateResourceCommands() error = %v", err)
