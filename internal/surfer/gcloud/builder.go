@@ -579,24 +579,22 @@ func newFormat(message *api.Message) string {
 
 // findHelpTextRule finds the help text rule from the config that applies to the current method.
 func findHelpTextRule(method *api.Method, overrides *Config) *HelpTextRule {
-	if overrides.APIs == nil {
-		return nil
-	}
-	for _, api := range overrides.APIs {
-		if api.HelpText == nil {
-			continue
-		}
-		for _, rule := range api.HelpText.MethodRules {
-			if rule.Selector == strings.TrimPrefix(method.ID, ".") {
-				return rule
-			}
-		}
-	}
-	return nil
+	return findHelpTextRuleBySelector(strings.TrimPrefix(method.ID, "."), overrides, func(ht *HelpTextRules) []*HelpTextRule {
+		return ht.MethodRules
+	})
 }
 
 // findFieldHelpTextRule finds the help text rule from the config that applies to the current field.
 func findFieldHelpTextRule(field *api.Field, overrides *Config) *HelpTextRule {
+	return findHelpTextRuleBySelector(field.ID, overrides, func(ht *HelpTextRules) []*HelpTextRule {
+		return ht.FieldRules
+	})
+}
+
+// findHelpTextRuleBySelector searches overrides for a help text rule matching
+// the given selector. The rules function extracts the relevant rule slice from
+// each API's HelpTextRules.
+func findHelpTextRuleBySelector(selector string, overrides *Config, rules func(*HelpTextRules) []*HelpTextRule) *HelpTextRule {
 	if overrides.APIs == nil {
 		return nil
 	}
@@ -604,8 +602,8 @@ func findFieldHelpTextRule(field *api.Field, overrides *Config) *HelpTextRule {
 		if api.HelpText == nil {
 			continue
 		}
-		for _, rule := range api.HelpText.FieldRules {
-			if rule.Selector == field.ID {
+		for _, rule := range rules(api.HelpText) {
+			if rule.Selector == selector {
 				return rule
 			}
 		}
