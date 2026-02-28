@@ -128,7 +128,8 @@ func ReformatAll(dir string) error {
 
 // UpdateAllLibraryVersions updates the clientLibrary.version field of all
 // snippet metadata files (filenames starting with "snippet_metadata" and
-// ending with ".json") under the given directory (including subdirectories).
+// ending with ".json") under the given directory (including subdirectories),
+// excluding those located within any directory named skipDir.
 func UpdateAllLibraryVersions(dir, skipDir, version string) error {
 	files, err := findAll(dir)
 	if err != nil {
