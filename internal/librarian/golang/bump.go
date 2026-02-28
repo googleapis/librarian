@@ -51,9 +51,6 @@ func bumpInternalVersion(library *config.Library, output, version string) error 
 		if err != nil {
 			return err
 		}
-		if !d.Type().IsRegular() {
-			return nil
-		}
 		if d.IsDir() {
 			if library.Go != nil && d.Name() == library.Go.NestedModule {
 				return filepath.SkipDir
