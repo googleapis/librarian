@@ -35,6 +35,13 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
+// IsVeneer reports whether a Python library is a veneer. A Python library is a
+// veneer when it has no APIs and has an explicit output path, meaning it
+// contains only handwritten code.
+func IsVeneer(lib *config.Library) bool {
+	return len(lib.APIs) == 0 && lib.Output != ""
+}
+
 // GenerateLibraries generates all the given libraries in sequence.
 func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {

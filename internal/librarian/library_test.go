@@ -504,6 +504,13 @@ func TestPrepareLibrary(t *testing.T) {
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated",
 		},
+		{
+			name:       "python veneer with no apis does not derive path",
+			language:   "python",
+			output:     "packages/my-library",
+			apis:       nil,
+			wantOutput: "packages/my-library",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
