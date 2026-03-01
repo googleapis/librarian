@@ -199,6 +199,10 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
+	// Veneer indicates this library has handwritten code. A veneer may
+	// contain generated libraries.
+	Veneer bool `yaml:"veneer,omitempty"`
+
 	// Language-specific fields are below.
 
 	// Dart contains Dart-specific library configuration.

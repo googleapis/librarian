@@ -430,7 +430,7 @@ func TestPrepareLibrary(t *testing.T) {
 		name        string
 		language    string
 		output      string
-		rust        *config.RustCrate
+		veneer      bool
 		apis        []*config.API
 		wantOutput  string
 		wantErr     bool
@@ -466,21 +466,19 @@ func TestPrepareLibrary(t *testing.T) {
 			name:        "veneer rust with no apis does not derive path",
 			language:    "rust",
 			output:      "src/storage/test/v1",
-			rust:        &config.RustCrate{Modules: []*config.RustModule{{}}},
+			veneer:      true,
 			apis:        nil,
 			wantOutput:  "src/storage/test/v1",
 			wantAPIPath: "",
 		},
 		{
-			name:     "veneer without output returns error",
-			language: "rust",
-			rust:     &config.RustCrate{Modules: []*config.RustModule{{}}},
-			wantErr:  true,
+			name:    "veneer without output returns error",
+			veneer:  true,
+			wantErr: true,
 		},
 		{
 			name:       "veneer with explicit output succeeds",
-			language:   "rust",
-			rust:       &config.RustCrate{Modules: []*config.RustModule{{}}},
+			veneer:     true,
 			output:     "src/storage",
 			wantOutput: "src/storage",
 		},
@@ -491,32 +489,12 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
 		},
-		{
-			name:       "fake veneer with no apis does not derive path",
-			language:   "fake",
-			output:     "packages/google-cloud-storage",
-			apis:       nil,
-			wantOutput: "packages/google-cloud-storage",
-		},
-		{
-			name:       "fake non-veneer with apis derives path",
-			language:   "fake",
-			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated",
-		},
-		{
-			name:       "python veneer with no apis does not derive path",
-			language:   "python",
-			output:     "packages/google-cloud-storage",
-			apis:       nil,
-			wantOutput: "packages/google-cloud-storage",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: test.output,
-				Rust:   test.rust,
+				Veneer: test.veneer,
 				APIs:   test.apis,
 			}
 			defaults := &config.Default{

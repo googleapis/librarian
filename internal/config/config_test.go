@@ -91,6 +91,7 @@ func TestRead(t *testing.T) {
 			{
 				Name:    "google-cloud-storage",
 				Version: "1.4.0",
+				Veneer:  true,
 				Rust: &RustCrate{
 					Modules: []*RustModule{
 						{

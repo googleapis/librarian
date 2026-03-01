@@ -52,10 +52,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 		{
 			name: "minimal config",
 			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Rust: &config.RustCrate{
-					Modules: []*config.RustModule{{}},
-				},
+				Name:   "google-cloud-secretmanager",
+				Veneer: true,
+				Rust:   &config.RustCrate{},
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",

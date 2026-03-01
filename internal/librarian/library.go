@@ -21,7 +21,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
-	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 )
 
@@ -158,19 +157,13 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 // isVeneer reports whether the library has handwritten code wrapping generated
 // code.
 func isVeneer(language string, lib *config.Library) bool {
-	switch language {
-	case languageFake:
-		return fakeIsVeneer(lib)
-	case languagePython:
-		return python.IsVeneer(lib)
-	case languageGo:
-		// TODO(https://github.com/googleapis/librarian/issues/4113): implement IsVeneer for Go.
-		return false
-	case languageRust:
-		return rust.IsVeneer(lib)
-	default:
-		return false
+	if lib.Veneer {
+		return true
 	}
+	if language == languageRust {
+		return rust.IsVeneer(lib)
+	}
+	return false
 }
 
 // libraryOutput returns the output path for a library. If the library has an

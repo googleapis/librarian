@@ -217,6 +217,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name:   "google-api-core",
+					Veneer: true,
 					Output: "packages/google-api-core",
 					Python: &config.PythonPackage{NamePrettyOverride: "Google API client core library"},
 				},

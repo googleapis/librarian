@@ -60,6 +60,7 @@ libraries:
         - rustdoc::bare_urls
   - name: google-cloud-storage
     version: 1.4.0
+    veneer: true
     rust:
       modules:
         - api_path: google/storage/v2

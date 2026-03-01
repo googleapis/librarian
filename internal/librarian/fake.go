@@ -90,12 +90,6 @@ func fakeCreateSkeleton(library *config.Library) error {
 	return os.WriteFile(starterPath, []byte(content), 0644)
 }
 
-// fakeIsVeneer reports whether a fake library is a veneer.
-// A fake library is a veneer when it has no APIs and has an explicit output.
-func fakeIsVeneer(lib *config.Library) bool {
-	return len(lib.APIs) == 0 && lib.Output != ""
-}
-
 // fakeDefaultLibraryName derives a library name from an API path by
 // replacing "/" with "-".
 func fakeDefaultLibraryName(api string) string {
