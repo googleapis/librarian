@@ -43,7 +43,7 @@ func Bump(output, version string) error {
 		return err
 	}
 	snippetsDir := filepath.Join(output, "samples", "generated_samples")
-	return snippetmetadata.UpdateAllLibraryVersions(snippetsDir, version)
+	return snippetmetadata.UpdateAllLibraryVersions(snippetsDir, "", version)
 }
 
 // bumpGapicVersion finds all gapic_version.py files under output. For each

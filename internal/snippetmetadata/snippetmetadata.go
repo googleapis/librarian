@@ -86,7 +86,7 @@ func reformat(path string) error {
 // "snippet_metadata" and ending with ".json") under the given directory
 // (including subdirectories).
 func findAll(dir string) ([]string, error) {
-	files := []string{}
+	var files []string
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -128,16 +128,30 @@ func ReformatAll(dir string) error {
 
 // UpdateAllLibraryVersions updates the clientLibrary.version field of all
 // snippet metadata files (filenames starting with "snippet_metadata" and
-// ending with ".json") under the given directory (including subdirectories).
-func UpdateAllLibraryVersions(dir, version string) error {
+// ending with ".json") under the given directory (including subdirectories),
+// excluding those located within any directory named skipDir.
+func UpdateAllLibraryVersions(dir, skipDir, version string) error {
 	files, err := findAll(dir)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
+		if shouldSkip(file, skipDir) {
+			continue
+		}
 		if err := updateLibraryVersion(file, version); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func shouldSkip(file string, skipDir string) bool {
+	file = filepath.Clean(file)
+	for _, dir := range strings.Split(file, string(filepath.Separator)) {
+		if dir != "" && dir == skipDir {
+			return true
+		}
+	}
+	return false
 }

@@ -107,7 +107,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	if err := os.WriteFile(readmePath, []byte(readmeContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := UpdateAllLibraryVersions(dir, "1.20.0"); err != nil {
+	if err := UpdateAllLibraryVersions(dir, "", "1.20.0"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -129,7 +129,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(string(readmeContent), string(got)); diff != "" {
+	if diff := cmp.Diff(readmeContent, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -163,7 +163,7 @@ func TestUpdateAllLibraryVersions_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.setup(t, dir)
-			gotErr := UpdateAllLibraryVersions(dir, "1.20.0")
+			gotErr := UpdateAllLibraryVersions(dir, "", "1.20.0")
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("UpdateAllLibraryVersions error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -389,6 +389,34 @@ func TestFindAll_Error(t *testing.T) {
 			_, gotErr := findAll(path)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("findAll() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestShouldSkip(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		file    string
+		skipDir string
+		want    bool
+	}{
+		{
+			name:    "skip",
+			file:    "/temp/nested/nested-1/snippet_metadata.json",
+			skipDir: "nested",
+			want:    true,
+		},
+		{
+			name:    "do not skip",
+			file:    "/temp/nested/nested-1/snippet_metadata.json",
+			skipDir: "another-dir",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := shouldSkip(test.file, test.skipDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
