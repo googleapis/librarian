@@ -15,6 +15,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -37,44 +38,39 @@ type SourceConfig struct {
 	ExcludeList []string
 }
 
-// ModelRoot returns the model root for the given specification source path.
-func (c SourceConfig) ModelRoot(path string) string {
-	if path == "schema/google/showcase/v1beta1" {
-		return c.Sources.Showcase
-	}
-	return c.Sources.Googleapis
-}
-
 // Root returns the directory path for the given root name.
-func (c SourceConfig) Root(name string) string {
+func (c SourceConfig) Root(name string) (string, error) {
 	switch name {
 	case "googleapis":
-		return c.Sources.Googleapis
+		return c.Sources.Googleapis, nil
 	case "discovery":
-		return c.Sources.Discovery
+		return c.Sources.Discovery, nil
 	case "showcase":
-		return c.Sources.Showcase
+		return c.Sources.Showcase, nil
 	case "protobuf", "protobuf-src":
-		return c.Sources.ProtobufSrc
+		return c.Sources.ProtobufSrc, nil
 	case "conformance":
-		return c.Sources.Conformance
+		return c.Sources.Conformance, nil
 	default:
-		return ""
+		return "", fmt.Errorf("unknown source name: %s", name)
 	}
 }
 
 // Resolve returns an absolute path for the given relative path if it is found
 // within the active source roots. Otherwise, it returns the original path.
-func (c SourceConfig) Resolve(relPath string) string {
+func (c SourceConfig) Resolve(relPath string) (string, error) {
 	for _, root := range c.ActiveRoots {
-		rootPath := c.Root(root)
+		rootPath, err := c.Root(root)
+		if err != nil {
+			return "", err
+		}
 		if rootPath == "" {
 			continue
 		}
 		fullName := filepath.Join(rootPath, relPath)
 		if stat, err := os.Stat(fullName); err == nil && !stat.IsDir() {
-			return fullName
+			return fullName, nil
 		}
 	}
-	return relPath
+	return relPath, nil
 }

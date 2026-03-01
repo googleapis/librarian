@@ -22,38 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestModelRoot(t *testing.T) {
-	cfg := SourceConfig{
-		Sources: Sources{
-			Googleapis: "googleapis",
-			Showcase:   "showcase",
-		},
-	}
-	for _, test := range []struct {
-		name string
-		path string
-		want string
-	}{
-		{
-			name: "googleapis",
-			path: "google/cloud/secretmanager/v1",
-			want: "googleapis",
-		},
-		{
-			name: "showcase",
-			path: "schema/google/showcase/v1beta1",
-			want: "showcase",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := cfg.ModelRoot(test.path)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("ModelRoot() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestRoot(t *testing.T) {
 	cfg := SourceConfig{
 		Sources: Sources{
@@ -62,9 +30,10 @@ func TestRoot(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name string
-		root string
-		want string
+		name    string
+		root    string
+		want    string
+		wantErr bool
 	}{
 		{
 			name: "googleapis",
@@ -77,15 +46,18 @@ func TestRoot(t *testing.T) {
 			want: "discovery-path",
 		},
 		{
-			name: "unknown",
-			root: "unknown",
-			want: "",
+			name:    "unknown",
+			root:    "unknown",
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := cfg.Root(test.root)
+			got, err := cfg.Root(test.root)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("Root(%q) error = %v, wantErr %v", test.root, err, test.wantErr)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Root() mismatch (-want +got):\n%s", diff)
+				t.Errorf("Root(%q) mismatch (-want +got):\n%s", test.root, diff)
 			}
 		})
 	}
@@ -118,6 +90,7 @@ func TestResolve(t *testing.T) {
 		name    string
 		relPath string
 		want    string
+		wantErr bool
 	}{
 		{
 			name:    "found",
@@ -129,11 +102,22 @@ func TestResolve(t *testing.T) {
 			relPath: "not/found",
 			want:    "not/found",
 		},
+		{
+			name:    "unknown root",
+			relPath: specPath,
+			wantErr: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := cfg.Resolve(test.relPath)
+			if test.name == "unknown root" {
+				cfg.ActiveRoots = []string{"unknown"}
+			}
+			got, err := cfg.Resolve(test.relPath)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("Resolve(%q) error = %v, wantErr %v", test.relPath, err, test.wantErr)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Resolve() mismatch (-want +got):\n%s", diff)
+				t.Errorf("Resolve(%q) mismatch (-want +got):\n%s", test.relPath, diff)
 			}
 		})
 	}
