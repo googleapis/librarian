@@ -980,3 +980,41 @@ def format(session):
 		t.Fatalf("unable to create noxfile.py: %v", err)
 	}
 }
+
+func TestIsVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "with apis",
+			lib:  &config.Library{APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}},
+			want: false,
+		},
+		{
+			name: "no apis no output",
+			lib:  &config.Library{},
+			want: false,
+		},
+		{
+			name: "with apis and output",
+			lib: &config.Library{
+				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Output: "packages/google-cloud-storage",
+			},
+			want: false,
+		},
+		{
+			name: "no apis with output",
+			lib:  &config.Library{Output: "packages/google-cloud-storage"},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsVeneer(test.lib); got != test.want {
+				t.Errorf("IsVeneer() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

@@ -84,6 +84,33 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 }
 
+func TestIsVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "empty modules",
+			lib:  &config.Library{Rust: &config.RustCrate{}},
+			want: false,
+		},
+		{
+			name: "with modules",
+			lib: &config.Library{Rust: &config.RustCrate{
+				Modules: []*config.RustModule{{}},
+			}},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsVeneer(test.lib); got != test.want {
+				t.Errorf("IsVeneer() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestGenerateVeneerNoModules(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()

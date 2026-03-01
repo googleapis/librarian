@@ -494,9 +494,9 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:       "fake veneer with no apis does not derive path",
 			language:   "fake",
-			output:     "packages/my-library",
+			output:     "packages/google-cloud-storage",
 			apis:       nil,
-			wantOutput: "packages/my-library",
+			wantOutput: "packages/google-cloud-storage",
 		},
 		{
 			name:       "fake non-veneer with apis derives path",
@@ -507,9 +507,9 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:       "python veneer with no apis does not derive path",
 			language:   "python",
-			output:     "packages/my-library",
+			output:     "packages/google-cloud-storage",
 			apis:       nil,
-			wantOutput: "packages/my-library",
+			wantOutput: "packages/google-cloud-storage",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
