@@ -31,7 +31,7 @@ type GoModule struct {
 // GoAPI represents configuration for a single API within a Go module.
 type GoAPI struct {
 	// ClientPackage is the package name of the generated client.
-	ClientPackage string `yaml:"client_directory,omitempty"`
+	ClientPackage string `yaml:"client_package,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
 	// Also known as proto-only client, which does not define a service in the proto files.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
