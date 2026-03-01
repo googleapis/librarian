@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/librarian/java/clirr"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -138,6 +139,14 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos); err != nil {
 		return fmt.Errorf("failed to restructure output: %w", err)
 	}
+
+	// Generate clirr-ignored-differences.xml for the proto module.
+	modules := deriveModuleNames(libraryName, version)
+	protoModuleRoot := filepath.Join(outdir, modules.proto)
+	if err := clirr.Generate(protoModuleRoot); err != nil {
+		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+	}
+
 	// Cleanup intermediate protoc output directory after restructuring
 	if err := os.RemoveAll(filepath.Join(outdir, version)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
