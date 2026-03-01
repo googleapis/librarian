@@ -472,12 +472,14 @@ func TestPrepareLibrary(t *testing.T) {
 			wantAPIPath: "",
 		},
 		{
-			name:    "veneer without output returns error",
-			rust:    &config.RustCrate{Modules: []*config.RustModule{{}}},
-			wantErr: true,
+			name:     "veneer without output returns error",
+			language: "rust",
+			rust:     &config.RustCrate{Modules: []*config.RustModule{{}}},
+			wantErr:  true,
 		},
 		{
 			name:       "veneer with explicit output succeeds",
+			language:   "rust",
 			rust:       &config.RustCrate{Modules: []*config.RustModule{{}}},
 			output:     "src/storage",
 			wantOutput: "src/storage",
@@ -488,6 +490,19 @@ func TestPrepareLibrary(t *testing.T) {
 			apis:        []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
+		},
+		{
+			name:       "fake veneer with no apis does not derive path",
+			language:   "fake",
+			output:     "packages/my-library",
+			apis:       nil,
+			wantOutput: "packages/my-library",
+		},
+		{
+			name:       "fake non-veneer with apis derives path",
+			language:   "fake",
+			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			wantOutput: "src/generated",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -214,12 +214,6 @@ type Library struct {
 	Rust *RustCrate `yaml:"rust,omitempty"`
 }
 
-// IsVeneer reports whether the library has handwritten code wrapping generated
-// code. A library is a veneer when it has Rust module configuration.
-func (lib *Library) IsVeneer() bool {
-	return lib.Rust != nil && len(lib.Rust.Modules) > 0
-}
-
 // API describes an API to include in a library.
 type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
