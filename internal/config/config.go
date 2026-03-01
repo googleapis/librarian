@@ -21,7 +21,7 @@ package config
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
-	Language string `yaml:"language"`
+	Language Language `yaml:"language"`
 
 	// Version is the librarian tool version to use.
 	Version string `yaml:"version,omitempty"`

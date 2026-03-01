@@ -347,7 +347,7 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 func TestDefaultOutput(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		language   string
+		language   config.Language
 		libName    string
 		api        string
 		defaultOut string
@@ -355,7 +355,7 @@ func TestDefaultOutput(t *testing.T) {
 	}{
 		{
 			name:       "dart",
-			language:   "dart",
+			language:   config.LanguageDart,
 			libName:    "google-cloud-secretmanager-v1",
 			api:        "google/cloud/secretmanager/v1",
 			defaultOut: "packages",
@@ -363,7 +363,7 @@ func TestDefaultOutput(t *testing.T) {
 		},
 		{
 			name:       "rust",
-			language:   "rust",
+			language:   config.LanguageRust,
 			libName:    "google-cloud-secretmanager-v1",
 			api:        "google/cloud/secretmanager/v1",
 			defaultOut: "generated",
@@ -371,7 +371,7 @@ func TestDefaultOutput(t *testing.T) {
 		},
 		{
 			name:       "python",
-			language:   "python",
+			language:   config.LanguagePython,
 			libName:    "google-cloud-secretmanager-v1",
 			api:        "google/cloud/secretmanager/v1",
 			defaultOut: "packages",
@@ -379,7 +379,7 @@ func TestDefaultOutput(t *testing.T) {
 		},
 		{
 			name:       "unknown language",
-			language:   "unknown",
+			language:   config.LanguageUnknown,
 			libName:    "google-cloud-secretmanager-v1",
 			api:        "google/cloud/secretmanager/v1",
 			defaultOut: "output",
@@ -427,7 +427,7 @@ func TestLoadSources(t *testing.T) {
 		{
 			name: "rust with sources",
 			cfg: &config.Config{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
 					Discovery:  &config.Source{Dir: "/tmp/discovery"},

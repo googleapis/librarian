@@ -58,7 +58,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -83,7 +83,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -107,7 +107,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -146,7 +146,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -170,7 +170,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -206,7 +206,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -237,7 +237,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -274,7 +274,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -304,7 +304,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "discoveries/compute.v1.json",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -329,7 +329,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "testdata/secretmanager_openapi_v1.json",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecOpenAPI,
 				SpecificationSource: "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
@@ -353,7 +353,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "discoveries/compute.v1.json",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -377,7 +377,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/apps/script/type/gmail",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/apps/script/type/gmail",
 				Source: map[string]string{
@@ -399,7 +399,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/longrunning",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/longrunning",
 				Source: map[string]string{
@@ -427,7 +427,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/spanner/admin/database/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/spanner/admin/database/v1",
 				Source: map[string]string{
@@ -455,7 +455,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/storageinsights/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/storageinsights/v1",
 				Source: map[string]string{
@@ -494,7 +494,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "discoveries/compute.v1.json",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
@@ -535,7 +535,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "google/cloud/vision/v1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/vision/v1",
 				Source: map[string]string{
@@ -556,7 +556,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Path: "schema/google/showcase/v1beta1",
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "schema/google/showcase/v1beta1",
 				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
@@ -628,7 +628,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -654,13 +654,13 @@ func TestModuleToModelConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: "rust_storage",
+							Language: config.LanguageRustStorage,
 						},
 					},
 				},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust_storage",
+				Language:            config.LanguageRustStorage,
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -681,7 +681,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: "none",
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -702,7 +702,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -724,7 +724,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/logging/type",
 				Source: map[string]string{
@@ -752,7 +752,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
@@ -779,7 +779,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Roots: []string{"conformance"},
 			},
 			want: &parser.ModelConfig{
-				Language:            "rust",
+				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "conformance",
 				Source: map[string]string{
@@ -807,7 +807,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",
@@ -842,7 +842,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				},
 			},
 			want: &parser.ModelConfig{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Source: map[string]string{
 					"googleapis-root": absPath(t, googleapisRoot),
 					"roots":           "googleapis",

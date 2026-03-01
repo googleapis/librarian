@@ -42,7 +42,7 @@ func toModelConfig(library *config.Library, ch *config.API, sources *sidekickcon
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	svcConfig, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
+	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageDart)
 	if err != nil {
 		return nil, err
 	}

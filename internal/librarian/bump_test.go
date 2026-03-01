@@ -379,7 +379,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 			name: "unsupported language",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				return c
 			}(),
 			versionOverride: "2.0.0",
@@ -603,7 +603,7 @@ func TestPostBump(t *testing.T) {
 				}
 			},
 			cfg: &config.Config{
-				Language: languageRust,
+				Language: config.LanguageRust,
 				Release: &config.Release{
 					Preinstalled: map[string]string{
 						"cargo": fakeCargo,
@@ -620,7 +620,7 @@ func TestPostBump(t *testing.T) {
 				}
 			},
 			cfg: &config.Config{
-				Language: languageRust,
+				Language: config.LanguageRust,
 				Release: &config.Release{
 					Preinstalled: map[string]string{
 						"cargo": fakeCargo,
@@ -632,7 +632,7 @@ func TestPostBump(t *testing.T) {
 		{
 			name: "non-rust language does nothing",
 			cfg: &config.Config{
-				Language: languageFake,
+				Language: config.LanguageFake,
 			},
 		},
 	} {
@@ -662,21 +662,21 @@ func TestDeriveNextVersion(t *testing.T) {
 			name: "rust library next non-GA version",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				c.Libraries[0].Version = sample.RustNonGAVersion
 				return c
 			}(),
-			versionOpts: languageVersioningOptions[languageRust],
+			versionOpts: languageVersioningOptions[config.LanguageRust],
 			wantVersion: sample.RustNextNonGAVersion,
 		},
 		{
 			name: "rust library next GA version",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				return c
 			}(),
-			versionOpts: languageVersioningOptions[languageRust],
+			versionOpts: languageVersioningOptions[config.LanguageRust],
 			wantVersion: sample.NextVersion,
 		},
 		{

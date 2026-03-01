@@ -71,7 +71,7 @@ type RepoMetadata struct {
 	IssueTracker string `json:"issue_tracker,omitempty"`
 
 	// Language is the programming language (e.g., "rust", "python", "go").
-	Language string `json:"language,omitempty"`
+	Language config.Language `json:"language,omitempty"`
 
 	// LibraryType is the type of library (e.g., "GAPIC_AUTO").
 	LibraryType string `json:"library_type,omitempty"`

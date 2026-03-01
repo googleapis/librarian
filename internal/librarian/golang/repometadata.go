@@ -44,7 +44,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		ClientLibraryType:   "generated",
 		Description:         api.Title,
 		DistributionName:    distributionName(goAPI.ImportPath),
-		Language:            "go",
+		Language:            config.LanguageGo,
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        level,
 	}

@@ -294,7 +294,7 @@ func TestUpdateCommand_Errors(t *testing.T) {
 
 func updateTestConfig() *config.Config {
 	cfg := sample.Config()
-	cfg.Language = "go"
+	cfg.Language = config.LanguageGo
 	cfg.Sources = &config.Sources{
 		Googleapis: &config.Source{
 			Commit: unchangedPlaceholder,

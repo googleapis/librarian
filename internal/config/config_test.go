@@ -28,7 +28,7 @@ func TestRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &Config{
-		Language: "rust",
+		Language: LanguageRust,
 		Sources: &Sources{
 			Discovery: &Source{
 				Commit: "b27c80574e918a7e2a36eb21864d1d2e45b8c032",

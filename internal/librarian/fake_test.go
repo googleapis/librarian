@@ -33,7 +33,7 @@ func TestGenerateLibraries(t *testing.T) {
 		Output: outputDir,
 	}
 	cfg := &config.Config{
-		Language: languageFake,
+		Language: config.LanguageFake,
 	}
 
 	tmpDir := t.TempDir()

@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -584,7 +583,7 @@ func TestGenerateLibraries(t *testing.T) {
 	createReplacementScripts(t, repoRoot)
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -635,7 +634,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	createReplacementScripts(t, repoRoot)
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -663,7 +662,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 func TestGenerate_NoAPIs(t *testing.T) {
 	repoRoot := t.TempDir()
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -702,7 +701,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -737,7 +736,7 @@ func TestGenerate(t *testing.T) {
 		ProductDocumentation: "https://cloud.google.com/secret-manager/",
 		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 		ReleaseLevel:         "stable",
-		Language:             "python",
+		Language:             config.LanguagePython,
 		Repo:                 "googleapis/google-cloud-python",
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
@@ -811,7 +810,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -844,7 +843,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://developers.google.com/meet/api/guides/overview",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=1216362&template=1766418",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-apps-meet",
 				APIID:                "meet.googleapis.com",
@@ -881,7 +880,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "overridden product_documentation",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -914,7 +913,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -928,7 +927,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
-				Language: serviceconfig.LangPython,
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 			}
 			got, err := createRepoMetadata(cfg, test.library, googleapisDir)
@@ -944,7 +943,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 
 func TestCreateRepoMetadata_Error(t *testing.T) {
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 	library := &config.Library{

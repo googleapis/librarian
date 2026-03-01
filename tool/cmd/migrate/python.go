@@ -313,7 +313,7 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	// use that to work out what will be generated in .repo-metadata.json by
 	// default.
 	if len(library.APIs) > 0 {
-		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangPython)
+		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguagePython)
 		if err != nil {
 			return nil, err
 		}

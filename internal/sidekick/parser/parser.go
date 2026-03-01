@@ -17,13 +17,13 @@ package parser
 import (
 	"fmt"
 
-	libconfig "github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // ModelConfig holds the configuration necessary to parse an API specification.
 type ModelConfig struct {
-	Language string
+	Language config.Language
 
 	// Source configuration
 	// SpecificationFormat is the format of the API specification.
@@ -60,11 +60,11 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	var err error
 	var model *api.API
 	switch cfg.SpecificationFormat {
-	case libconfig.SpecDiscovery:
+	case config.SpecDiscovery:
 		model, err = ParseDisco(cfg)
-	case libconfig.SpecOpenAPI:
+	case config.SpecOpenAPI:
 		model, err = ParseOpenAPI(cfg)
-	case libconfig.SpecProtobuf:
+	case config.SpecProtobuf:
 		model, err = ParseProtobuf(cfg)
 	case "none":
 		return nil, nil

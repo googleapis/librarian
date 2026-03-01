@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -100,7 +101,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
-				Languages:        []string{"dart", "go", "java", "python", "rust"},
+				Languages:        []config.Language{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
 				Title:            "Secret Manager API",
 			},
 		},
@@ -110,7 +111,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:             "google/cloud/orgpolicy/v1",
 				Title:            "Organization Policy Types",
-				Languages:        []string{"go", "python", "rust"},
+				Languages:        []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
 				DocumentationURI: "https://cloud.google.com/resource-manager/docs/organization-policy/overview",
 			},
 		},
@@ -131,8 +132,8 @@ func TestFind(t *testing.T) {
 				ServiceName:   "aiplatform.googleapis.com",
 				ShortName:     "aiplatform",
 				Title:         "Vertex AI API",
-				Languages:     []string{"go", "python", "rust"},
-				Transports:    map[string]Transport{"python": "grpc"},
+				Languages:     []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Transports:    map[config.Language]Transport{config.LanguagePython: GRPC},
 			},
 		},
 		{
@@ -144,7 +145,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Title:            "Secret Manager API",
-				Languages:        []string{"dart", "go", "java", "python", "rust"},
+				Languages:        []config.Language{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				ServiceName:      "secretmanager.googleapis.com",
@@ -163,13 +164,13 @@ func TestFind(t *testing.T) {
 				ServiceName:      "compute.googleapis.com",
 				ShortName:        "compute",
 				Title:            "Google Compute Engine API",
-				Languages:        []string{"go", "python", "rust"},
-				Transports:       map[string]Transport{"csharp": "rest", "go": "rest", "java": "rest", "php": "rest"},
+				Languages:        []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Transports:       map[config.Language]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Find(googleapisDir, test.api, LangGo)
+			got, err := Find(googleapisDir, test.api, config.LanguageGo)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)
@@ -334,42 +335,48 @@ func TestValidateAPI(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		path     string
-		language string
+		language config.Language
 		api      *API
 		wantErr  bool
 	}{
 		{
 			name:     "api in allowlist, all languages",
 			path:     "google/api",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      &API{Path: "google/api"},
 			wantErr:  false,
 		},
 		{
 			name:     "api in allowlist, restricted language allowed",
 			path:     "google/cloud/aiplatform/v1beta1",
-			language: LangPython,
-			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
-			wantErr:  false,
+			language: config.LanguagePython,
+			api: &API{
+				Path:      "google/cloud/aiplatform/v1beta1",
+				Languages: []config.Language{config.LanguagePython},
+			},
+			wantErr: false,
 		},
 		{
 			name:     "api in allowlist, restricted language not allowed",
 			path:     "google/cloud/aiplatform/v1beta1",
-			language: LangGo,
-			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
-			wantErr:  true,
+			language: config.LanguageGo,
+			api: &API{
+				Path:      "google/cloud/aiplatform/v1beta1",
+				Languages: []config.Language{config.LanguagePython},
+			},
+			wantErr: true,
 		},
 		{
 			name:     "api not in list, google/cloud/ prefix",
 			path:     "google/cloud/newapi/v1",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      nil,
 			wantErr:  false,
 		},
 		{
 			name:     "api not in list, no google/cloud/ prefix",
 			path:     "google/ads/newapi/v1",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      nil,
 			wantErr:  true,
 		},
