@@ -430,7 +430,7 @@ func TestPrepareLibrary(t *testing.T) {
 		name        string
 		language    string
 		output      string
-		veneer      bool
+		rust        *config.RustCrate
 		apis        []*config.API
 		wantOutput  string
 		wantErr     bool
@@ -466,19 +466,19 @@ func TestPrepareLibrary(t *testing.T) {
 			name:        "veneer rust with no apis does not derive path",
 			language:    "rust",
 			output:      "src/storage/test/v1",
-			veneer:      true,
+			rust:        &config.RustCrate{Modules: []*config.RustModule{{}}},
 			apis:        nil,
 			wantOutput:  "src/storage/test/v1",
 			wantAPIPath: "",
 		},
 		{
 			name:    "veneer without output returns error",
-			veneer:  true,
+			rust:    &config.RustCrate{Modules: []*config.RustModule{{}}},
 			wantErr: true,
 		},
 		{
 			name:       "veneer with explicit output succeeds",
-			veneer:     true,
+			rust:       &config.RustCrate{Modules: []*config.RustModule{{}}},
 			output:     "src/storage",
 			wantOutput: "src/storage",
 		},
@@ -494,7 +494,7 @@ func TestPrepareLibrary(t *testing.T) {
 			lib := &config.Library{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: test.output,
-				Veneer: test.veneer,
+				Rust:   test.rust,
 				APIs:   test.apis,
 			}
 			defaults := &config.Default{

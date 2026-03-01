@@ -82,7 +82,6 @@ This document describes the schema for the librarian.yaml.
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
-| `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
@@ -165,7 +164,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
-| `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. This is only used when the library has veneer: true. |
+| `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. |
 | `per_service_features` | bool | Enables per-service feature flags. |
 | `module_path` | string | Is the module path for the crate. |
 | `template_override` | string | Overrides the default template. |

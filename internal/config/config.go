@@ -199,10 +199,6 @@ type Library struct {
 	// overrides Default.Transport.
 	Transport string `yaml:"transport,omitempty"`
 
-	// Veneer indicates this library has handwritten code. A veneer may
-	// contain generated libraries.
-	Veneer bool `yaml:"veneer,omitempty"`
-
 	// Language-specific fields are below.
 
 	// Dart contains Dart-specific library configuration.
@@ -216,6 +212,12 @@ type Library struct {
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
+}
+
+// IsVeneer reports whether the library has handwritten code wrapping generated
+// code. A library is a veneer when it has Rust module configuration.
+func (lib *Library) IsVeneer() bool {
+	return lib.Rust != nil && len(lib.Rust.Modules) > 0
 }
 
 // API describes an API to include in a library.

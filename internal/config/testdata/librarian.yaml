@@ -67,7 +67,6 @@ libraries:
           replace: " \nThe `supports_under` field of the associated `Constraint`  defines whether"
   - name: google-cloud-storage
     version: 1.4.0
-    veneer: true
     rust:
       modules:
         - source: google/storage/v2

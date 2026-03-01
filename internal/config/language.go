@@ -166,7 +166,6 @@ type RustCrate struct {
 
 	// Modules specifies generation targets for veneer crates. Each module
 	// defines a source proto path, output location, and template to use.
-	// This is only used when the library has veneer: true.
 	Modules []*RustModule `yaml:"modules,omitempty"`
 
 	// PerServiceFeatures enables per-service feature flags.

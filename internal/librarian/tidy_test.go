@@ -567,9 +567,11 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 		Libraries: []*config.Library{
 			{
 				Name:         "google-cloud-storage",
-				Veneer:       true,
 				SkipGenerate: true,
 				Output:       "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{{}},
+				},
 			},
 		},
 	}

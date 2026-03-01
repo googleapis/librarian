@@ -160,7 +160,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if lib.Output != "" {
 		return lib.Output
 	}
-	if lib.Veneer {
+	if lib.IsVeneer() {
 		// Veneers require explicit output, so return empty if not set.
 		return ""
 	}
@@ -177,7 +177,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !lib.Veneer {
+	if !lib.IsVeneer() {
 		if len(lib.APIs) == 0 {
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
@@ -188,7 +188,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 	}
 	if lib.Output == "" {
-		if lib.Veneer {
+		if lib.IsVeneer() {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
 		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
