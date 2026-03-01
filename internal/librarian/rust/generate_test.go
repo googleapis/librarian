@@ -85,7 +85,69 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 }
 
-func TestSkipGenerateVeneer(t *testing.T) {
+func TestIsVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "rust modules with output",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "rust modules with api, no output",
+			lib: &config.Library{
+				Name: "google-cloud-storage",
+				APIs: []*config.API{
+					{Path: "google/storage/v2"},
+				},
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "output without api",
+			lib: &config.Library{
+				Name:   "storage-w1r3",
+				Output: "src/storage/benchmarks/w1r3",
+			},
+			want: true,
+		},
+		{
+			name: "output with api",
+			lib: &config.Library{
+				Name: "google-cloud-api",
+				APIs: []*config.API{
+					{Path: "google/api"},
+				},
+				Output: "src/generated/api/types",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsVeneer(test.lib); got != test.want {
+				t.Errorf("IsVeneer() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestGenerateVeneerNoModules(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 	module1Dir := filepath.Join(outDir, "src", "generated", "v1")

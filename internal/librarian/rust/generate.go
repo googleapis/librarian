@@ -31,6 +31,16 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// IsVeneer reports whether the library has handwritten code wrapping generated
+// code. A library is a veneer when it has Rust module configuration, or when
+// it has no APIs and an explicit output path.
+func IsVeneer(lib *config.Library) bool {
+	if lib.Rust != nil && len(lib.Rust.Modules) > 0 {
+		return true
+	}
+	return len(lib.APIs) == 0 && lib.Output != ""
+}
+
 // GenerateLibraries generates all the given libraries in parallel.
 func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *source.Sources) error {
 	// Generate all libraries in parallel.
@@ -45,7 +55,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources
 
 // generate generates a Rust client library.
 func generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
-	if library.Veneer {
+	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
 	if len(library.APIs) != 1 {
@@ -133,7 +143,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 
 // Keep returns the list of files to preserve when cleaning the output directory.
 func Keep(library *config.Library) ([]string, error) {
-	if !library.Veneer {
+	if !IsVeneer(library) {
 		return library.Keep, nil
 	}
 	// For veneers, keep all files outside module output directories. We walk
