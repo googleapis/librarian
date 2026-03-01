@@ -16,6 +16,7 @@ package golang
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,10 +64,11 @@ func TestGenerateInternalVersionFile(t *testing.T) {
 
 func TestGenerateClientVersionFile(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		apiPath string
-		wantDir string
+		name        string
+		library     *config.Library
+		apiPath     string
+		wantDir     string
+		wantPackage string
 	}{
 		{
 			name: "basic",
@@ -76,9 +78,9 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "secretmanager",
-							ImportPath:      "secretmanager/apiv1",
-							Path:            "google/cloud/secretmanager/v1",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
@@ -94,34 +96,35 @@ func TestGenerateClientVersionFile(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "secretmanager",
-							ImportPath:      "secretmanager/customdir/apiv1",
-							Path:            "google/cloud/secretmanager/v1",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/customdir/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
 			},
-			apiPath: "google/cloud/secretmanager/v1",
-			wantDir: "secretmanager/customdir/apiv1",
+			apiPath:     "google/cloud/secretmanager/v1",
+			wantDir:     "secretmanager/customdir/apiv1",
+			wantPackage: "secretmanager",
 		},
 		{
 			name: "custom client package",
 			library: &config.Library{
-				Name:   "storage",
+				Name:   "secretmanager",
 				Output: "", // set in test
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientPackageOverride: "storage",
-							ClientDirectory:       "internal",
-							ImportPath:            "storage/internal/apiv2",
-							Path:                  "google/cloud/storage/v2",
+							ClientPackage: "custompkg",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
 			},
-			apiPath: "google/cloud/storage/v2",
-			wantDir: "storage/internal/apiv2",
+			apiPath:     "google/cloud/secretmanager/v1",
+			wantDir:     "secretmanager/apiv1",
+			wantPackage: "custompkg",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -140,6 +143,9 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			if !strings.Contains(string(content), "versionClient = internal.Version") {
 				t.Errorf("want versionClient assignment in output, got:\n%s", content)
 			}
+			if !strings.Contains(string(content), fmt.Sprintf("package %s", test.wantPackage)) {
+				t.Errorf("want package %s, got:\n%s", test.wantPackage, content)
+			}
 		})
 	}
 }
@@ -152,10 +158,10 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 		Go: &config.GoModule{
 			GoAPIs: []*config.GoAPI{
 				{
-					ClientDirectory: "connectors",
-					ImportPath:      "alloydb/connectors/apiv1",
-					DisableGAPIC:    true,
-					Path:            "google/cloud/alloydb/connectors/v1",
+					ClientPackage: "connectors",
+					ImportPath:    "alloydb/connectors/apiv1",
+					DisableGAPIC:  true,
+					Path:          "google/cloud/alloydb/connectors/v1",
 				},
 			},
 		},
