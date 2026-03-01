@@ -157,13 +157,10 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 // isVeneer reports whether the library has handwritten code wrapping generated
 // code.
 func isVeneer(language string, lib *config.Library) bool {
-	if lib.Veneer {
-		return true
-	}
 	if language == languageRust {
 		return rust.IsVeneer(lib)
 	}
-	return false
+	return lib.Veneer
 }
 
 // libraryOutput returns the output path for a library. If the library has an

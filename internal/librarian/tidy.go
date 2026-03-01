@@ -71,7 +71,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
-	if isVeneer(cfg.Language, lib) {
+	if isVeneer(lib) {
 		// Veneers are never generated, so ensure skip_generate is false.
 		lib.SkipGenerate = false
 	}

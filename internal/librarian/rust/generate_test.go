@@ -92,25 +92,60 @@ func TestIsVeneer(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "empty modules",
-			lib:  &config.Library{Rust: &config.RustCrate{}},
+			name: "rust modules",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "rust modules with api",
+			lib: &config.Library{
+				Name: "google-cloud-storage",
+				APIs: []*config.API{
+					{Path: "google/storage/v2"},
+				},
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "output without api",
+			lib: &config.Library{
+				Name:   "storage-w1r3",
+				Output: "src/storage/benchmarks/w1r3",
+			},
+			want: true,
+		},
+		{
+			name: "api with output",
+			lib: &config.Library{
+				Name: "google-cloud-api",
+				APIs: []*config.API{
+					{Path: "google/api"},
+				},
+				Output: "src/generated/api/types",
+			},
 			want: false,
 		},
 		{
-			name: "with modules",
-			lib: &config.Library{Rust: &config.RustCrate{
-				Modules: []*config.RustModule{{}},
-			}},
-			want: true,
-		},
-		{
-			name: "no apis with output",
-			lib:  &config.Library{Output: "src/storage/benchmarks/w1r3"},
-			want: true,
-		},
-		{
-			name: "no apis without output",
-			lib:  &config.Library{},
+			name: "api without output",
+			lib: &config.Library{
+				Name: "google-cloud-secretmanager-v1",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
 			want: false,
 		},
 	} {
