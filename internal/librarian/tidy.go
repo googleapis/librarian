@@ -161,6 +161,7 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	if lib.Rust != nil && lib.Rust.Modules != nil {
 		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
 	}
+	lib.Veneer = false
 	return lib
 }
 
