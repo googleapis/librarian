@@ -88,7 +88,7 @@ var (
 // that individual test cases may modify their own instance as needed.
 func Config() *config.Config {
 	return &config.Config{
-		Language: "fake",
+		Language: config.LanguageFake,
 		Version:  LibrarianVersion,
 		Default: &config.Default{
 			TagFormat: "{name}/v{version}",

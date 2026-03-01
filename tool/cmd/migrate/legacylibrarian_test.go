@@ -108,7 +108,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "go",
+				Language: config.LanguageGo,
 				Repo:     "googleapis/google-cloud-go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -130,7 +130,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "python",
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -167,7 +167,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			fetchSource: defaultFetchSource,
 			repoPath:    "testdata/google-cloud-python",
 			want: &config.Config{
-				Language: "python",
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -231,7 +231,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "go",
+				Language: config.LanguageGo,
 				Repo:     "googleapis/google-cloud-go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -287,10 +287,14 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			fetchSource = test.fetchSource
+			var l config.Language
+			if err := l.UnmarshalText([]byte(test.lang)); err != nil {
+				t.Fatalf("unmarshal language %q: %v", test.lang, err)
+			}
 			input := &MigrationInput{
 				librarianState:  test.state,
 				librarianConfig: test.cfg,
-				lang:            test.lang,
+				lang:            l,
 				repoPath:        test.repoPath,
 			}
 			got, err := buildConfigFromLibrarian(t.Context(), input)

@@ -54,7 +54,7 @@ func TestResolveDependencies_Success(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: googleapisDir},
 				},
-				Language: "rust",
+				Language: config.LanguageRust,
 				Default: &config.Default{
 					Rust: &config.RustDefault{
 						PackageDependencies: []*config.RustPackageDependency{
@@ -90,7 +90,7 @@ func TestResolveDependencies_Success(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: googleapisDir},
 				},
-				Language: "rust",
+				Language: config.LanguageRust,
 				Default: &config.Default{
 					Rust: &config.RustDefault{
 						PackageDependencies: []*config.RustPackageDependency{
@@ -123,7 +123,7 @@ func TestResolveDependencies_Success(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: googleapisDir},
 				},
-				Language: "rust",
+				Language: config.LanguageRust,
 				Default: &config.Default{
 					Rust: &config.RustDefault{
 						PackageDependencies: []*config.RustPackageDependency{

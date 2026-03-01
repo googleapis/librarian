@@ -36,7 +36,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	svcConfig, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangRust)
+	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageRust)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *sour
 	}
 
 	modelCfg := &parser.ModelConfig{
-		Language:            "rust",
+		Language:            config.LanguageRust,
 		SpecificationFormat: specFormat,
 		SpecificationSource: specSource,
 		Source:              src,
@@ -222,7 +222,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	src := addLibraryRoots(library, sources)
 	var title string
 	if module.APIPath != "" && src["roots"] == "googleapis" {
-		api, err := serviceconfig.Find(sources.Googleapis, module.APIPath, serviceconfig.LangRust)
+		api, err := serviceconfig.Find(sources.Googleapis, module.APIPath, config.LanguageRust)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.APIPath, err)
 		}
@@ -231,8 +231,8 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		}
 	}
 
-	language := "rust"
-	if module.Language != "" {
+	language := config.LanguageRust
+	if module.Language != config.LanguageUnknown {
 		language = module.Language
 	}
 	specificationFormat := config.SpecProtobuf

@@ -6,7 +6,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `language` | string | Is the language for this workspace (go, python, rust). |
+| `language` | Language | Is the language for this workspace (go, python, rust). |
 | `version` | string | Is the librarian tool version to use. |
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python".<br><br>TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
@@ -223,7 +223,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
-| `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
+| `language` | Language | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |

@@ -139,7 +139,7 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sourc
 	}
 
 	var rustDartSources *source.Sources
-	if cfg.Language == languageRust || cfg.Language == languageDart {
+	if cfg.Language == config.LanguageRust || cfg.Language == config.LanguageDart {
 		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
 		if err != nil {
 			return "", nil, err
@@ -152,28 +152,28 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *source.Sourc
 
 // cleanLibraries iterates over all the given libraries sequentially,
 // delegating to language-specific code to clean each library.
-func cleanLibraries(language string, libraries []*config.Library) error {
+func cleanLibraries(language config.Language, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
-		case languageFake:
+		case config.LanguageFake:
 			// No cleaning needed.
-		case languageDart:
+		case config.LanguageDart:
 			if err := checkAndClean(library.Output, library.Keep); err != nil {
 				return err
 			}
-		case languageJava:
+		case config.LanguageJava:
 			if err := java.Clean(library); err != nil {
 				return err
 			}
-		case languagePython:
+		case config.LanguagePython:
 			if err := python.CleanLibrary(library); err != nil {
 				return err
 			}
-		case languageGo:
+		case config.LanguageGo:
 			if err := golang.Clean(library); err != nil {
 				return err
 			}
-		case languageRust:
+		case config.LanguageRust:
 			keep, err := rust.Keep(library)
 			if err != nil {
 				return fmt.Errorf("library %q: %w", library.Name, err)
@@ -188,51 +188,51 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 
 // generateLibraries delegates to language-specific code to generate all the
 // given libraries.
-func generateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string, src *source.Sources) error {
-	switch config.Language {
-	case languageFake:
+func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, googleapisDir string, src *source.Sources) error {
+	switch cfg.Language {
+	case config.LanguageFake:
 		return fakeGenerateLibraries(libraries)
-	case languageDart:
+	case config.LanguageDart:
 		return dart.GenerateLibraries(ctx, libraries, src)
-	case languagePython:
-		return python.GenerateLibraries(ctx, config, libraries, googleapisDir)
-	case languageGo:
+	case config.LanguagePython:
+		return python.GenerateLibraries(ctx, cfg, libraries, googleapisDir)
+	case config.LanguageGo:
 		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
-	case languageJava:
+	case config.LanguageJava:
 		return java.GenerateLibraries(ctx, libraries, googleapisDir)
-	case languageRust:
+	case config.LanguageRust:
 		return rust.GenerateLibraries(ctx, libraries, src)
 	default:
-		return fmt.Errorf("language %q does not support generation", config.Language)
+		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}
 }
 
 // formatLibraries iterates over all the given libraries sequentially,
 // delegating to language-specific code to format each library.
-func formatLibraries(ctx context.Context, language string, libraries []*config.Library) error {
+func formatLibraries(ctx context.Context, language config.Language, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
-		case languageFake:
+		case config.LanguageFake:
 			if err := fakeFormat(library); err != nil {
 				return err
 			}
-		case languageDart:
+		case config.LanguageDart:
 			if err := dart.Format(ctx, library); err != nil {
 				return err
 			}
-		case languageGo:
+		case config.LanguageGo:
 			if err := golang.Format(ctx, library); err != nil {
 				return err
 			}
-		case languageRust:
+		case config.LanguageRust:
 			if err := rust.Format(ctx, library); err != nil {
 				return err
 			}
-		case languagePython:
+		case config.LanguagePython:
 			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 			// generation and formatting for Python.
 			return nil
-		case languageJava:
+		case config.LanguageJava:
 			if err := java.Format(ctx, library); err != nil {
 				return err
 			}
@@ -245,35 +245,35 @@ func formatLibraries(ctx context.Context, language string, libraries []*config.L
 
 // postGenerate performs repository-level actions after all individual
 // libraries have been generated.
-func postGenerate(ctx context.Context, language string) error {
+func postGenerate(ctx context.Context, language config.Language) error {
 	switch language {
-	case languageRust:
+	case config.LanguageRust:
 		return rust.UpdateWorkspace(ctx)
-	case languageFake:
+	case config.LanguageFake:
 		return fakePostGenerate()
 	default:
 		return nil
 	}
 }
 
-func defaultOutput(language, name, api, defaultOut string) string {
+func defaultOutput(language config.Language, name, api, defaultOut string) string {
 	switch language {
-	case languageDart:
+	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
-	case languageRust:
+	case config.LanguageRust:
 		return rust.DefaultOutput(api, defaultOut)
-	case languagePython:
+	case config.LanguagePython:
 		return python.DefaultOutputByName(name, defaultOut)
 	default:
 		return defaultOut
 	}
 }
 
-func deriveAPIPath(language, name string) string {
+func deriveAPIPath(language config.Language, name string) string {
 	switch language {
-	case languageDart:
+	case config.LanguageDart:
 		return dart.DeriveAPIPath(name)
-	case languageRust:
+	case config.LanguageRust:
 		return rust.DeriveAPIPath(name)
 	default:
 		return strings.ReplaceAll(name, "-", "/")

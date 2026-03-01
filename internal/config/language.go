@@ -14,7 +14,118 @@
 
 package config
 
-import "github.com/googleapis/librarian/internal/yaml"
+import (
+	"fmt"
+
+	"github.com/googleapis/librarian/internal/yaml"
+)
+
+// Language is a programming language supported by Librarian.
+type Language int
+
+const (
+	// LanguageUnknown represents an unsupported or unspecified language.
+	LanguageUnknown Language = iota
+	// LanguageAll is the identifier for all languages.
+	LanguageAll
+	// LanguageCsharp is the language identifier for C#.
+	LanguageCsharp
+	// LanguageDart is the language identifier for Dart.
+	LanguageDart
+	// LanguageFake is the language identifier for Fakes.
+	LanguageFake
+	// LanguageGo is the language identifier for Go.
+	LanguageGo
+	// LanguageJava is the language identifier for Java.
+	LanguageJava
+	// LanguageNodejs is the language identifier for Node.js.
+	LanguageNodejs
+	// LanguagePhp is the language identifier for PHP.
+	LanguagePhp
+	// LanguagePython is the language identifier for Python.
+	LanguagePython
+	// LanguageRuby is the language identifier for Ruby.
+	LanguageRuby
+	// LanguageRust is the language identifier for Rust.
+	LanguageRust
+	// LanguageRustStorage is a variation of the Rust generator for storage.
+	LanguageRustStorage
+)
+
+// String returns the string representation of the language.
+func (l Language) String() string {
+	switch l {
+	case LanguageUnknown:
+		return "unknown"
+	case LanguageAll:
+		return "all"
+	case LanguageCsharp:
+		return "csharp"
+	case LanguageDart:
+		return "dart"
+	case LanguageFake:
+		return "fake"
+	case LanguageGo:
+		return "go"
+	case LanguageJava:
+		return "java"
+	case LanguageNodejs:
+		return "nodejs"
+	case LanguagePhp:
+		return "php"
+	case LanguagePython:
+		return "python"
+	case LanguageRuby:
+		return "ruby"
+	case LanguageRust:
+		return "rust"
+	case LanguageRustStorage:
+		return "rust_storage"
+	default:
+		panic(fmt.Sprintf("unknown language: %d", l))
+	}
+}
+
+// UnmarshalText implements [encoding.TextUnmarshaler].
+func (l *Language) UnmarshalText(text []byte) error {
+	str := string(text)
+	switch str {
+	case "unknown":
+		*l = LanguageUnknown
+	case "all":
+		*l = LanguageAll
+	case "csharp":
+		*l = LanguageCsharp
+	case "dart":
+		*l = LanguageDart
+	case "fake":
+		*l = LanguageFake
+	case "go":
+		*l = LanguageGo
+	case "java":
+		*l = LanguageJava
+	case "nodejs":
+		*l = LanguageNodejs
+	case "php":
+		*l = LanguagePhp
+	case "python":
+		*l = LanguagePython
+	case "ruby":
+		*l = LanguageRuby
+	case "rust":
+		*l = LanguageRust
+	case "rust_storage":
+		*l = LanguageRustStorage
+	default:
+		*l = LanguageUnknown
+	}
+	return nil
+}
+
+// MarshalText implements [encoding.TextMarshaler].
+func (l Language) MarshalText() ([]byte, error) {
+	return []byte(l.String()), nil
+}
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
@@ -115,7 +226,7 @@ type RustModule struct {
 
 	// Language can be used to select a variation of the Rust generator.
 	// For example, `rust_storage` enables special handling for the storage client.
-	Language string `yaml:"language,omitempty"`
+	Language Language `yaml:"language,omitempty"`
 
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").

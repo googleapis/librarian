@@ -569,11 +569,11 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: "target-language",
+							Language: config.LanguageRust,
 							Output:   "target-output",
 						},
 						{
-							Language: "other-language",
+							Language: config.LanguageRustStorage,
 							Output:   "other-output",
 						},
 					},
@@ -581,7 +581,7 @@ func TestFindModuleByOutput(t *testing.T) {
 			},
 			output: "target-output",
 			want: &config.RustModule{
-				Language: "target-language",
+				Language: config.LanguageRust,
 				Output:   "target-output",
 			},
 		},
@@ -592,7 +592,7 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: "other-language",
+							Language: config.LanguageRust,
 							Output:   "other-output",
 						},
 					},

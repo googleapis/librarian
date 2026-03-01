@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
@@ -38,7 +39,7 @@ func TestFromRepoMetadata(t *testing.T) {
 				DefaultVersion:       "default-version-ignored",
 				DistributionName:     "distribution-name",
 				IssueTracker:         "issue-tracker",
-				Language:             "language",
+				Language:             config.LanguageGo,
 				LibraryType:          "library-type-ignored",
 				Name:                 "name",
 				NamePretty:           "name-pretty-ignored",
@@ -50,7 +51,7 @@ func TestFromRepoMetadata(t *testing.T) {
 				DistributionName: "distribution-name",
 				GithubRepository: "repo",
 				IssueTracker:     "issue-tracker",
-				Language:         "language",
+				Language:         config.LanguageGo,
 				Name:             "name",
 				ProductPage:      "product-documentation",
 			},

@@ -47,8 +47,8 @@ var (
 	// options. Over time, languages should align on versioning semantics and
 	// this should be removed. If a language does not have specific needs, a
 	// default [semver.DeriveNextOptions] is returned for default semantics.
-	languageVersioningOptions = map[string]semver.DeriveNextOptions{
-		"rust": {
+	languageVersioningOptions = map[config.Language]semver.DeriveNextOptions{
+		config.LanguageRust: {
 			BumpVersionCore:       true,
 			DowngradePreGAChanges: true,
 		},
@@ -111,7 +111,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	if cfg.Language == languageRust {
+	if cfg.Language == config.LanguageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
 	}
 
@@ -196,9 +196,9 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 	lib.Version = version
 
 	switch cfg.Language {
-	case languageFake:
+	case config.LanguageFake:
 		return fakeBumpLibrary(output, version)
-	case languagePython:
+	case config.LanguagePython:
 		return python.Bump(output, version)
 	default:
 		return fmt.Errorf("%q does not support bump", cfg.Language)
@@ -208,7 +208,7 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 // postBump performs post version bump cleanup and maintenance tasks after libraries have been processed.
 func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
-	case languageRust:
+	case config.LanguageRust:
 		cargoExe := "cargo"
 		if cfg.Release != nil {
 			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
@@ -417,9 +417,9 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	}
 	output := libraryOutput(cfg.Language, lib, cfg.Default)
 	switch cfg.Language {
-	case languageRust:
+	case config.LanguageRust:
 		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
-	case languageFake:
+	case config.LanguageFake:
 		lib.Version = version
 		return fakeBumpLibrary(output, version)
 	default:

@@ -70,7 +70,7 @@ type MigrationInput struct {
 	librarianState  *legacyconfig.LibrarianState
 	librarianConfig *legacyconfig.LibrarianConfig
 	repoConfig      *RepoConfig
-	lang            string
+	lang            config.Language
 	repoPath        string
 	googleapisDir   string
 }
@@ -91,11 +91,15 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 		return err
 	}
 
+	var l config.Language
+	if err := l.UnmarshalText([]byte(language)); err != nil {
+		return err
+	}
 	cfg, err := buildConfigFromLibrarian(ctx, &MigrationInput{
 		librarianState:  librarianState,
 		librarianConfig: librarianConfig,
 		repoConfig:      repoConfig,
-		lang:            language,
+		lang:            l,
 		repoPath:        repoPath,
 	})
 	if err != nil {
@@ -109,7 +113,7 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 
 func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"
-	if input.lang == "python" {
+	if input.lang == config.LanguagePython {
 		repo = "googleapis/google-cloud-python"
 	}
 
@@ -129,7 +133,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		},
 	}
 
-	if input.lang == "python" {
+	if input.lang == config.LanguagePython {
 		cfg.Default.Python = &config.PythonDefault{
 			// Declared in python.go.
 			CommonGAPICPaths: pythonDefaultCommonGAPICPaths,

@@ -70,7 +70,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
-	case languageRust:
+	case config.LanguageRust:
 		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
@@ -87,15 +87,15 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language, api string) string {
+func deriveLibraryName(language config.Language, api string) string {
 	switch language {
-	case languageDart:
+	case config.LanguageDart:
 		return dart.DefaultLibraryName(api)
-	case languageFake:
+	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
-	case languagePython:
+	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
-	case languageRust:
+	case config.LanguageRust:
 		return rust.DefaultLibraryName(api)
 	default:
 		return strings.ReplaceAll(api, "/", "-")

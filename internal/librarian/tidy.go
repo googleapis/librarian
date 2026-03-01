@@ -97,7 +97,7 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	return lib.Output == derivedOutput
 }
 
-func isDerivableAPIPath(language string, name, api string) bool {
+func isDerivableAPIPath(language config.Language, name, api string) bool {
 	return api == deriveAPIPath(language, name)
 }
 
@@ -135,12 +135,12 @@ func validateLibraries(cfg *config.Config) error {
 
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
-var languageTidiers = map[string]func(*config.Library) *config.Library{
-	languageRust: tidyRustConfig,
+var languageTidiers = map[config.Language]func(*config.Library) *config.Library{
+	config.LanguageRust: tidyRustConfig,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
-func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
+func tidyLanguageConfig(lib *config.Library, language config.Language) *config.Library {
 	if tidier, ok := languageTidiers[language]; ok {
 		return tidier(lib)
 	}
