@@ -87,15 +87,8 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 		return err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
-	pkg := library.Name
-	if goAPI.ClientDirectory != "" {
-		pkg = goAPI.ClientDirectory
-	}
-	if goAPI.ClientPackageOverride != "" {
-		pkg = goAPI.ClientPackageOverride
-	}
 	return t.Execute(f, map[string]any{
-		"Package":    pkg,
+		"Package":    goAPI.ClientPackage,
 		"ModulePath": modulePath(library),
 	})
 }
