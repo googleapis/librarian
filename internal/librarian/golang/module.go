@@ -36,12 +36,12 @@ func Fill(library *config.Library) *config.Library {
 				Path: api.Path,
 			}
 		}
-		importPath, clientDir := defaultImportPathAndClientPkg(api.Path)
+		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
 		}
-		if goAPI.ClientDirectory == "" {
-			goAPI.ClientDirectory = clientDir
+		if goAPI.ClientPackage == "" {
+			goAPI.ClientPackage = clientPkg
 		}
 		goAPIs = append(goAPIs, goAPI)
 	}

@@ -39,9 +39,9 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "secretmanager",
-							ImportPath:      "secretmanager/apiv1",
-							Path:            "google/cloud/secretmanager/v1",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
@@ -73,14 +73,14 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "analyticshub",
-							ImportPath:      "bigquery/analyticshub/apiv1",
-							Path:            "google/cloud/bigquery/analyticshub/v1",
+							ClientPackage: "analyticshub",
+							ImportPath:    "bigquery/analyticshub/apiv1",
+							Path:          "google/cloud/bigquery/analyticshub/v1",
 						},
 						{
-							ClientDirectory: "biglake",
-							ImportPath:      "bigquery/biglake/apiv1",
-							Path:            "google/cloud/bigquery/biglake/v1",
+							ClientPackage: "biglake",
+							ImportPath:    "bigquery/biglake/apiv1",
+							Path:          "google/cloud/bigquery/biglake/v1",
 						},
 					},
 				},
@@ -94,8 +94,8 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "custom", // This value will be kept.
-							Path:            "google/cloud/example/v1",
+							ClientPackage: "custom", // This value will be kept.
+							Path:          "google/cloud/example/v1",
 						},
 					},
 				},
@@ -106,9 +106,9 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "custom",
-							ImportPath:      "example/apiv1",
-							Path:            "google/cloud/example/v1",
+							ClientPackage: "custom",
+							ImportPath:    "example/apiv1",
+							Path:          "google/cloud/example/v1",
 						},
 					},
 				},
@@ -136,7 +136,7 @@ func TestFill(t *testing.T) {
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory:    "example",
+							ClientPackage:      "example",
 							ImportPath:         "example/apiv1",
 							NoRESTNumericEnums: true,
 							Path:               "google/cloud/example/v1",
@@ -169,16 +169,16 @@ func TestFindGoAPI(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/secretmanager/v1",
-							ClientDirectory: "customDir",
+							Path:          "google/cloud/secretmanager/v1",
+							ClientPackage: "customDir",
 						},
 					},
 				},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			want: &config.GoAPI{
-				Path:            "google/cloud/secretmanager/v1",
-				ClientDirectory: "customDir",
+				Path:          "google/cloud/secretmanager/v1",
+				ClientPackage: "customDir",
 			},
 		},
 		{
@@ -195,8 +195,8 @@ func TestFindGoAPI(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/secretmanager/v1",
-							ClientDirectory: "customDir",
+							Path:          "google/cloud/secretmanager/v1",
+							ClientPackage: "customDir",
 						},
 					},
 				},
