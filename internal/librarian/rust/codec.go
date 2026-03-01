@@ -226,9 +226,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.APIPath, err)
 		}
-		if api != nil && api.Title != "" {
-			title = api.Title
-		}
+		title = api.Title
 	}
 
 	language := "rust"

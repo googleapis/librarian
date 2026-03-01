@@ -102,6 +102,16 @@ func TestIsVeneer(t *testing.T) {
 			}},
 			want: true,
 		},
+		{
+			name: "no apis with output",
+			lib:  &config.Library{Output: "src/storage/benchmarks/w1r3"},
+			want: true,
+		},
+		{
+			name: "no apis without output",
+			lib:  &config.Library{},
+			want: false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := IsVeneer(test.lib); got != test.want {

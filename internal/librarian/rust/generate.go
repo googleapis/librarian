@@ -32,9 +32,13 @@ import (
 )
 
 // IsVeneer reports whether the library has handwritten code wrapping generated
-// code. A library is a veneer when it has Rust module configuration.
+// code. A library is a veneer when it has Rust module configuration, or when
+// it has no APIs and an explicit output path.
 func IsVeneer(lib *config.Library) bool {
-	return lib.Rust != nil && len(lib.Rust.Modules) > 0
+	if lib.Rust != nil && len(lib.Rust.Modules) > 0 {
+		return true
+	}
+	return len(lib.APIs) == 0 && lib.Output != ""
 }
 
 // GenerateLibraries generates all the given libraries in parallel.
