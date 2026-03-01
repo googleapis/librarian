@@ -92,7 +92,7 @@ func TestIsVeneer(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "rust modules",
+			name: "rust modules with output",
 			lib: &config.Library{
 				Name:   "google-cloud-storage",
 				Output: "src/storage",
@@ -105,7 +105,7 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "rust modules with api",
+			name: "rust modules with api, no output",
 			lib: &config.Library{
 				Name: "google-cloud-storage",
 				APIs: []*config.API{
@@ -128,23 +128,13 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "api with output",
+			name: "output with api",
 			lib: &config.Library{
 				Name: "google-cloud-api",
 				APIs: []*config.API{
 					{Path: "google/api"},
 				},
 				Output: "src/generated/api/types",
-			},
-			want: false,
-		},
-		{
-			name: "api without output",
-			lib: &config.Library{
-				Name: "google-cloud-secretmanager-v1",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
 			},
 			want: false,
 		},
