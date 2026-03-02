@@ -79,7 +79,7 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	for _, k := range keep {
 		path := filepath.Join(dir, k)
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("keep file %q does not exist", k)
+			return nil, fmt.Errorf("error keeping %s: %w", k, err)
 		}
 		// Effectively get a canonical relative path. While in most cases
 		// this will be equal to k, it might not be - in particular,

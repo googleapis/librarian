@@ -15,12 +15,13 @@
 package golang
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -155,14 +156,14 @@ func TestClean_Error(t *testing.T) {
 		outputFiles  []string
 		snippetFiles []string
 		keep         []string
-		wantErrMsg   string
+		wantErr      error
 	}{
 		{
 			name:         "keep file not found in output directory",
 			outputFiles:  []string{"file2.go"},
 			snippetFiles: []string{"snippet1.go"},
 			keep:         []string{"file1.go"},
-			wantErrMsg:   "keep file \"file1.go\" does not exist",
+			wantErr:      fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -185,8 +186,8 @@ func TestClean_Error(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error")
 			}
-			if diff := cmp.Diff(test.wantErrMsg, err.Error()); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("CleanLibrary error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
