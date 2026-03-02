@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -154,12 +153,28 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 	return nil
 }
 
-var headerRegex = regexp.MustCompile(`\* Copyright \d{4} Google LLC`)
-
 // addMissingHeaders prepends the license header to all Java files in the given directory
 // if they don't already have one.
 func addMissingHeaders(dir string) error {
 	year := time.Now().Year()
+	licenseText := buildLicenseText(year)
+	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || !d.Type().IsRegular() || filepath.Ext(path) != ".java" {
+			return err
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if license.HasHeader(content) {
+			return nil
+		}
+		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
+	})
+}
+
+// buildLicenseText constructs the complete license header text for the given year.
+func buildLicenseText(year int) string {
 	lines := license.Header(strconv.Itoa(year))
 	var b strings.Builder
 	b.WriteString("/*\n")
@@ -169,21 +184,7 @@ func addMissingHeaders(dir string) error {
 		b.WriteString("\n")
 	}
 	b.WriteString(" */\n")
-	licenseText := b.String()
-
-	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || !d.Type().IsRegular() || filepath.Ext(path) != ".java" {
-			return err
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if headerRegex.Match(content) {
-			return nil
-		}
-		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
-	})
+	return b.String()
 }
 
 func createProtocOptions(api *config.API, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {

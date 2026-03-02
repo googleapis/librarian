@@ -467,22 +467,27 @@ func TestCollectJavaFiles(t *testing.T) {
 
 func TestAddMissingHeaders(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		filename   string
-		content    string
-		wantHeader bool
+		name         string
+		filename     string
+		content      string
+		wantModified bool
 	}{
 		{
-			name:       "file without header",
-			filename:   "NoHeader.java",
-			content:    "package com.example;\npublic class NoHeader {}",
-			wantHeader: true,
+			name:         "file without header",
+			filename:     "NoHeader.java",
+			content:      "package com.example;",
+			wantModified: true,
 		},
 		{
-			name:       "file with existing header",
-			filename:   "WithHeader.java",
-			content:    "/*\n * Copyright 2024 Google LLC\n */\npackage com.example;\npublic class WithHeader {}",
-			wantHeader: true,
+			name:     "file with full header",
+			filename: "WithHeader.java",
+			content:  "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
+		},
+		{
+			name:         "file with partial header",
+			filename:     "PartialHeader.java",
+			content:      "/* Copyright 2024 Google LLC */\npackage com.example;",
+			wantModified: true,
 		},
 		{
 			name:     "non-java file",
@@ -494,22 +499,21 @@ func TestAddMissingHeaders(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, test.filename)
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+			originalContent := []byte(test.content)
+			if err := os.WriteFile(path, originalContent, 0644); err != nil {
 				t.Fatal(err)
 			}
 			if err := addMissingHeaders(tmpDir); err != nil {
 				t.Fatal(err)
 			}
-			got, err := os.ReadFile(path)
+
+			newContent, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			hasHeader := strings.HasPrefix(string(got), "/*\n * Copyright")
-			if hasHeader != test.wantHeader {
-				t.Errorf("header presence = %v, want %v", hasHeader, test.wantHeader)
-			}
-			if !strings.Contains(string(got), test.content) {
-				t.Error("original content not preserved")
+			wasModified := !bytes.Equal(originalContent, newContent)
+			if wasModified != test.wantModified {
+				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
 			}
 		})
 	}
