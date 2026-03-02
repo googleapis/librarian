@@ -24,10 +24,10 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -42,7 +42,7 @@ func IsVeneer(lib *config.Library) bool {
 }
 
 // GenerateLibraries generates all the given libraries in parallel.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *source.Sources) error {
+func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
@@ -54,7 +54,7 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources
 }
 
 // generate generates a Rust client library.
-func generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
+func generate(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
 	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -109,7 +109,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *source.Sources) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
@@ -199,7 +199,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *source.Sources) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *sidekickconfig.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {

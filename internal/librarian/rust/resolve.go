@@ -22,12 +22,12 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 // ResolveDependencies automatically resolves Protobuf dependencies for a Rust library.
-func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library, sources *source.Sources) (*config.Config, error) {
+func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library, sources *sidekickconfig.Sources) (*config.Config, error) {
 	if len(lib.APIs) == 0 {
 		return cfg, nil
 	}
@@ -41,7 +41,7 @@ func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Li
 // findExternalPackages identifies Protobuf packages that are used by the library
 // but not defined within it. It parses the library's APIs into a model,
 // finds all transitive dependencies, and returns the set of external Protobuf packages.
-func findExternalPackages(lib *config.Library, sources *source.Sources) (map[string]bool, error) {
+func findExternalPackages(lib *config.Library, sources *sidekickconfig.Sources) (map[string]bool, error) {
 	// Only resolve dependencies for the first API in the library.
 	// This is consistent with how the Rust generator works.
 	modelConfig, err := libraryToModelConfig(lib, lib.APIs[0], sources)

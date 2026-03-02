@@ -21,11 +21,11 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
-func libraryToModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
@@ -218,7 +218,7 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *source.Sources) (*parser.ModelConfig, error) {
+func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
 	src := addLibraryRoots(library, sources)
 	var title string
 	if module.APIPath != "" && src["roots"] == "googleapis" {
@@ -322,7 +322,7 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
-func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
+func addLibraryRoots(library *config.Library, sources *sidekickconfig.Sources) map[string]string {
 	src := make(map[string]string)
 	if library.Rust == nil {
 		library.Rust = &config.RustCrate{}

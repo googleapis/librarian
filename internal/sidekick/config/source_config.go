@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package config provides configuration types and utilities for sidekick.
 package config
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 // Sources contains the directory paths for source repositories used by
@@ -73,4 +76,41 @@ func (c SourceConfig) Resolve(relPath string) (string, error) {
 		}
 	}
 	return relPath, nil
+}
+
+// SourceRoots returns the roots from the options map.
+// Legacy helper for map-based configuration.
+func SourceRoots(options map[string]string) []string {
+	var roots []string
+	if r, ok := options["roots"]; ok {
+		for _, root := range strings.Split(r, ",") {
+			key := root
+			if _, ok := options[key]; ok {
+				roots = append(roots, key)
+				continue
+			}
+			key = root + "-root"
+			if _, ok := options[key]; ok {
+				roots = append(roots, key)
+			}
+		}
+	}
+	// Also include any key that ends in "-root"
+	for key := range options {
+		if strings.HasSuffix(key, "-root") {
+			// Check if already added via "roots"
+			found := false
+			for _, r := range roots {
+				if r == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				roots = append(roots, key)
+			}
+		}
+	}
+	sort.Strings(roots)
+	return roots
 }

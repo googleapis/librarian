@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/source"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -67,7 +67,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(outDir, "generated", library.Name)
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
@@ -100,7 +100,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			APIs:                []*config.API{{Path: "broken"}},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	gotErr := GenerateLibraries(t.Context(), libraries, sources)
@@ -147,7 +147,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := generate(t.Context(), library, sources); err != nil {

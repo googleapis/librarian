@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 var (
@@ -32,10 +33,13 @@ const (
 
 func TestBasic(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,12 +57,15 @@ func TestBasic(t *testing.T) {
 
 func TestTooManyOptions(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"exclude-list":    "d,e,f",
-		"include-list":    "a,b,c",
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
+		IncludeList: []string{"a", "b", "c"},
+		ExcludeList: []string{"d", "e", "f"},
 	}
-	_, err := DetermineInputFiles(source, options)
+	_, err := DetermineInputFiles(source, cfg)
 	if err == nil {
 		t.Errorf("expected an error when setting both exclude-list and include-list")
 	}
@@ -66,11 +73,14 @@ func TestTooManyOptions(t *testing.T) {
 
 func TestIncludeList(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"include-list":    "resources.proto",
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
+		IncludeList: []string{"resources.proto"},
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,11 +97,14 @@ func TestIncludeList(t *testing.T) {
 
 func TestExcludeList(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"exclude-list":    "resources.proto",
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
+		ExcludeList: []string{"resources.proto"},
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
