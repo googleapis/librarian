@@ -139,6 +139,8 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	args := []string{"-w", filepath.Join(outDir, library.Name)}
+	// TODO(https://github.com/googleapis/librarian/issues/4297), refactor this function
+	// to use import path.
 	snippetDir := snippetDirectory(outDir, library.Name)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
