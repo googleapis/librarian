@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"golang.org/x/sync/errgroup"
 )
 
 // semverData holds parameters for running semver checks.
@@ -36,6 +37,10 @@ type semverData struct {
 	gitPath         string
 	env             map[string]string
 }
+
+// maxSemverConcurrency is set to 8 based on performance testing
+// on 64-core workstations (17m vs 2h serial).
+const maxSemverConcurrency = 8
 
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
@@ -120,12 +125,17 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 
 // runSemverChecks iterates through manifests and runs semver checks for each.
 func runSemverChecks(ctx context.Context, semverData semverData) error {
+	group, ctx := errgroup.WithContext(ctx)
+	group.SetLimit(maxSemverConcurrency)
 	for name, manifest := range semverData.manifests {
-		if err := semverCheck(ctx, semverData, name, manifest); err != nil {
-			return err
-		}
+		group.Go(func() error {
+			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
+				return fmt.Errorf("semver check failed for %s: %w", name, err)
+			}
+			return nil
+		})
 	}
-	return nil
+	return group.Wait()
 }
 
 // runSemverChecks iterates through manifests and runs semver checks for each.
@@ -135,7 +145,7 @@ func semverCheck(ctx context.Context, semverData semverData, name string, manife
 		return nil
 	}
 	slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
-	err := command.Run(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
+	err := command.Run(ctx, semverData.cargoPath, "semver-checks", "--frozen", "--all-features", "-p", name)
 	if err != nil && semverData.dryRunKeepGoing {
 		slog.Error("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
 		return nil

@@ -16,7 +16,9 @@ package rust
 
 import (
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -524,6 +526,114 @@ fi
 			}
 			if diff := cmp.Diff(test.wantErr, got); diff != "" {
 				t.Errorf("publishCrates() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRunSemverChecks(t *testing.T) {
+	for _, tt := range []struct {
+		name            string
+		manifests       map[string]string
+		dryRunKeepGoing bool
+	}{
+		{
+			name: "all crates pass",
+			manifests: map[string]string{
+				"crate-a": "a/Cargo.toml",
+				"crate-b": "b/Cargo.toml",
+			},
+		},
+		{
+			name: "dry-run-keep-going ignores failures",
+			manifests: map[string]string{
+				"fail-me": "fail/Cargo.toml",
+			},
+			dryRunKeepGoing: true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			mainGo := filepath.Join(tmpDir, "main.go")
+			// Create a native executable name (with .exe on Windows)
+			exeName := "fake_cargo"
+			if runtime.GOOS == "windows" {
+				exeName += ".exe"
+			}
+			fakeCargoExe := filepath.Join(tmpDir, exeName)
+
+			src := `package main
+import ("os"; "strings")
+func main() {
+	if strings.Contains(strings.Join(os.Args, " "), "fail-me") { os.Exit(1) }
+	os.Exit(0)
+}`
+			if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			// Compile the fake cargo once per test case
+			cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
+			}
+
+			sData := semverData{
+				manifests:       tt.manifests,
+				cargoPath:       fakeCargoExe,
+				dryRunKeepGoing: tt.dryRunKeepGoing,
+			}
+
+			if err := runSemverChecks(t.Context(), sData); err != nil {
+				t.Errorf("runSemverChecks() unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestRunSemverChecks_Errors(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		manifests map[string]string
+		wantErr   string
+	}{
+		{
+			name: "single crate failure",
+			manifests: map[string]string{
+				"fail-me": "fail/Cargo.toml",
+			},
+			wantErr: "semver check failed for fail-me",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			mainGo := filepath.Join(tmpDir, "main.go")
+			exeName := "fake_cargo"
+			if runtime.GOOS == "windows" {
+				exeName += ".exe"
+			}
+			fakeCargoExe := filepath.Join(tmpDir, exeName)
+
+			if err := os.WriteFile(mainGo, []byte("package main; import \"os\"; func main() { os.Exit(1) }"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
+			}
+
+			sData := semverData{
+				manifests: tt.manifests,
+				cargoPath: fakeCargoExe,
+			}
+
+			err := runSemverChecks(t.Context(), sData)
+			if err == nil {
+				t.Fatal("runSemverChecks() expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error %q does not contain %q", err, tt.wantErr)
 			}
 		})
 	}
