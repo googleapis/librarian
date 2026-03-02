@@ -29,12 +29,8 @@ import (
 var (
 	//go:embed template/*.tmpl
 	templatesFS embed.FS
-	templates   *template.Template
+	templates   = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
 )
-
-func init() {
-	templates = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
-}
 
 const (
 	// clirrIgnoreFile is the name of the Clirr ignore file to generate.
