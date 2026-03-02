@@ -60,9 +60,9 @@ func TestGenerateLibraries(t *testing.T) {
 			Go: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -80,9 +80,9 @@ func TestGenerateLibraries(t *testing.T) {
 			Go: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "configdelivery",
-						ImportPath:      "configdelivery/apiv1",
-						Path:            "google/cloud/configdelivery/v1",
+						ClientPackage: "configdelivery",
+						ImportPath:    "configdelivery/apiv1",
+						Path:          "google/cloud/configdelivery/v1",
 					},
 				},
 			},
@@ -128,9 +128,9 @@ func TestGenerateLibraries_Error(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								ClientDirectory: "non-existent",
-								ImportPath:      "non-existent/apiv1",
-								Path:            "google/cloud/non-existent/v1",
+								ClientPackage: "non-existent",
+								ImportPath:    "non-existent/apiv1",
+								Path:          "google/cloud/non-existent/v1",
 							},
 						},
 					},
@@ -190,9 +190,9 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -214,9 +214,9 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/v2/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/v2/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -232,9 +232,9 @@ func TestGenerate(t *testing.T) {
 				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secretmanagerpb"},
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -252,9 +252,9 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "secretmanager/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -271,9 +271,9 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						ImportPath:      "customdir/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						ImportPath:    "customdir/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -288,10 +288,10 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "secretmanager",
-						DisableGAPIC:    true,
-						ImportPath:      "secretmanager/apiv1",
-						Path:            "google/cloud/secretmanager/v1",
+						ClientPackage: "secretmanager",
+						DisableGAPIC:  true,
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
@@ -309,8 +309,8 @@ func TestGenerate(t *testing.T) {
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientDirectory: "gkehub",
-						ImportPath:      "gkehub/apiv1",
+						ClientPackage: "gkehub",
+						ImportPath:    "gkehub/apiv1",
 						NestedProtos: []string{
 							"configmanagement/configmanagement.proto",
 							"multiclusteringress/multiclusteringress.proto",
@@ -609,9 +609,9 @@ func TestBuildGAPICImportPath(t *testing.T) {
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "secretmanager",
-				ImportPath:      "secretmanager/apiv1",
-				Path:            "google/cloud/secretmanager/v1",
+				ClientPackage: "secretmanager",
+				ImportPath:    "secretmanager/apiv1",
+				Path:          "google/cloud/secretmanager/v1",
 			},
 			want: "cloud.google.com/go/secretmanager/apiv1;secretmanager",
 		},
@@ -621,10 +621,9 @@ func TestBuildGAPICImportPath(t *testing.T) {
 				Name: "storage",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory:       "internal",
-				ClientPackageOverride: "storage",
-				ImportPath:            "storage/internal/apiv2",
-				Path:                  "google/storage/v2",
+				ClientPackage: "storage",
+				ImportPath:    "storage/internal/apiv2",
+				Path:          "google/storage/v2",
 			},
 			want: "cloud.google.com/go/storage/internal/apiv2;storage",
 		},
@@ -760,9 +759,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "secretmanager",
-				ImportPath:      "secretmanager/apiv1",
-				Path:            "google/cloud/secretmanager/v1",
+				ClientPackage: "secretmanager",
+				ImportPath:    "secretmanager/apiv1",
+				Path:          "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -783,7 +782,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory:    "secretmanager",
+				ClientPackage:      "secretmanager",
 				ImportPath:         "secretmanager/apiv1",
 				NoRESTNumericEnums: true,
 				Path:               "google/cloud/secretmanager/v1",
@@ -806,9 +805,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "0.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "secretmanager",
-				ImportPath:      "secretmanager/apiv1",
-				Path:            "google/cloud/secretmanager/v1",
+				ClientPackage: "secretmanager",
+				ImportPath:    "secretmanager/apiv1",
+				Path:          "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -829,9 +828,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "gkehub",
-				ImportPath:      "gkehub/apiv1",
-				Path:            "google/cloud/gkehub/v1",
+				ClientPackage: "gkehub",
+				ImportPath:    "gkehub/apiv1",
+				Path:          "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -851,10 +850,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "gkehub",
-				ImportPath:      "gkehub/apiv1",
-				NoMetadata:      true,
-				Path:            "google/cloud/gkehub/v1",
+				ClientPackage: "gkehub",
+				ImportPath:    "gkehub/apiv1",
+				NoMetadata:    true,
+				Path:          "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -874,7 +873,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/bigquery/v2"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory:          "bigquery",
+				ClientPackage:            "bigquery",
 				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
 				ImportPath:               "bigquery/v2/apiv2",
 				Path:                     "google/cloud/bigquery/v2",
@@ -899,9 +898,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory: "apigeeconnect",
-				ImportPath:      "apigeeconnect/apiv1",
-				Path:            "google/cloud/apigeeconnect/v1",
+				ClientPackage: "apigeeconnect",
+				ImportPath:    "apigeeconnect/apiv1",
+				Path:          "google/cloud/apigeeconnect/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -921,7 +920,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientDirectory:    "compute",
+				ClientPackage:      "compute",
 				ImportPath:         "compute/apiv1",
 				HasDiregapic:       true,
 				NoRESTNumericEnums: true,

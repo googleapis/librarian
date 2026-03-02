@@ -255,7 +255,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				slices.Sort(enabledGenFeats)
 				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
-					ClientDirectory:          api.ClientDirectory,
+					ClientPackage:            api.ClientDirectory,
 					DisableGAPIC:             api.DisableGAPIC,
 					EnabledGeneratorFeatures: enabledGenFeats,
 					ImportPath:               api.ImportPath,
@@ -290,7 +290,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			if index == -1 {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
-			goAPI.ClientDirectory = info.ClientPackageName
+			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {

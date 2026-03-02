@@ -38,9 +38,9 @@ func TestGenerateRepoMetadata(t *testing.T) {
 		Go: &config.GoModule{
 			GoAPIs: []*config.GoAPI{
 				{
-					ClientDirectory: "secretmanager",
-					ImportPath:      "secretmanager/apiv1",
-					Path:            "google/cloud/secretmanager/v1",
+					ClientPackage: "secretmanager",
+					ImportPath:    "secretmanager/apiv1",
+					Path:          "google/cloud/secretmanager/v1",
 				},
 			},
 		},
@@ -109,9 +109,9 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "secretmanager",
-							ImportPath:      "secretmanager/apiv1",
-							Path:            "google/cloud/secretmanager/v1",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
@@ -130,9 +130,9 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientDirectory: "secretmanager",
-							ImportPath:      "secretmanager/apiv1",
-							Path:            "google/cloud/secretmanager/v1",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},

@@ -165,6 +165,9 @@ type API struct {
 	State *APIState
 	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
 	ResourceDefinitions []*Resource
+	// QuickstartService is the service that will be used to generate the quickstart sample
+	// at the package level.
+	QuickstartService *Service
 	// Language specific annotations.
 	Codec any
 }
@@ -230,6 +233,9 @@ type Service struct {
 	// The model this service belongs to, mustache templates use this field to
 	// navigate the data structure.
 	Model *API
+	// QuickstartMethod is the method that will be used to generate the quickstart sample
+	// for this service.
+	QuickstartMethod *Method
 	// Language specific annotations.
 	Codec any
 }
