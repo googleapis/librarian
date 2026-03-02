@@ -154,7 +154,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 					DescriptionOverride: "The Cloud Billing Budget API stores Cloud Billing budgets, which define a budget plan and the rules to execute as spend is tracked against that plan.",
 					Python: &config.PythonPackage{
 						DefaultVersion:               "v1beta",
-						NamePrettyOverride:           "Cloud Billing Budget",
+						NamePrettyOverride:           "Cloud Billing Budget API",
 						ProductDocumentationOverride: "https://cloud.google.com/billing/docs/how-to/budget-api-overview",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/billing/budgets/v1":      {"transport=grpc+rest"},
@@ -188,7 +188,6 @@ func TestBuildPythonLibraries(t *testing.T) {
 					},
 					DescriptionOverride: "Manage BigQuery connections to external data sources.",
 					Python: &config.PythonPackage{
-						NamePrettyOverride:           "BigQuery Connection",
 						ProductDocumentationOverride: "https://cloud.google.com/bigquery/docs/reference/bigqueryconnection",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/bigquery/connection/v1": {

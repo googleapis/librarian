@@ -628,19 +628,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 			},
 			want: "cloud.google.com/go/storage/internal/apiv2;storage",
 		},
-		{
-			name: "version suffix",
-			library: &config.Library{
-				Name: "monitoring",
-			},
-			goAPI: &config.GoAPI{
-				ClientDirectory: "monitoring",
-				ImportPath:      "monitoring/apiv3",
-				Path:            "google/monitoring/v3",
-				VersionSuffix:   "v2",
-			},
-			want: "cloud.google.com/go/monitoring/apiv3/v2;monitoring",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGAPICImportPath(test.library, test.goAPI)

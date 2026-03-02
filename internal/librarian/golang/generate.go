@@ -224,10 +224,6 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 }
 
 func buildGAPICImportPath(library *config.Library, goAPI *config.GoAPI) string {
-	importPath := goAPI.ImportPath
-	if goAPI.VersionSuffix != "" {
-		importPath = fmt.Sprintf("%s/%s", importPath, goAPI.VersionSuffix)
-	}
 	clientPkg := goAPI.ClientDirectory
 	if goAPI.ClientPackageOverride != "" {
 		clientPkg = goAPI.ClientPackageOverride
@@ -237,7 +233,7 @@ func buildGAPICImportPath(library *config.Library, goAPI *config.GoAPI) string {
 		modulePathVersion = "/" + library.Go.ModulePathVersion
 	}
 	return fmt.Sprintf("cloud.google.com/go/%s%s;%s",
-		importPath, modulePathVersion, clientPkg)
+		goAPI.ImportPath, modulePathVersion, clientPkg)
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.

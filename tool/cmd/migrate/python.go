@@ -310,7 +310,7 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		if err != nil {
 			return nil, err
 		}
-		defaultTitle = apiInfo.Title
+		defaultTitle = strings.TrimSuffix(strings.TrimSpace(apiInfo.Title), " API")
 		defaultDocumentationURI = apiInfo.DocumentationURI
 		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
 	}

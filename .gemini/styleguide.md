@@ -9,9 +9,9 @@ When reviewing or generating code, apply the following checks and references:
   [`doc/howwewritego.md`](../doc/howwewritego.md), which defines the project’s
   architectural patterns, design decisions, and testing requirements.
 - **Verify testing quality:** Add or update tests as needed, following the
-  guidance in [Go Test Comments](https://go.dev/wiki/TestComments).
+  guidance in [Go Test Comments](../doc/styleguide/go-test-comments.md).
 - **Enforce idiomatic Go:** Flag patterns that conflict with the recommendations
-  in [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments).
+  in [Go Code Review Comments](../doc/styleguide/go-code-review-comments.md).
 - **Write clear Markdown:** Follow the
   [Google Markdown Style Guide](../doc/styleguide/markdown-style-guide.md).
 - **Write proper commit messages:** Follow the conventions in

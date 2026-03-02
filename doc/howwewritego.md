@@ -22,7 +22,7 @@ For guidance, refer to the following resources:
 
 - [Effective Go](https://go.dev/doc/effective_go): The canonical guide to
   writing idiomatic Go code.
-- [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments): Common
+- [Go Code Review Comments](styleguide/go-code-review-comments.md): Common
   feedback and best practices used in Go code reviews.
 - [Google's Go Style Guide](https://google.github.io/styleguide/go/decisions):
   Google’s guidance on Go style and design decisions.
@@ -182,7 +182,7 @@ inputs versus which functions only read them.
 
 When writing tests, we follow the patterns below to ensure consistency,
 readability, and ease of debugging. See
-[Go Test Comments](https://go.dev/wiki/TestComments) for conventions around
+[Go Test Comments](styleguide/go-test-comments.md) for conventions around
 writing test code.
 
 ### Use `t.Context()`

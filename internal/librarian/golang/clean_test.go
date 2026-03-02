@@ -43,6 +43,7 @@ func TestClean(t *testing.T) {
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
 				"apiv1/doc.go",
+				"apiv1/operations.go",
 				"apiv1/library_client.go",
 				"apiv1/library_client_example_go123_test.go",
 				"apiv1/library_client_example_test.go",

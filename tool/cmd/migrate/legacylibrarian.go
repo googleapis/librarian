@@ -143,7 +143,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.Transport = "grpc+rest"
 	} else {
 		input.googleapisDir = src.Dir
-		cfg.Default.Keep = []string{"CHANGES.md", "go.mod", "go.sum"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries, err = buildGoLibraries(input)

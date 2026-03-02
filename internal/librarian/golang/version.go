@@ -69,7 +69,7 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 		// Therefore, version.go does not need to be generated.
 		return nil
 	}
-	dir := filepath.Join(library.Output, goAPI.ImportPath, goAPI.VersionSuffix)
+	dir := filepath.Join(library.Output, goAPI.ImportPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -153,6 +154,15 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
+// isVeneer reports whether the library has handwritten code wrapping generated
+// code.
+func isVeneer(language string, lib *config.Library) bool {
+	if language == languageRust {
+		return rust.IsVeneer(lib)
+	}
+	return lib.Veneer
+}
+
 // libraryOutput returns the output path for a library. If the library has an
 // explicit output path, it returns that. Otherwise, it computes the default
 // output path based on the api path and default configuration.
@@ -160,7 +170,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if lib.Output != "" {
 		return lib.Output
 	}
-	if lib.Veneer {
+	if isVeneer(language, lib) {
 		// Veneers require explicit output, so return empty if not set.
 		return ""
 	}
@@ -177,7 +187,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !lib.Veneer {
+	if !isVeneer(language, lib) {
 		if len(lib.APIs) == 0 {
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
@@ -188,7 +198,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 	}
 	if lib.Output == "" {
-		if lib.Veneer {
+		if isVeneer(language, lib) {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
 		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
