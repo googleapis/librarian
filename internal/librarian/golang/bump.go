@@ -63,8 +63,6 @@ func bumpInternalVersion(library *config.Library, output, version string) error 
 }
 
 func findAndReplace(path string, version string) error {
-	// The internal version.go is small, it should be good to read the file
-	// in one go.
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
