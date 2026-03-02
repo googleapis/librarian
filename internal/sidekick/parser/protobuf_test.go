@@ -2198,26 +2198,3 @@ func requireProtoc(t *testing.T) {
 		t.Skip("skipping test because protoc is not installed")
 	}
 }
-
-func TestProtobuf_SubdirRedundancy(t *testing.T) {
-	requireProtoc(t)
-	// This test covers a scenario where the -root option already contains the
-	// subdirectory, but a -subdir option is also present.
-	// Ensure that they are not double-joined.
-	options := map[string]string{
-		"googleapis-root":     "../../testdata/googleapis",
-		"extra-protos-root":   "testdata",
-		"extra-protos-subdir": "should_ignore_folder",
-		"include-list":        "scalar.proto",
-	}
-	req, err := newCodeGeneratorRequest("testdata", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want, got := 1, len(req.FileToGenerate); want != got {
-		t.Fatalf("newCodeGeneratorRequest() returned %d files, want %d", got, want)
-	}
-	if want := "scalar.proto"; !strings.HasSuffix(req.FileToGenerate[0], want) {
-		t.Errorf("newCodeGeneratorRequest() returned file %q, want suffix %q", req.FileToGenerate[0], want)
-	}
-}

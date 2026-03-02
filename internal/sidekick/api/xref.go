@@ -111,6 +111,141 @@ func enrichSamples(model *API) {
 	for _, m := range model.State.MethodByID {
 		enrichMethodSamples(m)
 	}
+
+	for _, s := range model.Services {
+		s.QuickstartMethod = findQuickstartMethod(s)
+	}
+	model.QuickstartService = findQuickstartService(model)
+}
+
+func findQuickstartMethod(s *Service) *Method {
+	// Priority: List > Get > Create > Delete > Update
+	priorities := []func(m *Method) bool{
+		func(m *Method) bool { return m.IsAIPStandardList },
+		func(m *Method) bool { return m.IsAIPStandardGet },
+		func(m *Method) bool { return m.IsAIPStandardCreate },
+		func(m *Method) bool { return m.IsAIPStandardDelete },
+		func(m *Method) bool { return m.IsAIPStandardUpdate },
+		// Fallback for when no standard AIP method is available: any method that is not streaming.
+		func(m *Method) bool { return !m.ClientSideStreaming && !m.ServerSideStreaming },
+	}
+
+	strippedServiceName := strings.TrimSuffix(s.Name, "Service")
+	lowerStripped := strings.ToLower(strippedServiceName)
+
+	for _, isType := range priorities {
+		var nonDeprecated []*Method
+		var deprecated []*Method
+
+		for _, m := range s.Methods {
+			if isType(m) {
+				if m.Deprecated {
+					deprecated = append(deprecated, m)
+				} else {
+					nonDeprecated = append(nonDeprecated, m)
+				}
+			}
+		}
+
+		searchList := nonDeprecated
+		if len(searchList) == 0 {
+			searchList = deprecated
+		}
+
+		if len(searchList) == 0 {
+			continue
+		}
+
+		if len(searchList) == 1 {
+			return searchList[0]
+		}
+
+		// Tie-breaking: Substring match on method name
+		for _, m := range searchList {
+			if strings.Contains(strings.ToLower(m.Name), lowerStripped) {
+				return m
+			}
+		}
+
+		// Tie-breaking: Resource singular/plural match
+		for _, m := range searchList {
+			res := standardMethodOutputResource(m)
+			if res != nil {
+				if strings.ToLower(res.Singular) == lowerStripped || strings.ToLower(res.Plural) == lowerStripped {
+					return m
+				}
+			}
+		}
+
+		// Default to first candidate if no tie-breaker matches
+		return searchList[0]
+	}
+	return nil
+}
+
+func findQuickstartService(api *API) *Service {
+	if len(api.Services) == 0 {
+		return nil
+	}
+
+	var nonDeprecated []*Service
+	var deprecated []*Service
+
+	for _, s := range api.Services {
+		if len(s.Methods) > 0 {
+			if s.Deprecated {
+				deprecated = append(deprecated, s)
+			} else {
+				nonDeprecated = append(nonDeprecated, s)
+			}
+		}
+	}
+
+	searchList := nonDeprecated
+	if len(searchList) == 0 {
+		searchList = deprecated
+	}
+
+	if len(searchList) == 0 {
+		return api.Services[0]
+	}
+
+	if len(searchList) == 1 {
+		return searchList[0]
+	}
+
+	// Prefer services with a QuickstartMethod that is an AIP standard method
+	var servicesWithStandardQuickstart []*Service
+	// Fallback to services with ANY QuickstartMethod
+	var servicesWithAnyQuickstart []*Service
+
+	for _, s := range searchList {
+		if s.QuickstartMethod != nil {
+			servicesWithAnyQuickstart = append(servicesWithAnyQuickstart, s)
+			if s.QuickstartMethod.IsAIPStandardList ||
+				s.QuickstartMethod.IsAIPStandardGet ||
+				s.QuickstartMethod.IsAIPStandardCreate ||
+				s.QuickstartMethod.IsAIPStandardDelete ||
+				s.QuickstartMethod.IsAIPStandardUpdate {
+				servicesWithStandardQuickstart = append(servicesWithStandardQuickstart, s)
+			}
+		}
+	}
+
+	if len(servicesWithStandardQuickstart) > 0 {
+		searchList = servicesWithStandardQuickstart
+	} else if len(servicesWithAnyQuickstart) > 0 {
+		searchList = servicesWithAnyQuickstart
+	}
+
+	lowerApiName := strings.ToLower(api.Name)
+	for _, s := range searchList {
+		if strings.Contains(strings.ToLower(s.Name), lowerApiName) {
+			return s
+		}
+	}
+
+	return searchList[0]
 }
 
 func enrichEnumSamples(e *Enum) {
