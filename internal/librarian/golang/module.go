@@ -15,12 +15,17 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	errGoAPINotFound = errors.New("go API not found")
 )
 
 // Fill populates empty Go-specific fields from the api path.

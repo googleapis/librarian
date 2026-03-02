@@ -43,7 +43,6 @@ var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
-	errGoAPINotFound = errors.New("go API not found")
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
