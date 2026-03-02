@@ -94,7 +94,7 @@ func TestCleanLibrary(t *testing.T) {
 				},
 				Keep: []string{
 					"google/cloud/secretmanager/keep-me.txt",
-					"google/cloud/secretmanager_v1/keep-me.txt",
+					"google/cloud/secretmanager_v1/types/keep-me.txt",
 				},
 			},
 			setupFiles: []string{
@@ -103,15 +103,15 @@ func TestCleanLibrary(t *testing.T) {
 				"google/cloud/secretmanager/leave-me.txt",
 				"google/cloud/secretmanager/keep-me.txt",
 				"google/cloud/secretmanager/delete-me.txt",
-				"google/cloud/secretmanager_v1/delete-me.txt",
-				"google/cloud/secretmanager_v1/keep-me.txt",
+				"google/cloud/secretmanager_v1/types/delete-me.txt",
+				"google/cloud/secretmanager_v1/types/keep-me.txt",
 				"docs/delete-me.txt",
 				"delete-me-directory/a.txt",
 				"delete-me-directory/subdirectory/b.txt",
 			},
 			wantDeleted: []string{
 				"google/cloud/secretmanager/delete-me.txt",
-				"google/cloud/secretmanager_v1/delete-me.txt",
+				"google/cloud/secretmanager_v1/types/delete-me.txt",
 				"docs/delete-me.txt",
 				"delete-me-directory/a.txt",
 				"delete-me-directory/subdirectory/b.txt",
@@ -437,7 +437,13 @@ func TestCleanGAPIC(t *testing.T) {
 			setupFiles: []string{
 				"google/cloud/functions/gapic_version.py",
 				"google/cloud/functions_v1/gapic_version.py",
-				"google/cloud/functions_v1/keep-me.txt",
+				"google/cloud/functions_v1/__init__.py",
+				"google/cloud/functions_v1/py.typed",
+				"google/cloud/functions_v1/gapic_metadata.json",
+				"google/cloud/functions_v1/services/generated.py",
+				"google/cloud/functions_v1/types/generated.py",
+				"google/cloud/functions_v1/other/ignored.py",
+				"google/cloud/functions_v1/handwritten.py",
 				"docs/functions_v1/README.txt",
 				"keep-me.txt",
 				"noxfile.py",
@@ -447,11 +453,15 @@ func TestCleanGAPIC(t *testing.T) {
 				APIs: []*config.API{{Path: "google/cloud/functions/v1"}},
 				Keep: []string{
 					"keep-me.txt",
-					"google/cloud/functions_v1/keep-me.txt",
 				},
 			},
 			wantDeleted: []string{
 				"google/cloud/functions_v1/gapic_version.py",
+				"google/cloud/functions_v1/__init__.py",
+				"google/cloud/functions_v1/py.typed",
+				"google/cloud/functions_v1/gapic_metadata.json",
+				"google/cloud/functions_v1/services/generated.py",
+				"google/cloud/functions_v1/types/generated.py",
 				"docs/functions_v1/README.txt",
 			},
 		},
@@ -516,7 +526,7 @@ func TestCleanGAPIC_Error(t *testing.T) {
 			},
 			setup: func(t *testing.T, dir string) {
 				sourceDirectory := filepath.Join(dir, "google", "cloud", "functions_v1")
-				createFileAndDirectories(t, filepath.Join(sourceDirectory, "file.txt"))
+				createFileAndDirectories(t, filepath.Join(sourceDirectory, "gapic_version.py"))
 				if err := os.Chmod(sourceDirectory, 0555); err != nil {
 					t.Fatal(err)
 				}
