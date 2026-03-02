@@ -27,7 +27,7 @@ import (
 
 var (
 	internalVersionFile = filepath.Join("internal", "version.go")
-	versionRegex        = regexp.MustCompile(`(const Version = ")([0-9.]+)(")`)
+	versionRegex        = regexp.MustCompile(`(const Version = ")([^"]*)(")`)
 )
 
 // Bump updates the version number in the library with the given output

@@ -94,6 +94,17 @@ func TestBump(t *testing.T) {
 				"internal/generated/snippets/test-lib/nested-mod/nested-2/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
 			},
 		},
+		{
+			name: "bump irregular version",
+			initialFiles: map[string]string{
+				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.1.0-rc1\"\n",
+			},
+			library: &config.Library{Name: "test-lib"},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
