@@ -54,8 +54,9 @@ func TestClean(t *testing.T) {
 				"internal/version.go",
 				"README.md",
 			},
-			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{},
+			snippetFiles: []string{
+				"apiv1/main.go",
+			},
 			wantOutput: []string{
 				"apiv1/non-generated.go",
 			},
@@ -67,7 +68,7 @@ func TestClean(t *testing.T) {
 				"apiv1/auxiliary_go123.go",
 				"README.md",
 			},
-			snippetFiles: []string{"snippet1.go"},
+			snippetFiles: []string{"apiv1/snippet1.go"},
 			keep:         []string{"README.md"},
 			wantOutput:   []string{"README.md"},
 		},
@@ -77,41 +78,23 @@ func TestClean(t *testing.T) {
 				"nested/apiv1/auxiliary.go",
 				"nested/apiv1/auxiliary_go123.go",
 			},
-			snippetFiles: []string{"snippet1.go"},
+			snippetFiles: []string{"nested/apiv1/snippet1.go"},
 			// They are not cleaned because these files are not within
 			// import path of the GoAPI.
 			wantOutput: []string{
 				"nested/apiv1/auxiliary.go",
 				"nested/apiv1/auxiliary_go123.go",
 			},
-		},
-		{
-			// nested module only works on snippet directory.
-			name:         "nested module",
-			outputFiles:  []string{},
-			snippetFiles: []string{"nested/snippet.go"},
-			keep:         []string{},
-			nestedModule: "nested",
-			wantOutput:   []string{},
-			wantSnippets: []string{"internal/generated/snippets/example/nested/snippet.go"},
+			wantSnippets: []string{
+				"internal/generated/snippets/example/nested/apiv1/snippet1.go",
+			},
 		},
 		{
 			name:        "no snippets",
 			outputFiles: []string{"apiv1/auxiliary.go"},
-			keep:        []string{},
-			wantOutput:  []string{},
 		},
 		{
-			name:         "snippets in current directory",
-			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{},
-			setup: func(dir string) {
-				// Change the working directory to the same level of
-				// internal directory to verify clean function when
-				// there's no prefix in snippets directory.
-				t.Chdir(dir)
-			},
-			wantOutput: []string{},
+			name: "no client files",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -143,9 +126,6 @@ func TestClean(t *testing.T) {
 			}
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
-			}
-			if test.setup != nil {
-				test.setup(root)
 			}
 
 			err := Clean(lib)

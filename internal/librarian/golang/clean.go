@@ -20,33 +20,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
 var (
-	// generatedRegex defines patterns to identify files produced by the generator.
-	// These patterns are essential to ensure the 'Clean' operation only removes
-	// files that are known to be generated, protecting handwritten code or
-	// configuration that may reside in the same directory.
-	// TODO(https://github.com/googleapis/librarian/issues/4217): document each regex about
-	// what are matched and why it is necessary.
-	generatedRegex = func() []*regexp.Regexp {
-		prefix := `.*/(?:apiv(\d+).*/)?`
-		return []*regexp.Regexp{
-			regexp.MustCompile(prefix + `\.repo-metadata\.json$`),
-			regexp.MustCompile(prefix + `(auxiliary(?:_go123)?|doc|operations)\.go$`),
-			regexp.MustCompile(prefix + `.*_client\.go$`),
-			regexp.MustCompile(prefix + `.*_client_example_go123_test\.go$`),
-			regexp.MustCompile(prefix + `.*_client_example_test\.go$`),
-			regexp.MustCompile(prefix + `gapic_metadata\.json$`),
-			regexp.MustCompile(prefix + `helpers\.go$`),
-			regexp.MustCompile(`.*pb/.*\.pb\.go$`),
-			regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
-		}
-	}()
 	rootFiles   = []string{"README.md", "internal/version.go"}
 	clientFiles = []string{
 		".repo-metadata.json",
@@ -70,19 +49,11 @@ func Clean(library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	var nestedModule string
-	if library.Go != nil {
-		nestedModule = library.Go.NestedModule
-	}
 
 	if err := cleanRootFiles(libraryDir, keepSet); err != nil {
 		return err
 	}
 	if err := cleanClientDirectory(library); err != nil {
-		return err
-	}
-	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := clean(snippetDir, nestedModule, nil); err != nil {
 		return err
 	}
 	return nil
@@ -119,40 +90,6 @@ func check(dir string, keep []string) (map[string]bool, error) {
 		keepSet[rel] = true
 	}
 	return keepSet, nil
-}
-
-// clean recursively removes files in dir that are not in keepSet.
-// If nestedModule is non-empty, any directory with that name is skipped.
-func clean(dir, nestedModule string, keepSet map[string]bool) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return nil
-	}
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if d.Name() == nestedModule {
-				return fs.SkipDir
-			}
-			return nil
-		}
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		isGenerated := false
-		for _, re := range generatedRegex {
-			if re.MatchString(path) {
-				isGenerated = true
-				break
-			}
-		}
-		if keepSet[rel] || !isGenerated {
-			return nil
-		}
-		return os.Remove(path)
-	})
 }
 
 // cleanRootFiles removes predefined root files from the library directory unless
@@ -206,6 +143,11 @@ func cleanClientDirectory(library *config.Library) error {
 			}
 			return nil
 		}); err != nil {
+			return err
+		}
+
+		snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", goAPI.ImportPath)
+		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}
 	}
