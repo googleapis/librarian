@@ -129,8 +129,18 @@ func cleanGAPIC(api *config.API, lib *config.Library) error {
 		return nil
 	}
 	srcDir := filepath.Join(generationInfo.RootDir, generationInfo.VersionDir)
-	if err := deleteUnlessKept(lib, srcDir); err != nil {
-		return err
+	relativePaths := []string{
+		"services",
+		"types",
+		"__init__.py",
+		"gapic_version.py",
+		"gapic_metadata.json",
+		"py.typed",
+	}
+	for _, relativePath := range relativePaths {
+		if err := deleteUnlessKept(lib, filepath.Join(srcDir, relativePath)); err != nil {
+			return err
+		}
 	}
 	docsDir := filepath.Join("docs", generationInfo.VersionDir)
 	return deleteUnlessKept(lib, docsDir)
