@@ -49,7 +49,6 @@ var (
 	}()
 	rootFiles   = []string{"README.md", "internal/version.go"}
 	clientFiles = []string{
-		"gapic_metadata.json",
 		".repo-metadata.json",
 		".pb.go",
 		"auxiliary.go",
@@ -58,6 +57,7 @@ var (
 		"_client_example_go123_test.go",
 		"client_example_test.go",
 		"doc.go",
+		"gapic_metadata.json",
 		"helpers.go",
 		"operations.go",
 	}
