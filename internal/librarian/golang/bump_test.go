@@ -77,19 +77,27 @@ func TestBump(t *testing.T) {
 		{
 			name: "bump snippet metadata",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/nested-1/nested-2/snippet_metadata_foo.json":   "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
-				"internal/generated/snippets/test-lib/nested-mod/nested-2/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
 			},
 			library: &config.Library{
 				Name: "test-lib",
+				APIs: []*config.API{
+					{
+						Path: "google/test-lib/v1",
+					},
+				},
 				Go: &config.GoModule{
-					NestedModule: "nested-mod",
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "test-lib/apiv1",
+							Path:       "google/test-lib/v1",
+						},
+					},
 				},
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"internal/generated/snippets/test-lib/nested-1/nested-2/snippet_metadata_foo.json":   "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
-				"internal/generated/snippets/test-lib/nested-mod/nested-2/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
 			},
 		},
 		{
