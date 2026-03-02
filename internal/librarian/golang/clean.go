@@ -178,6 +178,8 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 	return nil
 }
 
+// cleanClientDirectory walks through each API directory in the library and
+// removes generated Go client files.
 func cleanClientDirectory(library *config.Library) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
