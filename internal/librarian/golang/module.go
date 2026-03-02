@@ -83,6 +83,6 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }
 
-func snippetDirectory(output, libraryName string) string {
-	return filepath.Join(output, "internal", "generated", "snippets", libraryName)
+func snippetDirectory(output, importPath string) string {
+	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
