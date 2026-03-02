@@ -48,7 +48,7 @@ func TestRunJavaMigration(t *testing.T) {
 			outputPath := "librarian.yaml"
 			t.Cleanup(func() {
 				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Fatalf("cleanup: remove %s: %v", outputPath, err)
+					t.Fatalf("cleanup: %v", err)
 				}
 			})
 			err := runJavaMigration(t.Context(), test.repoPath)
