@@ -21,8 +21,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 func TestBuildCodec(t *testing.T) {
@@ -422,7 +422,7 @@ func TestToModelConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &source.Sources{
+			sources := &sidekickconfig.Sources{
 				Googleapis: test.googleapisDir,
 			}
 			got, err := toModelConfig(test.library, test.channel, sources)
@@ -447,13 +447,13 @@ func TestAddLibraryRoots(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		source  *source.Sources
+		source  *sidekickconfig.Sources
 		want    map[string]string
 	}{
 		{
 			name:    "empty roots",
 			library: &config.Library{},
-			source: &source.Sources{
+			source: &sidekickconfig.Sources{
 				Googleapis: "example/path",
 			},
 			want: map[string]string{
@@ -466,7 +466,7 @@ func TestAddLibraryRoots(t *testing.T) {
 			library: &config.Library{
 				Roots: []string{"non-existed", "googleapis"},
 			},
-			source: &source.Sources{
+			source: &sidekickconfig.Sources{
 				Googleapis:  "example/path",
 				ProtobufSrc: "protobuf/path",
 			},
@@ -486,7 +486,7 @@ func TestAddLibraryRoots(t *testing.T) {
 					"showcase",
 				},
 			},
-			source: &source.Sources{
+			source: &sidekickconfig.Sources{
 				Conformance: "conformance/path",
 				Discovery:   "discovery/path",
 				Googleapis:  "googleapis/path",
