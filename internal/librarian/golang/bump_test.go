@@ -101,6 +101,34 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore nested module",
+			initialFiles: map[string]string{
+				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json":           "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"internal/generated/snippets/test-lib/v2/apiv1/nested/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+			},
+			library: &config.Library{
+				Name: "test-lib",
+				APIs: []*config.API{
+					{
+						Path: "google/test-lib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "test-lib/apiv1",
+							Path:       "google/test-lib/v1",
+						},
+					},
+				},
+			},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json":           "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"internal/generated/snippets/test-lib/v2/apiv1/nested/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+			},
+		},
+		{
 			name: "bump irregular version",
 			initialFiles: map[string]string{
 				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.1.0-rc1\"\n",
