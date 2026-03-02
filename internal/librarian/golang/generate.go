@@ -140,7 +140,7 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	args := []string{"-w", filepath.Join(outDir, library.Name)}
-	snippetDir := filepath.Join(outDir, "internal", "generated", "snippets", library.Name)
+	snippetDir := snippetsDirectory(outDir, library.Name)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
