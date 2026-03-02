@@ -66,7 +66,25 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		}
 	}()
 
-	files, err := protobuf.DetermineInputFiles(source, options)
+	var includeList, excludeList []string
+	if list, ok := options["include-list"]; ok && list != "" {
+		includeList = strings.Split(list, ",")
+	}
+	if list, ok := options["exclude-list"]; ok && list != "" {
+		excludeList = strings.Split(list, ",")
+	}
+	files, err := protobuf.DetermineInputFiles(source, config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis:  options["googleapis-root"],
+			Discovery:   options["discovery-root"],
+			Conformance: options["conformance-root"],
+			ProtobufSrc: options["protobuf-root"],
+			Showcase:    options["showcase-root"],
+		},
+		ActiveRoots: config.SourceRoots(options),
+		IncludeList: includeList,
+		ExcludeList: excludeList,
+	})
 	if err != nil {
 		return nil, err
 	}

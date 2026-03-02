@@ -20,6 +20,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"github.com/googleapis/librarian/internal/sidekick/rust"
@@ -45,7 +46,25 @@ type methodAnnotations struct {
 
 func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
 	rootSource := cfg.Source[codec.RootName]
-	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, cfg.Source)
+	var includeList, excludeList []string
+	if list, ok := cfg.Source["include-list"]; ok && list != "" {
+		includeList = strings.Split(list, ",")
+	}
+	if list, ok := cfg.Source["exclude-list"]; ok && list != "" {
+		excludeList = strings.Split(list, ",")
+	}
+	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, sidekickconfig.SourceConfig{
+		Sources: sidekickconfig.Sources{
+			Googleapis:  cfg.Source["googleapis-root"],
+			Discovery:   cfg.Source["discovery-root"],
+			Conformance: cfg.Source["conformance-root"],
+			ProtobufSrc: cfg.Source["protobuf-root"],
+			Showcase:    cfg.Source["showcase-root"],
+		},
+		ActiveRoots: sidekickconfig.SourceRoots(cfg.Source),
+		IncludeList: includeList,
+		ExcludeList: excludeList,
+	})
 	if err != nil {
 		return err
 	}
