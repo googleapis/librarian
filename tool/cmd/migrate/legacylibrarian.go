@@ -293,6 +293,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.ImportPath = info.ImportPath
+			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}

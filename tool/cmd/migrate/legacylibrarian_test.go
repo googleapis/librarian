@@ -707,6 +707,42 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse metadata from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/asset/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/asset/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								NoMetadata: true,
+								Path:       "google/cloud/asset/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
