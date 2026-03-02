@@ -26,7 +26,9 @@ import (
 )
 
 var (
-	rootFiles   = []string{"README.md", "internal/version.go"}
+	rootFiles = []string{"README.md", "internal/version.go"}
+	// TODO(https://github.com/googleapis/librarian/issues/4217), document each file about
+	// what are matched and why it is necessary.
 	clientFiles = []string{
 		".repo-metadata.json",
 		".pb.go",
