@@ -36,7 +36,7 @@ var (
 		"auxiliary_go123.go",
 		"_client.go",
 		"_client_example_go123_test.go",
-		"client_example_test.go",
+		"_client_example_test.go",
 		"doc.go",
 		"gapic_metadata.json",
 		"helpers.go",
