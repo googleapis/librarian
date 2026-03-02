@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -46,6 +47,20 @@ var (
 			regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
 		}
 	}()
+	rootFiles   = []string{"README.md", "internal/version.go"}
+	clientFiles = []string{
+		".gapic_metadata.json",
+		".repo-metadata.json",
+		".pb.go",
+		"auxiliary.go",
+		"auxiliary_go123.go",
+		"_client.go",
+		"_client_example_go123_test.go",
+		"client_example_test.go",
+		"doc.go",
+		"helpers.go",
+		"operations.go",
+	}
 )
 
 // Clean cleans up a Go library and its associated snippets.
@@ -59,7 +74,11 @@ func Clean(library *config.Library) error {
 	if library.Go != nil {
 		nestedModule = library.Go.NestedModule
 	}
-	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
+
+	if err := cleanRootFiles(libraryDir, keepSet); err != nil {
+		return err
+	}
+	if err := cleanClientDirectory(library); err != nil {
 		return err
 	}
 	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
@@ -134,4 +153,51 @@ func clean(dir, nestedModule string, keepSet map[string]bool) error {
 		}
 		return os.Remove(path)
 	})
+}
+
+func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
+	for _, rootFile := range rootFiles {
+		// Handwritten/veneer libraries may have handwritten root files, README.md for example,
+		// defined in the keep list.
+		// Skip cleaning these files.
+		if keepSet[rootFile] {
+			continue
+		}
+		rootFile := filepath.Join(libraryDir, rootFile)
+		// Some library may not have the root file, README.md for example, this is rare,
+		// but we should not fail the clean in this case.
+		if _, err := os.Stat(rootFile); os.IsNotExist(err) {
+			continue
+		}
+		if err := os.Remove(rootFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanClientDirectory(library *config.Library) error {
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
+		}
+		clientPath := filepath.Join(library.Output, goAPI.ImportPath)
+		return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			for _, file := range clientFiles {
+				if !strings.HasSuffix(path, file) {
+					continue
+				}
+				return os.Remove(path)
+			}
+			return nil
+		})
+	}
+	return nil
 }
