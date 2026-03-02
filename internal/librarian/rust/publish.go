@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/git"
 )
 
+// semverData holds parameters for running semver checks.
 type semverData struct {
 	dryRunKeepGoing bool
 	manifests       map[string]string
@@ -96,15 +97,14 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 
 	if !skipSemverChecks {
 		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-		semverDetails := semverData{
+		if err := runSemverChecks(ctx, semverData{
 			dryRunKeepGoing: dryRunKeepGoing,
 			manifests:       manifests,
 			lastTag:         lastTag,
 			cargoPath:       cargoPath,
 			env:             env,
 			gitPath:         gitPath,
-		}
-		if err := runSemverChecks(ctx, semverDetails); err != nil {
+		}); err != nil {
 			return err
 		}
 	}
@@ -118,6 +118,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	return command.RunWithEnv(ctx, env, cargoPath, args...)
 }
 
+// runSemverChecks iterates through manifests and runs semver checks for each.
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	for name, manifest := range semverData.manifests {
 		if err := semverCheck(ctx, semverData, name, manifest); err != nil {
@@ -127,6 +128,7 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 	return nil
 }
 
+// runSemverChecks iterates through manifests and runs semver checks for each.
 func semverCheck(ctx context.Context, semverData semverData, name string, manifest string) error {
 	if git.IsNewFile(ctx, semverData.gitPath, semverData.lastTag, manifest) {
 		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
