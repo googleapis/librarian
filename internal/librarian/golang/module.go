@@ -16,6 +16,7 @@ package golang
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -80,4 +81,8 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	idx = strings.LastIndex(importPath, "/")
 	pkg := importPath[idx+1:]
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
+}
+
+func snippetsDirectory(output, libraryName string) string {
+	return filepath.Join(output, "internal", "generated", "snippets", libraryName)
 }
