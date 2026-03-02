@@ -40,8 +40,8 @@ func Bump(library *config.Library, output, version string) error {
 	if err := bumpInternalVersion(library, output, version); err != nil {
 		return err
 	}
-	snippetsDir := snippetsDirectory(output, library.Name)
-	return snippetmetadata.UpdateAllLibraryVersions(snippetsDir, skipDir, version)
+	snippetDir := snippetDirectory(output, library.Name)
+	return snippetmetadata.UpdateAllLibraryVersions(snippetDir, skipDir, version)
 }
 
 func bumpInternalVersion(library *config.Library, output, version string) error {

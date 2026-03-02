@@ -62,7 +62,7 @@ func Clean(library *config.Library) error {
 	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
 		return err
 	}
-	snippetDir := snippetsDirectory(library.Output, library.Name)
+	snippetDir := snippetDirectory(library.Output, library.Name)
 	if err := clean(snippetDir, nestedModule, nil); err != nil {
 		return err
 	}
