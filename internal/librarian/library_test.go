@@ -428,7 +428,7 @@ func TestFillDefaults_Python(t *testing.T) {
 func TestPrepareLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name        string
-		language    string
+		language    config.Language
 		output      string
 		veneer      bool
 		apis        []*config.API
@@ -438,33 +438,33 @@ func TestPrepareLibrary(t *testing.T) {
 	}{
 		{
 			name:       "empty output derives path from api",
-			language:   "rust",
+			language:   config.LanguageRust,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated/cloud/secretmanager/v1",
 		},
 		{
 			name:       "explicit output keeps explicit path",
-			language:   "rust",
+			language:   config.LanguageRust,
 			output:     "custom/output",
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "custom/output",
 		},
 		{
 			name:       "empty output uses default for non-rust",
-			language:   "go",
+			language:   config.LanguageGo,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated",
 		},
 		{
 			name:        "rust with no apis creates default and derives path",
-			language:    "rust",
+			language:    config.LanguageRust,
 			apis:        nil,
 			wantOutput:  "src/generated/cloud/secretmanager/v1",
 			wantAPIPath: "google/cloud/secretmanager/v1",
 		},
 		{
 			name:        "veneer rust with no apis does not derive path",
-			language:    "rust",
+			language:    config.LanguageRust,
 			output:      "src/storage/test/v1",
 			veneer:      true,
 			apis:        nil,
@@ -484,7 +484,7 @@ func TestPrepareLibrary(t *testing.T) {
 		},
 		{
 			name:        "rust lib without service config",
-			language:    "rust",
+			language:    config.LanguageRust,
 			apis:        []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",

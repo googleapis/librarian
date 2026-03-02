@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -86,7 +87,7 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The Showcase API ("schema/google/showcase/v1beta1") is a special case:
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
-func Find(googleapisDir, path, language string) (*API, error) {
+func Find(googleapisDir, path string, language config.Language) (*API, error) {
 	var result *API
 	for _, api := range APIs {
 		// The path for OpenAPI and discovery documents are in
@@ -206,7 +207,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 //
 // API paths not starting with "google/cloud/" must be explicitly included in the
 // allowlist and satisfy its language restrictions.
-func validateAPI(path, language string, api *API) (*API, error) {
+func validateAPI(path string, language config.Language, api *API) (*API, error) {
 	if api == nil && strings.HasPrefix(path, "google/cloud/") {
 		return &API{Path: path}, nil
 	}

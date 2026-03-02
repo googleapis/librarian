@@ -283,21 +283,21 @@ func TestAddLibrary(t *testing.T) {
 
 func TestDeriveLibraryName(t *testing.T) {
 	for _, test := range []struct {
-		language string
+		language config.Language
 		apiPath  string
 		want     string
 	}{
-		{"dart", "google/cloud/secretmanager/v1", "google_cloud_secretmanager_v1"},
-		{"python", "google/cloud/secretmanager/v1", "google-cloud-secretmanager"},
-		{"python", "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
-		{"python", "google/cloud/storage/v2alpha", "google-cloud-storage"},
-		{"python", "google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
-		{"python", "google/api/v1", "google-api"},
-		{"rust", "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
-		{"rust", "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager-v1beta2"},
-		{"fake", "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{config.LanguageDart, "google/cloud/secretmanager/v1", "google_cloud_secretmanager_v1"},
+		{config.LanguagePython, "google/cloud/secretmanager/v1", "google-cloud-secretmanager"},
+		{config.LanguagePython, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
+		{config.LanguagePython, "google/cloud/storage/v2alpha", "google-cloud-storage"},
+		{config.LanguagePython, "google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
+		{config.LanguagePython, "google/api/v1", "google-api"},
+		{config.LanguageRust, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{config.LanguageRust, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager-v1beta2"},
+		{config.LanguageFake, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 	} {
-		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
+		t.Run(test.language.String()+"/"+test.apiPath, func(t *testing.T) {
 			got := deriveLibraryName(test.language, test.apiPath)
 			if got != test.want {
 				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)

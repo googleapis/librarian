@@ -311,7 +311,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 
 func TestTidyDuplicateError(t *testing.T) {
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
@@ -343,7 +343,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -385,7 +385,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "dart",
+		Language: config.LanguageDart,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -426,7 +426,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -473,7 +473,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 		{
 			name: "empty_module_removed",
 			cfg: &config.Config{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
@@ -532,7 +532,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 
 func TestTidyMissingGoogleApisSource(t *testing.T) {
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Libraries: []*config.Library{
 			{
 				Name:    "google-cloud-storage-v1",
@@ -557,7 +557,7 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",

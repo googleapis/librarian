@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 func TestFromLibrary(t *testing.T) {
@@ -44,7 +43,7 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -66,7 +65,7 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -83,7 +82,7 @@ func TestFromLibrary(t *testing.T) {
 			},
 			want: &RepoMetadata{
 				ReleaseLevel:     "stable",
-				Language:         "python",
+				Language:         config.LanguagePython,
 				Repo:             "googleapis/google-cloud-python",
 				DistributionName: "google-longrunning",
 			},
@@ -97,7 +96,7 @@ func TestFromLibrary(t *testing.T) {
 			}
 
 			cfg := &config.Config{
-				Language: serviceconfig.LangPython,
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 			}
 
@@ -138,7 +137,7 @@ func TestFromLibrary_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Language: serviceconfig.LangPython}
+			cfg := &config.Config{Language: config.LanguagePython}
 			_, gotErr := FromLibrary(cfg, test.library, "../testdata/googleapis")
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
@@ -214,7 +213,7 @@ func TestWriteAndRead(t *testing.T) {
 	want := &RepoMetadata{
 		Name:       "test-library",
 		NamePretty: "Test Library",
-		Language:   "go",
+		Language:   config.LanguageGo,
 	}
 	tmpDir := t.TempDir()
 	if err := want.Write(tmpDir); err != nil {

@@ -113,7 +113,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-		api, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangGo)
+		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 }
 
 func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, apiPath, serviceconfig.LangGo)
+	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGo)
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +407,7 @@ func releaseLevel(apiPath, version string) (string, error) {
 // The default value is serviceconfig.GRPCRest.
 func transport(sc *serviceconfig.API) string {
 	if sc != nil {
-		return sc.Transport("go")
+		return sc.Transport(config.LanguageGo)
 	}
 	return string(serviceconfig.GRPCRest)
 }

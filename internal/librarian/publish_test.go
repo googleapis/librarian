@@ -136,7 +136,7 @@ func TestPublish_Error(t *testing.T) {
 			setup: func(cfg *config.Config) {
 				// Add a release commit to distinguish this case from "no releases"
 				cfg.Libraries[0].Version = "1.1.0"
-				cfg.Language = "unsupported-for-publish"
+				cfg.Language = config.LanguageUnknown
 				writeConfigAndCommit(t, cfg)
 			},
 			// Can't easily check this error.

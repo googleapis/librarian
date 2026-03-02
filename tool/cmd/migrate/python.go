@@ -306,7 +306,7 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	// Load the service config file for the first API if there is one, and
 	// use that
 	if len(library.APIs) > 0 {
-		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangPython)
+		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguagePython)
 		if err != nil {
 			return nil, err
 		}

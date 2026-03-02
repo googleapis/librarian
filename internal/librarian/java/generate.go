@@ -163,7 +163,7 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
 
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find api config: %w", err)
 	}

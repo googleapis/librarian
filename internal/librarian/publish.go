@@ -58,7 +58,7 @@ func publishCommand() *cli.Command {
 			if err != nil {
 				return err
 			}
-			if cfg.Language == languageRust {
+			if cfg.Language == config.LanguageRust {
 				return legacyRustPublish(ctx, cfg, cmd)
 			}
 			return publish(ctx, cfg, cmd.String("release-commit"), cmd.Bool("execute"))
@@ -129,7 +129,7 @@ func publish(ctx context.Context, cfg *config.Config, releaseCommit string, exec
 	}
 
 	switch cfg.Language {
-	case languageFake:
+	case config.LanguageFake:
 		return fakePublish(librariesToPublish, execute)
 	default:
 		return fmt.Errorf("%q does not support publish", cfg.Language)

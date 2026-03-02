@@ -30,12 +30,6 @@ var ErrLibraryNotFound = errors.New("library not found")
 
 const (
 	librarianConfigPath = "librarian.yaml"
-	languageDart        = "dart"
-	languageFake        = "fake"
-	languageGo          = "go"
-	languageJava        = "java"
-	languageRust        = "rust"
-	languagePython      = "python"
 )
 
 // Run executes the librarian command with the given arguments.

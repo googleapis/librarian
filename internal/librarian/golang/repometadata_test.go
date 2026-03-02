@@ -57,7 +57,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 		ClientLibraryType:   "generated",
 		Description:         "Secret Manager API",
 		DistributionName:    "cloud.google.com/go/secretmanager/apiv1",
-		Language:            "go",
+		Language:            config.LanguageGo,
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        "stable",
 	}
