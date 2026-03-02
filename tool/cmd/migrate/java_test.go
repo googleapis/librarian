@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,27 +17,11 @@ package main
 import (
 	"errors"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/license"
 )
-
-func licenseHeader() string {
-	var b strings.Builder
-	year := time.Now().Year()
-	for _, line := range license.Header(strconv.Itoa(year)) {
-		b.WriteString("#")
-		b.WriteString(line)
-		b.WriteString("\n")
-	}
-	b.WriteString("\n")
-	return b.String()
-}
 
 func TestRunJavaMigration(t *testing.T) {
 	for _, test := range []struct {
@@ -57,6 +41,7 @@ func TestRunJavaMigration(t *testing.T) {
 		{
 			name:     "no_generation_config",
 			repoPath: "testdata/run/non-existent",
+			wantErr:  os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

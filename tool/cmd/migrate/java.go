@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -49,19 +49,12 @@ type GenerationConfig struct {
 func runJavaMigration(ctx context.Context, repoPath string) error {
 	gen, err := readGenerationConfig(repoPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			log.Printf("Info: %s not found. Skipping.", filepath.Join(repoPath, generationConfigFileName))
-			return nil
-		}
 		return err
 	}
-
 	cfg := buildConfig(gen)
 	if cfg == nil {
-		log.Println("Info: No libraries found to migrate.")
-		return nil
+		return fmt.Errorf("no libraries found to migrate")
 	}
-
 	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
 	}
@@ -81,37 +74,26 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 		if name == "" {
 			name = l.APIShortName
 		}
-		if name == "" {
-			log.Printf("Warning: Skipping library with no name")
-			continue
-		}
-
 		var apis []*config.API
 		for _, g := range l.GAPICs {
 			if g.ProtoPath != "" {
 				apis = append(apis, &config.API{Path: g.ProtoPath})
 			}
 		}
-		if len(apis) == 0 {
-			log.Printf("Warning: Skipping library %q with no APIs", name)
-			continue
-		}
-
 		libs = append(libs, &config.Library{
 			Name:   name,
 			Output: "java-" + name,
 			APIs:   apis,
 		})
 	}
-
 	if len(libs) == 0 {
 		return nil
 	}
-
 	return &config.Config{
 		Language: "java",
 		Default:  &config.Default{},
 		Sources: &config.Sources{
+			// hardcoded for local testing
 			Googleapis: &config.Source{Dir: "../../googleapis"},
 		},
 		Libraries: libs,

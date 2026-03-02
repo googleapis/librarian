@@ -73,6 +73,6 @@ func run(ctx context.Context, args []string) error {
 		return runJavaMigration(ctx, abs)
 
 	default:
-		return fmt.Errorf("unsupported repository path: %q. Supported paths include 'google-cloud-python', 'google-cloud-go', and 'google-cloud-java'.", repoPath)
+		return fmt.Errorf("invalid path: %q", repoPath)
 	}
 }
