@@ -26,18 +26,21 @@ import (
 	"text/template"
 )
 
-//go:embed template/*.tmpl
-var templatesFS embed.FS
-
-var templates *template.Template
+var (
+	//go:embed template/*.tmpl
+	templatesFS embed.FS
+	templates   *template.Template
+)
 
 func init() {
 	templates = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
 }
 
 const (
+	// clirrIgnoreFile is the name of the Clirr ignore file to generate.
 	clirrIgnoreFile = "clirr-ignored-differences.xml"
-	templateName    = "clirr-ignored-differences.xml.tmpl"
+	// templateName is the name of the template used to generate Clirr ignore file.
+	templateName = "clirr-ignored-differences.xml.tmpl"
 )
 
 // Generate generates the clirr-ignored-differences.xml file if it doesn't exist.
@@ -51,13 +54,12 @@ const (
 // to ignore specific changes (like method additions to interfaces) to
 // prevent false-positive binary compatibility failures in the build.
 func Generate(protoModulePath string) error {
-	if protoModulePath == "" {
-		return fmt.Errorf("protoModulePath is empty")
-	}
 	outputPath := filepath.Join(protoModulePath, clirrIgnoreFile)
-	if _, err := os.Stat(outputPath); err == nil {
+	_, err := os.Stat(outputPath)
+	switch {
+	case err == nil:
 		return nil
-	} else if !os.IsNotExist(err) {
+	case !os.IsNotExist(err):
 		return fmt.Errorf("failed to check for %s: %w", outputPath, err)
 	}
 	protoPaths, err := findProtoPackages(protoModulePath)
@@ -71,8 +73,18 @@ func Generate(protoModulePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", outputPath, err)
 	}
-	defer f.Close()
-	return templates.ExecuteTemplate(f, templateName, protoPaths)
+	var returnErr error
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			if returnErr == nil {
+				returnErr = cerr
+			} else {
+				returnErr = fmt.Errorf("%w; close error: %w", returnErr, cerr)
+			}
+		}
+	}()
+	returnErr = templates.ExecuteTemplate(f, templateName, protoPaths)
+	return returnErr
 }
 
 func findProtoPackages(protoModulePath string) ([]string, error) {

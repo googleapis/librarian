@@ -66,9 +66,3 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("expected Generate to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
 	}
 }
-
-func TestGenerate_Error(t *testing.T) {
-	if err := Generate(""); err == nil {
-		t.Error("expected error for empty path, but got nil")
-	}
-}
