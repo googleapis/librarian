@@ -83,6 +83,8 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }
 
+// snippetDirectory returns the path to the directory where Go snippets are generated
+// for the given library output directory and Go import path.
 func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
