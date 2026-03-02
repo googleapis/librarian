@@ -36,10 +36,7 @@ var (
 		prefix := `.*/(?:apiv(\d+).*/)?`
 		return []*regexp.Regexp{
 			regexp.MustCompile(prefix + `\.repo-metadata\.json$`),
-			regexp.MustCompile(prefix + `auxiliary\.go$`),
-			regexp.MustCompile(prefix + `auxiliary_go123\.go$`),
-			regexp.MustCompile(prefix + `doc\.go$`),
-			regexp.MustCompile(prefix + `operations\.go$`),
+			regexp.MustCompile(prefix + `(auxiliary(?:_go123)?|doc|operations)\.go$`),
 			regexp.MustCompile(prefix + `.*_client\.go$`),
 			regexp.MustCompile(prefix + `.*_client_example_go123_test\.go$`),
 			regexp.MustCompile(prefix + `.*_client_example_test\.go$`),
