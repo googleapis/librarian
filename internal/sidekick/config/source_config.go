@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -81,36 +80,23 @@ func (c SourceConfig) Resolve(relPath string) (string, error) {
 // SourceRoots returns the roots from the options map.
 // Legacy helper for map-based configuration.
 func SourceRoots(options map[string]string) []string {
+	if opt, ok := options["roots"]; ok {
+		var roots []string
+		for _, name := range strings.Split(opt, ",") {
+			roots = append(roots, fmt.Sprintf("%s-root", name))
+		}
+		return roots
+	}
+	return AllSourceRoots(options)
+}
+
+// AllSourceRoots returns all the source roots from the options.
+func AllSourceRoots(options map[string]string) []string {
 	var roots []string
-	if r, ok := options["roots"]; ok {
-		for _, root := range strings.Split(r, ",") {
-			key := root
-			if _, ok := options[key]; ok {
-				roots = append(roots, key)
-				continue
-			}
-			key = root + "-root"
-			if _, ok := options[key]; ok {
-				roots = append(roots, key)
-			}
+	for name := range options {
+		if strings.HasSuffix(name, "-root") {
+			roots = append(roots, name)
 		}
 	}
-	// Also include any key that ends in "-root"
-	for key := range options {
-		if strings.HasSuffix(key, "-root") {
-			// Check if already added via "roots"
-			found := false
-			for _, r := range roots {
-				if r == key {
-					found = true
-					break
-				}
-			}
-			if !found {
-				roots = append(roots, key)
-			}
-		}
-	}
-	sort.Strings(roots)
 	return roots
 }

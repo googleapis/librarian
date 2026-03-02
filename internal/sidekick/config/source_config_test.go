@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestRoot(t *testing.T) {
@@ -120,5 +121,58 @@ func TestResolve(t *testing.T) {
 				t.Errorf("Resolve(%q) mismatch (-want +got):\n%s", test.relPath, diff)
 			}
 		})
+	}
+}
+
+func TestSourceRoots(t *testing.T) {
+	type TestCase struct {
+		input map[string]string
+		want  []string
+	}
+	testCases := []TestCase{
+		{map[string]string{}, nil},
+		{map[string]string{
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "other-root"}},
+		{map[string]string{
+			"roots":           "googleapis,more",
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"more-root":       "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "more-root"}},
+	}
+
+	for _, c := range testCases {
+		got := SourceRoots(c.input)
+		less := func(a, b string) bool { return a < b }
+		if diff := cmp.Diff(c.want, got, cmpopts.SortSlices(less)); diff != "" {
+			t.Errorf("AllSourceRoots mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestAllSourceRoots(t *testing.T) {
+	type TestCase struct {
+		input map[string]string
+		want  []string
+	}
+	testCases := []TestCase{
+		{map[string]string{}, nil},
+		{map[string]string{
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "other-root"}},
+	}
+
+	for _, c := range testCases {
+		got := AllSourceRoots(c.input)
+		less := func(a, b string) bool { return a < b }
+		if diff := cmp.Diff(c.want, got, cmpopts.SortSlices(less)); diff != "" {
+			t.Errorf("AllSourceRoots mismatch (-want, +got):\n%s", diff)
+		}
 	}
 }
