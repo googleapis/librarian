@@ -176,3 +176,32 @@ func TestAllSourceRoots(t *testing.T) {
 		}
 	}
 }
+
+func TestNewSourceConfig(t *testing.T) {
+	options := map[string]string{
+		"googleapis-root":  "ga-path",
+		"discovery-root":   "disco-path",
+		"conformance-root": "conf-path",
+		"protobuf-root":    "pb-path",
+		"showcase-root":    "show-path",
+		"include-list":     "file1,file2",
+		"exclude-list":     "file3",
+		"roots":            "googleapis,discovery",
+	}
+	want := SourceConfig{
+		Sources: Sources{
+			Googleapis:  "ga-path",
+			Discovery:   "disco-path",
+			Conformance: "conf-path",
+			ProtobufSrc: "pb-path",
+			Showcase:    "show-path",
+		},
+		ActiveRoots: []string{"googleapis-root", "discovery-root"},
+		IncludeList: []string{"file1", "file2"},
+		ExcludeList: []string{"file3"},
+	}
+	got := NewSourceConfig(options)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("NewSourceConfig() mismatch (-want +got):\n%s", diff)
+	}
+}

@@ -46,25 +46,7 @@ type methodAnnotations struct {
 
 func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
 	rootSource := cfg.Source[codec.RootName]
-	var includeList, excludeList []string
-	if list, ok := cfg.Source["include-list"]; ok && list != "" {
-		includeList = strings.Split(list, ",")
-	}
-	if list, ok := cfg.Source["exclude-list"]; ok && list != "" {
-		excludeList = strings.Split(list, ",")
-	}
-	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, sidekickconfig.SourceConfig{
-		Sources: sidekickconfig.Sources{
-			Googleapis:  cfg.Source["googleapis-root"],
-			Discovery:   cfg.Source["discovery-root"],
-			Conformance: cfg.Source["conformance-root"],
-			ProtobufSrc: cfg.Source["protobuf-root"],
-			Showcase:    cfg.Source["showcase-root"],
-		},
-		ActiveRoots: sidekickconfig.SourceRoots(cfg.Source),
-		IncludeList: includeList,
-		ExcludeList: excludeList,
-	})
+	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, sidekickconfig.NewSourceConfig(cfg.Source))
 	if err != nil {
 		return err
 	}

@@ -40,6 +40,29 @@ type SourceConfig struct {
 	ExcludeList []string
 }
 
+// NewSourceConfig creates a SourceConfig from a map of options.
+func NewSourceConfig(options map[string]string) SourceConfig {
+	var includeList, excludeList []string
+	if list, ok := options["include-list"]; ok && list != "" {
+		includeList = strings.Split(list, ",")
+	}
+	if list, ok := options["exclude-list"]; ok && list != "" {
+		excludeList = strings.Split(list, ",")
+	}
+	return SourceConfig{
+		Sources: Sources{
+			Googleapis:  options["googleapis-root"],
+			Discovery:   options["discovery-root"],
+			Conformance: options["conformance-root"],
+			ProtobufSrc: options["protobuf-root"],
+			Showcase:    options["showcase-root"],
+		},
+		ActiveRoots: SourceRoots(options),
+		IncludeList: includeList,
+		ExcludeList: excludeList,
+	}
+}
+
 // Root returns the directory path for the given root name.
 func (c SourceConfig) Root(name string) (string, error) {
 	switch name {
