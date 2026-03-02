@@ -49,7 +49,7 @@ var (
 	}()
 	rootFiles   = []string{"README.md", "internal/version.go"}
 	clientFiles = []string{
-		".gapic_metadata.json",
+		"gapic_metadata.json",
 		".repo-metadata.json",
 		".pb.go",
 		"auxiliary.go",
@@ -183,7 +183,7 @@ func cleanClientDirectory(library *config.Library) error {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		clientPath := filepath.Join(library.Output, goAPI.ImportPath)
-		return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
+		if err := filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -197,7 +197,9 @@ func cleanClientDirectory(library *config.Library) error {
 				return os.Remove(path)
 			}
 			return nil
-		})
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }

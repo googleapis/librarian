@@ -25,7 +25,7 @@ import (
 )
 
 func TestClean(t *testing.T) {
-	libraryName := "testlib"
+	libraryName := "example"
 	for _, test := range []struct {
 		name         string
 		outputFiles  []string
@@ -51,6 +51,8 @@ func TestClean(t *testing.T) {
 				"apiv1/helpers.go",
 				"apiv1/librarypb/content.pb.go",
 				"apiv1/non-generated.go",
+				"internal/version.go",
+				"README.md",
 			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
 			keep:         []string{},
@@ -108,10 +110,22 @@ func TestClean(t *testing.T) {
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
-				Name:   libraryName,
+				Name: libraryName,
+				APIs: []*config.API{
+					{
+						Path: "google/example/v1",
+					},
+				},
 				Output: root,
 				Keep:   test.keep,
 				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: libraryName,
+							ImportPath:    "example/apiv1",
+							Path:          "google/example/v1",
+						},
+					},
 					NestedModule: test.nestedModule,
 				},
 			}
