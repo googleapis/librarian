@@ -399,7 +399,7 @@ func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
 	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
 	info := &goGAPICInfo{
-		NoMetadata:         !(rule.AttrLiteral("metadata") == "True"),
+		NoMetadata:         rule.AttrLiteral("metadata") != "True",
 		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
 	}
 	if importPath != defaultImportPath {
