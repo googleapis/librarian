@@ -65,20 +65,35 @@ func TestClean(t *testing.T) {
 			outputFiles: []string{
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
-				"nested/apiv1/doc.go",
+				"README.md",
 			},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"apiv1/auxiliary_go123.go"},
-			wantOutput:   []string{"apiv1/auxiliary_go123.go"},
+			keep:         []string{"README.md"},
+			wantOutput:   []string{"README.md"},
 		},
 		{
+			name: "client files in nested module are not cleaned",
+			outputFiles: []string{
+				"nested/apiv1/auxiliary.go",
+				"nested/apiv1/auxiliary_go123.go",
+			},
+			snippetFiles: []string{"snippet1.go"},
+			// They are not cleaned because these files are not within
+			// import path of the GoAPI.
+			wantOutput: []string{
+				"nested/apiv1/auxiliary.go",
+				"nested/apiv1/auxiliary_go123.go",
+			},
+		},
+		{
+			// nested module only works on snippet directory.
 			name:         "nested module",
-			outputFiles:  []string{"nested/apiv1beta1/doc.go"},
+			outputFiles:  []string{},
 			snippetFiles: []string{"nested/snippet.go"},
 			keep:         []string{},
 			nestedModule: "nested",
-			wantOutput:   []string{"nested/apiv1beta1/doc.go"},
-			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
+			wantOutput:   []string{},
+			wantSnippets: []string{"internal/generated/snippets/example/nested/snippet.go"},
 		},
 		{
 			name:        "no snippets",
@@ -97,12 +112,6 @@ func TestClean(t *testing.T) {
 				t.Chdir(dir)
 			},
 			wantOutput: []string{},
-		},
-		{
-			name:        "non-versioned api path",
-			outputFiles: []string{"autogen/auxiliary.go"},
-			keep:        []string{},
-			wantOutput:  []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

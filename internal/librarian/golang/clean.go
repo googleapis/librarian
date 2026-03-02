@@ -183,6 +183,10 @@ func cleanClientDirectory(library *config.Library) error {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		clientPath := filepath.Join(library.Output, goAPI.ImportPath)
+		// clientPath doesn't exist, which means this is a new library, skip cleaning.
+		if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
 		if err := filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
