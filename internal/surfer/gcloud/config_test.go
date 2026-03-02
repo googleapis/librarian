@@ -50,6 +50,6 @@ func TestReadGcloudConfig(t *testing.T) {
 	}
 	want := fmt.Sprintf("service_name: %s\n%s", cfg.ServiceName, strings.Join(lines[index:], "\n"))
 	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch(-want, +got)\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

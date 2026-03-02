@@ -71,7 +71,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
-	if lib.Veneer {
+	if isVeneer(cfg.Language, lib) {
 		// Veneers are never generated, so ensure skip_generate is false.
 		lib.SkipGenerate = false
 	}
@@ -161,6 +161,7 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	if lib.Rust != nil && lib.Rust.Modules != nil {
 		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
 	}
+	lib.Veneer = false
 	return lib
 }
 

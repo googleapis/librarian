@@ -64,7 +64,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 		return nil, err
 	}
 	cmd.Arguments = args
-	cmd.Request = newRequest(method, overrides, model, service)
+	cmd.Request = newRequest(method, overrides, service)
 
 	if isList(method) {
 		// List commands should have an id_field to enable the --uri flag.
@@ -72,7 +72,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 			IDField: "name",
 		}
 		// List commands should have a default output format.
-		cmd.Output = newOutputConfig(method, model)
+		cmd.Output = newOutputConfig(method)
 	}
 
 	if isUpdate(method) {
@@ -83,7 +83,7 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 	}
 
 	if method.OperationInfo != nil {
-		cmd.Async = newAsync(method, model, overrides, service)
+		cmd.Async = newAsync(method, model, service)
 	}
 
 	return cmd, nil
@@ -166,7 +166,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 	// We check if the current field represents the primary resource of the command.
 	// This check happens at every level of nesting (e.g., `instance.name`).
 	if isPrimaryResource(field, method) {
-		param := newPrimaryResourceParam(field, method, model, overrides, service)
+		param := newPrimaryResourceParam(field, method, model, service)
 		args.Params = append(args.Params, param)
 		return nil
 	}
@@ -211,7 +211,7 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 		// If the field is a resource reference (e.g., a field for a network), we
 		// generate a `ResourceSpec` for it. This tells gcloud how to parse the
 		// resource name provided by the user.
-		spec, err := newResourceReferenceSpec(field, model, overrides, service)
+		spec, err := newResourceReferenceSpec(field, model, service)
 		if err != nil {
 			return Param{}, err
 		}
@@ -262,7 +262,7 @@ func newParam(field *api.Field, apiField string, overrides *Config, model *api.A
 
 // newPrimaryResourceParam creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.API, _ *Config, service *api.Service) Param {
+func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.API, service *api.Service) Param {
 	// We first need to get the full resource definition for the method.
 	resource := getResourceForMethod(method, model)
 	var segments []api.PathSegment
@@ -322,7 +322,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
 // another resource type (e.g., a `--network` flag).
-func newResourceReferenceSpec(field *api.Field, model *api.API, _ *Config, service *api.Service) (*ResourceSpec, error) {
+func newResourceReferenceSpec(field *api.Field, model *api.API, service *api.Service) (*ResourceSpec, error) {
 	// We iterate through all the resource definitions in the API model to find the
 	// one that matches the type of our resource reference.
 	for _, def := range model.ResourceDefinitions {
@@ -409,7 +409,7 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 }
 
 // newRequest creates the `Request` part of the command definition.
-func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.Service) *Request {
+func newRequest(method *api.Method, overrides *Config, service *api.Service) *Request {
 	req := &Request{
 		APIVersion: apiVersion(overrides),
 		Collection: newCollectionPath(method, service, false),
@@ -430,7 +430,7 @@ func newRequest(method *api.Method, overrides *Config, _ *api.API, service *api.
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(method *api.Method, model *api.API, _ *Config, service *api.Service) *Async {
+func newAsync(method *api.Method, model *api.API, service *api.Service) *Async {
 	async := &Async{
 		Collection: newCollectionPath(method, service, true),
 	}
@@ -504,7 +504,7 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 }
 
 // newOutputConfig generates the output configuration for List commands.
-func newOutputConfig(method *api.Method, _ *api.API) *OutputConfig {
+func newOutputConfig(method *api.Method) *OutputConfig {
 	// We only generate output config for list methods.
 	if !isList(method) {
 		return nil

@@ -120,8 +120,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `client_directory` | string | Is the directory where the client is generated, relative to Library.Output. |
-| `client_package_override` | string | Overrides the default package name of the generated client. |
+| `client_package` | string | Is the package name of the generated client. |
 | `disable_gapic` | bool | Determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `has_diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
@@ -131,7 +130,6 @@ This document describes the schema for the librarian.yaml.
 | `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Is the source path. |
 | `proto_package` | string | Is the proto package name. |
-| `version_suffix` | string | Is an optional suffix appended to the version part of the GAPIC import path. |
 
 ## GoModule Configuration
 

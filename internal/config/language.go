@@ -30,10 +30,8 @@ type GoModule struct {
 
 // GoAPI represents configuration for a single API within a Go module.
 type GoAPI struct {
-	// ClientDirectory is the directory where the client is generated, relative to Library.Output.
-	ClientDirectory string `yaml:"client_directory,omitempty"`
-	// ClientPackageOverride overrides the default package name of the generated client.
-	ClientPackageOverride string `yaml:"client_package_override,omitempty"`
+	// ClientPackage is the package name of the generated client.
+	ClientPackage string `yaml:"client_package,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
 	// Also known as proto-only client, which does not define a service in the proto files.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
@@ -58,8 +56,6 @@ type GoAPI struct {
 	Path string `yaml:"path,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
-	// VersionSuffix is an optional suffix appended to the version part of the GAPIC import path.
-	VersionSuffix string `yaml:"version_suffix,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.

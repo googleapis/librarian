@@ -43,6 +43,7 @@ func TestClean(t *testing.T) {
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
 				"apiv1/doc.go",
+				"apiv1/operations.go",
 				"apiv1/library_client.go",
 				"apiv1/library_client_example_go123_test.go",
 				"apiv1/library_client_example_test.go",
@@ -50,14 +51,11 @@ func TestClean(t *testing.T) {
 				"apiv1/helpers.go",
 				"apiv1/librarypb/content.pb.go",
 				"apiv1/non-generated.go",
-				"doc.go",
 			},
 			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
 			keep:         []string{},
 			wantOutput: []string{
 				"apiv1/non-generated.go",
-				// skipped because the file doesn't live in a versioned directory.
-				"doc.go",
 			},
 		},
 		{
@@ -97,6 +95,12 @@ func TestClean(t *testing.T) {
 				t.Chdir(dir)
 			},
 			wantOutput: []string{},
+		},
+		{
+			name:        "non-versioned api path",
+			outputFiles: []string{"autogen/auxiliary.go"},
+			keep:        []string{},
+			wantOutput:  []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

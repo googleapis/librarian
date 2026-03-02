@@ -1,0 +1,51 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{^Model.Codec.InternalBuilders}}
+///
+/// # Example
+/// ```
+/// # use {{Model.Codec.PackageNamespace}}::client::{{Codec.Name}};
+{{#Model.Codec.GenerateRpcSamples}}
+{{#QuickstartMethod}}
+{{> /templates/common/client_method_samples/use_statements}}
+{{/QuickstartMethod}}
+{{/Model.Codec.GenerateRpcSamples}}
+/// # async fn sample() -> Result<(), Box<dyn std::error::Error>> {
+///     let client = {{Codec.Name}}::builder().build().await?;
+{{#Model.Codec.GenerateRpcSamples}}
+{{#QuickstartMethod}}
+{{#IsAIPStandard}}
+{{#SampleInfo}}
+{{#ResourceNameField}}
+///     let {{Codec.SetterName}} = "{{Codec.SetterName}}_value";
+{{/ResourceNameField}}
+{{#IsAIPStandardUpdate}}
+///     let name = "name_value";
+{{/IsAIPStandardUpdate}}
+{{/SampleInfo}}
+{{/IsAIPStandard}}
+{{> /templates/common/client_method_samples/method_call}}
+{{/QuickstartMethod}}
+{{^QuickstartMethod}}
+///     // use `client` to make requests to the {{Codec.APITitle}}.
+{{/QuickstartMethod}}
+{{/Model.Codec.GenerateRpcSamples}}
+{{^Model.Codec.GenerateRpcSamples}}
+///     // use `client` to make requests to the {{Codec.APITitle}}.
+{{/Model.Codec.GenerateRpcSamples}}
+/// # Ok(()) }
+/// ```
+{{/Model.Codec.InternalBuilders}}
