@@ -15,11 +15,9 @@
 package golang
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/snippetmetadata"
@@ -45,21 +43,12 @@ func Bump(library *config.Library, output, version string) error {
 }
 
 func bumpInternalVersion(library *config.Library, output, version string) error {
-	libraryDir := filepath.Join(output, library.Name)
-	return filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if library.Go != nil && d.Name() == library.Go.NestedModule {
-				return filepath.SkipDir
-			}
-		}
-		if !strings.HasSuffix(path, internalVersionFile) {
-			return nil
-		}
-		return findAndReplace(path, version)
-	})
+	versionFilePath := filepath.Join(output, library.Name, internalVersionFile)
+	if _, err := os.Stat(versionFilePath); os.IsNotExist(err) {
+		return nil
+	}
+
+	return findAndReplace(versionFilePath, version)
 }
 
 func findAndReplace(path string, version string) error {

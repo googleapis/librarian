@@ -46,16 +46,14 @@ func TestBump(t *testing.T) {
 		{
 			name: "ignore other files",
 			initialFiles: map[string]string{
-				"test-lib/version.go":                "package testlib\n\nconst Version = \"0.1.0\"\n",
-				"test-lib/internal/other.go":         "package internal\n\nconst Version = \"0.1.0\"\n",
-				"test-lib/other/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/version.go":        "package testlib\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/internal/other.go": "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
 			library: &config.Library{Name: "test-lib"},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"test-lib/version.go":                "package testlib\n\nconst Version = \"0.1.0\"\n",
-				"test-lib/internal/other.go":         "package internal\n\nconst Version = \"0.1.0\"\n",
-				"test-lib/other/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+				"test-lib/version.go":        "package testlib\n\nconst Version = \"0.1.0\"\n",
+				"test-lib/internal/other.go": "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
 		},
 		{
