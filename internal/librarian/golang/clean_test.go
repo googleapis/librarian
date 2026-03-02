@@ -153,28 +153,41 @@ func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
+		library      *config.Library
 		outputFiles  []string
 		snippetFiles []string
-		keep         []string
 		wantErr      error
 	}{
 		{
-			name:         "keep file not found in output directory",
+			name: "keep file not found in output directory",
+			library: &config.Library{
+				Name: "testlib",
+				Keep: []string{"file1.go"},
+			},
 			outputFiles:  []string{"file2.go"},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"file1.go"},
 			wantErr:      fs.ErrNotExist,
+		},
+		{
+			name: "no go api",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/example/v1",
+					},
+				},
+			},
+			outputFiles:  []string{"testlib/apiv1/file2.go"},
+			snippetFiles: []string{"internal/generated/snippets/testlib/apiv1/snippet1.go"},
+			wantErr:      errGoAPINotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
-			lib := &config.Library{
-				Name:   libraryName,
-				Output: filepath.Join(root),
-				Keep:   test.keep,
-			}
+			test.library.Output = root
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
 			}
@@ -182,7 +195,7 @@ func TestClean_Error(t *testing.T) {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
 
-			err := Clean(lib)
+			err := Clean(test.library)
 			if err == nil {
 				t.Fatal("expected error")
 			}
