@@ -155,6 +155,8 @@ func clean(dir, nestedModule string, keepSet map[string]bool) error {
 	})
 }
 
+// cleanRootFiles removes predefined root files from the library directory unless
+// they are explicitly marked to be kept.
 func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 	for _, rootFile := range rootFiles {
 		// Handwritten/veneer libraries may have handwritten root files, README.md for example,
