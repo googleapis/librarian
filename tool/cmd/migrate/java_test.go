@@ -15,15 +15,15 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/license"
 )
 
@@ -41,150 +41,157 @@ func licenseHeader() string {
 
 func TestRunJavaMigration(t *testing.T) {
 	for _, test := range []struct {
-		name                string
-		genConfigContent    string
-		wantLibrarianYAML   string
-		wantErr             bool
-		expectLibrarianFile bool
+		name     string
+		repoPath string
+		wantErr  error
 	}{
 		{
-			name: "prioritize library_name over api_shortname",
-			genConfigContent: `libraries:
-  - api_shortname: language
-    library_name: language-v1
-    GAPICs:
-      - proto_path: google/cloud/language/v1
-`,
-			wantLibrarianYAML: licenseHeader() + `language: java
-sources:
-  googleapis:
-    commit: ""
-    dir: ../../googleapis
-default: {}
-libraries:
-  - name: language-v1
-    apis:
-      - path: google/cloud/language/v1
-    output: java-language-v1
-`,
-			expectLibrarianFile: true,
+			name:     "success",
+			repoPath: "testdata/run/success-java",
 		},
 		{
-			name: "fallback to api_shortname",
-			genConfigContent: `libraries:
-  - api_shortname: language
-    GAPICs:
-      - proto_path: google/cloud/language/v1
-`,
-			wantLibrarianYAML: licenseHeader() + `language: java
-sources:
-  googleapis:
-    commit: ""
-    dir: ../../googleapis
-default: {}
-libraries:
-  - name: language
-    apis:
-      - path: google/cloud/language/v1
-    output: java-language
-`,
-			expectLibrarianFile: true,
+			name:     "tidy_failed",
+			repoPath: "testdata/run/tidy-fails-java",
+			wantErr:  errTidyFailed,
 		},
 		{
-			name: "multiple libraries",
-			genConfigContent: `libraries:
-  - api_shortname: language
-    GAPICs:
-      - proto_path: google/cloud/language/v1
-  - library_name: vision
-    GAPICs:
-      - proto_path: google/cloud/vision/v1
-  - api_shortname: texttospeech
-    library_name: tts
-    GAPICs:
-      - proto_path: google/cloud/texttospeech/v1
-`,
-			wantLibrarianYAML: licenseHeader() + `language: java
-sources:
-  googleapis:
-    commit: ""
-    dir: ../../googleapis
-default: {}
-libraries:
-  - name: language
-    apis:
-      - path: google/cloud/language/v1
-    output: java-language
-  - name: tts
-    apis:
-      - path: google/cloud/texttospeech/v1
-    output: java-tts
-  - name: vision
-    apis:
-      - path: google/cloud/vision/v1
-    output: java-vision
-`,
-			expectLibrarianFile: true,
-		},
-		{
-			name:             "no generation config",
-			genConfigContent: "",
-			wantErr:          true,
-		},
-		{
-			name: "empty libraries list",
-			genConfigContent: `libraries: []
-`,
-		},
-		{
-			name:             "invalid yaml",
-			genConfigContent: "{",
-			wantErr:          true,
+			name:     "no_generation_config",
+			repoPath: "testdata/run/non-existent",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			if test.genConfigContent != "" {
-				genConfigFile := filepath.Join(tmpDir, "generation_config.yaml")
-				if err := os.WriteFile(genConfigFile, []byte(test.genConfigContent), 0644); err != nil {
-					t.Fatalf("failed to write test generation_config.yaml: %v", err)
+			outputPath := "librarian.yaml"
+			t.Cleanup(func() {
+				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
+					t.Fatalf("cleanup: remove %s: %v", outputPath, err)
 				}
+			})
+			err := runJavaMigration(t.Context(), test.repoPath)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("expected error %v, got %v", test.wantErr, err)
+				}
+				return
 			}
-
-			// RunTidyOnConfig writes to librarian.yaml in the current working directory.
-			t.Chdir(tmpDir)
-
-			err := runJavaMigration(context.Background(), ".")
-
-			if (err != nil) != test.wantErr {
-				t.Fatalf("runJavaMigration() error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
+		})
+	}
+}
 
-			librarianConfigFile := filepath.Join(tmpDir, "librarian.yaml")
-			_, statErr := os.Stat(librarianConfigFile)
-
-			if test.expectLibrarianFile {
-				if os.IsNotExist(statErr) {
-					t.Fatalf("expected librarian.yaml to be created, but it was not")
-				}
-				got, readErr := os.ReadFile(librarianConfigFile)
-				if readErr != nil {
-					t.Fatalf("failed to read librarian.yaml: %v", readErr)
-				}
-				// The marshaler adds a trailing newline.
-				want := test.wantLibrarianYAML
-				if len(want) > 0 && want[len(want)-1] != '\n' {
-					want += "\n"
-				}
-
-				if diff := cmp.Diff(want, string(got)); diff != "" {
-					t.Errorf(`mismatch (-want +got):
-%s`, diff)
-				}
-			} else {
-				if !os.IsNotExist(statErr) {
-					t.Fatalf("expected librarian.yaml not to be created, but it was")
-				}
+func TestBuildConfig(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		gen  *GenerationConfig
+		want *config.Config
+	}{
+		{
+			name: "prioritize library_name over api_shortname",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						LibraryName:  "language-v1",
+						APIShortName: "language",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+			want: &config.Config{
+				Language: "java",
+				Default:  &config.Default{},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "language-v1",
+						Output: "java-language-v1",
+						APIs: []*config.API{
+							{Path: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "fallback to api_shortname",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName: "language",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+			want: &config.Config{
+				Language: "java",
+				Default:  &config.Default{},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "language",
+						Output: "java-language",
+						APIs: []*config.API{
+							{Path: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple libraries",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						LibraryName: "vision",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/vision/v1"},
+						},
+					},
+					{
+						APIShortName: "language",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+			want: &config.Config{
+				Language: "java",
+				Default:  &config.Default{},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "vision",
+						Output: "java-vision",
+						APIs: []*config.API{
+							{Path: "google/cloud/vision/v1"},
+						},
+					},
+					{
+						Name:   "language",
+						Output: "java-language",
+						APIs: []*config.API{
+							{Path: "google/cloud/language/v1"},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildConfig(test.gen)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

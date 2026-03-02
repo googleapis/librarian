@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -46,8 +47,12 @@ type GenerationConfig struct {
 }
 
 func runJavaMigration(ctx context.Context, repoPath string) error {
-	gen, err := yaml.Read[GenerationConfig](filepath.Join(repoPath, generationConfigFileName))
+	gen, err := readGenerationConfig(repoPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Info: %s not found. Skipping.", filepath.Join(repoPath, generationConfigFileName))
+			return nil
+		}
 		return err
 	}
 
@@ -64,6 +69,10 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	return nil
 }
 
+func readGenerationConfig(path string) (*GenerationConfig, error) {
+	return yaml.Read[GenerationConfig](filepath.Join(path, generationConfigFileName))
+}
+
 // buildConfig converts a GenerationConfig to a Librarian Config.
 func buildConfig(gen *GenerationConfig) *config.Config {
 	var libs []*config.Library
@@ -72,26 +81,37 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 		if name == "" {
 			name = l.APIShortName
 		}
+		if name == "" {
+			log.Printf("Warning: Skipping library with no name")
+			continue
+		}
+
 		var apis []*config.API
 		for _, g := range l.GAPICs {
 			if g.ProtoPath != "" {
 				apis = append(apis, &config.API{Path: g.ProtoPath})
 			}
 		}
+		if len(apis) == 0 {
+			log.Printf("Warning: Skipping library %q with no APIs", name)
+			continue
+		}
+
 		libs = append(libs, &config.Library{
 			Name:   name,
 			Output: "java-" + name,
 			APIs:   apis,
 		})
 	}
+
 	if len(libs) == 0 {
 		return nil
 	}
+
 	return &config.Config{
 		Language: "java",
 		Default:  &config.Default{},
 		Sources: &config.Sources{
-			// hardcoded for local testing
 			Googleapis: &config.Source{Dir: "../../googleapis"},
 		},
 		Libraries: libs,
