@@ -34,10 +34,8 @@ func DetermineInputFiles(source string, cfg config.SourceConfig) ([]string, erro
 
 	// Iterate over active roots to find the source directory.
 	for _, root := range cfg.ActiveRoots {
-		rootPath, err := cfg.Root(root)
-		if err != nil {
-			return nil, err
-		}
+		rootPath := cfg.Root(root)
+		// Ignore non-existent roots
 		if rootPath == "" {
 			continue
 		}

@@ -47,16 +47,13 @@ func TestRoot(t *testing.T) {
 			want: "discovery-path",
 		},
 		{
-			name:    "unknown",
-			root:    "unknown",
-			wantErr: true,
+			name: "unknown",
+			root: "unknown",
+			want: "",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := cfg.Root(test.root)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("Root(%q) error = %v, wantErr %v", test.root, err, test.wantErr)
-			}
+			got := cfg.Root(test.root)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Root(%q) mismatch (-want +got):\n%s", test.root, diff)
 			}
@@ -106,7 +103,7 @@ func TestResolve(t *testing.T) {
 		{
 			name:    "unknown root",
 			relPath: specPath,
-			wantErr: true,
+			want:    specPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -179,14 +176,14 @@ func TestAllSourceRoots(t *testing.T) {
 
 func TestNewSourceConfig(t *testing.T) {
 	options := map[string]string{
-		"googleapis-root":  "ga-path",
-		"discovery-root":   "disco-path",
-		"conformance-root": "conf-path",
-		"protobuf-root":    "pb-path",
-		"showcase-root":    "show-path",
-		"include-list":     "file1,file2",
-		"exclude-list":     "file3",
-		"roots":            "googleapis,discovery",
+		"googleapis-root":   "ga-path",
+		"discovery-root":    "disco-path",
+		"conformance-root":  "conf-path",
+		"protobuf-src-root": "pb-path",
+		"showcase-root":     "show-path",
+		"include-list":      "file1,file2",
+		"exclude-list":      "file3",
+		"roots":             "googleapis,discovery",
 	}
 	want := SourceConfig{
 		Sources: Sources{

@@ -54,7 +54,7 @@ func NewSourceConfig(options map[string]string) SourceConfig {
 			Googleapis:  options["googleapis-root"],
 			Discovery:   options["discovery-root"],
 			Conformance: options["conformance-root"],
-			ProtobufSrc: options["protobuf-root"],
+			ProtobufSrc: options["protobuf-src-root"],
 			Showcase:    options["showcase-root"],
 		},
 		ActiveRoots: SourceRoots(options),
@@ -64,20 +64,21 @@ func NewSourceConfig(options map[string]string) SourceConfig {
 }
 
 // Root returns the directory path for the given root name.
-func (c SourceConfig) Root(name string) (string, error) {
+func (c SourceConfig) Root(name string) string {
 	switch name {
 	case "googleapis", "googleapis-root":
-		return c.Sources.Googleapis, nil
+		return c.Sources.Googleapis
 	case "discovery", "discovery-root":
-		return c.Sources.Discovery, nil
+		return c.Sources.Discovery
 	case "showcase", "showcase-root":
-		return c.Sources.Showcase, nil
-	case "protobuf", "protobuf-src", "protobuf-root", "protobuf-src-root":
-		return c.Sources.ProtobufSrc, nil
+		return c.Sources.Showcase
+	case "protobuf-src", "protobuf-src-root":
+		return c.Sources.ProtobufSrc
 	case "conformance", "conformance-root":
-		return c.Sources.Conformance, nil
+		return c.Sources.Conformance
 	default:
-		return "", fmt.Errorf("unknown source name: %s", name)
+		// Unknown root name
+		return ""
 	}
 }
 
@@ -85,10 +86,8 @@ func (c SourceConfig) Root(name string) (string, error) {
 // within the active source roots. Otherwise, it returns the original path.
 func (c SourceConfig) Resolve(relPath string) (string, error) {
 	for _, root := range c.ActiveRoots {
-		rootPath, err := c.Root(root)
-		if err != nil {
-			return "", err
-		}
+		rootPath := c.Root(root)
+		// Ignore non-existent roots
 		if rootPath == "" {
 			continue
 		}
