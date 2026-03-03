@@ -15,11 +15,17 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	errGoAPINotFound = errors.New("go API not found")
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -80,4 +86,10 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	idx = strings.LastIndex(importPath, "/")
 	pkg := importPath[idx+1:]
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
+}
+
+// snippetDirectory returns the path to the directory where Go snippets are generated
+// for the given library output directory and Go import path.
+func snippetDirectory(output, importPath string) string {
+	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
