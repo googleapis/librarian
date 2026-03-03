@@ -1,0 +1,7 @@
+libraries:
+  - library_name: duplicate
+    GAPICs:
+      - proto_path: google/cloud/duplicate/v1
+  - library_name: duplicate
+    GAPICs:
+      - proto_path: google/cloud/duplicate/v2
