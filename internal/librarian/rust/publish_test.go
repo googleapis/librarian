@@ -553,31 +553,13 @@ func TestRunSemverChecks(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			mainGo := filepath.Join(tmpDir, "main.go")
-			// Create a native executable name (with .exe on Windows)
-			exeName := "fake_cargo"
-			if runtime.GOOS == "windows" {
-				exeName += ".exe"
-			}
-			fakeCargoExe := filepath.Join(tmpDir, exeName)
-
 			src := `package main
 import ("os"; "strings")
 func main() {
 	if strings.Contains(strings.Join(os.Args, " "), "fail-me") { os.Exit(1) }
 	os.Exit(0)
 }`
-			if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			// Compile the fake cargo once per test case
-			cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
-			}
-
+			fakeCargoExe := buildFakeCargo(t, src)
 			sData := semverData{
 				manifests:       tt.manifests,
 				cargoPath:       fakeCargoExe,
@@ -606,28 +588,12 @@ func TestRunSemverChecks_Errors(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			mainGo := filepath.Join(tmpDir, "main.go")
-			exeName := "fake_cargo"
-			if runtime.GOOS == "windows" {
-				exeName += ".exe"
-			}
-			fakeCargoExe := filepath.Join(tmpDir, exeName)
-
-			if err := os.WriteFile(mainGo, []byte("package main; import \"os\"; func main() { os.Exit(1) }"), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
-			}
-
+			src := `package main; import "os"; func main() { os.Exit(1) }`
+			fakeCargoExe := buildFakeCargo(t, src)
 			sData := semverData{
 				manifests: tt.manifests,
 				cargoPath: fakeCargoExe,
 			}
-
 			err := runSemverChecks(t.Context(), sData)
 			if err == nil {
 				t.Fatal("runSemverChecks() expected error, got nil")
@@ -637,4 +603,29 @@ func TestRunSemverChecks_Errors(t *testing.T) {
 			}
 		})
 	}
+}
+
+// buildFakeCargo compiles a small Go program to serve as a mock 'cargo' binary.
+// It returns the path to the resulting executable.
+func buildFakeCargo(t *testing.T, src string) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	mainGo := filepath.Join(tmpDir, "main.go")
+
+	exeName := "fake_cargo"
+	if runtime.GOOS == "windows" {
+		exeName += ".exe"
+	}
+	fakeCargoExe := filepath.Join(tmpDir, exeName)
+
+	if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
+		t.Fatalf("failed to write fake cargo source: %v", err)
+	}
+
+	cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
+	}
+
+	return fakeCargoExe
 }
