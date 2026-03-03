@@ -67,11 +67,18 @@ func TestClean(t *testing.T) {
 			outputFiles: []string{
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
+				"apiv1/iam_policy_client.go",
 				"README.md",
 			},
 			snippetFiles: []string{"apiv1/snippet1.go"},
-			keep:         []string{"README.md"},
-			wantOutput:   []string{"README.md"},
+			keep: []string{
+				"apiv1/iam_policy_client.go",
+				"README.md",
+			},
+			wantOutput: []string{
+				"apiv1/iam_policy_client.go",
+				"README.md",
+			},
 		},
 		{
 			name: "client files in nested module are not cleaned",

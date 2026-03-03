@@ -60,7 +60,7 @@ func Clean(library *config.Library) error {
 	if err := cleanRootFiles(libraryDir, keepSet); err != nil {
 		return err
 	}
-	if err := cleanClientDirectory(library); err != nil {
+	if err := cleanClientDirectory(library, keepSet); err != nil {
 		return err
 	}
 	return nil
@@ -86,11 +86,7 @@ func check(dir string, keep []string) (map[string]bool, error) {
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("error keeping %s: %w", k, err)
 		}
-		// Effectively get a canonical relative path. While in most cases
-		// this will be equal to k, it might not be - in particular,
-		// on Windows the directory separator in paths returned by Rel
-		// will be a backslash.
-		rel, err := filepath.Rel(dir, path)
+		rel, err := filepath.Abs(path)
 		if err != nil {
 			return nil, err
 		}
@@ -103,13 +99,16 @@ func check(dir string, keep []string) (map[string]bool, error) {
 // they are explicitly marked to be kept.
 func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 	for _, rootFile := range rootFiles {
+		rootFilePath, err := filepath.Abs(filepath.Join(libraryDir, rootFile))
+		if err != nil {
+			return err
+		}
 		// Handwritten/veneer libraries may have handwritten root files, README.md for example,
 		// defined in the keep list.
 		// Skip cleaning these files.
-		if keepSet[rootFile] {
+		if keepSet[rootFilePath] {
 			continue
 		}
-		rootFilePath := filepath.Join(libraryDir, rootFile)
 		if err := os.Remove(rootFilePath); err != nil {
 			if errors.Is(err, syscall.ENOENT) {
 				// The file doesn't exist during deletion, it's fine to ignore this error.
@@ -123,18 +122,21 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 
 // cleanClientDirectory walks through each API directory in the library and
 // removes generated Go client files and snippets.
-func cleanClientDirectory(library *config.Library) error {
+func cleanClientDirectory(library *config.Library, keepSet map[string]bool) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		clientPath := filepath.Join(library.Output, goAPI.ImportPath)
+		clientPath, err := filepath.Abs(filepath.Join(library.Output, goAPI.ImportPath))
+		if err != nil {
+			return err
+		}
 		// clientPath doesn't exist, which means this is a new library, skip cleaning.
 		if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		if err := cleanGeneratedClientFiles(clientPath); err != nil {
+		if err := cleanGeneratedClientFiles(clientPath, keepSet); err != nil {
 			return err
 		}
 		snippetDir := snippetDirectory(library.Output, goAPI.ImportPath)
@@ -145,12 +147,18 @@ func cleanClientDirectory(library *config.Library) error {
 	return nil
 }
 
-func cleanGeneratedClientFiles(clientPath string) error {
+func cleanGeneratedClientFiles(clientPath string, keepSet map[string]bool) error {
 	return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
+			return nil
+		}
+		// Some libraries may have a non-generated file that has on of the
+		// suffixes in generatedClientFileSuffixes, e.g., iam_policy_client.go.
+		// Put them into keep and skip cleaning.
+		if keepSet[path] {
 			return nil
 		}
 		for _, file := range generatedClientFiles {
