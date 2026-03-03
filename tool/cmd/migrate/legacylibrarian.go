@@ -346,11 +346,11 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 }
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return reflect.DeepEqual(info, &goGAPICInfo{
-		DisableGAPIC:       false,
-		NoMetadata:         false,
-		NoRESTNumericEnums: false,
-	})
+	return info.ClientPackageName == "" &&
+		!info.DisableGAPIC &&
+		info.ImportPath == "" &&
+		!info.NoMetadata &&
+		!info.NoRESTNumericEnums
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
