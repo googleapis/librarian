@@ -138,7 +138,7 @@ func cleanClientDirectory(library *config.Library) error {
 				return nil
 			}
 			for _, file := range clientFiles {
-				if !strings.HasSuffix(path, file) {
+				if !strings.HasSuffix(filepath.Base(path), file) {
 					continue
 				}
 				return os.Remove(path)
