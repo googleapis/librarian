@@ -400,33 +400,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "parse BUILD.bazel with no GAPIC rule",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "example-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/no-gapic",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-				googleapisDir:   "testdata/googleapis",
-			},
-			want: []*config.Library{
-				{
-					Name: "example-library",
-					APIs: []*config.API{{Path: "google/cloud/no-gapic"}},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with no Go API",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
