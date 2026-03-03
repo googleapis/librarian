@@ -163,6 +163,7 @@ func TestClean_Error(t *testing.T) {
 		library      *config.Library
 		outputFiles  []string
 		snippetFiles []string
+		setup        func(t *testing.T, base string)
 		wantErr      error
 	}{
 		{
@@ -189,6 +190,69 @@ func TestClean_Error(t *testing.T) {
 			snippetFiles: []string{"internal/generated/snippets/testlib/apiv1/snippet1.go"},
 			wantErr:      errGoAPINotFound,
 		},
+		{
+			name: "no permission to remove root files",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			outputFiles: []string{"README.md"},
+			setup: func(t *testing.T, base string) {
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "no permission to remove client files",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			outputFiles: []string{"apiv1/doc.go"},
+			setup: func(t *testing.T, base string) {
+				base = filepath.Join(base, "apiv1")
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
@@ -200,6 +264,9 @@ func TestClean_Error(t *testing.T) {
 			}
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
+			}
+			if test.setup != nil {
+				test.setup(t, outputPath)
 			}
 
 			err := Clean(test.library)
