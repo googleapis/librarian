@@ -148,7 +148,7 @@ func cleanClientDirectory(library *config.Library) error {
 			return err
 		}
 
-		snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", goAPI.ImportPath)
+		snippetDir := snippetDirectory(library.Output, goAPI.ImportPath)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}

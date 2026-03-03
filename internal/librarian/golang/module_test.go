@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -248,5 +249,15 @@ func TestDefaultImportPathAndClientPkg(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestSnippetDirectory(t *testing.T) {
+	output := t.TempDir()
+	importPath := "example/apiv1"
+	got := snippetDirectory(output, importPath)
+	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
