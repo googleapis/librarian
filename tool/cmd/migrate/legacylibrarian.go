@@ -350,7 +350,7 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 	return info.ClientPackageName == "" &&
 		!info.DisableGAPIC &&
-		info.HasDireGAPIC &&
+		!info.HasDireGAPIC &&
 		info.ImportPath == "" &&
 		!info.NoMetadata &&
 		!info.NoRESTNumericEnums
