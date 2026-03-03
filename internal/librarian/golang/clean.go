@@ -104,13 +104,13 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 		if keepSet[rootFile] {
 			continue
 		}
-		rootFile := filepath.Join(libraryDir, rootFile)
+		rootFilePath := filepath.Join(libraryDir, rootFile)
 		// Some library may not have the root file, README.md for example, this is rare,
 		// but we should not fail the clean in this case.
-		if _, err := os.Stat(rootFile); os.IsNotExist(err) {
+		if _, err := os.Stat(rootFilePath); os.IsNotExist(err) {
 			continue
 		}
-		if err := os.Remove(rootFile); err != nil {
+		if err := os.Remove(rootFilePath); err != nil {
 			return err
 		}
 	}
