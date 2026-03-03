@@ -86,7 +86,7 @@ func reformat(path string) error {
 // "snippet_metadata" and ending with ".json") under the given directory
 // (including subdirectories).
 func findAll(dir string) ([]string, error) {
-	files := []string{}
+	var files []string
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err

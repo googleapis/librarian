@@ -43,7 +43,6 @@ var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
-	errGoAPINotFound = errors.New("go API not found")
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
@@ -140,7 +139,9 @@ func Format(ctx context.Context, library *config.Library) error {
 		return err
 	}
 	args := []string{"-w", filepath.Join(outDir, library.Name)}
-	snippetDir := filepath.Join(outDir, "internal", "generated", "snippets", library.Name)
+	// TODO(https://github.com/googleapis/librarian/issues/4297), refactor this function
+	// to use import path.
+	snippetDir := snippetDirectory(outDir, library.Name)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
