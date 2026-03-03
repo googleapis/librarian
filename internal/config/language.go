@@ -48,10 +48,9 @@ type GoAPI struct {
 	// NoMetadata indicates whether to skip generating gapic_metadata.json.
 	// This is typically false.
 	NoMetadata bool `yaml:"no_metadata,omitempty"`
-	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
-	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
-	// to generate numeric enums
-	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+	// RESTNumericEnums determines whether to use numeric enums in REST requests.
+	// This defaults to true.
+	RESTNumericEnums bool `yaml:"rest_numeric_enums,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 	// ProtoPackage is the proto package name.

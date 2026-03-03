@@ -35,10 +35,10 @@ import (
 )
 
 type goGAPICInfo struct {
-	ClientPackageName  string
-	ImportPath         string
-	NoMetadata         bool
-	NoRESTNumericEnums bool
+	ClientPackageName string
+	ImportPath        string
+	NoMetadata        bool
+	RESTNumericEnums  bool
 }
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
@@ -294,7 +294,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
-			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
+			goAPI.RESTNumericEnums = info.RESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
 			}
@@ -345,8 +345,8 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 	return reflect.DeepEqual(info, &goGAPICInfo{
-		NoMetadata:         false,
-		NoRESTNumericEnums: false,
+		NoMetadata:       false,
+		RESTNumericEnums: true,
 	})
 }
 
@@ -399,8 +399,8 @@ func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
 	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
 	info := &goGAPICInfo{
-		NoMetadata:         rule.AttrLiteral("metadata") != "True",
-		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
+		NoMetadata:       rule.AttrLiteral("metadata") != "True",
+		RESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") != "False",
 	}
 	if importPath != defaultImportPath {
 		info.ImportPath = importPath

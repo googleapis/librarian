@@ -453,8 +453,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								Path:               "google/cloud/bigquery/analyticshub/v1",
-								NoRESTNumericEnums: true,
+								Path:             "google/cloud/bigquery/analyticshub/v1",
+								RESTNumericEnums: false,
 							},
 						},
 					},
@@ -518,8 +518,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								NoRESTNumericEnums: true,
-								Path:               "google/cloud/bigquery/analyticshub/v1",
+								RESTNumericEnums: false,
+								Path:             "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
 					},
@@ -699,7 +699,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							{
 								EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
 								ImportPath:               "bigquery/v2/apiv2",
-								NoRESTNumericEnums:       true,
+								RESTNumericEnums:         false,
 								Path:                     "google/cloud/bigquery/v2",
 							},
 						},
@@ -824,7 +824,7 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
-				NoRESTNumericEnums: true,
+				RESTNumericEnums: false,
 			},
 		},
 		{
@@ -832,9 +832,9 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/custom-import-path",
 			buildPath:     "google/longrunning",
 			want: &goGAPICInfo{
-				ClientPackageName:  "longrunning",
-				ImportPath:         "longrunning/autogen",
-				NoRESTNumericEnums: true,
+				ClientPackageName: "longrunning",
+				ImportPath:        "longrunning/autogen",
+				RESTNumericEnums:  false,
 			},
 		},
 		{
