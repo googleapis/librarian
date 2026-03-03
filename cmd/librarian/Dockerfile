@@ -118,6 +118,9 @@ RUN curl -fsSL -o /tmp/pandoc.tar.gz \
 # Install Python dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --break-system-packages \
-    gapic-generator==1.28.3 \
+    gapic-generator==1.30.9 \
     nox==2025.11.12 \
-    gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
+    ruff==0.14.14 \
+    isort==5.11.0 \
+    black[jupyter]==23.7.0 \
+    gcp-synthtool@git+https://github.com/googleapis/synthtool@afd7725f32d522a95e964884e0fba6d0d6b4cb6a
