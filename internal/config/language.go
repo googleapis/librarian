@@ -401,3 +401,60 @@ type DartPackage struct {
 	// Version is the version of the dart package.
 	Version string `yaml:"version,omitempty"`
 }
+
+// JavaPackage contains Java-specific library configuration.
+type JavaPackage struct {
+	// APIReference is the URL for the API reference documentation.
+	APIReference string `yaml:"api_reference,omitempty"`
+
+	// APIDescriptionOverride allows the "api_description" field in
+	// .repo-metadata.json to be overridden.
+	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
+
+	// ClientDocumentation is the URL for the client library documentation.
+	ClientDocumentation string `yaml:"client_documentation,omitempty"`
+
+	// CodeownerTeam is the GitHub team that owns the code.
+	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
+
+	// DistributionName is the Maven coordinate (e.g., "com.google.cloud:google-cloud-pubsub").
+	DistributionName string `yaml:"distribution_name,omitempty"`
+
+	// ExcludedDependencies is a list of dependencies to exclude.
+	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
+
+	// ExcludedPoms is a list of POM files to exclude.
+	ExcludedPoms string `yaml:"excluded_poms,omitempty"`
+
+	// ExtraVersionedModules is a list of extra versioned modules.
+	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
+
+	// IssueTracker is the URL for the issue tracker.
+	IssueTracker string `yaml:"issue_tracker,omitempty"`
+
+	// LibraryType is the type of library (e.g., "GAPIC_AUTO").
+	LibraryType string `yaml:"library_type,omitempty"`
+
+	// MinJavaVersion is the minimum Java version required.
+	MinJavaVersion int `yaml:"min_java_version,omitempty"`
+
+	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
+	// to be overridden.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
+
+	// ProductDocumentationOverride allows the "product_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
+
+	// RecommendedPackage is the recommended package name.
+	RecommendedPackage string `yaml:"recommended_package,omitempty"`
+
+	// RequiresBilling indicates whether billing is required for this API, defaults to true.
+	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
+
+	// RestDocumentation is the URL for the REST documentation.
+	RestDocumentation string `yaml:"rest_documentation,omitempty"`
+
+	// RpcDocumentation is the URL for the RPC documentation.
+	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+}
