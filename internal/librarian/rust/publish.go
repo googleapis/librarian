@@ -42,6 +42,9 @@ type semverData struct {
 // on 64-core workstations (17m vs 2h serial).
 const maxSemverConcurrency = 8
 
+// ErrSemverCheck is returned when a semver check fails.
+var ErrSemverCheck = fmt.Errorf("semver check failed")
+
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
@@ -130,7 +133,7 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 	for name, manifest := range semverData.manifests {
 		group.Go(func() error {
 			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
-				return fmt.Errorf("semver check failed for %s: %w", name, err)
+				return fmt.Errorf("%w for %s: %v", ErrSemverCheck, name, err)
 			}
 			return nil
 		})

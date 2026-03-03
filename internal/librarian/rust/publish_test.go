@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path"
@@ -532,7 +533,7 @@ fi
 }
 
 func TestRunSemverChecks(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name            string
 		manifests       map[string]string
 		dryRunKeepGoing bool
@@ -552,7 +553,7 @@ func TestRunSemverChecks(t *testing.T) {
 			dryRunKeepGoing: true,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			src := `package main
 import ("os"; "strings")
 func main() {
@@ -561,45 +562,45 @@ func main() {
 }`
 			fakeCargoExe := buildFakeCargo(t, src)
 			sData := semverData{
-				manifests:       tt.manifests,
+				manifests:       test.manifests,
 				cargoPath:       fakeCargoExe,
-				dryRunKeepGoing: tt.dryRunKeepGoing,
+				dryRunKeepGoing: test.dryRunKeepGoing,
 			}
 
 			if err := runSemverChecks(t.Context(), sData); err != nil {
-				t.Errorf("runSemverChecks() unexpected error: %v", err)
+				t.Error(err)
 			}
 		})
 	}
 }
 
 func TestRunSemverChecks_Errors(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name      string
 		manifests map[string]string
-		wantErr   string
+		wantErr   error
 	}{
 		{
 			name: "single crate failure",
 			manifests: map[string]string{
 				"fail-me": "fail/Cargo.toml",
 			},
-			wantErr: "semver check failed for fail-me",
+			wantErr: ErrSemverCheck,
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			src := `package main; import "os"; func main() { os.Exit(1) }`
 			fakeCargoExe := buildFakeCargo(t, src)
 			sData := semverData{
-				manifests: tt.manifests,
+				manifests: test.manifests,
 				cargoPath: fakeCargoExe,
 			}
 			err := runSemverChecks(t.Context(), sData)
 			if err == nil {
-				t.Fatal("runSemverChecks() expected error, got nil")
+				t.Error("runSemverChecks() expected error, got nil")
 			}
-			if !strings.Contains(err.Error(), tt.wantErr) {
-				t.Errorf("error %q does not contain %q", err, tt.wantErr)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("runSemverChecks() error = %v, want to contain %v", err, test.wantErr)
 			}
 		})
 	}
