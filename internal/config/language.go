@@ -420,8 +420,9 @@ type JavaModule struct {
 	// ClientDocumentation is the URL for the client library documentation.
 	ClientDocumentation string `yaml:"client_documentation,omitempty"`
 
-	// CloudAPI indicates whether the API is a Google Cloud API, defaults to true.
-	CloudAPI *bool `yaml:"cloud_api,omitempty"`
+	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
+	// Defaults to false.
+	NonCloudAPI bool `yaml:"non_cloud_api,omitempty"`
 
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
@@ -461,8 +462,9 @@ type JavaModule struct {
 	// RecommendedPackage is the recommended package name.
 	RecommendedPackage string `yaml:"recommended_package,omitempty"`
 
-	// RequiresBilling indicates whether billing is required for this API, defaults to true.
-	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
+	// BillingNotRequired indicates whether the API does NOT require billing.
+	// This is typically false.
+	BillingNotRequired bool `yaml:"billing_not_required,omitempty"`
 
 	// RestDocumentation is the URL for the REST documentation.
 	RestDocumentation string `yaml:"rest_documentation,omitempty"`
