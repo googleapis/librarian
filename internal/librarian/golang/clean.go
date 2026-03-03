@@ -118,7 +118,7 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 }
 
 // cleanClientDirectory walks through each API directory in the library and
-// removes generated Go client files.
+// removes generated Go client files and snippets.
 func cleanClientDirectory(library *config.Library) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
@@ -130,28 +130,31 @@ func cleanClientDirectory(library *config.Library) error {
 		if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		if err := filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if d.IsDir() {
-				return nil
-			}
-			for _, file := range generatedClientFiles {
-				if !strings.HasSuffix(filepath.Base(path), file) {
-					continue
-				}
-				return os.Remove(path)
-			}
-			return nil
-		}); err != nil {
+		if err := cleanGeneratedClientFiles(clientPath); err != nil {
 			return err
 		}
-
 		snippetDir := snippetDirectory(library.Output, goAPI.ImportPath)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func cleanGeneratedClientFiles(clientPath string) error {
+	return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		for _, file := range generatedClientFiles {
+			if !strings.HasSuffix(filepath.Base(path), file) {
+				continue
+			}
+			return os.Remove(path)
+		}
+		return nil
+	})
 }
