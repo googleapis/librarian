@@ -37,6 +37,7 @@ import (
 type goGAPICInfo struct {
 	ClientPackageName  string
 	DisableGAPIC       bool
+	HasDireGAPIC       bool
 	ImportPath         string
 	NoMetadata         bool
 	NoRESTNumericEnums bool
@@ -294,6 +295,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.DisableGAPIC = info.DisableGAPIC
+			goAPI.HasDiregapic = info.HasDireGAPIC
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
@@ -348,6 +350,7 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 	return info.ClientPackageName == "" &&
 		!info.DisableGAPIC &&
+		info.HasDireGAPIC &&
 		info.ImportPath == "" &&
 		!info.NoMetadata &&
 		!info.NoRESTNumericEnums
@@ -402,6 +405,7 @@ func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
 	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
 	info := &goGAPICInfo{
+		HasDireGAPIC:       rule.AttrLiteral("diregapic") == "True",
 		NoMetadata:         rule.AttrLiteral("metadata") != "True",
 		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
 	}
