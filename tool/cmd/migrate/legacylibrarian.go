@@ -36,6 +36,7 @@ import (
 
 type goGAPICInfo struct {
 	ClientPackageName  string
+	DisableGAPIC       bool
 	ImportPath         string
 	NoMetadata         bool
 	NoRESTNumericEnums bool
@@ -292,6 +293,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
 			goAPI.ClientPackage = info.ClientPackageName
+			goAPI.DisableGAPIC = info.DisableGAPIC
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
@@ -344,10 +346,11 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 }
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return reflect.DeepEqual(info, &goGAPICInfo{
-		NoMetadata:         false,
-		NoRESTNumericEnums: false,
-	})
+	return info.ClientPackageName == "" &&
+		!info.DisableGAPIC &&
+		info.ImportPath == "" &&
+		!info.NoMetadata &&
+		!info.NoRESTNumericEnums
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
@@ -390,7 +393,7 @@ func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 	}
 	rules := file.Rules("go_gapic_library")
 	if len(rules) == 0 {
-		return nil, nil
+		return &goGAPICInfo{DisableGAPIC: true}, nil
 	}
 	if len(rules) > 1 {
 		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
