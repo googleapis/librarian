@@ -188,6 +188,14 @@ func TestGoClientDocURL(t *testing.T) {
 			importPath: "spanner/admin/database/apiv1",
 			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/spanner/latest/admin/database/apiv1",
 		},
+		{
+			name: "bigquery/v2",
+			library: &config.Library{
+				Name: "bigquery/v2",
+			},
+			importPath: "bigquery/v2/apiv2",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/bigquery/v2/latest/apiv2",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := clientDocURL(test.library, test.importPath)
