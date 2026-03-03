@@ -437,8 +437,8 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, tc.wantErr)
 			}
-			if got != tc.want {
-				t.Errorf("formatResourceNameTemplateFromPath() got = %v, want %v", got, tc.want)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
