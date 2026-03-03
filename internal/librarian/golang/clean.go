@@ -30,18 +30,22 @@ var (
 	rootFiles = []string{"README.md", "internal/version.go"}
 	// TODO(https://github.com/googleapis/librarian/issues/4217), document each file about
 	// what are matched and why it is necessary.
+	// Separate generated files to filename and filename suffix allow us to match
+	// the files as accurate as possible.
 	generatedClientFiles = []string{
 		".repo-metadata.json",
-		".pb.go",
 		"auxiliary.go",
 		"auxiliary_go123.go",
-		"_client.go",
-		"_client_example_go123_test.go",
-		"_client_example_test.go",
 		"doc.go",
 		"gapic_metadata.json",
 		"helpers.go",
 		"operations.go",
+	}
+	generatedClientFileSuffixes = []string{
+		".pb.go",
+		"_client.go",
+		"_client_example_go123_test.go",
+		"_client_example_test.go",
 	}
 )
 
@@ -108,7 +112,7 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 		rootFilePath := filepath.Join(libraryDir, rootFile)
 		if err := os.Remove(rootFilePath); err != nil {
 			if errors.Is(err, syscall.ENOENT) {
-				// The file doesn't exist, it's fine to ignore this error.
+				// The file doesn't exist during deletion, it's fine to ignore this error.
 				continue
 			}
 			return err
@@ -150,6 +154,12 @@ func cleanGeneratedClientFiles(clientPath string) error {
 			return nil
 		}
 		for _, file := range generatedClientFiles {
+			if d.Name() != file {
+				continue
+			}
+			return os.Remove(path)
+		}
+		for _, file := range generatedClientFileSuffixes {
 			if !strings.HasSuffix(filepath.Base(path), file) {
 				continue
 			}
