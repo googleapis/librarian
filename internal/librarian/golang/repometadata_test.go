@@ -196,6 +196,17 @@ func TestGoClientDocURL(t *testing.T) {
 			importPath: "bigquery/v2/apiv2",
 			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/bigquery/v2/latest/apiv2",
 		},
+		{
+			name: "dataproc",
+			library: &config.Library{
+				Name: "dataproc",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			importPath: "dataproc/v2/apiv1",
+			want:       "https://cloud.google.com/go/docs/reference/cloud.google.com/go/dataproc/v2/latest/apiv1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := clientDocURL(test.library, test.importPath)
