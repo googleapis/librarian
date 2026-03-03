@@ -121,9 +121,9 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
-| `disable_gapic` | bool | Determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. |
+| `disable_gapic` | bool | Determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. TODO(https://github.com/googleapis/librarian/issues/4312): rename this config. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
-| `has_diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `has_diregapic` | bool | TODO(https://github.com/googleapis/librarian/issues/4311): rename this config. HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
