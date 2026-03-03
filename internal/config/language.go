@@ -402,10 +402,10 @@ type DartPackage struct {
 	Version string `yaml:"version,omitempty"`
 }
 
-// JavaPackage contains Java-specific library configuration.
+// JavaModule contains Java-specific library configuration.
 // TODO(https://github.com/googleapis/librarian/issues/4130):
 // add fill defaults for fields with default.
-type JavaPackage struct {
+type JavaModule struct {
 	// APIID is the ID of the API (e.g., "pubsub.googleapis.com"),
 	// defaults to "{library.api_shortname}.googleapis.com".
 	APIID string `yaml:"api_id,omitempty"`

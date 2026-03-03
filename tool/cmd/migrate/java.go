@@ -108,7 +108,7 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 			APIs:         apis,
 			ReleaseLevel: l.ReleaseLevel,
 			Transport:    l.Transport,
-			Java: &config.JavaPackage{
+			Java: &config.JavaModule{
 				APIID:                        l.APIID,
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,

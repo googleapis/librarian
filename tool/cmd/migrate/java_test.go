@@ -97,7 +97,7 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaPackage{},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -127,7 +127,7 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaPackage{},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -163,7 +163,7 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
-						Java: &config.JavaPackage{},
+						Java: &config.JavaModule{},
 					},
 					{
 						Name:   "language",
@@ -171,7 +171,7 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaPackage{},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -226,7 +226,7 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/pubsub/v1"},
 						},
-						Java: &config.JavaPackage{
+						Java: &config.JavaModule{
 							APIID:                        "pubsub.googleapis.com",
 							APIReference:                 "https://api-ref.com",
 							APIDescriptionOverride:       "Pub/Sub description",
