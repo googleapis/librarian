@@ -743,6 +743,42 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse disable GAPIC BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/no-gapic",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/no-gapic"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								DisableGAPIC: true,
+								Path:         "google/cloud/no-gapic",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
@@ -840,6 +876,9 @@ func TestParseBazel(t *testing.T) {
 		{
 			name:          "no GAPIC rules",
 			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
+			want: &goGAPICInfo{
+				DisableGAPIC: true,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
