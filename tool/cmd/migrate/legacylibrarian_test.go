@@ -752,6 +752,43 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse diregapic from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "compute",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/compute/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "compute",
+					APIs: []*config.API{
+						{Path: "google/cloud/compute/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								HasDiregapic:       true,
+								NoRESTNumericEnums: true,
+								Path:               "google/cloud/compute/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
