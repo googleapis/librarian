@@ -85,6 +85,7 @@ This document describes the schema for the librarian.yaml.
 | `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
+| `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 
@@ -139,6 +140,31 @@ This document describes the schema for the librarian.yaml.
 | `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
+
+## JavaModule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `api_id` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), defaults to "{library.api_shortname}.googleapis.com". |
+| `api_reference` | string | Is the URL for the API reference documentation. |
+| `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
+| `client_documentation` | string | Is the URL for the client library documentation. |
+| `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
+| `codeowner_team` | string | Is the GitHub team that owns the code. |
+| `distribution_name` | string | Is the Maven coordinate (e.g., "com.google.cloud:google-cloud-pubsub"). |
+| `excluded_dependencies` | string | Is a list of dependencies to exclude. |
+| `excluded_poms` | string | Is a list of POM files to exclude. |
+| `extra_versioned_modules` | string | Is a list of extra versioned modules. |
+| `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
+| `issue_tracker` | string | Is the URL for the issue tracker. |
+| `library_type` | string | Is the type of library, defaults to "GAPIC_AUTO". |
+| `min_java_version` | int | Is the minimum Java version required. |
+| `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
+| `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
+| `recommended_package` | string | Is the recommended package name. |
+| `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
+| `rest_documentation` | string | Is the URL for the REST documentation. |
+| `rpc_documentation` | string | Is the URL for the RPC documentation. |
 
 ## PythonDefault Configuration
 
