@@ -134,10 +134,9 @@ func semverCheck(ctx context.Context, semverData semverData, name string, manife
 		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
 		return nil
 	}
-	slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
 	err := command.Run(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
 	if err != nil && semverData.dryRunKeepGoing {
-		slog.Error("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
+		slog.Warn("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
 		return nil
 	}
 	return err
