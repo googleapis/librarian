@@ -34,10 +34,12 @@ type GoAPI struct {
 	ClientPackage string `yaml:"client_package,omitempty"`
 	// DisableGAPIC determines whether to generate the GAPIC client.
 	// Also known as proto-only client, which does not define a service in the proto files.
+	// TODO(https://github.com/googleapis/librarian/issues/4312): rename this config.
 	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
+	// TODO(https://github.com/googleapis/librarian/issues/4311): rename this config.
 	// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	HasDiregapic bool `yaml:"has_diregapic,omitempty"`
