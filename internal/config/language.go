@@ -221,6 +221,9 @@ type RustCrate struct {
 
 	// Discovery contains discovery-specific configuration for LRO polling.
 	Discovery *RustDiscovery `yaml:"discovery,omitempty"`
+
+	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
+	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.

@@ -188,6 +188,7 @@ This document describes the schema for the librarian.yaml.
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Contains discovery-specific configuration for LRO polling. |
+| `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
 
 ## RustDefault Configuration
 
