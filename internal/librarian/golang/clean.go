@@ -108,6 +108,7 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 		rootFilePath := filepath.Join(libraryDir, rootFile)
 		if err := os.Remove(rootFilePath); err != nil {
 			if errors.Is(err, syscall.ENOENT) {
+				// The file doesn't exist, it's fine to ignore this error.
 				continue
 			}
 			return err
