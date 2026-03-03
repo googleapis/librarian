@@ -113,7 +113,7 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
 				ClientDocumentation:          l.ClientDocumentation,
-				NonCloudAPI:                  l.CloudAPI != nil && !*l.CloudAPI,
+				NonCloudAPI:                  invertBoolPtr(l.CloudAPI),
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionName:             l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
@@ -126,7 +126,7 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 				NamePrettyOverride:           l.NamePretty,
 				ProductDocumentationOverride: l.ProductDocumentation,
 				RecommendedPackage:           l.RecommendedPackage,
-				BillingNotRequired:           l.RequiresBilling != nil && !*l.RequiresBilling,
+				BillingNotRequired:           invertBoolPtr(l.RequiresBilling),
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
 			},
@@ -144,4 +144,8 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 		},
 		Libraries: libs,
 	}
+}
+
+func invertBoolPtr(p *bool) bool {
+	return p != nil && !*p
 }
