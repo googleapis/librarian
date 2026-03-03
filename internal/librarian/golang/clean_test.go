@@ -253,6 +253,39 @@ func TestClean_Error(t *testing.T) {
 			},
 			wantErr: os.ErrPermission,
 		},
+		{
+			name: "no permission to remove snippets",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			outputFiles:  []string{"apiv1/doc.go"},
+			snippetFiles: []string{"apiv1/snippet1.go"},
+			setup: func(t *testing.T, base string) {
+				base = filepath.Join(base, "..", "internal/generated/snippets/testlib/apiv1")
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
