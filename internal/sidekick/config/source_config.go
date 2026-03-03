@@ -72,7 +72,7 @@ func (c SourceConfig) Root(name string) (string, error) {
 		return c.Sources.Discovery, nil
 	case "showcase", "showcase-root":
 		return c.Sources.Showcase, nil
-	case "protobuf", "protobuf-src", "protobuf-root", "protobuf-src-root", "extra-protos-root":
+	case "protobuf", "protobuf-src", "protobuf-root", "protobuf-src-root":
 		return c.Sources.ProtobufSrc, nil
 	case "conformance", "conformance-root":
 		return c.Sources.Conformance, nil

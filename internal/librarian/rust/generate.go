@@ -116,11 +116,11 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sidek
 	for _, module := range library.Rust.Modules {
 		modelConfig, err := moduleToModelConfig(library, module, sources)
 		if err != nil {
-			return fmt.Errorf("module %q: %w", module.Output, err)
+			return fmt.Errorf("moduleToModelConfig %q: %w", module.Output, err)
 		}
 		model, err := parser.CreateModel(modelConfig)
 		if err != nil {
-			return fmt.Errorf("module %q: %w", module.Output, err)
+			return fmt.Errorf("CreateModel %q: %w", module.Output, err)
 		}
 		switch modelConfig.Language {
 		case "rust":
