@@ -69,9 +69,7 @@ func run(ctx context.Context, args []string) error {
 		parts := strings.SplitN(base, "-", 3)
 		return runLibrarianMigration(ctx, parts[2], abs)
 	case "google-cloud-java":
-		log.Printf("Detected Java repository: %s. Running migration.", base)
 		return runJavaMigration(ctx, abs)
-
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
