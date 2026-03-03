@@ -41,12 +41,14 @@ type LibraryConfig struct {
 	APIShortName          string        `yaml:"api_shortname"`
 	APIReference          string        `yaml:"api_reference"`
 	ClientDocumentation   string        `yaml:"client_documentation"`
+	CloudAPI              *bool         `yaml:"cloud_api"`
 	CodeownerTeam         string        `yaml:"codeowner_team"`
 	DistributionName      string        `yaml:"distribution_name"`
 	ExcludedDependencies  string        `yaml:"excluded_dependencies"`
 	ExcludedPoms          string        `yaml:"excluded_poms"`
 	ExtraVersionedModules string        `yaml:"extra_versioned_modules"`
 	GAPICs                []GAPICConfig `yaml:"GAPICs"`
+	GroupID               string        `yaml:"group_id"`
 	IssueTracker          string        `yaml:"issue_tracker"`
 	LibraryName           string        `yaml:"library_name"`
 	LibraryType           string        `yaml:"library_type"`
@@ -107,14 +109,17 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 			ReleaseLevel: l.ReleaseLevel,
 			Transport:    l.Transport,
 			Java: &config.JavaPackage{
+				APIID:                        l.APIID,
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
 				ClientDocumentation:          l.ClientDocumentation,
+				CloudAPI:                     l.CloudAPI,
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionName:             l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
 				ExcludedPoms:                 l.ExcludedPoms,
 				ExtraVersionedModules:        l.ExtraVersionedModules,
+				GroupID:                      l.GroupID,
 				IssueTracker:                 l.IssueTracker,
 				LibraryType:                  l.LibraryType,
 				MinJavaVersion:               l.MinJavaVersion,

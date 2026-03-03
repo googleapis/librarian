@@ -403,7 +403,13 @@ type DartPackage struct {
 }
 
 // JavaPackage contains Java-specific library configuration.
+// TODO(https://github.com/googleapis/librarian/issues/4130):
+// add fill defaults for fields with default.
 type JavaPackage struct {
+	// APIID is the ID of the API (e.g., "pubsub.googleapis.com"),
+	// defaults to "{library.api_shortname}.googleapis.com".
+	APIID string `yaml:"api_id,omitempty"`
+
 	// APIReference is the URL for the API reference documentation.
 	APIReference string `yaml:"api_reference,omitempty"`
 
@@ -413,6 +419,9 @@ type JavaPackage struct {
 
 	// ClientDocumentation is the URL for the client library documentation.
 	ClientDocumentation string `yaml:"client_documentation,omitempty"`
+
+	// CloudAPI indicates whether the API is a Google Cloud API, defaults to true.
+	CloudAPI *bool `yaml:"cloud_api,omitempty"`
 
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
@@ -429,10 +438,13 @@ type JavaPackage struct {
 	// ExtraVersionedModules is a list of extra versioned modules.
 	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
 
+	// GroupID is the Maven group ID, defaults to "com.google.cloud".
+	GroupID string `yaml:"group_id,omitempty"`
+
 	// IssueTracker is the URL for the issue tracker.
 	IssueTracker string `yaml:"issue_tracker,omitempty"`
 
-	// LibraryType is the type of library (e.g., "GAPIC_AUTO").
+	// LibraryType is the type of library, defaults to "GAPIC_AUTO".
 	LibraryType string `yaml:"library_type,omitempty"`
 
 	// MinJavaVersion is the minimum Java version required.
