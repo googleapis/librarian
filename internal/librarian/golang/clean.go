@@ -132,10 +132,6 @@ func cleanClientDirectory(library *config.Library, keepSet map[string]bool) erro
 		if err != nil {
 			return err
 		}
-		// clientPath doesn't exist, which means this is a new library, skip cleaning.
-		if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
 		if err := cleanGeneratedClientFiles(clientPath, keepSet); err != nil {
 			return err
 		}
@@ -148,6 +144,10 @@ func cleanClientDirectory(library *config.Library, keepSet map[string]bool) erro
 }
 
 func cleanGeneratedClientFiles(clientPath string, keepSet map[string]bool) error {
+	// clientPath doesn't exist, which means this is a new library, skip cleaning.
+	if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
 	return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

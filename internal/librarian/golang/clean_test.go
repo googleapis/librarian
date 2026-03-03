@@ -271,7 +271,6 @@ func TestClean_Error(t *testing.T) {
 					},
 				},
 			},
-			outputFiles:  []string{"apiv1/doc.go"},
 			snippetFiles: []string{"apiv1/snippet1.go"},
 			setup: func(t *testing.T, base string) {
 				base = filepath.Join(base, "..", "internal/generated/snippets/testlib/apiv1")
