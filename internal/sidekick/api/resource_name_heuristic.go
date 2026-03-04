@@ -93,17 +93,15 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				continue
 			}
 
-			// We iterate backwards.
+			// Iterate backwards.
 			for i := len(tmpl.Segments) - 1; i >= 0; i-- {
 				seg := tmpl.Segments[i]
 				if seg.Variable != nil {
-					// Found the last variable.
-					// Now look at i-1.
 					if i > 0 && tmpl.Segments[i-1].Literal != nil {
 						token := *tmpl.Segments[i-1].Literal
 						tokens[token] = true
 					}
-					break // We only care about the last one for the identity
+					break
 				}
 			}
 		}
@@ -119,8 +117,8 @@ func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	if vocabulary != nil && vocabulary[segment] {
 		return true
 	}
-	if strings.HasSuffix(segment, "s") {
-		return true
-	}
+	// if strings.HasSuffix(segment, "s") {
+	// 	return true
+	// }
 	return false
 }
