@@ -990,6 +990,9 @@
     nodejs: grpc+rest
     php: grpc+rest
     python: grpc+rest
+- languages:
+    - go
+  path: google/datastore/v1
 - documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
