@@ -409,7 +409,7 @@ type JavaModule struct {
 	// APIIDOverride is the ID of the API (e.g., "pubsub.googleapis.com"),
 	// allows the "api_id" field in .repo-metadata.json to be overridden.
 	// Defaults to "{library.api_shortname}.googleapis.com".
-	APIIDOverride string `yaml:"api_id,omitempty"`
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
 
 	// APIReference is the URL for the API reference documentation.
 	APIReference string `yaml:"api_reference,omitempty"`
@@ -420,7 +420,7 @@ type JavaModule struct {
 
 	// ClientDocumentationOverride allows the "client_documentation" field in
 	// .repo-metadata.json to be overridden.
-	ClientDocumentationOverride string `yaml:"client_documentation,omitempty"`
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 
 	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
 	// Defaults to false.
@@ -431,7 +431,7 @@ type JavaModule struct {
 
 	// DistributionNameOverride allows the "distribution_name" field in
 	// .repo-metadata.json to be overridden.
-	DistributionNameOverride string `yaml:"distribution_name,omitempty"`
+	DistributionNameOverride string `yaml:"distribution_name_override,omitempty"`
 
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
@@ -447,11 +447,11 @@ type JavaModule struct {
 
 	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
 	// to be overridden.
-	IssueTrackerOverride string `yaml:"issue_tracker,omitempty"`
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
 
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.
-	LibraryTypeOverride string `yaml:"library_type,omitempty"`
+	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
 
 	// MinJavaVersion is the minimum Java version required.
 	MinJavaVersion int `yaml:"min_java_version,omitempty"`

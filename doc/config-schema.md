@@ -145,19 +145,19 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `api_id` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
+| `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
-| `client_documentation` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
+| `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
-| `distribution_name` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
+| `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
 | `excluded_poms` | string | Is a list of POM files to exclude. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
-| `issue_tracker` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
-| `library_type` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
+| `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
+| `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
