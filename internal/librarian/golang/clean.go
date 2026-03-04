@@ -162,16 +162,14 @@ func cleanGeneratedClientFiles(clientPath string, keepSet map[string]bool) error
 			return nil
 		}
 		for _, file := range generatedClientFiles {
-			if d.Name() != file {
-				continue
+			if d.Name() == file {
+				return os.Remove(path)
 			}
-			return os.Remove(path)
 		}
 		for _, file := range generatedClientFileSuffixes {
-			if !strings.HasSuffix(filepath.Base(path), file) {
-				continue
+			if strings.HasSuffix(filepath.Base(path), file) {
+				return os.Remove(path)
 			}
-			return os.Remove(path)
 		}
 		return nil
 	})
