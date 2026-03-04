@@ -141,6 +141,15 @@ This document describes the schema for the librarian.yaml.
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
+## JavaAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `no_samples` | bool | Determines whether to generate samples for the API. |
+| `path` | string | Is the source path. |
+| `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests for the API. |
+
 ## JavaModule Configuration
 
 | Field | Type | Description |
@@ -160,6 +169,7 @@ This document describes the schema for the librarian.yaml.
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
+| `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
 | `recommended_package` | string | Is the recommended package name. |
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
