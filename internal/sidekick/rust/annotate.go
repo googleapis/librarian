@@ -397,6 +397,11 @@ func (s *bindingSubstitution) TemplateAsString() string {
 	return strings.Join(s.Template, "/")
 }
 
+// VariableName returns the variable name to be used in the templates.
+func (s *bindingSubstitution) VariableName() string {
+	return fmt.Sprintf("var_%s", strings.ReplaceAll(s.FieldName, ".", "_"))
+}
+
 type pathBindingAnnotation struct {
 	// The path format string for this binding
 	//
@@ -1252,7 +1257,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
-		rustNames = append(rustNames, toSnake(n))
+		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	binding := &bindingSubstitution{
 		FieldAccessor: fieldAccessor,

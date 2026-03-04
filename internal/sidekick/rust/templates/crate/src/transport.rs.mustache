@@ -104,10 +104,13 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{#PathInfo.Bindings}}
         .or_else(|| {
             {{#Codec.HasVariablePath}}
+            {{#Codec.Substitutions}}
+            let {{VariableName}} = try_match({{{FieldAccessor}}}, {{{TemplateAsArray}}})?;
+            {{/Codec.Substitutions}}
             let path = format!(
                 "{{Codec.PathFmt}}",
                 {{#Codec.Substitutions}}
-                try_match({{{FieldAccessor}}}, {{{TemplateAsArray}}})?,
+                {{VariableName}},
                 {{/Codec.Substitutions}}
             );
             {{/Codec.HasVariablePath}}
