@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package source provides functionalities to fetch and process source for generating and releasing clients in all
-// languages.
-package source
+package librarian
 
 import (
 	"context"
@@ -23,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,20 +31,10 @@ const (
 	showcaseRepo  = "github.com/googleapis/gapic-showcase"
 )
 
-// Sources contains the directory paths for source repositories used by
-// sidekick.
-type Sources struct {
-	Conformance string
-	Discovery   string
-	Googleapis  string
-	ProtobufSrc string
-	Showcase    string
-}
-
 // FetchRustDartSources fetches all source repositories needed for Rust and Dart generation in parallel.
-// It returns a Sources struct with all directories populated.
-func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*Sources, error) {
-	sources := &Sources{}
+// It returns a *sidekickconfig.Sources struct with all directories populated.
+func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*sidekickconfig.Sources, error) {
+	sources := &sidekickconfig.Sources{}
 	// fetchSource fetches a repository source.
 	fetchSource := func(ctx context.Context, source *config.Source, repo string) (string, error) {
 		if source == nil {

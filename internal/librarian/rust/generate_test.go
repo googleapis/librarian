@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/source"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -67,7 +67,7 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := generate(t.Context(), library, sources); err != nil {
@@ -172,7 +172,7 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := generate(t.Context(), library, sources); err != nil {
@@ -315,7 +315,7 @@ func TestGenerateLibraries(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
@@ -376,7 +376,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
@@ -469,7 +469,7 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 			}
-			sources := &source.Sources{
+			sources := &sidekickconfig.Sources{
 				Googleapis: googleapisDir,
 			}
 			if err := generate(t.Context(), library, sources); err != nil {

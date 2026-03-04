@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package config provides configuration types and utilities for sidekick.
 package config
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Sources contains the directory paths for source repositories used by
@@ -38,21 +40,45 @@ type SourceConfig struct {
 	ExcludeList []string
 }
 
+// NewSourceConfig creates a SourceConfig from a map of options.
+func NewSourceConfig(options map[string]string) SourceConfig {
+	var includeList, excludeList []string
+	if list, ok := options["include-list"]; ok && list != "" {
+		includeList = strings.Split(list, ",")
+	}
+	if list, ok := options["exclude-list"]; ok && list != "" {
+		excludeList = strings.Split(list, ",")
+	}
+	return SourceConfig{
+		Sources: Sources{
+			Googleapis:  options["googleapis-root"],
+			Discovery:   options["discovery-root"],
+			Conformance: options["conformance-root"],
+			ProtobufSrc: options["protobuf-src-root"],
+			Showcase:    options["showcase-root"],
+		},
+		ActiveRoots: SourceRoots(options),
+		IncludeList: includeList,
+		ExcludeList: excludeList,
+	}
+}
+
 // Root returns the directory path for the given root name.
-func (c SourceConfig) Root(name string) (string, error) {
+func (c SourceConfig) Root(name string) string {
 	switch name {
-	case "googleapis":
-		return c.Sources.Googleapis, nil
-	case "discovery":
-		return c.Sources.Discovery, nil
-	case "showcase":
-		return c.Sources.Showcase, nil
-	case "protobuf", "protobuf-src":
-		return c.Sources.ProtobufSrc, nil
-	case "conformance":
-		return c.Sources.Conformance, nil
+	case "googleapis", "googleapis-root":
+		return c.Sources.Googleapis
+	case "discovery", "discovery-root":
+		return c.Sources.Discovery
+	case "showcase", "showcase-root":
+		return c.Sources.Showcase
+	case "protobuf-src", "protobuf-src-root":
+		return c.Sources.ProtobufSrc
+	case "conformance", "conformance-root":
+		return c.Sources.Conformance
 	default:
-		return "", fmt.Errorf("unknown source name: %s", name)
+		// Unknown root name
+		return ""
 	}
 }
 
@@ -60,10 +86,8 @@ func (c SourceConfig) Root(name string) (string, error) {
 // within the active source roots. Otherwise, it returns the original path.
 func (c SourceConfig) Resolve(relPath string) (string, error) {
 	for _, root := range c.ActiveRoots {
-		rootPath, err := c.Root(root)
-		if err != nil {
-			return "", err
-		}
+		rootPath := c.Root(root)
+		// Ignore non-existent roots
 		if rootPath == "" {
 			continue
 		}
@@ -73,4 +97,28 @@ func (c SourceConfig) Resolve(relPath string) (string, error) {
 		}
 	}
 	return relPath, nil
+}
+
+// SourceRoots returns the roots from the options map.
+// Legacy helper for map-based configuration.
+func SourceRoots(options map[string]string) []string {
+	if opt, ok := options["roots"]; ok {
+		var roots []string
+		for _, name := range strings.Split(opt, ",") {
+			roots = append(roots, fmt.Sprintf("%s-root", name))
+		}
+		return roots
+	}
+	return AllSourceRoots(options)
+}
+
+// AllSourceRoots returns all the source roots from the options.
+func AllSourceRoots(options map[string]string) []string {
+	var roots []string
+	for name := range options {
+		if strings.HasSuffix(name, "-root") {
+			roots = append(roots, name)
+		}
+	}
+	return roots
 }
