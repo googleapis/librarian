@@ -60,12 +60,21 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 		".get", ".list", ".create", ".update", ".delete", ".patch", ".insert",
 	}
 
+	crudPrefixes := []string{
+		"get", "list", "create", "update", "delete", "patch", "insert",
+	}
+
 	for _, service := range model.Services {
 		for _, m := range service.Methods {
 			nameLower := strings.ToLower(m.Name)
 
-			// Protobuf APIs (AIP) have explicit annotations that identify standard methods
-			isAIP := m.IsAIPStandard
+			var isCRUDPrefix bool
+			for _, prefix := range crudPrefixes {
+				if strings.HasPrefix(nameLower, prefix) {
+					isCRUDPrefix = true
+					break
+				}
+			}
 
 			// Discovery APIs (like Compute) use exact lowercase verbs or suffix verb mapping
 			// (e.g., "get", "list", "instances.get", "projects.zones.insert")
@@ -79,7 +88,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				}
 			}
 
-			if !isAIP && !isDiscoveryExact && !isDiscoverySuffix {
+			if !isCRUDPrefix && !isDiscoveryExact && !isDiscoverySuffix {
 				continue
 			}
 
