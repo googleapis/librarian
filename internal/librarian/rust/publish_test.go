@@ -17,7 +17,6 @@ package rust
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -575,34 +574,23 @@ func main() {
 }
 
 func TestRunSemverChecks_Errors(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		manifests map[string]string
-		wantErr   error
-	}{
-		{
-			name: "single crate failure",
-			manifests: map[string]string{
-				"fail-me": "fail/Cargo.toml",
-			},
-			wantErr: ErrSemverCheck,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			src := `package main; import "os"; func main() { os.Exit(1) }`
-			fakeCargoExe := buildFakeCargo(t, src)
-			sData := semverData{
-				manifests: test.manifests,
-				cargoPath: fakeCargoExe,
-			}
-			err := runSemverChecks(t.Context(), sData)
-			if err == nil {
-				t.Error("runSemverChecks() expected error, got nil")
-			}
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("runSemverChecks() error = %v, want to contain %v", err, test.wantErr)
-			}
-		})
+	manifests := map[string]string{
+		"fail-me": "fail/Cargo.toml",
+	}
+	wantErr := errSemverCheck
+
+	src := `package main; import "os"; func main() { os.Exit(1) }`
+	fakeCargoExe := buildFakeCargo(t, src)
+	sData := semverData{
+		manifests: manifests,
+		cargoPath: fakeCargoExe,
+	}
+	err := runSemverChecks(t.Context(), sData)
+	if err == nil {
+		t.Error("runSemverChecks() expected error, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("runSemverChecks() error = %v, want to contain %v", err, wantErr)
 	}
 }
 
@@ -620,12 +608,11 @@ func buildFakeCargo(t *testing.T, src string) string {
 	fakeCargoExe := filepath.Join(tmpDir, exeName)
 
 	if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
-		t.Fatalf("failed to write fake cargo source: %v", err)
+		t.Errorf("failed to write fake cargo source: %v", err)
 	}
 
-	cmd := exec.Command("go", "build", "-o", fakeCargoExe, mainGo)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("failed to build fake cargo: %v\n%s", err, out)
+	if err := command.Run(t.Context(), "go", "build", "-o", fakeCargoExe, mainGo); err != nil {
+		t.Errorf("failed to build fake cargo: %v", err)
 	}
 
 	return fakeCargoExe
