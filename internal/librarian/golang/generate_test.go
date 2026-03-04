@@ -563,7 +563,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 		{
 			name:      "skip proto-only clients",
 			protoOnly: true,
-			// Do not create snippet directory to verify the function exists before
+			// Do not create snippet directory to verify the function returns before
 			// checking the existence of the directory.
 		},
 	} {
