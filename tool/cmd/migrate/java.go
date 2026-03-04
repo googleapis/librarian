@@ -56,17 +56,20 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	}
 	// 3. From proto_library_with_info
 	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
+		if len(rules) > 1 {
+			log.Printf("Warning: multiple proto_library_with_info in %s/BUILD.bazel, using first", dir)
+		}
 		rule := rules[0]
 		// Search for specific common resource targets in deps
 		if deps := rule.AttrStrings("deps"); len(deps) > 0 {
+			protoMappings := map[string]string{
+				"//google/cloud:common_resources_proto":  "google/cloud/common_resources.proto",
+				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
+				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
+			}
 			for _, dep := range deps {
-				switch dep {
-				case "//google/cloud:common_resources_proto":
-					info.AdditionalProtos = append(info.AdditionalProtos, "google/cloud/common_resources.proto")
-				case "//google/cloud/location:location_proto":
-					info.AdditionalProtos = append(info.AdditionalProtos, "google/cloud/location/locations.proto")
-				case "//google/iam/v1:iam_policy_proto":
-					info.AdditionalProtos = append(info.AdditionalProtos, "google/iam/v1/iam_policy.proto")
+				if protoPath, ok := protoMappings[dep]; ok {
+					info.AdditionalProtos = append(info.AdditionalProtos, protoPath)
 				}
 			}
 		}
