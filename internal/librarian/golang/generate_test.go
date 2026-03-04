@@ -613,7 +613,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		setup   func()
+		setup   func(dir string)
 		wantErr error
 	}{
 		{
@@ -642,9 +642,42 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			},
 			wantErr: os.ErrNotExist,
 		},
+		{
+			name: "no permission to read snippet directory",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(snippetFile, 0333); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EACCES,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(tmpDir)
+			}
 			err := updateSnippetMetadata(test.library, tmpDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
