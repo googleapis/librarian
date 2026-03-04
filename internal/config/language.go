@@ -406,9 +406,10 @@ type DartPackage struct {
 // TODO(https://github.com/googleapis/librarian/issues/4130):
 // add fill defaults for fields with default.
 type JavaModule struct {
-	// APIID is the ID of the API (e.g., "pubsub.googleapis.com"),
-	// defaults to "{library.api_shortname}.googleapis.com".
-	APIID string `yaml:"api_id,omitempty"`
+	// APIIDOverride is the ID of the API (e.g., "pubsub.googleapis.com"),
+	// allows the "api_id" field in .repo-metadata.json to be overridden.
+	// Defaults to "{library.api_shortname}.googleapis.com".
+	APIIDOverride string `yaml:"api_id,omitempty"`
 
 	// APIReference is the URL for the API reference documentation.
 	APIReference string `yaml:"api_reference,omitempty"`
@@ -417,8 +418,9 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
 
-	// ClientDocumentation is the URL for the client library documentation.
-	ClientDocumentation string `yaml:"client_documentation,omitempty"`
+	// ClientDocumentationOverride allows the "client_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ClientDocumentationOverride string `yaml:"client_documentation,omitempty"`
 
 	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
 	// Defaults to false.
@@ -427,8 +429,9 @@ type JavaModule struct {
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
 
-	// DistributionName is the Maven coordinate (e.g., "com.google.cloud:google-cloud-pubsub").
-	DistributionName string `yaml:"distribution_name,omitempty"`
+	// DistributionNameOverride allows the "distribution_name" field in
+	// .repo-metadata.json to be overridden.
+	DistributionNameOverride string `yaml:"distribution_name,omitempty"`
 
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
@@ -442,11 +445,13 @@ type JavaModule struct {
 	// GroupID is the Maven group ID, defaults to "com.google.cloud".
 	GroupID string `yaml:"group_id,omitempty"`
 
-	// IssueTracker is the URL for the issue tracker.
-	IssueTracker string `yaml:"issue_tracker,omitempty"`
+	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
+	// to be overridden.
+	IssueTrackerOverride string `yaml:"issue_tracker,omitempty"`
 
-	// LibraryType is the type of library, defaults to "GAPIC_AUTO".
-	LibraryType string `yaml:"library_type,omitempty"`
+	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
+	// to be overridden.
+	LibraryTypeOverride string `yaml:"library_type,omitempty"`
 
 	// MinJavaVersion is the minimum Java version required.
 	MinJavaVersion int `yaml:"min_java_version,omitempty"`
