@@ -52,6 +52,71 @@ proto_library_with_info(
 )
 
 ##############################################################################
+# Java
+##############################################################################
+# buildifier: disable=same-origin-load
+load(
+    "@com_google_googleapis_imports//:imports.bzl",
+    "java_gapic_assembly_gradle_pkg",
+    "java_gapic_library",
+    "java_gapic_test",
+    "java_grpc_library",
+    "java_proto_library",
+)
+
+java_proto_library(
+    name = "analyticshub_java_proto",
+    deps = [":analyticshub_proto"],
+)
+
+java_grpc_library(
+    name = "analyticshub_java_grpc",
+    srcs = [":analyticshub_proto"],
+    deps = [":analyticshub_java_proto"],
+)
+
+java_gapic_library(
+    name = "analyticshub_java_gapic",
+    srcs = [":analyticshub_proto_with_info"],
+    gapic_yaml = None,
+    grpc_service_config = "analyticshub_v1_grpc_service_config.json",
+    rest_numeric_enums = False,
+    service_yaml = "analyticshub_v1.yaml",
+    test_deps = [
+        ":analyticshub_java_grpc",
+        "//google/iam/v1:iam_java_grpc",
+    ],
+    transport = "grpc+rest",
+    deps = [
+        ":analyticshub_java_proto",
+        "//google/api:api_java_proto",
+        "//google/iam/v1:iam_java_proto",
+    ],
+)
+
+java_gapic_test(
+    name = "analyticshub_java_gapic_test_suite",
+    test_classes = [
+        "com.google.cloud.bigquery.analyticshub.v1.AnalyticsHubServiceClientHttpJsonTest",
+        "com.google.cloud.bigquery.analyticshub.v1.AnalyticsHubServiceClientTest",
+    ],
+    runtime_deps = [":analyticshub_java_gapic_test"],
+)
+
+# Open Source Packages
+java_gapic_assembly_gradle_pkg(
+    name = "google-cloud-bigquery-analyticshub-v1-java",
+    include_samples = True,
+    transport = "grpc+rest",
+    deps = [
+        ":analyticshub_java_gapic",
+        ":analyticshub_java_grpc",
+        ":analyticshub_java_proto",
+        ":analyticshub_proto",
+    ],
+)
+
+##############################################################################
 # Go
 ##############################################################################
 # buildifier: disable=same-origin-load

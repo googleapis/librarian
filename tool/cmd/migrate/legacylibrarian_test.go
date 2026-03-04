@@ -900,7 +900,7 @@ func TestParseBazel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseBazel(test.googleapisDir, test.buildPath)
+			got, err := parseGoBazel(test.googleapisDir, test.buildPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -924,7 +924,7 @@ func TestParseBazel_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := parseBazel("", test.dir)
+			_, err := parseGoBazel("", test.dir)
 			if err == nil {
 				t.Fatalf("parseBazel(%q): expected error", test.dir)
 			}

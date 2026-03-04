@@ -17,7 +17,6 @@ package main
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,7 +25,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
@@ -283,7 +281,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
-			info, err := parseBazel(input.googleapisDir, api.Path)
+			info, err := parseGoBazel(input.googleapisDir, api.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -379,28 +377,22 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	return yaml.Read[RepoConfig](configFile)
 }
 
-// parseBazel parses the BUILD.bazel file in the given directory to extract information from
+// parseGoBazel parses the BUILD.bazel file in the given directory to extract information from
 // the go_gapic_library rule.
-func parseBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
-	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		// Skip Not Exist error for testing purpose.
+func parseGoBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
+	file, err := parseBazel(googleapisDir, dir)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
 		return nil, nil
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	file, err := build.ParseBuild(path, data)
-	if err != nil {
-		return nil, err
 	}
 	rules := file.Rules("go_gapic_library")
 	if len(rules) == 0 {
 		return &goGAPICInfo{DisableGAPIC: true}, nil
 	}
 	if len(rules) > 1 {
-		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
+		return nil, fmt.Errorf("%s/BUILD.bazel contains multiple go_gapic_library rules", dir)
 	}
 	rule := rules[0]
 	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))

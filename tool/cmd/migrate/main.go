@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bazelbuild/buildtools/build"
 )
 
 const (
@@ -73,4 +75,20 @@ func run(ctx context.Context, args []string) error {
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
+}
+
+func parseBazel(googleapisDir, dir string) (*build.File, error) {
+	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }
