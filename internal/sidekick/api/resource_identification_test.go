@@ -261,6 +261,32 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		},
 
 		{
+			name:      "heuristic: stops at trailing action",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("zones").WithVariableNamed("zone").
+				WithLiteral("instances").WithVariableNamed("instance").
+				WithLiteral("start").WithVariableNamed("action_id"), // "start" is not a collection
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "zone", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
+				{Name: "action_id", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project").
+					WithLiteral("zones").WithVariableNamed("zone").
+					WithLiteral("instances").WithVariableNamed("instance"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
+			},
+		},
+
+		{
 			name:      "heuristic: skips if input field missing",
 			serviceID: ".google.cloud.compute.v1.Instances",
 			path: NewPathTemplate().

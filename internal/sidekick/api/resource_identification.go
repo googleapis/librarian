@@ -128,7 +128,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 					}, nil
 				}
 			}
-			return nil, nil
+			// continue scanning backward if not in vocabulary
 		}
 	}
 	return nil, nil
