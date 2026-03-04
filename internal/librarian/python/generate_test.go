@@ -794,6 +794,13 @@ func TestCreateRepoMetadata(t *testing.T) {
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secrets/v1beta1"},
 				},
+				// In normal operation this is populated from the top-level
+				// default.
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                 "google-cloud-secret-manager",
@@ -820,6 +827,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/apps/meet/v2",
+					},
+				},
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
 					},
 				},
 			},
@@ -855,6 +867,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
 					ProductDocumentationOverride: "overridden product_documentation",
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
 				},
 			},
 			want: &repometadata.RepoMetadata{
@@ -869,7 +884,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "overridden description",
-				LibraryType:          "GAPIC_AUTO",
+				LibraryType:          "CORE",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 				DefaultVersion:       "v1beta1",
 			},
@@ -882,6 +897,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
 					},
 				},
 			},

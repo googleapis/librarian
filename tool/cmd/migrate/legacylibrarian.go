@@ -136,6 +136,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.Python = &config.PythonDefault{
 			// Declared in python.go.
 			CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+			LibraryType:      pythonDefaultLibraryType,
 		}
 		cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
 		if err != nil {

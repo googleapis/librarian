@@ -318,6 +318,30 @@ type PythonPackage struct {
 	// field.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
 
+	// APIShortnameOverride allows the "api_shortname" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
+
+	// APIIDOverride allows the "api_id" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses
+	// of this field to only cases where it's really needed.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// IssueTrackerOverride allows the issue_tracker field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
+
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
 	// default it's the package name, but older packages use the API short name
@@ -338,6 +362,9 @@ type PythonDefault struct {
 	// library defines its own common_gapic_paths, they will be appended to
 	// the defaults.
 	CommonGAPICPaths []string `yaml:"common_gapic_paths,omitempty"`
+
+	// LibraryType is the type to emit in .repo-metadata.json.
+	LibraryType string `yaml:"library_type,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.
