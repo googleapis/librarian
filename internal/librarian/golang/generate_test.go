@@ -523,20 +523,12 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		library  *config.Library
 		dir      string
 		fileName string
 		data     string
 	}{
 		{
-			name: "skipped due to nested module",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				Go: &config.GoModule{
-					NestedModule: "v2",
-				},
-			},
+			name:     "skip non import path",
 			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
 			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
 			data: `{ 
@@ -555,11 +547,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 `,
 		},
 		{
-			name: "skipped due to non-snippets file name",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-			},
+			name:     "skip non-snippets file",
 			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "apiv1"),
 			fileName: "non_metadata.google.cloud.bigquery.v1.json",
 			data: `{ 
@@ -580,15 +568,32 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755)
-			if err != nil {
+			library := &config.Library{
+				Name:    "bigquery",
+				Output:  tmpDir,
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			}
+			// We need to create this directory because snippets directory should exist before updating.
+			if err := os.MkdirAll(filepath.Join(tmpDir, "internal/generated/snippets/bigquery/storage/apiv1"), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755); err != nil {
 				t.Fatal(err)
 			}
 			metadataFile := filepath.Join(tmpDir, test.dir, test.fileName)
 			if err := os.WriteFile(metadataFile, []byte(test.data), 0755); err != nil {
 				t.Fatal(err)
 			}
-			if err := updateSnippetMetadata(test.library, tmpDir); err != nil {
+			if err := updateSnippetMetadata(library, tmpDir); err != nil {
 				t.Fatal(err)
 			}
 
