@@ -34,94 +34,91 @@ func IsHeuristicEligible(serviceID string) bool {
 	return false
 }
 
-// baseVocabulary is the set of literal segments that are common
-// across Google Cloud APIs and should always be considered valid tokens.
-var baseVocabulary = map[string]bool{
-	"projects":        true,
-	"locations":       true,
-	"folders":         true,
-	"organizations":   true,
-	"billingAccounts": true,
-}
-
-var singularExceptions = map[string]bool{
-	"address":  true,
-	"status":   true,
-	"ingress":  true,
-	"egress":   true,
-	"access":   true,
-	"analysis": true,
-}
-
-// isBaseVocabulary checks if a segment is part of the common resource vocabulary.
-func isBaseVocabulary(segment string) bool {
-	return baseVocabulary[segment]
-}
-
-// isCollectionIdentifier returns true if the segment is likely a collection ID.
-// It checks in the following order:
-// 1. Base vocabulary (projects, locations, etc.)
-// 2. Known resource plurals (from the API model).
-// 3. Fallback: if the segment ends in 's' and is not in the singular exceptions list.
-func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
-	if isBaseVocabulary(segment) {
-		return true
-	}
-	if vocabulary != nil && vocabulary[segment] {
-		return true
-	}
-	if len(segment) > 2 && strings.HasSuffix(segment, "s") && !singularExceptions[segment] {
-		return true
-	}
-	return false
-}
-
-// BuildHeuristicVocabulary collects known resource target names from the model.
-// It learns from both explicit ResourceDefinitions and by analyzing the
-// HTTP path templates of standard methods.
+// BuildHeuristicVocabulary builds the vocabulary of valid resource tokens
+// based on the last literal before a variable in Get/List methods.
 func BuildHeuristicVocabulary(model *API) map[string]bool {
-	vocab := make(map[string]bool, len(model.ResourceDefinitions))
+	tokens := make(map[string]bool)
 
-	// 1. Collect from explicit definitions (if any)
-	for _, res := range model.ResourceDefinitions {
-		if res.Plural != "" {
-			vocab[res.Plural] = true
-		}
+	// Add standard infrastructure tokens
+	tokens["projects"] = true
+	tokens["locations"] = true
+	tokens["folders"] = true
+	tokens["organizations"] = true
+	tokens["billingAccounts"] = true
+
+	discoveryExactVerbs := map[string]struct{}{
+		"get":            {},
+		"list":           {},
+		"aggregatedlist": {},
+		"create":         {},
+		"update":         {},
+		"delete":         {},
+		"patch":          {},
+		"insert":         {},
+	}
+	discoverySuffixes := []string{
+		".get", ".list", ".create", ".update", ".delete", ".patch", ".insert",
 	}
 
-	// 2. Discover from standard method paths
 	for _, service := range model.Services {
-		for _, method := range service.Methods {
-			if !method.IsAIPStandard || method.PathInfo == nil {
+		for _, m := range service.Methods {
+			nameLower := strings.ToLower(m.Name)
+
+			// Protobuf APIs (AIP) have explicit annotations that identify standard methods
+			isAIP := m.IsAIPStandard
+
+			// Discovery APIs (like Compute) use exact lowercase verbs or suffix verb mapping
+			// (e.g., "get", "list", "instances.get", "projects.zones.insert")
+			_, isDiscoveryExact := discoveryExactVerbs[nameLower]
+
+			var isDiscoverySuffix bool
+			for _, suffix := range discoverySuffixes {
+				if strings.HasSuffix(nameLower, suffix) {
+					isDiscoverySuffix = true
+					break
+				}
+			}
+
+			if !isAIP && !isDiscoveryExact && !isDiscoverySuffix {
 				continue
 			}
-			for _, binding := range method.PathInfo.Bindings {
-				vocab = extractLiteralsFromPath(binding.PathTemplate, vocab)
-			}
-		}
-	}
-	return vocab
-}
 
-// extractLiteralsFromPath parses a path template and adds any string literals
-// (both top-level and nested inside variables) to the provided vocabulary set.
-func extractLiteralsFromPath(tmpl *PathTemplate, vocab map[string]bool) map[string]bool {
-	if tmpl == nil {
-		return vocab
-	}
-	for _, seg := range tmpl.Segments {
-		// Add regular literals (e.g. /projects/...)
-		if seg.Literal != nil && *seg.Literal != "" {
-			vocab[*seg.Literal] = true
-		}
-		// Add literals nested inside variables (e.g. /{name=projects/*/instances/*})
-		if seg.Variable != nil {
-			for _, subSeg := range seg.Variable.Segments {
-				if subSeg != "" && subSeg != SingleSegmentWildcard && subSeg != MultiSegmentWildcard {
-					vocab[subSeg] = true
+			if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+				continue
+			}
+
+			// Parse the path template of the primary binding
+			tmpl := m.PathInfo.Bindings[0].PathTemplate
+			if tmpl == nil {
+				continue
+			}
+
+			// Iterate backwards.
+			for i := len(tmpl.Segments) - 1; i >= 0; i-- {
+				seg := tmpl.Segments[i]
+				if seg.Variable != nil {
+					if i > 0 && tmpl.Segments[i-1].Literal != nil {
+						token := *tmpl.Segments[i-1].Literal
+						tokens[token] = true
+					}
+					break
 				}
 			}
 		}
 	}
-	return vocab
+	return tokens
+}
+
+// isCollectionIdentifier checks if a segment is a valid collection identifier.
+// It checks in the following order:
+// 1. Existing vocabulary (contains base tokens and tokens learned from API paths).
+// 2. Fallback heuristic: checks if the segment ends with 's'.
+func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
+	if vocabulary != nil && vocabulary[segment] {
+		return true
+	}
+	if strings.HasSuffix(segment, "s") {
+		return true
+	}
+	return false
 }

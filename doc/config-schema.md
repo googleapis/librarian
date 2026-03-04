@@ -121,9 +121,9 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
-| `disable_gapic` | bool | Determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. TODO(https://github.com/googleapis/librarian/issues/4312): rename this config. |
+| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
-| `has_diregapic` | bool | TODO(https://github.com/googleapis/librarian/issues/4311): rename this config. HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
@@ -145,6 +145,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `common_gapic_paths` | list of string | Contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). If a library defines its own common_gapic_paths, they will be appended to the defaults. |
+| `library_type` | string | Is the type to emit in .repo-metadata.json. |
 
 ## PythonPackage Configuration
 
@@ -155,6 +156,10 @@ This document describes the schema for the librarian.yaml.
 | `proto_only_apis` | list of string | Contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `api_id_override` | string | Allows the "api_id" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses of this field to only cases where it's really needed. |
+| `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 

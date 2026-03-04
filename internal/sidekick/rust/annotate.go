@@ -19,7 +19,6 @@ import (
 	"cmp"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -1619,16 +1618,26 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	return nil
 }
 
-var templateVarRegex = regexp.MustCompile(`\{[^{}]*\}`)
-
 // formatResourceNameTemplateFromPath constructs the Rust format string directly from the
 // resolved TargetResource.Template.
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	if b.TargetResource == nil || b.TargetResource.Template == "" {
+	if b.TargetResource == nil || len(b.TargetResource.Template) == 0 {
 		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
-	return templateVarRegex.ReplaceAllString(b.TargetResource.Template, "{}"), nil
+	var sb strings.Builder
+	for i, seg := range b.TargetResource.Template {
+		// TargetResource.Template contains elements like `//host` as the first literal
+		if i > 0 {
+			sb.WriteString("/")
+		}
+		if seg.Literal != nil {
+			sb.WriteString(*seg.Literal)
+		} else if seg.Variable != nil {
+			sb.WriteString("{}")
+		}
+	}
+	return sb.String(), nil
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

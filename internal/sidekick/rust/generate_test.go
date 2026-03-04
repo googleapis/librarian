@@ -353,8 +353,8 @@ func TestRustBootstrapWkt(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "google/protobuf",
 		Source: map[string]string{
-			"protobuf-root": localTestdataDir,
-			"include-list":  "source_context.proto",
+			"include-list":      "source_context.proto",
+			"protobuf-src-root": localTestdataDir,
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",

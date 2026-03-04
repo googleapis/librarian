@@ -61,6 +61,8 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Python: &config.PythonPackage{
 						MetadataNameOverride:         "secretmanager",
 						NamePrettyOverride:           "Secret Manager",
+						APIShortnameOverride:         "secretmanager",
+						APIIDOverride:                "secretmanager.googleapis.com",
 						ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
@@ -88,6 +90,9 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Python: &config.PythonPackage{
+						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
+					},
 				},
 			},
 		},
@@ -118,12 +123,20 @@ func TestBuildPythonLibraries(t *testing.T) {
 						NamePrettyOverride:           "Audit Log API",
 						ProductDocumentationOverride: "https://cloud.google.com/logging/docs/audit",
 						ProtoOnlyAPIs:                []string{"google/cloud/audit"},
+						APIShortnameOverride:         "auditlog",
+						ClientDocumentationOverride:  "https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log",
+						PythonDefault: config.PythonDefault{
+							LibraryType: "OTHER",
+						},
 					},
 				},
 				{
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Python: &config.PythonPackage{
+						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
+					},
 				},
 			},
 		},
@@ -218,7 +231,12 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Name:   "google-api-core",
 					Veneer: true,
 					Output: "packages/google-api-core",
-					Python: &config.PythonPackage{NamePrettyOverride: "Google API client core library"},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "CORE",
+						},
+						NamePrettyOverride: "Google API client core library",
+					},
 				},
 			},
 		},

@@ -298,7 +298,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				WithLiteral("types").
 				WithVariableNamed("type")
 			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
-				Template:   template,
+				Template:   api.ParseTemplateForTest(template),
 				FieldPaths: fields,
 			}
 		}
@@ -381,7 +381,7 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 			},
 			binding: &api.PathBinding{
 				TargetResource: &api.TargetResource{
-					Template: "//test.googleapis.com/projects/{project}/zones/{zone}",
+					Template: api.ParseTemplateForTest("//test.googleapis.com/projects/{project}/zones/{zone}"),
 				},
 			},
 			want: "//test.googleapis.com/projects/{}/zones/{}",
@@ -394,7 +394,7 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 			},
 			binding: &api.PathBinding{
 				TargetResource: &api.TargetResource{
-					Template: "//test.googleapis.com/items/{item.id}",
+					Template: api.ParseTemplateForTest("//test.googleapis.com/items/{item.id}"),
 				},
 			},
 			want: "//test.googleapis.com/items/{}",
@@ -417,7 +417,7 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 					WithVariableNamed("zone"),
 				TargetResource: &api.TargetResource{
 					// Notice that constructTemplate already stripped out "compute/v1"
-					Template: "//compute.googleapis.com/projects/{project}/zones/{zone}",
+					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),
 				},
 			},
 			want: "//compute.googleapis.com/projects/{}/zones/{}",

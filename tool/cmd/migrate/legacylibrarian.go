@@ -136,6 +136,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.Python = &config.PythonDefault{
 			// Declared in python.go.
 			CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+			LibraryType:      pythonDefaultLibraryType,
 		}
 		cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
 		if err != nil {
@@ -259,7 +260,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
 					ClientPackage:            api.ClientDirectory,
-					DisableGAPIC:             api.DisableGAPIC,
+					ProtoOnly:                api.DisableGAPIC,
 					EnabledGeneratorFeatures: enabledGenFeats,
 					ImportPath:               api.ImportPath,
 					NestedProtos:             api.NestedProtos,
@@ -294,8 +295,8 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
 			goAPI.ClientPackage = info.ClientPackageName
-			goAPI.DisableGAPIC = info.DisableGAPIC
-			goAPI.HasDiregapic = info.HasDiregapic
+			goAPI.ProtoOnly = info.DisableGAPIC
+			goAPI.DIREGAPIC = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums

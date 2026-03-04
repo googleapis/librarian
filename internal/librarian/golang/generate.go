@@ -162,7 +162,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		"--go-grpc_out=" + outdir,
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
-	if !goAPI.DisableGAPIC {
+	if !goAPI.ProtoOnly {
 		gapicOpts, err := buildGAPICOpts(api.Path, library, goAPI, googleapisDir)
 		if err != nil {
 			return err
@@ -198,7 +198,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
-	if goAPI != nil && goAPI.HasDiregapic {
+	if goAPI != nil && goAPI.DIREGAPIC {
 		opts = append(opts, "diregapic")
 	}
 	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {

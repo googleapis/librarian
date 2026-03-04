@@ -15,17 +15,18 @@
 package golang
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestClean(t *testing.T) {
-	libraryName := "testlib"
+	libraryName := "example"
 	for _, test := range []struct {
 		name         string
 		outputFiles  []string
@@ -51,9 +52,12 @@ func TestClean(t *testing.T) {
 				"apiv1/helpers.go",
 				"apiv1/librarypb/content.pb.go",
 				"apiv1/non-generated.go",
+				"internal/version.go",
+				"README.md",
 			},
-			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{},
+			snippetFiles: []string{
+				"apiv1/main.go",
+			},
 			wantOutput: []string{
 				"apiv1/non-generated.go",
 			},
@@ -63,44 +67,42 @@ func TestClean(t *testing.T) {
 			outputFiles: []string{
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
-				"nested/apiv1/doc.go",
+				"apiv1/iam_policy_client.go",
+				"README.md",
 			},
-			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"apiv1/auxiliary_go123.go"},
-			wantOutput:   []string{"apiv1/auxiliary_go123.go"},
+			snippetFiles: []string{"apiv1/snippet1.go"},
+			keep: []string{
+				"apiv1/iam_policy_client.go",
+				"README.md",
+			},
+			wantOutput: []string{
+				"apiv1/iam_policy_client.go",
+				"README.md",
+			},
 		},
 		{
-			name:         "nested module",
-			outputFiles:  []string{"nested/apiv1beta1/doc.go"},
-			snippetFiles: []string{"nested/snippet.go"},
-			keep:         []string{},
-			nestedModule: "nested",
-			wantOutput:   []string{"nested/apiv1beta1/doc.go"},
-			wantSnippets: []string{"internal/generated/snippets/testlib/nested/snippet.go"},
+			name: "client files in nested module are not cleaned",
+			outputFiles: []string{
+				"nested/apiv1/auxiliary.go",
+				"nested/apiv1/auxiliary_go123.go",
+			},
+			snippetFiles: []string{"nested/apiv1/snippet1.go"},
+			// They are not cleaned because these files are not within
+			// import path of the GoAPI.
+			wantOutput: []string{
+				"nested/apiv1/auxiliary.go",
+				"nested/apiv1/auxiliary_go123.go",
+			},
+			wantSnippets: []string{
+				"internal/generated/snippets/example/nested/apiv1/snippet1.go",
+			},
 		},
 		{
 			name:        "no snippets",
 			outputFiles: []string{"apiv1/auxiliary.go"},
-			keep:        []string{},
-			wantOutput:  []string{},
 		},
 		{
-			name:         "snippets in current directory",
-			snippetFiles: []string{"snippet1.go", "snippet2.go", "README.md"},
-			keep:         []string{},
-			setup: func(dir string) {
-				// Change the working directory to the same level of
-				// internal directory to verify clean function when
-				// there's no prefix in snippets directory.
-				t.Chdir(dir)
-			},
-			wantOutput: []string{},
-		},
-		{
-			name:        "non-versioned api path",
-			outputFiles: []string{"autogen/auxiliary.go"},
-			keep:        []string{},
-			wantOutput:  []string{},
+			name: "no client files",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -108,10 +110,22 @@ func TestClean(t *testing.T) {
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
-				Name:   libraryName,
+				Name: libraryName,
+				APIs: []*config.API{
+					{
+						Path: "google/example/v1",
+					},
+				},
 				Output: root,
 				Keep:   test.keep,
 				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: libraryName,
+							ImportPath:    "example/apiv1",
+							Path:          "google/example/v1",
+						},
+					},
 					NestedModule: test.nestedModule,
 				},
 			}
@@ -120,9 +134,6 @@ func TestClean(t *testing.T) {
 			}
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
-			}
-			if test.setup != nil {
-				test.setup(root)
 			}
 
 			err := Clean(lib)
@@ -149,41 +160,153 @@ func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
 		name         string
+		library      *config.Library
 		outputFiles  []string
 		snippetFiles []string
-		keep         []string
-		wantErrMsg   string
+		setup        func(t *testing.T, base string)
+		wantErr      error
 	}{
 		{
-			name:         "keep file not found in output directory",
+			name: "keep file not found in output directory",
+			library: &config.Library{
+				Name: "testlib",
+				Keep: []string{"file1.go"},
+			},
 			outputFiles:  []string{"file2.go"},
 			snippetFiles: []string{"snippet1.go"},
-			keep:         []string{"file1.go"},
-			wantErrMsg:   "keep file \"file1.go\" does not exist",
+			wantErr:      fs.ErrNotExist,
+		},
+		{
+			name: "no go api",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/example/v1",
+					},
+				},
+			},
+			outputFiles:  []string{"testlib/apiv1/file2.go"},
+			snippetFiles: []string{"internal/generated/snippets/testlib/apiv1/snippet1.go"},
+			wantErr:      errGoAPINotFound,
+		},
+		{
+			name: "no permission to remove root files",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			outputFiles: []string{"README.md"},
+			setup: func(t *testing.T, base string) {
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "no permission to remove client files",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			outputFiles: []string{"apiv1/doc.go"},
+			setup: func(t *testing.T, base string) {
+				base = filepath.Join(base, "apiv1")
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "no permission to remove snippets",
+			library: &config.Library{
+				Name: "testlib",
+				APIs: []*config.API{
+					{
+						Path: "google/testlib/v1",
+					},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "testlib/apiv1",
+							Path:       "google/testlib/v1",
+						},
+					},
+				},
+			},
+			snippetFiles: []string{"apiv1/snippet1.go"},
+			setup: func(t *testing.T, base string) {
+				base = filepath.Join(base, "..", "internal/generated/snippets/testlib/apiv1")
+				if err := os.Chmod(base, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(base, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: os.ErrPermission,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
-			lib := &config.Library{
-				Name:   libraryName,
-				Output: filepath.Join(root),
-				Keep:   test.keep,
-			}
+			test.library.Output = root
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
 			}
 			if test.snippetFiles != nil {
 				createFiles(t, snippetPath, test.snippetFiles)
 			}
+			if test.setup != nil {
+				test.setup(t, outputPath)
+			}
 
-			err := Clean(lib)
+			err := Clean(test.library)
 			if err == nil {
 				t.Fatal("expected error")
 			}
-			if diff := cmp.Diff(test.wantErrMsg, err.Error()); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("CleanLibrary error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

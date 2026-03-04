@@ -32,17 +32,15 @@ type GoModule struct {
 type GoAPI struct {
 	// ClientPackage is the package name of the generated client.
 	ClientPackage string `yaml:"client_package,omitempty"`
-	// DisableGAPIC determines whether to generate the GAPIC client.
-	// Also known as proto-only client, which does not define a service in the proto files.
-	// TODO(https://github.com/googleapis/librarian/issues/4312): rename this config.
-	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
-	// TODO(https://github.com/googleapis/librarian/issues/4311): rename this config.
-	// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
-	HasDiregapic bool `yaml:"has_diregapic,omitempty"`
+	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
@@ -319,6 +317,30 @@ type PythonPackage struct {
 	// field.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
 
+	// APIShortnameOverride allows the "api_shortname" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
+
+	// APIIDOverride allows the "api_id" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses
+	// of this field to only cases where it's really needed.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// IssueTrackerOverride allows the issue_tracker field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
+
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
 	// default it's the package name, but older packages use the API short name
@@ -339,6 +361,9 @@ type PythonDefault struct {
 	// library defines its own common_gapic_paths, they will be appended to
 	// the defaults.
 	CommonGAPICPaths []string `yaml:"common_gapic_paths,omitempty"`
+
+	// LibraryType is the type to emit in .repo-metadata.json.
+	LibraryType string `yaml:"library_type,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.

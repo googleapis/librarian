@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
-	"github.com/googleapis/librarian/internal/sidekick/source"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -401,7 +401,7 @@ func TestLoadSources(t *testing.T) {
 		cfg     *config.Config
 		wantErr bool
 		wantDir string
-		wantSrc *source.Sources
+		wantSrc *sidekickconfig.Sources
 	}{
 		{
 			name:    "nil sources",
@@ -434,7 +434,7 @@ func TestLoadSources(t *testing.T) {
 				},
 			},
 			wantDir: "/tmp/googleapis",
-			wantSrc: &source.Sources{
+			wantSrc: &sidekickconfig.Sources{
 				Googleapis: "/tmp/googleapis",
 				Discovery:  "/tmp/discovery",
 			},

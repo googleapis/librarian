@@ -289,7 +289,7 @@ func TestGenerate(t *testing.T) {
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
-						DisableGAPIC:  true,
+						ProtoOnly:     true,
 						ImportPath:    "secretmanager/apiv1",
 						Path:          "google/cloud/secretmanager/v1",
 					},
@@ -922,7 +922,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage:      "compute",
 				ImportPath:         "compute/apiv1",
-				HasDiregapic:       true,
+				DIREGAPIC:          true,
 				NoRESTNumericEnums: true,
 				Path:               "google/cloud/compute/v1",
 			},

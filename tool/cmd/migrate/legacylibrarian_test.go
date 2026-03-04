@@ -143,7 +143,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 			},
 		},
@@ -180,7 +183,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 				Libraries: []*config.Library{
 					{
@@ -196,6 +202,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							MetadataNameOverride:         "secretmanager",
 							ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 							NamePrettyOverride:           "Secret Manager",
+							APIShortnameOverride:         "secretmanager",
+							APIIDOverride:                "secretmanager.googleapis.com",
 							OptArgsByAPI: map[string][]string{
 								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 							},
@@ -389,7 +397,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							{
 								Path:          "google/maps/fleetengine/v1",
 								ClientPackage: "fleetengine",
-								DisableGAPIC:  true,
+								ProtoOnly:     true,
 								NestedProtos:  []string{"grafeas/grafeas.proto"},
 								ProtoPackage:  "google.cloud.translation.v3",
 							},
@@ -744,8 +752,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								DisableGAPIC: true,
-								Path:         "google/cloud/no-gapic",
+								ProtoOnly: true,
+								Path:      "google/cloud/no-gapic",
 							},
 						},
 					},
@@ -780,7 +788,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								HasDiregapic:       true,
+								DIREGAPIC:          true,
 								NoRESTNumericEnums: true,
 								Path:               "google/cloud/compute/v1",
 							},
