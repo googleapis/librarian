@@ -609,6 +609,33 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	}
 }
 
+func TestUpdateSnippetMetadata_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func()
+		wantErr error
+	}{
+		{
+			name: "no go api",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+			},
+			wantErr: errGoAPINotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			err := updateSnippetMetadata(test.library, tmpDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -651,7 +678,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
-func TestReleaseLevel_Success(t *testing.T) {
+func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		apiPath string
