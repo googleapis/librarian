@@ -718,6 +718,9 @@ func TestGenerate(t *testing.T) {
 		},
 		Python: &config.PythonPackage{
 			MetadataNameOverride: "secretmanager",
+			PythonDefault: config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
 		},
 	}
 	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
