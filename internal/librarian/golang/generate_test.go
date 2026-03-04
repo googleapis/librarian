@@ -522,48 +522,49 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 
 func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		dir      string
-		fileName string
-		data     string
+		name      string
+		protoOnly bool
+		path      string
+		fileName  string
+		setup     func(base, path, data, fileName string)
 	}{
 		{
 			name:     "skip non import path",
-			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
+			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
 			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
-			data: `{ 
- "clientLibrary": {
-    "name": "cloud.google.com/go/bigquery/v2/apiv2",
-    "version": "$VERSION",
-    "language": "GO",
-    "apis": [
-      {
-        "id": "google.cloud.bigquery.v2",
-        "version": "v2"
-      }
-    ]
- }
-}
-`,
+			setup: func(base, path, data, fileName string) {
+				// We need to create this directory because snippets directory should exist before updating.
+				if err := os.MkdirAll(filepath.Join(base, "internal/generated/snippets/bigquery/storage/apiv1"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				metadataFile := filepath.Join(base, path, fileName)
+				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
 		},
 		{
 			name:     "skip non-snippets file",
-			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "apiv1"),
+			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "storage", "apiv1"),
 			fileName: "non_metadata.google.cloud.bigquery.v1.json",
-			data: `{ 
- "clientLibrary": {
-    "name": "cloud.google.com/go/bigquery/apiv1",
-    "version": "$VERSION",
-    "language": "GO",
-    "apis": [
-      {
-        "id": "google.cloud.bigquery.v1",
-        "version": "v1"
-      }
-    ]
- }
-}
-`,
+			setup: func(base, path, data, fileName string) {
+				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				metadataFile := filepath.Join(base, path, fileName)
+				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:      "skip proto-only clients",
+			protoOnly: true,
+			// Do not create snippet directory to verify the function exists before
+			// checking the existence of the directory.
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -578,25 +579,37 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 						{
 							ImportPath: "bigquery/storage/apiv1",
 							Path:       "google/cloud/bigquery/storage/v1",
+							ProtoOnly:  test.protoOnly,
 						},
 					},
 				},
 			}
-			// We need to create this directory because snippets directory should exist before updating.
-			if err := os.MkdirAll(filepath.Join(tmpDir, "internal/generated/snippets/bigquery/storage/apiv1"), 0755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755); err != nil {
-				t.Fatal(err)
-			}
-			metadataFile := filepath.Join(tmpDir, test.dir, test.fileName)
-			if err := os.WriteFile(metadataFile, []byte(test.data), 0755); err != nil {
-				t.Fatal(err)
+			data := `{ 
+ "clientLibrary": {
+    "name": "cloud.google.com/go/bigquery/v2/apiv2",
+    "version": "$VERSION",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.cloud.bigquery.v2",
+        "version": "v2"
+      }
+    ]
+ }
+}
+`
+			if test.setup != nil {
+				test.setup(tmpDir, test.path, data, test.fileName)
 			}
 			if err := updateSnippetMetadata(library, tmpDir); err != nil {
 				t.Fatal(err)
 			}
-
+			if test.setup == nil {
+				// No need to check the content if the metadata file is not
+				// created during setup function.
+				return
+			}
+			metadataFile := filepath.Join(tmpDir, test.path, test.fileName)
 			content, err := os.ReadFile(metadataFile)
 			if err != nil {
 				t.Fatal(err)

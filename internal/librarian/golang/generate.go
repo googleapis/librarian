@@ -348,6 +348,10 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI == nil {
 			return fmt.Errorf("error finding GO API %s: %w", api.Path, errGoAPINotFound)
 		}
+		// Proto-only client doesn't have generated snippets, skip updating.
+		if goAPI.ProtoOnly {
+			continue
+		}
 		baseDir := snippetDirectory(output, goAPI.ImportPath)
 		return updateSnippetDirectory(baseDir, library.Version)
 	}
