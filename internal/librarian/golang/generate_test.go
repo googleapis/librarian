@@ -471,6 +471,15 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	library := &config.Library{
 		Name:    "accessapproval",
 		Version: "1.2.3",
+		APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ImportPath: "accessapproval/apiv1",
+					Path:       "google/cloud/accessapproval/v1",
+				},
+			},
+		},
 	}
 
 	tmpDir := t.TempDir()
