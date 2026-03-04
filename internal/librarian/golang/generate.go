@@ -18,7 +18,6 @@ package golang
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -344,19 +343,23 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
 // Skip nested module if exists.
 func updateSnippetMetadata(library *config.Library, output string) error {
-	baseDir := filepath.Join(output, "internal", "generated", "snippets", library.Name)
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("error finding GO API %s: %w", api.Path, errGoAPINotFound)
+		}
+		baseDir := snippetDirectory(output, goAPI.ImportPath)
+		return updateSnippetDirectory(baseDir, library.Version)
+	}
+	return nil
+}
+
+func updateSnippetDirectory(baseDir, version string) error {
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			// Skip the update if the baseDir is not existed.
-			if errors.Is(err, os.ErrNotExist) {
-				return nil
-			}
 			return err
 		}
 		if d.IsDir() {
-			if library.Go != nil && d.Name() == library.Go.NestedModule {
-				return fs.SkipDir
-			}
 			return nil
 		}
 		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
@@ -367,7 +370,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			return err
 		}
 
-		newContent := strings.Replace(string(read), "$VERSION", library.Version, 1)
+		newContent := strings.Replace(string(read), "$VERSION", version, 1)
 		err = os.WriteFile(path, []byte(newContent), 0644)
 		if err != nil {
 			return err
