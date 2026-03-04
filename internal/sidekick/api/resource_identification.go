@@ -81,53 +81,57 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		return nil, nil
 	}
 
-	var fieldPaths [][]string
-	var firstIndex = -1
-	var lastIndex int
-	segments := binding.PathTemplate.Segments
-
-	// Iterate starting from the second segment, looking for (literal, variable) pairs.
-	for i := 1; i < len(segments); i++ {
-		curr := segments[i]
-		prev := segments[i-1]
-
-		if curr.Variable == nil || prev.Literal == nil {
-			continue
-		}
-
-		// Check if the preceding literal is a valid collection identifier.
-		if !isCollectionIdentifier(*prev.Literal, vocabulary) {
-			// Once a path segment breaks the chain of valid (collection, ID) pairs,
-			// the resource identifier stops.
-			break
-		}
-
-		fieldPath := curr.Variable.FieldPath
-		// Verify the field exists in the input message.
-		_, err := findField(method.InputType, fieldPath)
-		if err != nil {
-			return nil, err
-		}
-		if firstIndex == -1 {
-			firstIndex = i - 1
-		}
-		fieldPaths = append(fieldPaths, fieldPath)
-		lastIndex = i + 1
-	}
-
-	if len(fieldPaths) == 0 {
+	tmpl := binding.PathTemplate
+	if tmpl == nil {
 		return nil, nil
 	}
 
-	template, err := constructTemplate(method, segments[firstIndex:lastIndex])
-	if err != nil {
-		return nil, err
-	}
+	// Iterate backwards over segments
+	for i := len(tmpl.Segments) - 1; i >= 0; i-- {
+		seg := tmpl.Segments[i]
+		if seg.Variable != nil {
+			if i > 0 && tmpl.Segments[i-1].Literal != nil {
+				token := *tmpl.Segments[i-1].Literal
+				if vocabulary[token] {
+					if method.InputType == nil {
+						return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+					}
 
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
+					// Walk backwards to find the start of the (literal, variable) chain
+					firstIndex := i - 1
+					for firstIndex >= 2 {
+						if tmpl.Segments[firstIndex-1].Variable != nil && tmpl.Segments[firstIndex-2].Literal != nil {
+							firstIndex -= 2
+						} else {
+							break
+						}
+					}
+
+					var fieldPaths [][]string
+					targetSegments := tmpl.Segments[firstIndex : i+1]
+					for _, s := range targetSegments {
+						if s.Variable != nil {
+							_, err := findField(method.InputType, s.Variable.FieldPath)
+							if err != nil {
+								return nil, err
+							}
+							fieldPaths = append(fieldPaths, s.Variable.FieldPath)
+						}
+					}
+					template, err := constructTemplate(method, targetSegments)
+					if err != nil {
+						return nil, err
+					}
+					return &TargetResource{
+						FieldPaths: fieldPaths,
+						Template:   template,
+					}, nil
+				}
+			}
+			return nil, nil
+		}
+	}
+	return nil, nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
