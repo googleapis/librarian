@@ -296,7 +296,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.ProtoOnly = info.DisableGAPIC
-			goAPI.DIREGARPIC = info.HasDiregapic
+			goAPI.DIREGAPIC = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums

@@ -922,7 +922,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage:      "compute",
 				ImportPath:         "compute/apiv1",
-				DIREGARPIC:         true,
+				DIREGAPIC:          true,
 				NoRESTNumericEnums: true,
 				Path:               "google/cloud/compute/v1",
 			},
