@@ -86,7 +86,11 @@ func check(dir string, keep []string) (map[string]bool, error) {
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("error keeping %s: %w", k, err)
 		}
-		rel, err := filepath.Abs(path)
+		// Effectively get a canonical relative path. While in most cases
+		// this will be equal to k, it might not be - in particular,
+		// on Windows the directory separator in paths returned by Rel
+		// will be a backslash.
+		rel, err := filepath.Rel(dir, path)
 		if err != nil {
 			return nil, err
 		}
