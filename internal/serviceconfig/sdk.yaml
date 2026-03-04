@@ -1268,6 +1268,7 @@
     - go
     - python
   path: google/cloud/language/v1
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - documentation_uri: https://cloud.google.com/natural-language/docs/
   languages:
     - go
@@ -1287,6 +1288,7 @@
     php: grpc+rest
     python: grpc+rest
     ruby: grpc+rest
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - languages:
     - go
     - python
@@ -2259,6 +2261,10 @@
 - languages:
     - go
     - python
+  path: google/datastore/v1
+- languages:
+    - go
+    - python
     - rust
   path: google/datastore/admin/v1
 - documentation_uri: https://cloud.google.com/artifact-registry
@@ -2352,6 +2358,10 @@
     - python
     - rust
   path: google/firestore/v1
+  title: Cloud Firestore API
+- languages:
+    - python
+  path: google/firestore/bundle
   title: Cloud Firestore API
 - languages:
     - python
