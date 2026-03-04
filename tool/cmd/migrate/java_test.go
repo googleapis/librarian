@@ -282,7 +282,6 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &javaGAPICInfo{
-				Transport:          "grpc+rest",
 				NoRestNumericEnums: true,
 				NoSamples:          false,
 				AdditionalProtos: []string{
@@ -294,7 +293,6 @@ func TestParseJavaBazel(t *testing.T) {
 			name:          "no GAPIC rules",
 			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
 			want: &javaGAPICInfo{
-				Transport: "grpc",
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},

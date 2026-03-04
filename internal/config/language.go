@@ -522,7 +522,4 @@ type JavaAPI struct {
 
 	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
 	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
-
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
-	Transport string `yaml:"transport,omitempty"`
 }

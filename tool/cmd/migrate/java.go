@@ -30,7 +30,6 @@ const (
 )
 
 type javaGAPICInfo struct {
-	Transport          string
 	NoRestNumericEnums bool
 	NoSamples          bool
 	AdditionalProtos   []string
@@ -44,15 +43,10 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	if file == nil {
 		return nil, nil
 	}
-	info := &javaGAPICInfo{
-		Transport: "grpc", // Default
-	}
+	info := &javaGAPICInfo{}
 	// 1. From java_gapic_library
 	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
 		rule := rules[0]
-		if t := rule.AttrString("transport"); t != "" {
-			info.Transport = t
-		}
 		info.NoRestNumericEnums = rule.AttrLiteral("rest_numeric_enums") == "False"
 	}
 	// 2. From java_gapic_assembly_gradle_pkg
@@ -175,7 +169,6 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 				NoRestNumericEnums: info.NoRestNumericEnums,
 				AdditionalProtos:   info.AdditionalProtos,
 				NoSamples:          info.NoSamples,
-				Transport:          info.Transport,
 			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
