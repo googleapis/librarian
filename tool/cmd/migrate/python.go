@@ -27,6 +27,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -58,6 +59,8 @@ var pythonDefaultCommonGAPICPaths = []string{
 	"docs/README.rst",
 	"docs/summary_overview.md",
 }
+
+const pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
 
 // pythonGapicInfo contains information about the py_gapic_library target
 // from BUILD.bazel.
@@ -303,8 +306,12 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	defaultTitle := ""
 	defaultDocumentationURI := ""
 	defaultDefaultVersion := ""
+	defaultIssueTracker := ""
+	defaultAPIShortname := ""
+	defaultAPIID := ""
 	// Load the service config file for the first API if there is one, and
-	// use that
+	// use that to work out what will be generated in .repo-metadata.json by
+	// default.
 	if len(library.APIs) > 0 {
 		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangPython)
 		if err != nil {
@@ -313,6 +320,9 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		defaultTitle = strings.TrimSuffix(strings.TrimSpace(apiInfo.Title), " API")
 		defaultDocumentationURI = apiInfo.DocumentationURI
 		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
+		defaultIssueTracker = apiInfo.NewIssueURI
+		defaultAPIShortname = apiInfo.ShortName
+		defaultAPIID = apiInfo.ServiceName
 	}
 
 	// Load the current repo metadata and apply overrides for anything that
@@ -345,6 +355,21 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	}
 	if repoMetadata.DefaultVersion != defaultDefaultVersion {
 		library.Python.DefaultVersion = repoMetadata.DefaultVersion
+	}
+	if repoMetadata.LibraryType != pythonDefaultLibraryType {
+		library.Python.LibraryType = repoMetadata.LibraryType
+	}
+	if repoMetadata.ClientDocumentation != python.BuildClientDocumentationURI(library.Name, repoMetadata.Name) {
+		library.Python.ClientDocumentationOverride = repoMetadata.ClientDocumentation
+	}
+	if repoMetadata.IssueTracker != defaultIssueTracker {
+		library.Python.IssueTrackerOverride = repoMetadata.IssueTracker
+	}
+	if repoMetadata.APIShortname != defaultAPIShortname {
+		library.Python.APIShortnameOverride = repoMetadata.APIShortname
+	}
+	if repoMetadata.APIID != defaultAPIID {
+		library.Python.APIIDOverride = repoMetadata.APIID
 	}
 
 	return library, nil

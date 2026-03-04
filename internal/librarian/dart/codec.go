@@ -22,13 +22,13 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
 
-func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
 		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
@@ -130,7 +130,7 @@ func buildCodec(library *config.Library) map[string]string {
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
-func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
+func addLibraryRoots(library *config.Library, sources *sidekickconfig.Sources) map[string]string {
 	src := make(map[string]string)
 	if library.Rust == nil {
 		library.Rust = &config.RustCrate{}

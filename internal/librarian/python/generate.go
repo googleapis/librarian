@@ -127,16 +127,14 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions.DefaultVersion != "" {
 		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
-	// library type.
-	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
-	// Work out the right documentation URI based on whether this is a Cloud
-	// or non-Cloud API.
-	docTemplate := cloudGoogleComDocumentationTemplate
-	if !strings.HasPrefix(library.Name, "google-cloud") {
-		docTemplate = googleapisDevDocumentationTemplate
+	repoMetadata.LibraryType = packageOptions.LibraryType
+	repoMetadata.ClientDocumentation = BuildClientDocumentationURI(library.Name, repoMetadata.Name)
+	// Even after migration oddities, just a few libraries don't fit into the
+	// normal pattern for client documentation URI (e.g. the documentation is
+	// in cloud.google.com when it would be expected to be in googleapis.dev).
+	if packageOptions.ClientDocumentationOverride != "" {
+		repoMetadata.ClientDocumentation = packageOptions.ClientDocumentationOverride
 	}
-	repoMetadata.ClientDocumentation = fmt.Sprintf(docTemplate, repoMetadata.Name)
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
 	if packageOptions.NamePrettyOverride != "" {
 		repoMetadata.NamePretty = packageOptions.NamePrettyOverride
@@ -144,7 +142,31 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions.ProductDocumentationOverride != "" {
 		repoMetadata.ProductDocumentation = packageOptions.ProductDocumentationOverride
 	}
+	if packageOptions.APIShortnameOverride != "" {
+		repoMetadata.APIShortname = packageOptions.APIShortnameOverride
+	}
+	if packageOptions.APIIDOverride != "" {
+		repoMetadata.APIID = packageOptions.APIIDOverride
+	}
+	if packageOptions.IssueTrackerOverride != "" {
+		repoMetadata.IssueTracker = packageOptions.IssueTrackerOverride
+	}
 	return repoMetadata, nil
+}
+
+// BuildClientDocumentationURI builds the URI for the client documentation
+// for the library.
+// TODO(https://github.com/googleapis/librarian/issues/4175): make this function
+// package-private (or inline it) after migration, when we won't need to
+// determine whether or not to specify an override.
+func BuildClientDocumentationURI(libraryName, repoMetadataName string) string {
+	// Work out the right documentation URI based on whether this is a Cloud
+	// or non-Cloud API.
+	docTemplate := cloudGoogleComDocumentationTemplate
+	if !strings.HasPrefix(libraryName, "google-cloud") {
+		docTemplate = googleapisDevDocumentationTemplate
+	}
+	return fmt.Sprintf(docTemplate, repoMetadataName)
 }
 
 // generateAPI generates part of a library for a single api.

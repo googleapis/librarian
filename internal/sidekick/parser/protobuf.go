@@ -66,7 +66,7 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		}
 	}()
 
-	files, err := protobuf.DetermineInputFiles(source, options)
+	files, err := protobuf.DetermineInputFiles(source, config.NewSourceConfig(options))
 	if err != nil {
 		return nil, err
 	}

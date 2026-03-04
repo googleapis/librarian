@@ -412,6 +412,40 @@ func TestFillDefaults_Python(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "library type defaults",
+			lib:  &config.Library{},
+			defaults: &config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
+			},
+		},
+		{
+			name: "library type overridden",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
+				},
+			},
+			defaults: &config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			defaults := &config.Default{

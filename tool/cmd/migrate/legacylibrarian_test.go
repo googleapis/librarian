@@ -143,7 +143,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 			},
 		},
@@ -180,7 +183,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					ReleaseLevel: "stable",
 					TagFormat:    defaultTagFormat,
 					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 				Libraries: []*config.Library{
 					{
@@ -196,6 +202,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							MetadataNameOverride:         "secretmanager",
 							ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 							NamePrettyOverride:           "Secret Manager",
+							APIShortnameOverride:         "secretmanager",
+							APIIDOverride:                "secretmanager.googleapis.com",
 							OptArgsByAPI: map[string][]string{
 								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 							},

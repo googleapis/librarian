@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package source
+package librarian
 
 import (
 	"errors"
@@ -20,13 +20,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestFetchRustSources(t *testing.T) {
+func TestFetchRustDartSources(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		cfgSources *config.Sources
-		want       *Sources
+		want       *sidekickconfig.Sources
 		wantErr    error
 	}{
 		{
@@ -37,7 +38,7 @@ func TestFetchRustSources(t *testing.T) {
 				Showcase:    &config.Source{Dir: "/path/to/showcase"},
 				ProtobufSrc: &config.Source{Dir: "/path/to/protobuf", Subpath: "src"},
 			},
-			want: &Sources{
+			want: &sidekickconfig.Sources{
 				Conformance: "/path/to/conformance",
 				Discovery:   "/path/to/discovery",
 				Googleapis:  "",
@@ -50,15 +51,15 @@ func TestFetchRustSources(t *testing.T) {
 			got, err := FetchRustDartSources(t.Context(), test.cfgSources)
 			if test.wantErr != nil {
 				if err == nil || !errors.Is(err, test.wantErr) {
-					t.Errorf("FetchRustSources() got error = %v, wantErr %v", err, test.wantErr)
+					t.Errorf("FetchRustDartSources() got error = %v, wantErr %v", err, test.wantErr)
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("FetchRustSources() got unexpected error: %v", got)
+				t.Errorf("FetchRustDartSources() got unexpected error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("FetchRustSources() mismatch (-want +got):%s", diff)
+				t.Errorf("FetchRustDartSources() mismatch (-want +got):%s", diff)
 			}
 		})
 	}
