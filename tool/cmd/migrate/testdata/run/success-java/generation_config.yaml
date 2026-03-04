@@ -1,0 +1,4 @@
+libraries:
+  - library_name: language-v1
+    GAPICs:
+      - proto_path: google/cloud/language/v1

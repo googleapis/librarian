@@ -362,3 +362,84 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatResourceNameTemplateFromPath(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		method  *api.Method
+		binding *api.PathBinding
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Basic",
+			method: &api.Method{
+				Model: &api.API{Name: "test"},
+				Service: &api.Service{
+					DefaultHost: "test.googleapis.com",
+				},
+			},
+			binding: &api.PathBinding{
+				TargetResource: &api.TargetResource{
+					Template: "//test.googleapis.com/projects/{project}/zones/{zone}",
+				},
+			},
+			want: "//test.googleapis.com/projects/{}/zones/{}",
+		},
+		{
+			name: "With Extended Field Path",
+			method: &api.Method{
+				Model:   &api.API{Name: "test"},
+				Service: &api.Service{},
+			},
+			binding: &api.PathBinding{
+				TargetResource: &api.TargetResource{
+					Template: "//test.googleapis.com/items/{item.id}",
+				},
+			},
+			want: "//test.googleapis.com/items/{}",
+		},
+		{
+			name: "Discovery API Compute V1 Example",
+			method: &api.Method{
+				Model: &api.API{Name: "compute"},
+				Service: &api.Service{
+					DefaultHost: "compute.googleapis.com",
+				},
+			},
+			binding: &api.PathBinding{
+				PathTemplate: api.NewPathTemplate().
+					WithLiteral("compute").
+					WithLiteral("v1").
+					WithLiteral("projects").
+					WithVariableNamed("project").
+					WithLiteral("zones").
+					WithVariableNamed("zone"),
+				TargetResource: &api.TargetResource{
+					// Notice that constructTemplate already stripped out "compute/v1"
+					Template: "//compute.googleapis.com/projects/{project}/zones/{zone}",
+				},
+			},
+			want: "//compute.googleapis.com/projects/{}/zones/{}",
+		},
+		{
+			name: "Missing TargetResource",
+			method: &api.Method{
+				ID:    "test.method",
+				Model: &api.API{Name: "test"},
+			},
+			binding: &api.PathBinding{},
+			wantErr: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := formatResourceNameTemplateFromPath(tc.method, tc.binding)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, tc.wantErr)
+			}
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

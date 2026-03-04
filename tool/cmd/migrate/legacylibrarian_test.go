@@ -400,33 +400,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "parse BUILD.bazel with no GAPIC rule",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "example-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/no-gapic",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-				googleapisDir:   "testdata/googleapis",
-			},
-			want: []*config.Library{
-				{
-					Name: "example-library",
-					APIs: []*config.API{{Path: "google/cloud/no-gapic"}},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with no Go API",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
@@ -707,6 +680,115 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "parse metadata from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/asset/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/asset/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								NoMetadata: true,
+								Path:       "google/cloud/asset/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse disable GAPIC BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/no-gapic",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/no-gapic"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								DisableGAPIC: true,
+								Path:         "google/cloud/no-gapic",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse diregapic from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "compute",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/compute/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "compute",
+					APIs: []*config.API{
+						{Path: "google/cloud/compute/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								HasDiregapic:       true,
+								NoRESTNumericEnums: true,
+								Path:               "google/cloud/compute/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
@@ -804,6 +886,9 @@ func TestParseBazel(t *testing.T) {
 		{
 			name:          "no GAPIC rules",
 			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
+			want: &goGAPICInfo{
+				DisableGAPIC: true,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

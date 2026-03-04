@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/semver"
@@ -198,6 +199,8 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 	switch cfg.Language {
 	case languageFake:
 		return fakeBumpLibrary(output, version)
+	case languageGo:
+		return golang.Bump(lib, output, version)
 	case languagePython:
 		return python.Bump(output, version)
 	default:
