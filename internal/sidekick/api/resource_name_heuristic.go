@@ -117,8 +117,8 @@ func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
 	if vocabulary != nil && vocabulary[segment] {
 		return true
 	}
-	// if strings.HasSuffix(segment, "s") {
-	// 	return true
-	// }
+	if strings.HasSuffix(segment, "s") {
+		return true
+	}
 	return false
 }
