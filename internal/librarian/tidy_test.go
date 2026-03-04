@@ -496,7 +496,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 								},
 								{
 									Output:   "src/storage/control",
-									APIPath:  "none",
+									APIPath:  "",
 									Template: "",
 								},
 							},
