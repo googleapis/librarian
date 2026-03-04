@@ -488,6 +488,9 @@ type JavaModule struct {
 	// to be overridden.
 	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
 
+	// JavaAPIs is a list of Java-specific API configurations.
+	JavaAPIs []*JavaAPI `yaml:"java_apis,omitempty"`
+
 	// ProductDocumentationOverride allows the "product_documentation" field in
 	// .repo-metadata.json to be overridden.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
@@ -504,4 +507,22 @@ type JavaModule struct {
 
 	// RpcDocumentation is the URL for the RPC documentation.
 	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+}
+
+// JavaAPI represents configuration for a single API within a Java module.
+type JavaAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// NoSamples determines whether to generate samples for the API.
+	NoSamples bool `yaml:"no_samples,omitempty"`
+
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
+	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
+	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+
+	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
+	Transport string `yaml:"transport,omitempty"`
 }

@@ -16,10 +16,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -28,6 +31,67 @@ import (
 const (
 	generationConfigFileName = "generation_config.yaml"
 )
+
+type javaGAPICInfo struct {
+	Transport          string
+	NoRestNumericEnums bool
+	NoSamples          bool
+	AdditionalProtos   []string
+}
+
+func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
+	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &javaGAPICInfo{
+		Transport: "grpc", // Default
+	}
+
+	// 1. From java_gapic_library
+	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
+		rule := rules[0]
+		if t := rule.AttrString("transport"); t != "" {
+			info.Transport = t
+		}
+		info.NoRestNumericEnums = rule.AttrLiteral("rest_numeric_enums") == "False"
+	}
+
+	// 2. From java_gapic_assembly_gradle_pkg
+	if rules := file.Rules("java_gapic_assembly_gradle_pkg"); len(rules) > 0 {
+		rule := rules[0]
+		info.NoSamples = rule.AttrLiteral("include_samples") == "False"
+	}
+
+	// 3. From proto_library_with_info
+	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
+		rule := rules[0]
+		// Search for specific common resource targets in deps
+		if deps := rule.AttrStrings("deps"); len(deps) > 0 {
+			for _, dep := range deps {
+				switch dep {
+				case "//google/cloud:common_resources_proto":
+					info.AdditionalProtos = append(info.AdditionalProtos, "google/cloud/common_resources.proto")
+				case "//google/cloud/location:location_proto":
+					info.AdditionalProtos = append(info.AdditionalProtos, "google/cloud/location/locations.proto")
+				case "//google/iam/v1:iam_policy_proto":
+					info.AdditionalProtos = append(info.AdditionalProtos, "google/iam/v1/iam_policy.proto")
+				}
+			}
+		}
+	}
+
+	return info, nil
+}
 
 // GAPICConfig represents the GAPIC configuration in generation_config.yaml.
 type GAPICConfig struct {
@@ -73,10 +137,18 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return err
 	}
-	cfg := buildConfig(gen)
+	src, err := fetchSource(ctx)
+	if err != nil {
+		return errFetchSource
+	}
+	cfg := buildConfig(gen, src.Dir)
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
+	// The directory name in Googleapis is present for migration code to look
+	// up API details. It shouldn't be persisted.
+	cfg.Sources.Googleapis.Dir = ""
+
 	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
 		return errTidyFailed
 	}
@@ -89,7 +161,7 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig) *config.Config {
+func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 	var libs []*config.Library
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
@@ -97,11 +169,40 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 			name = l.APIShortName
 		}
 		var apis []*config.API
+		var javaAPIs []*config.JavaAPI
+
+		var bazelTransport string
+
 		for _, g := range l.GAPICs {
-			if g.ProtoPath != "" {
-				apis = append(apis, &config.API{Path: g.ProtoPath})
+			if g.ProtoPath == "" {
+				continue
 			}
+			apis = append(apis, &config.API{Path: g.ProtoPath})
+
+			info, err := parseJavaBazel(googleapisDir, g.ProtoPath)
+			if err != nil {
+				log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", g.ProtoPath, err)
+				continue
+			}
+			if info == nil {
+				continue
+			}
+
+			if bazelTransport == "" {
+				bazelTransport = info.Transport
+			}
+
+			javaAPI := &config.JavaAPI{
+				Path:               g.ProtoPath,
+				NoRestNumericEnums: info.NoRestNumericEnums,
+				AdditionalProtos:   info.AdditionalProtos,
+				NoSamples:          info.NoSamples,
+				Transport:          info.Transport,
+			}
+
+			javaAPIs = append(javaAPIs, javaAPI)
 		}
+
 		libs = append(libs, &config.Library{
 			Name:         name,
 			Output:       "java-" + name,
@@ -119,6 +220,7 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 				ExcludedDependencies:         l.ExcludedDependencies,
 				ExcludedPoms:                 l.ExcludedPoms,
 				ExtraVersionedModules:        l.ExtraVersionedModules,
+				JavaAPIs:                     javaAPIs,
 				GroupID:                      l.GroupID,
 				IssueTrackerOverride:         l.IssueTracker,
 				LibraryTypeOverride:          l.LibraryType,
@@ -139,8 +241,7 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 		Language: "java",
 		Default:  &config.Default{},
 		Sources: &config.Sources{
-			// hardcoded for local testing
-			Googleapis: &config.Source{Dir: "../../googleapis"},
+			Googleapis: &config.Source{Dir: googleapisDir},
 		},
 		Libraries: libs,
 	}
