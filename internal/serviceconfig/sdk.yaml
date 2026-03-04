@@ -1267,8 +1267,8 @@
 - languages:
     - go
     - python
-  path: google/cloud/language/v1
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
+  path: google/cloud/language/v1
 - documentation_uri: https://cloud.google.com/natural-language/docs/
   languages:
     - go
@@ -1280,6 +1280,7 @@
     - go
     - python
     - rust
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
   path: google/cloud/language/v2
   transports:
     go: grpc+rest
@@ -1288,7 +1289,6 @@
     php: grpc+rest
     python: grpc+rest
     ruby: grpc+rest
-  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - languages:
     - go
     - python
@@ -2261,10 +2261,6 @@
 - languages:
     - go
     - python
-  path: google/datastore/v1
-- languages:
-    - go
-    - python
     - rust
   path: google/datastore/admin/v1
 - documentation_uri: https://cloud.google.com/artifact-registry
@@ -2273,6 +2269,10 @@
     - python
     - rust
   path: google/devtools/artifactregistry/v1
+- languages:
+    - go
+    - python
+  path: google/datastore/v1
 - documentation_uri: https://cloud.google.com/artifact-registry
   languages:
     - go
@@ -2354,14 +2354,14 @@
     - rust
   path: google/firestore/admin/v1
 - languages:
+    - python
+  path: google/firestore/bundle
+  title: Cloud Firestore API
+- languages:
     - go
     - python
     - rust
   path: google/firestore/v1
-  title: Cloud Firestore API
-- languages:
-    - python
-  path: google/firestore/bundle
   title: Cloud Firestore API
 - languages:
     - python
