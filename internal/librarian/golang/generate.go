@@ -198,7 +198,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if goAPI == nil || !goAPI.NoRESTNumericEnums {
 		opts = append(opts, "rest-numeric-enums")
 	}
-	if goAPI != nil && goAPI.DireGAPIC {
+	if goAPI != nil && goAPI.DIREGARPIC {
 		opts = append(opts, "diregapic")
 	}
 	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {

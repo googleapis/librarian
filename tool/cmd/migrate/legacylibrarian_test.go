@@ -788,7 +788,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								DireGAPIC:          true,
+								DIREGARPIC:         true,
 								NoRESTNumericEnums: true,
 								Path:               "google/cloud/compute/v1",
 							},
