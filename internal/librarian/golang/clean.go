@@ -155,9 +155,9 @@ func cleanGeneratedClientFiles(clientPath string, keepSet map[string]bool) error
 		if d.IsDir() {
 			return nil
 		}
-		// Some libraries may have a non-generated file that has on of the
-		// suffixes in generatedClientFileSuffixes, e.g., iam_policy_client.go.
-		// Put them into keep and skip cleaning.
+		// Some libraries may have a non-generated file that has one of the suffixes in generatedClientFileSuffixes,
+		// e.g., iam_policy_client.go.
+		// These files will be listed in the keep configuration, so we need to check and potentially skip cleaning.
 		if keepSet[path] {
 			return nil
 		}
