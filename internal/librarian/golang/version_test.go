@@ -160,7 +160,7 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 				{
 					ClientPackage: "connectors",
 					ImportPath:    "alloydb/connectors/apiv1",
-					DisableGAPIC:  true,
+					ProtoOnly:     true,
 					Path:          "google/cloud/alloydb/connectors/v1",
 				},
 			},

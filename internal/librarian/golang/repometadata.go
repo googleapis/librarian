@@ -40,7 +40,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 	}
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
-		ClientDocumentation: clientDocURL(goAPI.ImportPath),
+		ClientDocumentation: clientDocURL(library, goAPI.ImportPath),
 		ClientLibraryType:   "generated",
 		Description:         api.Title,
 		DistributionName:    distributionName(goAPI.ImportPath),
@@ -52,9 +52,13 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.
-func clientDocURL(importPath string) string {
-	idx := strings.Index(importPath, "/")
-	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", importPath[:idx], importPath[idx+1:])
+func clientDocURL(library *config.Library, importPath string) string {
+	versionPrefix := library.Name
+	if library.Go != nil && library.Go.ModulePathVersion != "" {
+		versionPrefix = fmt.Sprintf("%s/%s", versionPrefix, library.Go.ModulePathVersion)
+	}
+	pkgPath := strings.TrimPrefix(strings.TrimPrefix(importPath, versionPrefix), "/")
+	return fmt.Sprintf("https://cloud.google.com/go/docs/reference/cloud.google.com/go/%s/latest/%s", versionPrefix, pkgPath)
 }
 
 // distributionName builds the distribution name for Go SDK.

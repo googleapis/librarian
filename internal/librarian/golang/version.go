@@ -64,8 +64,8 @@ func generateClientVersionFile(library *config.Library, apiPath string) (err err
 	goAPI := findGoAPI(library, apiPath)
 	// goAPI should not be nil in production because they are filled with defaults
 	// for each API path of the library.
-	if goAPI == nil || goAPI.DisableGAPIC {
-		// If GAPIC is disabled, no client is generated, only proto files.
+	if goAPI == nil || goAPI.ProtoOnly {
+		// In proto-only client, no GAPIC client files are generated, only .pb.go files.
 		// Therefore, version.go does not need to be generated.
 		return nil
 	}
