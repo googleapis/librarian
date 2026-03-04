@@ -17,7 +17,6 @@ package api
 import (
 	"fmt"
 	"slices"
-	"strings"
 )
 
 // IdentifyTargetResources populates the TargetResource field in PathBinding
@@ -200,26 +199,27 @@ func findField(msg *Message, path []string) (*Field, error) {
 }
 
 // constructTemplate reconstructs the canonical resource name template from path segments.
-func constructTemplate(method *Method, segments []PathSegment) (string, error) {
+func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, error) {
 	host, err := getServiceHost(method)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var sb strings.Builder
-	sb.WriteString("//")
-	sb.WriteString(host)
+	var result []PathSegment
+	h := "//" + host
+	result = append(result, PathSegment{Literal: &h})
 
 	for _, seg := range segments {
-		sb.WriteString("/")
 		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
+			l := *seg.Literal
+			result = append(result, PathSegment{Literal: &l})
 		} else if seg.Variable != nil {
-			// Use simple field path form {field}, ignoring internal patterns, handling both exploded paths and full name variables correctly.
-			fmt.Fprintf(&sb, "{%s}", strings.Join(seg.Variable.FieldPath, "."))
+			result = append(result, PathSegment{Variable: &PathVariable{
+				FieldPath: seg.Variable.FieldPath,
+			}})
 		}
 	}
-	return sb.String(), nil
+	return result, nil
 }
 
 func getServiceHost(method *Method) (string, error) {

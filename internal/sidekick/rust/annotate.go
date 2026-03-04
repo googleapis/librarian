@@ -1619,25 +1619,18 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 }
 
 // formatResourceNameTemplateFromPath constructs the Rust format string directly from the
-// parsed PathTemplate.
+// resolved TargetResource.Template.
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	// Determine the service host (mirroring logic in api/resource_identification.go)
-	host := m.Model.Name + ".googleapis.com"
-	if m.Service != nil && m.Service.DefaultHost != "" {
-		host = m.Service.DefaultHost
+	if b.TargetResource == nil || len(b.TargetResource.Template) == 0 {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
 	var sb strings.Builder
-	sb.WriteString("//")
-	sb.WriteString(host)
-
-	// We assume simple path templates where variables correspond to arguments.
-	if b.PathTemplate == nil {
-		return "", fmt.Errorf("missing path template for method %s", m.ID)
-	}
-
-	for _, seg := range b.PathTemplate.Segments {
-		sb.WriteByte('/')
+	for i, seg := range b.TargetResource.Template {
+		// TargetResource.Template contains elements like `//host` as the first literal
+		if i > 0 {
+			sb.WriteString("/")
+		}
 		if seg.Literal != nil {
 			sb.WriteString(*seg.Literal)
 		} else if seg.Variable != nil {

@@ -27,6 +27,16 @@ import (
 	"github.com/googleapis/librarian/internal/git"
 )
 
+// semverData holds parameters for running semver checks.
+type semverData struct {
+	dryRunKeepGoing bool
+	manifests       map[string]string
+	lastTag         string
+	cargoPath       string
+	gitPath         string
+	env             map[string]string
+}
+
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
@@ -87,18 +97,15 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 
 	if !skipSemverChecks {
 		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
-		for name, manifest := range manifests {
-			if git.IsNewFile(ctx, gitPath, lastTag, manifest) {
-				continue
-			}
-			slog.Info("running cargo semver-checks to detect breaking changes", "crate", name)
-			if err := command.Run(ctx, cargoPath, "semver-checks", "--all-features", "-p", name); err != nil {
-				if dryRunKeepGoing {
-					slog.Error("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
-					continue
-				}
-				return err
-			}
+		if err := runSemverChecks(ctx, semverData{
+			dryRunKeepGoing: dryRunKeepGoing,
+			manifests:       manifests,
+			lastTag:         lastTag,
+			cargoPath:       cargoPath,
+			env:             env,
+			gitPath:         gitPath,
+		}); err != nil {
+			return err
 		}
 	}
 	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")
@@ -109,6 +116,30 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 		args = append(args, "--dry-run")
 	}
 	return command.RunWithEnv(ctx, env, cargoPath, args...)
+}
+
+// runSemverChecks iterates through manifests and runs semver checks for each.
+func runSemverChecks(ctx context.Context, semverData semverData) error {
+	for name, manifest := range semverData.manifests {
+		if err := semverCheck(ctx, semverData, name, manifest); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// semverCheck runs semver checks for a specific crate.
+func semverCheck(ctx context.Context, semverData semverData, name string, manifest string) error {
+	if git.IsNewFile(ctx, semverData.gitPath, semverData.lastTag, manifest) {
+		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
+		return nil
+	}
+	err := command.Run(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
+	if err != nil && semverData.dryRunKeepGoing {
+		slog.Warn("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
+		return nil
+	}
+	return err
 }
 
 func isMockCargo(path string) bool {
