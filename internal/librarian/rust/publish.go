@@ -128,7 +128,7 @@ func runSemverChecks(ctx context.Context, semverData semverData) error {
 	return nil
 }
 
-// runSemverChecks iterates through manifests and runs semver checks for each.
+// semverCheck runs semver checks for a specific crate.
 func semverCheck(ctx context.Context, semverData semverData, name string, manifest string) error {
 	if git.IsNewFile(ctx, semverData.gitPath, semverData.lastTag, manifest) {
 		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
