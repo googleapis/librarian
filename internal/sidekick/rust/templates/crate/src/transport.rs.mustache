@@ -95,12 +95,22 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             true,
         );
         {{/HasAutoPopulatedFields}}
+        {{#Codec.HasResourceNameGeneration}}
+        {{#Codec.DetailedTracingAttributes}}
+        let (builder, method, _path_template, _resource_name) = None
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
+        let (builder, method, _resource_name) = None
+        {{/Codec.DetailedTracingAttributes}}
+        {{/Codec.HasResourceNameGeneration}}
+        {{^Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
         let (builder, method, _path_template) = None
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         let (builder, method) = None
         {{/Codec.DetailedTracingAttributes}}
+        {{/Codec.HasResourceNameGeneration}}
         {{#PathInfo.Bindings}}
         .or_else(|| {
             {{#Codec.HasVariablePath}}
@@ -121,6 +131,15 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             let path_template = "{{Codec.PathTemplate}}";
             {{/Codec.DetailedTracingAttributes}}
 
+            {{#Codec.HasResourceNameGeneration}}
+            let _resource_name = format!(
+                "{{{Codec.ResourceNameTemplate}}}",
+                {{#Codec.ResourceNameArgs}}
+                {{{.}}},
+                {{/Codec.ResourceNameArgs}}
+            );
+            {{/Codec.HasResourceNameGeneration}}
+
             let builder = self.inner.builder(Method::{{Verb}}, path);
             {{#Codec.QueryParamsCanFail}}
             let builder = (|| {
@@ -136,12 +155,22 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.QueryParams}}
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
+            {{#Codec.HasResourceNameGeneration}}
+            {{#Codec.DetailedTracingAttributes}}
+            Some(builder.map(|b| (b, Method::{{Verb}}, path_template, _resource_name)))
+            {{/Codec.DetailedTracingAttributes}}
+            {{^Codec.DetailedTracingAttributes}}
+            Some(builder.map(|b| (b, Method::{{Verb}}, _resource_name)))
+            {{/Codec.DetailedTracingAttributes}}
+            {{/Codec.HasResourceNameGeneration}}
+            {{^Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}}, path_template)))
             {{/Codec.DetailedTracingAttributes}}
             {{^Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}})))
             {{/Codec.DetailedTracingAttributes}}
+            {{/Codec.HasResourceNameGeneration}}
         })
         {{/PathInfo.Bindings}}
         .ok_or_else(|| {
@@ -178,6 +207,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             options.insert_extension(PathTemplate(_path_template))
         };
         {{/Codec.DetailedTracingAttributes}}
+        {{#Codec.HasResourceNameGeneration}}
+        let options = {
+            use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
+            options.insert_extension(ResourceName(_resource_name))
+        };
+        {{/Codec.HasResourceNameGeneration}}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#4156) - return idempotency from the above closure }}

@@ -328,9 +328,9 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			want: &methodAnnotation{
 				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/zones/{}/types/{}",
 				ResourceNameArgs: []string{
-					"Some(&req).map(|m| &m.project).map(|s| s.as_str()).unwrap_or(\"\")",
-					"Some(&req).map(|m| &m.zone).map(|s| s.as_str()).unwrap_or(\"\")",
-					"Some(&req).map(|m| &m.r#type).map(|s| s.as_str()).unwrap_or(\"\")",
+					"var_project",
+					"var_zone",
+					"var_type",
 				},
 				HasResourceNameGeneration: true,
 			},

@@ -416,6 +416,11 @@ type pathBindingAnnotation struct {
 
 	// The codec is configured to generated detailed tracing attributes.
 	DetailedTracingAttributes bool
+
+	// Resource name generation fields, propagated from method scope.
+	HasResourceNameGeneration bool
+	ResourceNameTemplate      string
+	ResourceNameArgs          []string
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -1614,15 +1619,25 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 				}
 				annotation.ResourceNameTemplate = tmpl
 				for _, path := range b.TargetResource.FieldPaths {
-					accSegments, err := makeAccessors(path, m)
-					if err != nil {
-						return err
+					var rustNames []string
+					for _, p := range path {
+						rustNames = append(rustNames, toSnakeNoMangling(p))
 					}
-					fullAcc := "Some(&req)" + strings.Join(accSegments, "") + ".unwrap_or(\"\")"
-					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, fullAcc)
+					varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, varName)
 				}
 				annotation.HasResourceNameGeneration = true
 				break
+			}
+		}
+
+		if annotation.HasResourceNameGeneration {
+			for _, b := range m.PathInfo.Bindings {
+				if bAnn, ok := b.Codec.(*pathBindingAnnotation); ok {
+					bAnn.HasResourceNameGeneration = true
+					bAnn.ResourceNameTemplate = annotation.ResourceNameTemplate
+					bAnn.ResourceNameArgs = annotation.ResourceNameArgs
+				}
 			}
 		}
 	}
