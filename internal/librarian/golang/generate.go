@@ -162,7 +162,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		"--go-grpc_out=" + outdir,
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
-	if !goAPI.DisableGAPIC {
+	if !goAPI.ProtoOnly {
 		gapicOpts, err := buildGAPICOpts(api.Path, library, goAPI, googleapisDir)
 		if err != nil {
 			return err

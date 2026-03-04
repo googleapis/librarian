@@ -389,7 +389,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							{
 								Path:          "google/maps/fleetengine/v1",
 								ClientPackage: "fleetengine",
-								DisableGAPIC:  true,
+								ProtoOnly:     true,
 								NestedProtos:  []string{"grafeas/grafeas.proto"},
 								ProtoPackage:  "google.cloud.translation.v3",
 							},
@@ -744,8 +744,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								DisableGAPIC: true,
-								Path:         "google/cloud/no-gapic",
+								ProtoOnly: true,
+								Path:      "google/cloud/no-gapic",
 							},
 						},
 					},

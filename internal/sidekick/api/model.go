@@ -1086,7 +1086,12 @@ type TargetResource struct {
 	// For example, [["project"], ["zone"], ["instance"]] identifies a multi-part resource.
 	FieldPaths [][]string
 
-	// Template is the canonical HTTP path template for the resource.
-	// Example: "//compute.googleapis.com/projects/{project}/locations/{location}"
-	Template string
+	// Template is the canonical HTTP path template for the resource, derived from the PathBinding's PathTemplate by removing the API version prefix.
+	// For example, if the PathTemplate is "//compute.googleapis.com/projects/{project}/zones/{zone}", the Template will be a []PathSegment containing:
+	// - a Literal segment for "//compute.googleapis.com"
+	// - a Literal segment for "projects"
+	// - a Variable segment with FieldPath ["project"]
+	// - a Literal segment for "zones"
+	// - a Variable segment with FieldPath ["zone"]
+	Template []PathSegment
 }

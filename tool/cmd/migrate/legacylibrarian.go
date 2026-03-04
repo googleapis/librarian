@@ -259,7 +259,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
 					ClientPackage:            api.ClientDirectory,
-					DisableGAPIC:             api.DisableGAPIC,
+					ProtoOnly:                api.DisableGAPIC,
 					EnabledGeneratorFeatures: enabledGenFeats,
 					ImportPath:               api.ImportPath,
 					NestedProtos:             api.NestedProtos,
@@ -294,7 +294,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
 			goAPI.ClientPackage = info.ClientPackageName
-			goAPI.DisableGAPIC = info.DisableGAPIC
+			goAPI.ProtoOnly = info.DisableGAPIC
 			goAPI.HasDiregapic = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata

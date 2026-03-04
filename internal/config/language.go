@@ -32,10 +32,9 @@ type GoModule struct {
 type GoAPI struct {
 	// ClientPackage is the package name of the generated client.
 	ClientPackage string `yaml:"client_package,omitempty"`
-	// DisableGAPIC determines whether to generate the GAPIC client.
-	// Also known as proto-only client, which does not define a service in the proto files.
-	// TODO(https://github.com/googleapis/librarian/issues/4312): rename this config.
-	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
