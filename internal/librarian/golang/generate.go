@@ -352,7 +352,9 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			continue
 		}
 		baseDir := snippetDirectory(output, goAPI.ImportPath)
-		return updateSnippetDirectory(baseDir, library.Version)
+		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
+			return err
+		}
 	}
 	return nil
 }
