@@ -154,7 +154,8 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	return repoMetadata, nil
 }
 
-// BuildClientDocumentationURI builds the
+// BuildClientDocumentationURI builds the URI for the client documentation
+// for the library.
 // TODO(https://github.com/googleapis/librarian/issues/4175): make this function
 // package-private (or inline it) after migration, when we won't need to
 // determine whether or not to specify an override.
