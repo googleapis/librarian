@@ -289,7 +289,7 @@ func TestGenerate(t *testing.T) {
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
-						DisableGAPIC:  true,
+						ProtoOnly:     true,
 						ImportPath:    "secretmanager/apiv1",
 						Path:          "google/cloud/secretmanager/v1",
 					},
