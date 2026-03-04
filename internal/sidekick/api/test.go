@@ -278,7 +278,10 @@ func ParseTemplateForTest(template string) []PathSegment {
 	var segments []PathSegment
 	parts := strings.Split(strings.TrimPrefix(template, "//"), "/")
 
-	host := "//" + parts[0]
+	host := parts[0]
+	if strings.HasPrefix(template, "//") {
+		host = "//" + parts[0]
+	}
 	segments = append(segments, PathSegment{Literal: &host})
 
 	for _, part := range parts[1:] {
