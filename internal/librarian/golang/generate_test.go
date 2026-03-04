@@ -663,10 +663,36 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0755); err != nil {
+				// Do not have the read permission.
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0333); err != nil {
 					t.Fatal(err)
 				}
-				if err := os.Chmod(snippetFile, 0333); err != nil {
+			},
+			wantErr: syscall.EACCES,
+		},
+		{
+			name: "no permission to update snippet directory",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				// Do not have the write permission.
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0555); err != nil {
 					t.Fatal(err)
 				}
 			},
