@@ -625,6 +625,23 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			},
 			wantErr: errGoAPINotFound,
 		},
+		{
+			name: "snippet directory does not exist",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			wantErr: os.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
