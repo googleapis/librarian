@@ -70,7 +70,7 @@ func TestGenerateVeneer(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -175,7 +175,7 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -323,7 +323,8 @@ func TestGenerateLibraries(t *testing.T) {
 		library.Output = filepath.Join("generated", library.Name)
 	}
 
-	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
+	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
+	if err := GenerateLibraries(t.Context(), cfg, libraries, sources); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a Cargo.toml has been created for each library.
@@ -381,7 +382,8 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	}
 	t.Chdir(workspaceDir)
 
-	gotErr := GenerateLibraries(t.Context(), libraries, sources)
+	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
+	gotErr := GenerateLibraries(t.Context(), cfg, libraries, sources)
 	wantErrMessage := "unknown specification format \"invalid\""
 	if gotErr == nil {
 		t.Fatalf("expected error with message %s", wantErrMessage)
@@ -472,7 +474,7 @@ func TestGenerate(t *testing.T) {
 			sources := &sidekickconfig.Sources{
 				Googleapis: googleapisDir,
 			}
-			if err := generate(t.Context(), library, sources); err != nil {
+			if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 				t.Fatal(err)
 			}
 
@@ -483,6 +485,8 @@ func TestGenerate(t *testing.T) {
 				{filepath.Join(outDir, "Cargo.toml"), "name"},
 				{filepath.Join(outDir, "Cargo.toml"), libName},
 				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
+				{filepath.Join(outDir, ".repo-metadata.json"), "\"language\": \"rust\""},
+				{filepath.Join(outDir, ".repo-metadata.json"), "\"repo\": \"google-cloud-rust\""},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
 			} {
