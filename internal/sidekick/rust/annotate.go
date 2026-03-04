@@ -19,6 +19,7 @@ import (
 	"cmp"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -1618,33 +1619,16 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	return nil
 }
 
+var templateVarRegex = regexp.MustCompile(`\{[^{}]*\}`)
+
 // formatResourceNameTemplateFromPath constructs the Rust format string directly from the
-// parsed PathTemplate.
+// resolved TargetResource.Template.
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	// Determine the service host (mirroring logic in api/resource_identification.go)
-	host := m.Model.Name + ".googleapis.com"
-	if m.Service != nil && m.Service.DefaultHost != "" {
-		host = m.Service.DefaultHost
+	if b.TargetResource == nil || b.TargetResource.Template == "" {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
-	var sb strings.Builder
-	sb.WriteString("//")
-	sb.WriteString(host)
-
-	// We assume simple path templates where variables correspond to arguments.
-	if b.PathTemplate == nil {
-		return "", fmt.Errorf("missing path template for method %s", m.ID)
-	}
-
-	for _, seg := range b.PathTemplate.Segments {
-		sb.WriteByte('/')
-		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
-		} else if seg.Variable != nil {
-			sb.WriteString("{}")
-		}
-	}
-	return sb.String(), nil
+	return templateVarRegex.ReplaceAllString(b.TargetResource.Template, "{}"), nil
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
