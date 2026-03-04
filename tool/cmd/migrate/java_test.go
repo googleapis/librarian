@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -24,6 +25,13 @@ import (
 )
 
 func TestRunJavaMigration(t *testing.T) {
+	fetchSource = func(ctx context.Context) (*config.Source, error) {
+		return &config.Source{
+			Commit: "abcd123",
+			SHA256: "sha123",
+			Dir:    "../../internal/testdata/googleapis",
+		}, nil
+	}
 	for _, test := range []struct {
 		name     string
 		repoPath string
