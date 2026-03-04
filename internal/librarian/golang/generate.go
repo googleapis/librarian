@@ -341,7 +341,6 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
-// Skip nested module if exists.
 func updateSnippetMetadata(library *config.Library, output string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
