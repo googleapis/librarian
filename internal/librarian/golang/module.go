@@ -80,6 +80,7 @@ func modulePath(library *config.Library) string {
 	return path
 }
 
+// initModule initializes and tidies a Go module in the given directory.
 func initModule(ctx context.Context, dir, modPath string) error {
 	initArgs := []string{"go", "mod", "init", modPath}
 	if err := command.RunInDir(ctx, dir, initArgs[0], initArgs[1:]...); err != nil {
