@@ -26,16 +26,16 @@ func TestGenerate(t *testing.T) {
 	protoModulePath := filepath.Join(tmpDir, "proto-google-cloud-test-v1")
 	srcDir := filepath.Join(protoModulePath, "src", "main", "java", "com", "google", "cloud", "test", "v1")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatalf("failed to create src dir: %v", err)
+		t.Fatal(err)
 	}
 
 	orBuilderFile := filepath.Join(srcDir, "TestOrBuilder.java")
 	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.test.v1; public interface TestOrBuilder {}"), 0644); err != nil {
-		t.Fatalf("failed to write OrBuilder file: %v", err)
+		t.Fatal(err)
 	}
 
 	if err := Generate(protoModulePath); err != nil {
-		t.Fatalf("Generate failed: %v", err)
+		t.Fatal(err)
 	}
 
 	outputPath := filepath.Join(protoModulePath, "clirr-ignored-differences.xml")
@@ -44,7 +44,7 @@ func TestGenerate(t *testing.T) {
 	}
 	content, err := os.ReadFile(outputPath)
 	if err != nil {
-		t.Fatalf("failed to read generated file: %v", err)
+		t.Fatal(err)
 	}
 	expected := "com/google/cloud/test/v1"
 	if !strings.Contains(string(content), expected) {
@@ -53,14 +53,14 @@ func TestGenerate(t *testing.T) {
 	// Test generation skips if file already exists
 	initialContent := "manual content"
 	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
-		t.Fatalf("failed to write manual file: %v", err)
+		t.Fatal(err)
 	}
 	if err := Generate(protoModulePath); err != nil {
-		t.Fatalf("Generate failed on existing file: %v", err)
+		t.Fatal(err)
 	}
 	newContent, err := os.ReadFile(outputPath)
 	if err != nil {
-		t.Fatalf("failed to read file after second Generate: %v", err)
+		t.Fatal(err)
 	}
 	if string(newContent) != initialContent {
 		t.Errorf("expected Generate to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
