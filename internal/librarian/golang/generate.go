@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -391,12 +390,12 @@ func updateSnippetDirectory(baseDir, version string) error {
 }
 
 func initModule(ctx context.Context, dir, modPath string) error {
-	init := []string{"go", "mod", "init", modPath}
-	if err := execCmd(ctx, init, dir); err != nil {
+	initArgs := []string{"go", "mod", "init", modPath}
+	if err := command.RunInDir(ctx, dir, initArgs[0], initArgs[1:]...); err != nil {
 		return err
 	}
-	tidy := []string{"go", "mod", "tidy"}
-	return execCmd(ctx, tidy, dir)
+	tidyArgs := []string{"go", "mod", "tidy"}
+	return command.RunInDir(ctx, dir, tidyArgs[0], tidyArgs[1:]...)
 }
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
@@ -430,10 +429,4 @@ func transport(sc *serviceconfig.API) string {
 		return sc.Transport("go")
 	}
 	return string(serviceconfig.GRPCRest)
-}
-
-func execCmd(ctx context.Context, args []string, workingDir string) error {
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Dir = workingDir
-	return cmd.Run()
 }
