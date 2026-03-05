@@ -263,7 +263,7 @@ func TestPostProcess(t *testing.T) {
 	}
 
 	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcess(t.Context(), outdir, libraryName, version, true, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
+	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, true); err != nil {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
@@ -329,7 +329,7 @@ func TestRestructureOutput(t *testing.T) {
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
-	if err := restructureOutput(tmpDir, libraryID, version, true, googleapisDir, []string{protoPath}); err != nil {
+	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, []string{protoPath}, true); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 
@@ -370,7 +370,7 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := restructureOutput(tmpDir, libraryID, version, false, googleapisDir, nil); err != nil {
+	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, nil, false); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 	// Verify sample file location DOES NOT exist

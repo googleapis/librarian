@@ -102,7 +102,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/4344):
 	// Fill javaAPI before generate to avoid nil assertion
-	if err := postProcess(ctx, outdir, library.Name, version, javaAPI == nil || !javaAPI.NoSamples, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
+	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, javaAPI == nil || !javaAPI.NoSamples); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
@@ -133,7 +133,7 @@ func constructProtocCommandArgs(api *config.API, googleapisDir string, protocOpt
 	return args, protos, nil
 }
 
-func postProcess(ctx context.Context, outdir, libraryName, version string, includeSamples bool, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string) error {
+func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string, includeSamples bool) error {
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
@@ -146,7 +146,7 @@ func postProcess(ctx context.Context, outdir, libraryName, version string, inclu
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-	if err := restructureOutput(outdir, libraryName, version, includeSamples, googleapisDir, protos); err != nil {
+	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos, includeSamples); err != nil {
 		return fmt.Errorf("failed to restructure output: %w", err)
 	}
 
@@ -288,7 +288,7 @@ func removeConflictingFiles(protoSrcDir string) error {
 
 // restructureOutput moves the generated code from the temporary versioned directory
 // tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
-func restructureOutput(outputDir, libraryID, version string, includeSamples bool, googleapisDir string, protos []string) error {
+func restructureOutput(outputDir, libraryID, version, googleapisDir string, protos []string, includeSamples bool) error {
 	modules := deriveModuleNames(libraryID, version)
 	// Temporary source directories (from protoc/generator output)
 	tempGapicSrcDir := filepath.Join(outputDir, version, "gapic", "src", "main")
