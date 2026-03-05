@@ -235,16 +235,48 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		if got.QuickstartService != nil {
+			t.Errorf("expected QuickstartService to be nil because it was filtered out and there is no override, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("with override", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+		model.QuickstartService = model.Services[0] // Set default to 0
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		// Set override to Service1
+		codec.quickstartServiceOverride = "Service1"
+
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		if got.QuickstartService == nil {
 			t.Fatal("QuickstartService should not be nil")
 		}
-		// It should have fallen back to the first non-filtered service (Service0).
-		if got.QuickstartService != model.Services[0] {
-			t.Errorf("expected QuickstartService to fall back to Service0, got %v", got.QuickstartService.Name)
+		if got.QuickstartService != model.Services[1] {
+			t.Errorf("expected QuickstartService to be overridden to Service1, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("with missing override", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		codec.quickstartServiceOverride = "NonExistentService"
+
+		_, err := annotateModel(model, codec)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		expectedErr := `quickstart_service_override "NonExistentService" not found in generated services for package "google-cloud-Test"`
+		if err.Error() != expectedErr {
+			t.Errorf("expected error %q, got %q", expectedErr, err.Error())
 		}
 	})
 }
-
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",

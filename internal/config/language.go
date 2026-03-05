@@ -221,6 +221,9 @@ type RustCrate struct {
 
 	// Discovery contains discovery-specific configuration for LRO polling.
 	Discovery *RustDiscovery `yaml:"discovery,omitempty"`
+
+	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
+	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.
@@ -425,4 +428,80 @@ type DartPackage struct {
 
 	// Version is the version of the dart package.
 	Version string `yaml:"version,omitempty"`
+}
+
+// JavaModule contains Java-specific library configuration.
+// TODO(https://github.com/googleapis/librarian/issues/4130):
+// add fill defaults for fields with default.
+type JavaModule struct {
+	// APIIDOverride is the ID of the API (e.g., "pubsub.googleapis.com"),
+	// allows the "api_id" field in .repo-metadata.json to be overridden.
+	// Defaults to "{library.api_shortname}.googleapis.com".
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
+
+	// APIReference is the URL for the API reference documentation.
+	APIReference string `yaml:"api_reference,omitempty"`
+
+	// APIDescriptionOverride allows the "api_description" field in
+	// .repo-metadata.json to be overridden.
+	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
+
+	// ClientDocumentationOverride allows the "client_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
+	// Defaults to false.
+	NonCloudAPI bool `yaml:"non_cloud_api,omitempty"`
+
+	// CodeownerTeam is the GitHub team that owns the code.
+	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
+
+	// DistributionNameOverride allows the "distribution_name" field in
+	// .repo-metadata.json to be overridden.
+	DistributionNameOverride string `yaml:"distribution_name_override,omitempty"`
+
+	// ExcludedDependencies is a list of dependencies to exclude.
+	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
+
+	// ExcludedPoms is a list of POM files to exclude.
+	ExcludedPoms string `yaml:"excluded_poms,omitempty"`
+
+	// ExtraVersionedModules is a list of extra versioned modules.
+	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
+
+	// GroupID is the Maven group ID, defaults to "com.google.cloud".
+	GroupID string `yaml:"group_id,omitempty"`
+
+	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
+	// to be overridden.
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
+
+	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
+	// to be overridden.
+	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
+
+	// MinJavaVersion is the minimum Java version required.
+	MinJavaVersion int `yaml:"min_java_version,omitempty"`
+
+	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
+	// to be overridden.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
+
+	// ProductDocumentationOverride allows the "product_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
+
+	// RecommendedPackage is the recommended package name.
+	RecommendedPackage string `yaml:"recommended_package,omitempty"`
+
+	// BillingNotRequired indicates whether the API does NOT require billing.
+	// This is typically false.
+	BillingNotRequired bool `yaml:"billing_not_required,omitempty"`
+
+	// RestDocumentation is the URL for the REST documentation.
+	RestDocumentation string `yaml:"rest_documentation,omitempty"`
+
+	// RpcDocumentation is the URL for the RPC documentation.
+	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
 }

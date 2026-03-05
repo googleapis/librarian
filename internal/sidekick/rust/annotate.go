@@ -689,13 +689,19 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	}()
 
 	var quickstartService *api.Service
-	if model.QuickstartService != nil {
+	if codec.quickstartServiceOverride != "" {
+		idx := slices.IndexFunc(servicesSubset, func(s *api.Service) bool {
+			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name, codec.quickstartServiceOverride)
+		})
+		if idx != -1 {
+			quickstartService = servicesSubset[idx]
+		} else {
+			return nil, fmt.Errorf("quickstart_service_override %q not found in generated services for package %q", codec.quickstartServiceOverride, codec.packageName(model))
+		}
+	} else if model.QuickstartService != nil {
 		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService }) {
 			quickstartService = model.QuickstartService
 		}
-	}
-	if quickstartService == nil && len(servicesSubset) > 0 {
-		quickstartService = servicesSubset[0]
 	}
 
 	ann := &modelAnnotations{

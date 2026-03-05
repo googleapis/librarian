@@ -36,9 +36,31 @@ type GAPICConfig struct {
 
 // LibraryConfig represents a library entry in generation_config.yaml.
 type LibraryConfig struct {
-	LibraryName  string        `yaml:"library_name"`
-	APIShortName string        `yaml:"api_shortname"`
-	GAPICs       []GAPICConfig `yaml:"GAPICs"`
+	APIDescription        string        `yaml:"api_description"`
+	APIID                 string        `yaml:"api_id"`
+	APIShortName          string        `yaml:"api_shortname"`
+	APIReference          string        `yaml:"api_reference"`
+	ClientDocumentation   string        `yaml:"client_documentation"`
+	CloudAPI              *bool         `yaml:"cloud_api"`
+	CodeownerTeam         string        `yaml:"codeowner_team"`
+	DistributionName      string        `yaml:"distribution_name"`
+	ExcludedDependencies  string        `yaml:"excluded_dependencies"`
+	ExcludedPoms          string        `yaml:"excluded_poms"`
+	ExtraVersionedModules string        `yaml:"extra_versioned_modules"`
+	GAPICs                []GAPICConfig `yaml:"GAPICs"`
+	GroupID               string        `yaml:"group_id"`
+	IssueTracker          string        `yaml:"issue_tracker"`
+	LibraryName           string        `yaml:"library_name"`
+	LibraryType           string        `yaml:"library_type"`
+	MinJavaVersion        int           `yaml:"min_java_version"`
+	NamePretty            string        `yaml:"name_pretty"`
+	ProductDocumentation  string        `yaml:"product_documentation"`
+	RecommendedPackage    string        `yaml:"recommended_package"`
+	ReleaseLevel          string        `yaml:"release_level"`
+	RequiresBilling       *bool         `yaml:"requires_billing"`
+	RestDocumentation     string        `yaml:"rest_documentation"`
+	RpcDocumentation      string        `yaml:"rpc_documentation"`
+	Transport             string        `yaml:"transport"`
 }
 
 // GenerationConfig represents the root of generation_config.yaml.
@@ -81,9 +103,33 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 			}
 		}
 		libs = append(libs, &config.Library{
-			Name:   name,
-			Output: "java-" + name,
-			APIs:   apis,
+			Name:         name,
+			Output:       "java-" + name,
+			APIs:         apis,
+			ReleaseLevel: l.ReleaseLevel,
+			Transport:    l.Transport,
+			Java: &config.JavaModule{
+				APIIDOverride:                l.APIID,
+				APIReference:                 l.APIReference,
+				APIDescriptionOverride:       l.APIDescription,
+				ClientDocumentationOverride:  l.ClientDocumentation,
+				NonCloudAPI:                  invertBoolPtr(l.CloudAPI),
+				CodeownerTeam:                l.CodeownerTeam,
+				DistributionNameOverride:     l.DistributionName,
+				ExcludedDependencies:         l.ExcludedDependencies,
+				ExcludedPoms:                 l.ExcludedPoms,
+				ExtraVersionedModules:        l.ExtraVersionedModules,
+				GroupID:                      l.GroupID,
+				IssueTrackerOverride:         l.IssueTracker,
+				LibraryTypeOverride:          l.LibraryType,
+				MinJavaVersion:               l.MinJavaVersion,
+				NamePrettyOverride:           l.NamePretty,
+				ProductDocumentationOverride: l.ProductDocumentation,
+				RecommendedPackage:           l.RecommendedPackage,
+				BillingNotRequired:           invertBoolPtr(l.RequiresBilling),
+				RestDocumentation:            l.RestDocumentation,
+				RpcDocumentation:             l.RpcDocumentation,
+			},
 		})
 	}
 	if len(libs) == 0 {
@@ -98,4 +144,8 @@ func buildConfig(gen *GenerationConfig) *config.Config {
 		},
 		Libraries: libs,
 	}
+}
+
+func invertBoolPtr(p *bool) bool {
+	return p != nil && !*p
 }

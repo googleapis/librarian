@@ -211,6 +211,9 @@ type Library struct {
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
 
+	// Java contains Java-specific library configuration.
+	Java *JavaModule `yaml:"java,omitempty"`
+
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 

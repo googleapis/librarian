@@ -155,6 +155,9 @@ func buildCodec(library *config.Library) map[string]string {
 	if rust.NameOverrides != "" {
 		codec["name-overrides"] = rust.NameOverrides
 	}
+	if rust.QuickstartServiceOverride != "" {
+		codec["quickstart-service-override"] = rust.QuickstartServiceOverride
+	}
 	return codec
 }
 
