@@ -88,17 +88,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-
-	var javaAPI *config.JavaAPI
-	if library.Java != nil {
-		for _, ja := range library.Java.JavaAPIs {
-			if ja.Path == api.Path {
-				javaAPI = ja
-				break
-			}
-		}
-	}
-
+	javaAPI := findJavaAPI(library, api)
 	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, protoDir, grpcDir, gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
@@ -402,4 +392,16 @@ func collectJavaFiles(root string) ([]string, error) {
 		return nil
 	})
 	return files, err
+}
+
+func findJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+	if library.Java == nil {
+		return nil
+	}
+	for _, ja := range library.Java.JavaAPIs {
+		if ja.Path == api.Path {
+			return ja
+		}
+	}
+	return nil
 }
