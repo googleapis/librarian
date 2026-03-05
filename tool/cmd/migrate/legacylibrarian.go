@@ -71,12 +71,12 @@ type MigrationInput struct {
 	librarianState  *legacyconfig.LibrarianState
 	librarianConfig *legacyconfig.LibrarianConfig
 	repoConfig      *RepoConfig
-	lang            config.Language
+	lang            string
 	repoPath        string
 	googleapisDir   string
 }
 
-func runLibrarianMigration(ctx context.Context, language config.Language, repoPath string) error {
+func runLibrarianMigration(ctx context.Context, language string, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err

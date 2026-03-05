@@ -19,7 +19,6 @@ package docuploader
 import (
 	"time"
 
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
@@ -46,7 +45,7 @@ type DocUploaderMetadata struct {
 	IssueTracker string `json:"issueTracker,omitempty"`
 
 	// Language is the (programming) language.
-	Language config.Language `json:"language,omitempty"`
+	Language string `json:"language,omitempty"`
 
 	// Name is the product/API name. This *should* match the DNS name of the API
 	// service. For example, Python's Cloud Storage client would list "storage"

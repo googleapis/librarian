@@ -48,7 +48,7 @@ var (
 	// options. Over time, languages should align on versioning semantics and
 	// this should be removed. If a language does not have specific needs, a
 	// default [semver.DeriveNextOptions] is returned for default semantics.
-	languageVersioningOptions = map[config.Language]semver.DeriveNextOptions{
+	languageVersioningOptions = map[string]semver.DeriveNextOptions{
 		config.LanguageRust: {
 			BumpVersionCore:       true,
 			DowngradePreGAChanges: true,

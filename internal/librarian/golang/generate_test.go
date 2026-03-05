@@ -847,7 +847,7 @@ func TestGetTransport(t *testing.T) {
 		{
 			name: "go specific transport",
 			sc: &serviceconfig.API{
-				Transports: map[config.Language]serviceconfig.Transport{
+				Transports: map[string]serviceconfig.Transport{
 					config.LanguageGo: serviceconfig.GRPC,
 				},
 			},
@@ -856,7 +856,7 @@ func TestGetTransport(t *testing.T) {
 		{
 			name: "other language transport",
 			sc: &serviceconfig.API{
-				Transports: map[config.Language]serviceconfig.Transport{
+				Transports: map[string]serviceconfig.Transport{
 					config.LanguagePython: serviceconfig.GRPC,
 				},
 			},

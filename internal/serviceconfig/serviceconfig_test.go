@@ -101,7 +101,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
-				Languages:        []config.Language{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
+				Languages:        []string{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
 				Title:            "Secret Manager API",
 			},
 		},
@@ -111,7 +111,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:             "google/cloud/orgpolicy/v1",
 				Title:            "Organization Policy Types",
-				Languages:        []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Languages:        []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
 				DocumentationURI: "https://cloud.google.com/resource-manager/docs/organization-policy/overview",
 			},
 		},
@@ -132,8 +132,8 @@ func TestFind(t *testing.T) {
 				ServiceName:   "aiplatform.googleapis.com",
 				ShortName:     "aiplatform",
 				Title:         "Vertex AI API",
-				Languages:     []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
-				Transports:    map[config.Language]Transport{config.LanguagePython: GRPC},
+				Languages:     []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Transports:    map[string]Transport{config.LanguagePython: GRPC},
 			},
 		},
 		{
@@ -145,7 +145,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Title:            "Secret Manager API",
-				Languages:        []config.Language{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
+				Languages:        []string{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				ServiceName:      "secretmanager.googleapis.com",
@@ -164,8 +164,8 @@ func TestFind(t *testing.T) {
 				ServiceName:      "compute.googleapis.com",
 				ShortName:        "compute",
 				Title:            "Google Compute Engine API",
-				Languages:        []config.Language{config.LanguageGo, config.LanguagePython, config.LanguageRust},
-				Transports:       map[config.Language]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
+				Languages:        []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Transports:       map[string]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
 			},
 		},
 	} {
@@ -335,7 +335,7 @@ func TestValidateAPI(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		path     string
-		language config.Language
+		language string
 		api      *API
 		wantErr  bool
 	}{
@@ -352,7 +352,7 @@ func TestValidateAPI(t *testing.T) {
 			language: config.LanguagePython,
 			api: &API{
 				Path:      "google/cloud/aiplatform/v1beta1",
-				Languages: []config.Language{config.LanguagePython},
+				Languages: []string{config.LanguagePython},
 			},
 			wantErr: false,
 		},
@@ -362,7 +362,7 @@ func TestValidateAPI(t *testing.T) {
 			language: config.LanguageGo,
 			api: &API{
 				Path:      "google/cloud/aiplatform/v1beta1",
-				Languages: []config.Language{config.LanguagePython},
+				Languages: []string{config.LanguagePython},
 			},
 			wantErr: true,
 		},

@@ -18,36 +18,33 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Language is a programming language supported by Librarian.
-type Language = string
-
 const (
 	// LanguageUnknown represents an unsupported or unspecified language.
-	LanguageUnknown Language = "unknown"
+	LanguageUnknown = "unknown"
 	// LanguageAll is the identifier for all languages.
-	LanguageAll Language = "all"
+	LanguageAll = "all"
 	// LanguageCsharp is the language identifier for C#.
-	LanguageCsharp Language = "csharp"
+	LanguageCsharp = "csharp"
 	// LanguageDart is the language identifier for Dart.
-	LanguageDart Language = "dart"
+	LanguageDart = "dart"
 	// LanguageFake is the language identifier for Fakes.
-	LanguageFake Language = "fake"
+	LanguageFake = "fake"
 	// LanguageGo is the language identifier for Go.
-	LanguageGo Language = "go"
+	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
-	LanguageJava Language = "java"
+	LanguageJava = "java"
 	// LanguageNodejs is the language identifier for Node.js.
-	LanguageNodejs Language = "nodejs"
+	LanguageNodejs = "nodejs"
 	// LanguagePhp is the language identifier for PHP.
-	LanguagePhp Language = "php"
+	LanguagePhp = "php"
 	// LanguagePython is the language identifier for Python.
-	LanguagePython Language = "python"
+	LanguagePython = "python"
 	// LanguageRuby is the language identifier for Ruby.
-	LanguageRuby Language = "ruby"
+	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
-	LanguageRust Language = "rust"
+	LanguageRust = "rust"
 	// LanguageRustStorage is a variation of the Rust generator for storage.
-	LanguageRustStorage Language = "rust_storage"
+	LanguageRustStorage = "rust_storage"
 )
 
 // GoModule represents the Go-specific configuration for a library.
@@ -147,7 +144,7 @@ type RustModule struct {
 
 	// Language can be used to select a variation of the Rust generator.
 	// For example, `rust_storage` enables special handling for the storage client.
-	Language Language `yaml:"language,omitempty"`
+	Language string `yaml:"language,omitempty"`
 
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").

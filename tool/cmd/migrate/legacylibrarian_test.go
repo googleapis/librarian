@@ -92,7 +92,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name        string
-		lang        config.Language
+		lang        string
 		repoPath    string
 		state       *legacyconfig.LibrarianState
 		cfg         *legacyconfig.LibrarianConfig

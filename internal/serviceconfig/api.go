@@ -59,7 +59,7 @@ type API struct {
 	//   - Newer languages (Rust, Dart) skip older beta versions when stable versions exist
 	//   - Python has historical legacy APIs not available to other languages
 	//   - Some APIs (like DIREGAPIC protos) are only used by specific languages
-	Languages []config.Language `yaml:"languages,omitempty"`
+	Languages []string `yaml:"languages,omitempty"`
 
 	// NewIssueURI overrides the new issue URI from the service config's
 	// publishing section.
@@ -90,14 +90,14 @@ type API struct {
 	// Transports defines the supported transports per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
-	Transports map[config.Language]Transport `yaml:"transports,omitempty"`
+	Transports map[string]Transport `yaml:"transports,omitempty"`
 }
 
 // Transport gets transport for a given language.
 //
 // If language-specific transport is not defined, it falls back to the "all" language setting,
 // and then to GRPCRest.
-func (api *API) Transport(language config.Language) string {
+func (api *API) Transport(language string) string {
 	if trans, ok := api.Transports[language]; ok {
 		return string(trans)
 	}

@@ -235,7 +235,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	}
 
 	language := config.LanguageRust
-	if module.Language != config.LanguageUnknown {
+	if module.Language != "" {
 		language = module.Language
 	}
 	specificationFormat := config.SpecProtobuf

@@ -283,7 +283,7 @@ func TestAddLibrary(t *testing.T) {
 
 func TestDeriveLibraryName(t *testing.T) {
 	for _, test := range []struct {
-		language config.Language
+		language string
 		apiPath  string
 		want     string
 	}{

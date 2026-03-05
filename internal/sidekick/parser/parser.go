@@ -23,7 +23,7 @@ import (
 
 // ModelConfig holds the configuration necessary to parse an API specification.
 type ModelConfig struct {
-	Language config.Language
+	Language string
 
 	// Source configuration
 	// SpecificationFormat is the format of the API specification.

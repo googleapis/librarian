@@ -138,9 +138,9 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *sidekickconf
 		googleapisDir = dir
 	}
 
-	var rustDartSources *source.Sources
+	var rustDartSources *sidekickconfig.Sources
 	if cfg.Language == config.LanguageRust || cfg.Language == config.LanguageDart {
-		sources, err := source.FetchRustDartSources(ctx, cfg.Sources)
+		sources, err := FetchRustDartSources(ctx, cfg.Sources)
 		if err != nil {
 			return "", nil, err
 		}
@@ -152,7 +152,7 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *sidekickconf
 
 // cleanLibraries iterates over all the given libraries sequentially,
 // delegating to language-specific code to clean each library.
-func cleanLibraries(language config.Language, libraries []*config.Library) error {
+func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
 		case config.LanguageFake:
@@ -209,7 +209,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 
 // formatLibraries iterates over all the given libraries sequentially,
 // delegating to language-specific code to format each library.
-func formatLibraries(ctx context.Context, language config.Language, libraries []*config.Library) error {
+func formatLibraries(ctx context.Context, language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
 		case config.LanguageFake:
@@ -245,7 +245,7 @@ func formatLibraries(ctx context.Context, language config.Language, libraries []
 
 // postGenerate performs repository-level actions after all individual
 // libraries have been generated.
-func postGenerate(ctx context.Context, language config.Language) error {
+func postGenerate(ctx context.Context, language string) error {
 	switch language {
 	case config.LanguageRust:
 		return rust.UpdateWorkspace(ctx)
@@ -256,7 +256,7 @@ func postGenerate(ctx context.Context, language config.Language) error {
 	}
 }
 
-func defaultOutput(language config.Language, name, api, defaultOut string) string {
+func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
@@ -269,7 +269,7 @@ func defaultOutput(language config.Language, name, api, defaultOut string) strin
 	}
 }
 
-func deriveAPIPath(language config.Language, name string) string {
+func deriveAPIPath(language string, name string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DeriveAPIPath(name)

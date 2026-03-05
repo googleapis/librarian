@@ -159,7 +159,7 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 
 // isVeneer reports whether the library has handwritten code wrapping generated
 // code.
-func isVeneer(language config.Language, lib *config.Library) bool {
+func isVeneer(language string, lib *config.Library) bool {
 	if language == config.LanguageRust {
 		return rust.IsVeneer(lib)
 	}
@@ -169,7 +169,7 @@ func isVeneer(language config.Language, lib *config.Library) bool {
 // libraryOutput returns the output path for a library. If the library has an
 // explicit output path, it returns that. Otherwise, it computes the default
 // output path based on the api path and default configuration.
-func libraryOutput(language config.Language, lib *config.Library, defaults *config.Default) string {
+func libraryOutput(language string, lib *config.Library, defaults *config.Default) string {
 	if lib.Output != "" {
 		return lib.Output
 	}
@@ -189,7 +189,7 @@ func libraryOutput(language config.Language, lib *config.Library, defaults *conf
 }
 
 // applyDefaults applies language-specific derivations and fills defaults.
-func applyDefaults(language config.Language, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if !isVeneer(language, lib) {
 		if len(lib.APIs) == 0 {
 			lib.APIs = append(lib.APIs, &config.API{})
@@ -222,7 +222,7 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 }
 
 // fillLibraryDefaults populates language-specific default values for the library.
-func fillLibraryDefaults(language config.Language, lib *config.Library) (*config.Library, error) {
+func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
 	case config.LanguageGo:
 		return golang.Fill(lib), nil

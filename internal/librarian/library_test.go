@@ -462,7 +462,7 @@ func TestFillDefaults_Python(t *testing.T) {
 func TestPrepareLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name        string
-		language    config.Language
+		language    string
 		output      string
 		veneer      bool
 		apis        []*config.API

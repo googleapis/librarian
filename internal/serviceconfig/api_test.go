@@ -45,7 +45,7 @@ func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		sc   *API
-		lang config.Language
+		lang string
 		want string
 	}{
 		{
@@ -57,7 +57,7 @@ func TestGetTransport(t *testing.T) {
 		{
 			name: "go specific transport",
 			sc: &API{
-				Transports: map[config.Language]Transport{
+				Transports: map[string]Transport{
 					config.LanguageGo: GRPC,
 				},
 			},
@@ -67,7 +67,7 @@ func TestGetTransport(t *testing.T) {
 		{
 			name: "other language transport",
 			sc: &API{
-				Transports: map[config.Language]Transport{
+				Transports: map[string]Transport{
 					config.LanguageGo: GRPC,
 				},
 			},
@@ -77,7 +77,7 @@ func TestGetTransport(t *testing.T) {
 		{
 			name: "all language transport",
 			sc: &API{
-				Transports: map[config.Language]Transport{
+				Transports: map[string]Transport{
 					config.LanguageAll: GRPC,
 				},
 			},

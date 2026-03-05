@@ -87,7 +87,7 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language config.Language, api string) string {
+func deriveLibraryName(language string, api string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultLibraryName(api)

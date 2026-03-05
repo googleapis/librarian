@@ -347,7 +347,7 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 func TestDefaultOutput(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		language   config.Language
+		language   string
 		libName    string
 		api        string
 		defaultOut string
