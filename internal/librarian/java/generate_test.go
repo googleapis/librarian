@@ -263,7 +263,7 @@ func TestPostProcess(t *testing.T) {
 	}
 
 	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
+	if err := postProcess(t.Context(), outdir, libraryName, version, true, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
@@ -329,7 +329,7 @@ func TestRestructureOutput(t *testing.T) {
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
-	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, []string{protoPath}); err != nil {
+	if err := restructureOutput(tmpDir, libraryID, version, true, googleapisDir, []string{protoPath}); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 
@@ -347,6 +347,39 @@ func TestRestructureOutput(t *testing.T) {
 	wantProtoPath := filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
+	}
+}
+
+func TestRestructureOutput_NoSamples(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+
+	version := "v1"
+	libraryID := "secretmanager"
+	// Create a dummy structure to mimic generator output
+	dirs := []string{
+		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
+		filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+	}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Create a dummy sample file
+	sampleFile := filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
+	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := restructureOutput(tmpDir, libraryID, version, false, googleapisDir, nil); err != nil {
+		t.Fatalf("restructureOutput failed: %v", err)
+	}
+
+	// Verify sample file location DOES NOT exist
+	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
+	if _, err := os.Stat(wantSamplePath); !os.IsNotExist(err) {
+		t.Errorf("expected sample file at %s to be missing, but it exists", wantSamplePath)
 	}
 }
 
