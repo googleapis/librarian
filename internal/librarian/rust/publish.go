@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"maps"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -146,7 +147,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 // runSemverChecks iterates through manifests and runs semver checks for each.
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.SetLimit(maxSemverConcurrency)
+	group.SetLimit(max(runtime.NumCPU()/maxSemverConcurrency, 1))
 	for name, manifest := range semverData.manifests {
 		group.Go(func() error {
 			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
