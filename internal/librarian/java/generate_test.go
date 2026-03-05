@@ -370,7 +370,7 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := restructureOutput(tmpDir, libraryID, version, true, googleapisDir, nil); err != nil {
+	if err := restructureOutput(tmpDir, libraryID, version, false, googleapisDir, nil); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 	// Verify sample file location DOES NOT exist
