@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -131,7 +132,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); errors.Is(err, fs.ErrNotExist) {
 		// New client, init the module.
-		return initModule(ctx, absModuleRoot)
+		return initModule(ctx, absModuleRoot, modulePath(library))
 	}
 	return nil
 }
@@ -389,11 +390,15 @@ func updateSnippetDirectory(baseDir, version string) error {
 	})
 }
 
-func initModule(ctx context.Context, dir string) error {
-	if err := command.Run(ctx, "go", "mod", "init", dir); err != nil {
+func initModule(ctx context.Context, dir, modPath string) error {
+	cmd := exec.CommandContext(ctx, "go", "mod", "init", modPath)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
 		return err
 	}
-	return command.Run(ctx, "go", "mod", "tidy", dir)
+	cmd = exec.CommandContext(ctx, "go", "mod", "tidy")
+	cmd.Dir = dir
+	return cmd.Run()
 }
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
