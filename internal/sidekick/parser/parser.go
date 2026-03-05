@@ -19,6 +19,7 @@ import (
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // ModelConfig holds the configuration necessary to parse an API specification.
@@ -34,7 +35,7 @@ type ModelConfig struct {
 	// - `config.SpecNone`: "none"
 	SpecificationFormat string
 	SpecificationSource string
-	Source              map[string]string
+	Source              sidekickconfig.SourceConfig
 
 	// Service config
 	ServiceConfig string

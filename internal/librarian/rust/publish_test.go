@@ -15,8 +15,10 @@
 package rust
 
 import (
+	"errors"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -527,4 +529,91 @@ fi
 			}
 		})
 	}
+}
+
+func TestRunSemverChecks(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		manifests       map[string]string
+		dryRunKeepGoing bool
+	}{
+		{
+			name: "all crates pass",
+			manifests: map[string]string{
+				"crate-a": "a/Cargo.toml",
+				"crate-b": "b/Cargo.toml",
+			},
+		},
+		{
+			name: "dry-run-keep-going ignores failures",
+			manifests: map[string]string{
+				"fail-me": "fail/Cargo.toml",
+			},
+			dryRunKeepGoing: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			src := `package main
+import ("os"; "strings")
+func main() {
+	if strings.Contains(strings.Join(os.Args, " "), "fail-me") { os.Exit(1) }
+	os.Exit(0)
+}`
+			fakeCargoExe := buildFakeCargo(t, src)
+			sData := semverData{
+				manifests:       test.manifests,
+				cargoPath:       fakeCargoExe,
+				dryRunKeepGoing: test.dryRunKeepGoing,
+			}
+
+			if err := runSemverChecks(t.Context(), sData); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestRunSemverChecks_Errors(t *testing.T) {
+	manifests := map[string]string{
+		"fail-me": "fail/Cargo.toml",
+	}
+	wantErr := errSemverCheck
+
+	src := `package main; import "os"; func main() { os.Exit(1) }`
+	fakeCargoExe := buildFakeCargo(t, src)
+	sData := semverData{
+		manifests: manifests,
+		cargoPath: fakeCargoExe,
+	}
+	err := runSemverChecks(t.Context(), sData)
+	if err == nil {
+		t.Error("runSemverChecks() expected error, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("runSemverChecks() error = %v, want to contain %v", err, wantErr)
+	}
+}
+
+// buildFakeCargo compiles a small Go program to serve as a mock 'cargo' binary.
+// It returns the path to the resulting executable.
+func buildFakeCargo(t *testing.T, src string) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	mainGo := filepath.Join(tmpDir, "main.go")
+
+	exeName := "fake_cargo"
+	if runtime.GOOS == "windows" {
+		exeName += ".exe"
+	}
+	fakeCargoExe := filepath.Join(tmpDir, exeName)
+
+	if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
+		t.Errorf("failed to write fake cargo source: %v", err)
+	}
+
+	if err := command.Run(t.Context(), "go", "build", "-o", fakeCargoExe, mainGo); err != nil {
+		t.Errorf("failed to build fake cargo: %v", err)
+	}
+
+	return fakeCargoExe
 }
