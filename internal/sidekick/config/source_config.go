@@ -16,8 +16,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Sources contains the directory paths for source repositories used by
@@ -38,31 +40,41 @@ type SourceConfig struct {
 	ExcludeList []string
 }
 
-// NewSourceConfig creates a SourceConfig with the given sources and active roots.
-// If activeRoots is empty, it defaults to ["googleapis"].
-func NewSourceConfig(sources Sources, activeRoots []string) SourceConfig {
-	sc := SourceConfig{
-		Sources:     sources,
-		ActiveRoots: activeRoots,
+// NewSourceConfig creates a SourceConfig from a map of options.
+func NewSourceConfig(options map[string]string) SourceConfig {
+	var includeList, excludeList []string
+	if list, ok := options["include-list"]; ok && list != "" {
+		includeList = strings.Split(list, ",")
 	}
-	if len(sc.ActiveRoots) == 0 {
-		sc.ActiveRoots = []string{"googleapis"}
+	if list, ok := options["exclude-list"]; ok && list != "" {
+		excludeList = strings.Split(list, ",")
 	}
-	return sc
+	return SourceConfig{
+		Sources: Sources{
+			Googleapis:  options["googleapis-root"],
+			Discovery:   options["discovery-root"],
+			Conformance: options["conformance-root"],
+			ProtobufSrc: options["protobuf-src-root"],
+			Showcase:    options["showcase-root"],
+		},
+		ActiveRoots: SourceRoots(options),
+		IncludeList: includeList,
+		ExcludeList: excludeList,
+	}
 }
 
 // Root returns the directory path for the given root name.
 func (c SourceConfig) Root(name string) string {
 	switch name {
-	case "googleapis":
+	case "googleapis", "googleapis-root":
 		return c.Sources.Googleapis
-	case "discovery":
+	case "discovery", "discovery-root":
 		return c.Sources.Discovery
-	case "showcase":
+	case "showcase", "showcase-root":
 		return c.Sources.Showcase
-	case "protobuf-src":
+	case "protobuf-src", "protobuf-src-root":
 		return c.Sources.ProtobufSrc
-	case "conformance":
+	case "conformance", "conformance-root":
 		return c.Sources.Conformance
 	default:
 		// Unknown root name
@@ -72,7 +84,7 @@ func (c SourceConfig) Root(name string) string {
 
 // Resolve returns an absolute path for the given relative path if it is found
 // within the active source roots. Otherwise, it returns the original path.
-func (c SourceConfig) Resolve(relPath string) string {
+func (c SourceConfig) Resolve(relPath string) (string, error) {
 	for _, root := range c.ActiveRoots {
 		rootPath := c.Root(root)
 		// Ignore non-existent roots
@@ -81,25 +93,32 @@ func (c SourceConfig) Resolve(relPath string) string {
 		}
 		fullName := filepath.Join(rootPath, relPath)
 		if stat, err := os.Stat(fullName); err == nil && !stat.IsDir() {
-			return fullName
+			return fullName, nil
 		}
 	}
-	return relPath
+	return relPath, nil
 }
 
-// ResolveDir returns the absolute path for the given relative path within the
-// active source roots, ensuring the result is a directory.
-func (c SourceConfig) ResolveDir(relPath string) string {
-	for _, root := range c.ActiveRoots {
-		rootPath := c.Root(root)
-		// Ignore non-existent roots
-		if rootPath == "" {
-			continue
+// SourceRoots returns the roots from the options map.
+// Legacy helper for map-based configuration.
+func SourceRoots(options map[string]string) []string {
+	if opt, ok := options["roots"]; ok {
+		var roots []string
+		for _, name := range strings.Split(opt, ",") {
+			roots = append(roots, fmt.Sprintf("%s-root", name))
 		}
-		fullName := filepath.Join(rootPath, relPath)
-		if stat, err := os.Stat(fullName); err == nil && stat.IsDir() {
-			return fullName
+		return roots
+	}
+	return AllSourceRoots(options)
+}
+
+// AllSourceRoots returns all the source roots from the options.
+func AllSourceRoots(options map[string]string) []string {
+	var roots []string
+	for name := range options {
+		if strings.HasSuffix(name, "-root") {
+			roots = append(roots, name)
 		}
 	}
-	return relPath
+	return roots
 }

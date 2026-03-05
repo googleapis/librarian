@@ -32,7 +32,20 @@ func DetermineInputFiles(source string, cfg config.SourceConfig) ([]string, erro
 		return nil, fmt.Errorf("cannot use both `exclude-list` and `include-list` in the source options")
 	}
 
-	source = cfg.ResolveDir(source)
+	// Iterate over active roots to find the source directory.
+	for _, root := range cfg.ActiveRoots {
+		rootPath := cfg.Root(root)
+		// Ignore non-existent roots
+		if rootPath == "" {
+			continue
+		}
+		candidate := path.Join(rootPath, source)
+		stat, err := os.Stat(candidate)
+		if err == nil && stat.IsDir() {
+			source = candidate
+			break
+		}
+	}
 
 	files := map[string]bool{}
 	if err := findFiles(files, source); err != nil {

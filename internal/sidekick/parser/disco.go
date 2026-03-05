@@ -16,15 +16,29 @@ package parser
 
 import (
 	"os"
+	"path"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser/discovery"
 )
 
 // ParseDisco reads discovery docs specifications and converts them into
 // the `api.API` model.
 func ParseDisco(cfg *ModelConfig) (*api.API, error) {
-	source := cfg.Source.Resolve(cfg.SpecificationSource)
+	source := cfg.SpecificationSource
+	for _, opt := range config.SourceRoots(cfg.Source) {
+		location, ok := cfg.Source[opt]
+		if !ok {
+			// Ignore options that are not set
+			continue
+		}
+		fullName := path.Join(location, source)
+		if _, err := os.Stat(fullName); err == nil {
+			source = fullName
+			break
+		}
+	}
 	contents, err := os.ReadFile(source)
 	if err != nil {
 		return nil, err

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestRoot(t *testing.T) {
@@ -109,8 +110,10 @@ func TestResolve(t *testing.T) {
 			if test.name == "unknown root" {
 				cfg.ActiveRoots = []string{"unknown"}
 			}
-			got := cfg.Resolve(test.relPath)
-
+			got, err := cfg.Resolve(test.relPath)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("Resolve(%q) error = %v, wantErr %v", test.relPath, err, test.wantErr)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Resolve(%q) mismatch (-want +got):\n%s", test.relPath, diff)
 			}
@@ -118,20 +121,83 @@ func TestResolve(t *testing.T) {
 	}
 }
 
+func TestSourceRoots(t *testing.T) {
+	type TestCase struct {
+		input map[string]string
+		want  []string
+	}
+	testCases := []TestCase{
+		{map[string]string{}, nil},
+		{map[string]string{
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "other-root"}},
+		{map[string]string{
+			"roots":           "googleapis,more",
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"more-root":       "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "more-root"}},
+	}
+
+	for _, c := range testCases {
+		got := SourceRoots(c.input)
+		less := func(a, b string) bool { return a < b }
+		if diff := cmp.Diff(c.want, got, cmpopts.SortSlices(less)); diff != "" {
+			t.Errorf("AllSourceRoots mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
+func TestAllSourceRoots(t *testing.T) {
+	type TestCase struct {
+		input map[string]string
+		want  []string
+	}
+	testCases := []TestCase{
+		{map[string]string{}, nil},
+		{map[string]string{
+			"googleapis-root": "foo",
+			"other-root":      "bar",
+			"ignored":         "baz",
+		}, []string{"googleapis-root", "other-root"}},
+	}
+
+	for _, c := range testCases {
+		got := AllSourceRoots(c.input)
+		less := func(a, b string) bool { return a < b }
+		if diff := cmp.Diff(c.want, got, cmpopts.SortSlices(less)); diff != "" {
+			t.Errorf("AllSourceRoots mismatch (-want, +got):\n%s", diff)
+		}
+	}
+}
+
 func TestNewSourceConfig(t *testing.T) {
-	sources := Sources{
-		Googleapis:  "ga-path",
-		Discovery:   "disco-path",
-		Conformance: "conf-path",
-		ProtobufSrc: "pb-path",
-		Showcase:    "show-path",
+	options := map[string]string{
+		"googleapis-root":   "ga-path",
+		"discovery-root":    "disco-path",
+		"conformance-root":  "conf-path",
+		"protobuf-src-root": "pb-path",
+		"showcase-root":     "show-path",
+		"include-list":      "file1,file2",
+		"exclude-list":      "file3",
+		"roots":             "googleapis,discovery",
 	}
-	activeRoots := []string{"googleapis", "discovery"}
 	want := SourceConfig{
-		Sources:     sources,
-		ActiveRoots: activeRoots,
+		Sources: Sources{
+			Googleapis:  "ga-path",
+			Discovery:   "disco-path",
+			Conformance: "conf-path",
+			ProtobufSrc: "pb-path",
+			Showcase:    "show-path",
+		},
+		ActiveRoots: []string{"googleapis-root", "discovery-root"},
+		IncludeList: []string{"file1", "file2"},
+		ExcludeList: []string{"file3"},
 	}
-	got := NewSourceConfig(sources, activeRoots)
+	got := NewSourceConfig(options)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("NewSourceConfig() mismatch (-want +got):\n%s", diff)
 	}

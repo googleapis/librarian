@@ -22,7 +22,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (
@@ -95,11 +94,8 @@ func TestCreateModelProtobuf(t *testing.T) {
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(mainTestdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
 		},
 	}
 	model, err := CreateModel(cfg)
@@ -119,11 +115,8 @@ func TestCreateModelOverrides(t *testing.T) {
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(mainTestdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
 		},
 		Override: api.ModelOverride{
 			Name:        "Name Override",
@@ -157,11 +150,8 @@ func TestCreateModelNone(t *testing.T) {
 		SpecificationFormat: "none",
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "none",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(mainTestdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
 		},
 		Override: api.ModelOverride{
 			Name:        "Name Override",
@@ -183,11 +173,8 @@ func TestCreateModelUnknown(t *testing.T) {
 		SpecificationFormat: "--unknown--",
 		ServiceConfig:       secretManagerYamlRelative,
 		SpecificationSource: "none",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(mainTestdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
 		},
 		Override: api.ModelOverride{
 			Name:        "Name Override",
@@ -206,11 +193,8 @@ func TestCreateModelBadParse(t *testing.T) {
 		ServiceConfig:       secretManagerYamlRelative,
 		// Note the mismatch between the format and the file contents.
 		SpecificationSource: discoSourceFile,
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(mainTestdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(mainTestdataDir, "googleapis"),
 		},
 		Override: api.ModelOverride{
 			Name:        "Name Override",

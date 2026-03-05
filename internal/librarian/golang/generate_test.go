@@ -471,6 +471,15 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	library := &config.Library{
 		Name:    "accessapproval",
 		Version: "1.2.3",
+		APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ImportPath: "accessapproval/apiv1",
+					Path:       "google/cloud/accessapproval/v1",
+				},
+			},
+		},
 	}
 
 	tmpDir := t.TempDir()
@@ -513,24 +522,69 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 
 func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		library  *config.Library
-		dir      string
-		fileName string
-		data     string
+		name      string
+		protoOnly bool
+		path      string
+		fileName  string
+		setup     func(base, path, data, fileName string)
 	}{
 		{
-			name: "skipped due to nested module",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				Go: &config.GoModule{
-					NestedModule: "v2",
-				},
-			},
-			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
+			name:     "skip non import path",
+			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
 			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
-			data: `{ 
+			setup: func(base, path, data, fileName string) {
+				// We need to create this directory because snippets directory should exist before updating.
+				if err := os.MkdirAll(filepath.Join(base, "internal/generated/snippets/bigquery/storage/apiv1"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				metadataFile := filepath.Join(base, path, fileName)
+				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:     "skip non-snippets file",
+			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "storage", "apiv1"),
+			fileName: "non_metadata.google.cloud.bigquery.v1.json",
+			setup: func(base, path, data, fileName string) {
+				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				metadataFile := filepath.Join(base, path, fileName)
+				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:      "skip proto-only clients",
+			protoOnly: true,
+			// Do not create snippet directory to verify the function returns before
+			// checking the existence of the directory.
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			library := &config.Library{
+				Name:    "bigquery",
+				Output:  tmpDir,
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+							ProtoOnly:  test.protoOnly,
+						},
+					},
+				},
+			}
+			data := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/bigquery/v2/apiv2",
     "version": "$VERSION",
@@ -543,46 +597,19 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
     ]
  }
 }
-`,
-		},
-		{
-			name: "skipped due to non-snippets file name",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-			},
-			dir:      filepath.Join("internal", "generated", "snippets", "bigquery", "apiv1"),
-			fileName: "non_metadata.google.cloud.bigquery.v1.json",
-			data: `{ 
- "clientLibrary": {
-    "name": "cloud.google.com/go/bigquery/apiv1",
-    "version": "$VERSION",
-    "language": "GO",
-    "apis": [
-      {
-        "id": "google.cloud.bigquery.v1",
-        "version": "v1"
-      }
-    ]
- }
-}
-`,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			err := os.MkdirAll(filepath.Join(tmpDir, test.dir), 0755)
-			if err != nil {
+`
+			if test.setup != nil {
+				test.setup(tmpDir, test.path, data, test.fileName)
+			}
+			if err := updateSnippetMetadata(library, tmpDir); err != nil {
 				t.Fatal(err)
 			}
-			metadataFile := filepath.Join(tmpDir, test.dir, test.fileName)
-			if err := os.WriteFile(metadataFile, []byte(test.data), 0755); err != nil {
-				t.Fatal(err)
+			if test.setup == nil {
+				// No need to check the content if the metadata file is not
+				// created during setup function.
+				return
 			}
-			if err := updateSnippetMetadata(test.library, tmpDir); err != nil {
-				t.Fatal(err)
-			}
-
+			metadataFile := filepath.Join(tmpDir, test.path, test.fileName)
 			content, err := os.ReadFile(metadataFile)
 			if err != nil {
 				t.Fatal(err)
@@ -590,6 +617,109 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			s := string(content)
 			if !strings.Contains(s, "$VERSION") {
 				t.Errorf("want version in snippet metadata, got:\n%s", s)
+			}
+		})
+	}
+}
+
+func TestUpdateSnippetMetadata_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func(dir string)
+		wantErr error
+	}{
+		{
+			name: "no go api",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+			},
+			wantErr: errGoAPINotFound,
+		},
+		{
+			name: "snippet directory does not exist",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			wantErr: os.ErrNotExist,
+		},
+		{
+			name: "no permission to read snippet directory",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				// Do not have the read permission.
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0333); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EACCES,
+		},
+		{
+			name: "no permission to update snippet directory",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				// Do not have the write permission.
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0555); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EACCES,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(tmpDir)
+			}
+			err := updateSnippetMetadata(test.library, tmpDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -637,7 +767,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
-func TestReleaseLevel_Success(t *testing.T) {
+func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		apiPath string
