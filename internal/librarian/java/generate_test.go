@@ -37,6 +37,7 @@ func TestCreateProtocOptions(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		api      *config.API
+		javaAPI  *config.JavaAPI
 		library  *config.Library
 		expected []string
 		wantErr  bool
@@ -64,10 +65,24 @@ func TestCreateProtocOptions(t *testing.T) {
 				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=rest,rest-numeric-enums",
 			},
 		},
+		{
+			name:    "no rest numeric enum case",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{},
+			javaAPI: &config.JavaAPI{
+				NoRestNumericEnums: true,
+			},
+			expected: []string{
+				"--java_out=proto-out",
+				"--java_grpc_out=grpc-out",
+				"--java_gapic_out=metadata:gapic-out",
+				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := createProtocOptions(test.api, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
+			got, err := createProtocOptions(test.api, test.javaAPI, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
 			if (err != nil) != test.wantErr {
 				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
 			}
