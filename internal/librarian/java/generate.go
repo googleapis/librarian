@@ -93,7 +93,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
-	args, protos, err := constructProtocCommandArgs(api, googleapisDir, protocOptions)
+	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		return fmt.Errorf("failed to construct protoc command args: %w", err)
 	}
@@ -104,9 +104,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
-}
+	}
 
-func constructProtocCommandArgs(api *config.API, googleapisDir string, protocOptions []string) ([]string, []string, error) {
+	func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, protocOptions []string) ([]string, []string, error) {
 	apiDir := filepath.Join(googleapisDir, api.Path)
 	// TODO(https://github.com/googleapis/librarian/issues/4198):
 	// Consider recursive gathering and explicit sorting
@@ -119,10 +119,18 @@ func constructProtocCommandArgs(api *config.API, googleapisDir string, protocOpt
 	if len(protos) == 0 {
 		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
 	}
-	// hardcoded default to start, should get additionals from proto_library_with_info in BUILD.bazel
-	protos = append(protos, filepath.Join(googleapisDir, filepath.FromSlash(commonProtos)))
+
+	additionalProtos := []string{commonProtos}
+	if javaAPI != nil && len(javaAPI.AdditionalProtos) > 0 {
+		additionalProtos = javaAPI.AdditionalProtos
+	}
+	for _, p := range additionalProtos {
+		protos = append(protos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
+
 	args := []string{
 		"protoc",
+
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
 	}

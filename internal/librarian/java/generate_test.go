@@ -99,7 +99,7 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	protocOptions := []string{"--java_out=out"}
 
-	args, protos, err := constructProtocCommandArgs(api, googleapisDir, protocOptions)
+	args, protos, err := constructProtocCommandArgs(api, nil, googleapisDir, protocOptions)
 	if err != nil {
 		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestConstructProtocCommandArgs_Error(t *testing.T) {
 	t.Parallel()
 	api := &config.API{Path: "nonexistent"}
 	protocOptions := []string{"--java_out=out"}
-	if _, _, err := constructProtocCommandArgs(api, googleapisDir, protocOptions); err == nil {
+	if _, _, err := constructProtocCommandArgs(api, nil, googleapisDir, protocOptions); err == nil {
 		t.Error("constructProtocCommandArgs() expected error for nonexistent path, got nil")
 	}
 }
