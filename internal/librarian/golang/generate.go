@@ -391,14 +391,12 @@ func updateSnippetDirectory(baseDir, version string) error {
 }
 
 func initModule(ctx context.Context, dir, modPath string) error {
-	cmd := exec.CommandContext(ctx, "go", "mod", "init", modPath)
-	cmd.Dir = dir
-	if err := cmd.Run(); err != nil {
+	init := []string{"go", "mod", "init", modPath}
+	if err := execCmd(ctx, init, dir); err != nil {
 		return err
 	}
-	cmd = exec.CommandContext(ctx, "go", "mod", "tidy")
-	cmd.Dir = dir
-	return cmd.Run()
+	tidy := []string{"go", "mod", "tidy"}
+	return execCmd(ctx, tidy, dir)
 }
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
@@ -432,4 +430,10 @@ func transport(sc *serviceconfig.API) string {
 		return sc.Transport("go")
 	}
 	return string(serviceconfig.GRPCRest)
+}
+
+func execCmd(ctx context.Context, args []string, workingDir string) error {
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	cmd.Dir = workingDir
+	return cmd.Run()
 }
