@@ -124,6 +124,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 				"folders":         true,
 				"organizations":   true,
 				"billingAccounts": true,
+				"users":           true,
 				"widgets":         true,
 			},
 		},

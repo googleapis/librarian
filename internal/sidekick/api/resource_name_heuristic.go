@@ -110,7 +110,6 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 						token := *tmpl.Segments[i-1].Literal
 						tokens[token] = true
 					}
-					break
 				}
 			}
 		}

@@ -101,10 +101,27 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 					firstIndex := i - 1
 					for firstIndex >= 2 {
 						if tmpl.Segments[firstIndex-1].Variable != nil && tmpl.Segments[firstIndex-2].Literal != nil {
+							// Stop matching if the preceding segment isn't a known collection.
+							if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
+								break
+							}
 							firstIndex -= 2
 						} else {
 							break
 						}
+					}
+
+					// Verify the chain connects properly to the root of the path.
+					// If earlier variables exist, this chain is just a trailing partial match and should be ignored.
+					disconnected := false
+					for k := 0; k < firstIndex; k++ {
+						if tmpl.Segments[k].Variable != nil {
+							disconnected = true
+							break
+						}
+					}
+					if disconnected {
+						continue
 					}
 
 					var fieldPaths [][]string
