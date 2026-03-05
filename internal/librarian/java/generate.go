@@ -239,11 +239,7 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *conf
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	restNumericEnums := true
-	if javaAPI != nil && javaAPI.NoRestNumericEnums {
-		restNumericEnums = false
-	}
-	if restNumericEnums {
+	if javaAPI == nil || !javaAPI.NoRestNumericEnums {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 
