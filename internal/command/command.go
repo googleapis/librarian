@@ -17,6 +17,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -78,10 +79,11 @@ func runCmd(ctx context.Context, dir string, env map[string]string, command stri
 	}
 	output, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return "", fmt.Errorf("%s: %v\n%s", cmd, err, exitErr.Stderr)
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return "", fmt.Errorf("%s: %s: %w", cmd, exitErr.Stderr, err)
 		}
-		return "", fmt.Errorf("%s: %v", cmd, err)
+		return "", fmt.Errorf("%s: %w", cmd, err)
 	}
 	return string(output), nil
 }
