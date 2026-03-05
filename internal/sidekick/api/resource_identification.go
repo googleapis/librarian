@@ -98,6 +98,9 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 			continue // continue scanning backward if not in vocabulary
 		}
 
+		// The default firstIndex is the current variable segment. If the preceding
+		// literal is a known collection, we'll try to walk backwards to find the
+		// beginning of a resource pattern chain.
 		firstIndex := i
 		if vocabulary[token] {
 			// Walk backwards to find the start of the (literal, variable) chain
@@ -256,6 +259,8 @@ func getServiceHost(method *Method) (string, error) {
 	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
 }
 
+// isVersionString checks if a string appears to be an API version segment,
+// such as "v1" or "v1beta1".
 func isVersionString(s string) bool {
 	return len(s) >= 2 && s[0] == 'v' && s[1] >= '0' && s[1] <= '9'
 }
