@@ -15,8 +15,6 @@
 package golang
 
 import (
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -277,10 +275,10 @@ func TestInitModule(t *testing.T) {
 	if err := initModule(t.Context(), outDir, "example.com/testmod"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("go.mod does not exist")
+	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
+		t.Errorf("expected go.mod to exist, but Stat failed: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(outDir, "go.sum")); errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("go.sum does not exist")
+	if _, err := os.Stat(filepath.Join(outDir, "go.sum")); err != nil {
+		t.Errorf("expected go.sum to exist, but Stat failed: %v", err)
 	}
 }
