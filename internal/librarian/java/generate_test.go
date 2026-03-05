@@ -353,7 +353,6 @@ func TestRestructureOutput(t *testing.T) {
 func TestRestructureOutput_NoSamples(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-
 	version := "v1"
 	libraryID := "secretmanager"
 	// Create a dummy structure to mimic generator output
@@ -371,11 +370,9 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
-	if err := restructureOutput(tmpDir, libraryID, version, false, googleapisDir, nil); err != nil {
+	if err := restructureOutput(tmpDir, libraryID, version, true, googleapisDir, nil); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
-
 	// Verify sample file location DOES NOT exist
 	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
 	if _, err := os.Stat(wantSamplePath); !os.IsNotExist(err) {
