@@ -104,9 +104,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
-	}
+}
 
-	func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, protocOptions []string) ([]string, []string, error) {
+func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, protocOptions []string) ([]string, []string, error) {
 	apiDir := filepath.Join(googleapisDir, api.Path)
 	// TODO(https://github.com/googleapis/librarian/issues/4198):
 	// Consider recursive gathering and explicit sorting
@@ -120,6 +120,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
 	}
 
+	// add additional protos from configs, default to commonProtos if not specified
 	additionalProtos := []string{commonProtos}
 	if javaAPI != nil && len(javaAPI.AdditionalProtos) > 0 {
 		additionalProtos = javaAPI.AdditionalProtos
@@ -130,7 +131,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 	args := []string{
 		"protoc",
-
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
 	}

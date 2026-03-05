@@ -131,6 +131,46 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	}
 }
 
+func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
+	t.Parallel()
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	javaAPI := &config.JavaAPI{
+		AdditionalProtos: []string{"google/cloud/common_resources.proto", "google/cloud/location/locations.proto"},
+	}
+	protocOptions := []string{"--java_out=out"}
+	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	if err != nil {
+		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
+	}
+
+	expectedArgs := []string{
+		"protoc",
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+		"--java_out=out",
+	}
+
+	if diff := cmp.Diff(expectedArgs, args); diff != "" {
+		t.Errorf("mismatch in args (-want +got):\n%s", diff)
+	}
+
+	expectedProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+	}
+	sort.Strings(expectedProtos)
+	sort.Strings(protos)
+	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
+		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+	}
+}
+
 func TestConstructProtocCommandArgs_Error(t *testing.T) {
 	t.Parallel()
 	api := &config.API{Path: "nonexistent"}
