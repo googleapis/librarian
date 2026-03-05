@@ -129,9 +129,12 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := updateSnippetMetadata(library, outdir); err != nil {
 		return err
 	}
-	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); errors.Is(err, fs.ErrNotExist) {
-		// New client, init the module.
-		return initModule(ctx, absModuleRoot, modulePath(library))
+	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// New client, init the module.
+			return initModule(ctx, absModuleRoot, modulePath(library))
+		}
+		return err
 	}
 	return nil
 }
