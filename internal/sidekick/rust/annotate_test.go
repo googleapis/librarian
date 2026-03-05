@@ -1483,7 +1483,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		{"machine", "machine", "Some(&req).map(|m| &m.machine).map(|s| s.as_str())"},
 		{"machineType", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
 		{"machine_type", "machine_type", "Some(&req).map(|m| &m.machine_type).map(|s| s.as_str())"},
-		{"type", "r#type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())"},
+		{"type", "type", "Some(&req).map(|m| &m.r#type).map(|s| s.as_str())"},
 	} {
 		field := &api.Field{
 			Name:     test.FieldName,
