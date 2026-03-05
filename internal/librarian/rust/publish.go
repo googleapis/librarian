@@ -40,25 +40,25 @@ type semverData struct {
 	env             map[string]string
 }
 
-// maxSemverConcurrency is capped at 8 to balance throughput against resource contention.
+// semverCheckCPUDivisor scales the concurrency limit based on available CPUs to balance
+// throughput against resource contention.
 //
 // Why a limit?
 // `cargo semver-checks` is internally multithreaded during the compilation phase.
-// Running it completely unbounded (errgroup.SetLimit(-1)) could cause severe CPU
+// Running it completely unbounded, or even 1:1 with CPU cores, can cause severe CPU
 // thrashing and RAM exhaustion, as multiple instances of the Rust compiler
 // compete for the same physical cores and memory bandwidth.
 //
-// Why 8?
+// Why a divisor of 8?
 // Performance testing on 64-core workstations revealed a "sweet spot":
-// - Serial: ~2 hours
-// - 8-way parallel: ~17 minutes
-// - 16-way parallel: ~15 minutes
+// Running 8 concurrent jobs (64 cores / 8) reduced execution time from ~2 hours
+// down to ~17 minutes. Pushing concurrency higher yielded negligible gains (e.g.,
+// 15 mins at 16-way) but massively increased system load and OOM (Out Of Memory) risks.
 //
-// While 16 is slightly faster, the marginal gain (2 mins) doesn't justify the
-// massive increase in system load and potential for OOM (Out Of Memory) failures
-// on smaller CI runners or local dev machines. 8 provides a stable 7x speedup
-// across varied hardware without overwhelming the workstation.
-const maxSemverConcurrency = 8
+// By using a divisor instead of a hard cap, we dynamically apply this optimal 1/8th
+// ratio across varied hardware. This prevents smaller CI runners or local dev machines
+// from being overwhelmed while still safely maximizing throughput on larger workstations.
+const semverCheckCPUDivisor = 8
 
 // errSemverCheck is returned when a semver check fails.
 var errSemverCheck = errors.New("semver check failed")
@@ -147,7 +147,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 // runSemverChecks iterates through manifests and runs semver checks for each.
 func runSemverChecks(ctx context.Context, semverData semverData) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.SetLimit(max(runtime.NumCPU()/maxSemverConcurrency, 1))
+	group.SetLimit(max(runtime.NumCPU()/semverCheckCPUDivisor, 1))
 	for name, manifest := range semverData.manifests {
 		group.Go(func() error {
 			if err := semverCheck(ctx, semverData, name, manifest); err != nil {
