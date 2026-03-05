@@ -99,7 +99,7 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	protocOptions := []string{"--java_out=out"}
 
-	args, protos, err := constructProtocCommandArgs(api, googleapisDir, protocOptions)
+	args, protos, err := constructProtocCommandArgs(api, nil, googleapisDir, protocOptions)
 	if err != nil {
 		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
@@ -131,12 +131,71 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	}
 }
 
-func TestConstructProtocCommandArgs_Error(t *testing.T) {
+func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 	t.Parallel()
-	api := &config.API{Path: "nonexistent"}
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	javaAPI := &config.JavaAPI{
+		AdditionalProtos: []string{"google/cloud/common_resources.proto", "google/cloud/location/locations.proto"},
+	}
 	protocOptions := []string{"--java_out=out"}
-	if _, _, err := constructProtocCommandArgs(api, googleapisDir, protocOptions); err == nil {
-		t.Error("constructProtocCommandArgs() expected error for nonexistent path, got nil")
+	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	if err != nil {
+		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
+	}
+
+	expectedArgs := []string{
+		"protoc",
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+		"--java_out=out",
+	}
+
+	if diff := cmp.Diff(expectedArgs, args); diff != "" {
+		t.Errorf("mismatch in args (-want +got):\n%s", diff)
+	}
+
+	expectedProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
+	}
+	sort.Strings(expectedProtos)
+	sort.Strings(protos)
+	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
+		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+	}
+}
+
+func TestConstructProtocCommandArgs_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		wantErr string
+	}{
+		{
+			name:    "nonexistent path",
+			api:     &config.API{Path: "nonexistent"},
+			wantErr: "no protos found in api \"nonexistent\"",
+		},
+		{
+			name:    "malformed path",
+			api:     &config.API{Path: "malformed["},
+			wantErr: "failed to find protos",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			protocOptions := []string{"--java_out=out"}
+			_, _, err := constructProtocCommandArgs(test.api, nil, googleapisDir, protocOptions)
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("constructProtocCommandArgs() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
