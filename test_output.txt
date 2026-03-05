@@ -1,0 +1,114 @@
+ok  	github.com/googleapis/librarian	(cached)
+?   	github.com/googleapis/librarian/cmd/legacyautomation	[no test files]
+?   	github.com/googleapis/librarian/cmd/legacylibrarian	[no test files]
+?   	github.com/googleapis/librarian/cmd/librarian	[no test files]
+?   	github.com/googleapis/librarian/cmd/librarianops	[no test files]
+?   	github.com/googleapis/librarian/cmd/surfer	[no test files]
+ok  	github.com/googleapis/librarian/internal/command	(cached)
+ok  	github.com/googleapis/librarian/internal/config	(cached)
+ok  	github.com/googleapis/librarian/internal/config/bazel	(cached)
+ok  	github.com/googleapis/librarian/internal/config/gapicyaml	(cached)
+ok  	github.com/googleapis/librarian/internal/docuploader	(cached)
+ok  	github.com/googleapis/librarian/internal/fetch	(cached)
+ok  	github.com/googleapis/librarian/internal/filesystem	(cached)
+ok  	github.com/googleapis/librarian/internal/git	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacyautomation	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycli	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/bazel	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/execv	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/generate	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/generate	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/languagecontainer/release	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/message	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/pom	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/protoc	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacycontainer/java/release	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacydocker	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacygithub	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo	(cached)
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacyimages	(cached)
+?   	github.com/googleapis/librarian/internal/legacylibrarian/legacyintegration	[no test files]
+ok  	github.com/googleapis/librarian/internal/legacylibrarian/legacylibrarian	(cached)
+ok  	github.com/googleapis/librarian/internal/librarian	(cached)
+ok  	github.com/googleapis/librarian/internal/librarian/dart	(cached)
+ok  	github.com/googleapis/librarian/internal/librarian/golang	(cached)
+ok  	github.com/googleapis/librarian/internal/librarian/java	(cached)
+ok  	github.com/googleapis/librarian/internal/librarian/python	(cached)
+--- FAIL: TestGenerateVeneer (0.03s)
+    generate_test.go:74: module "/tmp/TestGenerateVeneer1873862695/001/src/generated/v1": language "" not supported
+2026/03/05 16:20:01 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:01 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:02 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:03 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:03 INFO there are 1 crates in need of publishing, summary=[google-cloud-pubsub]
+2026/03/05 16:20:03 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:03 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:03 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:04 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:06 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:06 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:07 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:07 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:07 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:07 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:07 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:08 INFO installing cargo tool name=cargo-semver-checks version=1.2.3
+2026/03/05 16:20:08 INFO installing cargo tool name=cargo-workspaces version=3.4.5
+2026/03/05 16:20:08 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:08 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:08 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:09 INFO installing cargo tool name=cargo-semver-checks version=1.2.3
+2026/03/05 16:20:09 INFO installing cargo tool name=cargo-workspaces version=3.4.5
+2026/03/05 16:20:11 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:11 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:11 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:12 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:12 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:12 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:12 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:12 WARN semver check failed, but continuing due to --keep-going crate=google-cloud-storage error="/tmp/TestPublishCratesSemverChecksKeepGoing2890262722/001/cargo semver-checks --frozen --all-features -p google-cloud-storage: exit status 1\n"
+2026/03/05 16:20:12 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:12 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:12 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:12 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:12 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:12 INFO there are 1 crates in need of publishing, summary=[google-cloud-storage]
+2026/03/05 16:20:12 INFO publishing crates with: cargo workspaces publish --skip-published ...
+2026/03/05 16:20:12 INFO computing publication plan with: cargo workspaces plan
+2026/03/05 16:20:13 WARN semver check failed, but continuing due to --keep-going crate=fail-me error="/tmp/TestRunSemverChecksdry-run-keep-going_ignores_failures2170603549/001/fake_cargo semver-checks --frozen --all-features -p fail-me: exit status 1\n"
+2026/03/05 16:20:16 INFO installing cargo tool name=not-a-valid-tool version=0.0.1
+2026/03/05 16:20:16 INFO installing cargo tool name=cargo-semver-checks version=0.42.0
+2026/03/05 16:20:17 INFO installing cargo tool name=invalid-tool-name--- version=a.b.c
+FAIL
+FAIL	github.com/googleapis/librarian/internal/librarian/rust	21.247s
+ok  	github.com/googleapis/librarian/internal/librarianops	(cached)
+ok  	github.com/googleapis/librarian/internal/license	(cached)
+ok  	github.com/googleapis/librarian/internal/repometadata	(cached)
+?   	github.com/googleapis/librarian/internal/sample	[no test files]
+ok  	github.com/googleapis/librarian/internal/semver	(cached)
+ok  	github.com/googleapis/librarian/internal/serviceconfig	0.144s
+ok  	github.com/googleapis/librarian/internal/sidekick/api	(cached)
+?   	github.com/googleapis/librarian/internal/sidekick/api/apitest	[no test files]
+ok  	github.com/googleapis/librarian/internal/sidekick/codec_sample	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/config	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/dart	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/language	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/parser	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/parser/discovery	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/parser/httprule	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/parser/svcconfig	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/protobuf	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/rust	(cached)
+ok  	github.com/googleapis/librarian/internal/sidekick/rust_prost	(cached)
+ok  	github.com/googleapis/librarian/internal/snippetmetadata	(cached)
+ok  	github.com/googleapis/librarian/internal/surfer/gcloud	(cached)
+ok  	github.com/googleapis/librarian/internal/surfer/surfer	(cached)
+?   	github.com/googleapis/librarian/internal/testhelper	[no test files]
+ok  	github.com/googleapis/librarian/internal/yaml	(cached)
+ok  	github.com/googleapis/librarian/tool/cmd/importconfigs	(cached)
+?   	github.com/googleapis/librarian/tool/cmd/importmetadata	[no test files]
+ok  	github.com/googleapis/librarian/tool/cmd/migrate	(cached)
+FAIL

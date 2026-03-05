@@ -297,7 +297,7 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageRust, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager-v1beta2"},
 		{config.LanguageFake, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 	} {
-		t.Run(test.language.String()+"/"+test.apiPath, func(t *testing.T) {
+		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
 			got := deriveLibraryName(test.language, test.apiPath)
 			if got != test.want {
 				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)

@@ -76,7 +76,7 @@ type MigrationInput struct {
 	googleapisDir   string
 }
 
-func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
+func runLibrarianMigration(ctx context.Context, language config.Language, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err
@@ -92,15 +92,11 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 		return err
 	}
 
-	var l config.Language
-	if err := l.UnmarshalText([]byte(language)); err != nil {
-		return err
-	}
 	cfg, err := buildConfigFromLibrarian(ctx, &MigrationInput{
 		librarianState:  librarianState,
 		librarianConfig: librarianConfig,
 		repoConfig:      repoConfig,
-		lang:            l,
+		lang:            language,
 		repoPath:        repoPath,
 	})
 	if err != nil {

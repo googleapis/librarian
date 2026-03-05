@@ -15,117 +15,40 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Language is a programming language supported by Librarian.
-type Language int
+type Language = string
 
 const (
 	// LanguageUnknown represents an unsupported or unspecified language.
-	LanguageUnknown Language = iota
+	LanguageUnknown Language = "unknown"
 	// LanguageAll is the identifier for all languages.
-	LanguageAll
+	LanguageAll Language = "all"
 	// LanguageCsharp is the language identifier for C#.
-	LanguageCsharp
+	LanguageCsharp Language = "csharp"
 	// LanguageDart is the language identifier for Dart.
-	LanguageDart
+	LanguageDart Language = "dart"
 	// LanguageFake is the language identifier for Fakes.
-	LanguageFake
+	LanguageFake Language = "fake"
 	// LanguageGo is the language identifier for Go.
-	LanguageGo
+	LanguageGo Language = "go"
 	// LanguageJava is the language identifier for Java.
-	LanguageJava
+	LanguageJava Language = "java"
 	// LanguageNodejs is the language identifier for Node.js.
-	LanguageNodejs
+	LanguageNodejs Language = "nodejs"
 	// LanguagePhp is the language identifier for PHP.
-	LanguagePhp
+	LanguagePhp Language = "php"
 	// LanguagePython is the language identifier for Python.
-	LanguagePython
+	LanguagePython Language = "python"
 	// LanguageRuby is the language identifier for Ruby.
-	LanguageRuby
+	LanguageRuby Language = "ruby"
 	// LanguageRust is the language identifier for Rust.
-	LanguageRust
+	LanguageRust Language = "rust"
 	// LanguageRustStorage is a variation of the Rust generator for storage.
-	LanguageRustStorage
+	LanguageRustStorage Language = "rust_storage"
 )
-
-// String returns the string representation of the language.
-func (l Language) String() string {
-	switch l {
-	case LanguageUnknown:
-		return "unknown"
-	case LanguageAll:
-		return "all"
-	case LanguageCsharp:
-		return "csharp"
-	case LanguageDart:
-		return "dart"
-	case LanguageFake:
-		return "fake"
-	case LanguageGo:
-		return "go"
-	case LanguageJava:
-		return "java"
-	case LanguageNodejs:
-		return "nodejs"
-	case LanguagePhp:
-		return "php"
-	case LanguagePython:
-		return "python"
-	case LanguageRuby:
-		return "ruby"
-	case LanguageRust:
-		return "rust"
-	case LanguageRustStorage:
-		return "rust_storage"
-	default:
-		panic(fmt.Sprintf("unknown language: %d", l))
-	}
-}
-
-// UnmarshalText implements [encoding.TextUnmarshaler].
-func (l *Language) UnmarshalText(text []byte) error {
-	str := string(text)
-	switch str {
-	case "unknown":
-		*l = LanguageUnknown
-	case "all":
-		*l = LanguageAll
-	case "csharp":
-		*l = LanguageCsharp
-	case "dart":
-		*l = LanguageDart
-	case "fake":
-		*l = LanguageFake
-	case "go":
-		*l = LanguageGo
-	case "java":
-		*l = LanguageJava
-	case "nodejs":
-		*l = LanguageNodejs
-	case "php":
-		*l = LanguagePhp
-	case "python":
-		*l = LanguagePython
-	case "ruby":
-		*l = LanguageRuby
-	case "rust":
-		*l = LanguageRust
-	case "rust_storage":
-		*l = LanguageRustStorage
-	default:
-		*l = LanguageUnknown
-	}
-	return nil
-}
-
-// MarshalText implements [encoding.TextMarshaler].
-func (l Language) MarshalText() ([]byte, error) {
-	return []byte(l.String()), nil
-}
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {

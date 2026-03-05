@@ -92,7 +92,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name        string
-		lang        string
+		lang        config.Language
 		repoPath    string
 		state       *legacyconfig.LibrarianState
 		cfg         *legacyconfig.LibrarianConfig
@@ -102,7 +102,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	}{
 		{
 			name:        "go_monorepo_defaults",
-			lang:        "go",
+			lang:        config.LanguageGo,
 			repoPath:    "testdata/google-cloud-go",
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
@@ -125,7 +125,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		},
 		{
 			name:        "python_monorepo_defaults",
-			lang:        "python",
+			lang:        config.LanguagePython,
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
@@ -152,7 +152,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		},
 		{
 			name: "no_librarian_config",
-			lang: "python",
+			lang: config.LanguagePython,
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
@@ -295,14 +295,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			fetchSource = test.fetchSource
-			var l config.Language
-			if err := l.UnmarshalText([]byte(test.lang)); err != nil {
-				t.Fatalf("unmarshal language %q: %v", test.lang, err)
-			}
 			input := &MigrationInput{
 				librarianState:  test.state,
 				librarianConfig: test.cfg,
-				lang:            l,
+				lang:            test.lang,
 				repoPath:        test.repoPath,
 			}
 			got, err := buildConfigFromLibrarian(t.Context(), input)
