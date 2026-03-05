@@ -15,11 +15,13 @@
 package golang
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -66,6 +68,25 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 		}
 	}
 	return nil
+}
+
+// modulePath returns the Go module path for the library. ModulePathVersion is
+// set for modules at v2+, e.g. "cloud.google.com/go/pubsub/v2".
+func modulePath(library *config.Library) string {
+	path := "cloud.google.com/go/" + library.Name
+	if library.Go != nil && library.Go.ModulePathVersion != "" {
+		path += "/" + library.Go.ModulePathVersion
+	}
+	return path
+}
+
+func initModule(ctx context.Context, dir, modPath string) error {
+	initArgs := []string{"go", "mod", "init", modPath}
+	if err := command.RunInDir(ctx, dir, initArgs[0], initArgs[1:]...); err != nil {
+		return err
+	}
+	tidyArgs := []string{"go", "mod", "tidy"}
+	return command.RunInDir(ctx, dir, tidyArgs[0], tidyArgs[1:]...)
 }
 
 // defaultImportPathAndClientPkg returns the default Go import path and client package name

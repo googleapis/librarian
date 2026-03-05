@@ -16,7 +16,6 @@ package golang
 
 import (
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1078,24 +1077,5 @@ func TestBuildGAPICOpts(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func TestInitModule(t *testing.T) {
-	testhelper.RequireCommand(t, "go")
-	outDir := t.TempDir()
-	// Write an import so go mod tidy can generate a go.sum file.
-	content := []byte("package main\nimport _ \"golang.org/x/text\"\n")
-	if err := os.WriteFile(filepath.Join(outDir, "main.go"), content, 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := initModule(t.Context(), outDir, "example.com/testmod"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("go.mod does not exist")
-	}
-	if _, err := os.Stat(filepath.Join(outDir, "go.sum")); errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("go.sum does not exist")
 	}
 }

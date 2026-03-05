@@ -55,6 +55,22 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 	return nil
 }
 
+// Format formats a generated Go library.
+func Format(ctx context.Context, library *config.Library) error {
+	outDir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return err
+	}
+	args := []string{"-w", filepath.Join(outDir, library.Name)}
+	// TODO(https://github.com/googleapis/librarian/issues/4297), refactor this function
+	// to use import path.
+	snippetDir := snippetDirectory(outDir, library.Name)
+	if _, err := os.Stat(snippetDir); err == nil {
+		args = append(args, snippetDir)
+	}
+	return command.Run(ctx, "goimports", args...)
+}
+
 // generate generates a Go client library.
 func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
@@ -137,22 +153,6 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		return err
 	}
 	return nil
-}
-
-// Format formats a generated Go library.
-func Format(ctx context.Context, library *config.Library) error {
-	outDir, err := filepath.Abs(library.Output)
-	if err != nil {
-		return err
-	}
-	args := []string{"-w", filepath.Join(outDir, library.Name)}
-	// TODO(https://github.com/googleapis/librarian/issues/4297), refactor this function
-	// to use import path.
-	snippetDir := snippetDirectory(outDir, library.Name)
-	if _, err := os.Stat(snippetDir); err == nil {
-		args = append(args, snippetDir)
-	}
-	return command.Run(ctx, "goimports", args...)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
@@ -282,16 +282,6 @@ func fixVersioning(outputDir, library, modPath string) error {
 	return nil
 }
 
-// modulePath returns the Go module path for the library. ModulePathVersion is
-// set for modules at v2+, e.g. "cloud.google.com/go/pubsub/v2".
-func modulePath(library *config.Library) string {
-	path := "cloud.google.com/go/" + library.Name
-	if library.Go != nil && library.Go.ModulePathVersion != "" {
-		path += "/" + library.Go.ModulePathVersion
-	}
-	return path
-}
-
 func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]string, error) {
 	apiDir := filepath.Join(googleapisDir, apiPath)
 	entries, err := os.ReadDir(apiDir)
@@ -390,15 +380,6 @@ func updateSnippetDirectory(baseDir, version string) error {
 		}
 		return nil
 	})
-}
-
-func initModule(ctx context.Context, dir, modPath string) error {
-	initArgs := []string{"go", "mod", "init", modPath}
-	if err := command.RunInDir(ctx, dir, initArgs[0], initArgs[1:]...); err != nil {
-		return err
-	}
-	tidyArgs := []string{"go", "mod", "tidy"}
-	return command.RunInDir(ctx, dir, tidyArgs[0], tidyArgs[1:]...)
 }
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
