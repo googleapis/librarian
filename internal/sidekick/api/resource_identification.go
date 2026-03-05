@@ -89,64 +89,65 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	// Iterate backwards over segments
 	for i := len(tmpl.Segments) - 1; i >= 0; i-- {
 		seg := tmpl.Segments[i]
-		if seg.Variable != nil {
-			if i > 0 && tmpl.Segments[i-1].Literal != nil {
-				token := *tmpl.Segments[i-1].Literal
-				if vocabulary[token] {
-					if method.InputType == nil {
-						return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
-					}
-
-					// Walk backwards to find the start of the (literal, variable) chain
-					firstIndex := i - 1
-					for firstIndex >= 2 {
-						if tmpl.Segments[firstIndex-1].Variable != nil && tmpl.Segments[firstIndex-2].Literal != nil {
-							// Stop matching if the preceding segment isn't a known collection.
-							if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
-								break
-							}
-							firstIndex -= 2
-						} else {
-							break
-						}
-					}
-
-					// Verify the chain connects properly to the root of the path.
-					// If earlier variables exist, this chain is just a trailing partial match and should be ignored.
-					disconnected := false
-					for k := 0; k < firstIndex; k++ {
-						if tmpl.Segments[k].Variable != nil {
-							disconnected = true
-							break
-						}
-					}
-					if disconnected {
-						continue
-					}
-
-					var fieldPaths [][]string
-					targetSegments := tmpl.Segments[firstIndex : i+1]
-					for _, s := range targetSegments {
-						if s.Variable != nil {
-							_, err := findField(method.InputType, s.Variable.FieldPath)
-							if err != nil {
-								return nil, err
-							}
-							fieldPaths = append(fieldPaths, s.Variable.FieldPath)
-						}
-					}
-					template, err := constructTemplate(method, targetSegments)
-					if err != nil {
-						return nil, err
-					}
-					return &TargetResource{
-						FieldPaths: fieldPaths,
-						Template:   template,
-					}, nil
-				}
-			}
-			// continue scanning backward if not in vocabulary
+		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == nil {
+			continue
 		}
+
+		token := *tmpl.Segments[i-1].Literal
+		if !vocabulary[token] {
+			continue // continue scanning backward if not in vocabulary
+		}
+
+		if method.InputType == nil {
+			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+		}
+
+		// Walk backwards to find the start of the (literal, variable) chain
+		firstIndex := i - 1
+		for firstIndex >= 2 {
+			if tmpl.Segments[firstIndex-1].Variable != nil && tmpl.Segments[firstIndex-2].Literal != nil {
+				// Stop matching if the preceding segment isn't a known collection.
+				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
+					break
+				}
+				firstIndex -= 2
+			} else {
+				break
+			}
+		}
+
+		// Verify the chain connects properly to the root of the path.
+		// If earlier variables exist, this chain is just a trailing partial match and should be ignored.
+		disconnected := false
+		for k := 0; k < firstIndex; k++ {
+			if tmpl.Segments[k].Variable != nil {
+				disconnected = true
+				break
+			}
+		}
+		if disconnected {
+			continue
+		}
+
+		var fieldPaths [][]string
+		targetSegments := tmpl.Segments[firstIndex : i+1]
+		for _, s := range targetSegments {
+			if s.Variable != nil {
+				_, err := findField(method.InputType, s.Variable.FieldPath)
+				if err != nil {
+					return nil, err
+				}
+				fieldPaths = append(fieldPaths, s.Variable.FieldPath)
+			}
+		}
+		template, err := constructTemplate(method, targetSegments)
+		if err != nil {
+			return nil, err
+		}
+		return &TargetResource{
+			FieldPaths: fieldPaths,
+			Template:   template,
+		}, nil
 	}
 	return nil, nil
 }
