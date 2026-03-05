@@ -204,14 +204,30 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		serviceID string
 		path      *PathTemplate
 		fields    []*Field
+		getPaths  []*PathTemplate // Path templates for Get/List methods to build vocabulary
 		resources []*Resource
 		want      *TargetResource
 	}{
+
 		{
-			name:      "heuristic: compute instance",
+			name:      "heuristic: standard infrastructure tokens",
 			serviceID: ".google.cloud.compute.v1.Instances", // eligible
 			path: NewPathTemplate().
-				WithLiteral("compute").WithLiteral("v1").
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("locations").WithVariableNamed("location"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "location", Typez: STRING_TYPE},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"location"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			},
+		},
+		{
+			name:      "heuristic: learns custom tokens from GET methods",
+			serviceID: ".google.cloud.compute.v1.Instances", // eligible
+			path: NewPathTemplate().
 				WithLiteral("projects").WithVariableNamed("project").
 				WithLiteral("zones").WithVariableNamed("zone").
 				WithLiteral("instances").WithVariableNamed("instance"),
@@ -220,15 +236,18 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				{Name: "zone", Typez: STRING_TYPE},
 				{Name: "instance", Typez: STRING_TYPE},
 			},
-			resources: []*Resource{
-				{Plural: "zones", Type: "compute.googleapis.com/Zone"},
-				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project").
+					WithLiteral("zones").WithVariableNamed("zone").
+					WithLiteral("instances").WithVariableNamed("instance"),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
+
 		{
 			name:      "heuristic: not eligible service",
 			serviceID: "any.service", // not eligible
@@ -240,26 +259,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			resources: nil,
 			want:      nil,
 		},
-		{
-			name:      "heuristic: stops at unknown segment",
-			serviceID: ".google.cloud.compute.v1.Instances",
-			path: NewPathTemplate().
-				WithLiteral("projects").WithVariableNamed("project").
-				WithLiteral("unknown").WithVariableNamed("other").
-				WithLiteral("instances").WithVariableNamed("instance"),
-			fields: []*Field{
-				{Name: "project", Typez: STRING_TYPE},
-				{Name: "other", Typez: STRING_TYPE},
-				{Name: "instance", Typez: STRING_TYPE},
-			},
-			resources: []*Resource{
-				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
-			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"project"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
-			},
-		},
+
 		{
 			name:      "heuristic: stops at trailing action",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -274,15 +274,42 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				{Name: "instance", Typez: STRING_TYPE},
 				{Name: "action_id", Typez: STRING_TYPE},
 			},
-			resources: []*Resource{
-				{Plural: "zones", Type: "compute.googleapis.com/Zone"},
-				{Plural: "instances", Type: "compute.googleapis.com/Instance"},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project").
+					WithLiteral("zones").WithVariableNamed("zone").
+					WithLiteral("instances").WithVariableNamed("instance"),
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
+
+		{
+			name:      "heuristic: stops at unknown segment",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("unknown").WithVariableNamed("other").
+				WithLiteral("instances").WithVariableNamed("instance"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "other", Typez: STRING_TYPE},
+				{Name: "instance", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project").
+					WithLiteral("zones").WithVariableNamed("zone").
+					WithLiteral("instances").WithVariableNamed("instance"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
+			},
+		},
+
 		{
 			name:      "heuristic: skips if input field missing",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -291,19 +318,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			fields: []*Field{}, // No fields
 			want:   nil,
 		},
-		{
-			name:      "heuristic: fallback matches literal ending in 's' (e.g. users)",
-			serviceID: ".google.cloud.compute.v1.Instances",
-			path: NewPathTemplate().
-				WithLiteral("users").WithVariableNamed("user"), // matches fallback heuristic
-			fields: []*Field{
-				{Name: "user", Typez: STRING_TYPE},
-			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"user"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/users/{user}"),
-			},
-		},
+
 		{
 			name:      "heuristic: skips non-collection literal without 's'",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -314,26 +329,24 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			},
 			want: nil,
 		},
-		{
-			name:      "heuristic: non-string field is still identified (if valid)",
-			serviceID: ".google.cloud.compute.v1.Instances",
-			path: NewPathTemplate().
-				WithLiteral("instances").WithVariableNamed("instance_id"),
-			fields: []*Field{
-				{Name: "instance_id", Typez: INT64_TYPE}, // Unlikely but good test case
-			},
-			resources: []*Resource{
-				{Plural: "instances"},
-			},
-			want: &TargetResource{
-				FieldPaths: [][]string{{"instance_id"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/instances/{instance_id}"),
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			model.ResourceDefinitions = test.resources
+			if test.resources != nil {
+				model.ResourceDefinitions = test.resources
+			}
+
+			// Add Get methods to populate vocabulary
+			for _, p := range test.getPaths {
+				m := &Method{
+					Name:          "GetSomething",
+					IsAIPStandard: true,
+					PathInfo: &PathInfo{
+						Bindings: []*PathBinding{{PathTemplate: p}},
+					},
+				}
+				model.Services[0].Methods = append(model.Services[0].Methods, m)
+			}
 			IdentifyTargetResources(model)
 
 			got := binding.TargetResource

@@ -88,7 +88,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	protocOptions, err := createProtocOptions(api, library, googleapisDir, protoDir, grpcDir, gapicDir)
+	javaAPI := findJavaAPI(library, api)
+	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, protoDir, grpcDir, gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
@@ -187,7 +188,7 @@ func buildLicenseText(year int) string {
 	return b.String()
 }
 
-func createProtocOptions(api *config.API, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
+func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
 	args := []string{
 		// --java_out generates standard Protocol Buffer Java classes.
 		fmt.Sprintf("--java_out=%s", protoDir),
@@ -215,21 +216,22 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
 	}
 
-	gc, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
+	grpcServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find grpc service config: %w", err)
 	}
-	if gc != "" {
+	if grpcServiceConfig != "" {
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
-		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, gc)))
+		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, grpcServiceConfig)))
 	}
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
 	gapicOpts = append(gapicOpts, gapicOpt("transport", transport))
+
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	// TODO(https://github.com/googleapis/librarian/issues/4130):
-	// assign this according to config
-	gapicOpts = append(gapicOpts, "rest-numeric-enums")
+	if javaAPI == nil || !javaAPI.NoRestNumericEnums {
+		gapicOpts = append(gapicOpts, "rest-numeric-enums")
+	}
 
 	// --java_gapic_out invokes the GAPIC generator.
 	// The "metadata:" prefix is a parameter that tells the generator to include
@@ -390,4 +392,16 @@ func collectJavaFiles(root string) ([]string, error) {
 		return nil
 	})
 	return files, err
+}
+
+func findJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+	if library.Java == nil {
+		return nil
+	}
+	for _, ja := range library.Java.JavaAPIs {
+		if ja.Path == api.Path {
+			return ja
+		}
+	}
+	return nil
 }

@@ -114,24 +114,9 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 						}
 						tokens[token] = true
 					}
-					break
 				}
 			}
 		}
 	}
 	return tokens
-}
-
-// isCollectionIdentifier checks if a segment is a valid collection identifier.
-// It checks in the following order:
-// 1. Existing vocabulary (contains base tokens and tokens learned from API paths).
-// 2. Fallback heuristic: checks if the segment ends with 's'.
-func isCollectionIdentifier(segment string, vocabulary map[string]bool) bool {
-	if vocabulary != nil && vocabulary[segment] {
-		return true
-	}
-	if strings.HasSuffix(segment, "s") {
-		return true
-	}
-	return false
 }
