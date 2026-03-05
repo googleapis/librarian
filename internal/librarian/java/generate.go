@@ -100,6 +100,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/4344):
+	// Fill javaAPI before generate to avoid nil assertion
 	if err := postProcess(ctx, outdir, library.Name, version, javaAPI == nil || !javaAPI.NoSamples, googleapisDir, gapicDir, grpcDir, protoDir, protos); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
