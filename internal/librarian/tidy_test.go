@@ -495,7 +495,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 									Template: "prost",
 								},
 								{
-									Output:   "src/storage/control",
+									Output: "src/storage/control",
 								},
 							},
 						},
