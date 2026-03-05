@@ -28,7 +28,6 @@ func TestGenerate(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	orBuilderFile := filepath.Join(srcDir, "TestOrBuilder.java")
 	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.test.v1; public interface TestOrBuilder {}"), 0644); err != nil {
 		t.Fatal(err)
@@ -50,12 +49,16 @@ func TestGenerate(t *testing.T) {
 	if !strings.Contains(string(content), expected) {
 		t.Errorf("expected generated file to contain %s, but got:\n%s", expected, string(content))
 	}
-	// Test generation skips if file already exists
+}
+
+func TestGenerate_SkipExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "clirr-ignored-differences.xml")
 	initialContent := "manual content"
 	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(protoModulePath); err != nil {
+	if err := Generate(tmpDir); err != nil {
 		t.Fatal(err)
 	}
 	newContent, err := os.ReadFile(outputPath)
