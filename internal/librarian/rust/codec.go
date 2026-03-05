@@ -31,7 +31,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *side
 		specFormat = library.SpecificationFormat
 	}
 
-	src := addLibraryRoots(library, sources)
+	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
@@ -222,10 +222,14 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 }
 
 func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
-	src := addLibraryRoots(library, sources)
+	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
 	var title string
-	if module.APIPath != "" && src["roots"] == "googleapis" {
-		api, err := serviceconfig.Find(sources.Googleapis, module.APIPath, config.LanguageRust)
+	if module.APIPath != "" && len(src.ActiveRoots) == 1 && src.ActiveRoots[0] == "googleapis" {
+		root := sources.Googleapis
+		if module.APIPath == "schema/google/showcase/v1beta1" {
+			root = sources.Showcase
+		}
+		api, err := serviceconfig.Find(root, module.APIPath, config.LanguageRust)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find service config for %q: %w", module.APIPath, err)
 		}
@@ -243,7 +247,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 		specificationFormat = module.SpecificationFormat
 	}
 	if module.IncludeList != "" {
-		src["include-list"] = module.IncludeList
+		src.IncludeList = strings.Split(module.IncludeList, ",")
 	}
 	modelCfg := &parser.ModelConfig{
 		Language:            language,
@@ -322,37 +326,4 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 		codec["internal-builders"] = "true"
 	}
 	return codec
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
-func addLibraryRoots(library *config.Library, sources *sidekickconfig.Sources) map[string]string {
-	src := make(map[string]string)
-	if library.Rust == nil {
-		library.Rust = &config.RustCrate{}
-	}
-
-	if len(library.Roots) == 0 && sources.Googleapis != "" {
-		// Default to googleapis if no roots are specified.
-		src["googleapis-root"] = sources.Googleapis
-		src["roots"] = "googleapis"
-	} else {
-		src["roots"] = strings.Join(library.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
-		for _, root := range library.Roots {
-			if r, ok := rootMap[root]; ok && r.path != "" {
-				src[r.key] = r.path
-			}
-		}
-	}
-
-	return src
 }
