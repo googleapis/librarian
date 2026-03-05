@@ -213,7 +213,6 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 				"folders":         true,
 				"organizations":   true,
 				"billingAccounts": true,
-				"v1":              true,
 			},
 		},
 		{
