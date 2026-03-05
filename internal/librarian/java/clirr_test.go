@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clirr
+package java
 
 import (
 	"os"
@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestGenerate(t *testing.T) {
+func TestGenerateClirr(t *testing.T) {
 	tmpDir := t.TempDir()
 	protoModulePath := filepath.Join(tmpDir, "proto-google-cloud-test-v1")
 	srcDir := filepath.Join(protoModulePath, "src", "main", "java", "com", "google", "cloud", "test", "v1")
@@ -33,7 +33,7 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := Generate(protoModulePath); err != nil {
+	if err := GenerateClirr(protoModulePath); err != nil {
 		t.Fatal(err)
 	}
 
@@ -51,14 +51,14 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerate_SkipExisting(t *testing.T) {
+func TestGenerateClirr_SkipExisting(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "clirr-ignored-differences.xml")
 	initialContent := "manual content"
 	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(tmpDir); err != nil {
+	if err := GenerateClirr(tmpDir); err != nil {
 		t.Fatal(err)
 	}
 	newContent, err := os.ReadFile(outputPath)
@@ -66,6 +66,6 @@ func TestGenerate_SkipExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(newContent) != initialContent {
-		t.Errorf("expected Generate to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
+		t.Errorf("expected GenerateClirr to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
 	}
 }

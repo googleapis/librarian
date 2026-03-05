@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/librarian/java/clirr"
 	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -151,7 +150,7 @@ func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDi
 	// Generate clirr-ignored-differences.xml for the proto module.
 	modules := deriveModuleNames(libraryName, version)
 	protoModuleRoot := filepath.Join(outdir, modules.proto)
-	if err := clirr.Generate(protoModuleRoot); err != nil {
+	if err := GenerateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 
