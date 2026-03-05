@@ -345,7 +345,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return fmt.Errorf("error finding GO API %s: %w", api.Path, errGoAPINotFound)
+			return fmt.Errorf("error finding Go API %s: %w", api.Path, errGoAPINotFound)
 		}
 		// Proto-only client doesn't have generated snippets, skip updating.
 		if goAPI.ProtoOnly {
