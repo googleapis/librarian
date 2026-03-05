@@ -181,6 +181,8 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `internal-builders` value %q to boolean: %w", definition, err)
 			}
 			codec.internalBuilders = value
+		case key == "quickstart-service-override":
+			codec.quickstartServiceOverride = definition
 		default:
 			return nil, fmt.Errorf("unknown Rust codec option %q", key)
 		}
@@ -329,6 +331,8 @@ type codec struct {
 	generateRpcSamples bool
 	// If true, the generator will set the internal builder's visibility to public (crate).
 	internalBuilders bool
+	// Overrides the default heuristically selected service for the package-level quickstart.
+	quickstartServiceOverride string
 }
 
 type systemParameter struct {

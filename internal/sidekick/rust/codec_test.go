@@ -324,6 +324,15 @@ func TestParseOptions(t *testing.T) {
 				c.internalBuilders = true
 			},
 		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
+				"quickstart-service-override": "OverriddenService",
+			},
+			Update: func(c *codec) {
+				c.quickstartServiceOverride = "OverriddenService"
+			},
+		},
 	} {
 		want, err := newCodec(test.Format, map[string]string{})
 		if err != nil {
