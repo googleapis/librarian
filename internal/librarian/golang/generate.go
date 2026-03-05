@@ -18,6 +18,7 @@ package golang
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -127,6 +128,10 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	}
 	if err := updateSnippetMetadata(library, outdir); err != nil {
 		return err
+	}
+	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); errors.Is(err, fs.ErrNotExist) {
+		// New client, init the module.
+		return initModule(ctx, absModuleRoot)
 	}
 	return nil
 }
@@ -382,6 +387,13 @@ func updateSnippetDirectory(baseDir, version string) error {
 		}
 		return nil
 	})
+}
+
+func initModule(ctx context.Context, dir string) error {
+	if err := command.Run(ctx, "go", "mod", "init", dir); err != nil {
+		return err
+	}
+	return command.Run(ctx, "go", "mod", "tidy", dir)
 }
 
 // releaseLevel determines the release level for an API based on the API path and the library's current version.
