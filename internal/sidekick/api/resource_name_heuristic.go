@@ -108,6 +108,10 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 				if seg.Variable != nil {
 					if i > 0 && tmpl.Segments[i-1].Literal != nil {
 						token := *tmpl.Segments[i-1].Literal
+						// Do not add API version strings (e.g., v1, v1beta1) to the vocabulary
+						if len(token) >= 2 && token[0] == 'v' && token[1] >= '0' && token[1] <= '9' {
+							continue
+						}
 						tokens[token] = true
 					}
 					break
