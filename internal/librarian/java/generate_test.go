@@ -172,11 +172,30 @@ func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 }
 
 func TestConstructProtocCommandArgs_Error(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "nonexistent"}
-	protocOptions := []string{"--java_out=out"}
-	if _, _, err := constructProtocCommandArgs(api, nil, googleapisDir, protocOptions); err == nil {
-		t.Error("constructProtocCommandArgs() expected error for nonexistent path, got nil")
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		wantErr string
+	}{
+		{
+			name:    "nonexistent path",
+			api:     &config.API{Path: "nonexistent"},
+			wantErr: "no protos found in api \"nonexistent\"",
+		},
+		{
+			name:    "malformed path",
+			api:     &config.API{Path: "malformed["},
+			wantErr: "failed to find protos",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			protocOptions := []string{"--java_out=out"}
+			_, _, err := constructProtocCommandArgs(test.api, nil, googleapisDir, protocOptions)
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("constructProtocCommandArgs() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
