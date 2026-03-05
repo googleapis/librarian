@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	libconfig "github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -187,11 +186,8 @@ func TestRustFromProtobuf(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(testdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"package:wkt":                   "source=google.protobuf,package=google-cloud-wkt",
@@ -230,11 +226,8 @@ func TestRustClient(t *testing.T) {
 			SpecificationFormat: libconfig.SpecProtobuf,
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
-			Source: sidekickconfig.SourceConfig{
-				Sources: sidekickconfig.Sources{
-					Googleapis: path.Join(testdataDir, "googleapis"),
-				},
-				ActiveRoots: []string{"googleapis"},
+			Source: map[string]string{
+				"googleapis-root": path.Join(testdataDir, "googleapis"),
 			},
 			Codec: map[string]string{
 				"copyright-year":                "2025",
@@ -281,11 +274,8 @@ func TestRustNosvc(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(testdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":                "2025",
@@ -325,11 +315,8 @@ func TestRustModuleRpc(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/rpc/rpc_publish.yaml",
 		SpecificationSource: "google/rpc",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				Googleapis: path.Join(testdataDir, "googleapis"),
-			},
-			ActiveRoots: []string{"googleapis"},
+		Source: map[string]string{
+			"googleapis-root": path.Join(testdataDir, "googleapis"),
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",
@@ -365,12 +352,9 @@ func TestRustBootstrapWkt(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "google/protobuf",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
-				ProtobufSrc: localTestdataDir,
-			},
-			ActiveRoots: []string{"protobuf-src"},
-			IncludeList: []string{"source_context.proto"},
+		Source: map[string]string{
+			"include-list":      "source_context.proto",
+			"protobuf-src-root": localTestdataDir,
 		},
 		Codec: map[string]string{
 			"copyright-year":    "2025",

@@ -25,7 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -2141,15 +2140,12 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 
 func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGeneratorRequest {
 	t.Helper()
-	src := sidekickconfig.SourceConfig{
-		Sources: sidekickconfig.Sources{
-			Googleapis:  "../../testdata/googleapis",
-			ProtobufSrc: "testdata",
-		},
-		ActiveRoots: []string{"googleapis", "protobuf-src"},
-		IncludeList: []string{filename},
+	options := map[string]string{
+		"googleapis-root":   "../../testdata/googleapis",
+		"extra-protos-root": "testdata",
+		"include-list":      filename,
 	}
-	request, err := newCodeGeneratorRequest("testdata", src)
+	request, err := newCodeGeneratorRequest("testdata", options)
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}

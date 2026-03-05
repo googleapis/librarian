@@ -28,7 +28,7 @@ import (
 const (
 	googleapisRoot  = "../../../internal/testdata/googleapis"
 	discoveryRoot   = "fake/path/to/testdata/discovery"
-	protobufRoot    = "fake/path/to/testdata/protobuf"
+	protobufSrcRoot = "fake/path/to/testdata/protobuf-src"
 	conformanceRoot = "fake/path/to/testdata/conformance"
 	showcaseRoot    = "../../../internal/testdata/gapic-showcase"
 )
@@ -62,8 +62,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -86,8 +87,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -109,8 +111,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -147,8 +150,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -170,8 +174,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -205,8 +210,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -235,8 +241,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -271,8 +278,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/secretmanager/v1",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -300,8 +308,10 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis", "discovery"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
+					"roots":           "googleapis,discovery",
 				},
 				Override: api.ModelOverride{
 					Title: "Google Compute Engine API",
@@ -323,8 +333,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecOpenAPI,
 				SpecificationSource: "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
@@ -346,8 +357,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis", "discovery", "showcase"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
+					"showcase-root":   absPath(t, showcaseRoot),
+					"roots":           "googleapis,discovery,showcase",
 				},
 				Override: api.ModelOverride{
 					Title: "Google Compute Engine API",
@@ -366,8 +380,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/apps/script/type/gmail",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Google Apps Script Types",
@@ -387,8 +402,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/longrunning",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Description: "Defines types and an abstract service to handle long-running operations.",
@@ -414,8 +430,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/spanner/admin/database/v1",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					SkippedIDs: []string{
@@ -441,8 +458,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/storageinsights/v1",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -480,8 +498,10 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecDiscovery,
 				SpecificationSource: "discoveries/compute.v1.json",
 				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis", "discovery"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"discovery-root":  absPath(t, discoveryRoot),
+					"roots":           "googleapis,discovery",
 				},
 				Override: api.ModelOverride{
 					Title: "Google Compute Engine API",
@@ -509,7 +529,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			name: "with protobuf and conformance",
 			library: &config.Library{
 				Name:  "google-cloud-vision-v1",
-				Roots: []string{"googleapis", "protobuf", "conformance"},
+				Roots: []string{"googleapis", "protobuf-src", "conformance"},
 			},
 			api: &config.API{
 				Path: "google/cloud/vision/v1",
@@ -518,8 +538,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/vision/v1",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis", "protobuf", "conformance"},
+				Source: map[string]string{
+					"googleapis-root":   absPath(t, googleapisRoot),
+					"protobuf-src-root": absPath(t, protobufSrcRoot),
+					"conformance-root":  absPath(t, conformanceRoot),
+					"roots":             "googleapis,protobuf-src,conformance",
 				},
 			},
 		},
@@ -537,8 +560,10 @@ func TestLibraryToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "schema/google/showcase/v1beta1",
 				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"showcase", "googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"showcase-root":   absPath(t, showcaseRoot),
+					"roots":           "showcase,googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Client Libraries Showcase API",
@@ -551,13 +576,10 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),
-				ProtobufSrc: absPath(t, protobufRoot),
+				ProtobufSrc: absPath(t, protobufSrcRoot),
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
-			if test.want.Source.Sources == (sidekickconfig.Sources{}) {
-				test.want.Source.Sources = *sources
-			}
 			got, err := libraryToModelConfig(test.library, test.api, sources)
 			if err != nil {
 				t.Fatal(err)
@@ -607,8 +629,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 			want: &parser.ModelConfig{
 				Language: "rust",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				CommentOverrides: []api.DocumentationOverride{
 					{
@@ -639,8 +662,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				Language:            "rust_storage",
 				SpecificationFormat: config.SpecProtobuf,
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -659,8 +683,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: "none",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -679,8 +704,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 			},
 		},
@@ -701,8 +727,9 @@ func TestModuleToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/logging/type",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					Title: "Logging types",
@@ -727,9 +754,10 @@ func TestModuleToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
-					IncludeList: []string{"example-list"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"include-list":    "example-list",
+					"roots":           "googleapis",
 				},
 				Override: api.ModelOverride{
 					IncludedIDs: []string{"id1", "id2"},
@@ -754,8 +782,9 @@ func TestModuleToModelConfig(t *testing.T) {
 				Language:            "rust",
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "conformance",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"conformance"},
+				Source: map[string]string{
+					"conformance-root": absPath(t, conformanceRoot),
+					"roots":            "conformance",
 				},
 			},
 		},
@@ -779,8 +808,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 			want: &parser.ModelConfig{
 				Language: "rust",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				PaginationOverrides: []api.PaginationOverride{
 					{
@@ -813,8 +843,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 			want: &parser.ModelConfig{
 				Language: "rust",
-				Source: sidekickconfig.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
+				Source: map[string]string{
+					"googleapis-root": absPath(t, googleapisRoot),
+					"roots":           "googleapis",
 				},
 				PaginationOverrides: []api.PaginationOverride{
 					{
@@ -830,15 +861,12 @@ func TestModuleToModelConfig(t *testing.T) {
 				Conformance: absPath(t, conformanceRoot),
 				Discovery:   absPath(t, discoveryRoot),
 				Googleapis:  absPath(t, googleapisRoot),
-				ProtobufSrc: absPath(t, protobufRoot),
+				ProtobufSrc: absPath(t, protobufSrcRoot),
 				Showcase:    absPath(t, showcaseRoot),
 			}
 
 			var commentOverrides []api.DocumentationOverride
 			for _, module := range test.library.Rust.Modules {
-				if test.want.Source.Sources == (sidekickconfig.Sources{}) {
-					test.want.Source.Sources = *sources
-				}
 				got, err := moduleToModelConfig(test.library, module, sources)
 				if err != nil {
 					t.Fatal(err)
