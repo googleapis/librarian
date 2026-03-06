@@ -198,7 +198,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		return nil, err
 	}
 
-	opts := []string{"go-gapic-package=" + buildGAPICImportPath(library, goAPI)}
+	opts := []string{"go-gapic-package=" + buildGAPICImportPath(goAPI)}
 	if goAPI == nil || !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
@@ -231,13 +231,9 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	return opts, nil
 }
 
-func buildGAPICImportPath(library *config.Library, goAPI *config.GoAPI) string {
-	var modulePathVersion string
-	if library.Go != nil && library.Go.ModulePathVersion != "" {
-		modulePathVersion = "/" + library.Go.ModulePathVersion
-	}
-	return fmt.Sprintf("cloud.google.com/go/%s%s;%s",
-		goAPI.ImportPath, modulePathVersion, goAPI.ClientPackage)
+func buildGAPICImportPath(goAPI *config.GoAPI) string {
+	return fmt.Sprintf("cloud.google.com/go/%s;%s",
+		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
@@ -349,7 +345,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(output, goAPI.ImportPath)
+		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
 		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
 			return err
 		}
@@ -360,6 +356,9 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 func updateSnippetDirectory(baseDir, version string) error {
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
 			return err
 		}
 		if d.IsDir() {

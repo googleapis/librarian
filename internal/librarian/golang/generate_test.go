@@ -566,6 +566,11 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			// Do not create snippet directory to verify the function returns before
 			// checking the existence of the directory.
 		},
+		{
+			name: "snippet directory does not exist",
+			// Do not create snippet directory to verify the function doesn't
+			// return error in such ase.
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -639,23 +644,6 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			wantErr: errGoAPINotFound,
 		},
 		{
-			name: "snippet directory does not exist",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			wantErr: os.ErrNotExist,
-		},
-		{
 			name: "no permission to read snippet directory",
 			library: &config.Library{
 				Name:    "bigquery",
@@ -727,17 +715,12 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		goAPI   *config.GoAPI
-		want    string
+		name  string
+		goAPI *config.GoAPI
+		want  string
 	}{
 		{
 			name: "no override",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
@@ -747,9 +730,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 		{
 			name: "customize package override",
-			library: &config.Library{
-				Name: "storage",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "storage",
 				ImportPath:    "storage/internal/apiv2",
@@ -759,7 +739,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGAPICImportPath(test.library, test.goAPI)
+			got := buildGAPICImportPath(test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

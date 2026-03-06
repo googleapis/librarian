@@ -254,6 +254,93 @@ func TestDefaultImportPathAndClientPkg(t *testing.T) {
 	}
 }
 
+func TestClientPathFromLibraryRoot(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		goAPI   *config.GoAPI
+		want    string
+	}{
+		{
+			name: "no module path version",
+			library: &config.Library{
+				Go: &config.GoModule{},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "with module path version v2",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v2/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "with module path version v2 and api version v2",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v2/apiv2",
+			},
+			want: "secretmanager/apiv2",
+		},
+		{
+			name: "with module path version v3",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v3",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v3/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			// This test case should not happen in production since
+			// GoAPI is part of Go config.
+			name: "library.Go is nil",
+			library: &config.Library{
+				Go: nil,
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "module path version not in import path",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := clientPathFromLibraryRoot(test.library, test.goAPI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestSnippetDirectory(t *testing.T) {
 	output := t.TempDir()
 	importPath := "example/apiv1"
@@ -261,6 +348,39 @@ func TestSnippetDirectory(t *testing.T) {
 	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestModulePath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "no module path version",
+			library: &config.Library{
+				Name: "pubsub",
+			},
+			want: "cloud.google.com/go/pubsub",
+		},
+		{
+			name: "with module path version v2",
+			library: &config.Library{
+				Name: "pubsub",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			want: "cloud.google.com/go/pubsub/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := modulePath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -48,7 +48,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        level,
 	}
-	return metadata.Write(filepath.Join(library.Output, goAPI.ImportPath))
+	return metadata.Write(filepath.Join(library.Output, clientPathFromLibraryRoot(library, goAPI)))
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.
