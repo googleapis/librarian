@@ -83,8 +83,8 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 		if keepSet[rel] || itTestRegexp.MatchString(filepath.ToSlash(rel)) {
 			return nil
 		}
-		// Bypass clirr-ignored-differences.xml files as they are generated once and manually maintained.
-		if d.Name() == "clirr-ignored-differences.xml" {
+		// Bypass clirr-ignored-differences.xml and pom.xml files as they are generated once and manually maintained.
+		if d.Name() == "clirr-ignored-differences.xml" || d.Name() == "pom.xml" {
 			return nil
 		}
 		return os.Remove(path)
