@@ -220,6 +220,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `detailed_tracing_attributes` | bool | Indicates whether to include detailed tracing attributes. |
+| `resource_name` | bool | Indicates whether to apply heuristics to identify and generate resource names. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
