@@ -1230,8 +1230,6 @@
     - rust
   path: google/cloud/gsuiteaddons/v1
 - languages:
-    - go
-    - python
     - rust
   path: google/cloud/hypercomputecluster/v1
 - languages:
@@ -2030,8 +2028,6 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
   path: google/cloud/translate/v3beta1
 - languages:
-    - go
-    - python
     - rust
   path: google/cloud/vectorsearch/v1
 - languages:
