@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
@@ -30,10 +29,6 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
-)
-
-const (
-	googleapisRepo = "github.com/googleapis/googleapis"
 )
 
 var (
@@ -77,7 +72,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return errEmptySources
 	}
 
-	googleapisDir, rustDartSources, err := LoadSources(ctx, cfg)
+	sources, err := LoadSources(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -113,7 +108,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if err := cleanLibraries(cfg.Language, libraries); err != nil {
 		return err
 	}
-	if err := generateLibraries(ctx, cfg, libraries, googleapisDir, rustDartSources); err != nil {
+	if err := generateLibraries(ctx, cfg, libraries, sources); err != nil {
 		return err
 	}
 	if err := formatLibraries(ctx, cfg.Language, libraries); err != nil {
@@ -123,31 +118,11 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 }
 
 // LoadSources fetches and loads the sources required for generation.
-func LoadSources(ctx context.Context, cfg *config.Config) (string, *sidekickconfig.Sources, error) {
-	var googleapisDir string
-	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-		return "", nil, errors.New("must specify --googleapis flag")
+func LoadSources(ctx context.Context, cfg *config.Config) (*sidekickconfig.Sources, error) {
+	if cfg.Sources == nil {
+		return nil, ErrMissingGoogleapisSource
 	}
-	if cfg.Sources.Googleapis.Dir != "" {
-		googleapisDir = cfg.Sources.Googleapis.Dir
-	} else {
-		dir, err := fetch.RepoDir(ctx, googleapisRepo, cfg.Sources.Googleapis.Commit, cfg.Sources.Googleapis.SHA256)
-		if err != nil {
-			return "", nil, fmt.Errorf("failed to fetch %s: %w", googleapisRepo, err)
-		}
-		googleapisDir = dir
-	}
-
-	var rustDartSources *sidekickconfig.Sources
-	if cfg.Language == config.LanguageRust || cfg.Language == config.LanguageDart {
-		sources, err := FetchRustDartSources(ctx, cfg.Sources)
-		if err != nil {
-			return "", nil, err
-		}
-		rustDartSources = sources
-		rustDartSources.Googleapis = googleapisDir
-	}
-	return googleapisDir, rustDartSources, nil
+	return fetchSources(ctx, cfg.Sources)
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
@@ -188,7 +163,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 
 // generateLibraries delegates to language-specific code to generate all the
 // given libraries.
-func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, googleapisDir string, src *sidekickconfig.Sources) error {
+func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sidekickconfig.Sources) error {
 	switch cfg.Language {
 	case config.LanguageFake:
 		return fakeGenerateLibraries(libraries)
@@ -197,9 +172,9 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguagePython:
 		return python.GenerateLibraries(ctx, cfg, libraries, src)
 	case config.LanguageGo:
-		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
+		return golang.GenerateLibraries(ctx, libraries, src.Googleapis)
 	case config.LanguageJava:
-		return java.GenerateLibraries(ctx, libraries, googleapisDir)
+		return java.GenerateLibraries(ctx, libraries, src.Googleapis)
 	case config.LanguageRust:
 		return rust.GenerateLibraries(ctx, cfg, libraries, src)
 	default:
