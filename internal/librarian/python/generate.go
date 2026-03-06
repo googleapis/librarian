@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (
@@ -36,9 +37,9 @@ const (
 )
 
 // GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
+func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	for _, library := range libraries {
-		if err := generate(ctx, config, library, googleapisDir); err != nil {
+		if err := generate(ctx, config, library, sources); err != nil {
 			return err
 		}
 	}
@@ -46,7 +47,7 @@ func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*
 }
 
 // generate generates a Python client library.
-func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+func generate(ctx context.Context, config *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
 	// If the library has no APIs, there's nothing to do.
 	if len(library.APIs) == 0 {
 		return nil
@@ -69,7 +70,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	// and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
+		if err := generateAPI(ctx, api, library, sources.Googleapis, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -77,7 +78,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	// Construct the repo metadata in memory, then write it to disk. This has
 	// to be before post-processing, as the data in .repo-metadata.json is used
 	// by the post-processor, primarily for documentation.
-	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
+	repoMetadata, err := createRepoMetadata(config, library, sources)
 	if err != nil {
 		return err
 	}
@@ -106,13 +107,13 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 
 // createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
 // for the given library.
-func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
+func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*repometadata.RepoMetadata, error) {
 	// Just to avoid lots of checks for library.Python being nil.
 	packageOptions := library.Python
 	if packageOptions == nil {
 		packageOptions = &config.PythonPackage{}
 	}
-	repoMetadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	repoMetadata, err := repometadata.FromLibrary(cfg, library, sources)
 	if err != nil {
 		return nil, err
 	}

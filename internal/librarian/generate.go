@@ -195,13 +195,13 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageDart:
 		return dart.GenerateLibraries(ctx, libraries, src)
 	case config.LanguagePython:
-		return python.GenerateLibraries(ctx, cfg, libraries, googleapisDir)
+		return python.GenerateLibraries(ctx, cfg, libraries, src)
 	case config.LanguageGo:
 		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
 	case config.LanguageJava:
 		return java.GenerateLibraries(ctx, libraries, googleapisDir)
 	case config.LanguageRust:
-		return rust.GenerateLibraries(ctx, libraries, src)
+		return rust.GenerateLibraries(ctx, cfg, libraries, src)
 	default:
 		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}
