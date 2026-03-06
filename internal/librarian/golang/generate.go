@@ -125,18 +125,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		return err
 	}
 	for i, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
-		if goAPI == nil {
-			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
-		}
-		if err := generateClientVersionFile(library, goAPI); err != nil {
+		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
 			return err
 		}
-		if err := generateRepoMetadata(api, library, goAPI); err != nil {
+		if err := generateRepoMetadata(api, library); err != nil {
 			return err
 		}
 		if i != 0 {
