@@ -566,6 +566,11 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			// Do not create snippet directory to verify the function returns before
 			// checking the existence of the directory.
 		},
+		{
+			name: "snippet directory does not exist",
+			// Do not create snippet directory to verify the function doesn't
+			// return error in such ase.
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -637,23 +642,6 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
 			},
 			wantErr: errGoAPINotFound,
-		},
-		{
-			name: "snippet directory does not exist",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			wantErr: os.ErrNotExist,
 		},
 		{
 			name: "no permission to read snippet directory",

@@ -356,6 +356,9 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 func updateSnippetDirectory(baseDir, version string) error {
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
 			return err
 		}
 		if d.IsDir() {
