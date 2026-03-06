@@ -60,8 +60,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 	})
 }
 
-func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	goAPI := findGoAPI(library, apiPath)
+func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (err error) {
 	// goAPI should not be nil in production because they are filled with defaults
 	// for each API path of the library.
 	if goAPI == nil || goAPI.ProtoOnly {

@@ -125,14 +125,18 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		return err
 	}
 	for i, api := range library.APIs {
-		if err := generateClientVersionFile(library, api.Path); err != nil {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
+		}
+		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return err
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
 			return err
 		}
-		if err := generateRepoMetadata(api, library); err != nil {
+		if err := generateRepoMetadata(api, library, goAPI); err != nil {
 			return err
 		}
 		if i != 0 {
@@ -198,7 +202,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 		return nil, err
 	}
 
-	opts := []string{"go-gapic-package=" + buildGAPICImportPath(library, goAPI)}
+	opts := []string{"go-gapic-package=" + buildGAPICImportPath(goAPI)}
 	if goAPI == nil || !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
@@ -231,7 +235,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	return opts, nil
 }
 
-func buildGAPICImportPath(library *config.Library, goAPI *config.GoAPI) string {
+func buildGAPICImportPath(goAPI *config.GoAPI) string {
 	return fmt.Sprintf("cloud.google.com/go/%s;%s",
 		goAPI.ImportPath, goAPI.ClientPackage)
 }

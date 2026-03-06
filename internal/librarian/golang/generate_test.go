@@ -727,17 +727,12 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		goAPI   *config.GoAPI
-		want    string
+		name  string
+		goAPI *config.GoAPI
+		want  string
 	}{
 		{
 			name: "no override",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
@@ -747,9 +742,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 		{
 			name: "customize package override",
-			library: &config.Library{
-				Name: "storage",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "storage",
 				ImportPath:    "storage/internal/apiv2",
@@ -759,7 +751,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGAPICImportPath(test.library, test.goAPI)
+			got := buildGAPICImportPath(test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

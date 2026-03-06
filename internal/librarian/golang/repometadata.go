@@ -29,11 +29,7 @@ const (
 	repoMetadataReleaseLevelPreview = "preview"
 )
 
-func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
-	goAPI := findGoAPI(library, api.Path)
-	if goAPI == nil {
-		return errGoAPINotFound
-	}
+func generateRepoMetadata(api *serviceconfig.API, library *config.Library, goAPI *config.GoAPI) error {
 	level, err := metadataReleaseLevel(api, library)
 	if err != nil {
 		return err
