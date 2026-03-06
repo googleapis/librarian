@@ -30,65 +30,59 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
-func TestCreateProtocOptions(t *testing.T) {
+func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		api      *config.API
-		javaAPI  *config.JavaAPI
-		library  *config.Library
-		expected []string
-		wantErr  bool
+		name      string
+		api       *config.API
+		javaAPI   *config.JavaAPI
+		transport string
+		expected  []string
+		wantErr   bool
 	}{
 		{
-			name:    "basic case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
-			javaAPI: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name:      "basic case",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			transport: "grpc+rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_grpc_out=grpc-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest,rest-numeric-enums",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"rest-numeric-enums",
 			},
 		},
 		{
-			name: "rest transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Transport: "rest",
-			},
-			javaAPI: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name:      "rest transport",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			transport: "rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=rest,rest-numeric-enums",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=rest",
+				"rest-numeric-enums",
 			},
 		},
 		{
-			name:    "no rest numeric enum case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
-			javaAPI: &config.JavaAPI{
-				Path:               "google/cloud/secretmanager/v1",
-				NoRestNumericEnums: true,
-			},
+			name:      "no rest numeric enum case",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
+			transport: "grpc+rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_grpc_out=grpc-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := createProtocOptions(test.api, test.javaAPI, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
+			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.transport)
 			if (err != nil) != test.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
+				t.Fatalf("resolveGAPICOptions() error = %v, wantErr %v", err, test.wantErr)
 			}
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
@@ -98,111 +92,59 @@ func TestCreateProtocOptions(t *testing.T) {
 	}
 }
 
-func TestConstructProtocCommandArgs_Success(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	javaAPI := &config.JavaAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
-	}
-	protocOptions := []string{"--java_out=out"}
-
-	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
-	if err != nil {
-		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
-	}
-
-	expectedArgs := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
+func TestProtocArgs(t *testing.T) {
+	apiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+	}
+	additionalProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		"--java_out=out",
 	}
 
-	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+	t.Run("protoProtocArgs", func(t *testing.T) {
+		got := protoProtocArgs(apiProtos, googleapisDir, "proto-out")
+		want := []string{
+			"--experimental_allow_proto3_optional",
+			"-I=" + googleapisDir,
+			"--java_out=proto-out",
+			apiProtos[0],
+			apiProtos[1],
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 
-	// Verify apiProtos contains the expected files
-	expectedApiProtos := []string{
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-	}
-	sort.Strings(expectedApiProtos)
-	sort.Strings(apiProtos)
-	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
-		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
-	}
-}
+	t.Run("grpcProtocArgs", func(t *testing.T) {
+		got := grpcProtocArgs(apiProtos, googleapisDir, "grpc-out")
+		want := []string{
+			"--experimental_allow_proto3_optional",
+			"-I=" + googleapisDir,
+			"--java_grpc_out=grpc-out",
+			apiProtos[0],
+			apiProtos[1],
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 
-func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	javaAPI := &config.JavaAPI{
-		AdditionalProtos: []string{"google/cloud/common_resources.proto", "google/cloud/location/locations.proto"},
-	}
-	protocOptions := []string{"--java_out=out"}
-	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
-	if err != nil {
-		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
-	}
-
-	expectedArgs := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
-		"--java_out=out",
-	}
-
-	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	expectedApiProtos := []string{
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-	}
-	sort.Strings(expectedApiProtos)
-	sort.Strings(apiProtos)
-	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
-		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
-	}
-}
-
-func TestConstructProtocCommandArgs_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		api     *config.API
-		wantErr string
-	}{
-		{
-			name:    "nonexistent path",
-			api:     &config.API{Path: "nonexistent"},
-			wantErr: "no protos found in api \"nonexistent\"",
-		},
-		{
-			name:    "malformed path",
-			api:     &config.API{Path: "malformed["},
-			wantErr: "failed to find protos",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			protocOptions := []string{"--java_out=out"}
-			javaAPI := &config.JavaAPI{Path: test.api.Path}
-			_, _, err := constructProtocCommandArgs(test.api, javaAPI, googleapisDir, protocOptions)
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("constructProtocCommandArgs() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
+	t.Run("gapicProtocArgs", func(t *testing.T) {
+		gapicOpts := []string{"opt1", "opt2"}
+		got := gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", gapicOpts)
+		want := []string{
+			"--experimental_allow_proto3_optional",
+			"-I=" + googleapisDir,
+			"--java_gapic_out=metadata:gapic-out",
+			"--java_gapic_opt=opt1,opt2",
+			apiProtos[0],
+			apiProtos[1],
+			additionalProtos[0],
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
 }
 
 func TestResolveJavaAPI(t *testing.T) {
