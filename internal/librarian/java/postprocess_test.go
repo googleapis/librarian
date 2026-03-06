@@ -233,18 +233,13 @@ func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
-	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
-	protos := []string{proto1, commonResources}
+	protos := []string{proto1}
 	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
 		t.Fatalf("copyProtos failed: %v", err)
 	}
 	// Verify proto1 was copied
 	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/secretmanager/v1/service.proto")); err != nil {
 		t.Errorf("expected proto1 to be copied: %v", err)
-	}
-	// Verify commonResources was NOT copied
-	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/common_resources.proto")); !os.IsNotExist(err) {
-		t.Errorf("expected commonResources to be skipped")
 	}
 }
 

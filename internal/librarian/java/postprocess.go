@@ -199,9 +199,6 @@ func restructureOutput(p postProcessParams) error {
 
 func copyProtos(googleapisDir string, protos []string, destDir string) error {
 	for _, proto := range protos {
-		if strings.HasSuffix(proto, commonProtos) {
-			continue
-		}
 		// Calculate relative path from googleapisDir to preserve directory structure
 		rel, err := filepath.Rel(googleapisDir, proto)
 		if err != nil {
