@@ -140,7 +140,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if diff := cmp.Diff(test.want, got); diff != "" {
@@ -188,7 +188,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if got != nil {
@@ -378,12 +378,34 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				}
 				model.Services[0].Methods = append(model.Services[0].Methods, m)
 			}
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
+	// A setup that would normally match the heuristics
+	serviceID := ".google.cloud.compute.v1.Instances"
+	path := NewPathTemplate().
+		WithLiteral("projects").WithVariableNamed("project").
+		WithLiteral("locations").WithVariableNamed("location")
+	fields := []*Field{
+		{Name: "project", Typez: STRING_TYPE},
+		{Name: "location", Typez: STRING_TYPE},
+	}
+
+	model, binding := setupTestModel(serviceID, path, fields)
+
+	// Explicitly disable heuristics
+	IdentifyTargetResources(model, false)
+
+	// Since heuristics are disabled, it should not find the target resource
+	if binding.TargetResource != nil {
+		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource)
 	}
 }
