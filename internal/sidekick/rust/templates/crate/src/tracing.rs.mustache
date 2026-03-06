@@ -33,9 +33,11 @@ use crate::Result;
 pub struct {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     inner: T,
+    {{#Codec.DetailedTracingAttributes}}
     #[cfg(google_cloud_unstable_tracing)]
     {{! Use a fully qualified name to avoid conflicts with any client called `DurationMetric` }}
     duration: gaxi::observability::DurationMetric,
+    {{/Codec.DetailedTracingAttributes}}
 }
 
 {{#Codec.PerServiceFeatures}}
@@ -46,10 +48,12 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     pub fn new(inner: T) -> Self {
         Self {
             inner,
+            {{#Codec.DetailedTracingAttributes}}
             #[cfg(google_cloud_unstable_tracing)]
             duration: gaxi::observability::DurationMetric::new(
                 &info::INSTRUMENTATION_CLIENT_INFO,
             ),
+            {{/Codec.DetailedTracingAttributes}}
         }
     }
 }
