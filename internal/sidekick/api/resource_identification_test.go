@@ -247,7 +247,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
-
 		{
 			name:      "heuristic: not eligible service",
 			serviceID: "any.service", // not eligible
@@ -259,7 +258,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			resources: nil,
 			want:      nil,
 		},
-
 		{
 			name:      "heuristic: paths with un-grouped variable after version string",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -280,7 +278,22 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/{resource}/children/{child}"),
 			},
 		},
-
+		{
+			name:      "heuristic: valid compute path with version string",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("locations").WithVariableNamed("location"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "location", Typez: STRING_TYPE},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"location"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			},
+		},
 		{
 			name:      "heuristic: stops at trailing action",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -306,7 +319,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
-
 		{
 			name:      "heuristic: stops at unknown segment",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -330,7 +342,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
 			},
 		},
-
 		{
 			name:      "heuristic: skips if input field missing",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -339,7 +350,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			fields: []*Field{}, // No fields
 			want:   nil,
 		},
-
 		{
 			name:      "heuristic: skips non-collection literal without 's'",
 			serviceID: ".google.cloud.compute.v1.Instances",
