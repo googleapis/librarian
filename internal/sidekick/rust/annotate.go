@@ -1632,17 +1632,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 						return err
 					}
 					bAnn.ResourceNameTemplate = tmpl
-
-					var args []string
-					for _, path := range b.TargetResource.FieldPaths {
-						var rustNames []string
-						for _, p := range path {
-							rustNames = append(rustNames, toSnakeNoMangling(p))
-						}
-						varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
-						args = append(args, varName)
-					}
-					bAnn.ResourceNameArgs = args
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
 
 					if annotation.ResourceNameTemplate == "" {
 						annotation.ResourceNameTemplate = bAnn.ResourceNameTemplate
@@ -1678,6 +1668,20 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		}
 	}
 	return sb.String(), nil
+}
+
+// formatResourceNameArgs creates the corresponding Rust template variables for the resource name.
+func formatResourceNameArgs(fieldPaths [][]string) []string {
+	var args []string
+	for _, path := range fieldPaths {
+		var rustNames []string
+		for _, p := range path {
+			rustNames = append(rustNames, toSnakeNoMangling(p))
+		}
+		varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+		args = append(args, varName)
+	}
+	return args
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.
