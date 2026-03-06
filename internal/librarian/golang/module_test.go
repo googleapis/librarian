@@ -308,6 +308,8 @@ func TestClientPathFromLibraryRoot(t *testing.T) {
 			want: "secretmanager/apiv1",
 		},
 		{
+			// This test case should not happen in production since
+			// GoAPI is part of Go config.
 			name: "library.Go is nil",
 			library: &config.Library{
 				Go: nil,
