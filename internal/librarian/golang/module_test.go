@@ -284,6 +284,18 @@ func TestClientPathFromLibraryRoot(t *testing.T) {
 			want: "secretmanager/apiv1",
 		},
 		{
+			name: "with module path version v2 and api version v2",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v2/apiv2",
+			},
+			want: "secretmanager/apiv2",
+		},
+		{
 			name: "with module path version v3",
 			library: &config.Library{
 				Go: &config.GoModule{
