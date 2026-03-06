@@ -360,52 +360,6 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "goimports")
-	outDir := t.TempDir()
-	goFile := filepath.Join(outDir, "test.go")
-	unformatted := `package main
-
-import (
-"fmt"
-"os"
-)
-
-func main() {
-fmt.Println("Hello World")
-}
-`
-	if err := os.WriteFile(goFile, []byte(unformatted), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Output: outDir,
-	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
-
-	gotBytes, err := os.ReadFile(goFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-	want := `package main
-
-import (
-	"fmt"
-)
-
-func main() {
-	fmt.Println("Hello World")
-}
-`
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestGenerateREADME(t *testing.T) {
 	dir := t.TempDir()
 	moduleRoot := filepath.Join(dir, "secretmanager")

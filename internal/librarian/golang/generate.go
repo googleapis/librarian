@@ -55,24 +55,6 @@ func GenerateLibraries(ctx context.Context, libraries []*config.Library, googlea
 	return nil
 }
 
-// Format formats a generated Go library.
-func Format(ctx context.Context, library *config.Library) error {
-	outDir, err := filepath.Abs(library.Output)
-	if err != nil {
-		return err
-	}
-	args := []string{"-w"}
-	libraryDir := filepath.Join(outDir, library.Name)
-	if _, err := os.Stat(libraryDir); err == nil {
-		args = append(args, libraryDir)
-	}
-	snippetDir := snippetDirectory(outDir, library.Name)
-	if _, err := os.Stat(snippetDir); err == nil {
-		args = append(args, snippetDir)
-	}
-	return command.Run(ctx, "goimports", args...)
-}
-
 // generate generates a Go client library.
 func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
