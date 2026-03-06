@@ -62,7 +62,7 @@ func (c SourceConfig) Root(name string) string {
 		return c.Sources.Showcase
 	case "protobuf-src":
 		return c.Sources.ProtobufSrc
-	case "conformance":
+	case "conformance", "conformance-root":
 		return c.Sources.Conformance
 	default:
 		// Unknown root name
