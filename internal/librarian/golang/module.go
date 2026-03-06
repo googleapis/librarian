@@ -108,6 +108,16 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }
 
+func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) string {
+	importPath := goAPI.ImportPath
+	if library.Go != nil && library.Go.ModulePathVersion != "" {
+		modulePathVersion := fmt.Sprintf("/%s", library.Go.ModulePathVersion)
+		idx := strings.Index(importPath, modulePathVersion)
+		importPath = importPath[:idx] + importPath[idx+len(modulePathVersion):]
+	}
+	return importPath
+}
+
 // snippetDirectory returns the path to the directory where Go snippets are generated
 // for the given library output directory and Go import path.
 func snippetDirectory(output, importPath string) string {
