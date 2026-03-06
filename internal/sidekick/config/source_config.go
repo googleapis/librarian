@@ -35,7 +35,6 @@ type SourceConfig struct {
 	Sources     Sources
 	ActiveRoots []string
 	IncludeList []string
-	ExcludeList []string
 }
 
 // NewSourceConfig creates a SourceConfig with the given sources and active roots.
