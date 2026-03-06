@@ -113,7 +113,7 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) string {
 	importPath := goAPI.ImportPath
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
-		modulePathVersion := fmt.Sprintf("/%s", library.Go.ModulePathVersion)
+		modulePathVersion := filepath.Join(string(filepath.Separator), library.Go.ModulePathVersion)
 		importPath = strings.Replace(importPath, modulePathVersion, "", 1)
 	}
 	return importPath
