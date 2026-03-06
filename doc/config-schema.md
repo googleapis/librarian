@@ -270,7 +270,7 @@ This document describes the schema for the librarian.yaml.
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `output` | string | Is the directory where generated code is written (e.g., "src/storage/src/generated/gapic"). |
 | `post_process_protos` | string | Contains code to post-process generated protos. |
-| `root_name` | string | Is the key for the root directory in the source map. It overrides the default root, googleapis-root, used by the rust+prost generator. |
+| `root_name` | string | Is the key for the root directory in the source map. It overrides the default root, googleapis, used by the rust+prost generator. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `service_config` | string | Is the path to the service config file. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation. |
