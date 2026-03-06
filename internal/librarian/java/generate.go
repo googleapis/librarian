@@ -79,17 +79,23 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if version == "" {
 		return fmt.Errorf("failed to generate api: failed to extract version from api path %q", api.Path)
 	}
-	// Output directories for Java
-	gapicDir := filepath.Join(outdir, version, "gapic")
-	grpcDir := filepath.Join(outdir, version, "grpc")
-	protoDir := filepath.Join(outdir, version, "proto")
-	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
+	javaAPI := resolveJavaAPI(library, api)
+	p := postProcessParams{
+		outDir:         outdir,
+		libraryName:    library.Name,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		includeSamples: !javaAPI.NoSamples,
+		gapicDir:       filepath.Join(outdir, version, "gapic"),
+		grpcDir:        filepath.Join(outdir, version, "grpc"),
+		protoDir:       filepath.Join(outdir, version, "proto"),
+	}
+	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	javaAPI := resolveJavaAPI(library, api)
-	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, protoDir, grpcDir, gapicDir)
+	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, p.protoDir, p.grpcDir, p.gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
@@ -97,13 +103,26 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to construct protoc command args: %w", err)
 	}
+	p.protos = protos
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
-	if err := postProcessAPI(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, !javaAPI.NoSamples); err != nil {
+	if err := postProcessAPI(ctx, p); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+type postProcessParams struct {
+	outDir         string
+	libraryName    string
+	version        string
+	googleapisDir  string
+	protos         []string
+	includeSamples bool
+	gapicDir       string
+	grpcDir        string
+	protoDir       string
 }
 
 func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, protocOptions []string) ([]string, []string, error) {
@@ -134,32 +153,32 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	return args, protos, nil
 }
 
-func postProcessAPI(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string, includeSamples bool) error {
+func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
-	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
+	srcjarPath := filepath.Join(p.gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
-		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
+		if err := filesystem.Unzip(ctx, srcjarPath, p.gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{grpcDir, protoDir} {
+	for _, dir := range []string{p.grpcDir, p.protoDir} {
 		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos, includeSamples); err != nil {
+	if err := restructureOutput(p); err != nil {
 		return fmt.Errorf("failed to restructure output: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
-	modules := deriveModuleNames(libraryName, version)
-	protoModuleRoot := filepath.Join(outdir, modules.proto)
+	modules := deriveModuleNames(p.libraryName, p.version)
+	protoModuleRoot := filepath.Join(p.outDir, modules.proto)
 	if err := GenerateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 
 	// Cleanup intermediate protoc output directory after restructuring
-	if err := os.RemoveAll(filepath.Join(outdir, version)); err != nil {
+	if err := os.RemoveAll(filepath.Join(p.outDir, p.version)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
 	}
 	return nil
@@ -289,25 +308,25 @@ func removeConflictingFiles(protoSrcDir string) error {
 
 // restructureOutput moves the generated code from the temporary versioned directory
 // tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
-func restructureOutput(outputDir, libraryID, version, googleapisDir string, protos []string, includeSamples bool) error {
-	modules := deriveModuleNames(libraryID, version)
+func restructureOutput(p postProcessParams) error {
+	modules := deriveModuleNames(p.libraryName, p.version)
 	// Temporary source directories (from protoc/generator output)
-	tempGapicSrcDir := filepath.Join(outputDir, version, "gapic", "src", "main")
-	tempGapicTestDir := filepath.Join(outputDir, version, "gapic", "src", "test")
-	tempProtoSrcDir := filepath.Join(outputDir, version, "proto")
-	tempGrpcSrcDir := filepath.Join(outputDir, version, "grpc")
-	tempResourceNameSrcDir := filepath.Join(outputDir, version, "gapic", "proto", "src", "main", "java")
-	tempSamplesDir := filepath.Join(outputDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
+	tempGapicSrcDir := filepath.Join(p.outDir, p.version, "gapic", "src", "main")
+	tempGapicTestDir := filepath.Join(p.outDir, p.version, "gapic", "src", "test")
+	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
+	tempGrpcSrcDir := filepath.Join(p.outDir, p.version, "grpc")
+	tempResourceNameSrcDir := filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java")
+	tempSamplesDir := filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
 	// Final destination directories
-	gapicDestDir := filepath.Join(outputDir, modules.gapic, "src", "main")
-	gapicTestDestDir := filepath.Join(outputDir, modules.gapic, "src", "test")
-	protoDestDir := filepath.Join(outputDir, modules.proto, "src", "main", "java")
-	grpcDestDir := filepath.Join(outputDir, modules.grpc, "src", "main", "java")
-	samplesDestDir := filepath.Join(outputDir, "samples", "snippets", "generated")
+	gapicDestDir := filepath.Join(p.outDir, modules.gapic, "src", "main")
+	gapicTestDestDir := filepath.Join(p.outDir, modules.gapic, "src", "test")
+	protoDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "java")
+	grpcDestDir := filepath.Join(p.outDir, modules.grpc, "src", "main", "java")
+	samplesDestDir := filepath.Join(p.outDir, "samples", "snippets", "generated")
 
 	// Ensure destination directories exist
 	destDirs := []string{gapicDestDir, gapicTestDestDir, protoDestDir, grpcDestDir}
-	if includeSamples {
+	if p.includeSamples {
 		destDirs = append(destDirs, samplesDestDir)
 	}
 	for _, dir := range destDirs {
@@ -331,7 +350,7 @@ func restructureOutput(outputDir, libraryID, version, googleapisDir string, prot
 		{src: tempGapicTestDir, dest: gapicTestDestDir, description: "gapic test"},
 		{src: tempResourceNameSrcDir, dest: protoDestDir, description: "resource name source"},
 	}
-	if includeSamples {
+	if p.includeSamples {
 		actions = append(actions, moveAction{src: tempSamplesDir, dest: samplesDestDir, description: "samples"})
 	}
 	for _, action := range actions {
@@ -342,8 +361,8 @@ func restructureOutput(outputDir, libraryID, version, googleapisDir string, prot
 		}
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(outputDir, modules.proto, "src", "main", "proto")
-	if err := copyProtos(googleapisDir, protos, protoFilesDestDir); err != nil {
+	protoFilesDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "proto")
+	if err := copyProtos(p.googleapisDir, p.protos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil

@@ -397,7 +397,18 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 
 	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcessAPI(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, true); err != nil {
+	p := postProcessParams{
+		outDir:         outdir,
+		libraryName:    libraryName,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		protos:         protos,
+		includeSamples: true,
+		gapicDir:       gapicDir,
+		grpcDir:        grpcDir,
+		protoDir:       protoDir,
+	}
+	if err := postProcessAPI(t.Context(), p); err != nil {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
@@ -463,7 +474,18 @@ func TestRestructureOutput(t *testing.T) {
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
-	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, []string{protoPath}, true); err != nil {
+	p := postProcessParams{
+		outDir:         tmpDir,
+		libraryName:    libraryID,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		protos:         []string{protoPath},
+		includeSamples: true,
+		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
+		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
+		protoDir:       filepath.Join(tmpDir, version, "proto"),
+	}
+	if err := restructureOutput(p); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 
@@ -504,7 +526,19 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, nil, false); err != nil {
+
+	p := postProcessParams{
+		outDir:         tmpDir,
+		libraryName:    libraryID,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		protos:         nil,
+		includeSamples: false,
+		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
+		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
+		protoDir:       filepath.Join(tmpDir, version, "proto"),
+	}
+	if err := restructureOutput(p); err != nil {
 		t.Fatalf("restructureOutput failed: %v", err)
 	}
 	// Verify sample file location DOES NOT exist
