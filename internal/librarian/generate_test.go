@@ -407,21 +407,13 @@ func TestLoadSources(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		cfg     *config.Config
-		wantErr bool
-		wantDir string
+		wantErr error
 		wantSrc *sidekickconfig.Sources
 	}{
 		{
 			name:    "nil sources",
 			cfg:     &config.Config{},
-			wantErr: true,
-		},
-		{
-			name: "nil googleapis",
-			cfg: &config.Config{
-				Sources: &config.Sources{},
-			},
-			wantErr: true,
+			wantErr: ErrMissingGoogleapisSource,
 		},
 		{
 			name: "googleapis dir set",
@@ -430,7 +422,9 @@ func TestLoadSources(t *testing.T) {
 					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
 				},
 			},
-			wantDir: "/tmp/googleapis",
+			wantSrc: &sidekickconfig.Sources{
+				Googleapis: "/tmp/googleapis",
+			},
 		},
 		{
 			name: "rust with sources",
@@ -441,7 +435,6 @@ func TestLoadSources(t *testing.T) {
 					Discovery:  &config.Source{Dir: "/tmp/discovery"},
 				},
 			},
-			wantDir: "/tmp/googleapis",
 			wantSrc: &sidekickconfig.Sources{
 				Googleapis: "/tmp/googleapis",
 				Discovery:  "/tmp/discovery",
@@ -449,15 +442,12 @@ func TestLoadSources(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotDir, gotSrc, err := LoadSources(t.Context(), test.cfg)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("LoadSources() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if test.wantErr {
+			gotSrc, err := LoadSources(t.Context(), test.cfg)
+			if test.wantErr != nil {
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("LoadSources() error = %v, wantErr %v", err, test.wantErr)
+				}
 				return
-			}
-			if gotDir != test.wantDir {
-				t.Errorf("googleapisDir mismatch: got %q, want %q", gotDir, test.wantDir)
 			}
 			if diff := cmp.Diff(test.wantSrc, gotSrc); diff != "" {
 				t.Errorf("sources mismatch (-want +got):\n%s", diff)
