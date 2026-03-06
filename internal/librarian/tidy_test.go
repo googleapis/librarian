@@ -505,6 +505,37 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 			wantNumLibs: 1,
 			wantNumMods: 1, // Modules should be removed
 		},
+		{
+			name: "storage_module_not_removed",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Default: &config.Default{
+					Output: "generated/",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "google-cloud-storage",
+						Output: "src/storage",
+						Rust: &config.RustCrate{
+							Modules: []*config.RustModule{
+								{
+									Output:   "src/storage/src/generated/protos/storage",
+									Language: config.LanguageRustStorage,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNumLibs: 1,
+			wantNumMods: 1, // Rust storage module should NOT be removed
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
