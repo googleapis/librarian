@@ -225,7 +225,7 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
 	case config.LanguageGo:
-		return golang.Fill(lib), nil
+		return golang.Fill(lib)
 	default:
 		return lib, nil
 	}

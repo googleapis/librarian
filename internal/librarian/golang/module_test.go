@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -148,11 +149,83 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "proto only API",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Fill(test.library)
+			got, err := Fill(test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFill_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "import path not set",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+			},
+			wantErr: errImportPathNotFound,
+		},
+		{
+			name: "client package not set",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+						},
+					},
+				},
+			},
+			wantErr: errClientPackageNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := Fill(test.library)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Fill() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
