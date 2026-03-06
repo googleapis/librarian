@@ -106,7 +106,22 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, sources *si
 	if err != nil {
 		return nil, err
 	}
+	// Overwrite fields to match current behavior
+	metadata.APIDescription = ""
+	metadata.DistributionName = "google-cloud-rust"
+	metadata.IssueTracker = ""
+	metadata.LibraryType = "GAPIC_AUTO"
+	metadata.Name = ""
+	if !strings.HasSuffix(metadata.NamePretty, " API") {
+		// Reverse the cleaning done in FromLibrary.
+		metadata.NamePretty = metadata.NamePretty + " API"
+	}
+	metadata.ProductDocumentation = ""
+
+	// Set fields that are not set by FromLibrary
 	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
+	metadata.Repo = "googleapis/google-cloud-rust"
+
 	return metadata, nil
 }
 

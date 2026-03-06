@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -485,10 +486,9 @@ func TestGenerate(t *testing.T) {
 				{filepath.Join(outDir, "Cargo.toml"), "name"},
 				{filepath.Join(outDir, "Cargo.toml"), libName},
 				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
-				{filepath.Join(outDir, ".repo-metadata.json"), "\"language\": \"rust\""},
-				{filepath.Join(outDir, ".repo-metadata.json"), "\"repo\": \"google-cloud-rust\""},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
+				{filepath.Join(outDir, ".repo-metadata.json"), "secretmanager.googleapis.com"},
 			} {
 				t.Run(check.path, func(t *testing.T) {
 					if _, err := os.Stat(check.path); err != nil {
@@ -612,5 +612,53 @@ func TestFindModuleByOutput(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+func TestCreateRepoMetadata(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageRust,
+		Repo:     "googleapis/google-cloud-rust",
+	}
+	library := &config.Library{
+		Name:         "google-cloud-secretmanager-v1",
+		Version:      "0.1.0",
+		ReleaseLevel: "preview",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+	sources := &sidekickconfig.Sources{
+		Googleapis: googleapisDir,
+	}
+
+	got, err := createRepoMetadata(cfg, library, sources)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &repometadata.RepoMetadata{
+		Name:                 "",
+		NamePretty:           "Secret Manager API",
+		ProductDocumentation: "",
+		ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
+		IssueTracker:         "",
+		ReleaseLevel:         "preview",
+		Language:             config.LanguageRust,
+		Repo:                 "googleapis/google-cloud-rust",
+		DistributionName:     "google-cloud-rust",
+		APIID:                "secretmanager.googleapis.com",
+		APIShortname:         "secretmanager",
+		APIDescription:       "",
+		LibraryType:          "GAPIC_AUTO",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
