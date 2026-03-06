@@ -225,7 +225,7 @@ func TestFill_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := Fill(test.library)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("Fill error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("Fill() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
