@@ -114,9 +114,7 @@ func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) str
 	importPath := goAPI.ImportPath
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion := fmt.Sprintf("/%s", library.Go.ModulePathVersion)
-		if idx := strings.Index(importPath, modulePathVersion); idx != -1 {
-			importPath = importPath[:idx] + importPath[idx+len(modulePathVersion):]
-		}
+		importPath = strings.Replace(importPath, modulePathVersion, "", 1)
 	}
 	return importPath
 }
