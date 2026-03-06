@@ -58,6 +58,7 @@ func Run(ctx context.Context, args ...string) error {
 			versionCommand(),
 			publishCommand(),
 			tagCommand(),
+			dockerCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
