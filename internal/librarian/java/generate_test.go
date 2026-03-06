@@ -82,11 +82,54 @@ func TestResolveGAPICOptions(t *testing.T) {
 			t.Parallel()
 			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.transport)
 			if (err != nil) != test.wantErr {
-				t.Fatalf("resolveGAPICOptions() error = %v, wantErr %v", err, test.wantErr)
+				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResolveGAPICOptions_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		setup   func(t *testing.T, root string)
+		wantErr string
+	}{
+		{
+			name:    "API not in allowlist",
+			apiPath: "not/in/allowlist/v1",
+			wantErr: "API not/in/allowlist/v1 is not in allowlist",
+		},
+		{
+			name:    "multiple gRPC configs",
+			apiPath: "google/cloud/multiple/v1",
+			setup: func(t *testing.T, root string) {
+				apiDir := filepath.Join(root, "google/cloud/multiple/v1")
+				if err := os.MkdirAll(apiDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, "a_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, "b_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "multiple gRPC service config files found",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			_, err := resolveGAPICOptions(&config.API{Path: test.apiPath}, &config.JavaAPI{Path: test.apiPath}, tmpDir, "grpc")
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -200,6 +243,23 @@ func TestResolveJavaAPI(t *testing.T) {
 				AdditionalProtos: []string{commonProtos},
 			},
 		},
+		{
+			name: "Java module exists but API not found",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path: "other/api",
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveJavaAPI(test.library, test.api)
@@ -240,6 +300,7 @@ func TestGenerate_ErrorCases(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		setup   func(t *testing.T, library *config.Library)
 		wantErr string
 	}{
 		{
@@ -258,9 +319,28 @@ func TestGenerate_ErrorCases(t *testing.T) {
 			},
 			wantErr: "failed to extract version from api path",
 		},
+		{
+			name: "mkdir failure for output dir",
+			library: &config.Library{
+				Name:   "test",
+				Output: filepath.Join(t.TempDir(), "file_exists"),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, library *config.Library) {
+				// Create a regular file where a directory is expected to cause os.MkdirAll to fail.
+				if err := os.WriteFile(library.Output, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "failed to create output directory",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			if test.setup != nil {
+				test.setup(t, test.library)
+			}
 			err := generate(t.Context(), test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
@@ -271,12 +351,30 @@ func TestGenerate_ErrorCases(t *testing.T) {
 
 func TestGenerateLibraries_ErrorCase(t *testing.T) {
 	t.Parallel()
-	libraries := []*config.Library{
-		{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
-	}
-	err := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		wantErr   bool
+	}{
+		{
+			name:      "no libraries",
+			libraries: nil,
+			wantErr:   false,
+		},
+		{
+			name: "generation failure",
+			libraries: []*config.Library{
+				{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			if (err != nil) != test.wantErr {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -343,7 +441,7 @@ func TestFormat_LookPathError(t *testing.T) {
 	t.Setenv("PATH", "")
 	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
-		t.Fatal("Format() error = nil, want error")
+		t.Fatal(err)
 	}
 }
 
@@ -374,7 +472,7 @@ func TestCollectJavaFiles(t *testing.T) {
 	}
 	got, err := collectJavaFiles(tmpDir)
 	if err != nil {
-		t.Fatalf("collectJavaFiles() error = %v", err)
+		t.Fatal(err)
 	}
 	sort.Strings(got)
 	sort.Strings(want)
