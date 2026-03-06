@@ -46,6 +46,9 @@ func TestCreateProtocOptions(t *testing.T) {
 			name:    "basic case",
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{},
+			javaAPI: &config.JavaAPI{
+				Path: "google/cloud/secretmanager/v1",
+			},
 			expected: []string{
 				"--java_out=proto-out",
 				"--java_grpc_out=grpc-out",
@@ -59,6 +62,9 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{
 				Transport: "rest",
 			},
+			javaAPI: &config.JavaAPI{
+				Path: "google/cloud/secretmanager/v1",
+			},
 			expected: []string{
 				"--java_out=proto-out",
 				"--java_gapic_out=metadata:gapic-out",
@@ -70,6 +76,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{},
 			javaAPI: &config.JavaAPI{
+				Path:               "google/cloud/secretmanager/v1",
 				NoRestNumericEnums: true,
 			},
 			expected: []string{
@@ -97,9 +104,13 @@ func TestCreateProtocOptions(t *testing.T) {
 func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	t.Parallel()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	javaAPI := &config.JavaAPI{
+		Path:             api.Path,
+		AdditionalProtos: []string{commonProtos},
+	}
 	protocOptions := []string{"--java_out=out"}
 
-	args, protos, err := constructProtocCommandArgs(api, nil, googleapisDir, protocOptions)
+	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
@@ -191,9 +202,73 @@ func TestConstructProtocCommandArgs_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			protocOptions := []string{"--java_out=out"}
-			_, _, err := constructProtocCommandArgs(test.api, nil, googleapisDir, protocOptions)
+			javaAPI := &config.JavaAPI{Path: test.api.Path}
+			_, _, err := constructProtocCommandArgs(test.api, javaAPI, googleapisDir, protocOptions)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("constructProtocCommandArgs() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestFindJavaAPI(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		api     *config.API
+		want    *config.JavaAPI
+	}{
+		{
+			name:    "not found, returns defaults",
+			library: &config.Library{},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+		{
+			name: "found in config",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto"},
+							NoSamples:        true,
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{"other.proto"},
+				NoSamples:        true,
+			},
+		},
+		{
+			name: "found in config, empty additional protos defaults to commonProtos",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path: "google/cloud/secretmanager/v1",
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveJavaAPI(test.library, test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("findJavaAPI() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

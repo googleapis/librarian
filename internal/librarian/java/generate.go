@@ -88,7 +88,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	javaAPI := findJavaAPI(library, api)
+	javaAPI := resolveJavaAPI(library, api)
 	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, protoDir, grpcDir, gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
@@ -100,9 +100,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4344):
-	// Fill javaAPI before generate to avoid nil assertion
-	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, javaAPI == nil || !javaAPI.NoSamples); err != nil {
+	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, !javaAPI.NoSamples); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
@@ -122,12 +120,7 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
 	}
 
-	// add additional protos from configs, default to commonProtos if not specified
-	additionalProtos := []string{commonProtos}
-	if javaAPI != nil && len(javaAPI.AdditionalProtos) > 0 {
-		additionalProtos = javaAPI.AdditionalProtos
-	}
-	for _, p := range additionalProtos {
+	for _, p := range javaAPI.AdditionalProtos {
 		protos = append(protos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
 
@@ -247,7 +240,7 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *conf
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	if javaAPI == nil || !javaAPI.NoRestNumericEnums {
+	if !javaAPI.NoRestNumericEnums {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 
@@ -417,14 +410,25 @@ func collectJavaFiles(root string) ([]string, error) {
 	return files, err
 }
 
-func findJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+// resolveJavaAPI returns the Java-specific configuration for the given API,
+// applying default values if no explicit configuration is found in the library.
+func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+	res := &config.JavaAPI{
+		Path:             api.Path,
+		AdditionalProtos: []string{commonProtos},
+	}
 	if library.Java == nil {
-		return nil
+		return res
 	}
-	for _, ja := range library.Java.JavaAPIs {
-		if ja.Path == api.Path {
-			return ja
+	for _, javaAPI := range library.Java.JavaAPIs {
+		if javaAPI.Path != api.Path {
+			continue
 		}
+		*res = *javaAPI
+		if len(res.AdditionalProtos) == 0 {
+			res.AdditionalProtos = []string{commonProtos}
+		}
+		return res
 	}
-	return nil
+	return res
 }
