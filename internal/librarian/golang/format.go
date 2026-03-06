@@ -46,10 +46,14 @@ func processArgs(outDir, libraryName string) ([]string, error) {
 	libraryDir := filepath.Join(outDir, libraryName)
 	if _, err := os.Stat(libraryDir); err == nil {
 		args = append(args, libraryDir)
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 	snippetDir := snippetDirectory(outDir, libraryName)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 	return args, nil
 }
