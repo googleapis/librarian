@@ -100,7 +100,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
-	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, !javaAPI.NoSamples); err != nil {
+	if err := postProcessAPI(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, !javaAPI.NoSamples); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
@@ -134,7 +134,7 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	return args, protos, nil
 }
 
-func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string, includeSamples bool) error {
+func postProcessAPI(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string, includeSamples bool) error {
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {

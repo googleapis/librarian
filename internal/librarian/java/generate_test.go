@@ -344,7 +344,7 @@ func TestGenerateLibraries_ErrorCase(t *testing.T) {
 	}
 }
 
-func TestPostProcess(t *testing.T) {
+func TestPostProcessAPI(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	libraryName := "secretmanager"
@@ -397,7 +397,7 @@ func TestPostProcess(t *testing.T) {
 	}
 
 	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, true); err != nil {
+	if err := postProcessAPI(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, true); err != nil {
 		t.Fatalf("postProcess failed: %v", err)
 	}
 
