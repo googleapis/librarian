@@ -29,14 +29,9 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"-w"}
-	libraryDir := filepath.Join(outDir, library.Name)
-	if _, err := os.Stat(libraryDir); err == nil {
-		args = append(args, libraryDir)
-	}
-	snippetDir := snippetDirectory(outDir, library.Name)
-	if _, err := os.Stat(snippetDir); err == nil {
-		args = append(args, snippetDir)
+	args, err := processArgs(outDir, library.Name)
+	if err != nil {
+		return err
 	}
 	if len(args) == 1 {
 		// No need to format the library if library directory doesn't exist,
@@ -44,4 +39,17 @@ func Format(ctx context.Context, library *config.Library) error {
 		return nil
 	}
 	return command.Run(ctx, "goimports", args...)
+}
+
+func processArgs(outDir, libraryName string) ([]string, error) {
+	args := []string{"-w"}
+	libraryDir := filepath.Join(outDir, libraryName)
+	if _, err := os.Stat(libraryDir); err == nil {
+		args = append(args, libraryDir)
+	}
+	snippetDir := snippetDirectory(outDir, libraryName)
+	if _, err := os.Stat(snippetDir); err == nil {
+		args = append(args, snippetDir)
+	}
+	return args, nil
 }
