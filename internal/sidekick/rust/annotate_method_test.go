@@ -197,6 +197,9 @@ func annotateMethodModel(t *testing.T) *api.API {
 			{Name: "project", ID: ".test.v1.Request.project", Typez: api.STRING_TYPE},
 			{Name: "zone", ID: ".test.v1.Request.zone", Typez: api.STRING_TYPE},
 			{Name: "type", ID: ".test.v1.Request.type", Typez: api.STRING_TYPE},
+			{Name: "name", ID: ".test.v1.Request.name", Typez: api.STRING_TYPE},
+			{Name: "location", ID: ".test.v1.Request.location", Typez: api.STRING_TYPE},
+			{Name: "cluster", ID: ".test.v1.Request.cluster", Typez: api.STRING_TYPE},
 		},
 	}
 	response := &api.Message{
@@ -311,6 +314,40 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		{"type"},
 	})
 
+	// Setup: Inject multiple bindings for the "Self" method
+	mSelf := model.State.MethodByID[".test.v1.ResourceService.Self"]
+	mSelf.PathInfo.Bindings = []*api.PathBinding{
+		{
+			Verb: "GET",
+			PathTemplate: api.NewPathTemplate().
+				WithLiteral("v1").
+				WithVariableNamed("name"),
+			TargetResource: &api.TargetResource{
+				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+				FieldPaths: [][]string{{"name"}},
+			},
+		},
+		{
+			Verb: "GET",
+			PathTemplate: api.NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("locations").
+				WithVariableNamed("location").
+				WithLiteral("clusters").
+				WithVariableNamed("cluster"),
+			TargetResource: &api.TargetResource{
+				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
+				FieldPaths: [][]string{{"project"}, {"location"}, {"cluster"}},
+			},
+		},
+		{
+			Verb:         "GET",
+			PathTemplate: api.NewPathTemplate(),
+		},
+	}
+
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 	_, err = annotateModel(model, codec)
 	if err != nil {
@@ -318,9 +355,10 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		id   string
-		want *methodAnnotation
+		name         string
+		id           string
+		want         *methodAnnotation
+		wantBindings []*pathBindingAnnotation
 	}{
 		{
 			name: "WithTargetResource",
@@ -328,9 +366,9 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			want: &methodAnnotation{
 				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/zones/{}/types/{}",
 				ResourceNameArgs: []string{
-					"Some(&req).map(|m| &m.project).map(|s| s.as_str()).unwrap_or(\"\")",
-					"Some(&req).map(|m| &m.zone).map(|s| s.as_str()).unwrap_or(\"\")",
-					"Some(&req).map(|m| &m.r#type).map(|s| s.as_str()).unwrap_or(\"\")",
+					"var_project",
+					"var_zone",
+					"var_type",
 				},
 				HasResourceNameGeneration: true,
 			},
@@ -340,6 +378,34 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			id:   ".test.v1.ResourceService.Delete",
 			want: &methodAnnotation{
 				HasResourceNameGeneration: false,
+			},
+		},
+		{
+			name: "MultipleBindings",
+			id:   ".test.v1.ResourceService.Self",
+			want: &methodAnnotation{
+				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
+				ResourceNameArgs: []string{
+					"var_name",
+				},
+				HasResourceNameGeneration: true,
+			},
+			wantBindings: []*pathBindingAnnotation{
+				{
+					HasResourceNameGeneration: true,
+					ResourceNameTemplate:      "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
+					ResourceNameArgs:          []string{"var_name"},
+				},
+				{
+					HasResourceNameGeneration: true,
+					ResourceNameTemplate:      "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
+					ResourceNameArgs:          []string{"var_project", "var_location", "var_cluster"},
+				},
+				{
+					HasResourceNameGeneration: true,
+					ResourceNameTemplate:      "",
+					ResourceNameArgs:          nil,
+				},
 			},
 		},
 	}
@@ -358,6 +424,15 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"RoutingRequired", "DetailedTracingAttributes", "ResourceNameFields",
 				"HasResourceNameFields", "InternalBuilders")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+
+			if tc.wantBindings != nil {
+				for i, wantBinding := range tc.wantBindings {
+					gotBinding := m.PathInfo.Bindings[i].Codec.(*pathBindingAnnotation)
+					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
+						t.Errorf("binding %d mismatch (-want, +got):\n%s", i, diff)
+					}
+				}
 			}
 		})
 	}
