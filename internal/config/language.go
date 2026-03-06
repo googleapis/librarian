@@ -163,7 +163,7 @@ type RustModule struct {
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
 	// RootName is the key for the root directory in the source map.
-	// It overrides the default root, googleapis-root, used by the rust+prost generator.
+	// It overrides the default root, googleapis, used by the rust+prost generator.
 	RootName string `yaml:"root_name,omitempty"`
 
 	// RoutingRequired indicates whether routing is required.
@@ -240,6 +240,9 @@ type RustCrate struct {
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
+
+	// ResourceName indicates whether to apply heuristics to identify and generate resource names.
+	ResourceName bool `yaml:"resource_name,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`

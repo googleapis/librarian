@@ -57,8 +57,8 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := language.GenerateFromModel(tmpDir, model, provider, generatedFiles); err != nil {
 		return err
 	}
-	rootName := cfg.Source[codec.RootName]
-	return buildRS(ctx, rootName, tmpDir, outdir)
+	rootSource := cfg.Source.Root(codec.RootName)
+	return buildRS(ctx, rootSource, tmpDir, outdir)
 }
 
 func templatesProvider() language.TemplateProvider {
