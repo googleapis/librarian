@@ -211,7 +211,7 @@ func TestConstructProtocCommandArgs_Error(t *testing.T) {
 	}
 }
 
-func TestFindJavaAPI(t *testing.T) {
+func TestResolveJavaAPI(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
