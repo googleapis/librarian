@@ -111,6 +111,10 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 				}
 				// Stop matching if the preceding segment isn't a known collection.
 				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
+					// Include root-level resource variables immediately after version string.
+					if isVersionString(*tmpl.Segments[firstIndex-2].Literal) {
+						firstIndex -= 1
+					}
 					break
 				}
 				firstIndex -= 2

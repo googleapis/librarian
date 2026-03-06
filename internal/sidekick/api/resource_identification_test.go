@@ -261,6 +261,27 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 		},
 
 		{
+			name:      "heuristic: paths with un-grouped variable after version string",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("v1").WithVariableNamed("resource").
+				WithLiteral("children").WithVariableNamed("child"),
+			fields: []*Field{
+				{Name: "resource", Typez: STRING_TYPE},
+				{Name: "child", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("v1").WithVariableNamed("resource").
+					WithLiteral("children").WithVariableNamed("child"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"resource"}, {"child"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/{resource}/children/{child}"),
+			},
+		},
+
+		{
 			name:      "heuristic: stops at trailing action",
 			serviceID: ".google.cloud.compute.v1.Instances",
 			path: NewPathTemplate().
