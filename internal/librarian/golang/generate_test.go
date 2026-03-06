@@ -566,6 +566,11 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			// Do not create snippet directory to verify the function returns before
 			// checking the existence of the directory.
 		},
+		{
+			name: "snippet directory does not exist",
+			// Do not create snippet directory to verify the function doesn't
+			// return error in such ase.
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
