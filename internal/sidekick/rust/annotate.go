@@ -1613,19 +1613,6 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 	if m.PathInfo != nil {
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
-				tmpl, err := formatResourceNameTemplateFromPath(m, b)
-				if err != nil {
-					return err
-				}
-				annotation.ResourceNameTemplate = tmpl
-				for _, path := range b.TargetResource.FieldPaths {
-					var rustNames []string
-					for _, p := range path {
-						rustNames = append(rustNames, toSnakeNoMangling(p))
-					}
-					varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
-					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, varName)
-				}
 				annotation.HasResourceNameGeneration = true
 				break
 			}
@@ -1633,10 +1620,37 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 
 		if annotation.HasResourceNameGeneration {
 			for _, b := range m.PathInfo.Bindings {
-				if bAnn, ok := b.Codec.(*pathBindingAnnotation); ok {
-					bAnn.HasResourceNameGeneration = true
-					bAnn.ResourceNameTemplate = annotation.ResourceNameTemplate
-					bAnn.ResourceNameArgs = annotation.ResourceNameArgs
+				bAnn, ok := b.Codec.(*pathBindingAnnotation)
+				if !ok {
+					continue
+				}
+				bAnn.HasResourceNameGeneration = true
+
+				if b.TargetResource != nil {
+					tmpl, err := formatResourceNameTemplateFromPath(m, b)
+					if err != nil {
+						return err
+					}
+					bAnn.ResourceNameTemplate = tmpl
+
+					var args []string
+					for _, path := range b.TargetResource.FieldPaths {
+						var rustNames []string
+						for _, p := range path {
+							rustNames = append(rustNames, toSnakeNoMangling(p))
+						}
+						varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+						args = append(args, varName)
+					}
+					bAnn.ResourceNameArgs = args
+
+					if annotation.ResourceNameTemplate == "" {
+						annotation.ResourceNameTemplate = bAnn.ResourceNameTemplate
+						annotation.ResourceNameArgs = bAnn.ResourceNameArgs
+					}
+				} else {
+					bAnn.ResourceNameTemplate = ""
+					bAnn.ResourceNameArgs = nil
 				}
 			}
 		}
