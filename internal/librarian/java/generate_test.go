@@ -92,7 +92,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Errorf("createProtocOptions() returned diff (-want +got): %s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -123,7 +123,7 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch in args (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify protos contains the expected files
@@ -135,7 +135,7 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	sort.Strings(expectedProtos)
 	sort.Strings(protos)
 	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch in args (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	expectedProtos := []string{
@@ -175,7 +175,7 @@ func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 	sort.Strings(expectedProtos)
 	sort.Strings(protos)
 	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -265,7 +265,7 @@ func TestResolveJavaAPI(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveJavaAPI(test.library, test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findJavaAPI() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -440,6 +440,6 @@ func TestCollectJavaFiles(t *testing.T) {
 	sort.Strings(got)
 	sort.Strings(want)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
