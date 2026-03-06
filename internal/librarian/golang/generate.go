@@ -61,9 +61,11 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"-w", filepath.Join(outDir, library.Name)}
-	// TODO(https://github.com/googleapis/librarian/issues/4297), refactor this function
-	// to use import path.
+	args := []string{"-w"}
+	libraryDir := filepath.Join(outDir, library.Name)
+	if _, err := os.Stat(libraryDir); err == nil {
+		args = append(args, libraryDir)
+	}
 	snippetDir := snippetDirectory(outDir, library.Name)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
