@@ -38,5 +38,10 @@ func Format(ctx context.Context, library *config.Library) error {
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	}
+	if len(args) == 1 {
+		// No need to format the library if library directory doesn't exist,
+		// e.g., root-module.
+		return nil
+	}
 	return command.Run(ctx, "goimports", args...)
 }

@@ -26,9 +26,52 @@ import (
 
 func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "goimports")
-	outDir := t.TempDir()
-	goFile := filepath.Join(outDir, "test.go")
-	unformatted := `package main
+	for _, test := range []struct {
+		name       string
+		library    *config.Library
+		goFilePath []string
+	}{
+		{
+			name: "library path and snippet directory exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"example",
+				"internal/generated/snippets/example",
+			},
+		},
+		{
+			// This is true for the root module, though the snippet
+			// directory should also not exist.
+			name: "library path does not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"internal/generated/snippets/example",
+			},
+		},
+		{
+			name: "snippet directory does not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"example",
+			},
+		},
+		{
+			name: "library path and snippet directory do not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			test.library.Output = outDir
+			unformatted := `package main
 
 import (
 "fmt"
@@ -39,23 +82,7 @@ func main() {
 fmt.Println("Hello World")
 }
 `
-	if err := os.WriteFile(goFile, []byte(unformatted), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Output: outDir,
-	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
-
-	gotBytes, err := os.ReadFile(goFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-	want := `package main
+			want := `package main
 
 import (
 	"fmt"
@@ -65,7 +92,29 @@ func main() {
 	fmt.Println("Hello World")
 }
 `
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			for _, aPath := range test.goFilePath {
+				path := filepath.Join(outDir, aPath)
+				if err := os.MkdirAll(path, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(path, "example.go"), []byte(unformatted), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := Format(t.Context(), test.library); err != nil {
+				t.Fatal(err)
+			}
+			for _, aPath := range test.goFilePath {
+				goFile := filepath.Join(outDir, aPath, "example.go")
+				gotBytes, err := os.ReadFile(goFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := string(gotBytes)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
 	}
 }
