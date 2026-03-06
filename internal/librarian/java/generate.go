@@ -95,11 +95,11 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
-	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		return fmt.Errorf("failed to construct protoc command args: %w", err)
 	}
-	p.protos = protos
+	p.apiProtos = apiProtos
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
@@ -115,16 +115,12 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	// Consider recursive gathering and explicit sorting
 	// of proto files to match the behavior of the hermetic build, ensuring
 	// a deterministic order in the generated gapic_metadata.json.
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	apiProtos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find protos: %w", err)
 	}
-	if len(protos) == 0 {
+	if len(apiProtos) == 0 {
 		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
-	}
-
-	for _, p := range javaAPI.AdditionalProtos {
-		protos = append(protos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
 
 	args := []string{
@@ -132,9 +128,12 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
 	}
-	args = append(args, protos...)
+	args = append(args, apiProtos...)
+	for _, p := range javaAPI.AdditionalProtos {
+		args = append(args, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
 	args = append(args, protocOptions...)
-	return args, protos, nil
+	return args, apiProtos, nil
 }
 
 func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {

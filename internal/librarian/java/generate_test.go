@@ -107,7 +107,7 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 	}
 	protocOptions := []string{"--java_out=out"}
 
-	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
@@ -126,16 +126,15 @@ func TestConstructProtocCommandArgs_Success(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	// Verify protos contains the expected files
-	expectedProtos := []string{
+	// Verify apiProtos contains the expected files
+	expectedApiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
 	}
-	sort.Strings(expectedProtos)
-	sort.Strings(protos)
-	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	sort.Strings(expectedApiProtos)
+	sort.Strings(apiProtos)
+	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
+		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
 	}
 }
 
@@ -146,7 +145,7 @@ func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 		AdditionalProtos: []string{"google/cloud/common_resources.proto", "google/cloud/location/locations.proto"},
 	}
 	protocOptions := []string{"--java_out=out"}
-	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
 	}
@@ -166,16 +165,14 @@ func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	expectedProtos := []string{
+	expectedApiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
 	}
-	sort.Strings(expectedProtos)
-	sort.Strings(protos)
-	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	sort.Strings(expectedApiProtos)
+	sort.Strings(apiProtos)
+	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
+		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
 	}
 }
 

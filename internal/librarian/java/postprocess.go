@@ -32,7 +32,7 @@ type postProcessParams struct {
 	libraryName    string
 	version        string
 	googleapisDir  string
-	protos         []string
+	apiProtos      []string
 	includeSamples bool
 	gapicDir       string
 	grpcDir        string
@@ -191,7 +191,7 @@ func restructureOutput(p postProcessParams) error {
 	}
 	// Copy proto files to proto-*/src/main/proto
 	protoFilesDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "proto")
-	if err := copyProtos(p.googleapisDir, p.protos, protoFilesDestDir); err != nil {
+	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil

@@ -77,13 +77,13 @@ func TestPostProcessAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
+	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	p := postProcessParams{
 		outDir:         outdir,
 		libraryName:    libraryName,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		protos:         protos,
+		apiProtos:      apiProtos,
 		includeSamples: true,
 		gapicDir:       gapicDir,
 		grpcDir:        grpcDir,
@@ -160,7 +160,7 @@ func TestRestructureOutput(t *testing.T) {
 		libraryName:    libraryID,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		protos:         []string{protoPath},
+		apiProtos:      []string{protoPath},
 		includeSamples: true,
 		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
 		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
@@ -213,7 +213,7 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 		libraryName:    libraryID,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		protos:         nil,
+		apiProtos:      nil,
 		includeSamples: false,
 		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
 		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
