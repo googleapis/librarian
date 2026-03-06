@@ -149,6 +149,35 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "proto only API",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)
