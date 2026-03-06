@@ -1624,6 +1624,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 				if !ok {
 					continue
 				}
+				// To make sure the Rust code for each binding returns the same type, we set HasResourceNameGeneration = true for all bindings to cue each binding to produce the same typed result (even if this specific binding does not have a TargetResource.)
 				bAnn.HasResourceNameGeneration = true
 
 				if b.TargetResource != nil {
