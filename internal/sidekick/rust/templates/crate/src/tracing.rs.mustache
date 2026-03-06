@@ -33,6 +33,9 @@ use crate::Result;
 pub struct {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     inner: T,
+    #[cfg(google_cloud_unstable_tracing)]
+    {{! Use a fully qualified name to avoid conflicts with any client called `DurationMetric` }}
+    duration: gaxi::observability::DurationMetric,
 }
 
 {{#Codec.PerServiceFeatures}}
@@ -41,7 +44,13 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 impl<T> {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     pub fn new(inner: T) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            #[cfg(google_cloud_unstable_tracing)]
+            duration: gaxi::observability::DurationMetric::new(
+                &info::INSTRUMENTATION_CLIENT_INFO,
+            ),
+        }
     }
 }
 
@@ -66,17 +75,18 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         {{#Codec.DetailedTracingAttributes}}
         #[cfg(google_cloud_unstable_tracing)]
         {
-            use tracing::Instrument;
-            use gaxi::observability::ResultExt as _;
-            let span = gaxi::client_request_span!(
+            use gaxi::observability::ClientSignalsExt as _;
+            let (start, span) = gaxi::client_request_signals!(
+                &info::INSTRUMENTATION_CLIENT_INFO,
+                &options,
                 "client::{{Codec.ServiceNameToPascal}}",
                 "{{Codec.Name}}",
-                &info::INSTRUMENTATION_CLIENT_INFO
+                Some("{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}")
             );
-            self.inner.{{Codec.Name}}(req, options)
-                .instrument(span.clone())
+            self.inner
+                .{{Codec.Name}}(req, options)
+                .instrument_client(self.duration.clone(), start, span)
                 .await
-                .record_in_span(&span)
         }
         #[cfg(not(google_cloud_unstable_tracing))]
         {{/Codec.DetailedTracingAttributes }}
