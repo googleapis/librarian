@@ -144,50 +144,57 @@ func TestProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
 	}
 
-	t.Run("protoProtocArgs", func(t *testing.T) {
-		got := protoProtocArgs(apiProtos, googleapisDir, "proto-out")
-		want := []string{
-			"--experimental_allow_proto3_optional",
-			"-I=" + googleapisDir,
-			"--java_out=proto-out",
-			apiProtos[0],
-			apiProtos[1],
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("grpcProtocArgs", func(t *testing.T) {
-		got := grpcProtocArgs(apiProtos, googleapisDir, "grpc-out")
-		want := []string{
-			"--experimental_allow_proto3_optional",
-			"-I=" + googleapisDir,
-			"--java_grpc_out=grpc-out",
-			apiProtos[0],
-			apiProtos[1],
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("gapicProtocArgs", func(t *testing.T) {
-		gapicOpts := []string{"opt1", "opt2"}
-		got := gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", gapicOpts)
-		want := []string{
-			"--experimental_allow_proto3_optional",
-			"-I=" + googleapisDir,
-			"--java_gapic_out=metadata:gapic-out",
-			"--java_gapic_opt=opt1,opt2",
-			apiProtos[0],
-			apiProtos[1],
-			additionalProtos[0],
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
+	for _, test := range []struct {
+		name string
+		call func() []string
+		want []string
+	}{
+		{
+			name: "protoProtocArgs",
+			call: func() []string { return protoProtocArgs(apiProtos, googleapisDir, "proto-out") },
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_out=proto-out",
+				apiProtos[0],
+				apiProtos[1],
+			},
+		},
+		{
+			name: "grpcProtocArgs",
+			call: func() []string { return grpcProtocArgs(apiProtos, googleapisDir, "grpc-out") },
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_grpc_out=grpc-out",
+				apiProtos[0],
+				apiProtos[1],
+			},
+		},
+		{
+			name: "gapicProtocArgs",
+			call: func() []string {
+				return gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", []string{"opt1", "opt2"})
+			},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_gapic_out=metadata:gapic-out",
+				"--java_gapic_opt=opt1,opt2",
+				apiProtos[0],
+				apiProtos[1],
+				additionalProtos[0],
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := test.call()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestResolveJavaAPI(t *testing.T) {
