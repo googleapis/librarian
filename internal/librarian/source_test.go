@@ -23,7 +23,7 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestFetchRustDartSources(t *testing.T) {
+func TestFetchSources(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		cfgSources *config.Sources
@@ -33,33 +33,39 @@ func TestFetchRustDartSources(t *testing.T) {
 		{
 			name: "success with pre-configured directories",
 			cfgSources: &config.Sources{
+				Googleapis:  &config.Source{Dir: "/path/to/googleapis"},
 				Conformance: &config.Source{Dir: "/path/to/conformance"},
 				Discovery:   &config.Source{Dir: "/path/to/discovery"},
 				Showcase:    &config.Source{Dir: "/path/to/showcase"},
 				ProtobufSrc: &config.Source{Dir: "/path/to/protobuf", Subpath: "src"},
 			},
 			want: &sidekickconfig.Sources{
+				Googleapis:  "/path/to/googleapis",
 				Conformance: "/path/to/conformance",
 				Discovery:   "/path/to/discovery",
-				Googleapis:  "",
 				ProtobufSrc: "/path/to/protobuf/src",
 				Showcase:    "/path/to/showcase",
 			},
 		},
+		{
+			name:       "missing googleapis",
+			cfgSources: &config.Sources{},
+			wantErr:    ErrMissingGoogleapisSource,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := FetchRustDartSources(t.Context(), test.cfgSources)
+			got, err := fetchSources(t.Context(), test.cfgSources)
 			if test.wantErr != nil {
-				if err == nil || !errors.Is(err, test.wantErr) {
-					t.Errorf("FetchRustDartSources() got error = %v, wantErr %v", err, test.wantErr)
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("fetchSources() got error = %v, wantErr %v", err, test.wantErr)
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("FetchRustDartSources() got unexpected error: %v", err)
+				t.Errorf("fetchSources() got unexpected error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("FetchRustDartSources() mismatch (-want +got):%s", diff)
+				t.Errorf("fetchSources() mismatch (-want +got):%s", diff)
 			}
 		})
 	}
