@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/snippetmetadata"
@@ -46,6 +47,21 @@ func Bump(library *config.Library, output, version string) error {
 		}
 	}
 	return nil
+}
+
+func HasChanges(library *config.Library, filesChanged []string) bool {
+	inclusion := filepath.Join(library.Output, library.Name)
+	var exclusion string
+	if library.Go != nil && library.Go.NestedModule != "" {
+		exclusion = filepath.Join(library.Output, library.Name, library.Go.NestedModule)
+	}
+	for _, file := range filesChanged {
+		if strings.HasPrefix(file, inclusion) &&
+			!strings.HasPrefix(file, exclusion) {
+			return true
+		}
+	}
+	return false
 }
 
 func bumpInternalVersion(library *config.Library, output, version string) error {

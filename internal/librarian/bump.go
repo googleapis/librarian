@@ -163,13 +163,22 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, err
 		}
-		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !hasChanges(cfg, lib, filesChanged) {
 			continue
 		}
 		librariesToBump = append(librariesToBump, lib)
 	}
 	return librariesToBump, nil
+}
+
+func hasChanges(cfg *config.Config, library *config.Library, filesChanged []string) bool {
+	switch cfg.Language {
+	case config.LanguageGo:
+		return golang.HasChanges(library, filesChanged)
+	default:
+		output := libraryOutput(cfg.Language, library, cfg.Default)
+		return hasChangesIn(output, filesChanged)
+	}
 }
 
 func hasChangesIn(dir string, filesChanged []string) bool {
