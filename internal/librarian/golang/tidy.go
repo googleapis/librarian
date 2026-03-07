@@ -52,7 +52,6 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 		!goAPI.NoRESTNumericEnums &&
 		!goAPI.ProtoOnly &&
 		goAPI.ProtoPackage == ""
-
 }
 
 func isEmptyGoModule(goModule *config.GoModule) bool {
