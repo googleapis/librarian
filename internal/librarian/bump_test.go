@@ -1278,6 +1278,14 @@ func TestHasChanges(t *testing.T) {
 				"another-lib/apiv1/example.go",
 			},
 		},
+		{
+			name: "library name prefix",
+			dir:  "test-lib",
+			filesChanges: []string{
+				"test-lib-1/apiv1/example.go",
+				"test-lib-2/apiv1/example.go",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := hasChangesIn(test.dir, test.filesChanges)
