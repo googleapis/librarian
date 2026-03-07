@@ -180,6 +180,86 @@ func TestBump(t *testing.T) {
 	}
 }
 
+func TestHasChanges(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		library      *config.Library
+		filesChanges []string
+		want         bool
+	}{
+		{
+			name: "find changes in library",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib/apiv1/example.go",
+				"another-lib/apiv1/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "no change in library",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"another-lib/apiv1/example.go",
+				"another-lib/apiv2/example.go",
+			},
+		},
+		{
+			name: "changes in library with nested module",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+				Go: &config.GoModule{
+					NestedModule: "v2",
+				},
+			},
+			filesChanges: []string{
+				"test-lib/v2/apiv2/example.go",
+				"test-lib/apiv1/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "all changes are within nested module",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+				Go: &config.GoModule{
+					NestedModule: "v2",
+				},
+			},
+			filesChanges: []string{
+				"test-lib/v2/apiv1/example.go",
+				"test-lib/v2/example.go",
+			},
+		},
+		{
+			name: "library name prefix",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib-1/v2/apiv1/example.go",
+				"test-lib-1/v2/example.go",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := HasChanges(test.library, test.filesChanges)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBump_Error(t *testing.T) {
 	for _, test := range []struct {
 		name         string
