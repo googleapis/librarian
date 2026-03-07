@@ -65,15 +65,12 @@ type GoModule struct {
 type GoAPI struct {
 	// ClientPackage is the package name of the generated client.
 	ClientPackage string `yaml:"client_package,omitempty"`
-	// ProtoOnly determines whether to generate a Proto-only client.
-	// A proto-only client does not define a service in the proto files.
-	ProtoOnly bool `yaml:"proto_only,omitempty"`
-	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
-	// at the API level.
-	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
+	// at the API level.
+	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
@@ -87,6 +84,9 @@ type GoAPI struct {
 	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 }

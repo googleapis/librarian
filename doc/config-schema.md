@@ -186,14 +186,14 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
-| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
-| `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Is the source path. |
+| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
 ## GoModule Configuration
