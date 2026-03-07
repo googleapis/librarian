@@ -643,18 +643,18 @@ func TestCreateRepoMetadata(t *testing.T) {
 	}
 
 	want := &repometadata.RepoMetadata{
-		Name:                 "",
-		NamePretty:           "Secret Manager API",
-		ProductDocumentation: "",
+		Name:                 "secretmanager",
+		NamePretty:           "Secret Manager",
+		ProductDocumentation: "https://cloud.google.com/secret-manager/",
 		ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
-		IssueTracker:         "",
+		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 		ReleaseLevel:         "preview",
 		Language:             config.LanguageRust,
 		Repo:                 "googleapis/google-cloud-rust",
-		DistributionName:     "google-cloud-rust",
+		DistributionName:     "google-cloud-secretmanager-v1",
 		APIID:                "secretmanager.googleapis.com",
 		APIShortname:         "secretmanager",
-		APIDescription:       "",
+		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 		LibraryType:          "GAPIC_AUTO",
 	}
 
