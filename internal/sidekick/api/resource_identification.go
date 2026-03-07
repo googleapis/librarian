@@ -25,9 +25,9 @@ import (
 // This is done in two passes:
 //  1. Explicit Identification: Matches google.api.resource_reference annotations
 //     with fields present in the PathTemplate.
-//  2. Heuristic Identification: For allow-listed services, uses path segment
-//     patterns to identify resources when annotations are missing.
-func IdentifyTargetResources(model *API) error {
+//  2. Heuristic Identification: If enableHeuristics is true and the service is
+//     allow-listed, uses path segment patterns to identify resources when annotations are missing.
+func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	// Build the set of known resource names for the heuristic.
 	vocabulary := BuildHeuristicVocabulary(model)
 
@@ -37,7 +37,7 @@ func IdentifyTargetResources(model *API) error {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding, vocabulary); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
 			}
@@ -47,7 +47,7 @@ func IdentifyTargetResources(model *API) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -65,13 +65,15 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
-	target, err = identifyHeuristicTarget(method, binding, vocabulary)
-	if err != nil {
-		return err
-	}
-	if target != nil {
-		binding.TargetResource = target
-		return nil
+	if enableHeuristics {
+		target, err = identifyHeuristicTarget(method, binding, vocabulary)
+		if err != nil {
+			return err
+		}
+		if target != nil {
+			binding.TargetResource = target
+			return nil
+		}
 	}
 	return nil
 }
@@ -94,26 +96,35 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		}
 
 		token := *tmpl.Segments[i-1].Literal
-		if !vocabulary[token] {
+		if !vocabulary[token] && !isVersionString(token) {
 			continue // continue scanning backward if not in vocabulary
+		}
+
+		// The default firstIndex is the current variable segment. If the preceding
+		// literal is a known collection, we'll try to walk backwards to find the
+		// beginning of a resource pattern chain.
+		firstIndex := i
+		if vocabulary[token] {
+			// Walk backwards to find the start of the (literal, variable) chain
+			firstIndex = i - 1
+			for firstIndex >= 2 {
+				if tmpl.Segments[firstIndex-1].Variable == nil || tmpl.Segments[firstIndex-2].Literal == nil {
+					break
+				}
+				// Stop matching if the preceding segment isn't a known collection.
+				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
+					// Include root-level resource variables immediately after version string.
+					if isVersionString(*tmpl.Segments[firstIndex-2].Literal) {
+						firstIndex -= 1
+					}
+					break
+				}
+				firstIndex -= 2
+			}
 		}
 
 		if method.InputType == nil {
 			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
-		}
-
-		// Walk backwards to find the start of the (literal, variable) chain
-		firstIndex := i - 1
-		for firstIndex >= 2 {
-			if tmpl.Segments[firstIndex-1].Variable != nil && tmpl.Segments[firstIndex-2].Literal != nil {
-				// Stop matching if the preceding segment isn't a known collection.
-				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
-					break
-				}
-				firstIndex -= 2
-			} else {
-				break
-			}
 		}
 
 		// Verify the chain connects properly to the root of the path.
@@ -252,4 +263,10 @@ func getServiceHost(method *Method) (string, error) {
 		return method.Model.Name + ".googleapis.com", nil
 	}
 	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
+}
+
+// isVersionString checks if a string appears to be an API version segment,
+// such as "v1" or "v1beta1".
+func isVersionString(s string) bool {
+	return len(s) >= 2 && s[0] == 'v' && s[1] >= '0' && s[1] <= '9'
 }

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -39,8 +40,11 @@ func TestFromProtobuf(t *testing.T) {
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: map[string]string{
-			"googleapis-root": path.Join(testdataDir, "googleapis"),
+		Source: sidekickconfig.SourceConfig{
+			Sources: sidekickconfig.Sources{
+				Googleapis: path.Join(testdataDir, "googleapis"),
+			},
+			ActiveRoots: []string{"googleapis"},
 		},
 		Codec: map[string]string{
 			"copyright-year":              "2025",

@@ -21,14 +21,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -79,30 +75,35 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if version == "" {
 		return fmt.Errorf("failed to generate api: failed to extract version from api path %q", api.Path)
 	}
-	// Output directories for Java
-	gapicDir := filepath.Join(outdir, version, "gapic")
-	grpcDir := filepath.Join(outdir, version, "grpc")
-	protoDir := filepath.Join(outdir, version, "proto")
-	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
+	javaAPI := resolveJavaAPI(library, api)
+	p := postProcessParams{
+		outDir:         outdir,
+		libraryName:    library.Name,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		includeSamples: !javaAPI.NoSamples,
+		gapicDir:       filepath.Join(outdir, version, "gapic"),
+		grpcDir:        filepath.Join(outdir, version, "grpc"),
+		protoDir:       filepath.Join(outdir, version, "proto"),
+	}
+	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	javaAPI := findJavaAPI(library, api)
-	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, protoDir, grpcDir, gapicDir)
+	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, p.protoDir, p.grpcDir, p.gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
-	args, protos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
+	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
 	if err != nil {
 		return fmt.Errorf("failed to construct protoc command args: %w", err)
 	}
+	p.apiProtos = apiProtos
 	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
 		return fmt.Errorf("failed to run protoc: %w", err)
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4344):
-	// Fill javaAPI before generate to avoid nil assertion
-	if err := postProcess(ctx, outdir, library.Name, version, googleapisDir, gapicDir, grpcDir, protoDir, protos, javaAPI == nil || !javaAPI.NoSamples); err != nil {
+	if err := postProcessAPI(ctx, p); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
@@ -114,21 +115,12 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	// Consider recursive gathering and explicit sorting
 	// of proto files to match the behavior of the hermetic build, ensuring
 	// a deterministic order in the generated gapic_metadata.json.
-	protos, err := filepath.Glob(apiDir + "/*.proto")
+	apiProtos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to find protos: %w", err)
 	}
-	if len(protos) == 0 {
+	if len(apiProtos) == 0 {
 		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
-	}
-
-	// add additional protos from configs, default to commonProtos if not specified
-	additionalProtos := []string{commonProtos}
-	if javaAPI != nil && len(javaAPI.AdditionalProtos) > 0 {
-		additionalProtos = javaAPI.AdditionalProtos
-	}
-	for _, p := range additionalProtos {
-		protos = append(protos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
 
 	args := []string{
@@ -136,74 +128,12 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
 	}
-	args = append(args, protos...)
+	args = append(args, apiProtos...)
+	for _, p := range javaAPI.AdditionalProtos {
+		args = append(args, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
 	args = append(args, protocOptions...)
-	return args, protos, nil
-}
-
-func postProcess(ctx context.Context, outdir, libraryName, version, googleapisDir, gapicDir, grpcDir, protoDir string, protos []string, includeSamples bool) error {
-	// Unzip the temp-codegen.srcjar into temporary version/ directory.
-	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
-	if _, err := os.Stat(srcjarPath); err == nil {
-		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
-			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
-		}
-	}
-	for _, dir := range []string{grpcDir, protoDir} {
-		if err := addMissingHeaders(dir); err != nil {
-			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
-		}
-	}
-	if err := restructureOutput(outdir, libraryName, version, googleapisDir, protos, includeSamples); err != nil {
-		return fmt.Errorf("failed to restructure output: %w", err)
-	}
-
-	// Generate clirr-ignored-differences.xml for the proto module.
-	modules := deriveModuleNames(libraryName, version)
-	protoModuleRoot := filepath.Join(outdir, modules.proto)
-	if err := GenerateClirr(protoModuleRoot); err != nil {
-		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
-	}
-
-	// Cleanup intermediate protoc output directory after restructuring
-	if err := os.RemoveAll(filepath.Join(outdir, version)); err != nil {
-		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
-	}
-	return nil
-}
-
-// addMissingHeaders prepends the license header to all Java files in the given directory
-// if they don't already have one.
-func addMissingHeaders(dir string) error {
-	year := time.Now().Year()
-	licenseText := buildLicenseText(year)
-	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || !d.Type().IsRegular() || filepath.Ext(path) != ".java" {
-			return err
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if license.HasHeader(content) {
-			return nil
-		}
-		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
-	})
-}
-
-// buildLicenseText constructs the complete license header text for the given year.
-func buildLicenseText(year int) string {
-	lines := license.Header(strconv.Itoa(year))
-	var b strings.Builder
-	b.WriteString("/*\n")
-	for _, line := range lines {
-		b.WriteString(" *")
-		b.WriteString(line)
-		b.WriteString("\n")
-	}
-	b.WriteString(" */\n")
-	return b.String()
+	return args, apiProtos, nil
 }
 
 func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
@@ -247,7 +177,7 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *conf
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	if javaAPI == nil || !javaAPI.NoRestNumericEnums {
+	if !javaAPI.NoRestNumericEnums {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 
@@ -261,120 +191,6 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *conf
 
 func gapicOpt(key, value string) string {
 	return fmt.Sprintf("%s=%s", key, value)
-}
-
-type javaModules struct {
-	gapic string // e.g., google-cloud-secretmanager
-	proto string // e.g., proto-google-cloud-secretmanager-v1
-	grpc  string // e.g., grpc-google-cloud-secretmanager-v1
-}
-
-func deriveModuleNames(libraryID, version string) javaModules {
-	name := libraryID
-	if !strings.HasPrefix(name, cloudPrefix) {
-		name = cloudPrefix + libraryID
-	}
-	return javaModules{
-		gapic: name,
-		proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),
-		grpc:  fmt.Sprintf("%s%s-%s", grpcPrefix, name, version),
-	}
-}
-
-func removeConflictingFiles(protoSrcDir string) error {
-	// These files are removed because they are often duplicated across
-	// multiple artifacts in the Google Cloud Java ecosystem, leading
-	// to classpath conflicts.
-	if err := os.RemoveAll(filepath.Join(protoSrcDir, "com", "google", "cloud", "location")); err != nil {
-		return fmt.Errorf("failed to remove location classes: %w", err)
-	}
-	if err := os.Remove(filepath.Join(protoSrcDir, "google", "cloud", "CommonResources.java")); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove CommonResources.java: %w", err)
-	}
-	return nil
-}
-
-// restructureOutput moves the generated code from the temporary versioned directory
-// tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
-func restructureOutput(outputDir, libraryID, version, googleapisDir string, protos []string, includeSamples bool) error {
-	modules := deriveModuleNames(libraryID, version)
-	// Temporary source directories (from protoc/generator output)
-	tempGapicSrcDir := filepath.Join(outputDir, version, "gapic", "src", "main")
-	tempGapicTestDir := filepath.Join(outputDir, version, "gapic", "src", "test")
-	tempProtoSrcDir := filepath.Join(outputDir, version, "proto")
-	tempGrpcSrcDir := filepath.Join(outputDir, version, "grpc")
-	tempResourceNameSrcDir := filepath.Join(outputDir, version, "gapic", "proto", "src", "main", "java")
-	tempSamplesDir := filepath.Join(outputDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
-	// Final destination directories
-	gapicDestDir := filepath.Join(outputDir, modules.gapic, "src", "main")
-	gapicTestDestDir := filepath.Join(outputDir, modules.gapic, "src", "test")
-	protoDestDir := filepath.Join(outputDir, modules.proto, "src", "main", "java")
-	grpcDestDir := filepath.Join(outputDir, modules.grpc, "src", "main", "java")
-	samplesDestDir := filepath.Join(outputDir, "samples", "snippets", "generated")
-
-	// Ensure destination directories exist
-	destDirs := []string{gapicDestDir, gapicTestDestDir, protoDestDir, grpcDestDir}
-	if includeSamples {
-		destDirs = append(destDirs, samplesDestDir)
-	}
-	for _, dir := range destDirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
-
-	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-		return err
-	}
-
-	type moveAction struct {
-		src, dest   string
-		description string
-	}
-	actions := []moveAction{
-		{src: tempProtoSrcDir, dest: protoDestDir, description: "proto source"},
-		{src: tempGrpcSrcDir, dest: grpcDestDir, description: "grpc source"},
-		{src: tempGapicSrcDir, dest: gapicDestDir, description: "gapic source"},
-		{src: tempGapicTestDir, dest: gapicTestDestDir, description: "gapic test"},
-		{src: tempResourceNameSrcDir, dest: protoDestDir, description: "resource name source"},
-	}
-	if includeSamples {
-		actions = append(actions, moveAction{src: tempSamplesDir, dest: samplesDestDir, description: "samples"})
-	}
-	for _, action := range actions {
-		if _, err := os.Stat(action.src); err == nil {
-			if err := filesystem.MoveAndMerge(action.src, action.dest); err != nil {
-				return fmt.Errorf("failed to move %s: %w", action.description, err)
-			}
-		}
-	}
-	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(outputDir, modules.proto, "src", "main", "proto")
-	if err := copyProtos(googleapisDir, protos, protoFilesDestDir); err != nil {
-		return fmt.Errorf("failed to copy proto files: %w", err)
-	}
-	return nil
-}
-
-func copyProtos(googleapisDir string, protos []string, destDir string) error {
-	for _, proto := range protos {
-		if strings.HasSuffix(proto, commonProtos) {
-			continue
-		}
-		// Calculate relative path from googleapisDir to preserve directory structure
-		rel, err := filepath.Rel(googleapisDir, proto)
-		if err != nil {
-			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
-		}
-		target := filepath.Join(destDir, rel)
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
-		}
-		if err := filesystem.CopyFile(proto, target); err != nil {
-			return fmt.Errorf("failed to copy file %s to %s: %w", proto, target, err)
-		}
-	}
-	return nil
 }
 
 // Format formats a Java client library using google-java-format.
@@ -417,14 +233,25 @@ func collectJavaFiles(root string) ([]string, error) {
 	return files, err
 }
 
-func findJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+// resolveJavaAPI returns the Java-specific configuration for the given API,
+// applying default values if no explicit configuration is found in the library.
+func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+	res := &config.JavaAPI{
+		Path:             api.Path,
+		AdditionalProtos: []string{commonProtos},
+	}
 	if library.Java == nil {
-		return nil
+		return res
 	}
-	for _, ja := range library.Java.JavaAPIs {
-		if ja.Path == api.Path {
-			return ja
+	for _, javaAPI := range library.Java.JavaAPIs {
+		if javaAPI.Path != api.Path {
+			continue
 		}
+		*res = *javaAPI
+		if len(res.AdditionalProtos) == 0 {
+			res.AdditionalProtos = []string{commonProtos}
+		}
+		return res
 	}
-	return nil
+	return res
 }

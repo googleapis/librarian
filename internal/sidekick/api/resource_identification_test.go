@@ -140,7 +140,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if diff := cmp.Diff(test.want, got); diff != "" {
@@ -188,7 +188,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if got != nil {
@@ -247,7 +247,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
-
 		{
 			name:      "heuristic: not eligible service",
 			serviceID: "any.service", // not eligible
@@ -259,7 +258,42 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			resources: nil,
 			want:      nil,
 		},
-
+		{
+			name:      "heuristic: paths with un-grouped variable after version string",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("v1").WithVariableNamed("resource").
+				WithLiteral("children").WithVariableNamed("child"),
+			fields: []*Field{
+				{Name: "resource", Typez: STRING_TYPE},
+				{Name: "child", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("v1").WithVariableNamed("resource").
+					WithLiteral("children").WithVariableNamed("child"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"resource"}, {"child"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/{resource}/children/{child}"),
+			},
+		},
+		{
+			name:      "heuristic: valid compute path with version string",
+			serviceID: ".google.cloud.compute.v1.Instances",
+			path: NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("locations").WithVariableNamed("location"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "location", Typez: STRING_TYPE},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"location"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/locations/{location}"),
+			},
+		},
 		{
 			name:      "heuristic: stops at trailing action",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -285,7 +319,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
-
 		{
 			name:      "heuristic: stops at unknown segment",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -309,7 +342,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
 			},
 		},
-
 		{
 			name:      "heuristic: skips if input field missing",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -318,7 +350,6 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			fields: []*Field{}, // No fields
 			want:   nil,
 		},
-
 		{
 			name:      "heuristic: skips non-collection literal without 's'",
 			serviceID: ".google.cloud.compute.v1.Instances",
@@ -347,12 +378,34 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				}
 				model.Services[0].Methods = append(model.Services[0].Methods, m)
 			}
-			IdentifyTargetResources(model)
+			IdentifyTargetResources(model, true)
 
 			got := binding.TargetResource
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
+	// A setup that would normally match the heuristics
+	serviceID := ".google.cloud.compute.v1.Instances"
+	path := NewPathTemplate().
+		WithLiteral("projects").WithVariableNamed("project").
+		WithLiteral("locations").WithVariableNamed("location")
+	fields := []*Field{
+		{Name: "project", Typez: STRING_TYPE},
+		{Name: "location", Typez: STRING_TYPE},
+	}
+
+	model, binding := setupTestModel(serviceID, path, fields)
+
+	// Explicitly disable heuristics
+	IdentifyTargetResources(model, false)
+
+	// Since heuristics are disabled, it should not find the target resource
+	if binding.TargetResource != nil {
+		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource)
 	}
 }

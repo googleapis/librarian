@@ -1464,6 +1464,14 @@
     php: grpc+rest
     python: grpc
     ruby: grpc
+- documentation_uri: https://cloud.google.com/network-connectivity/
+  languages:
+    - go
+    - python
+  path: google/cloud/networkconnectivity/v1beta
+  transports:
+    go: grpc
+    python: grpc
 - documentation_uri: https://cloud.google.com/network-management
   languages:
     - go
@@ -1645,6 +1653,14 @@
     - python
     - rust
   path: google/cloud/privilegedaccessmanager/v1
+- languages:
+    - go
+    - python
+    - rust
+  path: google/cloud/pubsublite/v1
+  transports:
+    go: grpc
+    python: grpc
 - languages:
     - go
     - python

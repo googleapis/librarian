@@ -19,6 +19,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 // ModelConfig holds the configuration necessary to parse an API specification.
@@ -34,7 +35,7 @@ type ModelConfig struct {
 	// - `config.SpecNone`: "none"
 	SpecificationFormat string
 	SpecificationSource string
-	Source              map[string]string
+	Source              sidekickconfig.SourceConfig
 
 	// Service config
 	ServiceConfig string
@@ -48,6 +49,9 @@ type ModelConfig struct {
 
 	// Discovery poller configurations
 	Discovery *api.Discovery
+
+	// Resource heuristic enablement
+	ResourceName bool
 
 	// Model overrides
 	Override api.ModelOverride
@@ -79,7 +83,7 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	if err := api.IdentifyTargetResources(model); err != nil {
+	if err := api.IdentifyTargetResources(model, cfg.ResourceName); err != nil {
 		return nil, err
 	}
 	if err := api.SkipModelElements(model, cfg.Override); err != nil {

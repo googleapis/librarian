@@ -273,7 +273,7 @@ type codec struct {
 	doNotPublish bool
 	// The version of the generated crate.
 	version string
-	// The "release level" as required by the `.repo-metadata.json` file.
+	// The "release level" as used in documentation and READMEs.
 	// Typically "stable" or "preview".
 	releaseLevel string
 	// True if the API model includes any services

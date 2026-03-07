@@ -52,8 +52,8 @@ func ParseProtobuf(cfg *ModelConfig) (*api.API, error) {
 	return makeAPIForProtobuf(serviceConfig, request)
 }
 
-func newCodeGeneratorRequest(source string, options map[string]string) (_ *pluginpb.CodeGeneratorRequest, err error) {
-	// Create a temporary files to store `protoc`'s output
+// Create a temporary files to store `protoc`'s output.
+func newCodeGeneratorRequest(source string, sourceCfg config.SourceConfig) (_ *pluginpb.CodeGeneratorRequest, err error) {
 	tempFile, err := os.CreateTemp("", "protoc-out-")
 	if err != nil {
 		return nil, err
@@ -66,13 +66,13 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 		}
 	}()
 
-	files, err := protobuf.DetermineInputFiles(source, config.NewSourceConfig(options))
+	files, err := protobuf.DetermineInputFiles(source, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call protoc with the given arguments.
-	contents, err := protoc(tempFile.Name(), files, options)
+	contents, err := protoc(tempFile.Name(), files, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,15 +102,15 @@ func newCodeGeneratorRequest(source string, options map[string]string) (_ *plugi
 	return request, nil
 }
 
-func protoc(tempFile string, files []string, options map[string]string) ([]byte, error) {
+func protoc(tempFile string, files []string, sourceCfg config.SourceConfig) ([]byte, error) {
 	args := []string{
 		"--include_imports",
 		"--include_source_info",
 		"--retain_options",
 		"--descriptor_set_out", tempFile,
 	}
-	for _, name := range config.SourceRoots(options) {
-		if path, ok := options[name]; ok {
+	for _, root := range sourceCfg.ActiveRoots {
+		if path := sourceCfg.Root(root); path != "" {
 			args = append(args, "--proto_path")
 			args = append(args, path)
 		}
