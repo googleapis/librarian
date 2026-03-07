@@ -49,6 +49,8 @@ func Bump(library *config.Library, output, version string) error {
 	return nil
 }
 
+// HasChanges reports whether any of the changed files belong to the library, excluding those contained
+// within a configured nested module.
 func HasChanges(library *config.Library, filesChanged []string) bool {
 	// Append file separator to avoid a library name is another library name's prefix.
 	// Git paths use forward slashes.
