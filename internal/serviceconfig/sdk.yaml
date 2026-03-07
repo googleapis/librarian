@@ -1836,6 +1836,7 @@
 - languages:
     - go
     - python
+    - rust
   path: google/cloud/securitycentermanagement/v1
 - languages:
     - go
