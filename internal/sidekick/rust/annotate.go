@@ -276,8 +276,6 @@ type methodAnnotation struct {
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
 	InternalBuilders          bool
-	ResourceNameTemplate      string
-	ResourceNameArgs          []string
 	HasResourceNameGeneration bool
 }
 
@@ -1634,11 +1632,6 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 					}
 					bAnn.ResourceNameTemplate = tmpl
 					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
-
-					if annotation.ResourceNameTemplate == "" {
-						annotation.ResourceNameTemplate = bAnn.ResourceNameTemplate
-						annotation.ResourceNameArgs = bAnn.ResourceNameArgs
-					}
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil

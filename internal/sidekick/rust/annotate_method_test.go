@@ -364,12 +364,6 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			name: "WithTargetResource",
 			id:   ".test.v1.ResourceService.move",
 			want: &methodAnnotation{
-				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/zones/{}/types/{}",
-				ResourceNameArgs: []string{
-					"var_project",
-					"var_zone",
-					"var_type",
-				},
 				HasResourceNameGeneration: true,
 			},
 		},
@@ -384,10 +378,6 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			name: "MultipleBindings",
 			id:   ".test.v1.ResourceService.Self",
 			want: &methodAnnotation{
-				ResourceNameTemplate: "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
-				ResourceNameArgs: []string{
-					"var_name",
-				},
 				HasResourceNameGeneration: true,
 			},
 			wantBindings: []*pathBindingAnnotation{
