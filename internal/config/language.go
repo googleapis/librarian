@@ -27,6 +27,8 @@ const (
 	LanguageCsharp = "csharp"
 	// LanguageDart is the language identifier for Dart.
 	LanguageDart = "dart"
+	// LanguageDotnet is the language identifier for .NET.
+	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
 	// LanguageGo is the language identifier for Go.
@@ -553,4 +555,83 @@ type JavaAPI struct {
 
 	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
 	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+}
+
+// DotnetPackage contains .NET-specific library configuration.
+type DotnetPackage struct {
+	// AdditionalServiceDescriptors is a list of extra service descriptors to include.
+	AdditionalServiceDescriptors []string `yaml:"additional_service_descriptors,omitempty"`
+
+	// Csproj contains configuration for .csproj file generation and overrides.
+	Csproj *DotnetCsproj `yaml:"csproj,omitempty"`
+
+	// Dependencies maps NuGet package IDs to version strings.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// Generator overrides the default generator (e.g., "proto").
+	Generator string `yaml:"generator,omitempty"`
+
+	// PackageGroup lists packages that must be released together.
+	PackageGroup []string `yaml:"package_group,omitempty"`
+
+	// Postgeneration contains post-generation shell commands or extra protos.
+	Postgeneration []*DotnetPostgeneration `yaml:"postgeneration,omitempty"`
+
+	// Pregeneration contains declarative proto mutations.
+	Pregeneration []*DotnetPregeneration `yaml:"pregeneration,omitempty"`
+}
+
+// DotnetPregeneration represents a declarative proto mutation.
+type DotnetPregeneration struct {
+	// RenameMessage renames a message.
+	RenameMessage *DotnetRenameMessage `yaml:"rename_message,omitempty"`
+
+	// RemoveField removes a field from a message.
+	RemoveField *DotnetRemoveField `yaml:"remove_field,omitempty"`
+
+	// RenameRPC renames an RPC.
+	RenameRPC *DotnetRenameRPC `yaml:"rename_rpc,omitempty"`
+}
+
+// DotnetRenameMessage contains rename message configuration.
+type DotnetRenameMessage struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
+}
+
+// DotnetRemoveField contains remove field configuration.
+type DotnetRemoveField struct {
+	Message string `yaml:"message"`
+	Field   string `yaml:"field"`
+}
+
+// DotnetRenameRPC contains rename RPC configuration.
+type DotnetRenameRPC struct {
+	From     string `yaml:"from"`
+	To       string `yaml:"to"`
+	WireName string `yaml:"wire_name,omitempty"`
+}
+
+// DotnetPostgeneration represents a post-generation action.
+type DotnetPostgeneration struct {
+	// Run is a shell command to execute.
+	Run string `yaml:"run,omitempty"`
+
+	// ExtraProto is an extra proto file to compile.
+	ExtraProto string `yaml:"extra_proto,omitempty"`
+}
+
+// DotnetCsproj contains configuration for .csproj file generation.
+type DotnetCsproj struct {
+	// Snippets contains XML fragments for .csproj files.
+	Snippets *DotnetCsprojSnippets `yaml:"snippets,omitempty"`
+
+	// IntegrationTests contains configuration for integration test projects.
+	IntegrationTests *DotnetCsprojSnippets `yaml:"integration_tests,omitempty"`
+}
+
+// DotnetCsprojSnippets contains XML fragments to be merged into .csproj files.
+type DotnetCsprojSnippets struct {
+	// EmbeddedResources is a list of glob patterns for embedded resources.
+	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
 }

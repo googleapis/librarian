@@ -139,6 +139,9 @@ type Default struct {
 
 	// Language-specific fields are below.
 
+	// Dotnet contains .NET-specific default configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
+
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
@@ -204,6 +207,9 @@ type Library struct {
 	Veneer bool `yaml:"veneer,omitempty"`
 
 	// Language-specific fields are below.
+
+	// Dotnet contains .NET-specific library configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
