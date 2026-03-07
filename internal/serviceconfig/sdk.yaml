@@ -1649,6 +1649,14 @@
     - go
     - python
     - rust
+  path: google/cloud/pubsublite/v1
+  transports:
+    go: grpc
+    python: grpc
+- languages:
+    - go
+    - python
+    - rust
   path: google/cloud/rapidmigrationassessment/v1
   transports:
     go: grpc+rest
