@@ -1254,6 +1254,40 @@ func TestLegacyRustBumpAll(t *testing.T) {
 	}
 }
 
+func TestHasChanges(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		dir          string
+		filesChanges []string
+		want         bool
+	}{
+		{
+			name: "find changes in library",
+			dir:  "test-lib",
+			filesChanges: []string{
+				"test-lib/apiv1/example.go",
+				"another-lib/apiv1/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "no change in library",
+			dir:  "test-lib",
+			filesChanges: []string{
+				"another-lib/apiv1/example.go",
+				"another-lib/apiv1/example.go",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := hasChangesIn(test.dir, test.filesChanges)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func writeReadmeAndCommit(t *testing.T, newContent string) {
 	writeFileAndCommit(t, testhelper.ReadmeFile, []byte(newContent), "Modified readme")
 }
