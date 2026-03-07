@@ -74,6 +74,24 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "empty go module is cleared",
+			library: &config.Library{
+				Name: "test-lib",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							Path:          "google/cloud/speech/v1",
+							ImportPath:    "speech/apiv1",
+							ClientPackage: "speech",
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "test-lib",
+			},
+		},
+		{
 			name: "GoAPIs empty config is removed",
 			library: &config.Library{
 				Name: "test-lib",
