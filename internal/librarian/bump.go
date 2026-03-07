@@ -163,7 +163,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, err
 		}
-		if !hasChanges(cfg, lib, filesChanged) {
+		if !libraryChanged(cfg, lib, filesChanged) {
 			continue
 		}
 		librariesToBump = append(librariesToBump, lib)
@@ -171,7 +171,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 	return librariesToBump, nil
 }
 
-func hasChanges(cfg *config.Config, library *config.Library, filesChanged []string) bool {
+func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
 	switch cfg.Language {
 	case config.LanguageGo:
 		return golang.HasChanges(library, filesChanged)
