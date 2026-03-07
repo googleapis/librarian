@@ -30,65 +30,59 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
-func TestCreateProtocOptions(t *testing.T) {
+func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		api      *config.API
-		javaAPI  *config.JavaAPI
-		library  *config.Library
-		expected []string
-		wantErr  bool
+		name      string
+		api       *config.API
+		javaAPI   *config.JavaAPI
+		transport string
+		expected  []string
+		wantErr   bool
 	}{
 		{
-			name:    "basic case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
-			javaAPI: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name:      "basic case",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			transport: "grpc+rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_grpc_out=grpc-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest,rest-numeric-enums",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"rest-numeric-enums",
 			},
 		},
 		{
-			name: "rest transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Transport: "rest",
-			},
-			javaAPI: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name:      "rest transport",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			transport: "rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=rest,rest-numeric-enums",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=rest",
+				"rest-numeric-enums",
 			},
 		},
 		{
-			name:    "no rest numeric enum case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
-			javaAPI: &config.JavaAPI{
-				Path:               "google/cloud/secretmanager/v1",
-				NoRestNumericEnums: true,
-			},
+			name:      "no rest numeric enum case",
+			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
+			transport: "grpc+rest",
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_grpc_out=grpc-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := createProtocOptions(test.api, test.javaAPI, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
+			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.transport)
 			if (err != nil) != test.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
+				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
@@ -98,108 +92,106 @@ func TestCreateProtocOptions(t *testing.T) {
 	}
 }
 
-func TestConstructProtocCommandArgs_Success(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	javaAPI := &config.JavaAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
-	}
-	protocOptions := []string{"--java_out=out"}
-
-	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
-	if err != nil {
-		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
-	}
-
-	expectedArgs := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		"--java_out=out",
-	}
-
-	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	// Verify apiProtos contains the expected files
-	expectedApiProtos := []string{
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-	}
-	sort.Strings(expectedApiProtos)
-	sort.Strings(apiProtos)
-	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
-		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
-	}
-}
-
-func TestConstructProtocCommandArgs_AdditionalProtos(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	javaAPI := &config.JavaAPI{
-		AdditionalProtos: []string{"google/cloud/common_resources.proto", "google/cloud/location/locations.proto"},
-	}
-	protocOptions := []string{"--java_out=out"}
-	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
-	if err != nil {
-		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
-	}
-
-	expectedArgs := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/location/locations.proto"),
-		"--java_out=out",
-	}
-
-	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	expectedApiProtos := []string{
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-	}
-	sort.Strings(expectedApiProtos)
-	sort.Strings(apiProtos)
-	if diff := cmp.Diff(expectedApiProtos, apiProtos); diff != "" {
-		t.Errorf("mismatch apiProtos (-want +got):\n%s", diff)
-	}
-}
-
-func TestConstructProtocCommandArgs_Error(t *testing.T) {
+func TestResolveGAPICOptions_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		api     *config.API
+		apiPath string
+		setup   func(t *testing.T, root string)
 		wantErr string
 	}{
 		{
-			name:    "nonexistent path",
-			api:     &config.API{Path: "nonexistent"},
-			wantErr: "no protos found in api \"nonexistent\"",
+			name:    "API not in allowlist",
+			apiPath: "not/in/allowlist/v1",
+			wantErr: "API not/in/allowlist/v1 is not in allowlist",
 		},
 		{
-			name:    "malformed path",
-			api:     &config.API{Path: "malformed["},
-			wantErr: "failed to find protos",
+			name:    "multiple gRPC configs",
+			apiPath: "google/cloud/multiple/v1",
+			setup: func(t *testing.T, root string) {
+				apiDir := filepath.Join(root, "google/cloud/multiple/v1")
+				if err := os.MkdirAll(apiDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, "a_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, "b_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "multiple gRPC service config files found",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			_, err := resolveGAPICOptions(&config.API{Path: test.apiPath}, &config.JavaAPI{Path: test.apiPath}, tmpDir, "grpc")
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestProtocArgs(t *testing.T) {
+	apiProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+	}
+	additionalProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+	}
+
+	for _, test := range []struct {
+		name string
+		call func() []string
+		want []string
+	}{
+		{
+			name: "protoProtocArgs",
+			call: func() []string { return protoProtocArgs(apiProtos, googleapisDir, "proto-out") },
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_out=proto-out",
+				apiProtos[0],
+				apiProtos[1],
+			},
+		},
+		{
+			name: "grpcProtocArgs",
+			call: func() []string { return grpcProtocArgs(apiProtos, googleapisDir, "grpc-out") },
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_grpc_out=grpc-out",
+				apiProtos[0],
+				apiProtos[1],
+			},
+		},
+		{
+			name: "gapicProtocArgs",
+			call: func() []string {
+				return gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", []string{"opt1", "opt2"})
+			},
+			want: []string{
+				"--experimental_allow_proto3_optional",
+				"-I=" + googleapisDir,
+				"--java_gapic_out=metadata:gapic-out",
+				"--java_gapic_opt=opt1,opt2",
+				apiProtos[0],
+				apiProtos[1],
+				additionalProtos[0],
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			protocOptions := []string{"--java_out=out"}
-			javaAPI := &config.JavaAPI{Path: test.api.Path}
-			_, _, err := constructProtocCommandArgs(test.api, javaAPI, googleapisDir, protocOptions)
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("constructProtocCommandArgs() error = %v, wantErr %v", err, test.wantErr)
+			got := test.call()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -258,6 +250,23 @@ func TestResolveJavaAPI(t *testing.T) {
 				AdditionalProtos: []string{commonProtos},
 			},
 		},
+		{
+			name: "Java module exists but API not found",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path: "other/api",
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveJavaAPI(test.library, test.api)
@@ -298,6 +307,7 @@ func TestGenerate_ErrorCases(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		setup   func(t *testing.T, library *config.Library)
 		wantErr string
 	}{
 		{
@@ -316,9 +326,28 @@ func TestGenerate_ErrorCases(t *testing.T) {
 			},
 			wantErr: "failed to extract version from api path",
 		},
+		{
+			name: "mkdir failure for output dir",
+			library: &config.Library{
+				Name:   "test",
+				Output: filepath.Join(t.TempDir(), "file_exists"),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, library *config.Library) {
+				// Create a regular file where a directory is expected to cause os.MkdirAll to fail.
+				if err := os.WriteFile(library.Output, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "failed to create output directory",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			if test.setup != nil {
+				test.setup(t, test.library)
+			}
 			err := generate(t.Context(), test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
@@ -329,12 +358,30 @@ func TestGenerate_ErrorCases(t *testing.T) {
 
 func TestGenerateLibraries_ErrorCase(t *testing.T) {
 	t.Parallel()
-	libraries := []*config.Library{
-		{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
-	}
-	err := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		wantErr   bool
+	}{
+		{
+			name:      "no libraries",
+			libraries: nil,
+			wantErr:   false,
+		},
+		{
+			name: "generation failure",
+			libraries: []*config.Library{
+				{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			if (err != nil) != test.wantErr {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -401,7 +448,7 @@ func TestFormat_LookPathError(t *testing.T) {
 	t.Setenv("PATH", "")
 	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
-		t.Fatal("Format() error = nil, want error")
+		t.Fatal(err)
 	}
 }
 
@@ -432,7 +479,7 @@ func TestCollectJavaFiles(t *testing.T) {
 	}
 	got, err := collectJavaFiles(tmpDir)
 	if err != nil {
-		t.Fatalf("collectJavaFiles() error = %v", err)
+		t.Fatal(err)
 	}
 	sort.Strings(got)
 	sort.Strings(want)
