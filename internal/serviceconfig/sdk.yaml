@@ -1464,6 +1464,13 @@
     php: grpc+rest
     python: grpc
     ruby: grpc
+- languages:
+    - go
+    - python
+  path: google/cloud/networkconnectivity/v1beta
+  transports:
+    go: grpc
+    python: grpc
 - documentation_uri: https://cloud.google.com/network-management
   languages:
     - go
