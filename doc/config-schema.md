@@ -61,6 +61,7 @@ This document describes the schema for the librarian.yaml.
 | `release_level` | string | Is either "stable" or "preview". |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
@@ -83,6 +84,7 @@ This document describes the schema for the librarian.yaml.
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
@@ -116,6 +118,68 @@ This document describes the schema for the librarian.yaml.
 | `repository_url` | string | Is the URL to the repository for this package. |
 | `title_override` | string | Overrides the API title. |
 | `version` | string | Is the version of the dart package. |
+
+## DotnetCsproj Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `snippets` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains XML fragments for .csproj files. |
+| `integration_tests` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains configuration for integration test projects. |
+
+## DotnetCsprojSnippets Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `embedded_resources` | list of string | Is a list of glob patterns for embedded resources. |
+
+## DotnetPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_service_descriptors` | list of string | Is a list of extra service descriptors to include. |
+| `csproj` | [DotnetCsproj](#dotnetcsproj-configuration) (optional) | Contains configuration for .csproj file generation and overrides. |
+| `dependencies` | map[string]string | Maps NuGet package IDs to version strings. |
+| `generator` | string | Overrides the default generator (e.g., "proto"). |
+| `package_group` | list of string | Lists packages that must be released together. |
+| `postgeneration` | list of [DotnetPostgeneration](#dotnetpostgeneration-configuration) (optional) | Contains post-generation shell commands or extra protos. |
+| `pregeneration` | list of [DotnetPregeneration](#dotnetpregeneration-configuration) (optional) | Contains declarative proto mutations. |
+
+## DotnetPostgeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `run` | string | Is a shell command to execute. |
+| `extra_proto` | string | Is an extra proto file to compile. |
+
+## DotnetPregeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `rename_message` | [DotnetRenameMessage](#dotnetrenamemessage-configuration) (optional) | Renames a message. |
+| `remove_field` | [DotnetRemoveField](#dotnetremovefield-configuration) (optional) | Removes a field from a message. |
+| `rename_rpc` | [DotnetRenameRPC](#dotnetrenamerpc-configuration) (optional) | Renames an RPC. |
+
+## DotnetRemoveField Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `message` | string |  |
+| `field` | string |  |
+
+## DotnetRenameMessage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+
+## DotnetRenameRPC Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+| `wire_name` | string |  |
 
 ## GoAPI Configuration
 
