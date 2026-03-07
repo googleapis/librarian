@@ -239,6 +239,17 @@ func TestHasChanges(t *testing.T) {
 				"test-lib/v2/example.go",
 			},
 		},
+		{
+			name: "library name prefix",
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib-1/v2/apiv1/example.go",
+				"test-lib-1/v2/example.go",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := HasChanges(test.library, test.filesChanges)

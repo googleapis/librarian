@@ -51,9 +51,16 @@ func Bump(library *config.Library, output, version string) error {
 
 func HasChanges(library *config.Library, filesChanged []string) bool {
 	inclusion := filepath.Clean(filepath.Join(library.Output, library.Name))
+	// Append file separator to avoid a library name is another library name's prefix.
+	if !strings.HasSuffix(inclusion, string(filepath.Separator)) {
+		inclusion += string(filepath.Separator)
+	}
 	var exclusion string
 	if library.Go != nil && library.Go.NestedModule != "" {
 		exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule))
+		if !strings.HasSuffix(exclusion, string(filepath.Separator)) {
+			exclusion += string(filepath.Separator)
+		}
 	}
 	for _, file := range filesChanged {
 		if strings.HasPrefix(file, inclusion) {
