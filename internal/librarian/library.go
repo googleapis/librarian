@@ -206,11 +206,11 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		if isVeneer(language, lib) {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
-		var api string
+		var apiPath string
 		if len(lib.APIs) > 0 {
-			api = lib.APIs[0].Path
+			apiPath = lib.APIs[0].Path
 		}
-		lib.Output = defaultOutput(language, lib.Name, api, defaults.Output)
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
