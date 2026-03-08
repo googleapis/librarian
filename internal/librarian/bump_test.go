@@ -1254,41 +1254,89 @@ func TestLegacyRustBumpAll(t *testing.T) {
 	}
 }
 
-func TestHasChanges(t *testing.T) {
+func TestLibraryChanged(t *testing.T) {
 	for _, test := range []struct {
 		name         string
-		dir          string
+		cfg          *config.Config
+		library      *config.Library
 		filesChanges []string
 		want         bool
 	}{
 		{
 			name: "find changes in library",
-			dir:  "test-lib",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
 			filesChanges: []string{
-				"test-lib/apiv1/example.go",
-				"another-lib/apiv1/example.go",
+				"src/storage/apiv1/example.go",
+				"src/spanner/apiv1/nested/example.go",
 			},
 			want: true,
 		},
 		{
 			name: "no change in library",
-			dir:  "test-lib",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
 			filesChanges: []string{
-				"another-lib/apiv1/example.go",
-				"another-lib/apiv1/example.go",
+				"src/spanner/apiv1/example.go",
 			},
 		},
 		{
 			name: "library name prefix",
-			dir:  "test-lib",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
+			filesChanges: []string{
+				"src/storage-prefix/apiv1/example.go",
+			},
+		},
+		{
+			name: "Go library",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib/apiv1/example.go",
+				"test-lib/apiv2/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "Go library name prefix",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
 			filesChanges: []string{
 				"test-lib-1/apiv1/example.go",
-				"test-lib-2/apiv1/example.go",
+				"test-lib-2/apiv2/example.go",
+			},
+		},
+		{
+			name: "Go library with a nested module",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+				Go:     &config.GoModule{NestedModule: "v2"},
+			},
+			filesChanges: []string{
+				"test-lib/v2/apiv1/example.go",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := hasChangesIn(test.dir, test.filesChanges)
+			got := libraryChanged(test.cfg, test.library, test.filesChanges)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -177,7 +177,7 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 	var exclusion string
 	switch cfg.Language {
 	case config.LanguageGo:
-		output = filepath.Join(library.Output, library.Name)
+		output = filepath.Clean(filepath.Join(library.Output, library.Name))
 		if library.Go != nil && library.Go.NestedModule != "" {
 			exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
 		}
@@ -416,7 +416,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !hasChangesIn(output, "", filesChanged) {
 			continue
 		}
 		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, gitExe, ""); err != nil {
