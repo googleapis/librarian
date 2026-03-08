@@ -19,7 +19,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/snippetmetadata"
@@ -47,27 +46,6 @@ func Bump(library *config.Library, output, version string) error {
 		}
 	}
 	return nil
-}
-
-// HasChanges reports whether any of the changed files belong to the library, excluding those contained
-// within a configured nested module.
-func HasChanges(library *config.Library, filesChanged []string) bool {
-	// Append file separator to avoid a library name is another library name's prefix.
-	// Git paths use forward slashes.
-	inclusion := filepath.Clean(filepath.Join(library.Output, library.Name)) + "/"
-	var exclusion string
-	if library.Go != nil && library.Go.NestedModule != "" {
-		exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
-	}
-	for _, file := range filesChanged {
-		if strings.HasPrefix(file, inclusion) {
-			if exclusion != "" && strings.HasPrefix(file, exclusion) {
-				continue
-			}
-			return true
-		}
-	}
-	return false
 }
 
 func bumpInternalVersion(library *config.Library, output, version string) error {

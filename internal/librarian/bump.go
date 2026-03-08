@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -172,21 +173,29 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 }
 
 func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
+	var output string
+	var exclusion string
 	switch cfg.Language {
 	case config.LanguageGo:
-		return golang.HasChanges(library, filesChanged)
+		output = filepath.Join(library.Output, library.Name)
+		if library.Go != nil && library.Go.NestedModule != "" {
+			exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
+		}
 	default:
-		output := libraryOutput(cfg.Language, library, cfg.Default)
-		return hasChangesIn(output, filesChanged)
+		output = libraryOutput(cfg.Language, library, cfg.Default)
 	}
+	return hasChangesIn(output, exclusion, filesChanged)
 }
 
-func hasChangesIn(dir string, filesChanged []string) bool {
+func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 	if !strings.HasSuffix(dir, "/") {
 		dir += "/"
 	}
 	for _, f := range filesChanged {
 		if strings.HasPrefix(f, dir) {
+			if exclusion != "" && strings.HasPrefix(f, exclusion) {
+				continue
+			}
 			return true
 		}
 	}
