@@ -176,6 +176,9 @@ func apiPathsFromOwlBot(owlBotPath, googleapisDir string) ([]string, error) {
 		return nil, fmt.Errorf("cannot parse API path from source: %q", source)
 	}
 	basePath := matches[1]
+	if !filepath.IsLocal(basePath) {
+		return nil, fmt.Errorf("invalid API path %q: must be a local path", basePath)
+	}
 
 	dir := filepath.Join(googleapisDir, basePath)
 	versionEntries, err := os.ReadDir(dir)

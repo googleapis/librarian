@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -174,12 +175,20 @@ func TestAPIPathsFromOwlBot(t *testing.T) {
 				"packages", "google-cloud-translate", ".OwlBot.yaml"),
 			wantPaths: []string{"google/cloud/translate/v3"},
 		},
+		{
+			name:       "path_traversal",
+			owlBotYAML: filepath.Join("testdata", "owlbot_traversal.yaml"),
+			wantErrSub: "must be a local path",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := apiPathsFromOwlBot(test.owlBotYAML, googleapisDir)
 			if test.wantErrSub != "" {
 				if err == nil {
 					t.Fatalf("expected error containing %q, got nil", test.wantErrSub)
+				}
+				if !strings.Contains(err.Error(), test.wantErrSub) {
+					t.Fatalf("expected error containing %q, got %v", test.wantErrSub, err)
 				}
 				return
 			}

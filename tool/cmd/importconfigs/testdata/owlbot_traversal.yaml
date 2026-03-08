@@ -1,0 +1,3 @@
+deep-copy-regex:
+  - source: /../../etc/(v.*)/.*-nodejs
+    dest: /owl-bot-staging/test/$1
