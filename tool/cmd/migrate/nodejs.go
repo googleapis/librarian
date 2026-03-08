@@ -59,7 +59,7 @@ type nodejsGapicInfo struct {
 
 // owlBotSourceRegex extracts the base API path from an .OwlBot.yaml
 // deep-copy-regex source pattern. The pattern is always of the form:
-// /some/path/(version-regex)/.*-nodejs
+// /some/path/(version-regex)/.*-nodejs.
 var owlBotSourceRegex = regexp.MustCompile(`^/(.+?)/\(`)
 
 func runNodejsMigration(ctx context.Context, repoPath string) error {
@@ -141,10 +141,7 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 		// Check if the npm package name needs to be set explicitly.
 		derivedName := deriveNpmPackageName(libraryName)
 		if pkgJSON.Name != derivedName {
-			if library.Nodejs == nil {
-				library.Nodejs = &config.NodejsPackage{}
-			}
-			library.Nodejs.PackageName = pkgJSON.Name
+			ensureNodejsPackage(library).PackageName = pkgJSON.Name
 		}
 
 		// Extract extra dependencies (beyond google-gax).
@@ -156,10 +153,7 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 			extraDeps[dep] = version
 		}
 		if len(extraDeps) > 0 {
-			if library.Nodejs == nil {
-				library.Nodejs = &config.NodejsPackage{}
-			}
-			library.Nodejs.Dependencies = extraDeps
+			ensureNodejsPackage(library).Dependencies = extraDeps
 		}
 
 		// Apply BUILD.bazel fields to the library config.
@@ -168,23 +162,21 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 			if err == nil && info != nil {
 				if info.bundleConfig != "" || len(info.extraProtocParameters) > 0 ||
 					info.handwrittenLayer || info.mainService != "" || info.mixins != "" {
-					if library.Nodejs == nil {
-						library.Nodejs = &config.NodejsPackage{}
-					}
+					pkg := ensureNodejsPackage(library)
 					if info.bundleConfig != "" {
-						library.Nodejs.BundleConfig = info.bundleConfig
+						pkg.BundleConfig = info.bundleConfig
 					}
 					if len(info.extraProtocParameters) > 0 {
-						library.Nodejs.ExtraProtocParameters = info.extraProtocParameters
+						pkg.ExtraProtocParameters = info.extraProtocParameters
 					}
 					if info.handwrittenLayer {
-						library.Nodejs.HandwrittenLayer = true
+						pkg.HandwrittenLayer = true
 					}
 					if info.mainService != "" {
-						library.Nodejs.MainService = info.mainService
+						pkg.MainService = info.mainService
 					}
 					if info.mixins != "" {
-						library.Nodejs.Mixins = info.mixins
+						pkg.Mixins = info.mixins
 					}
 				}
 			}
@@ -284,6 +276,15 @@ func parseBazelNodejsInfo(googleapisDir, apiDir string) (*nodejsGapicInfo, error
 		info.handwrittenLayer = true
 	}
 	return info, nil
+}
+
+// ensureNodejsPackage returns the Nodejs field of the library, initializing
+// it if nil.
+func ensureNodejsPackage(l *config.Library) *config.NodejsPackage {
+	if l.Nodejs == nil {
+		l.Nodejs = &config.NodejsPackage{}
+	}
+	return l.Nodejs
 }
 
 // deriveNpmPackageName derives the expected npm package name from a library

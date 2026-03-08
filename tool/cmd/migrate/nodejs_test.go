@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -80,7 +81,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.SortSlices(func(a, b *config.Library) bool { return a.Name < b.Name })); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
