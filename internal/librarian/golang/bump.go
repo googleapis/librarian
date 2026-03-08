@@ -40,7 +40,7 @@ func Bump(library *config.Library, output, version string) error {
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		snippetDir := snippetDirectory(output, goAPI.ImportPath)
+		snippetDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
 			return err
 		}
