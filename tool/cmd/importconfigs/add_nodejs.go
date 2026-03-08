@@ -73,8 +73,6 @@ func runAddNodejs(sdkYAMLPath, nodeRepo, googleapisDir string) error {
 	if err != nil {
 		return fmt.Errorf("finding Node.js API paths: %w", err)
 	}
-	slog.Info("found Node.js API paths", "count", len(apiPaths))
-
 	apis, err := yaml.Read[[]serviceconfig.API](sdkYAMLPath)
 	if err != nil {
 		return fmt.Errorf("reading sdk.yaml: %w", err)
@@ -118,7 +116,6 @@ func runAddNodejs(sdkYAMLPath, nodeRepo, googleapisDir string) error {
 	if err := yaml.Write(sdkYAMLPath, *apis); err != nil {
 		return fmt.Errorf("writing sdk.yaml: %w", err)
 	}
-	slog.Info("updated sdk.yaml", "added", added, "updated", updated, "total_nodejs_apis", len(apiPaths))
 	return nil
 }
 
