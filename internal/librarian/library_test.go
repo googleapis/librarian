@@ -523,6 +523,11 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
 		},
+		{
+			name:       "Go lib without api path",
+			language:   config.LanguageGo,
+			wantOutput: "src/generated",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
