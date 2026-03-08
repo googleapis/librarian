@@ -41,7 +41,7 @@ type owlBotYAML struct {
 
 // owlBotSourceRegex extracts the base API path from an .OwlBot.yaml
 // deep-copy-regex source pattern. The pattern is always of the form:
-// /some/path/(version-regex)/.*-nodejs
+// /some/path/(version-regex)/.*-nodejs.
 var owlBotSourceRegex = regexp.MustCompile(`^/(.+?)/\(`)
 
 func addNodejsCommand() *cli.Command {
