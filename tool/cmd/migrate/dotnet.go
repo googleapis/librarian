@@ -134,10 +134,7 @@ func buildDotnetConfig(apisJSON *ApisJSON, src *config.Source) *config.Config {
 		// Build .NET-specific configuration.
 		var dotnet *config.DotnetPackage
 		if api.Generator == "proto" {
-			if dotnet == nil {
-				dotnet = &config.DotnetPackage{}
-			}
-			dotnet.Generator = "proto"
+			dotnet = &config.DotnetPackage{Generator: "proto"}
 		}
 
 		// Filter dependencies: remove "default" and "project" values.
