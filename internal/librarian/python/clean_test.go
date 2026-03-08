@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestCleanLibrary(t *testing.T) {
+func TestClean(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -129,7 +129,7 @@ func TestCleanLibrary(t *testing.T) {
 				createFileAndDirectories(t, fullPath)
 			}
 
-			if err := CleanLibrary(test.lib); err != nil {
+			if err := Clean(test.lib); err != nil {
 				t.Fatal(err)
 			}
 
@@ -149,7 +149,7 @@ func TestCleanLibrary(t *testing.T) {
 	}
 }
 
-func TestCleanLibrary_Error(t *testing.T) {
+func TestClean_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
@@ -199,9 +199,9 @@ func TestCleanLibrary_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, dir)
 			}
-			gotErr := CleanLibrary(test.lib)
+			gotErr := Clean(test.lib)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Clean error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -849,7 +849,7 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 			}
 			gotErr := deleteUnlessKept(lib, test.path)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Clean error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

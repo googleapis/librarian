@@ -241,11 +241,11 @@ func TestKeepVeneer(t *testing.T) {
 	}
 }
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
@@ -325,7 +325,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 
 	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
-	if err := GenerateLibraries(t.Context(), cfg, libraries, sources); err != nil {
+	if err := Generate(t.Context(), cfg, libraries, sources); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a Cargo.toml has been created for each library.
@@ -338,7 +338,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
@@ -384,7 +384,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	t.Chdir(workspaceDir)
 
 	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
-	gotErr := GenerateLibraries(t.Context(), cfg, libraries, sources)
+	gotErr := Generate(t.Context(), cfg, libraries, sources)
 	wantErrMessage := "unknown specification format \"invalid\""
 	if gotErr == nil {
 		t.Fatalf("expected error with message %s", wantErrMessage)
@@ -394,7 +394,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")

@@ -565,11 +565,11 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -608,7 +608,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, library := range libraries {
@@ -620,7 +620,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -649,17 +649,17 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
+	gotErr := Generate(t.Context(), cfg, libraries, googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
-// Note: this is separate to TestGenerate as there's so little that we want
-// to do here. Making TestGenerate table-driven in order to take two entirely
-// different paths doesn't feel useful.
-func TestGenerate_NoAPIs(t *testing.T) {
+// Note: this is separate to TestGenerateLibrary as there's so little that we
+// want to do here. Making TestGenerateLibrary table-driven in order to take
+// two entirely different paths doesn't feel useful.
+func TestGenerateLibrary_NoAPIs(t *testing.T) {
 	repoRoot := t.TempDir()
 	cfg := &config.Config{
 		Language: config.LanguagePython,
@@ -681,7 +681,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
@@ -752,9 +752,9 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestDefaultOutputByName(t *testing.T) {
+func TestDefaultOutput(t *testing.T) {
 	want := "packages/google-cloud-secret-manager"
-	got := DefaultOutputByName("google-cloud-secret-manager", "packages")
+	got := DefaultOutput("google-cloud-secret-manager", "packages")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

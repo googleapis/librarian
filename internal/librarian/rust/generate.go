@@ -42,8 +42,8 @@ func IsVeneer(lib *config.Library) bool {
 	return len(lib.APIs) == 0 && lib.Output != ""
 }
 
-// GenerateLibraries generates all the given libraries in parallel.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates all the given libraries in parallel.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {

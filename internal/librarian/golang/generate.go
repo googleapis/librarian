@@ -45,8 +45,8 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
-// GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+// Generate generates all the given libraries in sequence.
+func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
 		if err := generate(ctx, library, googleapisDir); err != nil {
 			return err

@@ -29,8 +29,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// GenerateLibraries generates all the given libraries in parallel.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates all the given libraries in parallel.
+func Generate(ctx context.Context, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {

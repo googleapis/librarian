@@ -33,7 +33,7 @@ func TestGenerateClirr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := GenerateClirr(protoModulePath); err != nil {
+	if err := generateClirr(protoModulePath); err != nil {
 		t.Fatal(err)
 	}
 
@@ -58,7 +58,7 @@ func TestGenerateClirr_SkipExisting(t *testing.T) {
 	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := GenerateClirr(tmpDir); err != nil {
+	if err := generateClirr(tmpDir); err != nil {
 		t.Fatal(err)
 	}
 	newContent, err := os.ReadFile(outputPath)
@@ -66,6 +66,6 @@ func TestGenerateClirr_SkipExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(newContent) != initialContent {
-		t.Errorf("expected GenerateClirr to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
+		t.Errorf("expected generateClirr to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
 	}
 }

@@ -35,8 +35,8 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-// GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
+// Generate generates all the given libraries in sequence.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
 		if err := generate(ctx, config, library, googleapisDir); err != nil {
 			return err
@@ -430,10 +430,10 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	return nil
 }
 
-// DefaultOutputByName derives an output path from a library name and a default
+// DefaultOutput derives an output path from a library name and a default
 // output directory. Currently, this just assumes each library is a directory
 // directly underneath the default output directory.
-func DefaultOutputByName(name, defaultOutput string) string {
+func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 

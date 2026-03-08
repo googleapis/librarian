@@ -23,7 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	const (
 		libraryName = "test-library"
 		outputDir   = "output"
