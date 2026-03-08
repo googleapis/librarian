@@ -74,6 +74,8 @@ func run(ctx context.Context, args []string) error {
 		return runJavaMigration(ctx, abs)
 	case "google-cloud-node":
 		return runNodejsMigration(ctx, abs)
+	case "google-cloud-dotnet":
+		return runDotnetMigration(ctx, abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
