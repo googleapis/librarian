@@ -84,9 +84,6 @@ func NewCommand(method *api.Method, overrides *Config, model *api.API, service *
 
 // newArguments generates the set of arguments for a command by parsing the
 // fields of the method's request message.
-//
-// TODO(https://github.com/googleapis/librarian/issues/3412): Refactor to use a dispatch pattern
-// (IsIgnored, IsResourceArg, IsArg) to handle field processing.
 func newArguments(method *api.Method, overrides *Config, model *api.API, service *api.Service) (Arguments, error) {
 	args := Arguments{}
 	if method.InputType == nil {
@@ -94,7 +91,6 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 	}
 
 	for _, field := range method.InputType.Fields {
-		// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error handling strategy (Error vs Skip) and messaging.
 		if err := addFlattenedParams(field, field.JSONName, &args, overrides, model, service, method); err != nil {
 			return Arguments{}, err
 		}
@@ -102,12 +98,10 @@ func newArguments(method *api.Method, overrides *Config, model *api.API, service
 	return args, nil
 }
 
-// shouldSkipParam determines if a field should be excluded from the generated command arguments.
-func shouldSkipParam(field *api.Field, method *api.Method) bool {
-	if isPrimaryResource(field, method) {
-		return false
-	}
-
+// isIgnored determines if a field should be excluded from the generated command arguments.
+// These are fields that are either implicit in the command context or handled
+// automatically by the gcloud framework.
+func isIgnored(field *api.Field, method *api.Method) bool {
 	// The "parent" field is usually implicit in the command context (handled by the primary resource or hierarchy).
 	if field.Name == "parent" {
 		return true
@@ -145,20 +139,29 @@ func shouldSkipParam(field *api.Field, method *api.Method) bool {
 }
 
 // addFlattenedParams recursively processes a field and its sub-fields to generate
-// command-line flags. This function identifies primary resources and handles
-// nested messages by "flattening" them into top-level flags.
+// command-line flags. It uses a dispatch pattern to classify each field:
+//  1. Primary resource arguments (positional resource identifiers).
+//  2. Ignored fields (implicit or framework-handled).
+//  3. Nested messages (flattened into top-level flags).
+//  4. Standard arguments (scalars, maps, enums, resource references).
+//
+// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
+// handling strategy (Error vs Skip) and messaging.
 func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overrides *Config, model *api.API, service *api.Service, method *api.Method) error {
-	if shouldSkipParam(field, method) {
-		return nil
-	}
-
+	// Primary resource args are checked first because fields like "parent"
+	// and "name" are primary resources in certain method types (e.g., List
+	// and Get/Delete/Update respectively) and must not be ignored.
 	if isPrimaryResource(field, method) {
-		param := newPrimaryResourceParam(field, method, model, service)
-		args.Params = append(args.Params, param)
+		args.Params = append(args.Params, newPrimaryResourceParam(field, method, model, service))
 		return nil
 	}
 
-	// Recurse into nested messages that are not maps.
+	if isIgnored(field, method) {
+		return nil
+	}
+
+	// Nested messages are flattened into top-level flags.
+	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
 	if field.MessageType != nil && !field.Map {
 		for _, f := range field.MessageType.Fields {
 			if err := addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args, overrides, model, service, method); err != nil {
@@ -168,7 +171,7 @@ func addFlattenedParams(field *api.Field, prefix string, args *Arguments, overri
 		return nil
 	}
 
-	// Generate a parameter for scalar, map, or enum fields.
+	// Standard arguments: scalars, maps, enums, and resource references.
 	param, err := newParam(field, prefix, overrides, model, service, method)
 	if err != nil {
 		return err
