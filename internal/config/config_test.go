@@ -248,6 +248,88 @@ func TestDotnetRead(t *testing.T) {
 	}
 }
 
+func TestNodejsRead(t *testing.T) {
+	got, err := yaml.Read[Config]("testdata/nodejs/librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		Language: LanguageNodejs,
+		Sources: &Sources{
+			Googleapis: &Source{
+				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+			},
+		},
+		Default: &Default{
+			Output:       "packages",
+			Keep:         []string{"CHANGELOG.md"},
+			ReleaseLevel: "stable",
+		},
+		Libraries: []*Library{
+			{
+				Name:    "google-cloud-batch",
+				Version: "1.5.0",
+			},
+			{
+				Name:    "google-cloud-monitoring",
+				Version: "1.5.0",
+				APIs: []*API{
+					{Path: "google/monitoring/v3"},
+				},
+			},
+			{
+				Name:    "google-cloud-accessapproval",
+				Version: "4.2.0",
+				Nodejs: &NodejsPackage{
+					PackageName: "@google-cloud/access-approval",
+				},
+			},
+			{
+				Name:    "google-cloud-speech",
+				Version: "7.0.0",
+				Nodejs: &NodejsPackage{
+					Dependencies: map[string]string{
+						"@google-cloud/common": "^5.0.0",
+						"pumpify":              "^2.0.1",
+					},
+				},
+			},
+			{
+				Name:    "google-cloud-aiplatform",
+				Version: "4.0.0",
+				APIs: []*API{
+					{Path: "google/cloud/aiplatform/v1"},
+					{Path: "google/cloud/aiplatform/v1beta1"},
+				},
+				Keep: []string{
+					"src/decorator.ts",
+					"src/helpers.ts",
+					"src/index.ts",
+					"src/value-converter.ts",
+				},
+			},
+			{
+				Name:    "google-cloud-translate",
+				Version: "9.1.0",
+				Nodejs: &NodejsPackage{
+					BundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
+					ExtraProtocParameters: []string{
+						"metadata",
+						"auto-populate-field-oauth-scope",
+					},
+					HandwrittenLayer: true,
+					MainService:      "translate",
+					Mixins:           "none",
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestWrite(t *testing.T) {
 	want, err := yaml.Read[Config]("testdata/rust/librarian.yaml")
 	if err != nil {
