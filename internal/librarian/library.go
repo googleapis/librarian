@@ -191,7 +191,9 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if !isVeneer(language, lib) {
-		if len(lib.APIs) == 0 {
+		if len(lib.APIs) == 0 && language != config.LanguageGo {
+			// Do not derive API path for Go because the library name
+			// doesn't contain relevant info.
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
 		for _, api := range lib.APIs {
@@ -204,7 +206,11 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		if isVeneer(language, lib) {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
-		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
+		var api string
+		if len(lib.APIs) > 0 {
+			api = lib.APIs[0].Path
+		}
+		lib.Output = defaultOutput(language, lib.Name, api, defaults.Output)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
