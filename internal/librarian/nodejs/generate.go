@@ -167,14 +167,6 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
-	if err := command.Run(ctx, "gapic-node-processing",
-		"generate-readme",
-		"--source-path", outDir,
-		"--initial-generation", "true",
-	); err != nil {
-		return fmt.Errorf("generate-readme: %w", err)
-	}
-
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("compileProtos: %w", err)
 	}
