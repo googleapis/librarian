@@ -31,6 +31,7 @@ func main() {
 		Usage:     "commands for import configs",
 		UsageText: "import-configs [command]",
 		Commands: []*cli.Command{
+			addNodejsCommand(),
 			updateTransportsCommand(),
 		},
 	}

@@ -63,6 +63,7 @@ This document describes the schema for the librarian.yaml.
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
 
@@ -88,6 +89,7 @@ This document describes the schema for the librarian.yaml.
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 
@@ -239,6 +241,18 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+
+## NodejsPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `bundle_config` | string | Is the path to a GAPIC bundle config file. |
+| `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
+| `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
+| `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
+| `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
+| `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 
 ## PythonDefault Configuration
 

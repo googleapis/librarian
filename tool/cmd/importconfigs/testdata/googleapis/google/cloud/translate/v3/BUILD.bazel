@@ -1,0 +1,11 @@
+load("@com_google_googleapis_imports//:imports.bzl", "nodejs_gapic_assembly_pkg", "nodejs_gapic_library")
+
+nodejs_gapic_library(
+    name = "translate_nodejs_gapic",
+    package_name = "@google-cloud/translate",
+    src = ":translate_proto_with_info",
+    package = "google.cloud.translate.v3",
+    service_yaml = "translate_v3.yaml",
+    transport = "grpc+rest",
+    deps = [],
+)

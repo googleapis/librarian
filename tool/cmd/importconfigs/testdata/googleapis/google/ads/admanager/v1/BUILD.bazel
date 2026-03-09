@@ -1,0 +1,11 @@
+load("@com_google_googleapis_imports//:imports.bzl", "nodejs_gapic_assembly_pkg", "nodejs_gapic_library")
+
+nodejs_gapic_library(
+    name = "admanager_nodejs_gapic",
+    package_name = "@google-ads/admanager",
+    src = ":admanager_proto_with_info",
+    package = "google.ads.admanager.v1",
+    service_yaml = "admanager_v1.yaml",
+    transport = "rest",
+    deps = [],
+)
