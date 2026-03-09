@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -395,11 +396,17 @@ func TestBuildDotnetConfig(t *testing.T) {
 }
 
 func TestRunDotnetMigration(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(t.TempDir())
+
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "../../internal/testdata/googleapis",
+			Dir:    filepath.Join(wd, "../../internal/testdata/googleapis"),
 		}, nil
 	}
 	for _, test := range []struct {
@@ -423,21 +430,10 @@ func TestRunDotnetMigration(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outputPath := "librarian.yaml"
-			t.Cleanup(func() {
-				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Fatalf("cleanup: %v", err)
-				}
-			})
-			err := runDotnetMigration(t.Context(), test.repoPath)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("expected error %v, got %v", test.wantErr, err)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
+			repoPath := filepath.Join(wd, test.repoPath)
+			err := runDotnetMigration(t.Context(), repoPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}
@@ -447,7 +443,7 @@ func TestReadApisJSON(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		repoPath string
-		wantErr  bool
+		wantErr  error
 	}{
 		{
 			name:     "valid file",
@@ -456,21 +452,15 @@ func TestReadApisJSON(t *testing.T) {
 		{
 			name:     "missing file",
 			repoPath: "testdata/run/non-existent",
-			wantErr:  true,
+			wantErr:  os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := readApisJSON(test.repoPath)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if len(got.APIs) == 0 {
+			if err == nil && len(got.APIs) == 0 {
 				t.Error("expected at least one API entry")
 			}
 		})
