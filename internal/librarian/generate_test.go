@@ -494,13 +494,13 @@ func TestGenerateCommandWithRealLanguages(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if langueSetup, ok := languageSetups[test.language]; ok {
-				langueSetup(t, tempDir, test.libOutput)
+			if languageSetup, ok := languageSetups[test.language]; ok {
+				languageSetup(t, tempDir, test.libOutput)
 			}
 
 			// Create a stale file in the library output directory to verify that it gets cleaned.
 			if err := createStaleFile(t, test.libOutput, "stale.txt"); err != nil {
-				t.Errorf("failed to create stale file: %v", err)
+				t.Fatal(err)
 			}
 
 			err := Run(t.Context(), "librarian", "generate", test.libName)
@@ -509,7 +509,7 @@ func TestGenerateCommandWithRealLanguages(t *testing.T) {
 			}
 
 			if err := verifyCleanLibraries(t, test.libOutput, "stale.txt"); err != nil {
-				t.Errorf("failed to verify clean libraries: %v", err)
+				t.Fatal(err)
 			}
 
 			// Verify library creation.
@@ -563,7 +563,7 @@ categories = ["api-bindings"]
 tokio-test = "0.4"
 `
 	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargoToml), 0644); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }
 
