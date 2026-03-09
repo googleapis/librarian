@@ -173,8 +173,10 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 }
 
 func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
-	var output string
-	var exclusion string
+	var (
+		output    string
+		exclusion string
+	)
 	switch cfg.Language {
 	case config.LanguageGo:
 		output = filepath.Clean(filepath.Join(library.Output, library.Name))
