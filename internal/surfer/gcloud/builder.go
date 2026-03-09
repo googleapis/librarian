@@ -245,7 +245,7 @@ func newPrimaryResourceParam(field *api.Field, method *api.Method, model *api.AP
 		segments = getParentFromSegments(segments)
 	}
 
-	resourceName := strcase.ToSnake(strings.TrimSuffix(field.Name, "_id"))
+	resourceName := strings.TrimSuffix(field.Name, "_id")
 	if field.Name == "name" || isList(method) {
 		resourceName = getSingularFromSegments(segments)
 	}
