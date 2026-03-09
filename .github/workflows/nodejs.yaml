@@ -50,6 +50,6 @@ jobs:
           sudo mkdir -p /synthtool
           sudo chown -R $(whoami) /synthtool
           cd /synthtool
-          npm install gts google-gax
+          npm install gts gapic-tools
       - name: Run internal/librarian/nodejs tests
         run: go test -race ./internal/librarian/nodejs
