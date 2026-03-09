@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# ==============================================================================
+# This configuration is used for the organization-wide multi-approvers ruleset.
+# We store it centrally in this repository. See GitHub Action for details:
+# https://github.com/abcxyz/actions/tree/main/.github/actions/multi-approvers.
+# ==============================================================================
 name: 'multi-approvers'
 on:
   pull_request_target:
