@@ -28,33 +28,31 @@ import (
 	"github.com/googleapis/librarian/internal/librarian"
 )
 
-// ApisJSON represents the root of the apis.json file.
-type ApisJSON struct {
-	APIs          []APIEntry     `json:"apis"`
-	PackageGroups []PackageGroup `json:"packageGroups"`
+// DotnetAPIsJSON represents the root of the apis.json file.
+type DotnetAPIsJSON struct {
+	APIs          []DotnetAPIEntry     `json:"apis"`
+	PackageGroups []DotnetPackageGroup `json:"packageGroups"`
 }
 
-// APIEntry represents a single API entry in apis.json.
-type APIEntry struct {
-	ID            string            `json:"id"`
-	Version       string            `json:"version"`
-	Type          string            `json:"type"`
-	Generator     string            `json:"generator"`
-	ProtoPath     string            `json:"protoPath"`
-	Transport     string            `json:"transport"`
-	Dependencies  map[string]string `json:"dependencies"`
-	BlockRelease  string            `json:"blockRelease"`
-	NoVersionHist bool              `json:"noVersionHistory"`
+// DotnetAPIEntry represents a single API entry in apis.json.
+type DotnetAPIEntry struct {
+	ID           string            `json:"id"`
+	Version      string            `json:"version"`
+	Generator    string            `json:"generator"`
+	ProtoPath    string            `json:"protoPath"`
+	Transport    string            `json:"transport"`
+	Dependencies map[string]string `json:"dependencies"`
+	BlockRelease string            `json:"blockRelease"`
 }
 
-// PackageGroup represents a package group in apis.json.
-type PackageGroup struct {
+// DotnetPackageGroup represents a package group in apis.json.
+type DotnetPackageGroup struct {
 	ID         string   `json:"id"`
 	PackageIDs []string `json:"packageIds"`
 }
 
 func runDotnetMigration(ctx context.Context, repoPath string) error {
-	apisJSON, err := readApisJSON(repoPath)
+	apisJSON, err := readDotnetAPIsJSON(repoPath)
 	if err != nil {
 		return err
 	}
@@ -62,9 +60,9 @@ func runDotnetMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return errFetchSource
 	}
-	cfg := buildDotnetConfig(apisJSON, src)
-	if cfg == nil {
-		return fmt.Errorf("no libraries found to migrate")
+	cfg, err := buildDotnetConfig(apisJSON, src)
+	if err != nil {
+		return err
 	}
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
@@ -76,22 +74,21 @@ func runDotnetMigration(ctx context.Context, repoPath string) error {
 	return nil
 }
 
-func readApisJSON(repoPath string) (*ApisJSON, error) {
+func readDotnetAPIsJSON(repoPath string) (*DotnetAPIsJSON, error) {
 	path := filepath.Join(repoPath, "generator-input", "apis.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading apis.json: %w", err)
 	}
-	var apisJSON ApisJSON
+	var apisJSON DotnetAPIsJSON
 	if err := json.Unmarshal(data, &apisJSON); err != nil {
 		return nil, fmt.Errorf("parsing apis.json: %w", err)
 	}
 	return &apisJSON, nil
 }
 
-func buildDotnetConfig(apisJSON *ApisJSON, src *config.Source) *config.Config {
-	// Build a map of API ID to entry for package group lookups.
-	apiByID := make(map[string]*APIEntry, len(apisJSON.APIs))
+func buildDotnetConfig(apisJSON *DotnetAPIsJSON, src *config.Source) (*config.Config, error) {
+	apiByID := make(map[string]*DotnetAPIEntry, len(apisJSON.APIs))
 	for i := range apisJSON.APIs {
 		apiByID[apisJSON.APIs[i].ID] = &apisJSON.APIs[i]
 	}
@@ -103,25 +100,24 @@ func buildDotnetConfig(apisJSON *ApisJSON, src *config.Source) *config.Config {
 			Version: api.Version,
 		}
 
-		// Set APIs from protoPath for generated libraries.
 		isHandwritten := api.Generator == "None"
-		if !isHandwritten && api.ProtoPath != "" {
+		if !isHandwritten && api.ProtoPath == "" {
+			return nil, fmt.Errorf("generated library %s has no protoPath", api.ID)
+		}
+		if !isHandwritten {
 			lib.APIs = []*config.API{
 				{Path: api.ProtoPath},
 			}
 		}
 
-		// Only set transport when it differs from the default "grpc+rest".
 		if api.Transport != "" && api.Transport != "grpc+rest" {
 			lib.Transport = api.Transport
 		}
 
-		// Handwritten libraries are veneers.
 		if isHandwritten {
 			lib.Veneer = true
 		}
 
-		// Set release level for preview versions.
 		v := strings.ToLower(api.Version)
 		if strings.Contains(v, "alpha") || strings.Contains(v, "beta") {
 			lib.ReleaseLevel = "preview"
@@ -131,59 +127,44 @@ func buildDotnetConfig(apisJSON *ApisJSON, src *config.Source) *config.Config {
 			lib.SkipRelease = true
 		}
 
-		// Build .NET-specific configuration.
 		var dotnet *config.DotnetPackage
 		if api.Generator == "proto" {
 			dotnet = &config.DotnetPackage{Generator: "proto"}
 		}
 
-		// Filter dependencies: remove "default" and "project" values.
 		if len(api.Dependencies) > 0 {
-			filtered := make(map[string]string)
-			for k, v := range api.Dependencies {
-				if v == "default" || v == "project" {
-					continue
-				}
-				filtered[k] = v
+			if dotnet == nil {
+				dotnet = &config.DotnetPackage{}
 			}
-			if len(filtered) > 0 {
-				if dotnet == nil {
-					dotnet = &config.DotnetPackage{}
-				}
-				dotnet.Dependencies = filtered
-			}
+			dotnet.Dependencies = api.Dependencies
 		}
 
 		lib.Dotnet = dotnet
 		libs = append(libs, lib)
 	}
 
-	// Apply package groups.
+	if len(libs) == 0 {
+		return nil, fmt.Errorf("no libraries found to migrate")
+	}
+
+	libByName := make(map[string]*config.Library, len(libs))
+	for _, lib := range libs {
+		libByName[lib.Name] = lib
+	}
+
 	for _, pg := range apisJSON.PackageGroups {
-		// Find the first package in the group that is a generated library
-		// (has a protoPath).
 		for _, pkgID := range pg.PackageIDs {
 			api, ok := apiByID[pkgID]
 			if !ok || api.ProtoPath == "" {
 				continue
 			}
-			// Find the corresponding library and set the package group.
-			for _, lib := range libs {
-				if lib.Name != pkgID {
-					continue
-				}
-				if lib.Dotnet == nil {
-					lib.Dotnet = &config.DotnetPackage{}
-				}
-				lib.Dotnet.PackageGroup = pg.PackageIDs
-				break
+			lib := libByName[pkgID]
+			if lib.Dotnet == nil {
+				lib.Dotnet = &config.DotnetPackage{}
 			}
+			lib.Dotnet.PackageGroup = pg.PackageIDs
 			break
 		}
-	}
-
-	if len(libs) == 0 {
-		return nil
 	}
 
 	sort.Slice(libs, func(i, j int) bool {
@@ -200,5 +181,5 @@ func buildDotnetConfig(apisJSON *ApisJSON, src *config.Source) *config.Config {
 			TagFormat: "{name}-{version}",
 		},
 		Libraries: libs,
-	}
+	}, nil
 }

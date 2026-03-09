@@ -25,16 +25,31 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func wantConfig(libs []*config.Library) *config.Config {
+	return &config.Config{
+		Language: "dotnet",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{Dir: "testgoogleapis"},
+		},
+		Default: &config.Default{
+			Output:    "apis",
+			TagFormat: "{name}-{version}",
+		},
+		Libraries: libs,
+	}
+}
+
 func TestBuildDotnetConfig(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		apis *ApisJSON
-		want *config.Config
+		name    string
+		apis    *DotnetAPIsJSON
+		want    *config.Config
+		wantErr bool
 	}{
 		{
 			name: "basic generated library",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.SecretManager.V1",
 						Version:   "2.7.0",
@@ -44,30 +59,20 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.SecretManager.V1",
-						Version: "2.7.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.SecretManager.V1",
+					Version: "2.7.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "proto-only library",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Iam.V1",
 						Version:   "1.0.0",
@@ -77,33 +82,23 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.Iam.V1",
-						Version: "1.0.0",
-						APIs: []*config.API{
-							{Path: "google/iam/v1"},
-						},
-						Dotnet: &config.DotnetPackage{
-							Generator: "proto",
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.Iam.V1",
+					Version: "1.0.0",
+					APIs: []*config.API{
+						{Path: "google/iam/v1"},
+					},
+					Dotnet: &config.DotnetPackage{
+						Generator: "proto",
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "handwritten library",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Storage.V2",
 						Version:   "4.0.0",
@@ -112,28 +107,18 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.Storage.V2",
+					Version: "4.0.0",
+					Veneer:  true,
 				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.Storage.V2",
-						Version: "4.0.0",
-						Veneer:  true,
-					},
-				},
-			},
+			}),
 		},
 		{
 			name: "preview version",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Foo.V1Beta1",
 						Version:   "1.0.0-beta05",
@@ -143,31 +128,21 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:         "Google.Cloud.Foo.V1Beta1",
-						Version:      "1.0.0-beta05",
-						ReleaseLevel: "preview",
-						APIs: []*config.API{
-							{Path: "google/cloud/foo/v1beta1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:         "Google.Cloud.Foo.V1Beta1",
+					Version:      "1.0.0-beta05",
+					ReleaseLevel: "preview",
+					APIs: []*config.API{
+						{Path: "google/cloud/foo/v1beta1"},
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "non-default transport",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Compute.V1",
 						Version:   "3.0.0",
@@ -177,31 +152,21 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:      "Google.Cloud.Compute.V1",
-						Version:   "3.0.0",
-						Transport: "rest",
-						APIs: []*config.API{
-							{Path: "google/cloud/compute/v1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:      "Google.Cloud.Compute.V1",
+					Version:   "3.0.0",
+					Transport: "rest",
+					APIs: []*config.API{
+						{Path: "google/cloud/compute/v1"},
 					},
 				},
-			},
+			}),
 		},
 		{
-			name: "dependencies filtered",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			name: "dependencies",
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.SecretManager.V1",
 						Version:   "2.7.0",
@@ -216,35 +181,27 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.SecretManager.V1",
-						Version: "2.7.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
-						Dotnet: &config.DotnetPackage{
-							Dependencies: map[string]string{
-								"Google.Cloud.SecretManager.V1Beta": "1.0.0",
-							},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.SecretManager.V1",
+					Version: "2.7.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Dotnet: &config.DotnetPackage{
+						Dependencies: map[string]string{
+							"Google.Api.Gax.Grpc":               "default",
+							"Google.Cloud.Iam.V1":               "project",
+							"Google.Cloud.SecretManager.V1Beta": "1.0.0",
 						},
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "package group",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Datastore.V1",
 						Version:   "4.0.0",
@@ -260,7 +217,7 @@ func TestBuildDotnetConfig(t *testing.T) {
 						Transport: "grpc+rest",
 					},
 				},
-				PackageGroups: []PackageGroup{
+				PackageGroups: []DotnetPackageGroup{
 					{
 						ID: "Google.Cloud.Datastore",
 						PackageIDs: []string{
@@ -270,43 +227,33 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.Datastore.Admin.V1",
-						Version: "3.0.0",
-						APIs: []*config.API{
-							{Path: "google/datastore/admin/v1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.Datastore.Admin.V1",
+					Version: "3.0.0",
+					APIs: []*config.API{
+						{Path: "google/datastore/admin/v1"},
 					},
-					{
-						Name:    "Google.Cloud.Datastore.V1",
-						Version: "4.0.0",
-						APIs: []*config.API{
-							{Path: "google/datastore/v1"},
-						},
-						Dotnet: &config.DotnetPackage{
-							PackageGroup: []string{
-								"Google.Cloud.Datastore.V1",
-								"Google.Cloud.Datastore.Admin.V1",
-							},
+				},
+				{
+					Name:    "Google.Cloud.Datastore.V1",
+					Version: "4.0.0",
+					APIs: []*config.API{
+						{Path: "google/datastore/v1"},
+					},
+					Dotnet: &config.DotnetPackage{
+						PackageGroup: []string{
+							"Google.Cloud.Datastore.V1",
+							"Google.Cloud.Datastore.Admin.V1",
 						},
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "block release",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:           "Google.Cloud.Blocked.V1",
 						Version:      "1.0.0",
@@ -317,31 +264,21 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:        "Google.Cloud.Blocked.V1",
-						Version:     "1.0.0",
-						SkipRelease: true,
-						APIs: []*config.API{
-							{Path: "google/cloud/blocked/v1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:        "Google.Cloud.Blocked.V1",
+					Version:     "1.0.0",
+					SkipRelease: true,
+					APIs: []*config.API{
+						{Path: "google/cloud/blocked/v1"},
 					},
 				},
-			},
+			}),
 		},
 		{
 			name: "sorted by name",
-			apis: &ApisJSON{
-				APIs: []APIEntry{
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
 						ID:        "Google.Cloud.Zzz.V1",
 						Version:   "1.0.0",
@@ -358,36 +295,49 @@ func TestBuildDotnetConfig(t *testing.T) {
 					},
 				},
 			},
-			want: &config.Config{
-				Language: "dotnet",
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "testgoogleapis"},
-				},
-				Default: &config.Default{
-					Output:    "apis",
-					TagFormat: "{name}-{version}",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:    "Google.Cloud.Aaa.V1",
-						Version: "2.0.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/aaa/v1"},
-						},
+			want: wantConfig([]*config.Library{
+				{
+					Name:    "Google.Cloud.Aaa.V1",
+					Version: "2.0.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/aaa/v1"},
 					},
+				},
+				{
+					Name:    "Google.Cloud.Zzz.V1",
+					Version: "1.0.0",
+					APIs: []*config.API{
+						{Path: "google/cloud/zzz/v1"},
+					},
+				},
+			}),
+		},
+		{
+			name: "generated library missing protoPath",
+			apis: &DotnetAPIsJSON{
+				APIs: []DotnetAPIEntry{
 					{
-						Name:    "Google.Cloud.Zzz.V1",
-						Version: "1.0.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/zzz/v1"},
-						},
+						ID:        "Google.Cloud.NoProto.V1",
+						Version:   "1.0.0",
+						Generator: "micro",
+						Transport: "grpc+rest",
 					},
 				},
 			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildDotnetConfig(test.apis, &config.Source{Dir: "testgoogleapis"})
+			got, err := buildDotnetConfig(test.apis, &config.Source{Dir: "testgoogleapis"})
+			if test.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -439,7 +389,7 @@ func TestRunDotnetMigration(t *testing.T) {
 	}
 }
 
-func TestReadApisJSON(t *testing.T) {
+func TestReadDotnetAPIsJSON(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		repoPath string
@@ -456,7 +406,7 @@ func TestReadApisJSON(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readApisJSON(test.repoPath)
+			got, err := readDotnetAPIsJSON(test.repoPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
