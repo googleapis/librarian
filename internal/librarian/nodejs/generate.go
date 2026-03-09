@@ -211,22 +211,19 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		if err != nil {
 			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
 		}
-		if p.Introduction != "" {
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				"--string-to-replace=[//]: # \"partials.introduction\"",
-				fmt.Sprintf("--replacement-string=%s", p.Introduction),
-			); err != nil {
-				return fmt.Errorf("generate-readme (introduction) failed: %w", err)
+		for name, replacement := range map[string]string{
+			"introduction": p.Introduction,
+			"body":         p.Body,
+		} {
+			if replacement == "" {
+				continue
 			}
-		}
-		if p.Body != "" {
 			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
 				fmt.Sprintf("--source-path=%s", outDir),
-				"--string-to-replace=[//]: # \"partials.body\"",
-				fmt.Sprintf("--replacement-string=%s", p.Body),
+				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
+				fmt.Sprintf("--replacement-string=%s", replacement),
 			); err != nil {
-				return fmt.Errorf("generate-readme (body) failed: %w", err)
+				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
 			}
 		}
 	}
