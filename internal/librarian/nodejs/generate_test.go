@@ -313,11 +313,13 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager")
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	// Create staging structure that synthtool expects: owl-bot-staging/<lib>/v1/src/v1/index.ts
+	stagingVersionDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", "v1", "src", "v1")
+	if err := os.MkdirAll(stagingVersionDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(stagingDir, "README.md"), []byte("# test\n"), 0644); err != nil {
+	indexContent := `export {SecretManagerServiceClient} from './secret_manager_service_client';`
+	if err := os.WriteFile(filepath.Join(stagingVersionDir, "index.ts"), []byte(indexContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
