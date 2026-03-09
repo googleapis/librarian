@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestCleanLibrary(t *testing.T) {
+func TestClean(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name        string
@@ -129,27 +129,16 @@ func TestCleanLibrary(t *testing.T) {
 				createFileAndDirectories(t, fullPath)
 			}
 
-			if err := CleanLibrary(test.lib); err != nil {
+			if err := Clean(test.lib); err != nil {
 				t.Fatal(err)
 			}
 
-			for _, file := range test.setupFiles {
-				fullPath := filepath.Join(test.lib.Output, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !os.IsNotExist(err) {
-					t.Fatal(err)
-				}
-				gotDeleted := err != nil
-				wantDeleted := slices.Contains(test.wantDeleted, file)
-				if gotDeleted != wantDeleted {
-					t.Errorf("file %s: wantDeleted=%t, gotDeleted=%t", file, wantDeleted, gotDeleted)
-				}
-			}
+			verifyFileDeletions(t, test.lib.Output, test.setupFiles, test.wantDeleted)
 		})
 	}
 }
 
-func TestCleanLibrary_Error(t *testing.T) {
+func TestClean_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
@@ -199,9 +188,9 @@ func TestCleanLibrary_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, dir)
 			}
-			gotErr := CleanLibrary(test.lib)
+			gotErr := Clean(test.lib)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Clean error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -409,18 +398,7 @@ func TestCleanProtoOnly(t *testing.T) {
 			if err := cleanProtoOnly(test.lib.APIs[0], test.lib); err != nil {
 				t.Fatal(err)
 			}
-			for _, file := range test.setupFiles {
-				fullPath := filepath.Join(dir, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !os.IsNotExist(err) {
-					t.Fatal(err)
-				}
-				gotDeleted := err != nil
-				wantDeleted := slices.Contains(test.wantDeleted, file)
-				if gotDeleted != wantDeleted {
-					t.Errorf("file %s: wantDeleted=%t, gotDeleted=%t", file, wantDeleted, gotDeleted)
-				}
-			}
+			verifyFileDeletions(t, dir, test.setupFiles, test.wantDeleted)
 		})
 	}
 }
@@ -489,18 +467,7 @@ func TestCleanGAPIC(t *testing.T) {
 			if err := cleanGAPIC(test.lib.APIs[0], test.lib); err != nil {
 				t.Fatal(err)
 			}
-			for _, file := range test.setupFiles {
-				fullPath := filepath.Join(dir, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !os.IsNotExist(err) {
-					t.Fatal(err)
-				}
-				gotDeleted := err != nil
-				wantDeleted := slices.Contains(test.wantDeleted, file)
-				if gotDeleted != wantDeleted {
-					t.Errorf("file %s: wantDeleted=%t, gotDeleted=%t", file, wantDeleted, gotDeleted)
-				}
-			}
+			verifyFileDeletions(t, dir, test.setupFiles, test.wantDeleted)
 		})
 	}
 }
@@ -600,18 +567,7 @@ func TestCleanGAPICCommon(t *testing.T) {
 			if err := cleanGAPICCommon(test.lib); err != nil {
 				t.Fatal(err)
 			}
-			for _, file := range test.setupFiles {
-				fullPath := filepath.Join(dir, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !os.IsNotExist(err) {
-					t.Fatal(err)
-				}
-				gotDeleted := err != nil
-				wantDeleted := slices.Contains(test.wantDeleted, file)
-				if gotDeleted != wantDeleted {
-					t.Errorf("file %s: wantDeleted=%t, gotDeleted=%t", file, wantDeleted, gotDeleted)
-				}
-			}
+			verifyFileDeletions(t, dir, test.setupFiles, test.wantDeleted)
 		})
 	}
 }
@@ -739,18 +695,7 @@ func TestDeleteUnlessKept(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			for _, file := range test.setupFiles {
-				fullPath := filepath.Join(dir, file)
-				_, err := os.Stat(fullPath)
-				if err != nil && !os.IsNotExist(err) {
-					t.Fatal(err)
-				}
-				gotDeleted := err != nil
-				wantDeleted := slices.Contains(test.wantDeleted, file)
-				if gotDeleted != wantDeleted {
-					t.Errorf("file %s: wantDeleted=%t, gotDeleted=%t", file, wantDeleted, gotDeleted)
-				}
-			}
+			verifyFileDeletions(t, dir, test.setupFiles, test.wantDeleted)
 		})
 	}
 }
@@ -849,9 +794,25 @@ func TestDeleteUnlessKept_Error(t *testing.T) {
 			}
 			gotErr := deleteUnlessKept(lib, test.path)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Clean error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
+	}
+}
+
+func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []string) {
+	t.Helper()
+	for _, file := range setupFiles {
+		fullPath := filepath.Join(dir, file)
+		_, err := os.Stat(fullPath)
+		if err != nil && !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		got := err != nil
+		want := slices.Contains(wantDeleted, file)
+		if got != want {
+			t.Errorf("file %s deleted: got %t, want %t", file, got, want)
+		}
 	}
 }
 

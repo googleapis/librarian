@@ -15,6 +15,7 @@
 package gcloud
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,24 +29,14 @@ func TestGetPluralFromSegments(t *testing.T) {
 		want     string
 	}{
 		{
-			name: "Standard",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
-			want: "instances",
+			name:     "Standard",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     "instances",
 		},
 		{
-			name: "Short",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("shelves"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
-			},
-			want: "shelves",
+			name:     "Short",
+			segments: parseResourcePattern("shelves/{shelf}"),
+			want:     "shelves",
 		},
 		{
 			name: "No Variable End",
@@ -79,29 +70,14 @@ func TestGetParentFromSegments(t *testing.T) {
 		want     []api.PathSegment
 	}{
 		{
-			name: "Standard",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
-			want: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-			},
+			name:     "Standard",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     parseResourcePattern("projects/{project}/locations/{location}"),
 		},
 		{
-			name: "Root",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-			},
-			want: []api.PathSegment{},
+			name:     "Root",
+			segments: parseResourcePattern("projects/{project}"),
+			want:     []api.PathSegment{},
 		},
 		{
 			name: "Too Short",
@@ -142,24 +118,14 @@ func TestGetSingularFromSegments(t *testing.T) {
 		want     string
 	}{
 		{
-			name: "Standard",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
-			want: "instance",
+			name:     "Standard",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     "instance",
 		},
 		{
-			name: "Short",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("shelves"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
-			},
-			want: "shelf",
+			name:     "Short",
+			segments: parseResourcePattern("shelves/{shelf}"),
+			want:     "shelf",
 		},
 		{
 			name: "No Variable End",
@@ -193,55 +159,29 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 		want     string
 	}{
 		{
-			name: "Standard",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
-			want: "projects.locations.instances",
+			name:     "Standard",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     "projects.locations.instances",
 		},
 		{
-			name: "Short",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("shelves"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
-			},
-			want: "shelves",
+			name:     "Short",
+			segments: parseResourcePattern("shelves/{shelf}"),
+			want:     "shelves",
 		},
 		{
-			name: "Root",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-			},
-			want: "projects",
+			name:     "Root",
+			segments: parseResourcePattern("projects/{project}"),
+			want:     "projects",
 		},
 		{
-			name: "Mixed",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("organizations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("organization").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("clusters"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("cluster").WithMatch()),
-			},
-			want: "organizations.locations.clusters",
+			name:     "Mixed",
+			segments: parseResourcePattern("organizations/{organization}/locations/{location}/clusters/{cluster}"),
+			want:     "organizations.locations.clusters",
 		},
 		{
-			name: "Global",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("global"),
-				*api.NewPathSegment().WithLiteral("networks"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("network").WithMatch()),
-			},
-			want: "projects.networks",
+			name:     "Global",
+			segments: parseResourcePattern("projects/{project}/global/networks/{network}"),
+			want:     "projects.networks",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -261,17 +201,9 @@ func TestExtractPathFromSegments(t *testing.T) {
 		want     string
 	}{
 		{
-			name: "Standard Regional",
-			segments: []api.PathSegment{
-				*api.NewPathSegment().WithLiteral("v1"),
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-				*api.NewPathSegment().WithLiteral("locations"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("location").WithMatch()),
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
-			want: "projects.locations.instances",
+			name:     "Standard Regional",
+			segments: parseResourcePattern("v1/projects/{project}/locations/{location}/instances/{instance}"),
+			want:     "projects.locations.instances",
 		},
 		{
 			name: "Complex Variable",
@@ -446,12 +378,7 @@ func TestGetResourceForMethod(t *testing.T) {
 				Name: "GetInstance",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "name",
-							ResourceReference: &api.ResourceReference{
-								Type: "example.googleapis.com/Instance",
-							},
-						},
+						api.NewTestField("name").WithResourceReference("example.googleapis.com/Instance"),
 					},
 				},
 			},
@@ -464,12 +391,7 @@ func TestGetResourceForMethod(t *testing.T) {
 				Name: "ListInstances",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Instance",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
 					},
 				},
 			},
@@ -502,12 +424,7 @@ func TestGetResourceForMethod(t *testing.T) {
 				Name: "GetOther",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "name",
-							ResourceReference: &api.ResourceReference{
-								Type: "example.googleapis.com/Other",
-							},
-						},
+						api.NewTestField("name").WithResourceReference("example.googleapis.com/Other"),
 					},
 				},
 			},
@@ -538,10 +455,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 	instanceResource := &api.Resource{
 		Type: "example.googleapis.com/Instance",
 		Patterns: []api.ResourcePattern{
-			{
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
+			parseResourcePattern("instances/{instance}"),
 		},
 	}
 
@@ -557,12 +471,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 				Name: "ListInstances",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Instance",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
 					},
 				},
 			},
@@ -575,12 +484,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 				Name: "ListBooks",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Book",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Book"),
 					},
 				},
 			},
@@ -599,12 +503,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 				Name: "ListUnknown",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Unknown",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Unknown"),
 					},
 				},
 			},
@@ -629,10 +528,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 	instanceResource := &api.Resource{
 		Type: "example.googleapis.com/Instance",
 		Patterns: []api.ResourcePattern{
-			{
-				*api.NewPathSegment().WithLiteral("instances"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("instance").WithMatch()),
-			},
+			parseResourcePattern("instances/{instance}"),
 		},
 	}
 
@@ -648,12 +544,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 				Name: "ListInstances",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Instance",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
 					},
 				},
 			},
@@ -666,12 +557,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 				Name: "ListBooks",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Book",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Book"),
 					},
 				},
 			},
@@ -690,12 +576,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 				Name: "ListUnknown",
 				InputType: &api.Message{
 					Fields: []*api.Field{
-						{
-							Name: "parent",
-							ResourceReference: &api.ResourceReference{
-								ChildType: "example.googleapis.com/Unknown",
-							},
-						},
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Unknown"),
 					},
 				},
 			},
@@ -734,4 +615,21 @@ func TestGetResourceNameFromType(t *testing.T) {
 			}
 		})
 	}
+}
+
+// parseResourcePattern converts a resource pattern string into a
+// []api.PathSegment slice for testing. It handles AIP resource patterns
+// (e.g., "projects/{project}/locations/{location}"). Variables
+// automatically get a single-segment wildcard match.
+func parseResourcePattern(pattern string) []api.PathSegment {
+	var segments []api.PathSegment
+	for part := range strings.SplitSeq(pattern, "/") {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			name := part[1 : len(part)-1]
+			segments = append(segments, *api.NewPathSegment().WithVariable(api.NewPathVariable(name).WithMatch()))
+		} else {
+			segments = append(segments, *api.NewPathSegment().WithLiteral(part))
+		}
+	}
+	return segments
 }

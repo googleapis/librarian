@@ -254,6 +254,12 @@ func (f *Field) WithResourceReference(refType string) *Field {
 	return f
 }
 
+// WithChildTypeReference sets the child type resource reference on a field.
+func (f *Field) WithChildTypeReference(childType string) *Field {
+	f.ResourceReference = &ResourceReference{ChildType: childType}
+	return f
+}
+
 // NewTestResource creates a resource with defaults.
 func NewTestResource(typez string) *Resource {
 	return &Resource{

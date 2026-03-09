@@ -306,7 +306,7 @@ func TestClean_Error(t *testing.T) {
 				t.Fatal("expected error")
 			}
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("CleanLibrary error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("Clean error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
