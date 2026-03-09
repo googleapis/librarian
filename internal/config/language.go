@@ -638,3 +638,29 @@ type DotnetCsprojSnippets struct {
 	// EmbeddedResources is a list of glob patterns for embedded resources.
 	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
 }
+
+// NodejsPackage contains Node.js-specific library configuration.
+type NodejsPackage struct {
+	// BundleConfig is the path to a GAPIC bundle config file.
+	BundleConfig string `yaml:"bundle_config,omitempty"`
+
+	// Dependencies maps npm package names to version constraints.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// ExtraProtocParameters is a list of extra parameters to pass to protoc.
+	ExtraProtocParameters []string `yaml:"extra_protoc_parameters,omitempty"`
+
+	// HandwrittenLayer indicates the library has a handwritten layer on top
+	// of the generated code.
+	HandwrittenLayer bool `yaml:"handwritten_layer,omitempty"`
+
+	// MainService is the name of the main service for libraries with a
+	// handwritten layer.
+	MainService string `yaml:"main_service,omitempty"`
+
+	// Mixins controls mixin behavior (e.g., "none" to disable).
+	Mixins string `yaml:"mixins,omitempty"`
+
+	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
+	PackageName string `yaml:"package_name,omitempty"`
+}

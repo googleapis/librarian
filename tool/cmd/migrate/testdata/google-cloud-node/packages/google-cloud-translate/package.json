@@ -1,0 +1,7 @@
+{
+  "name": "@google-cloud/translate",
+  "version": "9.1.0",
+  "dependencies": {
+    "google-gax": "^5.0.0"
+  }
+}

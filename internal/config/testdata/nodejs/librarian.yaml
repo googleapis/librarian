@@ -1,0 +1,47 @@
+language: nodejs
+sources:
+  googleapis:
+    commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
+    sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
+default:
+  output: packages
+  keep:
+    - CHANGELOG.md
+  release_level: stable
+libraries:
+  - name: google-cloud-batch
+    version: 1.5.0
+  - name: google-cloud-monitoring
+    version: 1.5.0
+    apis:
+      - path: google/monitoring/v3
+  - name: google-cloud-accessapproval
+    version: 4.2.0
+    nodejs:
+      package_name: "@google-cloud/access-approval"
+  - name: google-cloud-speech
+    version: 7.0.0
+    nodejs:
+      dependencies:
+        "@google-cloud/common": "^5.0.0"
+        pumpify: "^2.0.1"
+  - name: google-cloud-aiplatform
+    version: 4.0.0
+    apis:
+      - path: google/cloud/aiplatform/v1
+      - path: google/cloud/aiplatform/v1beta1
+    keep:
+      - src/decorator.ts
+      - src/helpers.ts
+      - src/index.ts
+      - src/value-converter.ts
+  - name: google-cloud-translate
+    version: 9.1.0
+    nodejs:
+      bundle_config: google/cloud/translate/v3/translate_gapic.yaml
+      extra_protoc_parameters:
+        - metadata
+        - auto-populate-field-oauth-scope
+      handwritten_layer: true
+      main_service: translate
+      mixins: none

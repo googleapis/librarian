@@ -16,6 +16,7 @@ package librarianops
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -73,6 +74,23 @@ func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 	}
 
 	return version, nil
+}
+
+func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
+	output, err := command.Output(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
+	if err != nil {
+		return "", fmt.Errorf("go list: %w", err)
+	}
+	var mod struct {
+		Version string `json:"Version"`
+	}
+	if err := json.Unmarshal([]byte(output), &mod); err != nil {
+		return "", fmt.Errorf("parsing go list output: %w", err)
+	}
+	if mod.Version == "" {
+		return "", fmt.Errorf("no version in go list output: %s", output)
+	}
+	return mod.Version, nil
 }
 
 func updateLibrarianVersion(version, repoDir string) error {
