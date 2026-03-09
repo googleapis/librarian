@@ -319,7 +319,7 @@ func TestGenerateLibrary_ErrorCases(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := generate(t.Context(), test.library, googleapisDir)
+			err := generateLibrary(t.Context(), test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
