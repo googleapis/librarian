@@ -309,6 +309,10 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if err := os.WriteFile(filepath.Join(outDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager")
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		t.Fatal(err)
