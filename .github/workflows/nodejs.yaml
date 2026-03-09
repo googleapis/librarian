@@ -32,9 +32,6 @@ jobs:
           node-version: "22"
       - name: Display Node.js version
         run: node --version
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.14"
       - uses: ./.github/actions/install-protoc
       - name: Install gapic-generator-typescript
         run: |
@@ -43,13 +40,7 @@ jobs:
           npm install
           npm run compile
           npm link
-      - name: Install synthtool
-        run: pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
-      - name: Set up /synthtool for synthtool post-processor
-        run: |
-          sudo mkdir -p /synthtool
-          sudo chown -R $(whoami) /synthtool
-          cd /synthtool
-          npm install gts gapic-tools
+      - name: Install gapic-node-processing and gapic-tools
+        run: npm install -g gapic-node-processing gapic-tools
       - name: Run internal/librarian/nodejs tests
         run: go test -race ./internal/librarian/nodejs

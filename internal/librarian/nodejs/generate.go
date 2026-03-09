@@ -59,7 +59,7 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 		}
 	}
 
-	if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
+	if err := runPostProcessor(ctx, library, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
 	return nil
@@ -154,15 +154,29 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	return args, nil
 }
 
-// runPostProcessor runs synthtool to move files from owl-bot-staging/ to the
-// output directory.
-func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
-	pythonCode := fmt.Sprintf(`
-from synthtool.languages import node_mono_repo
-node_mono_repo.owlbot_main(%q)
-`, outDir)
-	if err := command.RunInDir(ctx, repoRoot, "python3", "-c", pythonCode); err != nil {
-		return err
+// runPostProcessor combines versioned API outputs from owl-bot-staging/ into
+// the output directory using gapic-node-processing, then compiles protos.
+func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+
+	if err := command.Run(ctx, "gapic-node-processing",
+		"combine-library",
+		"--source-path", stagingDir,
+		"--destination-path", outDir,
+	); err != nil {
+		return fmt.Errorf("combine-library: %w", err)
+	}
+
+	if err := command.Run(ctx, "gapic-node-processing",
+		"generate-readme",
+		"--source-path", outDir,
+		"--initial-generation", "true",
+	); err != nil {
+		return fmt.Errorf("generate-readme: %w", err)
+	}
+
+	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
+		return fmt.Errorf("compileProtos: %w", err)
 	}
 
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {

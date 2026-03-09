@@ -15,9 +15,7 @@
 package nodejs
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -300,34 +298,45 @@ func TestGenerateAPI(t *testing.T) {
 }
 
 func TestRunPostProcessor(t *testing.T) {
-	testhelper.RequireCommand(t, "python3")
-	requireSynthtool(t)
-	requireSynthtoolNodeModules(t)
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	repoRoot := t.TempDir()
-	outDir := filepath.Join(repoRoot, "packages", "google-cloud-secretmanager")
+	library := &config.Library{Name: "google-cloud-secretmanager"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(filepath.Join(outDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+	// Create staging structure matching gapic-generator-typescript output.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(srcDir, "index.ts"),
+		[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
+		0644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	protosDir := filepath.Join(stagingBase, "protos")
+	if err := os.MkdirAll(protosDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(absGoogleapisDir, "google"), filepath.Join(protosDir, "google")); err != nil {
 		t.Fatal(err)
 	}
 
-	// Create staging structure that synthtool expects: owl-bot-staging/<lib>/v1/src/v1/index.ts
-	stagingVersionDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", "v1", "src", "v1")
-	if err := os.MkdirAll(stagingVersionDir, 0755); err != nil {
+	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-	indexContent := `export {SecretManagerServiceClient} from './secret_manager_service_client';`
-	if err := os.WriteFile(filepath.Join(stagingVersionDir, "index.ts"), []byte(indexContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := runPostProcessor(t.Context(), repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 		t.Error("expected owl-bot-staging to be removed after post-processing")
 	}
@@ -339,9 +348,8 @@ func TestGenerate(t *testing.T) {
 	}
 
 	testhelper.RequireCommand(t, "gapic-generator-typescript")
-	testhelper.RequireCommand(t, "python3")
-	requireSynthtool(t)
-	requireSynthtoolNodeModules(t)
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
 
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
@@ -378,17 +386,3 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func requireSynthtool(t *testing.T) {
-	t.Helper()
-	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", "synthtool"))
-	if err := cmd.Run(); err != nil {
-		t.Skipf("skipping test because Python module synthtool is not installed")
-	}
-}
-
-func requireSynthtoolNodeModules(t *testing.T) {
-	t.Helper()
-	if _, err := os.Stat("/synthtool/node_modules"); err != nil {
-		t.Skip("skipping test because /synthtool/node_modules does not exist")
-	}
-}
