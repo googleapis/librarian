@@ -46,13 +46,10 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
-
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
@@ -150,7 +147,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 			args = append(args, "--mixins", library.Nodejs.Mixins)
 		}
 	}
-
 	return args, nil
 }
 
@@ -158,7 +154,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-
 	if err := command.Run(ctx, "gapic-node-processing",
 		"combine-library",
 		"--source-path", stagingDir,
