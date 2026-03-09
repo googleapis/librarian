@@ -178,7 +178,19 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 	// Synthtool is only used for post-processing handled by standalone scripts
 	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
 	// Librarian CLI tool).
-	//
+
+	// combine-library wipes the destination directory before writing generated
+	// files (src/, protos/). Back up existing files so non-generated files like
+	// librarian.js, README.md, and .readme-partials.yaml survive.
+	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
+	if err != nil {
+		return fmt.Errorf("failed to create backup dir: %w", err)
+	}
+	defer os.RemoveAll(backupDir)
+	if err := copyDir(outDir, backupDir); err != nil {
+		return fmt.Errorf("failed to back up outDir: %w", err)
+	}
+
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
 	if err := command.Run(ctx, "gapic-node-processing",
 		"combine-library",
@@ -186,6 +198,11 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		"--destination-path", outDir,
 	); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
+	}
+
+	// Restore non-generated files that combine-library deleted.
+	if err := restoreNonConflicting(backupDir, outDir); err != nil {
+		return fmt.Errorf("failed to restore files after combine-library: %w", err)
 	}
 
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
@@ -267,4 +284,52 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// copyDir copies all files from src to dst, preserving directory structure.
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, info.Mode())
+	})
+}
+
+// restoreNonConflicting copies files from backup into dst that do not already
+// exist in dst.
+func restoreNonConflicting(backup, dst string) error {
+	return filepath.Walk(backup, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(backup, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		if _, err := os.Stat(target); err == nil {
+			return nil // file exists in dst, don't overwrite
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, info.Mode())
+	})
 }
