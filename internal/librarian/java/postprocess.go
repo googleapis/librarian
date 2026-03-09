@@ -59,7 +59,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// Generate clirr-ignored-differences.xml for the proto module.
 	modules := deriveModuleNames(p.libraryName, p.version)
 	protoModuleRoot := filepath.Join(p.outDir, modules.proto)
-	if err := GenerateClirr(protoModuleRoot); err != nil {
+	if err := generateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 

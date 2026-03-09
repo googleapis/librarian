@@ -27,11 +27,11 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "dart")
 
@@ -70,7 +70,7 @@ func TestGenerateLibraries(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
+	if err := Generate(t.Context(), libraries, sources); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a pubspec.yaml has been created for each library.
@@ -83,7 +83,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "dart")
 
@@ -103,14 +103,14 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	gotErr := GenerateLibraries(t.Context(), libraries, sources)
+	gotErr := Generate(t.Context(), libraries, sources)
 	wantErr := errInvalidSpecificationFormat
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "dart")
 

@@ -30,11 +30,11 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
@@ -91,7 +91,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = outDir
 	}
-	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a README.md file has been created for each library.
@@ -104,7 +104,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -160,15 +160,15 @@ func TestGenerateLibraries_Error(t *testing.T) {
 				library.Output = outdir
 			}
 
-			gotErr := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			gotErr := Generate(t.Context(), test.libraries, googleapisDir)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")

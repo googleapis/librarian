@@ -166,7 +166,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 				return err
 			}
 		case config.LanguagePython:
-			if err := python.CleanLibrary(library); err != nil {
+			if err := python.Clean(library); err != nil {
 				return err
 			}
 		case config.LanguageGo:
@@ -193,15 +193,15 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageFake:
 		return fakeGenerateLibraries(libraries)
 	case config.LanguageDart:
-		return dart.GenerateLibraries(ctx, libraries, src)
+		return dart.Generate(ctx, libraries, src)
 	case config.LanguagePython:
-		return python.GenerateLibraries(ctx, cfg, libraries, src)
+		return python.Generate(ctx, cfg, libraries, googleapisDir)
 	case config.LanguageGo:
-		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
+		return golang.Generate(ctx, libraries, googleapisDir)
 	case config.LanguageJava:
-		return java.GenerateLibraries(ctx, libraries, googleapisDir)
+		return java.Generate(ctx, libraries, googleapisDir)
 	case config.LanguageRust:
-		return rust.GenerateLibraries(ctx, cfg, libraries, src)
+		return rust.Generate(ctx, cfg, libraries, src)
 	default:
 		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}
@@ -263,7 +263,7 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	case config.LanguageRust:
 		return rust.DefaultOutput(api, defaultOut)
 	case config.LanguagePython:
-		return python.DefaultOutputByName(name, defaultOut)
+		return python.DefaultOutput(name, defaultOut)
 	default:
 		return defaultOut
 	}

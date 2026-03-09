@@ -1,0 +1,7 @@
+{
+  "name": "@google-cloud/workstations",
+  "version": "1.3.0",
+  "dependencies": {
+    "google-gax": "^5.0.0"
+  }
+}

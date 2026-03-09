@@ -38,7 +38,7 @@ const (
 	templateName = "clirr-ignored-differences.xml.tmpl"
 )
 
-// GenerateClirr generates the clirr-ignored-differences.xml file if it doesn't exist.
+// generateClirr generates the clirr-ignored-differences.xml file if it doesn't exist.
 //
 // It identifies Java packages containing Protobuf-generated code by searching for
 // files ending in "OrBuilder.java" under "src/main/java". The "OrBuilder" suffix
@@ -48,7 +48,7 @@ const (
 // The generated file contains a set of whitelist rules that tell the Clirr tool
 // to ignore specific changes (like method additions to interfaces) to
 // prevent false-positive binary compatibility failures in the build.
-func GenerateClirr(protoModulePath string) error {
+func generateClirr(protoModulePath string) error {
 	outputPath := filepath.Join(protoModulePath, clirrIgnoreFile)
 	_, err := os.Stat(outputPath)
 	switch {

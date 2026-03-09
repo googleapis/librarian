@@ -22,7 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestRead(t *testing.T) {
+func TestRustRead(t *testing.T) {
 	got, err := yaml.Read[Config]("testdata/rust/librarian.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -112,6 +112,215 @@ func TestRead(t *testing.T) {
 							Template: "prost",
 						},
 					},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDotnetRead(t *testing.T) {
+	got, err := yaml.Read[Config]("testdata/dotnet/librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		Language: LanguageDotnet,
+		Sources: &Sources{
+			Googleapis: &Source{
+				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+			},
+		},
+		Default: &Default{
+			Output: "apis",
+		},
+		Libraries: []*Library{
+			{
+				Name:    "Google.Cloud.SecretManager.V1",
+				Version: "2.0.0",
+				Dotnet: &DotnetPackage{
+					Dependencies: map[string]string{
+						"Google.Cloud.Iam.V1":   "3.5.0",
+						"Google.Cloud.Location": "2.4.0",
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.AIPlatform.V1",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					Pregeneration: []*DotnetPregeneration{
+						{
+							RenameMessage: &DotnetRenameMessage{
+								From: "Schema",
+								To:   "OpenApiSchema",
+							},
+						},
+						{
+							RemoveField: &DotnetRemoveField{
+								Message: "QueryDeployedModelsResponse",
+								Field:   "deployed_models",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.Logging.V2",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					Pregeneration: []*DotnetPregeneration{
+						{
+							RenameRPC: &DotnetRenameRPC{
+								From:     "UpdateBucketAsync",
+								To:       "UpdateBucketLongRunning",
+								WireName: "UpdateBucketAsync",
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.Bigtable.V2",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					Postgeneration: []*DotnetPostgeneration{
+						{
+							Run: "dotnet run --project tools/BigtableClient.GenerateClient",
+						},
+					},
+				},
+			},
+			{
+				Name:    "Google.LongRunning",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					Postgeneration: []*DotnetPostgeneration{
+						{
+							ExtraProto: "google/cloud/extended_operations.proto",
+						},
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.DevTools.ContainerAnalysis.V1",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					AdditionalServiceDescriptors: []string{
+						"Grafeas.V1.GrafeasReflection.Descriptor",
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.Vision.V1",
+				Version: "1.0.0",
+				Dotnet: &DotnetPackage{
+					Csproj: &DotnetCsproj{
+						Snippets: &DotnetCsprojSnippets{
+							EmbeddedResources: []string{"*.jpg", "*.png"},
+						},
+						IntegrationTests: &DotnetCsprojSnippets{
+							EmbeddedResources: []string{"vision_eiffel_tower.jpg"},
+						},
+					},
+				},
+			},
+			{
+				Name:    "Google.Cloud.Spanner.V1",
+				Version: "5.0.0",
+				Dotnet: &DotnetPackage{
+					PackageGroup: []string{
+						"Google.Cloud.Spanner.Admin.Database.V1",
+						"Google.Cloud.Spanner.Admin.Instance.V1",
+						"Google.Cloud.Spanner.Common.V1",
+						"Google.Cloud.Spanner.Data",
+						"Google.Cloud.Spanner.V1",
+					},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestNodejsRead(t *testing.T) {
+	got, err := yaml.Read[Config]("testdata/nodejs/librarian.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &Config{
+		Language: LanguageNodejs,
+		Sources: &Sources{
+			Googleapis: &Source{
+				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
+				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
+			},
+		},
+		Default: &Default{
+			Output:       "packages",
+			Keep:         []string{"CHANGELOG.md"},
+			ReleaseLevel: "stable",
+		},
+		Libraries: []*Library{
+			{
+				Name:    "google-cloud-batch",
+				Version: "1.5.0",
+			},
+			{
+				Name:    "google-cloud-monitoring",
+				Version: "1.5.0",
+				APIs: []*API{
+					{Path: "google/monitoring/v3"},
+				},
+			},
+			{
+				Name:    "google-cloud-accessapproval",
+				Version: "4.2.0",
+				Nodejs: &NodejsPackage{
+					PackageName: "@google-cloud/access-approval",
+				},
+			},
+			{
+				Name:    "google-cloud-speech",
+				Version: "7.0.0",
+				Nodejs: &NodejsPackage{
+					Dependencies: map[string]string{
+						"@google-cloud/common": "^5.0.0",
+						"pumpify":              "^2.0.1",
+					},
+				},
+			},
+			{
+				Name:    "google-cloud-aiplatform",
+				Version: "4.0.0",
+				APIs: []*API{
+					{Path: "google/cloud/aiplatform/v1"},
+					{Path: "google/cloud/aiplatform/v1beta1"},
+				},
+				Keep: []string{
+					"src/decorator.ts",
+					"src/helpers.ts",
+					"src/index.ts",
+					"src/value-converter.ts",
+				},
+			},
+			{
+				Name:    "google-cloud-translate",
+				Version: "9.1.0",
+				Nodejs: &NodejsPackage{
+					BundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
+					ExtraProtocParameters: []string{
+						"metadata",
+						"auto-populate-field-oauth-scope",
+					},
+					HandwrittenLayer: true,
+					MainService:      "translate",
+					Mixins:           "none",
 				},
 			},
 		},

@@ -61,7 +61,9 @@ This document describes the schema for the librarian.yaml.
 | `release_level` | string | Is either "stable" or "preview". |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
 
@@ -83,9 +85,11 @@ This document describes the schema for the librarian.yaml.
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 
@@ -117,19 +121,81 @@ This document describes the schema for the librarian.yaml.
 | `title_override` | string | Overrides the API title. |
 | `version` | string | Is the version of the dart package. |
 
+## DotnetCsproj Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `snippets` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains XML fragments for .csproj files. |
+| `integration_tests` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains configuration for integration test projects. |
+
+## DotnetCsprojSnippets Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `embedded_resources` | list of string | Is a list of glob patterns for embedded resources. |
+
+## DotnetPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_service_descriptors` | list of string | Is a list of extra service descriptors to include. |
+| `csproj` | [DotnetCsproj](#dotnetcsproj-configuration) (optional) | Contains configuration for .csproj file generation and overrides. |
+| `dependencies` | map[string]string | Maps NuGet package IDs to version strings. |
+| `generator` | string | Overrides the default generator (e.g., "proto"). |
+| `package_group` | list of string | Lists packages that must be released together. |
+| `postgeneration` | list of [DotnetPostgeneration](#dotnetpostgeneration-configuration) (optional) | Contains post-generation shell commands or extra protos. |
+| `pregeneration` | list of [DotnetPregeneration](#dotnetpregeneration-configuration) (optional) | Contains declarative proto mutations. |
+
+## DotnetPostgeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `run` | string | Is a shell command to execute. |
+| `extra_proto` | string | Is an extra proto file to compile. |
+
+## DotnetPregeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `rename_message` | [DotnetRenameMessage](#dotnetrenamemessage-configuration) (optional) | Renames a message. |
+| `remove_field` | [DotnetRemoveField](#dotnetremovefield-configuration) (optional) | Removes a field from a message. |
+| `rename_rpc` | [DotnetRenameRPC](#dotnetrenamerpc-configuration) (optional) | Renames an RPC. |
+
+## DotnetRemoveField Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `message` | string |  |
+| `field` | string |  |
+
+## DotnetRenameMessage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+
+## DotnetRenameRPC Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+| `wire_name` | string |  |
+
 ## GoAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
-| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
-| `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Is the source path. |
+| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
 ## GoModule Configuration
@@ -175,6 +241,18 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+
+## NodejsPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `bundle_config` | string | Is the path to a GAPIC bundle config file. |
+| `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
+| `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
+| `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
+| `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
+| `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 
 ## PythonDefault Configuration
 

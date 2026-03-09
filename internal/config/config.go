@@ -139,8 +139,14 @@ type Default struct {
 
 	// Language-specific fields are below.
 
+	// Dotnet contains .NET-specific default configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
+
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
+
+	// Nodejs contains Node.js-specific default configuration.
+	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
@@ -205,6 +211,9 @@ type Library struct {
 
 	// Language-specific fields are below.
 
+	// Dotnet contains .NET-specific library configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
+
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
@@ -213,6 +222,9 @@ type Library struct {
 
 	// Java contains Java-specific library configuration.
 	Java *JavaModule `yaml:"java,omitempty"`
+
+	// Nodejs contains Node.js-specific library configuration.
+	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`

@@ -303,7 +303,7 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-func TestGenerate_ErrorCases(t *testing.T) {
+func TestGenerateLibrary_ErrorCases(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -348,7 +348,7 @@ func TestGenerate_ErrorCases(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, test.library)
 			}
-			err := generate(t.Context(), test.library, googleapisDir)
+			err := generateLibrary(t.Context(), test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -356,7 +356,7 @@ func TestGenerate_ErrorCases(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_ErrorCase(t *testing.T) {
+func TestGenerate_ErrorCase(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
@@ -377,7 +377,7 @@ func TestGenerateLibraries_ErrorCase(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			err := Generate(t.Context(), test.libraries, googleapisDir)
 			if (err != nil) != test.wantErr {
 				t.Fatal(err)
 			}

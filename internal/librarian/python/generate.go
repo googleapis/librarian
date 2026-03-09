@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 const (
@@ -36,18 +35,18 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-// GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates all the given libraries in sequence.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generate(ctx, config, library, sources); err != nil {
+		if err := generateLibrary(ctx, config, library, googleapisDir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// generate generates a Python client library.
-func generate(ctx context.Context, config *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
+// generateLibrary generates a Python client library.
+func generateLibrary(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	// If the library has no APIs, there's nothing to do.
 	if len(library.APIs) == 0 {
 		return nil
@@ -70,7 +69,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	// and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, sources.Googleapis, repoRoot); err != nil {
+		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -78,7 +77,7 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 	// Construct the repo metadata in memory, then write it to disk. This has
 	// to be before post-processing, as the data in .repo-metadata.json is used
 	// by the post-processor, primarily for documentation.
-	repoMetadata, err := createRepoMetadata(config, library, sources)
+	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -107,16 +106,20 @@ func generate(ctx context.Context, config *config.Config, library *config.Librar
 
 // createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
 // for the given library.
-func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*repometadata.RepoMetadata, error) {
+func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
 	// Just to avoid lots of checks for library.Python being nil.
 	packageOptions := library.Python
 	if packageOptions == nil {
 		packageOptions = &config.PythonPackage{}
 	}
-	repoMetadata, err := repometadata.FromLibrary(cfg, library, sources)
+	// TODO(https://github.com/googleapis/librarian/issues/4428): once
+	// repometadata exposes a FromLibrary function or similar that we can use,
+	// we should call that again, so that repometadata.FromAPI can be hidden.
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
 	if err != nil {
 		return nil, err
 	}
+	repoMetadata := repometadata.FromAPI(cfg, api, library)
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
@@ -427,10 +430,10 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	return nil
 }
 
-// DefaultOutputByName derives an output path from a library name and a default
+// DefaultOutput derives an output path from a library name and a default
 // output directory. Currently, this just assumes each library is a directory
 // directly underneath the default output directory.
-func DefaultOutputByName(name, defaultOutput string) string {
+func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
