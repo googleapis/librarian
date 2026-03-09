@@ -303,7 +303,7 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-func TestGenerateLibrary_ErrorCases(t *testing.T) {
+func TestGenerateLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -356,7 +356,7 @@ func TestGenerateLibrary_ErrorCases(t *testing.T) {
 	}
 }
 
-func TestGenerate_ErrorCase(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
