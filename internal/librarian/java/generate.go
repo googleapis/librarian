@@ -36,9 +36,9 @@ const (
 )
 
 // Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generateLibrary(ctx, library, googleapisDir); err != nil {
+		if err := generateLibrary(ctx, cfg, library, googleapisDir); err != nil {
 			return err
 		}
 	}
@@ -46,7 +46,7 @@ func Generate(ctx context.Context, libraries []*config.Library, googleapisDir st
 }
 
 // generateLibrary generates a Java client library.
-func generateLibrary(ctx context.Context, library *config.Library, googleapisDir string) error {
+func generateLibrary(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("failed to generate library: no apis configured for library %q", library.Name)
 	}
@@ -67,14 +67,7 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	return postProcessLibrary(ctx, library, outdir)
-}
-
-func postProcessLibrary(ctx context.Context, library *config.Library, outDir string) error {
-	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
-	// TODO(https://github.com/googleapis/librarian/issues/4218):
-	// generate .repo-metadata.json, README.md
-	return nil
+	return postProcessLibrary(cfg, library, outdir, googleapisDir)
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {

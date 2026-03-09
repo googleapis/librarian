@@ -19,12 +19,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 type postProcessParams struct {
@@ -213,4 +217,161 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 		}
 	}
 	return nil
+}
+
+func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
+	sortAPIs(library.APIs)
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
+	if err != nil {
+		return fmt.Errorf("failed to find primary API for path %s: %w", library.APIs[0].Path, err)
+	}
+	if api == nil {
+		return fmt.Errorf("failed to find primary API for path %s: not found", library.APIs[0].Path)
+	}
+	sharedMetadata := repometadata.FromAPI(cfg, api, library)
+
+	metadata := &repoMetadata{
+		APIShortname:         sharedMetadata.APIShortname,
+		NamePretty:           sharedMetadata.NamePretty,
+		ProductDocumentation: sharedMetadata.ProductDocumentation,
+		APIDescription:       sharedMetadata.APIDescription,
+		ReleaseLevel:         sharedMetadata.ReleaseLevel,
+		Language:             config.LanguageJava,
+		Repo:                 sharedMetadata.Repo,
+		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
+		DistributionName:     sharedMetadata.DistributionName,
+		APIID:                sharedMetadata.APIID,
+		LibraryType:          repometadata.GAPICAutoLibraryType,
+		RequiresBilling:      true,
+	}
+
+	// Java-specific overrides and optional fields
+	if library.Java.APIIDOverride != "" {
+		metadata.APIID = library.Java.APIIDOverride
+	}
+	if library.Java.APIDescriptionOverride != "" {
+		metadata.APIDescription = library.Java.APIDescriptionOverride
+	}
+	if library.Java.DistributionNameOverride != "" {
+		metadata.DistributionName = library.Java.DistributionNameOverride
+	}
+	if library.Java.IssueTrackerOverride != "" {
+		metadata.IssueTracker = library.Java.IssueTrackerOverride
+	}
+	if library.Java.LibraryTypeOverride != "" {
+		metadata.LibraryType = library.Java.LibraryTypeOverride
+	}
+	if library.Java.NamePrettyOverride != "" {
+		metadata.NamePretty = library.Java.NamePrettyOverride
+	}
+	if library.Java.ProductDocumentationOverride != "" {
+		metadata.ProductDocumentation = library.Java.ProductDocumentationOverride
+	}
+	if library.Java.ClientDocumentationOverride != "" {
+		metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
+	}
+	metadata.RequiresBilling = !library.Java.BillingNotRequired
+
+	// Java only fields
+	metadata.CodeownerTeam = library.Java.CodeownerTeam
+	metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
+	metadata.ExcludedDependencies = library.Java.ExcludedDependencies
+	metadata.ExcludedPoms = library.Java.ExcludedPoms
+	metadata.MinJavaVersion = library.Java.MinJavaVersion
+	metadata.RecommendedPackage = library.Java.RecommendedPackage
+	metadata.RestDocumentation = library.Java.RestDocumentation
+	metadata.RpcDocumentation = library.Java.RpcDocumentation
+
+	// distribution_name default for Java is groupId:artifactId
+	if !strings.Contains(metadata.DistributionName, ":") {
+		groupID := "com.google.cloud"
+		if library.Java != nil && library.Java.GroupID != "" {
+			groupID = library.Java.GroupID
+		}
+		artifactID := library.Name
+		if !strings.HasPrefix(artifactID, cloudPrefix) {
+			artifactID = cloudPrefix + artifactID
+		}
+		metadata.DistributionName = fmt.Sprintf("%s:%s", groupID, artifactID)
+	}
+
+	// Default ClientDocumentation uses artifact ID
+	if metadata.ClientDocumentation == "" {
+		parts := strings.Split(metadata.DistributionName, ":")
+		artifactID := parts[len(parts)-1]
+		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
+	}
+
+	// transport
+	transport := library.Transport
+	if transport == "" {
+		transport = "grpc+rest"
+	}
+	switch transport {
+	case "grpc":
+		metadata.Transport = "grpc"
+	case "rest":
+		metadata.Transport = "http"
+	default:
+		metadata.Transport = "both"
+	}
+	if err := metadata.write(outDir); err != nil {
+		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
+	// TODO(https://github.com/googleapis/librarian/issues/4218): generate README.md
+	return nil
+}
+
+// sortAPIs sorts the APIs in a library to ensure the primary version is first.
+// The sorting logic matches hermetic_build: stable versions come before
+// unstable ones, and within those groups, higher versions come before lower ones.
+func sortAPIs(apis []*config.API) {
+	sort.Slice(apis, func(i, j int) bool {
+		vi := serviceconfig.ExtractVersion(apis[i].Path)
+		vj := serviceconfig.ExtractVersion(apis[j].Path)
+		// Case 1: if both of the configs don't have a version in proto_path,
+		// the one with lower depth is smaller.
+		if vi == "" && vj == "" {
+			return strings.Count(apis[i].Path, "/") < strings.Count(apis[j].Path, "/")
+		}
+		// Case 2: if only one config has a version in proto_path, it is smaller
+		// than the other one.
+		if vi != "" && vj == "" {
+			return true
+		}
+		if vi == "" && vj != "" {
+			return false
+		}
+
+		si, sj := isStable(vi), isStable(vj)
+		// Case 3: if only one config has a stable version in proto_path, it is
+		// smaller than the other one.
+		if si && !sj {
+			return true
+		}
+		if !si && sj {
+			return false
+		}
+		// Case 4: if two configs have a non-stable version in proto_path,
+		// the one with higher version is smaller.
+		if !si && !sj {
+			return vi > vj
+		}
+		// Two configs both have a stable version in proto_path.
+		// Case 5: if two configs have different depth in proto_path, the one
+		// with lower depth is smaller.
+		di, dj := strings.Count(apis[i].Path, "/"), strings.Count(apis[j].Path, "/")
+		if di != dj {
+			return di < dj
+		}
+		// Case 6: the config with higher stable version is smaller.
+		ni, _ := strconv.Atoi(strings.TrimPrefix(vi, "v"))
+		nj, _ := strconv.Atoi(strings.TrimPrefix(vj, "v"))
+		return ni > nj
+	})
+}
+
+func isStable(v string) bool {
+	return v != "" && !strings.Contains(v, "alpha") && !strings.Contains(v, "beta")
 }

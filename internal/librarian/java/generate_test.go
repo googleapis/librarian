@@ -368,7 +368,8 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, test.library)
 			}
-			err := generateLibrary(t.Context(), test.library, googleapisDir)
+			cfg := &config.Config{Language: "java"}
+			err := generateLibrary(t.Context(), cfg, test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -396,7 +397,8 @@ func TestGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := Generate(t.Context(), test.libraries, googleapisDir)
+			cfg := &config.Config{Language: "java"}
+			err := Generate(t.Context(), cfg, test.libraries, googleapisDir)
 			if (err != nil) != test.wantErr {
 				t.Fatal(err)
 			}
