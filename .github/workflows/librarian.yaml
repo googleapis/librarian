@@ -62,6 +62,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
+      - uses: ./.github/actions/install-protoc
+      - uses: ./.github/actions/install-taplo
       - name: Run tests
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic \
