@@ -134,7 +134,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 {{/Codec.ResourceNameArgs}}
             );
             {{/Codec.HasResourceNameGeneration}}
-
             let builder = self.inner.builder(Method::{{Verb}}, path);
             {{#Codec.QueryParamsCanFail}}
             let builder = (|| {
@@ -184,7 +183,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         #[cfg(google_cloud_unstable_tracing)]
         let options = {
             use google_cloud_gax::options::internal::{RequestOptionsExt, PathTemplate};
-
             options.insert_extension(PathTemplate(_path_template))
         };
         {{/Codec.DetailedTracingAttributes}}
