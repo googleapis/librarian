@@ -340,6 +340,17 @@ func createGoogleapisServiceConfigs(t *testing.T, tempDir string, configs map[st
 		if err := os.WriteFile(filepath.Join(dir, filename), []byte(""), 0644); err != nil {
 			t.Fatal(err)
 		}
+		// Add a dummy proto file to avoid protoc errors.
+		protoFileName := filepath.Base(apiPath) + ".proto"
+		protoContent := fmt.Sprintf(`syntax = "proto3";
+
+package %s;
+
+service TestService {}
+`, strings.ReplaceAll(apiPath, "/", "."))
+		if err := os.WriteFile(filepath.Join(dir, protoFileName), []byte(protoContent), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return googleapisDir
 }
@@ -456,4 +467,123 @@ func TestLoadSources(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateCommandWithRealLanguages(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		language  string
+		libName   string
+		libOutput string
+		apiPath   string
+	}{
+		{
+			name:      "rust",
+			language:  config.LanguageRust,
+			libName:   "library-one",
+			libOutput: "output/library-one",
+			apiPath:   "google/cloud/test/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+
+			cfg := buildTestConfig(t, test.language, test.libName, test.libOutput, test.apiPath)
+			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+				t.Fatal(err)
+			}
+
+			if langueSetup, ok := languageSetups[test.language]; ok {
+				langueSetup(t, tempDir, test.libOutput)
+			}
+
+			// Create a stale file in the library output directory to verify that it gets cleaned.
+			if err := createStaleFile(t, test.libOutput, "stale.txt"); err != nil {
+				t.Errorf("failed to create stale file: %v", err)
+			}
+
+			err := Run(t.Context(), "librarian", "generate", test.libName)
+			if err != nil {
+				t.Errorf("run generate failed: %v", err)
+			}
+
+			if err := verifyCleanLibraries(t, test.libOutput, "stale.txt"); err != nil {
+				t.Errorf("failed to verify clean libraries: %v", err)
+			}
+
+			// Verify library creation.
+			if _, err := os.Stat(filepath.Join(test.libOutput, "src/lib.rs")); err != nil {
+				t.Errorf("expected generated file 'src/lib.rs' not found: %v", err)
+			}
+		})
+	}
+}
+
+func buildTestConfig(t *testing.T, language, libName, libOutput, apiPath string) *config.Config {
+	t.Helper()
+	googleapisDir := createGoogleapisServiceConfigs(t, t.TempDir(), map[string]string{
+		apiPath: "test_v1.yaml",
+	})
+	return &config.Config{
+		Language: language,
+		Sources: &config.Sources{
+			Googleapis: &config.Source{Dir: googleapisDir},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:   libName,
+				Output: libOutput,
+				APIs:   []*config.API{{Path: apiPath}},
+			},
+		},
+	}
+}
+
+var languageSetups = map[string]func(*testing.T, string, string){
+	config.LanguageRust: setupRust,
+}
+
+func setupRust(t *testing.T, _ string, libOutput string) {
+	workspaceCargoToml := `[workspace]
+members = ["` + libOutput + `"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.70"
+authors = ["Test Author <test@example.com>"]
+version = "0.1.0"
+description = "Test library"
+license = "Apache-2.0"
+repository = "https://github.com/googleapis/test"
+keywords = ["api", "google"]
+categories = ["api-bindings"]
+
+[workspace.dependencies]
+tokio-test = "0.4"
+`
+	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargoToml), 0644); err != nil {
+		t.Error(err)
+	}
+}
+
+func createStaleFile(t *testing.T, libOutputDir string, fileName string) error {
+	t.Helper()
+	if err := os.MkdirAll(libOutputDir, 0755); err != nil {
+		return err
+	}
+	staleFile := filepath.Join(libOutputDir, fileName)
+	if err := os.WriteFile(staleFile, []byte("very old"), 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func verifyCleanLibraries(t *testing.T, libOutputDir string, fileName string) error {
+	t.Helper()
+	staleFile := filepath.Join(libOutputDir, fileName)
+	if _, err := os.Stat(staleFile); !os.IsNotExist(err) {
+		return fmt.Errorf("os.Stat(%q): got %v, want not-exist error", staleFile, err)
+	}
+	return nil
 }
