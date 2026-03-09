@@ -378,6 +378,14 @@ func TestDefaultOutput(t *testing.T) {
 			want:       "packages/google-cloud-secretmanager-v1",
 		},
 		{
+			name:       "nodejs",
+			language:   config.LanguageNodejs,
+			libName:    "google-cloud-secretmanager",
+			api:        "google/cloud/secretmanager/v1",
+			defaultOut: "packages",
+			want:       "packages/google-cloud-secretmanager",
+		},
+		{
 			name:       "unknown language",
 			language:   config.LanguageUnknown,
 			libName:    "google-cloud-secretmanager-v1",

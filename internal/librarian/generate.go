@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
@@ -169,6 +170,10 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			if err := python.Clean(library); err != nil {
 				return err
 			}
+		case config.LanguageNodejs:
+			if err := checkAndClean(library.Output, library.Keep); err != nil {
+				return err
+			}
 		case config.LanguageGo:
 			if err := golang.Clean(library); err != nil {
 				return err
@@ -198,6 +203,8 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return python.Generate(ctx, cfg, libraries, googleapisDir)
 	case config.LanguageGo:
 		return golang.Generate(ctx, libraries, googleapisDir)
+	case config.LanguageNodejs:
+		return nodejs.Generate(ctx, libraries, googleapisDir)
 	case config.LanguageJava:
 		return java.Generate(ctx, libraries, googleapisDir)
 	case config.LanguageRust:
@@ -218,6 +225,10 @@ func formatLibraries(ctx context.Context, language string, libraries []*config.L
 			}
 		case config.LanguageDart:
 			if err := dart.Format(ctx, library); err != nil {
+				return err
+			}
+		case config.LanguageNodejs:
+			if err := nodejs.Format(ctx, library); err != nil {
 				return err
 			}
 		case config.LanguageGo:
@@ -262,6 +273,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 		return dart.DefaultOutput(name, defaultOut)
 	case config.LanguageRust:
 		return rust.DefaultOutput(api, defaultOut)
+	case config.LanguageNodejs:
+		return nodejs.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
 		return python.DefaultOutput(name, defaultOut)
 	default:
