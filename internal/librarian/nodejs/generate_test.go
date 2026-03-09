@@ -302,6 +302,7 @@ func TestGenerateAPI(t *testing.T) {
 func TestRunPostProcessor(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 	requireSynthtool(t)
+	requireSynthtoolNodeModules(t)
 
 	repoRoot := t.TempDir()
 	outDir := filepath.Join(repoRoot, "packages", "google-cloud-secretmanager")
@@ -340,6 +341,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-generator-typescript")
 	testhelper.RequireCommand(t, "python3")
 	requireSynthtool(t)
+	requireSynthtoolNodeModules(t)
 
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
@@ -381,5 +383,12 @@ func requireSynthtool(t *testing.T) {
 	cmd := exec.Command("python3", "-c", fmt.Sprintf("import %s", "synthtool"))
 	if err := cmd.Run(); err != nil {
 		t.Skipf("skipping test because Python module synthtool is not installed")
+	}
+}
+
+func requireSynthtoolNodeModules(t *testing.T) {
+	t.Helper()
+	if _, err := os.Stat("/synthtool/node_modules"); err != nil {
+		t.Skip("skipping test because /synthtool/node_modules does not exist")
 	}
 }

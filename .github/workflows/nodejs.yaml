@@ -45,5 +45,11 @@ jobs:
           npm link
       - name: Install synthtool
         run: pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
+      - name: Set up /synthtool for synthtool post-processor
+        run: |
+          sudo mkdir -p /synthtool
+          sudo chown -R $(whoami) /synthtool
+          cd /synthtool
+          npm install gts google-gax
       - name: Run internal/librarian/nodejs tests
         run: go test -race ./internal/librarian/nodejs
