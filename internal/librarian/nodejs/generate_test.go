@@ -198,7 +198,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				Name: "google-cloud-translate",
 				Nodejs: &config.NodejsPackage{
 					BundleConfig:          "google/cloud/translate/v3/translate_gapic.yaml",
-					ExtraProtocParameters: []string{"metadata", "auto-populate-field-oauth-scope"},
+					ExtraProtocParameters: []string{"auto-populate-field-oauth-scope"},
 					HandwrittenLayer:      true,
 					MainService:           "translate",
 					Mixins:                "none",
@@ -213,7 +213,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--package-name", "@google-cloud/translate",
 				"--metadata",
 				"--bundle-config", filepath.Join(absGoogleapisDir, "google/cloud/translate/v3/translate_gapic.yaml"),
-				"--metadata",
 				"--auto-populate-field-oauth-scope",
 				"--handwritten-layer",
 				"--main-service", "translate",

@@ -135,6 +135,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))
 		}
 		for _, param := range library.Nodejs.ExtraProtocParameters {
+			if param == "metadata" {
+				continue
+			}
 			args = append(args, "--"+param)
 		}
 		if library.Nodejs.HandwrittenLayer {
