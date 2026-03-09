@@ -19,12 +19,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates all given libraries in sequence.
@@ -93,10 +95,18 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
 func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+	protocPath, err := exec.LookPath("protoc")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find protoc: %w", err)
+	}
+
 	args := []string{
 		"gapic-generator-typescript",
+		"--protoc=" + protocPath,
+		"--gapic-validator_out=.",
+		"--common-proto-path=" + googleapisDir,
 		"-I", googleapisDir,
-		"--output_dir", stagingDir,
+		"--output-dir", stagingDir,
 	}
 
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
@@ -153,6 +163,22 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err == nil {
+		// Old way: use synthtool
+		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
+			return fmt.Errorf("owlbot.py failed: %w", err)
+		}
+		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check for owlbot.py: %w", err)
+	}
+
+	// Template generation and exclusions are handled at the generator level.
+	// Synthtool is only used for post-processing handled by standalone scripts
+	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
+	// Librarian CLI tool).
+	//
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
 	if err := command.Run(ctx, "gapic-node-processing",
 		"combine-library",
@@ -164,6 +190,45 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("compileProtos: %w", err)
+	}
+
+	// librarian.js is a custom script some libraries use for post-processing.
+	// It has nothing to do with the Librarian CLI tool.
+	librarianScript := filepath.Join(outDir, "librarian.js")
+	if _, err := os.Stat(librarianScript); err == nil {
+		if err := command.RunInDir(ctx, outDir, "node", "librarian.js"); err != nil {
+			return fmt.Errorf("librarian.js failed: %w", err)
+		}
+	}
+
+	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
+	if _, err := os.Stat(readmePartials); err == nil {
+		type partials struct {
+			Introduction string `yaml:"introduction"`
+			Body         string `yaml:"body"`
+		}
+		p, err := yaml.Read[partials](readmePartials)
+		if err != nil {
+			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
+		}
+		if p.Introduction != "" {
+			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
+				fmt.Sprintf("--source-path=%s", outDir),
+				"--string-to-replace=[//]: # \"partials.introduction\"",
+				fmt.Sprintf("--replacement-string=%s", p.Introduction),
+			); err != nil {
+				return fmt.Errorf("generate-readme (introduction) failed: %w", err)
+			}
+		}
+		if p.Body != "" {
+			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
+				fmt.Sprintf("--source-path=%s", outDir),
+				"--string-to-replace=[//]: # \"partials.body\"",
+				fmt.Sprintf("--replacement-string=%s", p.Body),
+			); err != nil {
+				return fmt.Errorf("generate-readme (body) failed: %w", err)
+			}
+		}
 	}
 
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
