@@ -301,11 +301,6 @@ func TestRunPostProcessor(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
 
-	absGoogleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	repoRoot := t.TempDir()
 	library := &config.Library{Name: "google-cloud-secretmanager"}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -326,11 +321,12 @@ func TestRunPostProcessor(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	protosDir := filepath.Join(stagingBase, "protos")
-	if err := os.MkdirAll(protosDir, 0755); err != nil {
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(filepath.Join(absGoogleapisDir, "google"), filepath.Join(protosDir, "google")); err != nil {
+	protoContent := "syntax = \"proto3\";\npackage google.cloud.secretmanager.v1;\n"
+	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
