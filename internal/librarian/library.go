@@ -191,7 +191,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if !isVeneer(language, lib) {
-		if len(lib.APIs) == 0 && language != config.LanguageGo {
+		if len(lib.APIs) == 0 && derivableAPIPath(language) {
 			// Do not derive API path for Go because the library name
 			// doesn't contain relevant info.
 			lib.APIs = append(lib.APIs, &config.API{})
@@ -213,6 +213,15 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
+}
+
+func derivableAPIPath(language string) bool {
+	switch language {
+	case config.LanguageGo, config.LanguagePython:
+		return false
+	default:
+		return true
+	}
 }
 
 // mergeMaps merges key-values of src and dst maps.
