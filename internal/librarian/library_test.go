@@ -562,7 +562,7 @@ func TestPrepareLibrary(t *testing.T) {
 	}
 }
 
-func TestDerivableAPIPath(t *testing.T) {
+func TestCanDeriveAPIPath(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		language string
@@ -588,7 +588,7 @@ func TestDerivableAPIPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := derivableAPIPath(test.language)
+			got := canDeriveAPIPath(test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
