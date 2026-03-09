@@ -366,7 +366,6 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name:      "no libraries",
 			libraries: nil,
-			wantErr:   false,
 		},
 		{
 			name: "generation failure",
