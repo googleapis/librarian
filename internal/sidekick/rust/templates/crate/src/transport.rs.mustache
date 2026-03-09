@@ -96,12 +96,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
         {{/HasAutoPopulatedFields}}
         {{#Codec.HasResourceNameGeneration}}
-        {{#Codec.DetailedTracingAttributes}}
         let (builder, method, _path_template, resource_name) = None
-        {{/Codec.DetailedTracingAttributes}}
-        {{^Codec.DetailedTracingAttributes}}
-        let (builder, method, resource_name) = None
-        {{/Codec.DetailedTracingAttributes}}
         {{/Codec.HasResourceNameGeneration}}
         {{^Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
@@ -156,12 +151,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
             {{#Codec.HasResourceNameGeneration}}
-            {{#Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}}, path_template, resource_name)))
-            {{/Codec.DetailedTracingAttributes}}
-            {{^Codec.DetailedTracingAttributes}}
-            Some(builder.map(|b| (b, Method::{{Verb}}, resource_name)))
-            {{/Codec.DetailedTracingAttributes}}
             {{/Codec.HasResourceNameGeneration}}
             {{^Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}

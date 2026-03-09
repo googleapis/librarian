@@ -1608,6 +1608,9 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 // annotateResourceNameGeneration populates the method annotation with a Rust format string (ResourceNameTemplate)
 // and a list of argument accessors (ResourceNameArgs) to generate the `resource_name()` helper.
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
+	if !annotation.DetailedTracingAttributes {
+		return nil // Constraint 1: Do nothing if detailed tracing is off.
+	}
 	if m.PathInfo != nil {
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {

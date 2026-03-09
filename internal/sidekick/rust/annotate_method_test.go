@@ -348,7 +348,9 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 	}
 
-	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
 	_, err = annotateModel(model, codec)
 	if err != nil {
 		t.Fatal(err)
