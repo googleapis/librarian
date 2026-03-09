@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -609,8 +608,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-	if err := GenerateLibraries(t.Context(), cfg, libraries, sources); err != nil {
+	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, library := range libraries {
@@ -651,8 +649,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-	gotErr := GenerateLibraries(t.Context(), cfg, libraries, sources)
+	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
@@ -673,9 +670,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 		Name:   "no-apis",
 		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
 	}
-
-	sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-	if err := generate(t.Context(), cfg, library, sources); err != nil {
+	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Validate that we haven't got as far as creating the output directory.
@@ -727,9 +722,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-
-	sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-	if err := generate(t.Context(), cfg, library, sources); err != nil {
+	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)
@@ -937,8 +930,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 			}
-			sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-			got, err := createRepoMetadata(cfg, test.library, sources)
+			got, err := createRepoMetadata(cfg, test.library, googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -961,8 +953,7 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 	}
 	// We don't check what the error is here; there's only one place it can
 	// come, and it's not an error we create ourselves.
-	sources := &sidekickconfig.Sources{Googleapis: googleapisDir}
-	_, err := createRepoMetadata(cfg, library, sources)
+	_, err := createRepoMetadata(cfg, library, googleapisDir)
 	if err == nil {
 		t.Error("expected error, got nil")
 	}

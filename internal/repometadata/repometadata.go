@@ -126,11 +126,11 @@ func FromLibrary(config *config.Config, library *config.Library, sources *sideki
 	if err != nil {
 		return nil, fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
 	}
-	return fromAPI(config, api, library), nil
+	return FromAPI(config, api, library), nil
 }
 
-// fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
-func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
+// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
+func FromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
 		apiDescription = library.DescriptionOverride

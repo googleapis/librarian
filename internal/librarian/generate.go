@@ -195,7 +195,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageDart:
 		return dart.GenerateLibraries(ctx, libraries, src)
 	case config.LanguagePython:
-		return python.GenerateLibraries(ctx, cfg, libraries, src)
+		return python.GenerateLibraries(ctx, cfg, libraries, googleapisDir)
 	case config.LanguageGo:
 		return golang.GenerateLibraries(ctx, libraries, googleapisDir)
 	case config.LanguageJava:
