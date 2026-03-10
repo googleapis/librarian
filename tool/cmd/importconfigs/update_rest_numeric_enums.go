@@ -125,9 +125,6 @@ func toSlice(apis map[string]*serviceconfig.API) []*serviceconfig.API {
 	for _, api := range apis {
 		res = append(res, api)
 	}
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].Path < res[j].Path
-	})
 	return res
 }
 
