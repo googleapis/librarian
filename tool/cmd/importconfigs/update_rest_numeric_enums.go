@@ -21,6 +21,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -47,12 +48,32 @@ func updateRestNumericEnumsCommand() *cli.Command {
 }
 
 func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
-	apis, err := yaml.Read[[]serviceconfig.API](sdkYaml)
+	apis, err := yaml.Read[[]*serviceconfig.API](sdkYaml)
 	if err != nil {
 		return fmt.Errorf("failed to parse %s: %w", sdkYaml, err)
 	}
+	apiMap := toMap(*apis)
 
-	return yaml.Write(sdkYaml, apis)
+	return yaml.Write(sdkYaml, toSlice(apiMap))
+}
+
+func toMap(apis []*serviceconfig.API) map[string]*serviceconfig.API {
+	res := make(map[string]*serviceconfig.API)
+	for _, api := range apis {
+		res[api.Path] = api
+	}
+	return res
+}
+
+func toSlice(apis map[string]*serviceconfig.API) []*serviceconfig.API {
+	var res []*serviceconfig.API
+	for _, api := range apis {
+		res = append(res, api)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].Path < res[j].Path
+	})
+	return res
 }
 
 func readRestNumericEnums(googleapisDir, path string) map[string]bool {
