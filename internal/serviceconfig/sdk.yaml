@@ -1030,6 +1030,9 @@
     - python
     - rust
   path: google/cloud/dns/v1
+  service_name: dns.googleapis.com
+  short_name: dns
+  title: Cloud DNS
 - languages:
     - go
     - nodejs
