@@ -137,6 +137,25 @@ func TestIdentifyTargetResources(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
 			},
 		},
+		{
+			name:      "explicit: crop trailing literals (API Keys keyString case)",
+			serviceID: "apikeys.googleapis.com",
+			path: NewPathTemplate().
+				WithLiteral("v2").
+				WithVariable(NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("keys").WithMatch()).
+				WithLiteral("keyString"),
+			fields: []*Field{
+				{
+					Name:              "name",
+					Typez:             STRING_TYPE,
+					ResourceReference: &ResourceReference{Type: "apikeys.googleapis.com/Key"},
+				},
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"name"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
