@@ -340,9 +340,7 @@ php_gapic_library(
 )
 `,
 			want: map[string]bool{
-				"go":     false,
 				"python": true,
-				"php":    false,
 			},
 		},
 		{
@@ -352,9 +350,7 @@ go_gapic_library(
     name = "asset_go_gapic",
 )
 `,
-			want: map[string]bool{
-				"go": false,
-			},
+			want: map[string]bool{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
