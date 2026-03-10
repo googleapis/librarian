@@ -143,7 +143,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return nil
 }
 
-func runProtoc(ctx context.Context, args []string) error {
+var runProtoc = func(ctx context.Context, args []string) error {
 	return command.Run(ctx, "protoc", args...)
 }
 

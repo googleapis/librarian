@@ -15,6 +15,7 @@
 package java
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -282,6 +283,43 @@ func TestGenerateAPI(t *testing.T) {
 	restructuredPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java")
 	if _, err := os.Stat(restructuredPath); err != nil {
 		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
+	}
+}
+
+func TestGenerateAPI_NoTools(t *testing.T) {
+	// Temporarily mock runProtoc to avoid external tool requirements.
+	oldRunProtoc := runProtoc
+	defer func() { runProtoc = oldRunProtoc }()
+	// Capture all calls to runProtoc to verify arguments without executing the command.
+	var calls [][]string
+	runProtoc = func(ctx context.Context, args []string) error {
+		calls = append(calls, args)
+		return nil
+	}
+	outdir := t.TempDir()
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	library := &config.Library{Name: "secretmanager", Output: outdir}
+
+	err := generateAPI(t.Context(), api, library, googleapisDir, outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that runProtoc was called 3 times: proto, grpc, and gapic.
+	if len(calls) != 3 {
+		t.Errorf("expected 3 calls to runProtoc, got %d", len(calls))
+	}
+	// Basic validation of GAPIC generation arguments (the 3rd call).
+	gapicArgs := calls[2]
+	foundGapicOut := false
+	for _, arg := range gapicArgs {
+		if strings.HasPrefix(arg, "--java_gapic_out=") {
+			foundGapicOut = true
+			break
+		}
+	}
+	if !foundGapicOut {
+		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
 	}
 }
 
