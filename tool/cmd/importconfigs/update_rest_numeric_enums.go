@@ -22,6 +22,7 @@ import (
 	"go/parser"
 	"go/token"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -134,7 +135,7 @@ func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int) {
 	return path, noRestIdx
 }
 
-func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
+func simplifyRestNumericEnums(restNumericEnums map[string]bool) map[string]bool {
 	var (
 		firstVal bool
 		firstSet bool
@@ -143,15 +144,15 @@ func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
 		if lang == "all" {
 			continue
 		}
-		val, ok := numericEnums[lang]
+		val, ok := restNumericEnums[lang]
 		if !ok {
-			return numericEnums
+			return removeDefaults(restNumericEnums)
 		}
 		if !firstSet {
 			firstVal = val
 			firstSet = true
 		} else if val != firstVal {
-			return numericEnums
+			return removeDefaults(restNumericEnums)
 		}
 	}
 	if !firstVal {
@@ -161,6 +162,16 @@ func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
 	// All languages do not need rest_numeric_enums.
 	// Return all: true.
 	return map[string]bool{"all": firstVal}
+}
+
+func removeDefaults(restNumericEnums map[string]bool) map[string]bool {
+	maps.DeleteFunc(restNumericEnums, func(k string, v bool) bool {
+		if !v {
+			return true
+		}
+		return false
+	})
+	return restNumericEnums
 }
 
 func createRestNumericEnumsExpr(numericEnums map[string]bool) *ast.CompositeLit {
