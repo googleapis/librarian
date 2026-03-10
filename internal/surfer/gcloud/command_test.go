@@ -36,6 +36,9 @@ func TestCommandYAML(t *testing.T) {
 		if d.IsDir() {
 			return nil
 		}
+		if filepath.Ext(path) != ".yaml" {
+			return nil
+		}
 		files = append(files, path)
 		return nil
 	})

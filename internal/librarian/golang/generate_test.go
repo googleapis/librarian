@@ -51,7 +51,6 @@ func TestGenerate(t *testing.T) {
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
-			Transport:     "grpc",
 			APIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
@@ -124,7 +123,6 @@ func TestGenerate_Error(t *testing.T) {
 					Version:       "0.1.0",
 					ReleaseLevel:  "preview",
 					CopyrightYear: "2025",
-					Transport:     "grpc",
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -148,7 +146,6 @@ func TestGenerate_Error(t *testing.T) {
 					Version:       "0.1.0",
 					ReleaseLevel:  "preview",
 					CopyrightYear: "2025",
-					Transport:     "grpc",
 				},
 			},
 			wantErr: errGoAPINotFound,
@@ -177,7 +174,6 @@ func TestGenerateLibrary(t *testing.T) {
 		name         string
 		libraryName  string
 		apis         []*config.API
-		transport    string
 		releaseLevel string
 		goModule     *config.GoModule
 		want         []string
@@ -246,7 +242,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "with transport and release level",
+			name:        "with release level",
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
@@ -258,7 +254,6 @@ func TestGenerateLibrary(t *testing.T) {
 					},
 				},
 			},
-			transport:    "grpc+rest",
 			releaseLevel: "ga",
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
@@ -337,7 +332,6 @@ func TestGenerateLibrary(t *testing.T) {
 				Version:      "1.0.0",
 				Output:       outdir,
 				APIs:         test.apis,
-				Transport:    test.transport,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
 			}
@@ -766,17 +760,17 @@ func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		sc   *serviceconfig.API
-		want string
+		want serviceconfig.Transport
 	}{
 		{
 			name: "nil serviceconfig",
 			sc:   nil,
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 		{
 			name: "empty serviceconfig",
 			sc:   &serviceconfig.API{},
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 		{
 			name: "go specific transport",
@@ -785,7 +779,7 @@ func TestGetTransport(t *testing.T) {
 					config.LanguageGo: serviceconfig.GRPC,
 				},
 			},
-			want: "grpc",
+			want: serviceconfig.GRPC,
 		},
 		{
 			name: "other language transport",
@@ -794,7 +788,7 @@ func TestGetTransport(t *testing.T) {
 					config.LanguagePython: serviceconfig.GRPC,
 				},
 			},
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
