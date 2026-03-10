@@ -220,10 +220,6 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 	case config.LanguageFake:
 		return fakeBumpLibrary(output, version)
 	case config.LanguageGo:
-		lib, err := golang.Fill(lib)
-		if err != nil {
-			return err
-		}
 		return golang.Bump(lib, output, version)
 	case config.LanguagePython:
 		return python.Bump(output, version)
