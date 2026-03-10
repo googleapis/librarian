@@ -186,6 +186,24 @@ func TestBump(t *testing.T) {
 				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
 			},
 		},
+		{
+			name: "ignore non existent snippet directory",
+			initialFiles: map[string]string{
+				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
