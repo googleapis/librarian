@@ -325,7 +325,7 @@ func TestParseRESTNumericEnums(t *testing.T) {
 		want    map[string]bool
 	}{
 		{
-			name: "happy path",
+			name: "some languages contain the value",
 			content: `
 go_gapic_library(
     name = "asset_go_gapic",
@@ -340,8 +340,8 @@ php_gapic_library(
 )
 `,
 			want: map[string]bool{
-				"go":     true,
-				"python": false,
+				"python": true,
+				"php":    true,
 			},
 		},
 		{
@@ -351,7 +351,9 @@ go_gapic_library(
     name = "asset_go_gapic",
 )
 `,
-			want: map[string]bool{},
+			want: map[string]bool{
+				"go": true,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

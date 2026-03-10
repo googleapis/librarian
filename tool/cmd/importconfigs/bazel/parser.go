@@ -151,18 +151,15 @@ func ParseRESTNumericEnums(path string) (map[string]bool, error) {
 		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
 	}
 
-	numericEnums := make(map[string]bool)
+	noNumericEnums := make(map[string]bool)
 	for ruleName, lang := range ruleToLang {
 		for _, rule := range file.Rules(ruleName) {
-			switch rule.AttrLiteral("rest_numeric_enums") {
-			case "True":
-				numericEnums[lang] = true
-			case "False":
-				numericEnums[lang] = false
+			if rule.AttrLiteral("rest_numeric_enums") != "True" {
+				noNumericEnums[lang] = true
 			}
 		}
 	}
-	return numericEnums, nil
+	return noNumericEnums, nil
 }
 
 var ruleToLang = map[string]string{
