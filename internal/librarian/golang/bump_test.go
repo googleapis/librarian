@@ -280,20 +280,17 @@ func TestBump_Error(t *testing.T) {
 			wantErr: os.ErrPermission,
 		},
 		{
-			name: "no go api",
-			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
-			},
+			name: "no import path",
 			library: &config.Library{
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
-						Path: "google/example/v1",
+						Path: "google/example/common",
 					},
 				},
 			},
 			version: "0.2.0",
-			wantErr: errGoAPINotFound,
+			wantErr: errImportPathNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
