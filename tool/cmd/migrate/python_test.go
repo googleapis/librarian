@@ -214,7 +214,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "veneer",
+			name: "no APIs",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
 				librarianState: &legacyconfig.LibrarianState{
@@ -228,9 +228,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name:   "google-api-core",
-					Veneer: true,
-					Output: "packages/google-api-core",
+					Name: "google-api-core",
 					Python: &config.PythonPackage{
 						PythonDefault: config.PythonDefault{
 							LibraryType: "CORE",
