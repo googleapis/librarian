@@ -175,3 +175,13 @@ func Checkout(ctx context.Context, gitExe, revision string) error {
 	}
 	return nil
 }
+
+// GetCommitSubject returns the commit subject (the first line of the commit
+// message for the given commit), without a trailing newline.
+func GetCommitSubject(ctx context.Context, gitExe, revision string) (string, error) {
+	output, err := command.Output(ctx, gitExe, "show", "--no-patch", "--format=%s", revision)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(output, "\n"), nil
+}

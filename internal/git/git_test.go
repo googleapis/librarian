@@ -583,3 +583,59 @@ func TestGetCommitHash(t *testing.T) {
 		t.Errorf("GetCommitHash() for HEAD~: got = %s; want = %s", previousToHeadCommit, commits[1])
 	}
 }
+
+func TestGetCommitSubject(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	for _, test := range []struct {
+		name     string
+		setup    func(*testing.T)
+		revision string
+		want     string
+	}{
+		{
+			name: "one-line message",
+			setup: func(t *testing.T) {
+				testhelper.RunGit(t, "commit", "--allow-empty", "-m", "simple message")
+			},
+			revision: "HEAD",
+			want:     "simple message",
+		},
+		{
+			name: "multi-line message",
+			setup: func(t *testing.T) {
+				testhelper.RunGit(t, "commit", "--allow-empty", "-m", "line 1", "-m", "line 2")
+			},
+			revision: "HEAD",
+			want:     "line 1",
+		},
+		{
+			name: "non-HEAD revision",
+			setup: func(t *testing.T) {
+				testhelper.RunGit(t, "commit", "--allow-empty", "-m", "first commit")
+				testhelper.RunGit(t, "commit", "--allow-empty", "-m", "second commit")
+			},
+			revision: "HEAD~",
+			want:     "first commit",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			testhelper.SetupRepo(t)
+			test.setup(t)
+			got, err := GetCommitSubject(t.Context(), "git", test.revision)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetCommitSubject_Error(t *testing.T) {
+	testhelper.SetupRepo(t)
+	_, err := GetCommitSubject(t.Context(), "git", "bad-revision")
+	if err == nil {
+		t.Fatal("wanted an error; got none")
+	}
+}
