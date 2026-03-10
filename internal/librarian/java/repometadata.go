@@ -14,12 +14,7 @@
 
 package java
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-)
+import "github.com/googleapis/librarian/internal/repometadata"
 
 // repoMetadata represents the .repo-metadata.json file structure for Java.
 //
@@ -66,15 +61,5 @@ type repoMetadata struct {
 
 // write writes the given repoMetadata into libraryOutputDir/.repo-metadata.json.
 func (metadata *repoMetadata) write(libraryOutputDir string) error {
-	data, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
-	metadataPath := filepath.Join(libraryOutputDir, ".repo-metadata.json")
-	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write metadata file: %w", err)
-	}
-
-	return nil
+	return repometadata.WriteJSON(metadata, "  ", libraryOutputDir, ".repo-metadata.json")
 }
