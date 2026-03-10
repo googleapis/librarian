@@ -180,15 +180,22 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 	// Librarian CLI tool).
 
 	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Back up existing files so non-generated files like
-	// librarian.js, README.md, and .readme-partials.yaml survive.
+	// files (src/, protos/). Save the non-generated files it would delete, then
+	// restore them afterward.
+	preserveFiles := []string{"librarian.js", ".readme-partials.yaml"}
 	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
 	if err != nil {
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}
 	defer os.RemoveAll(backupDir)
-	if err := copyDir(outDir, backupDir); err != nil {
-		return fmt.Errorf("failed to back up outDir: %w", err)
+	for _, name := range preserveFiles {
+		src := filepath.Join(outDir, name)
+		if _, err := os.Stat(src); err != nil {
+			continue // file doesn't exist, nothing to save
+		}
+		if err := os.Rename(src, filepath.Join(backupDir, name)); err != nil {
+			return fmt.Errorf("failed to save %s: %w", name, err)
+		}
 	}
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
@@ -200,9 +207,15 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
-	// Restore non-generated files that combine-library deleted.
-	if err := restoreNonConflicting(backupDir, outDir); err != nil {
-		return fmt.Errorf("failed to restore files after combine-library: %w", err)
+	// Restore non-generated files.
+	for _, name := range preserveFiles {
+		src := filepath.Join(backupDir, name)
+		if _, err := os.Stat(src); err != nil {
+			continue
+		}
+		if err := os.Rename(src, filepath.Join(outDir, name)); err != nil {
+			return fmt.Errorf("failed to restore %s: %w", name, err)
+		}
 	}
 
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
@@ -286,50 +299,3 @@ func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
-// copyDir copies all files from src to dst, preserving directory structure.
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		if info.IsDir() {
-			return os.MkdirAll(target, info.Mode())
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, info.Mode())
-	})
-}
-
-// restoreNonConflicting copies files from backup into dst that do not already
-// exist in dst.
-func restoreNonConflicting(backup, dst string) error {
-	return filepath.Walk(backup, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(backup, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		if info.IsDir() {
-			return os.MkdirAll(target, info.Mode())
-		}
-		if _, err := os.Stat(target); err == nil {
-			return nil // file exists in dst, don't overwrite
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, info.Mode())
-	})
-}
