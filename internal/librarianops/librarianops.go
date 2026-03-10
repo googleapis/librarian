@@ -23,13 +23,17 @@ import (
 )
 
 const (
-	repoRust = "google-cloud-rust"
-	repoFake = "fake-repo" // used for testing
+	repoRust   = "google-cloud-rust"
+	repoPython = "google-cloud-python"
+	repoGo     = "google-cloud-go"
+	repoFake   = "fake-repo" // used for testing
 )
 
 var supportedRepositories = map[string]bool{
-	repoFake: true, // used for testing
-	repoRust: true,
+	repoFake:   true, // used for testing
+	repoRust:   true,
+	repoGo:     true,
+	repoPython: true,
 }
 
 // Run executes the librarianops command with the given arguments.

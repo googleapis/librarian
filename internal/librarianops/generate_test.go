@@ -85,8 +85,8 @@ func TestGenerateCommand(t *testing.T) {
 				command.Verbose = true
 				defer func() { command.Verbose = false }()
 			}
-
-			if err := processRepo(t.Context(), repoFake, repoDir, librarianBin, test.verbose); err != nil {
+			runInDocker := false
+			if err := processRepo(t.Context(), repoFake, repoDir, librarianBin, test.verbose, runInDocker); err != nil {
 				t.Fatal(err)
 			}
 
