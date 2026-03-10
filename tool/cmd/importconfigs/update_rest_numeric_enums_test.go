@@ -152,10 +152,10 @@ var APIs = []API{
 csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = False)
 go_gapic_library(name = "foo-go", rest_numeric_enums = False)
 java_gapic_library(name = "foo-java", rest_numeric_enums = False)
-nodejs_gapic_library(name = "foo-nodejs")
+nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = False)
 php_gapic_library(name = "foo-php", rest_numeric_enums = False)
 py_gapic_library(name = "foo-python", rest_numeric_enums = False)
-ruby_cloud_gapic_library(name = "foo-ruby")
+ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = False)
 `,
 			want: `package serviceconfig
 
@@ -212,10 +212,10 @@ var APIs = []API{
 			buildBazel: `
 csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
 go_gapic_library(name = "foo-go", rest_numeric_enums = True)
-java_gapic_library(name = "foo-java", rest_numeric_enums = True)
+java_gapic_library(name = "foo-java")
 nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
 php_gapic_library(name = "foo-php", rest_numeric_enums = True)
-py_gapic_library(name = "foo-python", rest_numeric_enums = True)
+py_gapic_library(name = "foo-python")
 ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
 `,
 			want: `package serviceconfig
@@ -225,6 +225,46 @@ var APIs = []API{
 }
 `,
 		},
+		{
+			name: "all present, different values",
+			apiGo: `package serviceconfig
+var APIs = []API{
+	{Path: "google/cloud/foo/v1"},
+}
+`,
+			buildBazel: `
+csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
+go_gapic_library(name = "foo-go", rest_numeric_enums = False)
+java_gapic_library(name = "foo-java")
+nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
+php_gapic_library(name = "foo-php", rest_numeric_enums = False)
+py_gapic_library(name = "foo-python")
+ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
+`,
+			want: `package serviceconfig
+
+var APIs = []API{
+	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangGo: true, LangPhp: true}},
+}
+`,
+		},
+		{
+			name: "merge",
+			apiGo: `package serviceconfig
+var APIs = []API{
+	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangCsharp: true}},
+}
+`,
+			buildBazel: `
+csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = False)
+go_gapic_library(name = "foo-go", rest_numeric_enums = False)
+`,
+			want: `package serviceconfig
+
+var APIs = []API{
+	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangCsharp: true, LangGo: true}},
+}
+`},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
