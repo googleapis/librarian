@@ -318,6 +318,59 @@ go_gapic_library(
 	}
 }
 
+func TestParseRESTNumericEnums(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    map[string]bool
+	}{
+		{
+			name: "happy path",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+    rest_numeric_enums = True,
+)
+py_gapic_library(
+    name = "asset_py_gapic",
+    rest_numeric_enums = False,
+)
+php_gapic_library(
+    name = "asset_php_gapic",
+)
+`,
+			want: map[string]bool{
+				"go":     true,
+				"python": false,
+			},
+		},
+		{
+			name: "missing rest_numeric_enums attribute",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+)
+`,
+			want: map[string]bool{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := ParseRESTNumericEnums(buildPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func mustParse(t *testing.T, content string) *Config {
 	t.Helper()
 	tmpDir := t.TempDir()
