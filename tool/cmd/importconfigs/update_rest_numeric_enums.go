@@ -59,7 +59,35 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Write(sdkYaml, toSlice(apiMap))
+	var newAPIs []*serviceconfig.API
+	for _, path := range buildFilePaths {
+		noRESTNumericEnums := readRestNumericEnums(googleapisDir, path)
+		if len(noRESTNumericEnums) == 0 {
+			// No need to change the default value.
+			continue
+		}
+		api, ok := apiMap[path]
+		if !ok {
+			if !strings.HasPrefix(path, "google/cloud") {
+				// Ignore a non-cloud API that is not in sdk.yaml since it is blocked.
+				continue
+			}
+			// Add the NoRESTNumericEnums to a cloud API.
+			newAPIs = append(newAPIs, &serviceconfig.API{
+				Path:               path,
+				NoRESTNumericEnums: noRESTNumericEnums,
+			})
+			continue
+		}
+		// Add the NoRESTNumericEnums to an existing API, regardless a cloud API or not.
+		api.NoRESTNumericEnums = noRESTNumericEnums
+	}
+	finalAPIs := toSlice(apiMap)
+	finalAPIs = append(finalAPIs, newAPIs...)
+	sort.Slice(finalAPIs, func(i, j int) bool {
+		return finalAPIs[i].Path < finalAPIs[j].Path
+	})
+	return yaml.Write(sdkYaml, finalAPIs)
 }
 
 func findBuild(googleapisDir string) ([]string, error) {
@@ -104,7 +132,7 @@ func toSlice(apis map[string]*serviceconfig.API) []*serviceconfig.API {
 }
 
 func readRestNumericEnums(googleapisDir, path string) map[string]bool {
-	buildPath := filepath.Join(googleapisDir, path, "BUILD.bazel")
+	buildPath := filepath.Join(googleapisDir, path)
 	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
 		return nil
 	}
