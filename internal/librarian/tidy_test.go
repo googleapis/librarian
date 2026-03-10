@@ -281,9 +281,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
-			RunTidyOnConfig(t.Context(), test.config)
-
+			if err := RunTidyOnConfig(t.Context(), test.config); err != nil {
+				t.Fatal()
+			}
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)

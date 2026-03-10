@@ -84,8 +84,10 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	}
 	// Only remove derivable API paths when there's exactly one API.
 	// When there are multiple APIs, preserve all of them.
-	if len(lib.APIs) == 1 && isDerivableAPIPath(cfg.Language, lib.Name, lib.APIs[0].Path) {
-		lib.APIs[0].Path = ""
+	if len(lib.APIs) == 1 && canDeriveAPIPath(cfg.Language) {
+		if lib.APIs[0].Path == deriveAPIPath(cfg.Language, lib.Name) {
+			lib.APIs[0].Path = ""
+		}
 	}
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
