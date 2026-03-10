@@ -17,17 +17,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"go/ast"
-	"go/format"
-	"go/parser"
-	"go/token"
 	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 
+	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/googleapis/librarian/tool/cmd/importconfigs/bazel"
 	"github.com/urfave/cli/v3"
 )
@@ -45,57 +41,18 @@ func updateRestNumericEnumsCommand() *cli.Command {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			googleapisDir := cmd.String("googleapis")
-			return runUpdateRestNumericEnums("internal/serviceconfig/api.go", googleapisDir)
+			return runUpdateRestNumericEnums("internal/serviceconfig/sdk.yaml", googleapisDir)
 		},
 	}
 }
 
-func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
-	fset := token.NewFileSet()
-	astFile, err := parser.ParseFile(fset, apiGoPath, nil, parser.ParseComments)
+func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
+	apis, err := yaml.Read[[]serviceconfig.API](sdkYaml)
 	if err != nil {
-		return fmt.Errorf("failed to parse %s: %w", apiGoPath, err)
+		return fmt.Errorf("failed to parse %s: %w", sdkYaml, err)
 	}
 
-	apisSlice := findAPIsSlice(astFile)
-	if apisSlice == nil {
-		return fmt.Errorf("could not find APIs variable in %s", apiGoPath)
-	}
-
-	for _, expr := range apisSlice.Elts {
-		apiLit, ok := expr.(*ast.CompositeLit)
-		if !ok {
-			continue
-		}
-		path, index := extractRESTNumericEnumsInfo(apiLit)
-		if path == "" {
-			continue
-		}
-		noRestNumericEnums := readRestNumericEnums(googleapisDir, path)
-		if len(noRestNumericEnums) == 0 {
-			if index != -1 {
-				// Remove the NoRESTNumericEnums field if it exists and is now the default.
-				apiLit.Elts = append(apiLit.Elts[:index], apiLit.Elts[index+1:]...)
-			}
-			continue
-		}
-		restKV := &ast.KeyValueExpr{
-			Key:   ast.NewIdent("NoRESTNumericEnums"),
-			Value: createRestNumericEnumsExpr(noRestNumericEnums),
-		}
-		if index != -1 {
-			apiLit.Elts[index] = restKV
-		} else {
-			apiLit.Elts = append(apiLit.Elts, restKV)
-		}
-	}
-
-	out, err := os.Create(apiGoPath)
-	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", apiGoPath, err)
-	}
-	defer out.Close()
-	return format.Node(out, fset, astFile)
+	return yaml.Write(sdkYaml, apis)
 }
 
 func readRestNumericEnums(googleapisDir, path string) map[string]bool {
@@ -109,30 +66,6 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 		return nil
 	}
 	return simplifyRestNumericEnums(numericEnums)
-}
-
-func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int) {
-	var path string
-	noRestIdx := -1
-	for i, expr := range apiLit.Elts {
-		kvExpr, ok := expr.(*ast.KeyValueExpr)
-		if !ok {
-			continue
-		}
-		ident, ok := kvExpr.Key.(*ast.Ident)
-		if !ok {
-			continue
-		}
-		if ident.Name == "Path" {
-			if lit, ok := kvExpr.Value.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-				path = strings.Trim(lit.Value, "\"")
-			}
-		}
-		if ident.Name == "NoRESTNumericEnums" {
-			noRestIdx = i
-		}
-	}
-	return path, noRestIdx
 }
 
 func simplifyRestNumericEnums(restNumericEnums map[string]bool) map[string]bool {
@@ -169,34 +102,4 @@ func removeDefaults(restNumericEnums map[string]bool) map[string]bool {
 		return !v
 	})
 	return restNumericEnums
-}
-
-func createRestNumericEnumsExpr(numericEnums map[string]bool) *ast.CompositeLit {
-	keys := make([]string, 0, len(numericEnums))
-	for k := range numericEnums {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	mapElt := &ast.CompositeLit{
-		Type: &ast.MapType{
-			Key:   ast.NewIdent("string"),
-			Value: ast.NewIdent("bool"),
-		},
-		Elts: []ast.Expr{},
-	}
-	for _, lang := range keys {
-		var langKey ast.Expr
-		if constName, ok := langToConstant[lang]; ok {
-			langKey = ast.NewIdent(constName)
-		} else {
-			langKey = &ast.BasicLit{Kind: token.STRING, Value: "\"" + lang + "\""}
-		}
-
-		mapElt.Elts = append(mapElt.Elts, &ast.KeyValueExpr{
-			Key:   langKey,
-			Value: ast.NewIdent("true"),
-		})
-	}
-	return mapElt
 }
