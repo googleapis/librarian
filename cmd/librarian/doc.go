@@ -193,6 +193,7 @@ USAGE:
 OPTIONS:
 
 	--release-commit string  the release commit to tag; default finds latest release commit
+	--create-release-tag     whether to create a tag of the form release-{PR number}
 	--help, -h               show help
 
 GLOBAL OPTIONS:
