@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 # Implementation definition for gcloud iam workforce-pools providers scim-tenants update
-
 - release_tracks: [ALPHA, BETA, GA]
   help_text:
     brief: Update an IAM workforce identity pool provider SCIM tenant.

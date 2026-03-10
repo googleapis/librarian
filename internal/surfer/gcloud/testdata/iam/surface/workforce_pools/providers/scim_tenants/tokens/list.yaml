@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 # Implementation definition for gcloud iam workforce-pools providers scim-tenants tokens list
-
 - release_tracks: [ALPHA, BETA, GA]
   help_text:
     brief: List IAM workforce identity pool provider SCIM tenant tokens.
