@@ -70,7 +70,7 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 		if path == "" {
 			continue
 		}
-		noRestNumericEnums := map[string]string{}
+		noRestNumericEnums := readRestNumericEnums(googleapisDir, path)
 		if len(noRestNumericEnums) == 0 {
 			if index == -1 {
 				apiLit.Elts = append(apiLit.Elts[:index], apiLit.Elts[index+1:]...)
@@ -79,7 +79,7 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 		}
 		restKV := &ast.KeyValueExpr{
 			Key:   ast.NewIdent("NoRestNumericEnums"),
-			Value: createTransportsExpr(noRestNumericEnums),
+			Value: createRestNumericEnumsExpr(noRestNumericEnums),
 		}
 		if index != -1 {
 			apiLit.Elts[index] = restKV
@@ -94,23 +94,6 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 	}
 	defer out.Close()
 	return format.Node(out, fset, astFile)
-}
-
-func removeElement(elts []ast.Expr, i int) []ast.Expr {
-	return append(elts[:i], elts[i+1:]...)
-}
-
-func splitNumericEnums(numericEnums map[string]bool) (map[string]bool, map[string]bool) {
-	yesMap := make(map[string]bool)
-	noMap := make(map[string]bool)
-	for lang, val := range numericEnums {
-		if val {
-			yesMap[lang] = true
-		} else {
-			noMap[lang] = true
-		}
-	}
-	return yesMap, noMap
 }
 
 func readRestNumericEnums(googleapisDir, path string) map[string]bool {
