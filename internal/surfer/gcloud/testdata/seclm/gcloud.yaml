@@ -1,0 +1,171 @@
+config_version: v2.0
+service_name: seclm.googleapis.com
+generate_operations: true
+regional_endpoint_compatibility: NOT_SUPPORTED
+apis:
+  - name: SecLM
+    root_is_hidden: true
+    api_version: v1
+    release_tracks:
+      - ALPHA
+    help_text:
+      service_rules:
+        - selector: google.cloud.seclm.v1.SecLM
+          help_text:
+            brief: Manage and Query SecLM Workbench resources
+            description:
+              |- # Provide addtional surface/service level details here.
+              Service to manage SecLM Workbench resources
+      message_rules:
+        - selector: google.cloud.seclm.v1.Workbench
+          help_text:
+            brief: SecLM Workbench
+            description:
+              |- # Provide addtional surface/service level details here.
+              Manage Workbench instance resources.
+
+      method_rules:
+        - selector: google.cloud.seclm.v1.SecLM.ListWorkbenches
+          help_text:
+            brief: List Workbenches
+            description:
+              | # Provide Addtional Content and context for the command here.
+              List Workbenches by location.
+
+              list --location=<LOCATION>
+            examples:
+              - |-
+                To list all instances in particular location `us-central1` run:
+
+                $ {command} --location=us-central1
+        - selector: google.cloud.seclm.v1.SecLM.CreateWorkbench
+          help_text:
+            brief: Creates a Workbench
+            description:
+              | # Provide Addtional Content and context for the command here.
+              Creates a Workbench instance.
+              If run asynchronously with --async, exits after printing an operation that can
+              be used to poll the status of the creation operation.
+
+              create <WORKBENCH_ID> --location=<LOCATION> [--async] [--labels]
+            examples:
+              - |-
+                To create an instance `my-workbench` in location `us-central1` run:
+
+                $ {command} my-workbench --location=us-central1
+        - selector: google.cloud.seclm.v1.SecLM.GetWorkbench
+          help_text:
+            brief: Gets a Workbench
+            description:
+              | # Provide Addtional Content and context for the command here.
+              Gets details of a single Workbench instance.
+
+              describe <WORKBENCH_ID> --location=<LOCATION>
+            examples:
+              - |-
+                To get the details of a single workbench `my-workbench in location `us-central1` run:
+
+                $ {command} my-workbench --location=us-central1
+        - selector: google.cloud.seclm.v1.SecLM.UpdateWorkbench
+          help_text:
+            brief: Updates the parameters of a single Workbench
+            description:
+              | # Provide Addtional Content and context for the command here.
+              Updates the parameters of a single Workbench.
+              If run asynchronously with --async, exits after printing an operation that can
+              be used to poll the status of the creation operation.
+
+              update <WORKBENCH_ID> --location=<LOCATION> [--async] [--labels]
+            examples:
+              - |-
+                To update the description of an instance `my-workbench` in location `us-central1` run:
+
+                $ {command} my-workbench --location=us-central1
+        - selector: google.cloud.seclm.v1.SecLM.DeleteWorkbench
+          help_text:
+            brief: Deletes a single Workbench instance
+            description:
+              | # Provide Addtional Content and context for the command here.
+              Deletes a single Workbench instance.
+
+              delete <WORKBENCH_ID> --location=<LOCATION>
+            examples:
+              - |-
+                To delete a workbench instance `my-workbench` run:
+
+                $ {command} my-workbench --location=us-central1
+        - selector: google.cloud.seclm.v1.SecLM.WorkbenchQuery
+          help_text:
+            brief: Runs a query against a single Workbench instance
+            description:
+              | # Provide Addtional Content and context for the command here.
+              Runs a query against a single Workbench instance.
+
+              If run asynchronously with --async, exits after printing an operation that can
+              be used to poll the status of the creation operation.
+
+              query <WORKBENCH_ID> --location=<LOCATION> --query=<QUERY> [--async] [--labels]
+            examples:
+              - |-
+                To query workbench `my-workbench` run:
+
+                $ {command} my-workbench --location=us-central1 --query="What is lateral movement?"
+    output_formatting:
+      - selector: google.cloud.seclm.v1.SecLM.ListWorkbenches
+        format: |-
+          table(name,
+                createTime,
+                updateTime,
+                labels.join(","))
+  - name: Operations
+    api_version: v1
+    root_is_hidden: true
+    release_tracks:
+      - ALPHA
+    help_text:
+      method_rules:
+        - selector: google.longrunning.Operations.CancelOperation
+          help_text:
+            brief: Cancel an Operation
+            description: Cancel an Operation
+            examples:
+              - |-
+                To cancel the operation `myOperation`, run:
+
+                $ {command} myOperation
+        - selector: google.longrunning.Operations.DeleteOperation
+          help_text:
+            brief: Delete an Operation
+            description: Delete an Operation
+            examples:
+              - |-
+                To delete the operation `myOperation`, run:
+
+                $ {command} myOperation
+        - selector: google.longrunning.Operations.ListOperations
+          help_text:
+            brief: List all Operations
+            description: List all Operations
+            examples:
+              - |-
+                To list all the operations in all valid locations, run:
+
+                $ {command} myOperation --location=-
+        - selector: google.longrunning.Operations.GetOperation
+          help_text:
+            brief: Describe an Operation
+            description: Describe an Operation
+            examples:
+              - |-
+                To describe the operation `myOperation`, run:
+
+                $ {command} myOperation
+        - selector: google.longrunning.Operations.WaitOperation
+          help_text:
+            brief: Wait for an Operation to complete
+            description: Wait for an Operation to complete
+            examples:
+              - |-
+                To wait for the operation `myOperation` to complete, run:
+
+                $ {command} myOperation
