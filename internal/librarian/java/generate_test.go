@@ -37,7 +37,6 @@ func TestResolveGAPICOptions(t *testing.T) {
 		javaAPI   *config.JavaAPI
 		transport string
 		expected  []string
-		wantErr   bool
 	}{
 		{
 			name:      "basic case",
@@ -81,10 +80,9 @@ func TestResolveGAPICOptions(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.transport)
-			if (err != nil) != test.wantErr {
+			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
