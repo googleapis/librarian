@@ -141,7 +141,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
-					TagFormat:    defaultTagFormat,
+					TagFormat:    pythonTagFormat,
 					Python: &config.PythonDefault{
 						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
 						LibraryType:      pythonDefaultLibraryType,
@@ -180,7 +180,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
-					TagFormat:    defaultTagFormat,
+					TagFormat:    pythonTagFormat,
 					Python: &config.PythonDefault{
 						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
 						LibraryType:      pythonDefaultLibraryType,

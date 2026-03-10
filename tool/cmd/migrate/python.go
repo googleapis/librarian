@@ -60,7 +60,10 @@ var pythonDefaultCommonGAPICPaths = []string{
 	"docs/summary_overview.md",
 }
 
-const pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
+const (
+	pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
+	pythonTagFormat          = "{name}: v{version}"
+)
 
 // pythonGapicInfo contains information about the py_gapic_library target
 // from BUILD.bazel.
