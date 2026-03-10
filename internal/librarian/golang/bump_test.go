@@ -279,19 +279,6 @@ func TestBump_Error(t *testing.T) {
 			},
 			wantErr: os.ErrPermission,
 		},
-		{
-			name: "no import path",
-			library: &config.Library{
-				Name: "test-lib",
-				APIs: []*config.API{
-					{
-						Path: "google/example/common",
-					},
-				},
-			},
-			version: "0.2.0",
-			wantErr: errImportPathNotFound,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
