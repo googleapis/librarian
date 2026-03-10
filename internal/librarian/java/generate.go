@@ -111,13 +111,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	apiCfgs, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
 		return fmt.Errorf("failed to find api config: %w", err)
 	}
 	transport := serviceconfig.GRPCRest
-	if apiCfgs != nil {
-		transport = apiCfgs.Transport(config.LanguageJava)
+	if apiCfg != nil {
+		transport = apiCfg.Transport(config.LanguageJava)
 	}
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
@@ -125,7 +125,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfgs)
+	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve gapic options: %w", err)
 	}
