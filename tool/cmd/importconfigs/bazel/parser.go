@@ -139,6 +139,32 @@ func ParseTransports(path string) (map[string]string, error) {
 	return transports, nil
 }
 
+// ParseRESTNumericEnums reads a BUILD.bazel file and extracts rest_numeric_enums configuration
+// for all recognized language GAPIC rules.
+func ParseRESTNumericEnums(path string) (map[string]bool, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
+	}
+
+	numericEnums := make(map[string]bool)
+	for ruleName, lang := range ruleToLang {
+		for _, rule := range file.Rules(ruleName) {
+			switch rule.AttrLiteral("rest_numeric_enums") {
+			case "True":
+				numericEnums[lang] = true
+			case "False":
+				numericEnums[lang] = false
+			}
+		}
+	}
+	return numericEnums, nil
+}
+
 var ruleToLang = map[string]string{
 	"csharp_gapic_library":     "csharp",
 	"go_gapic_library":         "go",

@@ -87,6 +87,13 @@ type API struct {
 	// Title overrides the API title from the service config.
 	Title string `yaml:"title,omitempty"`
 
+	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
+	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
+	// to generate numeric enums.
+	// Map key is the language name (e.g., "python", "rust").
+	// Optional. If omitted, the generator default is used.
+	NoRESTNumericEnums map[string]bool `yaml:"no_rest_numeric_enums,omitempty"`
+
 	// Transports defines the supported transports per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
