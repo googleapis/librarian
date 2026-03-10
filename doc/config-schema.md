@@ -60,7 +60,6 @@ This document describes the schema for the librarian.yaml.
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `release_level` | string | Is either "stable" or "preview". |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
-| `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
@@ -83,7 +82,6 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |

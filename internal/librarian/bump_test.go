@@ -1349,11 +1349,15 @@ func writeReadmeAndCommit(t *testing.T, newContent string) {
 }
 
 func writeConfigAndCommit(t *testing.T, cfg *config.Config) {
+	writeConfigAndCommitWithMessage(t, cfg, "Modified config")
+}
+
+func writeConfigAndCommitWithMessage(t *testing.T, cfg *config.Config, message string) {
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFileAndCommit(t, librarianConfigPath, data, "Modified config")
+	writeFileAndCommit(t, librarianConfigPath, data, message)
 }
 
 func writeFileAndCommit(t *testing.T, path string, content []byte, message string) {

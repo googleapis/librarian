@@ -277,13 +277,33 @@ func TestTidy_DerivableFields(t *testing.T) {
 			wantNumLibs:  1,
 			wantNumChnls: 0,
 		},
+		{
+			name: "do not derive api path for Python library",
+			config: &config.Config{
+				Language: config.LanguagePython,
+				Sources:  googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-shopping-type",
+						APIs: []*config.API{
+							{
+								Path: "google/shopping/type",
+							},
+						},
+					},
+				},
+			},
+			wantPath:     "google/shopping/type",
+			wantNumLibs:  1,
+			wantNumChnls: 1,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
-			RunTidyOnConfig(t.Context(), test.config)
-
+			if err := RunTidyOnConfig(t.Context(), test.config); err != nil {
+				t.Fatal(err)
+			}
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)

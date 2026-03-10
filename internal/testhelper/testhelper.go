@@ -297,3 +297,10 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	}
 	configNewGitRepository(t)
 }
+
+// RunGit runs git with the specified arguments, aborting the test on any error.
+func RunGit(t *testing.T, args ...string) {
+	if err := command.Run(t.Context(), "git", args...); err != nil {
+		t.Fatal(err)
+	}
+}

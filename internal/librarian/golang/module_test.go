@@ -178,6 +178,16 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "no API",
+			library: &config.Library{
+				Name: "auth",
+			},
+			want: &config.Library{
+				Name: "auth",
+				Go:   &config.GoModule{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)

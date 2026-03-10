@@ -265,8 +265,16 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 			opts = append(opts, apiOptArgs...)
 		}
 	}
+	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePython)
+	if err != nil {
+		return nil, err
+	}
+	transport := serviceconfig.GRPCRest
+	if apiMetadata != nil {
+		transport = apiMetadata.Transport(config.LanguagePython)
+	}
 	restNumericEnums := true
-	addTransport := library.Transport != ""
+	addTransport := transport != serviceconfig.GRPCRest
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, "rest-numeric-enums") {
 			restNumericEnums = false
@@ -283,7 +291,7 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 
 	// Add transport option, if we haven't already got it.
 	if addTransport {
-		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
+		opts = append(opts, fmt.Sprintf("transport=%s", transport))
 	}
 
 	// Add gapic-version from library version
@@ -305,10 +313,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 
-	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePython)
-	if err != nil {
-		return nil, err
-	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
 		opts = append(opts, fmt.Sprintf("service-yaml=%s", apiMetadata.ServiceConfig))
 	}

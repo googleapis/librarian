@@ -46,13 +46,13 @@ func TestGetTransport(t *testing.T) {
 		name string
 		sc   *API
 		lang string
-		want string
+		want Transport
 	}{
 		{
 			name: "empty serviceconfig",
 			sc:   &API{},
 			lang: config.LanguageGo,
-			want: "grpc+rest",
+			want: GRPCRest,
 		},
 		{
 			name: "go specific transport",
@@ -62,7 +62,7 @@ func TestGetTransport(t *testing.T) {
 				},
 			},
 			lang: config.LanguageGo,
-			want: "grpc",
+			want: GRPC,
 		},
 		{
 			name: "other language transport",
@@ -72,7 +72,7 @@ func TestGetTransport(t *testing.T) {
 				},
 			},
 			lang: config.LanguagePython,
-			want: "grpc+rest",
+			want: GRPCRest,
 		},
 		{
 			name: "all language transport",
@@ -82,7 +82,7 @@ func TestGetTransport(t *testing.T) {
 				},
 			},
 			lang: config.LanguageGo,
-			want: "grpc",
+			want: GRPC,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

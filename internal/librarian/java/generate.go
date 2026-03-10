@@ -111,9 +111,13 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	transport := library.Transport
-	if transport == "" {
-		transport = "grpc+rest" // Default to grpc+rest
+	apiCfgs, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		return fmt.Errorf("failed to find api config: %w", err)
+	}
+	transport := serviceconfig.GRPCRest
+	if apiCfgs != nil {
+		transport = apiCfgs.Transport(config.LanguageJava)
 	}
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
@@ -121,7 +125,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, transport)
+	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfgs)
 	if err != nil {
 		return fmt.Errorf("failed to resolve gapic options: %w", err)
 	}
@@ -173,19 +177,14 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicD
 	return args
 }
 
-func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir, transport string) ([]string, error) {
+func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
-
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-	if apiCfg != nil && apiCfg.ServiceConfig != "" {
+	if apiCfgs != nil && apiCfgs.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
-		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfgs.ServiceConfig)))
 	}
 
 	grpcServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
@@ -196,8 +195,13 @@ func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
 		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, grpcServiceConfig)))
 	}
+
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
-	gapicOpts = append(gapicOpts, gapicOpt("transport", transport))
+	transport := serviceconfig.GRPCRest
+	if apiCfgs != nil {
+		transport = apiCfgs.Transport(config.LanguageJava)
+	}
+	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.

@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
@@ -155,22 +156,26 @@ func LoadSources(ctx context.Context, cfg *config.Config) (string, *sidekickconf
 func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
-		case config.LanguageFake:
-			// No cleaning needed.
 		case config.LanguageDart:
 			if err := checkAndClean(library.Output, library.Keep); err != nil {
+				return err
+			}
+		case config.LanguageFake:
+			// No cleaning needed.
+		case config.LanguageGo:
+			if err := golang.Clean(library); err != nil {
 				return err
 			}
 		case config.LanguageJava:
 			if err := java.Clean(library); err != nil {
 				return err
 			}
-		case config.LanguagePython:
-			if err := python.Clean(library); err != nil {
+		case config.LanguageNodejs:
+			if err := checkAndClean(library.Output, library.Keep); err != nil {
 				return err
 			}
-		case config.LanguageGo:
-			if err := golang.Clean(library); err != nil {
+		case config.LanguagePython:
+			if err := python.Clean(library); err != nil {
 				return err
 			}
 		case config.LanguageRust:
@@ -190,16 +195,18 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // given libraries.
 func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, googleapisDir string, src *sidekickconfig.Sources) error {
 	switch cfg.Language {
-	case config.LanguageFake:
-		return fakeGenerateLibraries(libraries)
 	case config.LanguageDart:
 		return dart.Generate(ctx, libraries, src)
-	case config.LanguagePython:
-		return python.Generate(ctx, cfg, libraries, googleapisDir)
+	case config.LanguageFake:
+		return fakeGenerateLibraries(libraries)
 	case config.LanguageGo:
 		return golang.Generate(ctx, libraries, googleapisDir)
 	case config.LanguageJava:
 		return java.Generate(ctx, libraries, googleapisDir)
+	case config.LanguageNodejs:
+		return nodejs.Generate(ctx, libraries, googleapisDir)
+	case config.LanguagePython:
+		return python.Generate(ctx, cfg, libraries, googleapisDir)
 	case config.LanguageRust:
 		return rust.Generate(ctx, cfg, libraries, src)
 	default:
@@ -212,28 +219,32 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 func formatLibraries(ctx context.Context, language string, libraries []*config.Library) error {
 	for _, library := range libraries {
 		switch language {
-		case config.LanguageFake:
-			if err := fakeFormat(library); err != nil {
-				return err
-			}
 		case config.LanguageDart:
 			if err := dart.Format(ctx, library); err != nil {
+				return err
+			}
+		case config.LanguageFake:
+			if err := fakeFormat(library); err != nil {
 				return err
 			}
 		case config.LanguageGo:
 			if err := golang.Format(ctx, library); err != nil {
 				return err
 			}
-		case config.LanguageRust:
-			if err := rust.Format(ctx, library); err != nil {
+		case config.LanguageJava:
+			if err := java.Format(ctx, library); err != nil {
+				return err
+			}
+		case config.LanguageNodejs:
+			if err := nodejs.Format(ctx, library); err != nil {
 				return err
 			}
 		case config.LanguagePython:
 			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 			// generation and formatting for Python.
 			return nil
-		case config.LanguageJava:
-			if err := java.Format(ctx, library); err != nil {
+		case config.LanguageRust:
+			if err := rust.Format(ctx, library); err != nil {
 				return err
 			}
 		default:
@@ -247,10 +258,10 @@ func formatLibraries(ctx context.Context, language string, libraries []*config.L
 // libraries have been generated.
 func postGenerate(ctx context.Context, language string) error {
 	switch language {
-	case config.LanguageRust:
-		return rust.UpdateWorkspace(ctx)
 	case config.LanguageFake:
 		return fakePostGenerate()
+	case config.LanguageRust:
+		return rust.UpdateWorkspace(ctx)
 	default:
 		return nil
 	}
@@ -260,10 +271,12 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
-	case config.LanguageRust:
-		return rust.DefaultOutput(api, defaultOut)
+	case config.LanguageNodejs:
+		return nodejs.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
 		return python.DefaultOutput(name, defaultOut)
+	case config.LanguageRust:
+		return rust.DefaultOutput(api, defaultOut)
 	default:
 		return defaultOut
 	}

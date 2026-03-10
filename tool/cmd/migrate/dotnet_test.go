@@ -154,9 +154,8 @@ func TestBuildDotnetConfig(t *testing.T) {
 			},
 			want: wantConfig([]*config.Library{
 				{
-					Name:      "Google.Cloud.Compute.V1",
-					Version:   "3.0.0",
-					Transport: "rest",
+					Name:    "Google.Cloud.Compute.V1",
+					Version: "3.0.0",
 					APIs: []*config.API{
 						{Path: "google/cloud/compute/v1"},
 					},

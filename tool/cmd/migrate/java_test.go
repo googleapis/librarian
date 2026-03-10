@@ -230,7 +230,6 @@ func TestBuildConfig(t *testing.T) {
 						Name:         "pubsub",
 						Output:       "java-pubsub",
 						ReleaseLevel: "stable",
-						Transport:    "grpc",
 						APIs: []*config.API{
 							{Path: "google/pubsub/v1"},
 						},

@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -35,43 +36,48 @@ func TestResolveGAPICOptions(t *testing.T) {
 		name      string
 		api       *config.API
 		javaAPI   *config.JavaAPI
+		apiCfgs   *serviceconfig.API
 		transport string
 		expected  []string
 	}{
 		{
-			name:      "basic case",
-			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
-			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
-			transport: "grpc+rest",
+			name:    "basic case",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPCRest,
+			}},
 			expected: []string{
 				"metadata",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
 			},
 		},
 		{
-			name:      "rest transport",
-			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
-			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
-			transport: "rest",
+			name:    "rest transport",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.Rest,
+			}},
 			expected: []string{
 				"metadata",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
 				"rest-numeric-enums",
 			},
 		},
 		{
-			name:      "no rest numeric enum case",
-			api:       &config.API{Path: "google/cloud/secretmanager/v1"},
-			javaAPI:   &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
-			transport: "grpc+rest",
-			expected: []string{
+			name:    "no rest numeric enum case",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
+
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPCRest,
+			}}, expected: []string{
 				"metadata",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 			},
@@ -79,7 +85,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.transport)
+			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.apiCfgs)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -125,7 +131,10 @@ func TestResolveGAPICOptions_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, tmpDir)
 			}
-			_, err := resolveGAPICOptions(&config.API{Path: test.apiPath}, &config.JavaAPI{Path: test.apiPath}, tmpDir, "grpc")
+			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPC,
+			}}
+			_, err := resolveGAPICOptions(&config.API{Path: test.apiPath}, &config.JavaAPI{Path: test.apiPath}, tmpDir, apiCfgs)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, test.wantErr)
 			}

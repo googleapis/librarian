@@ -33,7 +33,7 @@ func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 			Sources: sidekickconfig.Sources{
 				Googleapis: googleapisPath,
 			},
-			ActiveRoots: []string{"local"},
+			ActiveRoots: []string{"googleapis"},
 			IncludeList: []string{includeList},
 		},
 	}

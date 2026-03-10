@@ -97,15 +97,15 @@ type API struct {
 //
 // If language-specific transport is not defined, it falls back to the "all" language setting,
 // and then to GRPCRest.
-func (api *API) Transport(language string) string {
+func (api *API) Transport(language string) Transport {
 	if trans, ok := api.Transports[language]; ok {
-		return string(trans)
+		return trans
 	}
 	if trans, ok := api.Transports[config.LanguageAll]; ok {
-		return string(trans)
+		return trans
 	}
 
-	return string(GRPCRest)
+	return GRPCRest
 }
 
 var (
