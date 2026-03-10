@@ -74,13 +74,13 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 		noRestNumericEnums := readRestNumericEnums(googleapisDir, path)
 		if len(noRestNumericEnums) == 0 {
 			if index != -1 {
-				// Remove the NoRestNumericEnums field if it exists and is now the default.
+				// Remove the NoRESTNumericEnums field if it exists and is now the default.
 				apiLit.Elts = append(apiLit.Elts[:index], apiLit.Elts[index+1:]...)
 			}
 			continue
 		}
 		restKV := &ast.KeyValueExpr{
-			Key:   ast.NewIdent("NoRestNumericEnums"),
+			Key:   ast.NewIdent("NoRESTNumericEnums"),
 			Value: createRestNumericEnumsExpr(noRestNumericEnums),
 		}
 		if index != -1 {
@@ -166,10 +166,7 @@ func simplifyRestNumericEnums(restNumericEnums map[string]bool) map[string]bool 
 
 func removeDefaults(restNumericEnums map[string]bool) map[string]bool {
 	maps.DeleteFunc(restNumericEnums, func(k string, v bool) bool {
-		if !v {
-			return true
-		}
-		return false
+		return !v
 	})
 	return restNumericEnums
 }
