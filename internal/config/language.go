@@ -243,8 +243,8 @@ type RustCrate struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
 
-	// ResourceName indicates whether to apply heuristics to identify and generate resource names.
-	ResourceName bool `yaml:"resource_name,omitempty"`
+	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
+	ResourceNameHeuristic bool `yaml:"resource_name_heuristic,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`

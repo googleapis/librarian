@@ -62,7 +62,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *side
 			Description: library.DescriptionOverride,
 			Title:       svcConfig.Title,
 		},
-		ResourceName: library.Rust != nil && library.Rust.ResourceName,
+		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic,
 	}
 
 	if library.Rust != nil {
@@ -262,7 +262,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 			IncludedIDs: module.IncludedIds,
 			SkippedIDs:  module.SkippedIds,
 		},
-		ResourceName: library.Rust != nil && library.Rust.ResourceName,
+		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic,
 	}
 	if len(module.DocumentationOverrides) > 0 {
 		modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(module.DocumentationOverrides))
