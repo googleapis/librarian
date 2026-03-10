@@ -79,9 +79,6 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 }
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
-	if !IsHeuristicEligible(method.Service.ID) {
-		return nil, nil
-	}
 
 	tmpl := binding.PathTemplate
 	if tmpl == nil {
@@ -245,6 +242,9 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 	for _, seg := range segments {
 		if seg.Literal != nil {
 			l := *seg.Literal
+			if isVersionString(l) {
+				continue
+			}
 			result = append(result, PathSegment{Literal: &l})
 		} else if seg.Variable != nil {
 			result = append(result, PathSegment{Variable: &PathVariable{

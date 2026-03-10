@@ -142,6 +142,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		}
 		cfg.Default.Output = "packages"
 		cfg.Default.ReleaseLevel = "stable"
+		cfg.Default.TagFormat = pythonTagFormat
 	} else {
 		input.googleapisDir = src.Dir
 		cfg.Default.Output = "."
