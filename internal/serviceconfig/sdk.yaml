@@ -92,13 +92,6 @@
     - python
     - rust
   path: google/api/cloudquotas/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -154,8 +147,6 @@
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/apps/card/v1
-  transports:
-    python: grpc+rest
 - languages:
     - go
     - nodejs
@@ -262,8 +253,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - go
@@ -292,13 +281,9 @@
     - rust
   path: google/cloud/aiplatform/v1
   transports:
-    csharp: grpc+rest
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - python
@@ -339,32 +324,20 @@
   path: google/cloud/aiplatform/v1beta1
   service_config: google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml
   transports:
-    csharp: grpc+rest
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - python
     - rust
   path: google/cloud/alloydb/connectors/v1
-  transports:
-    python: grpc+rest
 - languages:
     - go
     - python
   path: google/cloud/alloydb/connectors/v1alpha
-  transports:
-    python: grpc+rest
 - languages:
     - go
     - python
   path: google/cloud/alloydb/connectors/v1beta
-  transports:
-    python: grpc+rest
 - languages:
     - go
     - nodejs
@@ -396,13 +369,8 @@
     - rust
   path: google/cloud/apigeeconnect/v1
   transports:
-    csharp: grpc+rest
     go: ""
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/apigee/docs/api-hub/get-started-registry-api
   languages:
     - go
@@ -410,13 +378,7 @@
     - python
   path: google/cloud/apigeeregistry/v1
   transports:
-    csharp: grpc+rest
     go: ""
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -429,7 +391,6 @@
     java: rest
     nodejs: rest
     php: rest
-    python: grpc+rest
     ruby: rest
 - languages:
     - go
@@ -474,12 +435,6 @@
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
   path: google/cloud/asset/v1p5beta1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
     - go
@@ -551,9 +506,6 @@
     csharp: grpc
     go: ""
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
@@ -566,9 +518,6 @@
     csharp: grpc
     go: ""
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
@@ -581,9 +530,6 @@
     csharp: grpc
     go: ""
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
@@ -596,9 +542,6 @@
     csharp: grpc
     go: ""
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
@@ -611,9 +554,6 @@
     csharp: grpc
     go: ""
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - go
@@ -628,33 +568,15 @@
     - rust
   path: google/cloud/bigquery/analyticshub/v1
   transports:
-    csharp: grpc+rest
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - python
   path: google/cloud/bigquery/biglake/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - languages:
     - go
     - python
   path: google/cloud/bigquery/biglake/v1alpha1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
   languages:
     - go
@@ -669,10 +591,6 @@
     - python
   path: google/cloud/bigquery/dataexchange/v1beta1
   transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
 - documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
   languages:
@@ -688,10 +606,6 @@
     - python
   path: google/cloud/bigquery/datapolicies/v1beta1
   transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
 - languages:
     - go
@@ -728,13 +642,9 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   path: google/cloud/bigquery/migration/v2
   transports:
-    csharp: grpc+rest
     go: grpc
-    java: grpc+rest
     nodejs: grpc
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
   languages:
     - go
@@ -743,10 +653,6 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   path: google/cloud/bigquery/migration/v2alpha
   transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
 - documentation_uri: https://cloud.google.com/bigquery/docs/reference/reservations
   languages:
@@ -763,7 +669,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
 - languages:
     - go
@@ -782,10 +687,7 @@
     - python
   path: google/cloud/bigquery/storage/v1beta2
   transports:
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
 - languages:
     - go
@@ -793,8 +695,6 @@
     - rust
   path: google/cloud/bigquery/v2
   transports:
-    go: grpc+rest
-    nodejs: grpc+rest
     python: rest
 - documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
   languages:
@@ -812,10 +712,7 @@
   path: google/cloud/billing/budgets/v1beta1
   transports:
     csharp: grpc
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/billing
@@ -856,13 +753,7 @@
     - python
   path: google/cloud/channel/v1
   transports:
-    csharp: grpc+rest
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -892,7 +783,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - languages:
@@ -954,13 +844,6 @@
     - python
     - rust
   path: google/cloud/config/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - python
@@ -1010,25 +893,14 @@
     - rust
   path: google/cloud/datacatalog/v1
   transports:
-    csharp: grpc+rest
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
     - python
   path: google/cloud/datacatalog/v1beta1
   transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -1055,10 +927,7 @@
   path: google/cloud/datalabeling/v1beta1
   transports:
     csharp: grpc
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - languages:
@@ -1081,12 +950,6 @@
     - nodejs
     - python
   path: google/cloud/dataqna/v1alpha
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
@@ -1167,6 +1030,9 @@
     - python
     - rust
   path: google/cloud/dns/v1
+  service_name: dns.googleapis.com
+  short_name: dns
+  title: Cloud DNS
 - languages:
     - go
     - nodejs
@@ -1209,11 +1075,6 @@
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/cloud/enterpriseknowledgegraph/v1
-  transports:
-    csharp: grpc+rest
-    java: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/resource-manager/docs/managing-notification-contacts/
   languages:
     - go
@@ -1325,8 +1186,6 @@
     - rust
   path: google/cloud/gkehub/v1/rbacrolebindingactuation
   title: GKE Hub Types
-  transports:
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/anthos/gke/docs/
   languages:
     - go
@@ -1340,13 +1199,8 @@
     - rust
   path: google/cloud/gkemulticloud/v1
   transports:
-    csharp: grpc+rest
     go: grpc
-    java: grpc+rest
     nodejs: grpc
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - python
@@ -1383,13 +1237,6 @@
     - python
     - rust
   path: google/cloud/kms/inventory/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/kms
   languages:
     - go
@@ -1419,13 +1266,6 @@
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
   path: google/cloud/language/v2
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -1446,8 +1286,6 @@
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/cloud/location
-  transports:
-    ruby: grpc+rest
 - languages:
     - go
     - python
@@ -1482,7 +1320,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - languages:
@@ -1491,12 +1328,6 @@
     - python
     - rust
   path: google/cloud/managedkafka/schemaregistry/v1
-  transports:
-    go: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -1514,7 +1345,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
@@ -1570,13 +1400,6 @@
     - python
     - rust
   path: google/cloud/migrationcenter/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -1606,7 +1429,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/network-connectivity/
@@ -1617,10 +1439,7 @@
   path: google/cloud/networkconnectivity/v1alpha1
   transports:
     csharp: grpc
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/network-connectivity/
@@ -1649,9 +1468,6 @@
   transports:
     csharp: grpc
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - nodejs
@@ -1676,13 +1492,10 @@
     - python
   path: google/cloud/notebooks/v1
   transports:
-    csharp: grpc+rest
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/ai-platform/notebooks/
   languages:
     - go
@@ -1691,11 +1504,7 @@
   path: google/cloud/notebooks/v1beta1
   transports:
     csharp: grpc
-    go: grpc+rest
     java: grpc
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - go
@@ -1703,13 +1512,6 @@
     - python
     - rust
   path: google/cloud/notebooks/v2
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/optimization/docs
   languages:
     - go
@@ -1812,13 +1614,6 @@
     - python
     - rust
   path: google/cloud/policytroubleshooter/iam/v3
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -1851,13 +1646,6 @@
     - python
     - rust
   path: google/cloud/rapidmigrationassessment/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/recaptcha-enterprise
   languages:
     - go
@@ -1870,7 +1658,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/recommendations-ai/
@@ -2109,10 +1896,7 @@
     - rust
   path: google/cloud/sql/v1
   transports:
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -2131,12 +1915,6 @@
     - python
     - rust
   path: google/cloud/support/v2
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - languages:
     - go
     - nodejs
@@ -2185,24 +1963,10 @@
     - python
     - rust
   path: google/cloud/telcoautomation/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - nodejs
     - python
   path: google/cloud/telcoautomation/v1alpha1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/text-to-speech
   languages:
     - go
@@ -2222,13 +1986,6 @@
     - python
     - rust
   path: google/cloud/timeseriesinsights/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/tpu/
   languages:
     - go
@@ -2240,7 +1997,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/tpu/
@@ -2260,7 +2016,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/translate/docs/
@@ -2300,8 +2055,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - documentation_uri: https://cloud.google.com/transcoder
   languages:
@@ -2345,13 +2098,7 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
   path: google/cloud/videointelligence/v1p3beta1
   transports:
-    csharp: grpc+rest
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - go
@@ -2463,11 +2210,8 @@
   path: google/cloud/workflows/executions/v1
   transports:
     go: grpc
-    java: grpc+rest
     nodejs: grpc
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/workflows/
   languages:
     - go
@@ -2476,10 +2220,6 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   path: google/cloud/workflows/executions/v1beta
   transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
     python: grpc
 - documentation_uri: https://cloud.google.com/workflows/
   languages:
@@ -2500,13 +2240,6 @@
     - python
     - rust
   path: google/cloud/workstations/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -2531,7 +2264,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/dataflow/
@@ -2578,12 +2310,6 @@
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
   path: google/devtools/cloudbuild/v2
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://cloud.google.com/error-reporting
   languages:
     - go
@@ -2620,12 +2346,6 @@
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559777
   path: google/devtools/containeranalysis/v1
-  transports:
-    csharp: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - languages:
     - go
     - nodejs
@@ -2667,7 +2387,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/iam/docs/
@@ -2686,9 +2405,6 @@
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
   path: google/iam/v1
-  transports:
-    go: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://cloud.google.com/iam/docs/audit-logging
   languages:
     - python
@@ -2714,13 +2430,9 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
   path: google/iam/v2beta
   transports:
-    csharp: grpc+rest
     go: grpc
-    java: grpc+rest
     nodejs: grpc
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - go
     - nodejs
@@ -2748,13 +2460,6 @@
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   path: google/identity/accesscontextmanager/v1
-  transports:
-    csharp: grpc+rest
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    ruby: grpc+rest
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
@@ -2772,10 +2477,8 @@
   path: google/logging/v2
   transports:
     csharp: grpc
-    go: grpc+rest
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - languages:
@@ -2784,9 +2487,6 @@
     - python
     - rust
   path: google/longrunning
-  transports:
-    go: grpc+rest
-    php: grpc+rest
 - documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
   languages:
     - go
@@ -2796,11 +2496,6 @@
   path: google/maps/addressvalidation/v1
   transports:
     csharp: grpc
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - go
@@ -2818,13 +2513,10 @@
     - python
   path: google/maps/fleetengine/v1
   transports:
-    csharp: grpc+rest
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
-    ruby: grpc+rest
 - languages:
     - nodejs
     - python
@@ -2875,7 +2567,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/monitoring/docs
@@ -2891,7 +2582,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
     ruby: grpc
 - documentation_uri: https://cloud.google.com/dlp/docs/
@@ -2910,12 +2600,6 @@
     - python
     - rust
   path: google/pubsub/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
@@ -3077,8 +2761,6 @@
     - go
     - python
   path: google/shopping/type
-  transports:
-    python: grpc+rest
 - languages:
     - go
   path: google/spanner/adapter/v1
@@ -3100,12 +2782,6 @@
     - python
     - rust
   path: google/spanner/v1
-  transports:
-    go: grpc+rest
-    java: grpc+rest
-    nodejs: grpc+rest
-    php: grpc+rest
-    python: grpc+rest
 - languages:
     - go
     - nodejs
@@ -3121,7 +2797,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
     python: grpc
 - documentation_uri: https://cloud.google.com/storage-transfer/
   languages:
@@ -3154,8 +2829,6 @@
     go: grpc
     java: grpc
     nodejs: grpc
-    php: grpc+rest
-    python: grpc+rest
     ruby: grpc
 - languages:
     - dart

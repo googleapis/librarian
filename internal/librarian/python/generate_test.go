@@ -85,18 +85,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name:      "google-cloud-secret-manager",
-				Transport: "grpc",
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "with python opts by api",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -171,7 +159,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "transport overridden in OptOptArgsByAPIArgs",
+			name: "transport specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
@@ -180,7 +168,6 @@ func TestCreateProtocOptions(t *testing.T) {
 						"google/cloud/secretmanager/v1": {"transport=rest"},
 					},
 				},
-				Transport: "grpc",
 			},
 			expected: []string{
 				"--python_gapic_out=staging",

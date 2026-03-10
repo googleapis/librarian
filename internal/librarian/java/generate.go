@@ -91,7 +91,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	protocOptions, err := createProtocOptions(api, javaAPI, library, googleapisDir, p.protoDir, p.grpcDir, p.gapicDir)
+	protocOptions, err := createProtocOptions(api, javaAPI, googleapisDir, p.protoDir, p.grpcDir, p.gapicDir)
 	if err != nil {
 		return fmt.Errorf("failed to create protoc options: %w", err)
 	}
@@ -136,28 +136,28 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	return args, apiProtos, nil
 }
 
-func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *config.Library, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
+func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
 	args := []string{
 		// --java_out generates standard Protocol Buffer Java classes.
 		fmt.Sprintf("--java_out=%s", protoDir),
 	}
-	transport := library.Transport
-	if transport == "" {
-		transport = "grpc+rest" // Default to grpc+rest
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find api config: %w", err)
+	}
+
+	transport := serviceconfig.GRPCRest
+	if apiCfg != nil {
+		transport = apiCfg.Transport(config.LanguageJava)
 	}
 	// --java_grpc_out generates the gRPC service stubs.
 	// This is omitted if the transport is purely REST-based.
-	if transport != "rest" {
+	if transport != serviceconfig.Rest {
 		args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
 	}
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
-
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
 	if apiCfg != nil && apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
@@ -173,7 +173,7 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, library *conf
 		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, grpcServiceConfig)))
 	}
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
-	gapicOpts = append(gapicOpts, gapicOpt("transport", transport))
+	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.

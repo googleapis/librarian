@@ -35,14 +35,12 @@ func TestCreateProtocOptions(t *testing.T) {
 		name     string
 		api      *config.API
 		javaAPI  *config.JavaAPI
-		library  *config.Library
 		expected []string
 		wantErr  bool
 	}{
 		{
-			name:    "basic case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
+			name: "basic case",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			javaAPI: &config.JavaAPI{
 				Path: "google/cloud/secretmanager/v1",
 			},
@@ -54,24 +52,8 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "rest transport",
+			name: "no rest numeric enum case",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Transport: "rest",
-			},
-			javaAPI: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			expected: []string{
-				"--java_out=proto-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=rest,rest-numeric-enums",
-			},
-		},
-		{
-			name:    "no rest numeric enum case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
 			javaAPI: &config.JavaAPI{
 				Path:               "google/cloud/secretmanager/v1",
 				NoRestNumericEnums: true,
@@ -86,7 +68,7 @@ func TestCreateProtocOptions(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := createProtocOptions(test.api, test.javaAPI, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
+			got, err := createProtocOptions(test.api, test.javaAPI, googleapisDir, "proto-out", "grpc-out", "gapic-out")
 			if (err != nil) != test.wantErr {
 				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
 			}

@@ -1,0 +1,135 @@
+## Copyright 2026 Google LLC
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+config_version: v2.0
+service_name: blockchainvalidatormanager.googleapis.com
+regional_endpoint_compatibility: NOT_SUPPORTED
+apis:
+  - name: BlockchainValidatorManager
+    api_version: v1
+    root_is_hidden: false
+    supports_star_update_masks: false
+    release_tracks:
+      - ALPHA
+    help_text:
+      service_rules:
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager
+          help_text:
+            brief: Manage blockchain validator configuration
+            description: |- # Provide addtional surface/service level details here.
+              Manage blockchain validator configurations.
+
+              Configurations can be deployed to blockchain nodes running under
+              Blockchain Node Engine.
+      message_rules:
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorConfig
+          help_text:
+            brief: Manage blockchain validator configurations
+            description: |- # Provide addtional surface/service level details here.
+              Manage blockchain validator configurations.
+      method_rules:
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.ListBlockchainValidatorConfigs
+          help_text:
+            brief: List blockchain validator configs
+            description: | # Provide Additional Content and context for the command here.
+              List blockchain validator configs.
+            examples: # Add More realistic examples here
+              - |-
+                To list all blockchain validators in the project `my-project` and location `us-central1` run:
+
+                $ {command} --location=us-central1 --project=my-project
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.GetBlockchainValidatorConfig
+          help_text:
+            brief: Get details of a single blockchain validator configuration
+            description: | # Provide Additional Content and context for the command here.
+              Get details of a single blockchain validator configuration.
+            examples: # Add More realistic examples here
+              - |-
+                To get the details of a single validator `my-validator` in the project `my-project` and
+                location `us-central1` run:
+
+                $ {command} my-validator --location=us-central1 --project=my-project
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.CreateBlockchainValidatorConfig
+          help_text:
+            brief: Create a blockchain validator configuration
+            description: | # Provide Additional Content and context for the command here.
+              Create a blockchain validator configuration on a blockchain node managed by Blockchain Node
+              Engine.
+            examples: # Add More realistic examples here
+              - |-
+                To create an Ethereum validator configuration `my-validator` in the project `my-project`
+                and location `us-central1`, using a new seed phrase which is exported to Secret Manager,
+                and deploy it to the blockchain node `my-node`, run:
+
+                $ {command} my-validator --location=us-central1 --project=my-project
+                  --validation-work-enabled=false
+                  --blockchain-type=ETHEREUM --key-source=SEED_PHRASE_REFERENCE
+                  --seed-phrase-reference-secret=projects/my-project/secrets/my-seed-phrase
+                  --seed-phrase-reference-export=true
+                  --blockchain-node-id=projects/my-project/locations/us-central1/blockchainNodes/my-node
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.UpdateBlockchainValidatorConfig
+          help_text:
+            brief: Update the configuration of a single blockchain validator
+            description: | # Provide Additional Content and context for the command here.
+              Update the configuration of a single blockchain validator.
+            examples: # Add More realistic examples here
+              - |-
+                To enable validation work on a previously disabled blockchain validator `my-validator` in
+                the project `my-project` and location `us-central1` run:
+
+                $ {command} my-validator --location=us-central1 --project=my-project \
+                  --validation-work-enabled=true
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.GenerateBlockchainValidatorConfigs
+          help_text:
+            brief: Generate one or more blockchain validator configurations
+            description: | # Provide Additional Content and context for the command here.
+              Generate one or more blockchain validator configurations, optionally with a new managed
+              blockchain node.
+            examples: # Add More realistic examples here
+              - |-
+                To create an Ethereum validator configuration `my-validator` in the project `my-project`
+                and location `us-central1`, using a new seed phrase which is exported to Secret Manager,
+                and deploy it to the blockchain node `my-node`, run:
+
+                $ {command} my-validator --location=us-central1 --project=my-project \
+                  --blockchain-validator-config-template-validation-work-enabled=false \
+                  --blockchain-validator-config-template-type=ETHEREUM \
+                  --blockchain-validator-config-template-key-source=SEED_PHRASE_REFERENCE \=
+                  --blockchain-validator-config-template-blockchain-node-source=USE_EXISTING_NODE \
+                  --seed-phrase-secret=projects/my-project/secrets/my-seed-phrase \
+                  --seed-phrase-reference-export=true \
+        - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.DeleteBlockchainValidatorConfig
+          help_text:
+            brief: Delete a single blockchain validator configuration
+            description: | # Provide Additional Content and context for the command here.
+              Delete a single blockchain validator configuration from a blockchain node.
+            examples: # Add More realistic examples here
+              - |-
+                To delete a blockchain validator configuration `my-validator` in
+                the project `my-project` and location `us-central1` run:
+
+                $ {command} my-validator --location=us-central1 --project=my-project
+    output_formatting:
+      - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.ListBlockchainValidatorConfigs
+        format: |-
+          table(name,
+                blockchainType:label=Network,
+                blockchainNodeId:label='Node ID',
+                validationWorkEnabled:label=Enabled,
+                createTime,
+                updateTime)
+  - name: Operations
+    api_version: v1
+    root_is_hidden: false
+    release_tracks:
+      - ALPHA

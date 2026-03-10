@@ -205,7 +205,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	// transport is library-wide for now, until we have figured out the config
 	// for transports.
 	if trans := transport(sc); trans != "" {
-		opts = append(opts, "transport="+trans)
+		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
 	level, err := releaseLevel(apiPath, library.Version)
 	if err != nil {
@@ -391,9 +391,9 @@ func releaseLevel(apiPath, version string) (string, error) {
 // transport get transport from serviceconfig.API for language Go.
 //
 // The default value is serviceconfig.GRPCRest.
-func transport(sc *serviceconfig.API) string {
+func transport(sc *serviceconfig.API) serviceconfig.Transport {
 	if sc != nil {
 		return sc.Transport(config.LanguageGo)
 	}
-	return string(serviceconfig.GRPCRest)
+	return serviceconfig.GRPCRest
 }

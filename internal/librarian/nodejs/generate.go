@@ -119,12 +119,12 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
-	transport := library.Transport
-	if transport == "" {
-		transport = "grpc+rest"
+	transport := serviceconfig.GRPCRest
+	if apiMetadata != nil {
+		transport = apiMetadata.Transport(config.LanguageNodejs)
 	}
-	if transport != "grpc+rest" {
-		args = append(args, "--transport", transport)
+	if transport != serviceconfig.GRPCRest {
+		args = append(args, "--transport", string(transport))
 	}
 
 	if library.Nodejs != nil {

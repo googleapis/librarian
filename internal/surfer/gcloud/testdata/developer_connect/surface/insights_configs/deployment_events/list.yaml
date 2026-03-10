@@ -1,0 +1,37 @@
+- release_tracks: [ALPHA]
+  help_text:
+    brief: List deploymentEvents
+    description: List deploymentEvents
+    examples: |-
+      To list all deploymentEvents, run:
+
+          $ {command}
+  arguments:
+    params:
+      - help_text: |-
+          The parent insights config that owns this collection of deployment events.
+          Format:
+          projects/{project}/locations/{location}/insightsConfigs/{insights_config}
+        is_positional: false
+        is_primary_resource: true
+        resource_spec:
+          name: insightsConfig
+          plural_name: insightsConfigs
+          collection: developerconnect.projects.locations.insightsConfigs
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: insightsConfigsId
+              attribute_name: insights_config
+              help: The insightsConfig id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+  request:
+    api_version: v1
+    collection:
+      - developerconnect.projects.locations.insightsConfigs.deploymentEvents

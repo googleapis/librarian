@@ -134,9 +134,6 @@ type Default struct {
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
-	Transport string `yaml:"transport,omitempty"`
-
 	// Language-specific fields are below.
 
 	// Dotnet contains .NET-specific default configuration.
@@ -200,10 +197,6 @@ type Library struct {
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
-
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
-	// overrides Default.Transport.
-	Transport string `yaml:"transport,omitempty"`
 
 	// Veneer indicates this library has handwritten code. A veneer may
 	// contain generated libraries.

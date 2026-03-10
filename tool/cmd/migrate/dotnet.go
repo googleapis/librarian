@@ -110,10 +110,6 @@ func buildDotnetConfig(apisJSON *DotnetAPIsJSON, src *config.Source) (*config.Co
 			}
 		}
 
-		if api.Transport != "" && api.Transport != "grpc+rest" {
-			lib.Transport = api.Transport
-		}
-
 		if isHandwritten {
 			lib.Veneer = true
 		}
