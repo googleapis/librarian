@@ -215,7 +215,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 		config                  *config.Config
 		wantPath                string
 		wantNumLibs             int
-		wantNumChnls            int
+		wantNumAPIs             int
 		wantSpecificationFormat string
 	}{
 		{
@@ -236,7 +236,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 			},
 			wantPath:                "",
 			wantNumLibs:             1,
-			wantNumChnls:            0,
+			wantNumAPIs:             0,
 			wantSpecificationFormat: "",
 		},
 		{
@@ -254,9 +254,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "src/generated/cloud/aiplatform/schema/predict/instance",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
+			wantPath:    "src/generated/cloud/aiplatform/schema/predict/instance",
+			wantNumLibs: 1,
+			wantNumAPIs: 1,
 		},
 		{
 			name: "api removed if only derivable path",
@@ -273,9 +273,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "",
-			wantNumLibs:  1,
-			wantNumChnls: 0,
+			wantPath:    "",
+			wantNumLibs: 1,
+			wantNumAPIs: 0,
 		},
 		{
 			name: "do not derive api path for Python library",
@@ -293,9 +293,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "google/shopping/type",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
+			wantPath:    "google/shopping/type",
+			wantNumLibs: 1,
+			wantNumAPIs: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -313,10 +313,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 				t.Fatalf("wrong number of libraries")
 			}
 			lib := cfg.Libraries[0]
-			if len(lib.APIs) != test.wantNumChnls {
+			if len(lib.APIs) != test.wantNumAPIs {
 				t.Fatalf("wrong number of apis")
 			}
-			if test.wantNumChnls > 0 {
+			if test.wantNumAPIs > 0 {
 				ch := lib.APIs[0]
 				if ch.Path != test.wantPath {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
