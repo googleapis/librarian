@@ -138,10 +138,10 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 		slog.Warn("failed to parse rest numeric enums", "path", buildPath, "error", err)
 		return nil
 	}
-	return simplifyRestNumericEnums(numericEnums)
+	return simplifyRESTNumericEnums(numericEnums)
 }
 
-func simplifyRestNumericEnums(restNumericEnums map[string]bool) map[string]bool {
+func simplifyRESTNumericEnums(restNumericEnums map[string]bool) map[string]bool {
 	var (
 		firstVal bool
 		firstSet bool

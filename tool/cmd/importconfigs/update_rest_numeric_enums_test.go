@@ -86,7 +86,7 @@ func TestSimplifyRestNumericEnums(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := simplifyRestNumericEnums(test.restNumericEnums)
+			got := simplifyRESTNumericEnums(test.restNumericEnums)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
