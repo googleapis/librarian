@@ -36,13 +36,16 @@ const (
 // ErrMissingGoogleapisSource is returned when the googleapis source is missing.
 var ErrMissingGoogleapisSource = errors.New("must specify googleapis source")
 
-// fetchSources fetches all source repositories needed for generation in parallel.
+// LoadSources fetches all source repositories needed for generation in parallel.
 // It returns a *sidekickconfig.Sources struct with all directories populated.
-func fetchSources(ctx context.Context, cfgSources *config.Sources) (*sidekickconfig.Sources, error) {
+func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sources, error) {
+	if src == nil || src.Googleapis == nil {
+		return nil, ErrMissingGoogleapisSource
+	}
 	sources := &sidekickconfig.Sources{}
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Googleapis, googleapisRepo)
+		dir, err := fetchSource(ctx, src.Googleapis, googleapisRepo)
 		if err != nil {
 			return err
 		}
@@ -53,7 +56,7 @@ func fetchSources(ctx context.Context, cfgSources *config.Sources) (*sidekickcon
 		return nil
 	})
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		dir, err := fetchSource(ctx, src.Conformance, protobufRepo)
 		if err != nil {
 			return err
 		}
@@ -61,7 +64,7 @@ func fetchSources(ctx context.Context, cfgSources *config.Sources) (*sidekickcon
 		return nil
 	})
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		dir, err := fetchSource(ctx, src.Discovery, discoveryRepo)
 		if err != nil {
 			return err
 		}
@@ -69,20 +72,20 @@ func fetchSources(ctx context.Context, cfgSources *config.Sources) (*sidekickcon
 		return nil
 	})
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		dir, err := fetchSource(ctx, src.Showcase, showcaseRepo)
 		if err != nil {
 			return err
 		}
 		sources.Showcase = dir
 		return nil
 	})
-	if cfgSources.ProtobufSrc != nil {
+	if src.ProtobufSrc != nil {
 		g.Go(func() error {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+			dir, err := fetchSource(ctx, src.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return err
 			}
-			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
+			sources.ProtobufSrc = filepath.Join(dir, src.ProtobufSrc.Subpath)
 			return nil
 		})
 	}

@@ -35,7 +35,6 @@ import (
 var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
-	errEmptySources            = errors.New("sources required in librarian.yaml")
 	errSkipGenerate            = errors.New("library has skip_generate set")
 )
 
@@ -69,11 +68,7 @@ func generateCommand() *cli.Command {
 }
 
 func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName string) error {
-	if cfg.Sources == nil {
-		return errEmptySources
-	}
-
-	sources, err := LoadSources(ctx, cfg)
+	sources, err := LoadSources(ctx, cfg.Sources)
 	if err != nil {
 		return err
 	}
@@ -116,14 +111,6 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return err
 	}
 	return postGenerate(ctx, cfg.Language)
-}
-
-// LoadSources fetches and loads the sources required for generation.
-func LoadSources(ctx context.Context, cfg *config.Config) (*sidekickconfig.Sources, error) {
-	if cfg.Sources == nil {
-		return nil, ErrMissingGoogleapisSource
-	}
-	return fetchSources(ctx, cfg.Sources)
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,

@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -398,59 +397,6 @@ func TestDefaultOutput(t *testing.T) {
 			got := defaultOutput(test.language, test.libName, test.api, test.defaultOut)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestLoadSources(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		wantErr error
-		wantSrc *sidekickconfig.Sources
-	}{
-		{
-			name:    "nil sources",
-			cfg:     &config.Config{},
-			wantErr: ErrMissingGoogleapisSource,
-		},
-		{
-			name: "googleapis dir set",
-			cfg: &config.Config{
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
-				},
-			},
-			wantSrc: &sidekickconfig.Sources{
-				Googleapis: "/tmp/googleapis",
-			},
-		},
-		{
-			name: "rust with sources",
-			cfg: &config.Config{
-				Language: config.LanguageRust,
-				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "/tmp/googleapis"},
-					Discovery:  &config.Source{Dir: "/tmp/discovery"},
-				},
-			},
-			wantSrc: &sidekickconfig.Sources{
-				Googleapis: "/tmp/googleapis",
-				Discovery:  "/tmp/discovery",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			gotSrc, err := LoadSources(t.Context(), test.cfg)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("LoadSources() error = %v, wantErr %v", err, test.wantErr)
-				}
-				return
-			}
-			if diff := cmp.Diff(test.wantSrc, gotSrc); diff != "" {
-				t.Errorf("sources mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

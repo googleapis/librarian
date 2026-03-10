@@ -74,7 +74,7 @@ func importMetadata(ctx context.Context, pythonRepoDir, librarianRepoDir string)
 	}
 	defaultOutputDir := filepath.Join(pythonRepoDir, pythonCfg.Default.Output)
 
-	sources, err := librarian.LoadSources(ctx, pythonCfg)
+	sources, err := librarian.LoadSources(ctx, pythonCfg.Sources)
 	if err != nil {
 		return fmt.Errorf("error loading sources: %w", err)
 	}

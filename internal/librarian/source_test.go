@@ -23,16 +23,16 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestFetchSources(t *testing.T) {
+func TestLoadSources(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		cfgSources *config.Sources
-		want       *sidekickconfig.Sources
-		wantErr    error
+		name    string
+		src     *config.Sources
+		want    *sidekickconfig.Sources
+		wantErr error
 	}{
 		{
 			name: "success with pre-configured directories",
-			cfgSources: &config.Sources{
+			src: &config.Sources{
 				Googleapis:  &config.Source{Dir: "/path/to/googleapis"},
 				Conformance: &config.Source{Dir: "/path/to/conformance"},
 				Discovery:   &config.Source{Dir: "/path/to/discovery"},
@@ -48,24 +48,49 @@ func TestFetchSources(t *testing.T) {
 			},
 		},
 		{
-			name:       "missing googleapis",
-			cfgSources: &config.Sources{},
-			wantErr:    ErrMissingGoogleapisSource,
+			name:    "nil sources",
+			src:     nil,
+			wantErr: ErrMissingGoogleapisSource,
+		},
+		{
+			name:    "empty sources",
+			src:     &config.Sources{},
+			wantErr: ErrMissingGoogleapisSource,
+		},
+		{
+			name: "googleapis dir set",
+			src: &config.Sources{
+				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+			},
+			want: &sidekickconfig.Sources{
+				Googleapis: "/tmp/googleapis",
+			},
+		},
+		{
+			name: "discovery dir set",
+			src: &config.Sources{
+				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+				Discovery:  &config.Source{Dir: "/tmp/discovery"},
+			},
+			want: &sidekickconfig.Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := fetchSources(t.Context(), test.cfgSources)
+			got, err := LoadSources(t.Context(), test.src)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
-					t.Errorf("fetchSources() got error = %v, wantErr %v", err, test.wantErr)
+					t.Errorf("LoadSources() got error = %v, wantErr %v", err, test.wantErr)
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("fetchSources() got unexpected error: %v", err)
+				t.Errorf("LoadSources() got unexpected error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("fetchSources() mismatch (-want +got):%s", diff)
+				t.Errorf("LoadSources() mismatch (-want +got):%s", diff)
 			}
 		})
 	}
