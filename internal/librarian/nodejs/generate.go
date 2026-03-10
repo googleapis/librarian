@@ -182,7 +182,7 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the non-generated files it would delete, then
 	// restore them afterward.
-	preserveFiles := []string{"librarian.js", ".readme-partials.yaml"}
+	preserveFiles := []string{"librarian.js", ".readme-partials.yaml", "README.md"}
 	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
 	if err != nil {
 		return fmt.Errorf("failed to create backup dir: %w", err)
