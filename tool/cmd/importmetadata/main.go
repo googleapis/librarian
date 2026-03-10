@@ -99,7 +99,7 @@ func importMetadata(ctx context.Context, pythonRepoDir, librarianRepoDir string)
 		if resolvedAPI.NewIssueURI != "" || resolvedAPI.DocumentationURI != "" {
 			continue
 		}
-		libraryOutputDir := python.DefaultOutputByName(library.Name, defaultOutputDir)
+		libraryOutputDir := python.DefaultOutput(library.Name, defaultOutputDir)
 		repoMetadata, err := repometadata.Read(libraryOutputDir)
 		if err != nil {
 			return fmt.Errorf("error finding service for path %s: %w", api.Path, err)

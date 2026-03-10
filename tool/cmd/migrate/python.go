@@ -164,16 +164,7 @@ func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*conf
 			pythonConfig.OptArgsByAPI[api.Path] = bazelGapicInfo.optArgs
 		}
 	}
-	if len(allTransports) == 1 {
-		// One consistent transport; set it library-wide if it's not the default.
-		// This assumes that where there's a mixture of GAPIC and non-GAPIC, the
-		// first path is a GAPIC API, but that happens to be true for now (and
-		// we don't care what happens post-migration).
-		transport := transportsByApi[library.APIs[0].Path]
-		if transport != "grpc+rest" {
-			library.Transport = transport
-		}
-	} else {
+	if len(allTransports) != 1 {
 		// Transport differs by API version. Add it into OptArgsByAPI, but only
 		// for non-proto-only APIs. (Proto-only APIs don't have a transport
 		// anyway.)

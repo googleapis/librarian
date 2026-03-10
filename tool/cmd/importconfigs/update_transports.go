@@ -27,7 +27,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/config/bazel"
+	"github.com/googleapis/librarian/tool/cmd/importconfigs/bazel"
 	"github.com/urfave/cli/v3"
 )
 

@@ -1,0 +1,120 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package golang
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
+)
+
+func TestFormat(t *testing.T) {
+	testhelper.RequireCommand(t, "goimports")
+	for _, test := range []struct {
+		name       string
+		library    *config.Library
+		goFilePath []string
+	}{
+		{
+			name: "library path and snippet directory exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"example",
+				"internal/generated/snippets/example",
+			},
+		},
+		{
+			// This is true for the root module, though the snippet
+			// directory should also not exist.
+			name: "library path does not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"internal/generated/snippets/example",
+			},
+		},
+		{
+			name: "snippet directory does not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+			goFilePath: []string{
+				"example",
+			},
+		},
+		{
+			name: "library path and snippet directory do not exist",
+			library: &config.Library{
+				Name: "example",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			test.library.Output = outDir
+			unformatted := `package main
+
+import (
+"fmt"
+"os"
+)
+
+func main() {
+fmt.Println("Hello World")
+}
+`
+			want := `package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	fmt.Println("Hello World")
+}
+`
+			for _, aPath := range test.goFilePath {
+				path := filepath.Join(outDir, aPath)
+				if err := os.MkdirAll(path, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(path, "example.go"), []byte(unformatted), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := Format(t.Context(), test.library); err != nil {
+				t.Fatal(err)
+			}
+			for _, aPath := range test.goFilePath {
+				goFile := filepath.Join(outDir, aPath, "example.go")
+				gotBytes, err := os.ReadFile(goFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got := string(gotBytes)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}

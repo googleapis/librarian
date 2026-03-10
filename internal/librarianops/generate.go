@@ -16,7 +16,6 @@ package librarianops
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -79,10 +78,10 @@ func runGenerate(ctx context.Context, repoName, repoDir string) error {
 	if !supportedRepositories[repoName] {
 		return fmt.Errorf("repository %q not found in supported repositories list", repoName)
 	}
-	return processRepo(ctx, repoName, repoDir, command.Verbose)
+	return processRepo(ctx, repoName, repoDir, "", command.Verbose)
 }
 
-func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (err error) {
+func processRepo(ctx context.Context, repoName, repoDir, librarianBin string, verbose bool) (err error) {
 	if repoDir == "" {
 		repoDir, err = os.MkdirTemp("", "librarianops-"+repoName+"-*")
 		if err != nil {
@@ -110,30 +109,30 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 	if err := createBranch(ctx, time.Now()); err != nil {
 		return err
 	}
-	version, err := getLibrarianVersionAtMain(ctx)
+	configPath := filepath.Join(repoDir, "librarian.yaml")
+	cfg, err := yaml.Read[config.Config](configPath)
 	if err != nil {
 		return err
 	}
-	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, verbose, "tidy"); err != nil {
-			return err
+	run := func(args ...string) error {
+		if librarianBin != "" {
+			return runLibrarianBin(ctx, librarianBin, verbose, args...)
 		}
+		return runLibrarianWithVersion(ctx, cfg.Version, verbose, args...)
 	}
 	if repoName != repoFake {
-		configPath := filepath.Join(repoDir, "librarian.yaml")
-		cfg, err := yaml.Read[config.Config](configPath)
-		if err != nil {
+		if err := run("tidy"); err != nil {
 			return err
 		}
 		sources := sourcesToUpdate(cfg)
 		if len(sources) > 0 {
 			args := append([]string{"update"}, sources...)
-			if err := runLibrarianWithVersion(ctx, version, verbose, args...); err != nil {
+			if err := run(args...); err != nil {
 				return err
 			}
 		}
 	}
-	if err := runLibrarianWithVersion(ctx, version, verbose, "generate", "--all"); err != nil {
+	if err := run("generate", "--all"); err != nil {
 		return err
 	}
 	if repoName == repoRust {
@@ -148,7 +147,7 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 		if err := pushBranch(ctx); err != nil {
 			return err
 		}
-		if err := createPR(ctx, repoName, version); err != nil {
+		if err := createPR(ctx, repoName); err != nil {
 			return err
 		}
 	}
@@ -175,37 +174,18 @@ func pushBranch(ctx context.Context) error {
 	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
 }
 
-func createPR(ctx context.Context, repoName, librarianVersion string) error {
+func createPR(ctx context.Context, repoName string) error {
 	sources := "googleapis"
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
 	}
-	title := fmt.Sprintf("chore: update librarian, %s, and regenerate", sources)
-	body := fmt.Sprintf(`Update librarian version to @main (%s).
-
-Update %s to the latest commit and regenerate all client libraries.`, librarianVersion, sources)
+	title := fmt.Sprintf("chore: update %s and regenerate", sources)
+	body := fmt.Sprintf("Update %s to the latest commit and regenerate all client libraries.", sources)
 	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
 }
 
 func runCargoUpdate(ctx context.Context) error {
 	return command.Run(ctx, "cargo", "update", "--workspace")
-}
-
-func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
-	output, err := command.Output(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
-	if err != nil {
-		return "", fmt.Errorf("go list: %w", err)
-	}
-	var mod struct {
-		Version string `json:"Version"`
-	}
-	if err := json.Unmarshal([]byte(output), &mod); err != nil {
-		return "", fmt.Errorf("parsing go list output: %w", err)
-	}
-	if mod.Version == "" {
-		return "", fmt.Errorf("no version in go list output: %s", output)
-	}
-	return mod.Version, nil
 }
 
 func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {
@@ -214,6 +194,14 @@ func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, 
 	}
 	return command.Run(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
+}
+
+// runLibrarianBin runs a pre-built librarian binary with the given arguments.
+func runLibrarianBin(ctx context.Context, bin string, verbose bool, args ...string) error {
+	if verbose {
+		args = append([]string{"-v"}, args...)
+	}
+	return command.Run(ctx, bin, args...)
 }
 
 func sourcesToUpdate(cfg *config.Config) []string {

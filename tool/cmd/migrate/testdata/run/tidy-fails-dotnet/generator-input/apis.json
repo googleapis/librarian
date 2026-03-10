@@ -1,0 +1,21 @@
+{
+  "apis": [
+    {
+      "id": "Google.Cloud.SecretManager.V1",
+      "version": "2.7.0",
+      "generator": "micro",
+      "protoPath": "google/cloud/secretmanager/v1",
+      "transport": "grpc+rest",
+      "dependencies": {}
+    },
+    {
+      "id": "Google.Cloud.SecretManager.V1",
+      "version": "1.0.0",
+      "generator": "micro",
+      "protoPath": "google/cloud/secretmanager/v1",
+      "transport": "grpc+rest",
+      "dependencies": {}
+    }
+  ],
+  "packageGroups": []
+}

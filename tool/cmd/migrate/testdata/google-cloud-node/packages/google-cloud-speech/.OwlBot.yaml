@@ -1,0 +1,5 @@
+deep-remove-regex:
+  - /owl-bot-staging
+deep-copy-regex:
+  - source: /google/cloud/speech/(v.*)/.*-nodejs
+    dest: /owl-bot-staging/google-cloud-speech/$1

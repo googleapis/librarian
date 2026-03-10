@@ -59,10 +59,10 @@ var (
 	}
 )
 
-// CleanLibrary removes all generated code from beneath the given library's
+// Clean removes all generated code from beneath the given library's
 // output directory. If the output directory does not currently exist, this
 // function is a no-op.
-func CleanLibrary(lib *config.Library) error {
+func Clean(lib *config.Library) error {
 	_, err := os.Stat(lib.Output)
 	if os.IsNotExist(err) {
 		return nil

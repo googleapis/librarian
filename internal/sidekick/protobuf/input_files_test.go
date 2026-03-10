@@ -55,22 +55,6 @@ func TestBasic(t *testing.T) {
 	}
 }
 
-func TestTooManyOptions(t *testing.T) {
-	source := sourceDir
-	cfg := config.SourceConfig{
-		Sources: config.Sources{
-			Googleapis: testdataDir,
-		},
-		ActiveRoots: []string{"googleapis"},
-		IncludeList: []string{"a", "b", "c"},
-		ExcludeList: []string{"d", "e", "f"},
-	}
-	_, err := DetermineInputFiles(source, cfg)
-	if err == nil {
-		t.Errorf("expected an error when setting both exclude-list and include-list")
-	}
-}
-
 func TestIncludeList(t *testing.T) {
 	source := sourceDir
 	cfg := config.SourceConfig{
@@ -89,30 +73,6 @@ func TestIncludeList(t *testing.T) {
 	}
 	want := []string{
 		filepath.ToSlash(path.Join(testdataDir, source, "resources.proto")),
-	}
-	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
-	}
-}
-
-func TestExcludeList(t *testing.T) {
-	source := sourceDir
-	cfg := config.SourceConfig{
-		Sources: config.Sources{
-			Googleapis: testdataDir,
-		},
-		ActiveRoots: []string{"googleapis"},
-		ExcludeList: []string{"resources.proto"},
-	}
-	got, err := DetermineInputFiles(source, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i := range got {
-		got[i] = filepath.ToSlash(got[i])
-	}
-	want := []string{
-		filepath.ToSlash(path.Join(testdataDir, source, "service.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)

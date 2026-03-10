@@ -38,9 +38,6 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.ReleaseLevel == "" {
 		lib.ReleaseLevel = d.ReleaseLevel
 	}
-	if lib.Transport == "" {
-		lib.Transport = d.Transport
-	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}
@@ -191,7 +188,9 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if !isVeneer(language, lib) {
-		if len(lib.APIs) == 0 {
+		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
+			// Do not derive API path for Go because the library name
+			// doesn't contain relevant info.
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
 		for _, api := range lib.APIs {
@@ -204,9 +203,24 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		if isVeneer(language, lib) {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
-		lib.Output = defaultOutput(language, lib.Name, lib.APIs[0].Path, defaults.Output)
+		var apiPath string
+		if len(lib.APIs) > 0 {
+			apiPath = lib.APIs[0].Path
+		}
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
+}
+
+// canDeriveAPIPath reports whether the language's library name contains enough information to
+// derive the API path.
+func canDeriveAPIPath(language string) bool {
+	switch language {
+	case config.LanguageGo, config.LanguagePython:
+		return false
+	default:
+		return true
+	}
 }
 
 // mergeMaps merges key-values of src and dst maps.
@@ -225,7 +239,7 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
 	case config.LanguageGo:
-		return golang.Fill(lib), nil
+		return golang.Fill(lib)
 	default:
 		return lib, nil
 	}

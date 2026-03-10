@@ -92,7 +92,6 @@ func Write(path string, v any) error {
 		b.WriteString(line)
 		b.WriteString("\n")
 	}
-	b.WriteString("\n")
 	header := b.String()
 
 	data = append([]byte(header), data...)

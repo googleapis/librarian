@@ -30,11 +30,11 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
@@ -51,7 +51,6 @@ func TestGenerateLibraries(t *testing.T) {
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
-			Transport:     "grpc",
 			APIs: []*config.API{
 				{
 					Path: "google/cloud/secretmanager/v1",
@@ -91,7 +90,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = outDir
 	}
-	if err := GenerateLibraries(t.Context(), libraries, googleapisDir); err != nil {
+	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a README.md file has been created for each library.
@@ -104,7 +103,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -124,7 +123,6 @@ func TestGenerateLibraries_Error(t *testing.T) {
 					Version:       "0.1.0",
 					ReleaseLevel:  "preview",
 					CopyrightYear: "2025",
-					Transport:     "grpc",
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -148,7 +146,6 @@ func TestGenerateLibraries_Error(t *testing.T) {
 					Version:       "0.1.0",
 					ReleaseLevel:  "preview",
 					CopyrightYear: "2025",
-					Transport:     "grpc",
 				},
 			},
 			wantErr: errGoAPINotFound,
@@ -160,15 +157,15 @@ func TestGenerateLibraries_Error(t *testing.T) {
 				library.Output = outdir
 			}
 
-			gotErr := GenerateLibraries(t.Context(), test.libraries, googleapisDir)
+			gotErr := Generate(t.Context(), test.libraries, googleapisDir)
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
@@ -177,7 +174,6 @@ func TestGenerate(t *testing.T) {
 		name         string
 		libraryName  string
 		apis         []*config.API
-		transport    string
 		releaseLevel string
 		goModule     *config.GoModule
 		want         []string
@@ -246,7 +242,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			name:        "with transport and release level",
+			name:        "with release level",
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
@@ -258,7 +254,6 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 			},
-			transport:    "grpc+rest",
 			releaseLevel: "ga",
 			want: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
@@ -337,7 +332,6 @@ func TestGenerate(t *testing.T) {
 				Version:      "1.0.0",
 				Output:       outdir,
 				APIs:         test.apis,
-				Transport:    test.transport,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
 			}
@@ -357,52 +351,6 @@ func TestGenerate(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "goimports")
-	outDir := t.TempDir()
-	goFile := filepath.Join(outDir, "test.go")
-	unformatted := `package main
-
-import (
-"fmt"
-"os"
-)
-
-func main() {
-fmt.Println("Hello World")
-}
-`
-	if err := os.WriteFile(goFile, []byte(unformatted), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Output: outDir,
-	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
-
-	gotBytes, err := os.ReadFile(goFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-	want := `package main
-
-import (
-	"fmt"
-)
-
-func main() {
-	fmt.Println("Hello World")
-}
-`
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -566,6 +514,11 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			// Do not create snippet directory to verify the function returns before
 			// checking the existence of the directory.
 		},
+		{
+			name: "snippet directory does not exist",
+			// Do not create snippet directory to verify the function doesn't
+			// return error in such ase.
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -639,23 +592,6 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			wantErr: errGoAPINotFound,
 		},
 		{
-			name: "snippet directory does not exist",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			wantErr: os.ErrNotExist,
-		},
-		{
 			name: "no permission to read snippet directory",
 			library: &config.Library{
 				Name:    "bigquery",
@@ -727,17 +663,12 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 
 func TestBuildGAPICImportPath(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		goAPI   *config.GoAPI
-		want    string
+		name  string
+		goAPI *config.GoAPI
+		want  string
 	}{
 		{
 			name: "no override",
-			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
@@ -747,9 +678,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 		{
 			name: "customize package override",
-			library: &config.Library{
-				Name: "storage",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "storage",
 				ImportPath:    "storage/internal/apiv2",
@@ -759,7 +687,7 @@ func TestBuildGAPICImportPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildGAPICImportPath(test.library, test.goAPI)
+			got := buildGAPICImportPath(test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -832,17 +760,17 @@ func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		sc   *serviceconfig.API
-		want string
+		want serviceconfig.Transport
 	}{
 		{
 			name: "nil serviceconfig",
 			sc:   nil,
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 		{
 			name: "empty serviceconfig",
 			sc:   &serviceconfig.API{},
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 		{
 			name: "go specific transport",
@@ -851,7 +779,7 @@ func TestGetTransport(t *testing.T) {
 					config.LanguageGo: serviceconfig.GRPC,
 				},
 			},
-			want: "grpc",
+			want: serviceconfig.GRPC,
 		},
 		{
 			name: "other language transport",
@@ -860,7 +788,7 @@ func TestGetTransport(t *testing.T) {
 					config.LanguagePython: serviceconfig.GRPC,
 				},
 			},
-			want: "grpc+rest",
+			want: serviceconfig.GRPCRest,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

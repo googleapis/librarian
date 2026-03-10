@@ -26,7 +26,6 @@ func TestFillDefaults(t *testing.T) {
 		Keep:         []string{"CHANGES.md"},
 		Output:       "src/generated/",
 		ReleaseLevel: "stable",
-		Transport:    "grpc+rest",
 	}
 	for _, test := range []struct {
 		name     string
@@ -42,7 +41,6 @@ func TestFillDefaults(t *testing.T) {
 				Keep:         []string{"CHANGES.md"},
 				Output:       "src/generated/",
 				ReleaseLevel: "stable",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -51,13 +49,11 @@ func TestFillDefaults(t *testing.T) {
 			lib: &config.Library{
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
-				Transport:    "grpc+rest",
 			},
 			want: &config.Library{
 				Keep:         []string{"CHANGES.md"},
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -68,7 +64,6 @@ func TestFillDefaults(t *testing.T) {
 				Keep:         []string{"CHANGES.md"},
 				Output:       "custom/output/",
 				ReleaseLevel: "stable",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -523,6 +518,11 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
 		},
+		{
+			name:       "Go lib without api path",
+			language:   config.LanguageGo,
+			wantOutput: "src/generated",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
@@ -552,6 +552,40 @@ func TestPrepareLibrary(t *testing.T) {
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
 					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
 				}
+			}
+		})
+	}
+}
+
+func TestCanDeriveAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		want     bool
+	}{
+		{
+			name:     "dart",
+			language: config.LanguageDart,
+			want:     true,
+		},
+		{
+			name:     "go",
+			language: config.LanguageGo,
+		},
+		{
+			name:     "python",
+			language: config.LanguagePython,
+		},
+		{
+			name:     "rust",
+			language: config.LanguageRust,
+			want:     true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := canDeriveAPIPath(test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

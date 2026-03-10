@@ -85,18 +85,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name:      "google-cloud-secret-manager",
-				Transport: "grpc",
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "with python opts by api",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -171,7 +159,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "transport overridden in OptOptArgsByAPIArgs",
+			name: "transport specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
@@ -180,7 +168,6 @@ func TestCreateProtocOptions(t *testing.T) {
 						"google/cloud/secretmanager/v1": {"transport=rest"},
 					},
 				},
-				Transport: "grpc",
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
@@ -565,11 +552,11 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -608,7 +595,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, library := range libraries {
@@ -620,7 +607,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -649,17 +636,17 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
+	gotErr := Generate(t.Context(), cfg, libraries, googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
-// Note: this is separate to TestGenerate as there's so little that we want
-// to do here. Making TestGenerate table-driven in order to take two entirely
-// different paths doesn't feel useful.
-func TestGenerate_NoAPIs(t *testing.T) {
+// Note: this is separate to TestGenerateLibrary as there's so little that we
+// want to do here. Making TestGenerateLibrary table-driven in order to take
+// two entirely different paths doesn't feel useful.
+func TestGenerateLibrary_NoAPIs(t *testing.T) {
 	repoRoot := t.TempDir()
 	cfg := &config.Config{
 		Language: config.LanguagePython,
@@ -670,7 +657,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 		Name:   "no-apis",
 		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
 	}
-	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Validate that we haven't got as far as creating the output directory.
@@ -681,7 +668,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
@@ -722,7 +709,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)
@@ -752,9 +739,9 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestDefaultOutputByName(t *testing.T) {
+func TestDefaultOutput(t *testing.T) {
 	want := "packages/google-cloud-secret-manager"
-	got := DefaultOutputByName("google-cloud-secret-manager", "packages")
+	got := DefaultOutput("google-cloud-secret-manager", "packages")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -27,6 +27,8 @@ const (
 	LanguageCsharp = "csharp"
 	// LanguageDart is the language identifier for Dart.
 	LanguageDart = "dart"
+	// LanguageDotnet is the language identifier for .NET.
+	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
 	// LanguageGo is the language identifier for Go.
@@ -63,15 +65,12 @@ type GoModule struct {
 type GoAPI struct {
 	// ClientPackage is the package name of the generated client.
 	ClientPackage string `yaml:"client_package,omitempty"`
-	// ProtoOnly determines whether to generate a Proto-only client.
-	// A proto-only client does not define a service in the proto files.
-	ProtoOnly bool `yaml:"proto_only,omitempty"`
-	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
-	// at the API level.
-	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
+	// at the API level.
+	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
@@ -85,6 +84,9 @@ type GoAPI struct {
 	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
 }
@@ -163,7 +165,7 @@ type RustModule struct {
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
 	// RootName is the key for the root directory in the source map.
-	// It overrides the default root, googleapis-root, used by the rust+prost generator.
+	// It overrides the default root, googleapis, used by the rust+prost generator.
 	RootName string `yaml:"root_name,omitempty"`
 
 	// RoutingRequired indicates whether routing is required.
@@ -240,6 +242,9 @@ type RustCrate struct {
 
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
+
+	// ResourceName indicates whether to apply heuristics to identify and generate resource names.
+	ResourceName bool `yaml:"resource_name,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
@@ -553,4 +558,109 @@ type JavaAPI struct {
 
 	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
 	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+}
+
+// DotnetPackage contains .NET-specific library configuration.
+type DotnetPackage struct {
+	// AdditionalServiceDescriptors is a list of extra service descriptors to include.
+	AdditionalServiceDescriptors []string `yaml:"additional_service_descriptors,omitempty"`
+
+	// Csproj contains configuration for .csproj file generation and overrides.
+	Csproj *DotnetCsproj `yaml:"csproj,omitempty"`
+
+	// Dependencies maps NuGet package IDs to version strings.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// Generator overrides the default generator (e.g., "proto").
+	Generator string `yaml:"generator,omitempty"`
+
+	// PackageGroup lists packages that must be released together.
+	PackageGroup []string `yaml:"package_group,omitempty"`
+
+	// Postgeneration contains post-generation shell commands or extra protos.
+	Postgeneration []*DotnetPostgeneration `yaml:"postgeneration,omitempty"`
+
+	// Pregeneration contains declarative proto mutations.
+	Pregeneration []*DotnetPregeneration `yaml:"pregeneration,omitempty"`
+}
+
+// DotnetPregeneration represents a declarative proto mutation.
+type DotnetPregeneration struct {
+	// RenameMessage renames a message.
+	RenameMessage *DotnetRenameMessage `yaml:"rename_message,omitempty"`
+
+	// RemoveField removes a field from a message.
+	RemoveField *DotnetRemoveField `yaml:"remove_field,omitempty"`
+
+	// RenameRPC renames an RPC.
+	RenameRPC *DotnetRenameRPC `yaml:"rename_rpc,omitempty"`
+}
+
+// DotnetRenameMessage contains rename message configuration.
+type DotnetRenameMessage struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
+}
+
+// DotnetRemoveField contains remove field configuration.
+type DotnetRemoveField struct {
+	Message string `yaml:"message"`
+	Field   string `yaml:"field"`
+}
+
+// DotnetRenameRPC contains rename RPC configuration.
+type DotnetRenameRPC struct {
+	From     string `yaml:"from"`
+	To       string `yaml:"to"`
+	WireName string `yaml:"wire_name,omitempty"`
+}
+
+// DotnetPostgeneration represents a post-generation action.
+type DotnetPostgeneration struct {
+	// Run is a shell command to execute.
+	Run string `yaml:"run,omitempty"`
+
+	// ExtraProto is an extra proto file to compile.
+	ExtraProto string `yaml:"extra_proto,omitempty"`
+}
+
+// DotnetCsproj contains configuration for .csproj file generation.
+type DotnetCsproj struct {
+	// Snippets contains XML fragments for .csproj files.
+	Snippets *DotnetCsprojSnippets `yaml:"snippets,omitempty"`
+
+	// IntegrationTests contains configuration for integration test projects.
+	IntegrationTests *DotnetCsprojSnippets `yaml:"integration_tests,omitempty"`
+}
+
+// DotnetCsprojSnippets contains XML fragments to be merged into .csproj files.
+type DotnetCsprojSnippets struct {
+	// EmbeddedResources is a list of glob patterns for embedded resources.
+	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
+}
+
+// NodejsPackage contains Node.js-specific library configuration.
+type NodejsPackage struct {
+	// BundleConfig is the path to a GAPIC bundle config file.
+	BundleConfig string `yaml:"bundle_config,omitempty"`
+
+	// Dependencies maps npm package names to version constraints.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// ExtraProtocParameters is a list of extra parameters to pass to protoc.
+	ExtraProtocParameters []string `yaml:"extra_protoc_parameters,omitempty"`
+
+	// HandwrittenLayer indicates the library has a handwritten layer on top
+	// of the generated code.
+	HandwrittenLayer bool `yaml:"handwritten_layer,omitempty"`
+
+	// MainService is the name of the main service for libraries with a
+	// handwritten layer.
+	MainService string `yaml:"main_service,omitempty"`
+
+	// Mixins controls mixin behavior (e.g., "none" to disable).
+	Mixins string `yaml:"mixins,omitempty"`
+
+	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
+	PackageName string `yaml:"package_name,omitempty"`
 }

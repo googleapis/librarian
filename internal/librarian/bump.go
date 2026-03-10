@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -163,8 +164,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, err
 		}
-		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !libraryChanged(cfg, lib, filesChanged) {
 			continue
 		}
 		librariesToBump = append(librariesToBump, lib)
@@ -172,12 +172,32 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 	return librariesToBump, nil
 }
 
-func hasChangesIn(dir string, filesChanged []string) bool {
+func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
+	var (
+		output    string
+		exclusion string
+	)
+	switch cfg.Language {
+	case config.LanguageGo:
+		output = filepath.Clean(filepath.Join(library.Output, library.Name))
+		if library.Go != nil && library.Go.NestedModule != "" {
+			exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
+		}
+	default:
+		output = libraryOutput(cfg.Language, library, cfg.Default)
+	}
+	return hasChangesIn(output, exclusion, filesChanged)
+}
+
+func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 	if !strings.HasSuffix(dir, "/") {
 		dir += "/"
 	}
 	for _, f := range filesChanged {
 		if strings.HasPrefix(f, dir) {
+			if exclusion != "" && strings.HasPrefix(f, exclusion) {
+				continue
+			}
 			return true
 		}
 	}
@@ -398,7 +418,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !hasChangesIn(output, "", filesChanged) {
 			continue
 		}
 		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, gitExe, ""); err != nil {

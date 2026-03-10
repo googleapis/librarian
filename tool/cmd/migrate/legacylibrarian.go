@@ -142,7 +142,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		}
 		cfg.Default.Output = "packages"
 		cfg.Default.ReleaseLevel = "stable"
-		cfg.Default.Transport = "grpc+rest"
 	} else {
 		input.googleapisDir = src.Dir
 		cfg.Default.Output = "."

@@ -186,7 +186,6 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 			Output:       "java-" + name,
 			APIs:         apis,
 			ReleaseLevel: l.ReleaseLevel,
-			Transport:    l.Transport,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,

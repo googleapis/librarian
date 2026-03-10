@@ -1,0 +1,64 @@
+language: dotnet
+sources:
+  googleapis:
+    commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
+    sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
+default:
+  output: apis
+libraries:
+  - name: Google.Cloud.SecretManager.V1
+    version: 2.0.0
+    dotnet:
+      dependencies:
+        Google.Cloud.Iam.V1: "3.5.0"
+        Google.Cloud.Location: "2.4.0"
+  - name: Google.Cloud.AIPlatform.V1
+    version: 1.0.0
+    dotnet:
+      pregeneration:
+        - rename_message:
+            from: Schema
+            to: OpenApiSchema
+        - remove_field:
+            message: QueryDeployedModelsResponse
+            field: deployed_models
+  - name: Google.Cloud.Logging.V2
+    version: 1.0.0
+    dotnet:
+      pregeneration:
+        - rename_rpc:
+            from: UpdateBucketAsync
+            to: UpdateBucketLongRunning
+            wire_name: UpdateBucketAsync
+  - name: Google.Cloud.Bigtable.V2
+    version: 1.0.0
+    dotnet:
+      postgeneration:
+        - run: "dotnet run --project tools/BigtableClient.GenerateClient"
+  - name: Google.LongRunning
+    version: 1.0.0
+    dotnet:
+      postgeneration:
+        - extra_proto: google/cloud/extended_operations.proto
+  - name: Google.Cloud.DevTools.ContainerAnalysis.V1
+    version: 1.0.0
+    dotnet:
+      additional_service_descriptors:
+        - Grafeas.V1.GrafeasReflection.Descriptor
+  - name: Google.Cloud.Vision.V1
+    version: 1.0.0
+    dotnet:
+      csproj:
+        snippets:
+          embedded_resources: ["*.jpg", "*.png"]
+        integration_tests:
+          embedded_resources: ["vision_eiffel_tower.jpg"]
+  - name: Google.Cloud.Spanner.V1
+    version: 5.0.0
+    dotnet:
+      package_group:
+        - Google.Cloud.Spanner.Admin.Database.V1
+        - Google.Cloud.Spanner.Admin.Instance.V1
+        - Google.Cloud.Spanner.Common.V1
+        - Google.Cloud.Spanner.Data
+        - Google.Cloud.Spanner.V1

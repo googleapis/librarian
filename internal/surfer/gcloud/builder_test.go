@@ -203,7 +203,7 @@ func TestNewParam(t *testing.T) {
 	}
 }
 
-func TestShouldSkipParam(t *testing.T) {
+func TestIsIgnored(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		field  *api.Field
@@ -225,32 +225,16 @@ func TestShouldSkipParam(t *testing.T) {
 			want: false,
 		},
 		{
-			name:  "Name Field (Primary)",
-			field: api.NewTestField("name").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
-			method: api.NewTestMethod("DeleteThing").WithVerb("DELETE").WithInput(
-				api.NewTestMessage("DeleteRequest").WithFields(
-					api.NewTestField("name").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
-				),
-			),
-			want: false,
+			name:   "Name Field",
+			field:  api.NewTestField("name").WithType(api.STRING_TYPE),
+			method: api.NewTestMethod("DeleteThing").WithVerb("DELETE"),
+			want:   true,
 		},
 		{
-			name: "Parent Field (Primary in List)",
-			field: func() *api.Field {
-				f := api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Parent")
-				f.ResourceReference.ChildType = "test.googleapis.com/Thing"
-				return f
-			}(),
-			method: func() *api.Method {
-				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
-					api.NewTestMessage("ListRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Parent"),
-					),
-				)
-				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
-				return m
-			}(),
-			want: false,
+			name:   "Parent Field (List)",
+			field:  api.NewTestField("parent").WithType(api.STRING_TYPE),
+			method: api.NewTestMethod("ListThings").WithVerb("GET"),
+			want:   true,
 		},
 		{
 			name:  "Parent Field (Skipped in Create)",
@@ -312,9 +296,9 @@ func TestShouldSkipParam(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := shouldSkipParam(test.field, test.method)
+			got := isIgnored(test.field, test.method)
 			if got != test.want {
-				t.Errorf("shouldSkipParam() = %v, want %v", got, test.want)
+				t.Errorf("isIgnored() = %v, want %v", got, test.want)
 			}
 		})
 	}

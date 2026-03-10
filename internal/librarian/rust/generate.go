@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
@@ -41,20 +42,20 @@ func IsVeneer(lib *config.Library) bool {
 	return len(lib.APIs) == 0 && lib.Output != ""
 }
 
-// GenerateLibraries generates all the given libraries in parallel.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates all the given libraries in parallel.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
 		g.Go(func() error {
-			return generate(gctx, lib, sources)
+			return generate(gctx, config, lib, sources)
 		})
 	}
 	return g.Wait()
 }
 
 // generate generates a Rust client library.
-func generate(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
+func generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
 	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -85,10 +86,43 @@ func generate(ctx context.Context, library *config.Library, sources *sidekickcon
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
+	if len(model.Services) > 0 {
+		repoMetadata, err := createRepoMetadata(cfg, library, sources)
+		if err != nil {
+			return err
+		}
+		if err := repoMetadata.Write(library.Output); err != nil {
+			return err
+		}
+	}
 	if !exists {
 		validate(ctx, library.Output)
 	}
 	return nil
+}
+
+func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*repometadata.RepoMetadata, error) {
+	metadata, err := repometadata.FromLibrary(cfg, library, sources)
+	if err != nil {
+		return nil, err
+	}
+	// Overwrite fields to match current behavior
+	metadata.APIDescription = ""
+	metadata.DistributionName = "google-cloud-rust"
+	metadata.IssueTracker = ""
+	metadata.LibraryType = "GAPIC_AUTO"
+	metadata.Name = ""
+	if !strings.HasSuffix(metadata.NamePretty, " API") {
+		// Reverse the cleaning done in FromLibrary.
+		metadata.NamePretty = metadata.NamePretty + " API"
+	}
+	metadata.ProductDocumentation = ""
+
+	// Set fields that are not set by FromLibrary
+	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
+	metadata.Repo = "googleapis/google-cloud-rust"
+
+	return metadata, nil
 }
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.
