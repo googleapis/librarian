@@ -66,49 +66,25 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 		if !ok {
 			continue
 		}
-		path, restIdx, noRestIdx := extractRESTNumericEnumsInfo(apiLit)
+		path, index := extractRESTNumericEnumsInfo(apiLit)
 		if path == "" {
 			continue
 		}
-		numericEnums := readRestNumericEnums(googleapisDir, path)
-		yesMap, noMap := splitNumericEnums(numericEnums)
-
-		// Update RESTNumericEnums
-		if len(yesMap) == 0 {
-			if restIdx != -1 {
-				apiLit.Elts = removeElement(apiLit.Elts, restIdx)
-				// Re-adjust noRestIdx if it was after restIdx
-				if noRestIdx > restIdx {
-					noRestIdx--
-				}
+		noRestNumericEnums := map[string]string{}
+		if len(noRestNumericEnums) == 0 {
+			if index == -1 {
+				apiLit.Elts = append(apiLit.Elts[:index], apiLit.Elts[index+1:]...)
 			}
-		} else {
-			kv := &ast.KeyValueExpr{
-				Key:   ast.NewIdent("RESTNumericEnums"),
-				Value: createRestNumericEnumsExpr(yesMap),
-			}
-			if restIdx != -1 {
-				apiLit.Elts[restIdx] = kv
-			} else {
-				apiLit.Elts = append(apiLit.Elts, kv)
-			}
+			continue
 		}
-
-		// Update NoRESTNumericEnums
-		if len(noMap) == 0 {
-			if noRestIdx != -1 {
-				apiLit.Elts = removeElement(apiLit.Elts, noRestIdx)
-			}
+		restKV := &ast.KeyValueExpr{
+			Key:   ast.NewIdent("NoRestNumericEnums"),
+			Value: createTransportsExpr(noRestNumericEnums),
+		}
+		if index != -1 {
+			apiLit.Elts[index] = restKV
 		} else {
-			kv := &ast.KeyValueExpr{
-				Key:   ast.NewIdent("NoRESTNumericEnums"),
-				Value: createRestNumericEnumsExpr(noMap),
-			}
-			if noRestIdx != -1 {
-				apiLit.Elts[noRestIdx] = kv
-			} else {
-				apiLit.Elts = append(apiLit.Elts, kv)
-			}
+			apiLit.Elts = append(apiLit.Elts, restKV)
 		}
 	}
 
@@ -153,9 +129,8 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 	return simplifyRestNumericEnums(numericEnums)
 }
 
-func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int, int) {
+func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int) {
 	var path string
-	restIdx := -1
 	noRestIdx := -1
 	for i, expr := range apiLit.Elts {
 		kvExpr, ok := expr.(*ast.KeyValueExpr)
@@ -171,14 +146,11 @@ func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int, int) {
 				path = strings.Trim(lit.Value, "\"")
 			}
 		}
-		if ident.Name == "RESTNumericEnums" {
-			restIdx = i
-		}
 		if ident.Name == "NoRESTNumericEnums" {
 			noRestIdx = i
 		}
 	}
-	return path, restIdx, noRestIdx
+	return path, noRestIdx
 }
 
 func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
