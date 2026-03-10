@@ -245,6 +245,9 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 	for _, seg := range segments {
 		if seg.Literal != nil {
 			l := *seg.Literal
+			if isVersionString(l) {
+				continue
+			}
 			result = append(result, PathSegment{Literal: &l})
 		} else if seg.Variable != nil {
 			result = append(result, PathSegment{Variable: &PathVariable{

@@ -134,7 +134,7 @@ func TestIdentifyTargetResources(t *testing.T) {
 			},
 			want: &TargetResource{
 				FieldPaths: [][]string{{"name"}},
-				Template:   ParseTemplateForTest("//test-api.googleapis.com/v1/{name}"),
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
 			},
 		},
 	} {
