@@ -78,12 +78,8 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 	_ = testhelper.SetupRepoWithChange(t, "release-with-new-crate")
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
+	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 	files := []string{
 		path.Join("src", "pubsub", "Cargo.toml"),
 		path.Join("src", "pubsub", "src", "lib.rs"),
@@ -154,9 +150,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "commit", "-m", "feat: changed storage", ".")
 	files := []string{
 		path.Join("src", "storage", "Cargo.toml"),
 		path.Join("src", "storage", "src", "lib.rs"),
@@ -312,12 +306,8 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-with-local-changes-error")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
+	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 	if err := Publish(t.Context(), config, true, false, false); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}

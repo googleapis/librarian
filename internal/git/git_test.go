@@ -87,12 +87,8 @@ func TestIsNewFileSuccess(t *testing.T) {
 	if err := os.WriteFile(newName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "feat: changed storage", ".")
 	if IsNewFile(t.Context(), gitExe, headCommit, existingName) {
 		t.Errorf("file is not new but reported as such: %s", existingName)
 	}
@@ -284,12 +280,8 @@ func TestMatchesDirtyCloneError(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
+	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 
 	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
 		t.Errorf("expected an error with a dirty clone")

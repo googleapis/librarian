@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -43,18 +44,10 @@ func TestGenerateCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := t.TempDir()
-			if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.email", "test@example.com"); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.name", "Test User"); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "checkout", "-b", "main"); err != nil {
-				t.Fatal(err)
-			}
+			testhelper.RunGit(t, "init", repoDir)
+			testhelper.RunGit(t, "-C", repoDir, "config", "user.email", "test@example.com")
+			testhelper.RunGit(t, "-C", repoDir, "config", "user.name", "Test User")
+			testhelper.RunGit(t, "-C", repoDir, "checkout", "-b", "main")
 
 			wd, err := os.Getwd()
 			if err != nil {
@@ -66,12 +59,8 @@ func TestGenerateCommand(t *testing.T) {
 			if err := yaml.Write(filepath.Join(repoDir, "librarian.yaml"), cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "add", "."); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "commit", "-m", "initial commit"); err != nil {
-				t.Fatal(err)
-			}
+			testhelper.RunGit(t, "-C", repoDir, "add", ".")
+			testhelper.RunGit(t, "-C", repoDir, "commit", "-m", "initial commit")
 
 			// Rename temp dir to fake-repo so basename matches expected repo
 			// name.

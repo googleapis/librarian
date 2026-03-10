@@ -21,7 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -44,9 +43,7 @@ func TestShouldBumpManifestVersionSuccess(t *testing.T) {
 	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "updated version", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "commit", "-m", "updated version", ".")
 
 	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
 	if err != nil {
@@ -63,12 +60,8 @@ func TestShouldBumpManifestVersionNewCrate(t *testing.T) {
 	testhelper.SetupForVersionBump(t, tag)
 
 	testhelper.AddCrate(t, path.Join("src", "new"), "google-cloud-new")
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "new crate", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", "new crate", ".")
 	name := path.Join("src", "new", "Cargo.toml")
 
 	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
