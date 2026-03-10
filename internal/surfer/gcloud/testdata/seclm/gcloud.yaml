@@ -26,23 +26,19 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM
           help_text:
             brief: Manage and Query SecLM Workbench resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Service to manage SecLM Workbench resources
       message_rules:
         - selector: google.cloud.seclm.v1.Workbench
           help_text:
             brief: SecLM Workbench
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Workbench instance resources.
-
       method_rules:
         - selector: google.cloud.seclm.v1.SecLM.ListWorkbenches
           help_text:
             brief: List Workbenches
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List Workbenches by location.
 
               list --location=<LOCATION>
@@ -54,8 +50,7 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM.CreateWorkbench
           help_text:
             brief: Creates a Workbench
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Creates a Workbench instance.
               If run asynchronously with --async, exits after printing an operation that can
               be used to poll the status of the creation operation.
@@ -69,8 +64,7 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM.GetWorkbench
           help_text:
             brief: Gets a Workbench
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Gets details of a single Workbench instance.
 
               describe <WORKBENCH_ID> --location=<LOCATION>
@@ -82,8 +76,7 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM.UpdateWorkbench
           help_text:
             brief: Updates the parameters of a single Workbench
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Updates the parameters of a single Workbench.
               If run asynchronously with --async, exits after printing an operation that can
               be used to poll the status of the creation operation.
@@ -97,8 +90,7 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM.DeleteWorkbench
           help_text:
             brief: Deletes a single Workbench instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Deletes a single Workbench instance.
 
               delete <WORKBENCH_ID> --location=<LOCATION>
@@ -110,8 +102,7 @@ apis:
         - selector: google.cloud.seclm.v1.SecLM.WorkbenchQuery
           help_text:
             brief: Runs a query against a single Workbench instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Runs a query against a single Workbench instance.
 
               If run asynchronously with --async, exits after printing an operation that can

@@ -26,22 +26,19 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore
           help_text:
             brief: Manage Parallelstore resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore resources
       message_rules:
         - selector: google.cloud.parallelstore.v1alpha.Instance
           help_text:
             brief: Manage Parallelstore instance resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore instance resources.
       method_rules:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.ListInstances
           help_text:
             brief: List Parallelstore instances
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List Parallelstore instances.
             examples: # Add More realisitc examples here
               - |-
@@ -51,8 +48,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.GetInstance
           help_text:
             brief: Gets details of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Gets details of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -62,8 +58,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.CreateInstance
           help_text:
             brief: Creates a Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Creates a Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -73,8 +68,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.UpdateInstance
           help_text:
             brief: Updates the parameters of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Updates the parameters of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -84,8 +78,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.DeleteInstance
           help_text:
             brief: Deletes a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Deletes a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -95,8 +88,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.ImportData
           help_text:
             brief: Imports data from Cloud Storage to Parallelstore instance.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Imports data from Cloud Storage to Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -106,8 +98,7 @@ apis:
         - selector: google.cloud.parallelstore.v1alpha.Parallelstore.ExportData
           help_text:
             brief: Exports data from Parallelstore instance to Cloud Storage.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Exports data from Parallelstore instance to Cloud Storage.
             examples: # Add More realisitc examples here
               - |-
@@ -131,7 +122,6 @@ apis:
                 network,
                 reserved_ip_range,
                 accessPoints.join(","))
-
   - name: Parallelstore
     api_version: v1beta
     supports_star_update_masks: false
@@ -143,22 +133,19 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore
           help_text:
             brief: Manage Parallelstore resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore resources
       message_rules:
         - selector: google.cloud.parallelstore.v1beta.Instance
           help_text:
             brief: Manage Parallelstore instance resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore instance resources.
       method_rules:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.ListInstances
           help_text:
             brief: List Parallelstore instances
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List Parallelstore instances.
             examples: # Add More realisitc examples here
               - |-
@@ -168,8 +155,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.GetInstance
           help_text:
             brief: Gets details of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Gets details of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -179,8 +165,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.CreateInstance
           help_text:
             brief: Creates a Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Creates a Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -190,8 +175,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.UpdateInstance
           help_text:
             brief: Updates the parameters of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Updates the parameters of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -201,8 +185,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.DeleteInstance
           help_text:
             brief: Deletes a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Deletes a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -212,8 +195,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.ImportData
           help_text:
             brief: Imports data from Cloud Storage to Parallelstore instance.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Imports data from Cloud Storage to Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -223,8 +205,7 @@ apis:
         - selector: google.cloud.parallelstore.v1beta.Parallelstore.ExportData
           help_text:
             brief: Exports data from Parallelstore instance to Cloud Storage.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Exports data from Parallelstore instance to Cloud Storage.
             examples: # Add More realisitc examples here
               - |-
@@ -259,22 +240,19 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore
           help_text:
             brief: Manage Parallelstore resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore resources
       message_rules:
         - selector: google.cloud.parallelstore.v1.Instance
           help_text:
             brief: Manage Parallelstore instance resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage Parallelstore instance resources.
       method_rules:
         - selector: google.cloud.parallelstore.v1.Parallelstore.ListInstances
           help_text:
             brief: List Parallelstore instances
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List Parallelstore instances.
             examples: # Add More realisitc examples here
               - |-
@@ -284,8 +262,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.GetInstance
           help_text:
             brief: Gets details of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Gets details of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -295,8 +272,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.CreateInstance
           help_text:
             brief: Creates a Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Creates a Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -306,8 +282,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.UpdateInstance
           help_text:
             brief: Updates the parameters of a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Updates the parameters of a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -317,8 +292,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.DeleteInstance
           help_text:
             brief: Deletes a single Parallelstore instance
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Deletes a single Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -328,8 +302,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.ImportData
           help_text:
             brief: Imports data from Cloud Storage to Parallelstore instance.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Imports data from Cloud Storage to Parallelstore instance.
             examples: # Add More realisitc examples here
               - |-
@@ -339,8 +312,7 @@ apis:
         - selector: google.cloud.parallelstore.v1.Parallelstore.ExportData
           help_text:
             brief: Exports data from Parallelstore instance to Cloud Storage.
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Exports data from Parallelstore instance to Cloud Storage.
             examples: # Add More realisitc examples here
               - |-

@@ -11,7 +11,6 @@
 ## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
-
 service_name: developerconnect.googleapis.com
 regional_endpoint_compatibility: NOT_SUPPORTED
 apis:
@@ -39,21 +38,18 @@ apis:
         - selector: google.cloud.developerconnect.v1.Connection
           help_text:
             brief: Manage connection resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage connection resources.
         - selector: google.cloud.developerconnect.v1.GitRepositoryLink
           help_text:
             brief: Manage git repository link resources
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage git repository link resources.
       method_rules:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.CreateConnection
           help_text:
             brief: Create a connection resource
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Create a connection resource.
             examples: # Add More realisitc examples here
               # TODO(b/321233033): Add examples of creating connections of different SCMs once implemented.
@@ -64,8 +60,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.DeleteConnection
           help_text:
             brief: Delete a single connection
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Delete a single connection.
             examples: # Add More realisitc examples here
               - |-
@@ -75,8 +70,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.GetConnection
           help_text:
             brief: Get details of a single connection resource
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Get details of a single connection resource.
             examples: # Add More realisitc examples here
               - |-
@@ -86,8 +80,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.ListConnections
           help_text:
             brief: List connections
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List connections.
             examples: # Add More realisitc examples here
               - |-
@@ -97,8 +90,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.UpdateConnection
           help_text:
             brief: Update the parameters of a single connection
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Update a connection.
             examples: # Add More realisitc examples here
               - |-
@@ -108,8 +100,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.CreateGitRepositoryLink
           help_text:
             brief: Create a git repository link
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Create a git repository link.
             examples: # Add More realisitc examples here
               # TODO(b/321233033): Add examples of creating connections of different SCMs once implemented.
@@ -124,8 +115,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.DeleteGitRepositoryLink
           help_text:
             brief: Delete a single git repository link
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Delete a single git repository link.
             examples: # Add More realisitc examples here
               - |-
@@ -135,8 +125,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.GetGitRepositoryLink
           help_text:
             brief: Get details of a single git repository link
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Get details of a single git repository link.
             examples: # Add More realisitc examples here
               - |-
@@ -146,8 +135,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.ListGitRepositoryLinks
           help_text:
             brief: List all git repository links in a connection
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List all git repository links in a connection.
             examples: # Add More realisitc examples here
               - |-
@@ -157,8 +145,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.ListGitRepositoryLinks
           help_text:
             brief: List all git repository links in a connection
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               List all git repository links in a connection.
             examples: # Add More realisitc examples here
               - |-
@@ -168,8 +155,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.ListInsightsConfigs
           help_text:
             brief: Lists insights configs in a given project and location
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Lists InsightsConfigs in a given project and location.
             examples: # Add More realisitc examples here
               - |-
@@ -179,8 +165,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.DeleteInsightsConfig
           help_text:
             brief: Delete a single insight config in a given project and location
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Delete a single insight config in a given project and location
             examples: # Add More realisitc examples here
               - |-
@@ -190,8 +175,7 @@ apis:
         - selector: google.cloud.developerconnect.v1.DeveloperConnect.GetInsightsConfig
           help_text:
             brief: Get details of a single insight config in a given project and location
-            description:
-              | # Provide Addtional Content and context for the command here.
+            description: | # Provide Addtional Content and context for the command here.
               Get details of a single insight config in a given project and location
             examples: # Add More realisitc examples here
               - |-

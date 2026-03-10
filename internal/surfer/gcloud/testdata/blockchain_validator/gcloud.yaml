@@ -11,7 +11,6 @@
 ## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
-
 config_version: v2.0
 service_name: blockchainvalidatormanager.googleapis.com
 regional_endpoint_compatibility: NOT_SUPPORTED
@@ -27,8 +26,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager
           help_text:
             brief: Manage blockchain validator configuration
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage blockchain validator configurations.
 
               Configurations can be deployed to blockchain nodes running under
@@ -37,15 +35,13 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorConfig
           help_text:
             brief: Manage blockchain validator configurations
-            description:
-              |- # Provide addtional surface/service level details here.
+            description: |- # Provide addtional surface/service level details here.
               Manage blockchain validator configurations.
       method_rules:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.ListBlockchainValidatorConfigs
           help_text:
             brief: List blockchain validator configs
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               List blockchain validator configs.
             examples: # Add More realistic examples here
               - |-
@@ -55,8 +51,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.GetBlockchainValidatorConfig
           help_text:
             brief: Get details of a single blockchain validator configuration
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               Get details of a single blockchain validator configuration.
             examples: # Add More realistic examples here
               - |-
@@ -67,8 +62,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.CreateBlockchainValidatorConfig
           help_text:
             brief: Create a blockchain validator configuration
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               Create a blockchain validator configuration on a blockchain node managed by Blockchain Node
               Engine.
             examples: # Add More realistic examples here
@@ -86,8 +80,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.UpdateBlockchainValidatorConfig
           help_text:
             brief: Update the configuration of a single blockchain validator
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               Update the configuration of a single blockchain validator.
             examples: # Add More realistic examples here
               - |-
@@ -99,8 +92,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.GenerateBlockchainValidatorConfigs
           help_text:
             brief: Generate one or more blockchain validator configurations
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               Generate one or more blockchain validator configurations, optionally with a new managed
               blockchain node.
             examples: # Add More realistic examples here
@@ -119,8 +111,7 @@ apis:
         - selector: google.cloud.blockchainvalidatormanager.v1.BlockchainValidatorManager.DeleteBlockchainValidatorConfig
           help_text:
             brief: Delete a single blockchain validator configuration
-            description:
-              | # Provide Additional Content and context for the command here.
+            description: | # Provide Additional Content and context for the command here.
               Delete a single blockchain validator configuration from a blockchain node.
             examples: # Add More realistic examples here
               - |-

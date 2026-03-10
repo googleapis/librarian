@@ -27,8 +27,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -48,8 +47,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies.CreateAccessPolicy
           help_text:
             brief: Create AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create AccessPolicy instance.
             examples:
               - |-
@@ -59,8 +57,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies.DeleteAccessPolicy
           help_text:
             brief: Delete AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete AccessPolicy instance.
             examples:
               - |-
@@ -70,8 +67,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies.GetAccessPolicy
           help_text:
             brief: Get AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get AccessPolicy instance.
             examples:
               - |-
@@ -81,8 +77,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies.ListAccessPolicies
           help_text:
             brief: List AccessPolicy instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List AccessPolicy instances.
             examples:
               - |-
@@ -92,8 +87,7 @@ apis:
         - selector: google.iam.v3alpha.AccessPolicies.UpdateAccessPolicy
           help_text:
             brief: Update AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update AccessPolicy instance.
             examples:
               - |-
@@ -110,8 +104,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -131,8 +124,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies.CreateAccessPolicy
           help_text:
             brief: Create AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create AccessPolicy instance.
             examples:
               - |-
@@ -142,8 +134,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies.DeleteAccessPolicy
           help_text:
             brief: Delete AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete AccessPolicy instance.
             examples:
               - |-
@@ -153,8 +144,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies.GetAccessPolicy
           help_text:
             brief: Get AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get AccessPolicy instance.
             examples:
               - |-
@@ -164,8 +154,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies.ListAccessPolicies
           help_text:
             brief: List AccessPolicy instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List AccessPolicy instances.
             examples:
               - |-
@@ -175,8 +164,7 @@ apis:
         - selector: google.iam.v3beta.AccessPolicies.UpdateAccessPolicy
           help_text:
             brief: Update AccessPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update AccessPolicy instance.
             examples:
               - |-
@@ -201,8 +189,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -222,8 +209,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.GetPolicyBinding
           help_text:
             brief: Get PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PolicyBinding instance.
             examples:
               - |-
@@ -233,8 +219,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.ListPolicyBindings
           help_text:
             brief: List PolicyBinding instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PolicyBinding instances.
             examples:
               - |-
@@ -244,8 +229,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.CreatePolicyBinding
           help_text:
             brief: Create PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PolicyBinding instance.
             examples:
               - |-
@@ -258,8 +242,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.UpdatePolicyBinding
           help_text:
             brief: Update PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PolicyBinding instance.
             examples:
               - |-
@@ -269,8 +252,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.DeletePolicyBinding
           help_text:
             brief: Delete PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PolicyBinding instance.
             examples:
               - |-
@@ -280,8 +262,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBindings.SearchTargetPolicyBindings
           help_text:
             brief: Search policy bindings by target.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search policy bindings by target.
             examples:
               - |-
@@ -292,8 +273,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyBinding
           help_text:
             brief: Manage PolicyBinding instances.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage PolicyBinding instances.
     output_formatting:
       - selector: google.iam.v3alpha.PolicyBindings.ListPolicyBindings
@@ -328,8 +308,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -349,8 +328,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.GetPrincipalAccessBoundaryPolicy
           help_text:
             brief: Get PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -360,8 +338,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
           help_text:
             brief: List PrincipalAccessBoundaryPolicy instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PrincipalAccessBoundaryPolicy instances.
             examples:
               - |-
@@ -371,8 +348,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.CreatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Create PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -382,8 +358,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.UpdatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Update PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -393,8 +368,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.DeletePrincipalAccessBoundaryPolicy
           help_text:
             brief: Delete PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -404,8 +378,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.SearchPrincipalAccessBoundaryPolicyBindings
           help_text:
             brief: Search Principal Access Boundary Policy Bindings.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search all policy bindings that bind a specific policy if a user has searchPolicyBindings permission on that policy.
             examples:
               - |-
@@ -416,8 +389,7 @@ apis:
         - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicy
           help_text:
             brief: Manage PrincipalAccessBoundaryPolicy instances.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage PrincipalAccessBoundaryPolicy instances.
     output_formatting:
       - selector: google.iam.v3alpha.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
@@ -445,8 +417,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -466,8 +437,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.GetPolicyBinding
           help_text:
             brief: Get PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PolicyBinding instance.
             examples:
               - |-
@@ -477,8 +447,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.ListPolicyBindings
           help_text:
             brief: List PolicyBinding instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PolicyBinding instances.
             examples:
               - |-
@@ -488,8 +457,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.CreatePolicyBinding
           help_text:
             brief: Create PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PolicyBinding instance.
             examples:
               - |-
@@ -502,8 +470,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.UpdatePolicyBinding
           help_text:
             brief: Update PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PolicyBinding instance.
             examples:
               - |-
@@ -513,8 +480,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.DeletePolicyBinding
           help_text:
             brief: Delete PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PolicyBinding instance.
             examples:
               - |-
@@ -524,8 +490,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBindings.SearchTargetPolicyBindings
           help_text:
             brief: Search policy bindings by target.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search policy bindings by target.
             examples:
               - |-
@@ -536,8 +501,7 @@ apis:
         - selector: google.iam.v3beta.PolicyBinding
           help_text:
             brief: Manage PolicyBinding instances.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage PolicyBinding instances.
     output_formatting:
       - selector: google.iam.v3beta.PolicyBindings.ListPolicyBindings
@@ -568,8 +532,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -589,8 +552,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.GetPrincipalAccessBoundaryPolicy
           help_text:
             brief: Get PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -600,8 +562,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
           help_text:
             brief: List PrincipalAccessBoundaryPolicy instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PrincipalAccessBoundaryPolicy instances.
             examples:
               - |-
@@ -611,8 +572,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.CreatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Create PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -622,8 +582,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.UpdatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Update PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -633,8 +592,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.DeletePrincipalAccessBoundaryPolicy
           help_text:
             brief: Delete PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -644,8 +602,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.SearchPrincipalAccessBoundaryPolicyBindings
           help_text:
             brief: Search Principal Access Boundary Policy Bindings.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search all policy bindings that bind a specific policy if a user has searchPolicyBindings permission on that policy.
             examples:
               - |-
@@ -656,8 +613,7 @@ apis:
         - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicy
           help_text:
             brief: Manage PrincipalAccessBoundaryPolicy instances.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage PrincipalAccessBoundaryPolicy instances.
     output_formatting:
       - selector: google.iam.v3beta.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
@@ -685,8 +641,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -706,8 +661,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.GetPolicyBinding
           help_text:
             brief: Get PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PolicyBinding instance.
             examples:
               - |-
@@ -717,8 +671,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.ListPolicyBindings
           help_text:
             brief: List PolicyBinding instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PolicyBinding instances.
             examples:
               - |-
@@ -728,8 +681,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.CreatePolicyBinding
           help_text:
             brief: Create PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PolicyBinding instance.
             examples:
               - |-
@@ -742,8 +694,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.UpdatePolicyBinding
           help_text:
             brief: Update PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PolicyBinding instance.
             examples:
               - |-
@@ -753,8 +704,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.DeletePolicyBinding
           help_text:
             brief: Delete PolicyBinding instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PolicyBinding instance.
             examples:
               - |-
@@ -764,8 +714,7 @@ apis:
         - selector: google.iam.v3.PolicyBindings.SearchTargetPolicyBindings
           help_text:
             brief: Search policy bindings by target.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search policy bindings by target.
             examples:
               - |-
@@ -776,8 +725,7 @@ apis:
         - selector: google.iam.v3.PolicyBinding
           help_text:
             brief: Manage policy bindings.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage policy bindings.
     output_formatting:
       - selector: google.iam.v3.PolicyBindings.ListPolicyBindings
@@ -808,8 +756,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies
           help_text:
             brief: The super-group for the IAM CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Manage IAM service accounts and keys.
 
               The gcloud iam command group lets you manage Google Cloud Identity &
@@ -829,8 +776,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.GetPrincipalAccessBoundaryPolicy
           help_text:
             brief: Get PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -840,8 +786,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
           help_text:
             brief: List PrincipalAccessBoundaryPolicy instances.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PrincipalAccessBoundaryPolicy instances.
             examples:
               - |-
@@ -851,8 +796,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.CreatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Create PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Create PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -862,8 +806,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.UpdatePrincipalAccessBoundaryPolicy
           help_text:
             brief: Update PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Update PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -873,8 +816,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.DeletePrincipalAccessBoundaryPolicy
           help_text:
             brief: Delete PrincipalAccessBoundaryPolicy instance.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Delete PrincipalAccessBoundaryPolicy instance.
             examples:
               - |-
@@ -884,8 +826,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.SearchPrincipalAccessBoundaryPolicyBindings
           help_text:
             brief: Search Principal Access Boundary Policy Bindings.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Search all policy bindings that bind a specific policy if a user has searchPolicyBindings permission on that policy.
             examples:
               - |-
@@ -896,8 +837,7 @@ apis:
         - selector: google.iam.v3.PrincipalAccessBoundaryPolicy
           help_text:
             brief: Manage principal access boundary policies.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage principal access boundary policies.
     output_formatting:
       - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
@@ -992,8 +932,7 @@ apis:
         - selector: google.iam.v3.RegionalAccessBoundaryPolicies
           help_text:
             brief: Manage RegionalAccessBoundaryPolicy instances.
-            description:
-              |- # Provide additional Content and context for the command here.
+            description: |- # Provide additional Content and context for the command here.
               Manage RegionalAccessBoundaryPolicy instances.
     output_formatting:
       - selector: google.iam.v3.RegionalAccessBoundaryPolicies.ListRegionalAccessBoundaryPolicies
@@ -1030,8 +969,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService
           help_text:
             brief: The super-group for the IAM PolicyPortersService CLI.
-            description:
-              |- # Provide additional surface/service level details here.
+            description: |- # Provide additional surface/service level details here.
               Port AWS IAM policies to GCP.
 
               The gcloud iam policy-porter command group lets you manage your IAM policyporter
@@ -1047,8 +985,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.CreatePolicyPorter
           help_text:
             brief: Creates a PolicyPorter resource.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Creates a PolicyPorter resource, which is used to translate AWS IAM policies to GCP V1
               policies.
             examples:
@@ -1064,8 +1001,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.GetPolicyPorter
           help_text:
             brief: Describes a PolicyPorter resource.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Describes a PolicyPorter resource.
             examples:
               - |-
@@ -1075,8 +1011,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.ListPolicyPorters
           help_text:
             brief: Lists PolicyPorter resources.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Lists PolicyPorters.
             examples:
               - |-
@@ -1086,8 +1021,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.DeletePolicyPorter
           help_text:
             brief: Deletes policy porter and child resources.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Exports translated policies from a PolicyPorter resource.
             examples:
               - |-
@@ -1097,8 +1031,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.UpdatePolicyPorter
           help_text:
             brief: Updates a PolicyPorter resource.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Updates a PolicyPorter resource. It can be helpful to first Create a PolicyPorter resource
               to see the parsed Principal/Resource keys, and use them to update the mappings in this
               command.
@@ -1112,8 +1045,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.CreateTranslation
           help_text:
             brief: Creates a translation.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Instructs PolicyPorter to do a translation of the policies in the PolicyPorter resource.
             examples:
               - |-
@@ -1124,8 +1056,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.GetTranslation
           help_text:
             brief: Describes a translation.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Describes a PolicyPorter translation, useful for understanding translation status.
             examples:
               - |-
@@ -1136,8 +1067,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.ListTranslations
           help_text:
             brief: Lists translations.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               List PolicyPorter translation resources.
             examples:
               - |-
@@ -1147,8 +1077,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.DeleteTranslation
           help_text:
             brief: Delete a translation.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Deletes PolicyPorter translation resource.
             examples:
               - |-
@@ -1159,8 +1088,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.GetSourcePolicy
           help_text:
             brief: Gets a SourcePolicy.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Get the source policies parsed from the input policy json.
               resource.
             examples:
@@ -1172,8 +1100,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.ListSourcePolicies
           help_text:
             brief: Lists source policies.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Lists the source policies for a translation.
             examples:
               - |-
@@ -1184,8 +1111,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.GetTranslatedPolicy
           help_text:
             brief: Describes translated policies.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Describes the translated policy.
             examples:
               - |-
@@ -1196,8 +1122,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.ListTranslatedPolicies
           help_text:
             brief: Lists translated policies.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Lists the source policies for a translation.
             examples:
               - |-
@@ -1208,8 +1133,7 @@ apis:
         - selector: google.iam.v3alpha.PolicyPortersService.UpdateTranslatedPolicy
           help_text:
             brief: Updates translated policies.
-            description:
-              | # Provide additional Content and context for the command here.
+            description: | # Provide additional Content and context for the command here.
               Updates the translated policies.
             examples:
               - |-
