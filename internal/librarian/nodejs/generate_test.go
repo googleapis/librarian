@@ -231,6 +231,61 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 		},
 		{
+			name: "no grpc config",
+			api:  &config.API{Path: "google/cloud/apigeeconnect/v1"},
+			library: &config.Library{
+				Name: "google-cloud-apigeeconnect",
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=" + absGoogleapisDir,
+				"-I", absGoogleapisDir,
+				"--output-dir", "staging",
+				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
+				"--package-name", "@google-cloud/apigeeconnect",
+				"--metadata",
+			},
+		},
+		{
+			name: "no grpc config and no service config",
+			api:  &config.API{Path: "google/cloud/fakefoo/v1"},
+			library: &config.Library{
+				Name: "google-cloud-fakefoo",
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=" + absGoogleapisDir,
+				"-I", absGoogleapisDir,
+				"--output-dir", "staging",
+				"--package-name", "@google-cloud/fakefoo",
+				"--metadata",
+			},
+		},
+		{
+			name: "metadata in extra params is skipped",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					ExtraProtocParameters: []string{"metadata", "some-other-param"},
+				},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=" + absGoogleapisDir,
+				"-I", absGoogleapisDir,
+				"--output-dir", "staging",
+				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--some-other-param",
+			},
+		},
+		{
 			name: "grpc+rest transport is default and not passed",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -274,6 +329,121 @@ func TestGenerateLibrary_NoAPIs(t *testing.T) {
 	_, gotErr := os.Stat(library.Output)
 	if !os.IsNotExist(gotErr) {
 		t.Errorf("expected output directory to not exist, got err: %v", gotErr)
+	}
+}
+
+func TestGenerateAPI_NoProtos(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	repoRoot := t.TempDir()
+	outDir := filepath.Join(repoRoot, "packages", "google-cloud-empty")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an empty API directory with no protos.
+	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi", "v1")
+	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi"))
+
+	err = generateAPI(
+		t.Context(),
+		&config.API{Path: "google/cloud/emptyapi/v1"},
+		&config.Library{Name: "google-cloud-empty", Output: outDir},
+		absGoogleapisDir,
+		repoRoot,
+	)
+	if err == nil {
+		t.Fatal("expected error for API with no protos")
+	}
+	if !strings.Contains(err.Error(), "no protos found") {
+		t.Errorf("expected 'no protos found' error, got: %v", err)
+	}
+}
+
+func TestRunPostProcessor_Owlbot(t *testing.T) {
+	testhelper.RequireCommand(t, "python3")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{Name: "google-cloud-test"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create owlbot.py that writes a marker file.
+	owlbotScript := filepath.Join(outDir, "owlbot.py")
+	if err := os.WriteFile(owlbotScript, []byte("import pathlib\npathlib.Path('owlbot-ran.txt').write_text('yes')\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
+		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
+	}
+}
+
+func TestGenerateLibrary_GenerateError(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an empty API directory with no protos to trigger error.
+	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi2", "v1")
+	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi2"))
+
+	repoRoot := t.TempDir()
+	library := &config.Library{
+		Name:   "google-cloud-empty2",
+		Output: filepath.Join(repoRoot, "packages", "google-cloud-empty2"),
+		APIs:   []*config.API{{Path: "google/cloud/emptyapi2/v1"}},
+	}
+
+	err = generateLibrary(t.Context(), library, absGoogleapisDir)
+	if err == nil {
+		t.Fatal("expected error for API with no protos")
+	}
+	if !strings.Contains(err.Error(), "no protos found") {
+		t.Errorf("expected 'no protos found' error, got: %v", err)
+	}
+}
+
+func TestGenerate_Error(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an empty API directory with no protos to trigger error.
+	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi3", "v1")
+	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi3"))
+
+	repoRoot := t.TempDir()
+	libraries := []*config.Library{
+		{
+			Name:   "google-cloud-empty3",
+			Output: filepath.Join(repoRoot, "packages", "google-cloud-empty3"),
+			APIs:   []*config.API{{Path: "google/cloud/emptyapi3/v1"}},
+		},
+	}
+
+	err = Generate(t.Context(), libraries, absGoogleapisDir)
+	if err == nil {
+		t.Fatal("expected error for API with no protos")
 	}
 }
 
@@ -424,6 +594,79 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	}
 	if !strings.Contains(contentStr, "body text") {
 		t.Errorf("expected README.md to contain body, got:\n%s", contentStr)
+	}
+}
+
+func TestFormat(t *testing.T) {
+	testhelper.RequireCommand(t, "npm")
+
+	outDir := t.TempDir()
+	// Create a minimal package.json with a "fix" script.
+	if err := os.WriteFile(filepath.Join(outDir, "package.json"), []byte(`{"scripts":{"fix":"echo formatted"}}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "google-cloud-test",
+		Output: outDir,
+	}
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunPostProcessor_PreservesFiles(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{Name: "google-cloud-test"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create staging structure matching gapic-generator-typescript output.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create files that should be preserved across combine-library.
+	readmeContent := "# Test README"
+	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	partialsContent := "introduction: ''\nbody: ''"
+	if err := os.WriteFile(filepath.Join(outDir, ".readme-partials.yaml"), []byte(partialsContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify preserved files still exist.
+	got, err := os.ReadFile(filepath.Join(outDir, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != readmeContent {
+		t.Errorf("README.md content = %q, want %q", string(got), readmeContent)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, ".readme-partials.yaml")); err != nil {
+		t.Errorf("expected .readme-partials.yaml to be preserved: %v", err)
 	}
 }
 
