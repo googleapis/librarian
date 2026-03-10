@@ -292,6 +292,24 @@ func TestBump_Error(t *testing.T) {
 			version: "0.2.0",
 			wantErr: errImportPathNotFound,
 		},
+		{
+			name: "no snippet directory",
+			library: &config.Library{
+				Name: "test-lib",
+				APIs: []*config.API{
+					{
+						Path: "google/test-lib/v1",
+					},
+				},
+			},
+			setup: func(t *testing.T, dir string) {
+				snippetsDir := filepath.Join(dir, "internal", "generated", "snippets", "test-lib")
+				if err := os.RemoveAll(snippetsDir); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: os.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
