@@ -72,13 +72,12 @@ func TestSimplifyRestNumericEnums(t *testing.T) {
 			name: "some present, different values",
 			restNumericEnums: map[string]bool{
 				"csharp": false,
-				"go":     true,
-				"java":   false,
+				"java":   true,
 				"python": true,
 				"ruby":   false,
 			},
 			want: map[string]bool{
-				"go":     true,
+				"java":   true,
 				"python": true,
 			},
 		},
