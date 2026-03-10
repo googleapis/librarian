@@ -100,10 +100,6 @@ func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	return lib.Output == derivedOutput
 }
 
-func isDerivableAPIPath(language string, name, api string) bool {
-	return api == deriveAPIPath(language, name)
-}
-
 func validateLibraries(cfg *config.Config) error {
 	var (
 		errs      []error
