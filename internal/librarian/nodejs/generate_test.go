@@ -172,11 +172,10 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 		},
 		{
-			name: "with transport grpc",
+			name: "default transport not passed",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
-				Name:      "google-cloud-secretmanager",
-				Transport: "grpc",
+				Name: "google-cloud-secretmanager",
 			},
 			want: []string{
 				"gapic-generator-typescript",
@@ -186,7 +185,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
-				"--transport", "grpc",
 			},
 		},
 		{
@@ -215,23 +213,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--handwritten-layer",
 				"--main-service", "translate",
 				"--mixins", "none",
-			},
-		},
-		{
-			name: "grpc+rest transport is default and not passed",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name:      "google-cloud-secretmanager",
-				Transport: "grpc+rest",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"-I", absGoogleapisDir,
-				"--output_dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
 			},
 		},
 	} {

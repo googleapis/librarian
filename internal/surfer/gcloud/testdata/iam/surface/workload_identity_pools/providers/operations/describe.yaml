@@ -1,0 +1,63 @@
+# Copyright 2020 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+- release_tracks: [ALPHA, BETA, GA]
+  help_text:
+    brief: Describe a workload identity pool provider operation.
+    description: Describe a workload identity pool provider operation.
+    examples: |
+      The following command describes the long running workload identity pool provider operation with
+      the ID ``my-operation'':
+
+        $ {command} my-operation \
+            --workload-identity-pool="my-workload-identity-pool" \
+            --provider="my-provider" \
+            --location="global"
+  request:
+    collection: iam.projects.locations.workloadIdentityPools.providers.operations
+    ALPHA:
+      api_version: v1beta
+    BETA:
+      api_version: v1beta
+  arguments:
+    resource:
+      help_text: The workload identity pool provider long running operation to describe.
+      spec:
+        name: workload identity pool provider operation
+        collection: iam.projects.locations.workloadIdentityPools.providers.operations
+        attributes:
+          - parameter_name: projectsId
+            attribute_name: project
+            help: The project name.
+            property: core/project
+          - parameter_name: locationsId
+            attribute_name: location
+            help: The location name.
+          - parameter_name: workloadIdentityPoolsId
+            attribute_name: workload_identity_pool
+            help: |
+              The ID to use for the pool, which becomes the final component of the resource name. This value
+              should be 4-32 characters, and may contain the characters [a-z0-9-]. The prefix `gcp-` is
+              reserved for use by Google, and may not be specified.
+          - parameter_name: providersId
+            attribute_name: provider
+            help: |
+              The ID for the provider, which becomes the final component of the resource name. This value
+              must be 4-32 characters, and may contain the characters [a-z0-9-]. The prefix `gcp-` is
+              reserved for use by Google, and may not be specified.
+          - parameter_name: operationsId
+            attribute_name: operation
+            help: |
+              The ID of the operation.
+        disable_auto_completers: false
+      is_positional: true
