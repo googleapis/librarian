@@ -188,7 +188,7 @@ func TestIdentifyTargetResources_NoMatch(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
-			IdentifyTargetResources(model, true)
+			IdentifyTargetResources(model, false)
 
 			got := binding.TargetResource
 			if got != nil {
@@ -247,17 +247,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/zones/{zone}/instances/{instance}"),
 			},
 		},
-		{
-			name:      "heuristic: not eligible service",
-			serviceID: "any.service", // not eligible
-			path: NewPathTemplate().
-				WithLiteral("projects").WithVariableNamed("project"),
-			fields: []*Field{
-				{Name: "project", Typez: STRING_TYPE},
-			},
-			resources: nil,
-			want:      nil,
-		},
+
 		{
 			name:      "heuristic: paths with un-grouped variable after version string",
 			serviceID: ".google.cloud.compute.v1.Instances",

@@ -79,9 +79,6 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 }
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
-	if !IsHeuristicEligible(method.Service.ID) {
-		return nil, nil
-	}
 
 	tmpl := binding.PathTemplate
 	if tmpl == nil {
