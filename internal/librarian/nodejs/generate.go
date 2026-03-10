@@ -103,7 +103,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	args := []string{
 		"gapic-generator-typescript",
 		"--protoc=" + protocPath,
-		"--gapic-validator_out=.",
 		"--common-proto-path=" + googleapisDir,
 		"-I", googleapisDir,
 		"--output-dir", stagingDir,

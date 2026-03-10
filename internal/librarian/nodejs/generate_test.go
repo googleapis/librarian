@@ -152,7 +152,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--gapic-validator_out=.",
 				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
 				"--output-dir", "staging",
@@ -174,7 +173,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--gapic-validator_out=.",
 				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
 				"--output-dir", "staging",
@@ -193,7 +191,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--gapic-validator_out=.",
 				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
 				"--output-dir", "staging",
@@ -219,7 +216,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--gapic-validator_out=.",
 				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
 				"--output-dir", "staging",
@@ -244,7 +240,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--gapic-validator_out=.",
 				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
 				"--output-dir", "staging",
