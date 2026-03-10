@@ -228,12 +228,19 @@ func runLibrarianInDocker(ctx context.Context, language, version string, verbose
 	}
 	dockerArgs := []string{
 		"run",
+		// Clean up the container afterwards.
+		"--rm",
+		// Run as the current user in the container, so that files are still
+		// owned appropriately.
 		"-u",
 		fmt.Sprintf("%s:%s", currentUser.Uid, currentUser.Gid),
+		// Map the current working directory to /repo.
 		"-v",
 		".:/repo",
+		// Map the cache directory (avoids fetching sources multiple times).
 		"-v",
 		homeCache + ":/.cache",
+		// Use /repo as the working directory.
 		"-w",
 		"/repo",
 		dockerImage,
