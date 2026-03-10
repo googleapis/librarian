@@ -72,7 +72,8 @@ func runUpdateRestNumericEnums(apiGoPath, googleapisDir string) error {
 		}
 		noRestNumericEnums := readRestNumericEnums(googleapisDir, path)
 		if len(noRestNumericEnums) == 0 {
-			if index == -1 {
+			if index != -1 {
+				// Remove the NoRestNumericEnums field if it exists and is now the default.
 				apiLit.Elts = append(apiLit.Elts[:index], apiLit.Elts[index+1:]...)
 			}
 			continue
@@ -106,9 +107,6 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 		slog.Warn("failed to parse rest numeric enums", "path", buildPath, "error", err)
 		return nil
 	}
-	if len(numericEnums) == 0 {
-		return nil
-	}
 	return simplifyRestNumericEnums(numericEnums)
 }
 
@@ -137,11 +135,10 @@ func extractRESTNumericEnumsInfo(apiLit *ast.CompositeLit) (string, int) {
 }
 
 func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
-	if len(numericEnums) != bazelLangs {
-		return numericEnums
-	}
-	var firstVal bool
-	var firstSet bool
+	var (
+		firstVal bool
+		firstSet bool
+	)
 	for lang := range langToConstant {
 		if lang == "all" {
 			continue
@@ -157,6 +154,12 @@ func simplifyRestNumericEnums(numericEnums map[string]bool) map[string]bool {
 			return numericEnums
 		}
 	}
+	if !firstVal {
+		// All languages need rest_numeric_enums.
+		return make(map[string]bool)
+	}
+	// All languages do not need rest_numeric_enums.
+	// Return all: true.
 	return map[string]bool{"all": firstVal}
 }
 

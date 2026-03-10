@@ -164,9 +164,9 @@ func ParseRESTNumericEnums(path string) (map[string]bool, error) {
 	noNumericEnums := make(map[string]bool)
 	for ruleName, lang := range ruleToLang {
 		for _, rule := range file.Rules(ruleName) {
-			if rule.AttrLiteral("rest_numeric_enums") != "True" {
-				noNumericEnums[lang] = true
-			}
+			// lang: true, if the language doesn't have rest_numeric_enums.
+			// lang: false, if the language has rest_numeric_enums.
+			noNumericEnums[lang] = rule.AttrLiteral("rest_numeric_enums") != "True"
 		}
 	}
 	return noNumericEnums, nil
