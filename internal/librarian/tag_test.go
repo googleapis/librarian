@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -30,15 +31,16 @@ func TestTag(t *testing.T) {
 	// Each test starts (before setup) with Lib1Name with a version of 1.0.0 and
 	// Lib2Name with a version of 1.2.0.
 	for _, test := range []struct {
-		name           string
-		setup          func(cfg *config.Config)
-		releaseCommit  string
-		taggedRevision string
-		wantTags       []string
+		name             string
+		setup            func(t *testing.T, cfg *config.Config)
+		releaseCommit    string
+		taggedRevision   string
+		createReleaseTag bool
+		wantTags         []string
 	}{
 		{
 			name: "tag Lib1Name and Lib2Name",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				cfg.Libraries[1].Version = "1.3.0"
 				writeConfigAndCommit(t, cfg)
@@ -48,7 +50,7 @@ func TestTag(t *testing.T) {
 		},
 		{
 			name: "tag Lib1Name (Lib2Name not released)",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommit(t, cfg)
 			},
@@ -57,7 +59,7 @@ func TestTag(t *testing.T) {
 		},
 		{
 			name: "tag Lib1Name in earlier commit",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommit(t, cfg)
 				writeReadmeAndCommit(t, "modified readme")
@@ -67,7 +69,7 @@ func TestTag(t *testing.T) {
 		},
 		{
 			name: "tag Lib1Name, specified in flags, with a later release of Lib2Name ignored",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommit(t, cfg)
 				cfg.Libraries[1].Version = "1.3.0"
@@ -77,15 +79,28 @@ func TestTag(t *testing.T) {
 			taggedRevision: "HEAD~",
 			wantTags:       []string{sample.Lib1Name + "/v1.1.0"},
 		},
+		{
+			name: "release tag",
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommitWithMessage(t, cfg, "chore: release a library (#12345)")
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			releaseCommit:    "HEAD~",
+			taggedRevision:   "HEAD~",
+			createReleaseTag: true,
+			wantTags:         []string{sample.Lib1Name + "/v1.1.0", "release-12345"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
 			cfg.Default.TagFormat = "{name}/v{version}"
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
-			test.setup(cfg)
+			test.setup(t, cfg)
 
-			if err := tag(t.Context(), cfg, test.releaseCommit); err != nil {
+			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag); err != nil {
 				t.Fatal(err)
 			}
 
@@ -112,14 +127,15 @@ func TestTag_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	for _, test := range []struct {
-		name          string
-		setup         func(cfg *config.Config)
-		releaseCommit string
-		wantErr       error
+		name             string
+		setup            func(t *testing.T, cfg *config.Config)
+		releaseCommit    string
+		createReleaseTag bool
+		wantErr          error
 	}{
 		{
 			name: "custom tool specified for git and doesn't exist",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				// Add a release commit to distinguish this case from "no releases"
 				cfg.Libraries[0].Version = "1.1.0"
 				cfg.Release = &config.Release{
@@ -133,7 +149,7 @@ func TestTag_Error(t *testing.T) {
 		},
 		{
 			name: "repo is dirty",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				// Add a release commit to distinguish this case from "no releases"
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommit(t, cfg)
@@ -145,13 +161,13 @@ func TestTag_Error(t *testing.T) {
 		},
 		{
 			name: "no release commit",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 			},
 			wantErr: errReleaseCommitNotFound,
 		},
 		{
 			name: "specified release commit is not a release commit",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				writeFileAndCommit(t, "README.txt", []byte("Just a readme"), "Modified config")
 			},
 			releaseCommit: "HEAD",
@@ -159,12 +175,21 @@ func TestTag_Error(t *testing.T) {
 		},
 		{
 			name: "specified release commit is invalid",
-			setup: func(cfg *config.Config) {
+			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[1].Version = "1.3.0"
 				writeConfigAndCommit(t, cfg)
 			},
 			releaseCommit: "not-a-commit",
 			// Can't easily check this error
+		},
+		{
+			name: "createReleaseTag but bad commit subject",
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[0].Version = "1.1.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			createReleaseTag: true,
+			wantErr:          errCannotDeriveReleaseTag,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -172,8 +197,8 @@ func TestTag_Error(t *testing.T) {
 			cfg.Default.TagFormat = "{name}/v{version}"
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
-			test.setup(cfg)
-			err := tag(t.Context(), cfg, test.releaseCommit)
+			test.setup(t, cfg)
+			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -212,5 +237,47 @@ func TestTagCommand(t *testing.T) {
 	if gotTaggedCommit != wantTaggedCommit {
 		// Deliberately not using diff as the hashes are basically opaque
 		t.Errorf("incorrect commit for tag: got = %s; want = %s", gotTaggedCommit, wantTaggedCommit)
+	}
+}
+
+func TestPullRequestCommitSubjectRegex(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		text      string
+		wantMatch bool
+	}{
+		{
+			name:      "match",
+			text:      "chore: release a library (#12345)",
+			wantMatch: true,
+		},
+		{
+			name: "no number at all",
+			text: "chore: release a library",
+		},
+		{
+			name: "no number",
+			text: "chore: release a library (#)",
+		},
+		{
+			name: "no hash",
+			text: "chore: release a library (12345)",
+		},
+		{
+			name: "no parens",
+			text: "chore: release a library #12345",
+		},
+		{
+			name: "match not at end",
+			text: "chore: release (#12345) a library",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotMatch := pullRequestCommitSubjectRegex.MatchString(test.text)
+
+			if diff := cmp.Diff(test.wantMatch, gotMatch); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
