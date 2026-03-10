@@ -22,8 +22,9 @@ import (
 )
 
 // repoMetadata represents the .repo-metadata.json file structure for Java.
-// The fields are ordered to match the insertion order in hermetic_build
-// (Python dictionary order).
+//
+// IMPORTANT: The order of fields in this struct matters. It is ordered
+// to match the insertion order in hermetic_build (Python dictionary order).
 type repoMetadata struct {
 	APIShortname         string `json:"api_shortname"`
 	NamePretty           string `json:"name_pretty"`
@@ -31,25 +32,36 @@ type repoMetadata struct {
 	APIDescription       string `json:"api_description"`
 	ClientDocumentation  string `json:"client_documentation"`
 	ReleaseLevel         string `json:"release_level"`
-	Transport            string `json:"transport"`
-	Language             string `json:"language"`
-	Repo                 string `json:"repo"`
-	RepoShort            string `json:"repo_short"`
-	DistributionName     string `json:"distribution_name"`
-	APIID                string `json:"api_id,omitempty"`
-	LibraryType          string `json:"library_type"`
-	RequiresBilling      bool   `json:"requires_billing"`
+	// Java-specific field.
+	Transport string `json:"transport"`
+	Language  string `json:"language"`
+	Repo      string `json:"repo"`
+	// Java-specific field.
+	RepoShort        string `json:"repo_short"`
+	DistributionName string `json:"distribution_name"`
+	APIID            string `json:"api_id,omitempty"`
+	LibraryType      string `json:"library_type"`
+	// Java-specific field.
+	RequiresBilling bool `json:"requires_billing"`
 
 	// Optional fields (appended in this order in Python)
-	CodeownerTeam         string `json:"codeowner_team,omitempty"`
-	ExcludedDependencies  string `json:"excluded_dependencies,omitempty"`
-	ExcludedPoms          string `json:"excluded_poms,omitempty"`
-	IssueTracker          string `json:"issue_tracker,omitempty"`
-	RestDocumentation     string `json:"rest_documentation,omitempty"`
-	RpcDocumentation      string `json:"rpc_documentation,omitempty"`
+	// Java-specific field.
+	CodeownerTeam string `json:"codeowner_team,omitempty"`
+	// Java-specific field.
+	ExcludedDependencies string `json:"excluded_dependencies,omitempty"`
+	// Java-specific field.
+	ExcludedPoms string `json:"excluded_poms,omitempty"`
+	IssueTracker string `json:"issue_tracker,omitempty"`
+	// Java-specific field.
+	RestDocumentation string `json:"rest_documentation,omitempty"`
+	// Java-specific field.
+	RpcDocumentation string `json:"rpc_documentation,omitempty"`
+	// Java-specific field.
 	ExtraVersionedModules string `json:"extra_versioned_modules,omitempty"`
-	RecommendedPackage    string `json:"recommended_package,omitempty"`
-	MinJavaVersion        int    `json:"min_java_version,omitempty"`
+	// Java-specific field.
+	RecommendedPackage string `json:"recommended_package,omitempty"`
+	// Java-specific field.
+	MinJavaVersion int `json:"min_java_version,omitempty"`
 }
 
 // write writes the given repoMetadata into libraryOutputDir/.repo-metadata.json.

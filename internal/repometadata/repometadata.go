@@ -91,15 +91,6 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
-
-	// RepoShort is the short name of the repository (e.g., "java-secretmanager").
-	RepoShort string `json:"repo_short,omitempty"`
-
-	// RequiresBilling indicates whether the API requires billing.
-	RequiresBilling bool `json:"requires_billing,omitempty"`
-
-	// Transport is the transport protocol (e.g., "grpc", "http", "both").
-	Transport string `json:"transport,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a

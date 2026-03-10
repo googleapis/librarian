@@ -382,3 +382,50 @@ func TestSortAPIs(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveRepoMetadata_Overrides(t *testing.T) {
+	t.Parallel()
+	apiPath := "google/cloud/secretmanager/v1"
+	googleapis := "internal/testdata/googleapis"
+
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+	}
+	library := &config.Library{
+		Name: "secretmanager",
+		APIs: []*config.API{{Path: apiPath}},
+		Java: &config.JavaModule{
+			GroupID:                      "com.custom",
+			DistributionNameOverride:     "com.custom:custom-artifact",
+			APIIDOverride:                "custom.googleapis.com",
+			APIDescriptionOverride:       "Custom description",
+			NamePrettyOverride:           "Custom Pretty Name",
+			ProductDocumentationOverride: "https://custom.docs",
+			ClientDocumentationOverride:  "https://custom.client.docs",
+			BillingNotRequired:           true,
+			LibraryTypeOverride:          "OTHER",
+		},
+	}
+	got, err := deriveRepoMetadata(cfg, library, googleapis)
+	if err != nil {
+		t.Fatalf("deriveRepoMetadata failed: %v", err)
+	}
+	want := &repoMetadata{
+		NamePretty:           "Custom Pretty Name",
+		ProductDocumentation: "https://custom.docs",
+		APIDescription:       "Custom description",
+		ClientDocumentation:  "https://custom.client.docs",
+		ReleaseLevel:         "",
+		Transport:            "both",
+		Language:             "java",
+		Repo:                 "googleapis/google-cloud-java",
+		RepoShort:            "java-secretmanager",
+		DistributionName:     "com.custom:custom-artifact",
+		APIID:                "custom.googleapis.com",
+		LibraryType:          "OTHER",
+		RequiresBilling:      false,
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(repoMetadata{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

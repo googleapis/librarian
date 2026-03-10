@@ -219,14 +219,29 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 	return nil
 }
 
+// postProcessLibrary coordinates all library-level post-processing tasks,
+// such as generating .repo-metadata.json.
 func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
+	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
+	if err != nil {
+		return fmt.Errorf("failed to derive repo metadata: %w", err)
+	}
+	if err := metadata.write(outDir); err != nil {
+		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
+	}
+	return nil
+}
+
+// deriveRepoMetadata constructs the repoMetadata for a Java library using
+// information from the primary service configuration and library-level overrides.
+func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repoMetadata, error) {
 	sortAPIs(library.APIs)
 	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
 	if err != nil {
-		return fmt.Errorf("failed to find primary API for path %s: %w", library.APIs[0].Path, err)
+		return nil, fmt.Errorf("failed to find primary API for path %s: %w", library.APIs[0].Path, err)
 	}
 	if api == nil {
-		return fmt.Errorf("failed to find primary API for path %s: not found", library.APIs[0].Path)
+		return nil, fmt.Errorf("failed to find primary API for path %s: not found", library.APIs[0].Path)
 	}
 	sharedMetadata := repometadata.FromAPI(cfg, api, library)
 
@@ -271,7 +286,6 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 		metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 	}
 	metadata.RequiresBilling = !library.Java.BillingNotRequired
-
 	// Java only fields
 	metadata.CodeownerTeam = library.Java.CodeownerTeam
 	metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
@@ -294,18 +308,16 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 		}
 		metadata.DistributionName = fmt.Sprintf("%s:%s", groupID, artifactID)
 	}
-
 	// Default ClientDocumentation uses artifact ID
 	if metadata.ClientDocumentation == "" {
 		parts := strings.Split(metadata.DistributionName, ":")
 		artifactID := parts[len(parts)-1]
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
-
 	// transport
 	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
-		return fmt.Errorf("failed to find api config: %w", err)
+		return nil, fmt.Errorf("failed to find api config: %w", err)
 	}
 	transport := serviceconfig.GRPCRest
 	if apiCfg != nil {
@@ -319,12 +331,7 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 	default:
 		metadata.Transport = "both"
 	}
-	if err := metadata.write(outDir); err != nil {
-		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
-	// TODO(https://github.com/googleapis/librarian/issues/4218): generate README.md
-	return nil
+	return metadata, nil
 }
 
 // sortAPIs sorts the APIs in a library to ensure the primary version is first.
