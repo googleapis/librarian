@@ -202,6 +202,29 @@ var APIs = []API{
 }
 `,
 		},
+		{
+			name: "remains same if all languages have default",
+			apiGo: `package serviceconfig
+var APIs = []API{
+	{Path: "google/cloud/foo/v1"},
+}
+`,
+			buildBazel: `
+csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
+go_gapic_library(name = "foo-go", rest_numeric_enums = True)
+java_gapic_library(name = "foo-java", rest_numeric_enums = True)
+nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
+php_gapic_library(name = "foo-php", rest_numeric_enums = True)
+py_gapic_library(name = "foo-python", rest_numeric_enums = True)
+ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
+`,
+			want: `package serviceconfig
+
+var APIs = []API{
+	{Path: "google/cloud/foo/v1"},
+}
+`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
