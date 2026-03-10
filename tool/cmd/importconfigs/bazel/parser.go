@@ -23,6 +23,16 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 )
 
+var ruleToLang = map[string]string{
+	"csharp_gapic_library":     "csharp",
+	"go_gapic_library":         "go",
+	"java_gapic_library":       "java",
+	"nodejs_gapic_library":     "nodejs",
+	"php_gapic_library":        "php",
+	"py_gapic_library":         "python",
+	"ruby_cloud_gapic_library": "ruby",
+}
+
 // Config holds configuration extracted from googleapis BUILD.bazel files.
 type Config struct {
 	// DIREGAPIC indicates whether DIREGAPIC (Discovery REST GAPICs) is used.
@@ -160,14 +170,4 @@ func ParseRESTNumericEnums(path string) (map[string]bool, error) {
 		}
 	}
 	return noNumericEnums, nil
-}
-
-var ruleToLang = map[string]string{
-	"csharp_gapic_library":     "csharp",
-	"go_gapic_library":         "go",
-	"java_gapic_library":       "java",
-	"nodejs_gapic_library":     "nodejs",
-	"php_gapic_library":        "php",
-	"py_gapic_library":         "python",
-	"ruby_cloud_gapic_library": "ruby",
 }
