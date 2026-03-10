@@ -152,10 +152,10 @@ var APIs = []API{
 csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = False)
 go_gapic_library(name = "foo-go", rest_numeric_enums = False)
 java_gapic_library(name = "foo-java", rest_numeric_enums = False)
-nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = False)
+nodejs_gapic_library(name = "foo-nodejs")
 php_gapic_library(name = "foo-php", rest_numeric_enums = False)
 py_gapic_library(name = "foo-python", rest_numeric_enums = False)
-ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = False)
+ruby_cloud_gapic_library(name = "foo-ruby")
 `,
 			want: `package serviceconfig
 
@@ -165,7 +165,7 @@ var APIs = []API{
 `,
 		},
 		{
-			name: "remove if all languages default (True)",
+			name: "remove if all languages have default",
 			apiGo: `package serviceconfig
 var APIs = []API{
 	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangAll: true}},
