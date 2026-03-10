@@ -342,7 +342,7 @@ php_gapic_library(
 			want: map[string]bool{
 				"go":     false,
 				"python": true,
-				"php":    true,
+				"php":    false,
 			},
 		},
 		{
@@ -353,7 +353,7 @@ go_gapic_library(
 )
 `,
 			want: map[string]bool{
-				"go": true,
+				"go": false,
 			},
 		},
 	} {
