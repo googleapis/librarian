@@ -166,7 +166,7 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
 	}
 
-	var lastVarIndex int = -1
+	var lastVarIndex = -1
 	// Collect field paths corresponding to variable segments in the path template
 	for i, segment := range binding.PathTemplate.Segments {
 		if segment.Variable == nil {
