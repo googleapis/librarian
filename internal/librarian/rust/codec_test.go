@@ -71,6 +71,31 @@ func TestLibraryToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "with ResourceNameHeuristic",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Rust: &config.RustCrate{
+					ResourceNameHeuristic: true,
+				},
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageRust,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Source: sidekickconfig.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+				Override: api.ModelOverride{
+					Title: "Secret Manager API",
+				},
+				ResourceNameHeuristic: true,
+			},
+		},
+		{
 			name: "with version and release level",
 			library: &config.Library{
 				Name:         "google-cloud-secretmanager",
@@ -578,6 +603,50 @@ func TestModuleToModelConfig(t *testing.T) {
 		library *config.Library
 		want    *parser.ModelConfig
 	}{
+		{
+			name: "with ResourceNameHeuristic false",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Rust: &config.RustCrate{
+					ResourceNameHeuristic: false,
+					Modules: []*config.RustModule{
+						{
+							Language: config.LanguageRust,
+						},
+					},
+				},
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageRust,
+				SpecificationFormat: config.SpecProtobuf,
+				Source: sidekickconfig.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+				ResourceNameHeuristic: false,
+			},
+		},
+		{
+			name: "with ResourceNameHeuristic true",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Rust: &config.RustCrate{
+					ResourceNameHeuristic: true,
+					Modules: []*config.RustModule{
+						{
+							Language: config.LanguageRust,
+						},
+					},
+				},
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageRust,
+				SpecificationFormat: config.SpecProtobuf,
+				Source: sidekickconfig.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+				ResourceNameHeuristic: true,
+			},
+		},
 		{
 			name: "with veneer documentation overrides",
 			library: &config.Library{
