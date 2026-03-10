@@ -17,11 +17,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -53,8 +55,33 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 		return fmt.Errorf("failed to parse %s: %w", sdkYaml, err)
 	}
 	apiMap := toMap(*apis)
-
+	buildFilePaths, err := findBuild(googleapisDir)
+	if err != nil {
+		return err
+	}
 	return yaml.Write(sdkYaml, toSlice(apiMap))
+}
+
+func findBuild(googleapisDir string) ([]string, error) {
+	var res []string
+	err := filepath.WalkDir(filepath.Join(googleapisDir, "google"), func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		if d.Name() != "BUILD.bazel" {
+			return nil
+		}
+
+		res = append(res, strings.TrimPrefix(path, "googleapisDir/"))
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func toMap(apis []*serviceconfig.API) map[string]*serviceconfig.API {
