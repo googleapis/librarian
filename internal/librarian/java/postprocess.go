@@ -303,9 +303,13 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 	}
 
 	// transport
-	transport := library.Transport
-	if transport == "" {
-		transport = "grpc+rest"
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		return fmt.Errorf("failed to find api config: %w", err)
+	}
+	transport := serviceconfig.GRPCRest
+	if apiCfg != nil {
+		transport = apiCfg.Transport(config.LanguageJava)
 	}
 	switch transport {
 	case "grpc":
