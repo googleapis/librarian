@@ -156,7 +156,7 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
-			name: "library without Go API",
+			name: "library without Library.Go field for overrides",
 			initialFiles: map[string]string{
 				"internal/generated/snippets/secretmanager/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.1.0\"\n",
