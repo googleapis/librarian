@@ -298,4 +298,3 @@ func derivePackageNameFromLibraryName(name string) string {
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
-
