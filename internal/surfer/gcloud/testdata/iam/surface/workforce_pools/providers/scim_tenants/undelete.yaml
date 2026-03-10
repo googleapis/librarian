@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*- #
+# Copyright 2025 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Implementation definition for gcloud iam workforce-pools providers scim-tenants undelete
+
+- release_tracks: [ALPHA, BETA, GA]
+  help_text:
+    brief: Undelete an IAM workforce identity pool provider SCIM tenant.
+    description: |
+      Undelete a previously deleted SCIM tenant associated with a specific workforce identity pool provider, restoring it to an active state.
+    examples: |
+      To undelete a SCIM tenant with ID `my-tenant` under provider `my-okta-provider` in pool `my-pool` located in `global`:
+
+        $ {command} my-tenant --location=global --workforce-pool=my-pool --provider=my-okta-provider
+  request:
+    collection: iam.locations.workforcePools.providers.scimTenants
+    method: undelete
+  arguments:
+    resource:
+      help_text: The SCIM tenant to undelete.
+      spec:
+        name: workforce pool provider scim tenant
+        collection: iam.locations.workforcePools.providers.scimTenants
+        request_id_field: workforcePoolProviderScimTenantId
+        attributes:
+          - parameter_name: locationsId
+            attribute_name: location
+            help: The location for the workforce pool.
+          - parameter_name: workforcePoolsId
+            attribute_name: workforce-pool
+            help: |
+              The ID to use for the workforce pool, which becomes the final component of the resource name.
+              This value must be a globally unique string of 6 to 63 lowercase letters, digits, or hyphens.
+              It must start with a letter, and cannot have a trailing hyphen. The prefix `gcp-` is reserved
+              for use by Google, and may not be specified.
+          - parameter_name: providersId
+            attribute_name: provider
+            help: |
+              The ID to use for the workforce pool provider, which becomes the final component of the
+              resource name. This value must be unique within the workforce pool, 4-32 characters in length,
+              and may contain the characters [a-z0-9-]. The prefix `gcp-` is reserved for use by Google,
+              and may not be specified.
+          - parameter_name: scimTenantsId
+            attribute_name: scim-tenant
+            help: |
+              The ID for the SCIM tenant, which becomes the final component of the resource name.
+              This value must be 4-32 characters, alphanumeric ([a-z0-9-]), and cannot start with gcp-.
+        disable_auto_completers: false
+      is_positional: true
