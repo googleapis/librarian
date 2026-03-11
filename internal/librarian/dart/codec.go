@@ -17,32 +17,31 @@ package dart
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 )
 
 var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
 
-func toModelConfig(library *config.Library, ch *config.API, sources *source.Sources) (*parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
 		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
 
-	src := addLibraryRoots(library, sources)
+	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
 
 	if library.Dart != nil && library.Dart.IncludeList != nil {
-		src["include-list"] = strings.Join(library.Dart.IncludeList, ",")
+		src.IncludeList = library.Dart.IncludeList
 	}
 	root := sources.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
 		root = sources.Showcase
 	}
-	svcConfig, err := serviceconfig.Find(root, ch.Path, serviceconfig.LangDart)
+	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageDart)
 	if err != nil {
 		return nil, err
 	}
@@ -127,37 +126,4 @@ func buildCodec(library *config.Library) map[string]string {
 		codec[key] = value
 	}
 	return codec
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/3863): remove this function once we removed sidekick config.
-func addLibraryRoots(library *config.Library, sources *source.Sources) map[string]string {
-	src := make(map[string]string)
-	if library.Rust == nil {
-		library.Rust = &config.RustCrate{}
-	}
-
-	if len(library.Roots) == 0 && sources.Googleapis != "" {
-		// Default to googleapis if no roots are specified.
-		src["googleapis-root"] = sources.Googleapis
-		src["roots"] = "googleapis"
-	} else {
-		src["roots"] = strings.Join(library.Roots, ",")
-		rootMap := map[string]struct {
-			path string
-			key  string
-		}{
-			"googleapis":   {path: sources.Googleapis, key: "googleapis-root"},
-			"discovery":    {path: sources.Discovery, key: "discovery-root"},
-			"showcase":     {path: sources.Showcase, key: "showcase-root"},
-			"protobuf-src": {path: sources.ProtobufSrc, key: "protobuf-src-root"},
-			"conformance":  {path: sources.Conformance, key: "conformance-root"},
-		}
-		for _, root := range library.Roots {
-			if r, ok := rootMap[root]; ok && r.path != "" {
-				src[r.key] = r.path
-			}
-		}
-	}
-
-	return src
 }

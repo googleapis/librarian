@@ -80,6 +80,12 @@ type modelAnnotations struct {
 	DetailedTracingAttributes bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
+	// The service to use for the package-level quickstart sample.
+	// Rust generation may decide not to generate some services,
+	// e.g. if the methods have no bindings. On occasion the service
+	// selected at the model level will be skipped for Rust generation
+	// so we need to choose a different one.
+	QuickstartService *api.Service
 }
 
 // IsWktCrate returns true when bootstrapping the well-known types crate the templates add some
@@ -270,8 +276,6 @@ type methodAnnotation struct {
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
 	InternalBuilders          bool
-	ResourceNameTemplate      string
-	ResourceNameArgs          []string
 	HasResourceNameGeneration bool
 }
 
@@ -391,6 +395,11 @@ func (s *bindingSubstitution) TemplateAsString() string {
 	return strings.Join(s.Template, "/")
 }
 
+// VariableName returns the variable name to be used in the templates.
+func (s *bindingSubstitution) VariableName() string {
+	return fmt.Sprintf("var_%s", strings.ReplaceAll(s.FieldName, ".", "_"))
+}
+
 type pathBindingAnnotation struct {
 	// The path format string for this binding
 	//
@@ -405,6 +414,11 @@ type pathBindingAnnotation struct {
 
 	// The codec is configured to generated detailed tracing attributes.
 	DetailedTracingAttributes bool
+
+	// Resource name generation fields, propagated from method scope.
+	HasResourceNameGeneration bool
+	ResourceNameTemplate      string
+	ResourceNameArgs          []string
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -681,6 +695,23 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		}
 		return defaultHost[:idx]
 	}()
+
+	var quickstartService *api.Service
+	if codec.quickstartServiceOverride != "" {
+		idx := slices.IndexFunc(servicesSubset, func(s *api.Service) bool {
+			return strings.EqualFold(codec.ServiceName(s), codec.quickstartServiceOverride) || strings.EqualFold(s.Name, codec.quickstartServiceOverride)
+		})
+		if idx != -1 {
+			quickstartService = servicesSubset[idx]
+		} else {
+			return nil, fmt.Errorf("quickstart_service_override %q not found in generated services for package %q", codec.quickstartServiceOverride, codec.packageName(model))
+		}
+	} else if model.QuickstartService != nil {
+		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService }) {
+			quickstartService = model.QuickstartService
+		}
+	}
+
 	ann := &modelAnnotations{
 		PackageName:      codec.packageName(model),
 		PackageNamespace: codec.rootModuleName(model),
@@ -709,6 +740,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
 		InternalBuilders:          codec.internalBuilders,
+		QuickstartService:         quickstartService,
 	}
 
 	codec.addFeatureAnnotations(model, ann)
@@ -1228,7 +1260,7 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
-		rustNames = append(rustNames, toSnake(n))
+		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	binding := &bindingSubstitution{
 		FieldAccessor: fieldAccessor,
@@ -1576,24 +1608,37 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 // annotateResourceNameGeneration populates the method annotation with a Rust format string (ResourceNameTemplate)
 // and a list of argument accessors (ResourceNameArgs) to generate the `resource_name()` helper.
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
+	if !annotation.DetailedTracingAttributes {
+		return nil // Constraint 1: Do nothing if detailed tracing is off.
+	}
 	if m.PathInfo != nil {
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
-				tmpl, err := formatResourceNameTemplateFromPath(m, b)
-				if err != nil {
-					return err
+				annotation.HasResourceNameGeneration = true
+				break
+			}
+		}
+
+		if annotation.HasResourceNameGeneration {
+			for _, b := range m.PathInfo.Bindings {
+				bAnn, ok := b.Codec.(*pathBindingAnnotation)
+				if !ok {
+					continue
 				}
-				annotation.ResourceNameTemplate = tmpl
-				for _, path := range b.TargetResource.FieldPaths {
-					accSegments, err := makeAccessors(path, m)
+				// To make sure the Rust code for each binding returns the same type, we set HasResourceNameGeneration = true for all bindings to cue each binding to produce the same typed result (even if this specific binding does not have a TargetResource.)
+				bAnn.HasResourceNameGeneration = true
+
+				if b.TargetResource != nil {
+					tmpl, err := formatResourceNameTemplateFromPath(m, b)
 					if err != nil {
 						return err
 					}
-					fullAcc := "Some(&req)" + strings.Join(accSegments, "") + ".unwrap_or(\"\")"
-					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, fullAcc)
+					bAnn.ResourceNameTemplate = tmpl
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+				} else {
+					bAnn.ResourceNameTemplate = ""
+					bAnn.ResourceNameArgs = nil
 				}
-				annotation.HasResourceNameGeneration = true
-				break
 			}
 		}
 	}
@@ -1601,25 +1646,18 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 }
 
 // formatResourceNameTemplateFromPath constructs the Rust format string directly from the
-// parsed PathTemplate.
+// resolved TargetResource.Template.
 func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (string, error) {
-	// Determine the service host (mirroring logic in api/resource_identification.go)
-	host := m.Model.Name + ".googleapis.com"
-	if m.Service != nil && m.Service.DefaultHost != "" {
-		host = m.Service.DefaultHost
+	if b.TargetResource == nil || len(b.TargetResource.Template) == 0 {
+		return "", fmt.Errorf("missing target resource template for method %s", m.ID)
 	}
 
 	var sb strings.Builder
-	sb.WriteString("//")
-	sb.WriteString(host)
-
-	// We assume simple path templates where variables correspond to arguments.
-	if b.PathTemplate == nil {
-		return "", fmt.Errorf("missing path template for method %s", m.ID)
-	}
-
-	for _, seg := range b.PathTemplate.Segments {
-		sb.WriteByte('/')
+	for i, seg := range b.TargetResource.Template {
+		// TargetResource.Template contains elements like `//host` as the first literal
+		if i > 0 {
+			sb.WriteString("/")
+		}
 		if seg.Literal != nil {
 			sb.WriteString(*seg.Literal)
 		} else if seg.Variable != nil {
@@ -1627,6 +1665,20 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		}
 	}
 	return sb.String(), nil
+}
+
+// formatResourceNameArgs creates the corresponding Rust template variables for the resource name.
+func formatResourceNameArgs(fieldPaths [][]string) []string {
+	var args []string
+	for _, path := range fieldPaths {
+		var rustNames []string
+		for _, p := range path {
+			rustNames = append(rustNames, toSnakeNoMangling(p))
+		}
+		varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+		args = append(args, varName)
+	}
+	return args
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

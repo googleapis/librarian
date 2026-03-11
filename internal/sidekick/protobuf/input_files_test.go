@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 var (
@@ -32,10 +33,13 @@ const (
 
 func TestBasic(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,29 +52,19 @@ func TestBasic(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
-	}
-}
-
-func TestTooManyOptions(t *testing.T) {
-	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"exclude-list":    "d,e,f",
-		"include-list":    "a,b,c",
-	}
-	_, err := DetermineInputFiles(source, options)
-	if err == nil {
-		t.Errorf("expected an error when setting both exclude-list and include-list")
 	}
 }
 
 func TestIncludeList(t *testing.T) {
 	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"include-list":    "resources.proto",
+	cfg := config.SourceConfig{
+		Sources: config.Sources{
+			Googleapis: testdataDir,
+		},
+		ActiveRoots: []string{"googleapis"},
+		IncludeList: []string{"resources.proto"},
 	}
-	got, err := DetermineInputFiles(source, options)
+	got, err := DetermineInputFiles(source, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,27 +73,6 @@ func TestIncludeList(t *testing.T) {
 	}
 	want := []string{
 		filepath.ToSlash(path.Join(testdataDir, source, "resources.proto")),
-	}
-	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
-	}
-}
-
-func TestExcludeList(t *testing.T) {
-	source := sourceDir
-	options := map[string]string{
-		"googleapis-root": testdataDir,
-		"exclude-list":    "resources.proto",
-	}
-	got, err := DetermineInputFiles(source, options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for i := range got {
-		got[i] = filepath.ToSlash(got[i])
-	}
-	want := []string{
-		filepath.ToSlash(path.Join(testdataDir, source, "service.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
 		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)

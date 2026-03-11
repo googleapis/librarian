@@ -185,6 +185,98 @@ func TestInternalBuildersAnnotation(t *testing.T) {
 	}
 }
 
+func TestQuickstartServiceAnnotation(t *testing.T) {
+	t.Run("survives filtering", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+		// model.Services[0] is Service0, model.Services[1] is Service1
+		model.QuickstartService = model.Services[1]
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.QuickstartService == nil {
+			t.Fatal("QuickstartService should not be nil")
+		}
+		if got.QuickstartService != model.Services[1] {
+			t.Errorf("expected QuickstartService to be Service1, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("filtered out fallback", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+
+		// Create a service that has no methods with bindings, so it will be filtered out.
+		filteredService := &api.Service{
+			Name:    "FilteredService",
+			ID:      "..FilteredService",
+			Package: "test.v1",
+			Methods: []*api.Method{
+				{
+					Name: "noBindings",
+					ID:   "..FilteredService.noBindings",
+				},
+			},
+		}
+		model.Services = append(model.Services, filteredService)
+		for _, s := range model.Services {
+			s.Model = model
+		}
+		api.CrossReference(model)
+
+		// Set the filtered service as the global quickstart.
+		model.QuickstartService = filteredService
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.QuickstartService != nil {
+			t.Errorf("expected QuickstartService to be nil because it was filtered out and there is no override, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("with override", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+		model.QuickstartService = model.Services[0] // Set default to 0
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		// Set override to Service1
+		codec.quickstartServiceOverride = "Service1"
+
+		got, err := annotateModel(model, codec)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got.QuickstartService == nil {
+			t.Fatal("QuickstartService should not be nil")
+		}
+		if got.QuickstartService != model.Services[1] {
+			t.Errorf("expected QuickstartService to be overridden to Service1, got %v", got.QuickstartService.Name)
+		}
+	})
+
+	t.Run("with missing override", func(t *testing.T) {
+		model := newTestAnnotateModelAPI()
+
+		codec := newTestCodec(t, libconfig.SpecProtobuf, "", nil)
+		codec.quickstartServiceOverride = "NonExistentService"
+
+		_, err := annotateModel(model, codec)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		expectedErr := `quickstart_service_override "NonExistentService" not found in generated services for package "google-cloud-Test"`
+		if err.Error() != expectedErr {
+			t.Errorf("expected error %q, got %q", expectedErr, err.Error())
+		}
+	})
+}
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",

@@ -129,7 +129,7 @@ func TestUpdateAllLibraryVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(string(readmeContent), string(got)); diff != "" {
+	if diff := cmp.Diff(readmeContent, string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

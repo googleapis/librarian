@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	const (
 		libraryName = "test-library"
 		outputDir   = "output"
@@ -33,12 +34,12 @@ func TestGenerateLibraries(t *testing.T) {
 		Output: outputDir,
 	}
 	cfg := &config.Config{
-		Language: languageFake,
+		Language: config.LanguageFake,
 	}
 
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
-	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, "", nil); err != nil {
+	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -50,5 +51,52 @@ func TestGenerateLibraries(t *testing.T) {
 	want := "# test-library\n\nGenerated library\n"
 	if diff := cmp.Diff(want, string(content)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCleanLibraries(t *testing.T) {
+	const (
+		libraryName = "test-library"
+		outputDir   = "output"
+	)
+	library := &config.Library{
+		Name:   libraryName,
+		Output: outputDir,
+	}
+	cfg := &config.Config{
+		Language: config.LanguageFake,
+	}
+
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	if err := generateLibraries(t.Context(), cfg, []*config.Library{library}, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := cleanLibraries(cfg.Language, []*config.Library{library}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := os.Stat(filepath.Join(library.Output, "README.md"))
+	wantErr := os.ErrNotExist
+	if !errors.Is(err, wantErr) {
+		t.Errorf("after cleaning, checking for README.md error = %v, wantErr %v", err, wantErr)
+	}
+}
+
+func TestFakeClean_Error(t *testing.T) {
+	const (
+		libraryName = "test-library"
+		outputDir   = "output"
+	)
+	library := &config.Library{
+		Name:   libraryName,
+		Output: outputDir,
+	}
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	err := fakeClean(library)
+	wantErr := os.ErrNotExist
+	if !errors.Is(err, wantErr) {
+		t.Errorf("fakeClean(), error = %v, wantErr %v", err, wantErr)
 	}
 }

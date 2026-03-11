@@ -22,7 +22,7 @@ For guidance, refer to the following resources:
 
 - [Effective Go](https://go.dev/doc/effective_go): The canonical guide to
   writing idiomatic Go code.
-- [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments): Common
+- [Go Code Review Comments](styleguide/go-code-review-comments.md): Common
   feedback and best practices used in Go code reviews.
 - [Google's Go Style Guide](https://google.github.io/styleguide/go/decisions):
   Google’s guidance on Go style and design decisions.
@@ -182,7 +182,7 @@ inputs versus which functions only read them.
 
 When writing tests, we follow the patterns below to ensure consistency,
 readability, and ease of debugging. See
-[Go Test Comments](https://go.dev/wiki/TestComments) for conventions around
+[Go Test Comments](styleguide/go-test-comments.md) for conventions around
 writing test code.
 
 ### Use `t.Context()`
@@ -289,6 +289,15 @@ func TestTransform(t *testing.T) {
 	}
 }
 ```
+
+### Verify with `errors.Is` and `errors.As`
+
+Avoid comparing error strings directly with `==` or `strings.Contains`, as these are fragile and can break if the error message is updated for humans.
+
+Instead:
+
+- Use `errors.Is(err, target)` to check if an error matches a specific sentinel error (e.g., `fs.ErrNotExist`). It correctly handles wrapped errors.
+- Use `errors.As(err, &target)` when you need to verify if an error is of a specific custom type and access its fields (e.g., a `ValidationError` struct with a list of invalid fields).
 
 ### Separate error tests
 

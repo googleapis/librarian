@@ -19,6 +19,8 @@ permissions:
 jobs:
   go-generate:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -37,6 +39,8 @@ jobs:
           fi
   legacylibrarian:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -51,6 +55,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
   test:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6

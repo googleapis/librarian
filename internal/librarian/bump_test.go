@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -379,7 +378,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 			name: "unsupported language",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				return c
 			}(),
 			versionOverride: "2.0.0",
@@ -603,7 +602,7 @@ func TestPostBump(t *testing.T) {
 				}
 			},
 			cfg: &config.Config{
-				Language: languageRust,
+				Language: config.LanguageRust,
 				Release: &config.Release{
 					Preinstalled: map[string]string{
 						"cargo": fakeCargo,
@@ -620,7 +619,7 @@ func TestPostBump(t *testing.T) {
 				}
 			},
 			cfg: &config.Config{
-				Language: languageRust,
+				Language: config.LanguageRust,
 				Release: &config.Release{
 					Preinstalled: map[string]string{
 						"cargo": fakeCargo,
@@ -632,7 +631,7 @@ func TestPostBump(t *testing.T) {
 		{
 			name: "non-rust language does nothing",
 			cfg: &config.Config{
-				Language: languageFake,
+				Language: config.LanguageFake,
 			},
 		},
 	} {
@@ -662,21 +661,21 @@ func TestDeriveNextVersion(t *testing.T) {
 			name: "rust library next non-GA version",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				c.Libraries[0].Version = sample.RustNonGAVersion
 				return c
 			}(),
-			versionOpts: languageVersioningOptions[languageRust],
+			versionOpts: languageVersioningOptions[config.LanguageRust],
 			wantVersion: sample.RustNextNonGAVersion,
 		},
 		{
 			name: "rust library next GA version",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = languageRust
+				c.Language = config.LanguageRust
 				return c
 			}(),
-			versionOpts: languageVersioningOptions[languageRust],
+			versionOpts: languageVersioningOptions[config.LanguageRust],
 			wantVersion: sample.NextVersion,
 		},
 		{
@@ -1014,9 +1013,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 				if err := os.Remove(librarianConfigPath); err != nil {
 					t.Fatal(err)
 				}
-				if err := command.Run(t.Context(), "git", "commit", "-m", "deleted config file", "."); err != nil {
-					t.Fatal(err)
-				}
+				testhelper.RunGit(t, "commit", "-m", "deleted config file", ".")
 			},
 		},
 		{
@@ -1254,26 +1251,116 @@ func TestLegacyRustBumpAll(t *testing.T) {
 	}
 }
 
+func TestLibraryChanged(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		cfg          *config.Config
+		library      *config.Library
+		filesChanges []string
+		want         bool
+	}{
+		{
+			name: "find changes in library",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
+			filesChanges: []string{
+				"src/storage/apiv1/example.go",
+				"src/spanner/apiv1/nested/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "no change in library",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
+			filesChanges: []string{
+				"src/spanner/apiv1/example.go",
+			},
+		},
+		{
+			name: "library name prefix",
+			cfg:  sample.Config(),
+			library: &config.Library{
+				Name:   sample.Lib1Name,
+				Output: sample.Lib1Output,
+			},
+			filesChanges: []string{
+				"src/storage-prefix/apiv1/example.go",
+			},
+		},
+		{
+			name: "Go library",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib/apiv1/example.go",
+				"test-lib/apiv2/example.go",
+			},
+			want: true,
+		},
+		{
+			name: "Go library name prefix",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+			},
+			filesChanges: []string{
+				"test-lib-1/apiv1/example.go",
+				"test-lib-2/apiv2/example.go",
+			},
+		},
+		{
+			name: "Go library with a nested module",
+			cfg:  &config.Config{Language: config.LanguageGo},
+			library: &config.Library{
+				Name:   "test-lib",
+				Output: ".",
+				Go:     &config.GoModule{NestedModule: "v2"},
+			},
+			filesChanges: []string{
+				"test-lib/v2/apiv1/example.go",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryChanged(test.cfg, test.library, test.filesChanges)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func writeReadmeAndCommit(t *testing.T, newContent string) {
 	writeFileAndCommit(t, testhelper.ReadmeFile, []byte(newContent), "Modified readme")
 }
 
 func writeConfigAndCommit(t *testing.T, cfg *config.Config) {
+	writeConfigAndCommitWithMessage(t, cfg, "Modified config")
+}
+
+func writeConfigAndCommitWithMessage(t *testing.T, cfg *config.Config, message string) {
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFileAndCommit(t, librarianConfigPath, data, "Modified config")
+	writeFileAndCommit(t, librarianConfigPath, data, message)
 }
 
 func writeFileAndCommit(t *testing.T, path string, content []byte, message string) {
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", message); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", message)
 }

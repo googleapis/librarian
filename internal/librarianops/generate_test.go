@@ -15,21 +15,26 @@
 package librarianops
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/testhelper"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestGenerateCommand(t *testing.T) {
+	// Build the librarian binary from local source to avoid downloading
+	// a published module version during tests.
+	librarianBin := filepath.Join(t.TempDir(), "librarian")
+	if err := command.Run(t.Context(), "go", "build", "-o", librarianBin, "../../cmd/librarian"); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
 		name    string
 		verbose bool
@@ -39,18 +44,10 @@ func TestGenerateCommand(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoDir := t.TempDir()
-			if err := command.Run(t.Context(), "git", "init", repoDir); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.email", "test@example.com"); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "config", "user.name", "Test User"); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "checkout", "-b", "main"); err != nil {
-				t.Fatal(err)
-			}
+			testhelper.RunGit(t, "init", repoDir)
+			testhelper.RunGit(t, "-C", repoDir, "config", "user.email", "test@example.com")
+			testhelper.RunGit(t, "-C", repoDir, "config", "user.name", "Test User")
+			testhelper.RunGit(t, "-C", repoDir, "checkout", "-b", "main")
 
 			wd, err := os.Getwd()
 			if err != nil {
@@ -62,12 +59,8 @@ func TestGenerateCommand(t *testing.T) {
 			if err := yaml.Write(filepath.Join(repoDir, "librarian.yaml"), cfg); err != nil {
 				t.Fatal(err)
 			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "add", "."); err != nil {
-				t.Fatal(err)
-			}
-			if err := command.Run(t.Context(), "git", "-C", repoDir, "commit", "-m", "initial commit"); err != nil {
-				t.Fatal(err)
-			}
+			testhelper.RunGit(t, "-C", repoDir, "add", ".")
+			testhelper.RunGit(t, "-C", repoDir, "commit", "-m", "initial commit")
 
 			// Rename temp dir to fake-repo so basename matches expected repo
 			// name.
@@ -77,47 +70,13 @@ func TestGenerateCommand(t *testing.T) {
 			}
 			repoDir = fakeRepoDir
 
-			args := []string{"librarianops", "generate", "-C", repoDir}
 			if test.verbose {
-				args = append(args, "-v")
 				command.Verbose = true
 				defer func() { command.Verbose = false }()
 			}
-
-			if !test.verbose {
-				if err := Run(t.Context(), args...); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				old := os.Stdout
-				r, w, err := os.Pipe()
-				if err != nil {
-					t.Fatal(err)
-				}
-				os.Stdout = w
-				t.Cleanup(func() { os.Stdout = old })
-
-				runErr := Run(t.Context(), args...)
-				if err := w.Close(); err != nil {
-					// Close writer to signal EOF to reader.
-					t.Fatal(err)
-				}
-
-				var buf bytes.Buffer
-				if _, err := io.Copy(&buf, r); err != nil {
-					t.Fatal(err)
-				}
-				if runErr != nil {
-					t.Fatal(runErr)
-				}
-
-				output := buf.String()
-				if !strings.Contains(output, "librarian@") {
-					t.Errorf("expected output to contain librarian command, got: %s", output)
-				}
-				if !strings.Contains(output, "-v") {
-					t.Errorf("expected output to contain -v flag, got: %s", output)
-				}
+			runInDocker := false
+			if err := processRepo(t.Context(), repoFake, repoDir, librarianBin, test.verbose, runInDocker); err != nil {
+				t.Fatal(err)
 			}
 
 			readmePath := filepath.Join(repoDir, sample.Lib1Output, "README.md")

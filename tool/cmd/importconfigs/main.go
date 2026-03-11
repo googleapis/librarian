@@ -31,7 +31,9 @@ func main() {
 		Usage:     "commands for import configs",
 		UsageText: "import-configs [command]",
 		Commands: []*cli.Command{
+			addNodejsCommand(),
 			updateTransportsCommand(),
+			updateRestNumericEnumsCommand(),
 		},
 	}
 	if err := cmd.Run(ctx, os.Args); err != nil {

@@ -18,11 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/semver"
@@ -48,7 +50,7 @@ var (
 	// this should be removed. If a language does not have specific needs, a
 	// default [semver.DeriveNextOptions] is returned for default semantics.
 	languageVersioningOptions = map[string]semver.DeriveNextOptions{
-		"rust": {
+		config.LanguageRust: {
 			BumpVersionCore:       true,
 			DowngradePreGAChanges: true,
 		},
@@ -111,7 +113,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
-	if cfg.Language == languageRust {
+	if cfg.Language == config.LanguageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
 	}
 
@@ -162,8 +164,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, err
 		}
-		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !libraryChanged(cfg, lib, filesChanged) {
 			continue
 		}
 		librariesToBump = append(librariesToBump, lib)
@@ -171,12 +172,32 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 	return librariesToBump, nil
 }
 
-func hasChangesIn(dir string, filesChanged []string) bool {
+func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []string) bool {
+	var (
+		output    string
+		exclusion string
+	)
+	switch cfg.Language {
+	case config.LanguageGo:
+		output = filepath.Clean(filepath.Join(library.Output, library.Name))
+		if library.Go != nil && library.Go.NestedModule != "" {
+			exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
+		}
+	default:
+		output = libraryOutput(cfg.Language, library, cfg.Default)
+	}
+	return hasChangesIn(output, exclusion, filesChanged)
+}
+
+func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 	if !strings.HasSuffix(dir, "/") {
 		dir += "/"
 	}
 	for _, f := range filesChanged {
 		if strings.HasPrefix(f, dir) {
+			if exclusion != "" && strings.HasPrefix(f, exclusion) {
+				continue
+			}
 			return true
 		}
 	}
@@ -196,9 +217,11 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 	lib.Version = version
 
 	switch cfg.Language {
-	case languageFake:
+	case config.LanguageFake:
 		return fakeBumpLibrary(output, version)
-	case languagePython:
+	case config.LanguageGo:
+		return golang.Bump(lib, output, version)
+	case config.LanguagePython:
 		return python.Bump(output, version)
 	default:
 		return fmt.Errorf("%q does not support bump", cfg.Language)
@@ -208,7 +231,7 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 // postBump performs post version bump cleanup and maintenance tasks after libraries have been processed.
 func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
-	case languageRust:
+	case config.LanguageRust:
 		cargoExe := "cargo"
 		if cfg.Release != nil {
 			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
@@ -395,7 +418,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 			continue
 		}
 		output := libraryOutput(cfg.Language, lib, cfg.Default)
-		if !hasChangesIn(output, filesChanged) {
+		if !hasChangesIn(output, "", filesChanged) {
 			continue
 		}
 		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, gitExe, ""); err != nil {
@@ -417,9 +440,9 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	}
 	output := libraryOutput(cfg.Language, lib, cfg.Default)
 	switch cfg.Language {
-	case languageRust:
+	case config.LanguageRust:
 		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
-	case languageFake:
+	case config.LanguageFake:
 		lib.Version = version
 		return fakeBumpLibrary(output, version)
 	default:

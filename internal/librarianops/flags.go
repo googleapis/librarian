@@ -26,8 +26,14 @@ func parseFlags(cmd *cli.Command) (repoName, workDir string, verbose bool, err e
 	workDir = cmd.String("C")
 	verbose = cmd.Bool("v")
 	if workDir != "" {
-		// When -C is provided, infer repo name from directory basename.
-		repoName = filepath.Base(workDir)
+		// When -C is provided, infer repo name from directory basename, having
+		// it to an absolute directory (to allow "-C .")
+		absWorkDir, err := filepath.Abs(workDir)
+		if err != nil {
+			return "", "", verbose, fmt.Errorf("cannot resolve %s: %w", workDir, err)
+		}
+		workDir = absWorkDir
+		repoName = filepath.Base(absWorkDir)
 	} else {
 		// When -C is not provided, require positional repo argument.
 		if cmd.Args().Len() == 0 {

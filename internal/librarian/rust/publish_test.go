@@ -15,8 +15,10 @@
 package rust
 
 import (
+	"errors"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -76,12 +78,8 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 	_ = testhelper.SetupRepoWithChange(t, "release-with-new-crate")
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
+	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 	files := []string{
 		path.Join("src", "pubsub", "Cargo.toml"),
 		path.Join("src", "pubsub", "src", "lib.rs"),
@@ -152,9 +150,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	if err := os.WriteFile(name, []byte("bad-toml = {\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "commit", "-m", "feat: changed storage", ".")
 	files := []string{
 		path.Join("src", "storage", "Cargo.toml"),
 		path.Join("src", "storage", "src", "lib.rs"),
@@ -310,12 +306,8 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-with-local-changes-error")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
-	if err := command.Run(t.Context(), "git", "add", path.Join("src", "pubsub")); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: created pubsub", "."); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
+	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 	if err := Publish(t.Context(), config, true, false, false); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
@@ -527,4 +519,91 @@ fi
 			}
 		})
 	}
+}
+
+func TestRunSemverChecks(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		manifests       map[string]string
+		dryRunKeepGoing bool
+	}{
+		{
+			name: "all crates pass",
+			manifests: map[string]string{
+				"crate-a": "a/Cargo.toml",
+				"crate-b": "b/Cargo.toml",
+			},
+		},
+		{
+			name: "dry-run-keep-going ignores failures",
+			manifests: map[string]string{
+				"fail-me": "fail/Cargo.toml",
+			},
+			dryRunKeepGoing: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			src := `package main
+import ("os"; "strings")
+func main() {
+	if strings.Contains(strings.Join(os.Args, " "), "fail-me") { os.Exit(1) }
+	os.Exit(0)
+}`
+			fakeCargoExe := buildFakeCargo(t, src)
+			sData := semverData{
+				manifests:       test.manifests,
+				cargoPath:       fakeCargoExe,
+				dryRunKeepGoing: test.dryRunKeepGoing,
+			}
+
+			if err := runSemverChecks(t.Context(), sData); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestRunSemverChecks_Errors(t *testing.T) {
+	manifests := map[string]string{
+		"fail-me": "fail/Cargo.toml",
+	}
+	wantErr := errSemverCheck
+
+	src := `package main; import "os"; func main() { os.Exit(1) }`
+	fakeCargoExe := buildFakeCargo(t, src)
+	sData := semverData{
+		manifests: manifests,
+		cargoPath: fakeCargoExe,
+	}
+	err := runSemverChecks(t.Context(), sData)
+	if err == nil {
+		t.Error("runSemverChecks() expected error, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("runSemverChecks() error = %v, want to contain %v", err, wantErr)
+	}
+}
+
+// buildFakeCargo compiles a small Go program to serve as a mock 'cargo' binary.
+// It returns the path to the resulting executable.
+func buildFakeCargo(t *testing.T, src string) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	mainGo := filepath.Join(tmpDir, "main.go")
+
+	exeName := "fake_cargo"
+	if runtime.GOOS == "windows" {
+		exeName += ".exe"
+	}
+	fakeCargoExe := filepath.Join(tmpDir, exeName)
+
+	if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
+		t.Errorf("failed to write fake cargo source: %v", err)
+	}
+
+	if err := command.Run(t.Context(), "go", "build", "-o", fakeCargoExe, mainGo); err != nil {
+		t.Errorf("failed to build fake cargo: %v", err)
+	}
+
+	return fakeCargoExe
 }

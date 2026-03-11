@@ -24,28 +24,39 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
-	"github.com/googleapis/librarian/internal/sidekick/source"
 	"golang.org/x/sync/errgroup"
 )
 
-// GenerateLibraries generates all the given libraries in parallel.
-func GenerateLibraries(ctx context.Context, libraries []*config.Library, sources *source.Sources) error {
+// IsVeneer reports whether the library has handwritten code wrapping generated
+// code. A library is a veneer when it has Rust module configuration, or when
+// it has no APIs and an explicit output path.
+func IsVeneer(lib *config.Library) bool {
+	if lib.Rust != nil && len(lib.Rust.Modules) > 0 {
+		return true
+	}
+	return len(lib.APIs) == 0 && lib.Output != ""
+}
+
+// Generate generates all the given libraries in parallel.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
 	// Generate all libraries in parallel.
 	g, gctx := errgroup.WithContext(ctx)
 	for _, lib := range libraries {
 		g.Go(func() error {
-			return generate(gctx, lib, sources)
+			return generate(gctx, config, lib, sources)
 		})
 	}
 	return g.Wait()
 }
 
 // generate generates a Rust client library.
-func generate(ctx context.Context, library *config.Library, sources *source.Sources) error {
-	if library.Veneer {
+func generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
+	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
 	if len(library.APIs) != 1 {
@@ -75,10 +86,33 @@ func generate(ctx context.Context, library *config.Library, sources *source.Sour
 	if err := sidekickrust.Generate(ctx, model, library.Output, modelConfig); err != nil {
 		return err
 	}
+	if len(model.Services) > 0 {
+		repoMetadata, err := createRepoMetadata(cfg, library, sources)
+		if err != nil {
+			return err
+		}
+		if err := repoMetadata.Write(library.Output); err != nil {
+			return err
+		}
+	}
 	if !exists {
 		validate(ctx, library.Output)
 	}
 	return nil
+}
+
+func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*repometadata.RepoMetadata, error) {
+	metadata, err := repometadata.FromLibrary(cfg, library, sources)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set fields not set by FromLibrary.
+	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
+	metadata.Repo = "googleapis/google-cloud-rust"
+	metadata.LibraryType = repometadata.GAPICAutoLibraryType
+
+	return metadata, nil
 }
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.
@@ -99,27 +133,27 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *source.Sources) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
 		modelConfig, err := moduleToModelConfig(library, module, sources)
 		if err != nil {
-			return fmt.Errorf("module %q: %w", module.Output, err)
+			return fmt.Errorf("moduleToModelConfig %q: %w", module.Output, err)
 		}
 		model, err := parser.CreateModel(modelConfig)
 		if err != nil {
-			return fmt.Errorf("module %q: %w", module.Output, err)
+			return fmt.Errorf("CreateModel %q: %w", module.Output, err)
 		}
 		switch modelConfig.Language {
-		case "rust":
+		case config.LanguageRust:
 			if module.Template == "prost" {
 				err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
 			} else {
 				err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
 			}
-		case "rust_storage":
+		case config.LanguageRustStorage:
 			return generateRustStorage(ctx, library, module.Output, sources)
 		default:
 			err = fmt.Errorf("language %q not supported", modelConfig.Language)
@@ -133,7 +167,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 
 // Keep returns the list of files to preserve when cleaning the output directory.
 func Keep(library *config.Library) ([]string, error) {
-	if !library.Veneer {
+	if !IsVeneer(library) {
 		return library.Keep, nil
 	}
 	// For veneers, keep all files outside module output directories. We walk
@@ -189,7 +223,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *source.Sources) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *sidekickconfig.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {

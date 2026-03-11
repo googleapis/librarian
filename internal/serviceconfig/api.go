@@ -20,30 +20,8 @@ import (
 	_ "embed"
 	"fmt"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
-)
-
-const (
-	// LangAll is the identifier for all languages.
-	LangAll = "all"
-	// LangCsharp is the language identifier for C#.
-	LangCsharp = "csharp"
-	// LangDart is the language identifier for Dart.
-	LangDart = "dart"
-	// LangGo is the language identifier for Go.
-	LangGo = "go"
-	// LangJava is the language identifier for Java.
-	LangJava = "java"
-	// LangNodejs is the language identifier for Node.js.
-	LangNodejs = "nodejs"
-	// LangPhp is the language identifier for PHP.
-	LangPhp = "php"
-	// LangPython is the language identifier for Python.
-	LangPython = "python"
-	// LangRuby is the language identifier for Ruby.
-	LangRuby = "ruby"
-	// LangRust is the language identifier for Rust.
-	LangRust = "rust"
 )
 
 // Transport defines the supported transport protocol.
@@ -87,6 +65,13 @@ type API struct {
 	// publishing section.
 	NewIssueURI string `yaml:"new_issue_uri,omitempty"`
 
+	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
+	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
+	// to generate numeric enums.
+	// Map key is the language name (e.g., "python", "rust").
+	// Optional. If omitted, the generator default is used.
+	NoRESTNumericEnums map[string]bool `yaml:"no_rest_numeric_enums,omitempty"`
+
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
 	OpenAPI string `yaml:"open_api,omitempty"`
@@ -119,15 +104,15 @@ type API struct {
 //
 // If language-specific transport is not defined, it falls back to the "all" language setting,
 // and then to GRPCRest.
-func (api *API) Transport(language string) string {
+func (api *API) Transport(language string) Transport {
 	if trans, ok := api.Transports[language]; ok {
-		return string(trans)
+		return trans
 	}
-	if trans, ok := api.Transports[LangAll]; ok {
-		return string(trans)
+	if trans, ok := api.Transports[config.LanguageAll]; ok {
+		return trans
 	}
 
-	return string(GRPCRest)
+	return GRPCRest
 }
 
 var (

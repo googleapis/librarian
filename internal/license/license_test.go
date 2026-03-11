@@ -17,15 +17,51 @@ package license
 import (
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestLicense(t *testing.T) {
 	got := Header("2038")
 	want := "Copyright 2038"
 	if len(got) != 13 {
-		t.Errorf("bad header length from Header(), got=%d, want=%q", len(got), 13)
+		t.Errorf("bad header length from Header(), got=%d, want=%d", len(got), 13)
 	}
 	if !strings.Contains(got[0], want) {
 		t.Errorf("bad start line for Header(), got=%q, want=%q", got[0], want)
+	}
+}
+
+func TestHasHeader(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    bool
+	}{
+		{
+			name:    "full header",
+			content: `/*\n * Copyright 2024 Google LLC\n *\n * Licensed under the Apache License, Version 2.0 (the "License");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     https://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an "AS IS" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage com.example;`,
+			want:    true,
+		},
+		{
+			name:    "partial header (only copyright)",
+			content: `/*\n * Copyright 2024 Google LLC\n */\npackage com.example;`,
+		},
+		{
+			name:    "no header",
+			content: `package com.example;\npublic class NoHeader {}`,
+		},
+		{
+			name:    "empty file",
+			content: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := HasHeader([]byte(test.content))
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("HasHeader() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

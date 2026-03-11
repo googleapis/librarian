@@ -15,9 +15,7 @@
 package java
 
 import (
-	"archive/zip"
-	"bytes"
-	"fmt"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,100 +26,237 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 const googleapisDir = "../../testdata/googleapis"
 
-func TestCreateProtocOptions(t *testing.T) {
+func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		api      *config.API
-		library  *config.Library
+		javaAPI  *config.JavaAPI
+		apiCfgs  *serviceconfig.API
 		expected []string
-		wantErr  bool
 	}{
 		{
 			name:    "basic case",
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPCRest,
+			}},
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_grpc_out=grpc-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=grpc+rest,rest-numeric-enums",
+				"metadata",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"rest-numeric-enums",
 			},
 		},
 		{
-			name: "rest transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Transport: "rest",
-			},
+			name:    "rest transport",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
+
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.Rest,
+			}},
 			expected: []string{
-				"--java_out=proto-out",
-				"--java_gapic_out=metadata:gapic-out",
-				"--java_gapic_opt=metadata,api-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml,grpc-service-config=../../testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,transport=rest,rest-numeric-enums",
+				"metadata",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=rest",
+				"rest-numeric-enums",
+			},
+		},
+		{
+			name:    "no rest numeric enum case",
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
+
+			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPCRest,
+			}},
+			expected: []string{
+				"metadata",
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc+rest",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := createProtocOptions(test.api, test.library, googleapisDir, "proto-out", "grpc-out", "gapic-out")
-			if (err != nil) != test.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
+			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.apiCfgs)
+			if err != nil {
+				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Errorf("createProtocOptions() returned diff (-want +got): %s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestConstructProtocCommandArgs_Success(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	protocOptions := []string{"--java_out=out"}
-
-	args, protos, err := constructProtocCommandArgs(api, googleapisDir, protocOptions)
-	if err != nil {
-		t.Fatalf("constructProtocCommandArgs() unexpected error: %v", err)
+func TestResolveGAPICOptions_Error(t *testing.T) {
+	apiPath := "google/cloud/multiple/v1"
+	tmpDir := t.TempDir()
+	apiDir := filepath.Join(tmpDir, apiPath)
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(apiDir, "a_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(apiDir, "b_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
-	expectedArgs := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-		"--java_out=out",
-	}
-
-	if diff := cmp.Diff(expectedArgs, args); diff != "" {
-		t.Errorf("mismatch in args (-want +got):\n%s", diff)
-	}
-
-	// Verify protos contains the expected files
-	expectedProtos := []string{
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
-		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
-		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
-	}
-	sort.Strings(expectedProtos)
-	sort.Strings(protos)
-	if diff := cmp.Diff(expectedProtos, protos); diff != "" {
-		t.Errorf("mismatch in protos (-want +got):\n%s", diff)
+	wantErr := "multiple gRPC service config files found"
+	apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+		config.LanguageJava: serviceconfig.GRPC,
+	}}
+	_, err := resolveGAPICOptions(&config.API{Path: apiPath}, &config.JavaAPI{Path: apiPath}, tmpDir, apiCfgs)
+	if err == nil || !strings.Contains(err.Error(), wantErr) {
+		t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, wantErr)
 	}
 }
 
-func TestConstructProtocCommandArgs_Error(t *testing.T) {
-	t.Parallel()
-	api := &config.API{Path: "nonexistent"}
-	protocOptions := []string{"--java_out=out"}
-	if _, _, err := constructProtocCommandArgs(api, googleapisDir, protocOptions); err == nil {
-		t.Error("constructProtocCommandArgs() expected error for nonexistent path, got nil")
+func TestProtoProtocArgs(t *testing.T) {
+	apiProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+	}
+	got := protoProtocArgs(apiProtos, googleapisDir, "proto-out")
+	want := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--java_out=proto-out",
+		apiProtos[0],
+		apiProtos[1],
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGrpcProtocArgs(t *testing.T) {
+	apiProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+	}
+	got := grpcProtocArgs(apiProtos, googleapisDir, "grpc-out")
+	want := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--java_grpc_out=grpc-out",
+		apiProtos[0],
+		apiProtos[1],
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGapicProtocArgs(t *testing.T) {
+	apiProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
+		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
+	}
+	additionalProtos := []string{
+		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
+	}
+	got := gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", []string{"opt1", "opt2"})
+	want := []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+		"--java_gapic_out=metadata:gapic-out",
+		"--java_gapic_opt=opt1,opt2",
+		apiProtos[0],
+		apiProtos[1],
+		additionalProtos[0],
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestResolveJavaAPI(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		api     *config.API
+		want    *config.JavaAPI
+	}{
+		{
+			name:    "not found, returns defaults",
+			library: &config.Library{},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+		{
+			name: "found in config",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto"},
+							NoSamples:        true,
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{"other.proto"},
+				NoSamples:        true,
+			},
+		},
+		{
+			name: "found in config, empty additional protos defaults to commonProtos",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path: "google/cloud/secretmanager/v1",
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+		{
+			name: "Java module exists but API not found",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path: "other/api",
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.JavaAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveJavaAPI(test.library, test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -151,10 +286,48 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-func TestGenerate_ErrorCases(t *testing.T) {
+func TestGenerateAPI_NoTools(t *testing.T) {
+	// Temporarily mock runProtoc to avoid external tool requirements.
+	oldRunProtoc := runProtoc
+	defer func() { runProtoc = oldRunProtoc }()
+	// Capture all calls to runProtoc to verify arguments without executing the command.
+	var calls [][]string
+	runProtoc = func(ctx context.Context, args []string) error {
+		calls = append(calls, args)
+		return nil
+	}
+	outdir := t.TempDir()
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	library := &config.Library{Name: "secretmanager", Output: outdir}
+
+	err := generateAPI(t.Context(), api, library, googleapisDir, outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that runProtoc was called 3 times: proto, grpc, and gapic.
+	if len(calls) != 3 {
+		t.Errorf("expected 3 calls to runProtoc, got %d", len(calls))
+	}
+	// Basic validation of GAPIC generation arguments (the 3rd call).
+	gapicArgs := calls[2]
+	foundGapicOut := false
+	for _, arg := range gapicArgs {
+		if strings.HasPrefix(arg, "--java_gapic_out=") {
+			foundGapicOut = true
+			break
+		}
+	}
+	if !foundGapicOut {
+		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
+	}
+}
+
+func TestGenerateLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		setup   func(t *testing.T, library *config.Library)
 		wantErr string
 	}{
 		{
@@ -173,10 +346,30 @@ func TestGenerate_ErrorCases(t *testing.T) {
 			},
 			wantErr: "failed to extract version from api path",
 		},
+		{
+			name: "mkdir failure for output dir",
+			library: &config.Library{
+				Name:   "test",
+				Output: filepath.Join(t.TempDir(), "file_exists"),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, library *config.Library) {
+				// Create a regular file where a directory is expected to cause os.MkdirAll to fail.
+				if err := os.WriteFile(library.Output, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "failed to create output directory",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			err := generate(t.Context(), test.library, googleapisDir)
+			if test.setup != nil {
+				test.setup(t, test.library)
+			}
+			cfg := &config.Config{Language: "java"}
+			err := generateLibrary(t.Context(), cfg, test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -184,149 +377,32 @@ func TestGenerate_ErrorCases(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_ErrorCase(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
-	libraries := []*config.Library{
-		{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
-	}
-	err := GenerateLibraries(t.Context(), libraries, googleapisDir)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestPostProcess(t *testing.T) {
-	t.Parallel()
-	outdir := t.TempDir()
-	libraryName := "secretmanager"
-	version := "v1"
-	gapicDir := filepath.Join(outdir, version, "gapic")
-	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create a dummy srcjar (which is a zip)
-	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
-	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
-	f, err := zw.Create("src/main/java/com/google/cloud/secretmanager/v1/SomeFile.java")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
-		t.Fatal(err)
-	}
-	f2, err := zw.Create("src/test/java/com/google/cloud/secretmanager/v1/SomeTest.java")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f2.Write([]byte("package com.google.cloud.secretmanager.v1;")); err != nil {
-		t.Fatal(err)
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	protos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	if err := postProcess(t.Context(), outdir, libraryName, version, googleapisDir, gapicDir, protos); err != nil {
-		t.Fatalf("postProcess failed: %v", err)
-	}
-
-	// Verify that the file from srcjar was unzipped and moved
-	unzippedPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
-	if _, err := os.Stat(unzippedPath); err != nil {
-		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
-	}
-	unzippedTestPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
-	if _, err := os.Stat(unzippedTestPath); err != nil {
-		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
-	}
-
-	// Verify that the version directory was cleaned up
-	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
-		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
-	}
-}
-
-func TestRestructureOutput(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-
-	version := "v1"
-	libraryID := "secretmanager"
-	libraryName := "google-cloud-secretmanager"
-	// Create a dummy structure to mimic generator output
-	dirs := []string{
-		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
-		filepath.Join(tmpDir, version, "gapic", "src", "main", "resources", "META-INF", "native-image"),
-		filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
-		filepath.Join(tmpDir, version, "proto"),
-	}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// Create a dummy sample file
-	sampleFile := filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
-	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	// Create a dummy reflect-config.json
-	reflectConfigPath := filepath.Join(tmpDir, version, "gapic", "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
-	if err := os.WriteFile(reflectConfigPath, []byte("{}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
-
-	if err := restructureOutput(tmpDir, libraryID, version, googleapisDir, []string{protoPath}); err != nil {
-		t.Fatalf("restructureOutput failed: %v", err)
-	}
-
-	// Verify sample file location
-	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
-	if _, err := os.Stat(wantSamplePath); err != nil {
-		t.Errorf("expected sample file at %s, but it was not found: %v", wantSamplePath, err)
-	}
-	// Verify reflect-config.json location
-	wantReflectPath := filepath.Join(tmpDir, libraryName, "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
-	if _, err := os.Stat(wantReflectPath); err != nil {
-		t.Errorf("expected reflect-config.json at %s, but it was not found: %v", wantReflectPath, err)
-	}
-	// Verify proto file location
-	wantProtoPath := filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
-	if _, err := os.Stat(wantProtoPath); err != nil {
-		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
-	}
-}
-
-func TestCopyProtos_Success(t *testing.T) {
-	t.Parallel()
-	destDir := t.TempDir()
-	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
-	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
-	protos := []string{proto1, commonResources}
-	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
-		t.Fatalf("copyProtos failed: %v", err)
-	}
-	// Verify proto1 was copied
-	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/secretmanager/v1/service.proto")); err != nil {
-		t.Errorf("expected proto1 to be copied: %v", err)
-	}
-	// Verify commonResources was NOT copied
-	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/common_resources.proto")); !os.IsNotExist(err) {
-		t.Errorf("expected commonResources to be skipped")
-	}
-}
-
-func TestCopyProtos_ErrorCase(t *testing.T) {
-	t.Parallel()
-	destDir := t.TempDir()
-	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
-		t.Error("expected error for proto not in googleapisDir, got nil")
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		wantErr   bool
+	}{
+		{
+			name:      "no libraries",
+			libraries: nil,
+		},
+		{
+			name: "generation failure",
+			libraries: []*config.Library{
+				{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
+			},
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{Language: "java"}
+			err := Generate(t.Context(), cfg, test.libraries, googleapisDir)
+			if (err != nil) != test.wantErr {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -393,7 +469,7 @@ func TestFormat_LookPathError(t *testing.T) {
 	t.Setenv("PATH", "")
 	err := Format(t.Context(), &config.Library{Output: tmpDir})
 	if err == nil {
-		t.Fatal("Format() error = nil, want error")
+		t.Fatal(err)
 	}
 }
 
@@ -424,11 +500,11 @@ func TestCollectJavaFiles(t *testing.T) {
 	}
 	got, err := collectJavaFiles(tmpDir)
 	if err != nil {
-		t.Fatalf("collectJavaFiles() error = %v", err)
+		t.Fatal(err)
 	}
 	sort.Strings(got)
 	sort.Strings(want)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("collectJavaFiles() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

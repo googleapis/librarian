@@ -15,7 +15,16 @@
 // Package license provides functions for generating license header text.
 package license
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
+
+// HasHeader returns true if the content contains the Apache 2.0 license header.
+// It checks for the presence of a specific, static line from the license text.
+func HasHeader(content []byte) bool {
+	return bytes.Contains(content, []byte("Licensed under the Apache License, Version 2.0"))
+}
 
 // Header returns the license header with the given year.
 func Header(year string) []string {

@@ -134,13 +134,16 @@ type Default struct {
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc".
-	Transport string `yaml:"transport,omitempty"`
-
 	// Language-specific fields are below.
+
+	// Dotnet contains .NET-specific default configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
+
+	// Nodejs contains Node.js-specific default configuration.
+	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
@@ -195,21 +198,26 @@ type Library struct {
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Transport is the transport protocol, such as "grpc+rest" or "grpc". This
-	// overrides Default.Transport.
-	Transport string `yaml:"transport,omitempty"`
-
 	// Veneer indicates this library has handwritten code. A veneer may
 	// contain generated libraries.
 	Veneer bool `yaml:"veneer,omitempty"`
 
 	// Language-specific fields are below.
 
+	// Dotnet contains .NET-specific library configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
+
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
+
+	// Java contains Java-specific library configuration.
+	Java *JavaModule `yaml:"java,omitempty"`
+
+	// Nodejs contains Node.js-specific library configuration.
+	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`

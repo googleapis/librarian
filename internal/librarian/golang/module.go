@@ -15,45 +15,62 @@
 package golang
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
+
+var (
+	errGoAPINotFound         = errors.New("go API not found")
+	errImportPathNotFound    = errors.New("import path not found")
+	errClientPackageNotFound = errors.New("client package not found")
 )
 
 // Fill populates empty Go-specific fields from the api path.
-// Library configs takes precedence.
-func Fill(library *config.Library) *config.Library {
+// Library configurations takes precedence.
+func Fill(library *config.Library) (*config.Library, error) {
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
 	}
 	var goAPIs []*config.GoAPI
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
-		if !strings.HasPrefix(api.Path, "google/cloud/") {
-			// Do nothing for non cloud API.
-			if goAPI != nil {
-				goAPIs = append(goAPIs, goAPI)
-			}
-			continue
-		}
 		if goAPI == nil {
 			goAPI = &config.GoAPI{
 				Path: api.Path,
 			}
 		}
-		importPath, clientDir := defaultImportPathAndClientDir(api.Path)
+		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
 		}
-		if goAPI.ClientDirectory == "" {
-			goAPI.ClientDirectory = clientDir
+		if goAPI.ImportPath == "" {
+			// The import path is used to define the relative path from repo root.
+			// If it doesn't set in the librarian configuration, and we can't derive it from the API path,
+			// we should return an error to signify the configuration is wrong.
+			return nil, fmt.Errorf("%s: %w", api.Path, errImportPathNotFound)
+		}
+		if goAPI.ClientPackage == "" {
+			goAPI.ClientPackage = clientPkg
+		}
+		if goAPI.ClientPackage == "" && !goAPI.ProtoOnly {
+			// The client package is used to define the client package name, this value must be set for
+			// GAPIC (non proto-only) client.
+			// If it doesn't set in the librarian configuration, and we can't derive it from the API path,
+			// we should return an error to signify the configuration is wrong.
+			return nil, fmt.Errorf("%s: %w", api.Path, errClientPackageNotFound)
 		}
 		goAPIs = append(goAPIs, goAPI)
 	}
 	library.Go.GoAPIs = goAPIs
 
-	return library
+	return library, nil
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
@@ -68,18 +85,57 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-// defaultImportPathAndClientDir returns the default Go import path and client directory
+// modulePath returns the Go module path for the library. ModulePathVersion is
+// set for modules at v2+, e.g. "cloud.google.com/go/pubsub/v2".
+func modulePath(library *config.Library) string {
+	path := "cloud.google.com/go/" + library.Name
+	if library.Go != nil && library.Go.ModulePathVersion != "" {
+		path += "/" + library.Go.ModulePathVersion
+	}
+	return path
+}
+
+// initModule initializes and tidies a Go module in the given directory.
+func initModule(ctx context.Context, dir, modPath string) error {
+	if err := command.RunInDir(ctx, dir, "go", "mod", "init", modPath); err != nil {
+		return err
+	}
+	return command.RunInDir(ctx, dir, "go", "mod", "tidy")
+}
+
+// defaultImportPathAndClientPkg returns the default Go import path and client package name
 // based on the provided API path.
 //
-// The API path is expected to be either google/cloud/{dir}/{version} or
-// google/cloud/{dir}/{nested}/{version}.
-func defaultImportPathAndClientDir(apiPath string) (string, string) {
-	dirs := strings.Split(apiPath, "/")
-	if len(dirs) < 4 {
+// The API path is expected to be google/cloud/{dir}/{0 or more nested directories}/{version}.
+func defaultImportPathAndClientPkg(apiPath string) (string, string) {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	version := serviceconfig.ExtractVersion(apiPath)
+	if idx == -1 || version == "" {
+		// Do not guess non-versioned APIs, define the import path and
+		// client package name in Go API configuration.
 		return "", ""
 	}
-	if len(dirs) == 5 {
-		return fmt.Sprintf("%s/%s", dirs[2], dirs[3]), dirs[3]
+	importPath, version := apiPath[:idx], apiPath[idx+1:]
+	idx = strings.LastIndex(importPath, "/")
+	pkg := importPath[idx+1:]
+	return fmt.Sprintf("%s/api%s", importPath, version), pkg
+}
+
+// clientPathFromLibraryRoot returns the relative path from the module root to the client directory.
+// It strips any module path version from the import path to get the correct filesystem path.
+func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) string {
+	importPath := goAPI.ImportPath
+	if library.Go != nil && library.Go.ModulePathVersion != "" {
+		modulePathVersion := filepath.Join(string(filepath.Separator), library.Go.ModulePathVersion)
+		importPath = strings.Replace(importPath, modulePathVersion, "", 1)
 	}
-	return dirs[2], ""
+	return importPath
+}
+
+// snippetDirectory returns the path to the directory where Go snippets are generated
+// for the given library output directory and Go import path.
+func snippetDirectory(output, importPath string) string {
+	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }

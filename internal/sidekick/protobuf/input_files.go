@@ -16,7 +16,6 @@
 package protobuf
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,36 +25,16 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-// DetermineInputFiles determines the input files from the source and options.
-func DetermineInputFiles(source string, options map[string]string) ([]string, error) {
-	if _, ok := options["include-list"]; ok {
-		if _, ok := options["exclude-list"]; ok {
-			return nil, fmt.Errorf("cannot use both `exclude-list` and `include-list` in the source options")
-		}
-	}
+// DetermineInputFiles determines the input files from the source config.
+func DetermineInputFiles(source string, cfg config.SourceConfig) ([]string, error) {
 
-	// `config.Source` is relative to the source root, or `extra-protos-root`,
-	// when that is set. It should always be a directory and by default all the
-	// files in that directory are used.
-	for _, opt := range config.SourceRoots(options) {
-		location, ok := options[opt]
-		if !ok {
-			// Ignore options that are not set
-			continue
-		}
-		stat, err := os.Stat(path.Join(location, source))
-		if err == nil && stat.IsDir() {
-			// Found a matching directory, use it.
-			source = path.Join(location, source)
-			break
-		}
-	}
+	source = cfg.ResolveDir(source)
+
 	files := map[string]bool{}
 	if err := findFiles(files, source); err != nil {
 		return nil, err
 	}
-	applyIncludeList(files, source, options)
-	applyExcludeList(files, source, options)
+	applyIncludeList(files, source, cfg.IncludeList)
 	var list []string
 	for name, ok := range files {
 		if ok {
@@ -88,24 +67,13 @@ func findFiles(files map[string]bool, source string) error {
 	})
 }
 
-func applyIncludeList(files map[string]bool, sourceDirectory string, options map[string]string) {
-	list, ok := options["include-list"]
-	if !ok {
+func applyIncludeList(files map[string]bool, sourceDirectory string, includeList []string) {
+	if len(includeList) == 0 {
 		return
 	}
 	// Ignore any discovered paths, only the paths from the include list apply.
 	clear(files)
-	for _, p := range strings.Split(list, ",") {
+	for _, p := range includeList {
 		files[filepath.ToSlash(path.Join(sourceDirectory, p))] = true
-	}
-}
-
-func applyExcludeList(files map[string]bool, sourceDirectory string, options map[string]string) {
-	list, ok := options["exclude-list"]
-	if !ok {
-		return
-	}
-	for _, p := range strings.Split(list, ",") {
-		delete(files, filepath.ToSlash(path.Join(sourceDirectory, p)))
 	}
 }

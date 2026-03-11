@@ -20,30 +20,32 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
+	"strings"
+	"syscall"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
 var (
-	// generatedRegex defines patterns to identify files produced by the generator.
-	// These patterns are essential to ensure the 'Clean' operation only removes
-	// files that are known to be generated, protecting handwritten code or
-	// configuration that may reside in the same directory.
-	// TODO(https://github.com/googleapis/librarian/issues/4217): document each regex about
+	rootFiles = []string{"README.md", "internal/version.go"}
+	// TODO(https://github.com/googleapis/librarian/issues/4217), document each file about
 	// what are matched and why it is necessary.
-	generatedRegex = []*regexp.Regexp{
-		regexp.MustCompile(`.*/apiv(\d+).*/\.repo-metadata\.json$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/auxiliary_go123\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/doc\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_go123_test\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/.*_client_example_test\.go$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/gapic_metadata\.json$`),
-		regexp.MustCompile(`.*/apiv(\d+).*/helpers\.go$`),
-		regexp.MustCompile(`.*pb/.*\.pb\.go$`),
-		regexp.MustCompile(`(^|.*/)internal/generated/snippets/.*$`),
+	// Separate generated files to filename and filename suffix allow us to match
+	// the files as accurate as possible.
+	generatedClientFiles = []string{
+		".repo-metadata.json",
+		"auxiliary.go",
+		"auxiliary_go123.go",
+		"doc.go",
+		"gapic_metadata.json",
+		"helpers.go",
+		"operations.go",
+	}
+	generatedClientFileSuffixes = []string{
+		".pb.go",
+		"_client.go",
+		"_client_example_go123_test.go",
+		"_client_example_test.go",
 	}
 )
 
@@ -54,15 +56,11 @@ func Clean(library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	var nestedModule string
-	if library.Go != nil {
-		nestedModule = library.Go.NestedModule
-	}
-	if err := clean(libraryDir, nestedModule, keepSet); err != nil {
+
+	if err := cleanRootFiles(libraryDir, keepSet); err != nil {
 		return err
 	}
-	snippetDir := filepath.Join(library.Output, "internal", "generated", "snippets", library.Name)
-	if err := clean(snippetDir, nestedModule, nil); err != nil {
+	if err := cleanClientDirectory(library, libraryDir, keepSet); err != nil {
 		return err
 	}
 	return nil
@@ -86,7 +84,7 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	for _, k := range keep {
 		path := filepath.Join(dir, k)
 		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("keep file %q does not exist", k)
+			return nil, fmt.Errorf("error keeping %s: %w", k, err)
 		}
 		// Effectively get a canonical relative path. While in most cases
 		// this will be equal to k, it might not be - in particular,
@@ -101,36 +99,81 @@ func check(dir string, keep []string) (map[string]bool, error) {
 	return keepSet, nil
 }
 
-// clean recursively removes files in dir that are not in keepSet.
-// If nestedModule is non-empty, any directory with that name is skipped.
-func clean(dir, nestedModule string, keepSet map[string]bool) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+// cleanRootFiles removes predefined root files from the library directory unless
+// they are explicitly marked to be kept.
+func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
+	for _, rootFile := range rootFiles {
+		// Handwritten/veneer libraries may have handwritten root files, README.md for example,
+		// defined in the keep list.
+		// Skip cleaning these files.
+		if keepSet[rootFile] {
+			continue
+		}
+		rootFilePath := filepath.Join(libraryDir, rootFile)
+		if err := os.Remove(rootFilePath); err != nil {
+			if errors.Is(err, syscall.ENOENT) {
+				// The file doesn't exist during deletion, it's fine to ignore this error.
+				continue
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+// cleanClientDirectory walks through each API directory in the library and
+// removes generated Go client files and snippets.
+func cleanClientDirectory(library *config.Library, libraryDir string, keepSet map[string]bool) error {
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
+		}
+		relClientPath := clientPathFromLibraryRoot(library, goAPI)
+		clientPath := filepath.Join(library.Output, relClientPath)
+		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
+			return err
+		}
+		snippetDir := snippetDirectory(library.Output, relClientPath)
+		if err := os.RemoveAll(snippetDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string]bool) error {
+	// clientPath doesn't exist, which means this is a new library, skip cleaning.
+	if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	return filepath.WalkDir(clientPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			if d.Name() == nestedModule {
-				return fs.SkipDir
-			}
 			return nil
 		}
-		rel, err := filepath.Rel(dir, path)
+		relPath, err := filepath.Rel(libraryDir, path)
 		if err != nil {
 			return err
 		}
-		isGenerated := false
-		for _, re := range generatedRegex {
-			if re.MatchString(path) {
-				isGenerated = true
-				break
-			}
-		}
-		if keepSet[rel] || !isGenerated {
+		// Some libraries may have a non-generated file that has one of the suffixes in generatedClientFileSuffixes,
+		// e.g., iam_policy_client.go.
+		// These files will be listed in the keep configuration, so we need to check and potentially skip cleaning.
+		if keepSet[relPath] {
 			return nil
 		}
-		return os.Remove(path)
+		for _, file := range generatedClientFiles {
+			if d.Name() == file {
+				return os.Remove(path)
+			}
+		}
+		for _, file := range generatedClientFileSuffixes {
+			if strings.HasSuffix(filepath.Base(path), file) {
+				return os.Remove(path)
+			}
+		}
+		return nil
 	})
 }

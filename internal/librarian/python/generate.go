@@ -35,18 +35,18 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-// GenerateLibraries generates all the given libraries in sequence.
-func GenerateLibraries(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
+// Generate generates all the given libraries in sequence.
+func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
 	for _, library := range libraries {
-		if err := generate(ctx, config, library, googleapisDir); err != nil {
+		if err := generateLibrary(ctx, config, library, googleapisDir); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// generate generates a Python client library.
-func generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+// generateLibrary generates a Python client library.
+func generateLibrary(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	// If the library has no APIs, there's nothing to do.
 	if len(library.APIs) == 0 {
 		return nil
@@ -112,10 +112,14 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions == nil {
 		packageOptions = &config.PythonPackage{}
 	}
-	repoMetadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	// TODO(https://github.com/googleapis/librarian/issues/4428): once
+	// repometadata exposes a FromLibrary function or similar that we can use,
+	// we should call that again, so that repometadata.FromAPI can be hidden.
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
 	if err != nil {
 		return nil, err
 	}
+	repoMetadata := repometadata.FromAPI(cfg, api, library)
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
@@ -127,16 +131,14 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions.DefaultVersion != "" {
 		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4147): use the right
-	// library type.
-	repoMetadata.LibraryType = repometadata.GAPICAutoLibraryType
-	// Work out the right documentation URI based on whether this is a Cloud
-	// or non-Cloud API.
-	docTemplate := cloudGoogleComDocumentationTemplate
-	if !strings.HasPrefix(library.Name, "google-cloud") {
-		docTemplate = googleapisDevDocumentationTemplate
+	repoMetadata.LibraryType = packageOptions.LibraryType
+	repoMetadata.ClientDocumentation = BuildClientDocumentationURI(library.Name, repoMetadata.Name)
+	// Even after migration oddities, just a few libraries don't fit into the
+	// normal pattern for client documentation URI (e.g. the documentation is
+	// in cloud.google.com when it would be expected to be in googleapis.dev).
+	if packageOptions.ClientDocumentationOverride != "" {
+		repoMetadata.ClientDocumentation = packageOptions.ClientDocumentationOverride
 	}
-	repoMetadata.ClientDocumentation = fmt.Sprintf(docTemplate, repoMetadata.Name)
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
 	if packageOptions.NamePrettyOverride != "" {
 		repoMetadata.NamePretty = packageOptions.NamePrettyOverride
@@ -144,7 +146,31 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions.ProductDocumentationOverride != "" {
 		repoMetadata.ProductDocumentation = packageOptions.ProductDocumentationOverride
 	}
+	if packageOptions.APIShortnameOverride != "" {
+		repoMetadata.APIShortname = packageOptions.APIShortnameOverride
+	}
+	if packageOptions.APIIDOverride != "" {
+		repoMetadata.APIID = packageOptions.APIIDOverride
+	}
+	if packageOptions.IssueTrackerOverride != "" {
+		repoMetadata.IssueTracker = packageOptions.IssueTrackerOverride
+	}
 	return repoMetadata, nil
+}
+
+// BuildClientDocumentationURI builds the URI for the client documentation
+// for the library.
+// TODO(https://github.com/googleapis/librarian/issues/4175): make this function
+// package-private (or inline it) after migration, when we won't need to
+// determine whether or not to specify an override.
+func BuildClientDocumentationURI(libraryName, repoMetadataName string) string {
+	// Work out the right documentation URI based on whether this is a Cloud
+	// or non-Cloud API.
+	docTemplate := cloudGoogleComDocumentationTemplate
+	if !strings.HasPrefix(libraryName, "google-cloud") {
+		docTemplate = googleapisDevDocumentationTemplate
+	}
+	return fmt.Sprintf(docTemplate, repoMetadataName)
 }
 
 // generateAPI generates part of a library for a single api.
@@ -239,8 +265,16 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 			opts = append(opts, apiOptArgs...)
 		}
 	}
+	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguagePython)
+	if err != nil {
+		return nil, err
+	}
+	transport := serviceconfig.GRPCRest
+	if apiMetadata != nil {
+		transport = apiMetadata.Transport(config.LanguagePython)
+	}
 	restNumericEnums := true
-	addTransport := library.Transport != ""
+	addTransport := transport != serviceconfig.GRPCRest
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, "rest-numeric-enums") {
 			restNumericEnums = false
@@ -257,7 +291,7 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 
 	// Add transport option, if we haven't already got it.
 	if addTransport {
-		opts = append(opts, fmt.Sprintf("transport=%s", library.Transport))
+		opts = append(opts, fmt.Sprintf("transport=%s", transport))
 	}
 
 	// Add gapic-version from library version
@@ -279,10 +313,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}
 
-	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, serviceconfig.LangPython)
-	if err != nil {
-		return nil, err
-	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
 		opts = append(opts, fmt.Sprintf("service-yaml=%s", apiMetadata.ServiceConfig))
 	}
@@ -404,10 +434,10 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	return nil
 }
 
-// DefaultOutputByName derives an output path from a library name and a default
+// DefaultOutput derives an output path from a library name and a default
 // output directory. Currently, this just assumes each library is a directory
 // directly underneath the default output directory.
-func DefaultOutputByName(name, defaultOutput string) string {
+func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 

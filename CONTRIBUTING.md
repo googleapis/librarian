@@ -279,6 +279,8 @@ applied.
 Please don’t use alternate GitHub-supported aliases like Close or Resolves
 instead of Fixes.
 
+You can also use the Gemini CLI [/commit-message skill](#commit-message) to draft commit messages automatically. See [Gemini CLI skills](#gemini-cli-skills) for details.
+
 ## The review process
 
 This section explains the review process in detail and how to approach reviews
@@ -348,6 +350,23 @@ file an issue following the guidelines above and include a clear justification.
 
 See the guidelines for
 [How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
+
+## Gemini CLI skills
+
+This repository includes project-scoped
+[agent skills](https://geminicli.com/docs/cli/skills/) for
+[Gemini CLI](https://github.com/google-gemini/gemini-cli). Skills are defined
+in the `.gemini/skills/` directory and are discovered automatically when you run
+Gemini CLI from the repository root.
+
+### Using skills
+
+Skills activate automatically when Gemini identifies a matching task based on
+the skill's description. Run `gemini` from the repository root and describe
+what you need. If a matching skill exists, Gemini calls `activate_skill` and
+you will see a confirmation prompt with the skill name before it runs.
+
+To list all available skills, run `/skills list` inside Gemini CLI.
 
 ## Expectations for the team
 
@@ -435,3 +454,11 @@ We only update dependencies for security vulnerabilities, bug fixes, or to add
 feature support. Security vulnerabilities are identified using Dependabot and
 govulncheck. Dependency updates for bug fixes or new features must be associated
 with an issue in this repository.
+
+### Presubmit Time Limit
+
+Presubmit jobs are expected to take less than 5 minutes. This keeps the feedback
+loop fast for contributors and reviewers. Tests that take longer than 5 minutes
+should run as postsubmit jobs (triggered only on push to main) instead. See the
+[Rust workflow's `integration` job](https://github.com/googleapis/librarian/blob/2e22539c6dbab1a786d51054136e28a7218d9d7e/.github/workflows/rust.yaml#L72)
+for an example.

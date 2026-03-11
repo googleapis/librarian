@@ -47,12 +47,22 @@ const neutralSourcePlaceholder = "{neutral-source}"
 var (
 	errBadAPIPath               = errors.New("invalid API path")
 	errNoCommonGAPICFilesConfig = errors.New("when cleaning a GAPIC package, a config with common GAPIC paths must be provided")
+	// versionedGAPICRelativePathsToClean is the set of paths to remove for each
+	// API-versioned GAPIC output directory, relative to that directory.
+	versionedGAPICRelativePathsToClean = []string{
+		"services",
+		"types",
+		"__init__.py",
+		"gapic_version.py",
+		"gapic_metadata.json",
+		"py.typed",
+	}
 )
 
-// CleanLibrary removes all generated code from beneath the given library's
+// Clean removes all generated code from beneath the given library's
 // output directory. If the output directory does not currently exist, this
 // function is a no-op.
-func CleanLibrary(lib *config.Library) error {
+func Clean(lib *config.Library) error {
 	_, err := os.Stat(lib.Output)
 	if os.IsNotExist(err) {
 		return nil
@@ -129,8 +139,10 @@ func cleanGAPIC(api *config.API, lib *config.Library) error {
 		return nil
 	}
 	srcDir := filepath.Join(generationInfo.RootDir, generationInfo.VersionDir)
-	if err := deleteUnlessKept(lib, srcDir); err != nil {
-		return err
+	for _, relativePath := range versionedGAPICRelativePathsToClean {
+		if err := deleteUnlessKept(lib, filepath.Join(srcDir, relativePath)); err != nil {
+			return err
+		}
 	}
 	docsDir := filepath.Join("docs", generationInfo.VersionDir)
 	return deleteUnlessKept(lib, docsDir)

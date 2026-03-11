@@ -14,7 +14,40 @@
 
 package config
 
-import "github.com/googleapis/librarian/internal/yaml"
+import (
+	"github.com/googleapis/librarian/internal/yaml"
+)
+
+const (
+	// LanguageUnknown represents an unsupported or unspecified language.
+	LanguageUnknown = "unknown"
+	// LanguageAll is the identifier for all languages.
+	LanguageAll = "all"
+	// LanguageCsharp is the language identifier for C#.
+	LanguageCsharp = "csharp"
+	// LanguageDart is the language identifier for Dart.
+	LanguageDart = "dart"
+	// LanguageDotnet is the language identifier for .NET.
+	LanguageDotnet = "dotnet"
+	// LanguageFake is the language identifier for Fakes.
+	LanguageFake = "fake"
+	// LanguageGo is the language identifier for Go.
+	LanguageGo = "go"
+	// LanguageJava is the language identifier for Java.
+	LanguageJava = "java"
+	// LanguageNodejs is the language identifier for Node.js.
+	LanguageNodejs = "nodejs"
+	// LanguagePhp is the language identifier for PHP.
+	LanguagePhp = "php"
+	// LanguagePython is the language identifier for Python.
+	LanguagePython = "python"
+	// LanguageRuby is the language identifier for Ruby.
+	LanguageRuby = "ruby"
+	// LanguageRust is the language identifier for Rust.
+	LanguageRust = "rust"
+	// LanguageRustStorage is a variation of the Rust generator for storage.
+	LanguageRustStorage = "rust_storage"
+)
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
@@ -30,19 +63,14 @@ type GoModule struct {
 
 // GoAPI represents configuration for a single API within a Go module.
 type GoAPI struct {
-	// ClientDirectory is the directory where the client is generated, relative to Library.Output.
-	ClientDirectory string `yaml:"client_directory,omitempty"`
-	// ClientPackageOverride overrides the default package name of the generated client.
-	ClientPackageOverride string `yaml:"client_package_override,omitempty"`
-	// DisableGAPIC determines whether to generate the GAPIC client.
-	// Also known as proto-only client, which does not define a service in the proto files.
-	DisableGAPIC bool `yaml:"disable_gapic,omitempty"`
+	// ClientPackage is the package name of the generated client.
+	ClientPackage string `yaml:"client_package,omitempty"`
+	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// This is typically false. Used for the GCE (compute) client.
+	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
-	// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
-	// This is typically false. Used for the GCE (compute) client.
-	HasDiregapic bool `yaml:"has_diregapic,omitempty"`
 	// ImportPath is the Go import path for the API.
 	ImportPath string `yaml:"import_path,omitempty"`
 	// NestedProtos is a list of nested proto files.
@@ -56,10 +84,11 @@ type GoAPI struct {
 	NoRESTNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 	// ProtoPackage is the proto package name.
 	ProtoPackage string `yaml:"proto_package,omitempty"`
-	// VersionSuffix is an optional suffix appended to the version part of the GAPIC import path.
-	VersionSuffix string `yaml:"version_suffix,omitempty"`
 }
 
 // RustDefault contains Rust-specific default configuration.
@@ -136,7 +165,7 @@ type RustModule struct {
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
 
 	// RootName is the key for the root directory in the source map.
-	// It overrides the default root, googleapis-root, used by the rust+prost generator.
+	// It overrides the default root, googleapis, used by the rust+prost generator.
 	RootName string `yaml:"root_name,omitempty"`
 
 	// RoutingRequired indicates whether routing is required.
@@ -214,6 +243,9 @@ type RustCrate struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
 
+	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
+	ResourceNameHeuristic bool `yaml:"resource_name_heuristic,omitempty"`
+
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
 
@@ -225,6 +257,9 @@ type RustCrate struct {
 
 	// Discovery contains discovery-specific configuration for LRO polling.
 	Discovery *RustDiscovery `yaml:"discovery,omitempty"`
+
+	// QuickstartServiceOverride overrides the default heuristically selected service for the package-level quickstart.
+	QuickstartServiceOverride string `yaml:"quickstart_service_override,omitempty"`
 }
 
 // RustPackageDependency represents a package dependency configuration.
@@ -321,6 +356,30 @@ type PythonPackage struct {
 	// field.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
 
+	// APIShortnameOverride allows the "api_shortname" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
+
+	// APIIDOverride allows the "api_id" field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses
+	// of this field to only cases where it's really needed.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// IssueTrackerOverride allows the issue_tracker field in
+	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
+	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
+	// field.
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
+
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
 	// default it's the package name, but older packages use the API short name
@@ -341,6 +400,9 @@ type PythonDefault struct {
 	// library defines its own common_gapic_paths, they will be appended to
 	// the defaults.
 	CommonGAPICPaths []string `yaml:"common_gapic_paths,omitempty"`
+
+	// LibraryType is the type to emit in .repo-metadata.json.
+	LibraryType string `yaml:"library_type,omitempty"`
 }
 
 // DartPackage contains Dart-specific library configuration.
@@ -402,4 +464,203 @@ type DartPackage struct {
 
 	// Version is the version of the dart package.
 	Version string `yaml:"version,omitempty"`
+}
+
+// JavaModule contains Java-specific library configuration.
+// TODO(https://github.com/googleapis/librarian/issues/4130):
+// add fill defaults for fields with default.
+type JavaModule struct {
+	// APIIDOverride is the ID of the API (e.g., "pubsub.googleapis.com"),
+	// allows the "api_id" field in .repo-metadata.json to be overridden.
+	// Defaults to "{library.api_shortname}.googleapis.com".
+	APIIDOverride string `yaml:"api_id_override,omitempty"`
+
+	// APIReference is the URL for the API reference documentation.
+	APIReference string `yaml:"api_reference,omitempty"`
+
+	// APIDescriptionOverride allows the "api_description" field in
+	// .repo-metadata.json to be overridden.
+	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
+
+	// ClientDocumentationOverride allows the "client_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
+	// Defaults to false.
+	NonCloudAPI bool `yaml:"non_cloud_api,omitempty"`
+
+	// CodeownerTeam is the GitHub team that owns the code.
+	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
+
+	// DistributionNameOverride allows the "distribution_name" field in
+	// .repo-metadata.json to be overridden.
+	DistributionNameOverride string `yaml:"distribution_name_override,omitempty"`
+
+	// ExcludedDependencies is a list of dependencies to exclude.
+	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
+
+	// ExcludedPoms is a list of POM files to exclude.
+	ExcludedPoms string `yaml:"excluded_poms,omitempty"`
+
+	// ExtraVersionedModules is a list of extra versioned modules.
+	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
+
+	// GroupID is the Maven group ID, defaults to "com.google.cloud".
+	GroupID string `yaml:"group_id,omitempty"`
+
+	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
+	// to be overridden.
+	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
+
+	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
+	// to be overridden.
+	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
+
+	// MinJavaVersion is the minimum Java version required.
+	MinJavaVersion int `yaml:"min_java_version,omitempty"`
+
+	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
+	// to be overridden.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
+
+	// JavaAPIs is a list of Java-specific API configurations.
+	JavaAPIs []*JavaAPI `yaml:"java_apis,omitempty"`
+
+	// ProductDocumentationOverride allows the "product_documentation" field in
+	// .repo-metadata.json to be overridden.
+	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
+
+	// RecommendedPackage is the recommended package name.
+	RecommendedPackage string `yaml:"recommended_package,omitempty"`
+
+	// BillingNotRequired indicates whether the API does NOT require billing.
+	// This is typically false.
+	BillingNotRequired bool `yaml:"billing_not_required,omitempty"`
+
+	// RestDocumentation is the URL for the REST documentation.
+	RestDocumentation string `yaml:"rest_documentation,omitempty"`
+
+	// RpcDocumentation is the URL for the RPC documentation.
+	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+}
+
+// JavaAPI represents configuration for a single API within a Java module.
+type JavaAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// NoSamples determines whether to generate samples for the API.
+	NoSamples bool `yaml:"no_samples,omitempty"`
+
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
+	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
+	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
+}
+
+// DotnetPackage contains .NET-specific library configuration.
+type DotnetPackage struct {
+	// AdditionalServiceDescriptors is a list of extra service descriptors to include.
+	AdditionalServiceDescriptors []string `yaml:"additional_service_descriptors,omitempty"`
+
+	// Csproj contains configuration for .csproj file generation and overrides.
+	Csproj *DotnetCsproj `yaml:"csproj,omitempty"`
+
+	// Dependencies maps NuGet package IDs to version strings.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// Generator overrides the default generator (e.g., "proto").
+	Generator string `yaml:"generator,omitempty"`
+
+	// PackageGroup lists packages that must be released together.
+	PackageGroup []string `yaml:"package_group,omitempty"`
+
+	// Postgeneration contains post-generation shell commands or extra protos.
+	Postgeneration []*DotnetPostgeneration `yaml:"postgeneration,omitempty"`
+
+	// Pregeneration contains declarative proto mutations.
+	Pregeneration []*DotnetPregeneration `yaml:"pregeneration,omitempty"`
+}
+
+// DotnetPregeneration represents a declarative proto mutation.
+type DotnetPregeneration struct {
+	// RenameMessage renames a message.
+	RenameMessage *DotnetRenameMessage `yaml:"rename_message,omitempty"`
+
+	// RemoveField removes a field from a message.
+	RemoveField *DotnetRemoveField `yaml:"remove_field,omitempty"`
+
+	// RenameRPC renames an RPC.
+	RenameRPC *DotnetRenameRPC `yaml:"rename_rpc,omitempty"`
+}
+
+// DotnetRenameMessage contains rename message configuration.
+type DotnetRenameMessage struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
+}
+
+// DotnetRemoveField contains remove field configuration.
+type DotnetRemoveField struct {
+	Message string `yaml:"message"`
+	Field   string `yaml:"field"`
+}
+
+// DotnetRenameRPC contains rename RPC configuration.
+type DotnetRenameRPC struct {
+	From     string `yaml:"from"`
+	To       string `yaml:"to"`
+	WireName string `yaml:"wire_name,omitempty"`
+}
+
+// DotnetPostgeneration represents a post-generation action.
+type DotnetPostgeneration struct {
+	// Run is a shell command to execute.
+	Run string `yaml:"run,omitempty"`
+
+	// ExtraProto is an extra proto file to compile.
+	ExtraProto string `yaml:"extra_proto,omitempty"`
+}
+
+// DotnetCsproj contains configuration for .csproj file generation.
+type DotnetCsproj struct {
+	// Snippets contains XML fragments for .csproj files.
+	Snippets *DotnetCsprojSnippets `yaml:"snippets,omitempty"`
+
+	// IntegrationTests contains configuration for integration test projects.
+	IntegrationTests *DotnetCsprojSnippets `yaml:"integration_tests,omitempty"`
+}
+
+// DotnetCsprojSnippets contains XML fragments to be merged into .csproj files.
+type DotnetCsprojSnippets struct {
+	// EmbeddedResources is a list of glob patterns for embedded resources.
+	EmbeddedResources []string `yaml:"embedded_resources,omitempty"`
+}
+
+// NodejsPackage contains Node.js-specific library configuration.
+type NodejsPackage struct {
+	// BundleConfig is the path to a GAPIC bundle config file.
+	BundleConfig string `yaml:"bundle_config,omitempty"`
+
+	// Dependencies maps npm package names to version constraints.
+	Dependencies map[string]string `yaml:"dependencies,omitempty"`
+
+	// ExtraProtocParameters is a list of extra parameters to pass to protoc.
+	ExtraProtocParameters []string `yaml:"extra_protoc_parameters,omitempty"`
+
+	// HandwrittenLayer indicates the library has a handwritten layer on top
+	// of the generated code.
+	HandwrittenLayer bool `yaml:"handwritten_layer,omitempty"`
+
+	// MainService is the name of the main service for libraries with a
+	// handwritten layer.
+	MainService string `yaml:"main_service,omitempty"`
+
+	// Mixins controls mixin behavior (e.g., "none" to disable).
+	Mixins string `yaml:"mixins,omitempty"`
+
+	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
+	PackageName string `yaml:"package_name,omitempty"`
 }

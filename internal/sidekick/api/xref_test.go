@@ -1946,3 +1946,122 @@ func TestFindResourceIDField(t *testing.T) {
 		})
 	}
 }
+
+func TestFindQuickstartMethod(t *testing.T) {
+	fooMethod := &Method{Name: "FooMethod"}
+	listPolicies := &Method{Name: "ListAccessPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}
+	getPolicy := &Method{Name: "GetAccessPolicy", IsAIPStandardGet: true}
+	createPolicy := &Method{Name: "CreateAccessPolicy", IsAIPStandardCreate: true}
+	deletePolicy := &Method{Name: "DeleteAccessPolicy", IsAIPStandardDelete: true}
+	updatePolicy := &Method{Name: "UpdateAccessPolicy", IsAIPStandardUpdate: true}
+	listOther := &Method{Name: "ListOtherThings", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "otherthing"}}}
+
+	testCases := []struct {
+		name    string
+		service *Service
+		want    *Method
+	}{
+		{
+			name:    "empty service",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{}},
+			want:    nil,
+		},
+		{
+			name:    "fallback to simple method when no standard methods exist",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{fooMethod}},
+			want:    fooMethod,
+		},
+		{
+			name:    "prefer non-deprecated simple method",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{{Name: "DeprecatedList", Deprecated: true}, fooMethod}},
+			want:    fooMethod,
+		},
+		{
+			name:    "only get method",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{getPolicy}},
+			want:    getPolicy,
+		},
+		{
+			name:    "prioritizes list over get",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{getPolicy, listOther}},
+			want:    listOther,
+		},
+		{
+			name:    "prioritizes create over delete",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{deletePolicy, createPolicy}},
+			want:    createPolicy,
+		},
+		{
+			name:    "prioritizes delete over update",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{updatePolicy, deletePolicy}},
+			want:    deletePolicy,
+		},
+		{
+			name:    "tie-breaking on name matching (ListAccessPolicies vs ListOtherThings for AccessPolicyService)",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{listOther, listPolicies}},
+			want:    listPolicies,
+		},
+		{
+			name:    "tie-breaking fallback to resource singular/plural",
+			service: &Service{Name: "AccessPolicyService", Methods: []*Method{listOther, {Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}}},
+			want:    &Method{Name: "ListPolicies", IsAIPStandardList: true, OutputType: &Message{Resource: &Resource{Singular: "accesspolicy"}}}, // matches singular 'accesspolicy'
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := findQuickstartMethod(tc.service)
+			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
+				t.Errorf("findQuickstartMethod() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindQuickstartService(t *testing.T) {
+	fooMethod := &Method{Name: "FooMethod"}
+	serviceA := &Service{Name: "ServiceA", Methods: []*Method{fooMethod}}
+	serviceB := &Service{Name: "SecretManagerService", Methods: []*Method{fooMethod}}
+	deprecatedService := &Service{Name: "SecretManagerService", Deprecated: true, Methods: []*Method{fooMethod}}
+
+	testCases := []struct {
+		name string
+		api  *API
+		want *Service
+	}{
+		{
+			name: "no services",
+			api:  &API{Name: "secretmanager", Services: nil},
+			want: nil,
+		},
+		{
+			name: "one service",
+			api:  &API{Name: "secretmanager", Services: []*Service{serviceA}},
+			want: serviceA,
+		},
+		{
+			name: "match service name to api name",
+			api:  &API{Name: "secretmanager", Services: []*Service{serviceA, serviceB}},
+			want: serviceB,
+		},
+		{
+			name: "no match defaults to first",
+			api:  &API{Name: "otherapi", Services: []*Service{serviceA, serviceB}},
+			want: serviceA,
+		},
+		{
+			name: "prefer non-deprecated service",
+			api:  &API{Name: "secretmanager", Services: []*Service{deprecatedService, serviceA}},
+			want: serviceA,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := findQuickstartService(tc.api)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("findQuickstartService() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -26,7 +26,6 @@ func TestFillDefaults(t *testing.T) {
 		Keep:         []string{"CHANGES.md"},
 		Output:       "src/generated/",
 		ReleaseLevel: "stable",
-		Transport:    "grpc+rest",
 	}
 	for _, test := range []struct {
 		name     string
@@ -42,7 +41,6 @@ func TestFillDefaults(t *testing.T) {
 				Keep:         []string{"CHANGES.md"},
 				Output:       "src/generated/",
 				ReleaseLevel: "stable",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -51,13 +49,11 @@ func TestFillDefaults(t *testing.T) {
 			lib: &config.Library{
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
-				Transport:    "grpc+rest",
 			},
 			want: &config.Library{
 				Keep:         []string{"CHANGES.md"},
 				Output:       "custom/output/",
 				ReleaseLevel: "preview",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -68,7 +64,6 @@ func TestFillDefaults(t *testing.T) {
 				Keep:         []string{"CHANGES.md"},
 				Output:       "custom/output/",
 				ReleaseLevel: "stable",
-				Transport:    "grpc+rest",
 			},
 		},
 		{
@@ -412,6 +407,40 @@ func TestFillDefaults_Python(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "library type defaults",
+			lib:  &config.Library{},
+			defaults: &config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
+			},
+		},
+		{
+			name: "library type overridden",
+			lib: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
+				},
+			},
+			defaults: &config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			want: &config.Library{
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			defaults := &config.Default{
@@ -438,33 +467,33 @@ func TestPrepareLibrary(t *testing.T) {
 	}{
 		{
 			name:       "empty output derives path from api",
-			language:   "rust",
+			language:   config.LanguageRust,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated/cloud/secretmanager/v1",
 		},
 		{
 			name:       "explicit output keeps explicit path",
-			language:   "rust",
+			language:   config.LanguageRust,
 			output:     "custom/output",
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "custom/output",
 		},
 		{
 			name:       "empty output uses default for non-rust",
-			language:   "go",
+			language:   config.LanguageGo,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			wantOutput: "src/generated",
 		},
 		{
 			name:        "rust with no apis creates default and derives path",
-			language:    "rust",
+			language:    config.LanguageRust,
 			apis:        nil,
 			wantOutput:  "src/generated/cloud/secretmanager/v1",
 			wantAPIPath: "google/cloud/secretmanager/v1",
 		},
 		{
 			name:        "veneer rust with no apis does not derive path",
-			language:    "rust",
+			language:    config.LanguageRust,
 			output:      "src/storage/test/v1",
 			veneer:      true,
 			apis:        nil,
@@ -484,10 +513,15 @@ func TestPrepareLibrary(t *testing.T) {
 		},
 		{
 			name:        "rust lib without service config",
-			language:    "rust",
+			language:    config.LanguageRust,
 			apis:        []*config.API{{Path: "google/cloud/orgpolicy/v1"}},
 			wantOutput:  "src/generated/cloud/orgpolicy/v1",
 			wantAPIPath: "google/cloud/orgpolicy/v1",
+		},
+		{
+			name:       "Go lib without api path",
+			language:   config.LanguageGo,
+			wantOutput: "src/generated",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -518,6 +552,40 @@ func TestPrepareLibrary(t *testing.T) {
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
 					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
 				}
+			}
+		})
+	}
+}
+
+func TestCanDeriveAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		want     bool
+	}{
+		{
+			name:     "dart",
+			language: config.LanguageDart,
+			want:     true,
+		},
+		{
+			name:     "go",
+			language: config.LanguageGo,
+		},
+		{
+			name:     "python",
+			language: config.LanguagePython,
+		},
+		{
+			name:     "rust",
+			language: config.LanguageRust,
+			want:     true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := canDeriveAPIPath(test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

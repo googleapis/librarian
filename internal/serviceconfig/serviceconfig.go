@@ -22,8 +22,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -86,7 +89,7 @@ func Read(serviceConfigPath string) (*Service, error) {
 // The Showcase API ("schema/google/showcase/v1beta1") is a special case:
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
-func Find(googleapisDir, path, language string) (*API, error) {
+func Find(googleapisDir, path string, language string) (*API, error) {
 	var result *API
 	for _, api := range APIs {
 		// The path for OpenAPI and discovery documents are in
@@ -206,7 +209,7 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 //
 // API paths not starting with "google/cloud/" must be explicitly included in the
 // allowlist and satisfy its language restrictions.
-func validateAPI(path, language string, api *API) (*API, error) {
+func validateAPI(path string, language string, api *API) (*API, error) {
 	if api == nil && strings.HasPrefix(path, "google/cloud/") {
 		return &API{Path: path}, nil
 	}
@@ -263,4 +266,59 @@ func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
 		return "", fmt.Errorf("multiple gRPC service config files found in %q", path)
 	}
 	return filepath.Rel(googleapisDir, matches[0])
+}
+
+// SortAPIs sorts APIs in-place to ensure the primary version is first.
+// The sorting logic: versioned APIs come before unversioned ones, stable
+// versions before unstable ones, shallower paths before deeper ones, and
+// higher versions before lower ones.
+// This is used in languages (e.g. Java) to match existing behaviors.
+func SortAPIs(apis []*config.API) {
+	sort.Slice(apis, func(i, j int) bool {
+		vi := ExtractVersion(apis[i].Path)
+		vj := ExtractVersion(apis[j].Path)
+		// Case 1: if both of the configs don't have a version in proto_path,
+		// the one with lower depth is smaller.
+		if vi == "" && vj == "" {
+			return strings.Count(apis[i].Path, "/") < strings.Count(apis[j].Path, "/")
+		}
+		// Case 2: if only one config has a version in proto_path, it is smaller
+		// than the other one.
+		if vi != "" && vj == "" {
+			return true
+		}
+		if vi == "" && vj != "" {
+			return false
+		}
+
+		si, sj := isStable(vi), isStable(vj)
+		// Case 3: if only one config has a stable version in proto_path, it is
+		// smaller than the other one.
+		if si && !sj {
+			return true
+		}
+		if !si && sj {
+			return false
+		}
+		// Case 4: if two configs have a non-stable version in proto_path,
+		// the one with higher version is smaller.
+		if !si && !sj {
+			return vi > vj
+		}
+		// Two configs both have a stable version in proto_path.
+		// Case 5: if two configs have different depth in proto_path, the one
+		// with lower depth is smaller.
+		di, dj := strings.Count(apis[i].Path, "/"), strings.Count(apis[j].Path, "/")
+		if di != dj {
+			return di < dj
+		}
+		// Case 6: the config with higher stable version is smaller.
+		ni, _ := strconv.Atoi(strings.TrimPrefix(vi, "v"))
+		nj, _ := strconv.Atoi(strings.TrimPrefix(vj, "v"))
+		return ni > nj
+	})
+}
+
+func isStable(v string) bool {
+	return v != "" && !strings.Contains(v, "alpha") && !strings.Contains(v, "beta")
 }

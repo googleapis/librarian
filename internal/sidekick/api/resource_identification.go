@@ -17,7 +17,6 @@ package api
 import (
 	"fmt"
 	"slices"
-	"strings"
 )
 
 // IdentifyTargetResources populates the TargetResource field in PathBinding
@@ -26,9 +25,9 @@ import (
 // This is done in two passes:
 //  1. Explicit Identification: Matches google.api.resource_reference annotations
 //     with fields present in the PathTemplate.
-//  2. Heuristic Identification: For allow-listed services, uses path segment
-//     patterns to identify resources when annotations are missing.
-func IdentifyTargetResources(model *API) error {
+//  2. Heuristic Identification: If enableHeuristics is true and the service is
+//     allow-listed, uses path segment patterns to identify resources when annotations are missing.
+func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	// Build the set of known resource names for the heuristic.
 	vocabulary := BuildHeuristicVocabulary(model)
 
@@ -38,7 +37,7 @@ func IdentifyTargetResources(model *API) error {
 				continue
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding, vocabulary); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
 			}
@@ -48,7 +47,7 @@ func IdentifyTargetResources(model *API) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -66,69 +65,99 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
-	target, err = identifyHeuristicTarget(method, binding, vocabulary)
-	if err != nil {
-		return err
-	}
-	if target != nil {
-		binding.TargetResource = target
-		return nil
+	if enableHeuristics {
+		target, err = identifyHeuristicTarget(method, binding, vocabulary)
+		if err != nil {
+			return err
+		}
+		if target != nil {
+			binding.TargetResource = target
+			return nil
+		}
 	}
 	return nil
 }
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
-	if !IsHeuristicEligible(method.Service.ID) {
+
+	tmpl := binding.PathTemplate
+	if tmpl == nil {
 		return nil, nil
 	}
 
-	var fieldPaths [][]string
-	var firstIndex = -1
-	var lastIndex int
-	segments := binding.PathTemplate.Segments
-
-	// Iterate starting from the second segment, looking for (literal, variable) pairs.
-	for i := 1; i < len(segments); i++ {
-		curr := segments[i]
-		prev := segments[i-1]
-
-		if curr.Variable == nil || prev.Literal == nil {
+	// Iterate backwards over segments
+	for i := len(tmpl.Segments) - 1; i >= 0; i-- {
+		seg := tmpl.Segments[i]
+		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == nil {
 			continue
 		}
 
-		// Check if the preceding literal is a valid collection identifier.
-		if !isCollectionIdentifier(*prev.Literal, vocabulary) {
-			// Once a path segment breaks the chain of valid (collection, ID) pairs,
-			// the resource identifier stops.
-			break
+		token := *tmpl.Segments[i-1].Literal
+		if !vocabulary[token] && !isVersionString(token) {
+			continue // continue scanning backward if not in vocabulary
 		}
 
-		fieldPath := curr.Variable.FieldPath
-		// Verify the field exists in the input message.
-		_, err := findField(method.InputType, fieldPath)
+		// The default firstIndex is the current variable segment. If the preceding
+		// literal is a known collection, we'll try to walk backwards to find the
+		// beginning of a resource pattern chain.
+		firstIndex := i
+		if vocabulary[token] {
+			// Walk backwards to find the start of the (literal, variable) chain
+			firstIndex = i - 1
+			for firstIndex >= 2 {
+				if tmpl.Segments[firstIndex-1].Variable == nil || tmpl.Segments[firstIndex-2].Literal == nil {
+					break
+				}
+				// Stop matching if the preceding segment isn't a known collection.
+				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
+					// Include root-level resource variables immediately after version string.
+					if isVersionString(*tmpl.Segments[firstIndex-2].Literal) {
+						firstIndex -= 1
+					}
+					break
+				}
+				firstIndex -= 2
+			}
+		}
+
+		if method.InputType == nil {
+			return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
+		}
+
+		// Verify the chain connects properly to the root of the path.
+		// If earlier variables exist, this chain is just a trailing partial match and should be ignored.
+		disconnected := false
+		for k := 0; k < firstIndex; k++ {
+			if tmpl.Segments[k].Variable != nil {
+				disconnected = true
+				break
+			}
+		}
+		if disconnected {
+			continue
+		}
+
+		var fieldPaths [][]string
+		targetSegments := tmpl.Segments[firstIndex : i+1]
+		for _, s := range targetSegments {
+			if s.Variable != nil {
+				_, err := findField(method.InputType, s.Variable.FieldPath)
+				if err != nil {
+					return nil, err
+				}
+				fieldPaths = append(fieldPaths, s.Variable.FieldPath)
+			}
+		}
+		template, err := constructTemplate(method, targetSegments)
 		if err != nil {
 			return nil, err
 		}
-		if firstIndex == -1 {
-			firstIndex = i - 1
-		}
-		fieldPaths = append(fieldPaths, fieldPath)
-		lastIndex = i + 1
+		return &TargetResource{
+			FieldPaths: fieldPaths,
+			Template:   template,
+		}, nil
 	}
-
-	if len(fieldPaths) == 0 {
-		return nil, nil
-	}
-
-	template, err := constructTemplate(method, segments[firstIndex:lastIndex])
-	if err != nil {
-		return nil, err
-	}
-
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
+	return nil, nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
@@ -137,8 +166,9 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 		return nil, fmt.Errorf("consistency error: method %q has no InputType", method.Name)
 	}
 
+	var lastVarIndex = -1
 	// Collect field paths corresponding to variable segments in the path template
-	for _, segment := range binding.PathTemplate.Segments {
+	for i, segment := range binding.PathTemplate.Segments {
 		if segment.Variable == nil {
 			continue
 		}
@@ -155,12 +185,13 @@ func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResour
 			return nil, nil
 		}
 		fieldPaths = append(fieldPaths, fieldPath)
+		lastVarIndex = i
 	}
 
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
-	template, err := constructTemplate(method, binding.PathTemplate.Segments)
+	template, err := constructTemplate(method, binding.PathTemplate.Segments[:lastVarIndex+1])
 	if err != nil {
 		return nil, err
 	}
@@ -200,26 +231,30 @@ func findField(msg *Message, path []string) (*Field, error) {
 }
 
 // constructTemplate reconstructs the canonical resource name template from path segments.
-func constructTemplate(method *Method, segments []PathSegment) (string, error) {
+func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, error) {
 	host, err := getServiceHost(method)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var sb strings.Builder
-	sb.WriteString("//")
-	sb.WriteString(host)
+	var result []PathSegment
+	h := "//" + host
+	result = append(result, PathSegment{Literal: &h})
 
 	for _, seg := range segments {
-		sb.WriteString("/")
 		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
+			l := *seg.Literal
+			if isVersionString(l) {
+				continue
+			}
+			result = append(result, PathSegment{Literal: &l})
 		} else if seg.Variable != nil {
-			// Use simple field path form {field}, ignoring internal patterns, handling both exploded paths and full name variables correctly.
-			fmt.Fprintf(&sb, "{%s}", strings.Join(seg.Variable.FieldPath, "."))
+			result = append(result, PathSegment{Variable: &PathVariable{
+				FieldPath: seg.Variable.FieldPath,
+			}})
 		}
 	}
-	return sb.String(), nil
+	return result, nil
 }
 
 func getServiceHost(method *Method) (string, error) {
@@ -230,4 +265,10 @@ func getServiceHost(method *Method) (string, error) {
 		return method.Model.Name + ".googleapis.com", nil
 	}
 	return "", fmt.Errorf("consistency error: no service host found for method %q", method.Name)
+}
+
+// isVersionString checks if a string appears to be an API version segment,
+// such as "v1" or "v1beta1".
+func isVersionString(s string) bool {
+	return len(s) >= 2 && s[0] == 'v' && s[1] >= '0' && s[1] <= '9'
 }

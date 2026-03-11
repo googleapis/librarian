@@ -70,6 +70,13 @@ func TestParseFlags(t *testing.T) {
 			wantWorkDir:  "/path/to/repo",
 			wantVerbose:  true,
 		},
+		{
+			name:         "-C is resolved absolutely",
+			args:         []string{"librarianops", "test-command", "-C", "/path/to/other/../repo", "-v"},
+			wantRepoName: "repo",
+			wantWorkDir:  "/path/to/repo",
+			wantVerbose:  true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var (

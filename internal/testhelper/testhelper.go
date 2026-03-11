@@ -74,14 +74,10 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	remoteDir := t.TempDir()
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
-	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "tag", wantTag)
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := command.Run(t.Context(), "git", "clone", remoteDir, "."); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "clone", remoteDir, ".")
 	configNewGitRepository(t)
 }
 
@@ -91,22 +87,14 @@ func ContinueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	RequireCommand(t, "git")
 	t.Chdir(tmpDir)
-	if err := command.Run(t.Context(), "git", "init", "-b", "main"); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "init", "-b", "main")
 	configNewGitRepository(t)
 }
 
 func configNewGitRepository(t *testing.T) {
-	if err := command.Run(t.Context(), "git", "config", "user.email", "test@test-only.com"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "config", "user.name", "Test Account"); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "remote", "add", TestRemote, testRemoteURL); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "config", "user.email", "test@test-only.com")
+	RunGit(t, "config", "user.name", "Test Account")
+	RunGit(t, "remote", "add", TestRemote, testRemoteURL)
 }
 
 func initRepositoryContents(t *testing.T) {
@@ -119,12 +107,8 @@ func initRepositoryContents(t *testing.T) {
 	AddCrate(t, sample.Lib2Output, sample.Lib2Name)
 	AddCrate(t, path.Join(sample.Lib2Output, "echo-server"), "echo-server")
 	addGeneratedCrate(t, path.Join("src", "generated", "cloud", "secretmanager", "v1"), "google-cloud-secretmanager-v1")
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "initial version"); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "add", ".")
+	RunGit(t, "commit", "-m", "initial version")
 }
 
 func addGeneratedCrate(t *testing.T, location, name string) {
@@ -200,9 +184,7 @@ func setup(t *testing.T, opts SetupOptions) {
 		addLibrarianConfig(t, opts.Config)
 	}
 	for _, tag := range opts.Tags {
-		if err := command.Run(t.Context(), "git", "tag", tag); err != nil {
-			t.Fatal(err)
-		}
+		RunGit(t, "tag", tag)
 	}
 	// Must be handled after tagging for tests that need to detect untagged
 	// changes needing release.
@@ -210,23 +192,17 @@ func setup(t *testing.T, opts SetupOptions) {
 		for _, srcPath := range opts.WithChanges {
 			touchFile(t, srcPath)
 		}
-		if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed file(s)", "."); err != nil {
-			t.Fatal(err)
-		}
+		RunGit(t, "commit", "-m", "feat: changed file(s)", ".")
 	}
 	if opts.PreviewOptions != nil {
-		if err := command.Run(t.Context(), "git", "checkout", "-b", "preview"); err != nil {
-			t.Fatal(err)
-		}
+		RunGit(t, "checkout", "-b", "preview")
 		setup(t, *opts.PreviewOptions)
 	}
 	if opts.Clone != "" {
 		CloneRepositoryBranch(t, opts.remoteDir, opts.Clone)
 	}
 	if opts.Dirty {
-		if err := command.Run(t.Context(), "git", "reset", "HEAD~1"); err != nil {
-			t.Fatal(err)
-		}
+		RunGit(t, "reset", "HEAD~1")
 	}
 }
 
@@ -254,12 +230,8 @@ func addLibrarianConfig(t *testing.T, cfg *config.Config) {
 	if err := yaml.Write("librarian.yaml", cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "chore: add/update librarian yaml", "."); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "add", ".")
+	RunGit(t, "commit", "-m", "chore: add/update librarian yaml", ".")
 }
 
 // SetupRepoWithChange creates a git repository for testing publish scenarios,
@@ -267,16 +239,12 @@ func addLibrarianConfig(t *testing.T, cfg *config.Config) {
 // It returns the path to the remote repository.
 func SetupRepoWithChange(t *testing.T, wantTag string) string {
 	remoteDir := SetupRepo(t)
-	if err := command.Run(t.Context(), "git", "tag", wantTag); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "tag", wantTag)
 	name := path.Join(sample.Lib1Output, "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(NewLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", "feat: changed storage", "."); err != nil {
-		t.Fatal(err)
-	}
+	RunGit(t, "commit", "-m", "feat: changed storage", ".")
 	return remoteDir
 }
 
@@ -292,8 +260,13 @@ func CloneRepository(t *testing.T, remoteDir string) {
 func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
-	if err := command.Run(t.Context(), "git", "clone", "--branch", branch, remoteDir, "."); err != nil {
+	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
+	configNewGitRepository(t)
+}
+
+// RunGit runs git with the specified arguments, aborting the test on any error.
+func RunGit(t *testing.T, args ...string) {
+	if err := command.Run(t.Context(), "git", args...); err != nil {
 		t.Fatal(err)
 	}
-	configNewGitRepository(t)
 }

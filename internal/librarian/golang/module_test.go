@@ -15,10 +15,14 @@
 package golang
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestFill(t *testing.T) {
@@ -28,7 +32,7 @@ func TestFill(t *testing.T) {
 		want    *config.Library
 	}{
 		{
-			name: "fill default import path",
+			name: "fill defaults for non-nested api",
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
@@ -39,15 +43,16 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:       "google/cloud/secretmanager/v1",
-							ImportPath: "secretmanager",
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "fill default import path and client directory",
+			name: "fill defaults for nested api",
 			library: &config.Library{
 				Name: "bigquery",
 				APIs: []*config.API{
@@ -72,60 +77,49 @@ func TestFill(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/bigquery/analyticshub/v1",
-							ClientDirectory: "analyticshub",
-							ImportPath:      "bigquery/analyticshub",
+							ClientPackage: "analyticshub",
+							ImportPath:    "bigquery/analyticshub/apiv1",
+							Path:          "google/cloud/bigquery/analyticshub/v1",
 						},
 						{
-							Path:            "google/cloud/bigquery/biglake/v1",
-							ClientDirectory: "biglake",
-							ImportPath:      "bigquery/biglake",
+							ClientPackage: "biglake",
+							ImportPath:    "bigquery/biglake/apiv1",
+							Path:          "google/cloud/bigquery/biglake/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "skip non cloud api with nil Go module",
+			name: "do not override library configs",
 			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
-			},
-			want: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
-				Go:   &config.GoModule{},
-			},
-		},
-		{
-			name: "skip non cloud api with Go module",
-			library: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
+							ClientPackage: "custom", // This value will be kept.
+							Path:          "google/cloud/example/v1",
 						},
 					},
 				},
 			},
 			want: &config.Library{
-				Name: "ai",
-				APIs: []*config.API{{Path: "google/ai/generativelanguage/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/ai/generativelanguage/v1",
-							ClientDirectory: "generativelanguage",
+							ClientPackage: "custom",
+							ImportPath:    "example/apiv1",
+							Path:          "google/cloud/example/v1",
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "defaults do not override library config",
+			name: "merge defaults",
 			library: &config.Library{
 				Name: "example",
 				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
@@ -146,19 +140,102 @@ func TestFill(t *testing.T) {
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:               "google/cloud/example/v1",
-							ImportPath:         "example",
+							ClientPackage:      "example",
+							ImportPath:         "example/apiv1",
 							NoRESTNumericEnums: true,
+							Path:               "google/cloud/example/v1",
 						},
 					},
 				},
 			},
 		},
+		{
+			name: "proto only API",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+							ProtoOnly:  true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "no API",
+			library: &config.Library{
+				Name: "auth",
+			},
+			want: &config.Library{
+				Name: "auth",
+				Go:   &config.GoModule{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Fill(test.library)
+			got, err := Fill(test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFill_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "import path not set",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+			},
+			wantErr: errImportPathNotFound,
+		},
+		{
+			name: "client package not set",
+			library: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "oslogin/common",
+							Path:       "google/cloud/oslogin/common",
+						},
+					},
+				},
+			},
+			wantErr: errClientPackageNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := Fill(test.library)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Fill() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -178,16 +255,16 @@ func TestFindGoAPI(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/secretmanager/v1",
-							ClientDirectory: "customDir",
+							Path:          "google/cloud/secretmanager/v1",
+							ClientPackage: "customDir",
 						},
 					},
 				},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			want: &config.GoAPI{
-				Path:            "google/cloud/secretmanager/v1",
-				ClientDirectory: "customDir",
+				Path:          "google/cloud/secretmanager/v1",
+				ClientPackage: "customDir",
 			},
 		},
 		{
@@ -204,8 +281,8 @@ func TestFindGoAPI(t *testing.T) {
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:            "google/cloud/secretmanager/v1",
-							ClientDirectory: "customDir",
+							Path:          "google/cloud/secretmanager/v1",
+							ClientPackage: "customDir",
 						},
 					},
 				},
@@ -219,5 +296,192 @@ func TestFindGoAPI(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestDefaultImportPathAndClientPkg(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		apiPath           string
+		wantImportPath    string
+		wantClientPkgName string
+	}{
+		{
+			name:              "secretmanager",
+			apiPath:           "google/cloud/secretmanager/v1",
+			wantImportPath:    "secretmanager/apiv1",
+			wantClientPkgName: "secretmanager",
+		},
+		{
+			name:              "shopping",
+			apiPath:           "google/shopping/merchant/quota/v1",
+			wantImportPath:    "shopping/merchant/quota/apiv1",
+			wantClientPkgName: "quota",
+		},
+		{
+			name:              "non-versioned api path",
+			apiPath:           "google/shopping/type",
+			wantImportPath:    "",
+			wantClientPkgName: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotImportPath, gotPkg := defaultImportPathAndClientPkg(test.apiPath)
+			if diff := cmp.Diff(test.wantImportPath, gotImportPath); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantClientPkgName, gotPkg); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestClientPathFromLibraryRoot(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		goAPI   *config.GoAPI
+		want    string
+	}{
+		{
+			name: "no module path version",
+			library: &config.Library{
+				Go: &config.GoModule{},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "with module path version v2",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v2/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "with module path version v2 and api version v2",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v2/apiv2",
+			},
+			want: "secretmanager/apiv2",
+		},
+		{
+			name: "with module path version v3",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v3",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/v3/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			// This test case should not happen in production since
+			// GoAPI is part of Go config.
+			name: "library.Go is nil",
+			library: &config.Library{
+				Go: nil,
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+		{
+			name: "module path version not in import path",
+			library: &config.Library{
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/apiv1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := clientPathFromLibraryRoot(test.library, test.goAPI)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSnippetDirectory(t *testing.T) {
+	output := t.TempDir()
+	importPath := "example/apiv1"
+	got := snippetDirectory(output, importPath)
+	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestModulePath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "no module path version",
+			library: &config.Library{
+				Name: "pubsub",
+			},
+			want: "cloud.google.com/go/pubsub",
+		},
+		{
+			name: "with module path version v2",
+			library: &config.Library{
+				Name: "pubsub",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			want: "cloud.google.com/go/pubsub/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := modulePath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInitModule(t *testing.T) {
+	testhelper.RequireCommand(t, "go")
+	outDir := t.TempDir()
+	// Write an import so go mod tidy can generate a go.sum file.
+	content := []byte("package main\nimport _ \"golang.org/x/text\"\n")
+	if err := os.WriteFile(filepath.Join(outDir, "main.go"), content, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := initModule(t.Context(), outDir, "example.com/testmod"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
+		t.Errorf("expected go.mod to exist, but Stat failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "go.sum")); err != nil {
+		t.Errorf("expected go.sum to exist, but Stat failed: %v", err)
 	}
 }

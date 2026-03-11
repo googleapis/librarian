@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -2140,12 +2141,15 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 
 func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGeneratorRequest {
 	t.Helper()
-	options := map[string]string{
-		"googleapis-root":   "../../testdata/googleapis",
-		"extra-protos-root": "testdata",
-		"include-list":      filename,
+	src := sidekickconfig.SourceConfig{
+		Sources: sidekickconfig.Sources{
+			Googleapis:  "../../testdata/googleapis",
+			ProtobufSrc: "testdata",
+		},
+		ActiveRoots: []string{"googleapis", "protobuf-src"},
+		IncludeList: []string{filename},
 	}
-	request, err := newCodeGeneratorRequest("testdata", options)
+	request, err := newCodeGeneratorRequest("testdata", src)
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
@@ -2196,28 +2200,5 @@ func requireProtoc(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("protoc"); err != nil {
 		t.Skip("skipping test because protoc is not installed")
-	}
-}
-
-func TestProtobuf_SubdirRedundancy(t *testing.T) {
-	requireProtoc(t)
-	// This test covers a scenario where the -root option already contains the
-	// subdirectory, but a -subdir option is also present.
-	// Ensure that they are not double-joined.
-	options := map[string]string{
-		"googleapis-root":     "../../testdata/googleapis",
-		"extra-protos-root":   "testdata",
-		"extra-protos-subdir": "should_ignore_folder",
-		"include-list":        "scalar.proto",
-	}
-	req, err := newCodeGeneratorRequest("testdata", options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want, got := 1, len(req.FileToGenerate); want != got {
-		t.Fatalf("newCodeGeneratorRequest() returned %d files, want %d", got, want)
-	}
-	if want := "scalar.proto"; !strings.HasSuffix(req.FileToGenerate[0], want) {
-		t.Errorf("newCodeGeneratorRequest() returned file %q, want suffix %q", req.FileToGenerate[0], want)
 	}
 }

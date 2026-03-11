@@ -30,8 +30,8 @@ func TestIsCreate(t *testing.T) {
 	}{
 		{"Name Prefix", &api.Method{Name: "CreateInstance"}, true},
 		{"Name Mismatch", &api.Method{Name: "GetInstance"}, false},
-		{"Verb Match", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, true},
-		{"Verb Mismatch", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Verb Match", api.NewTestMethod("CreateInstance").WithVerb("POST"), true},
+		{"Verb Mismatch", api.NewTestMethod("CreateInstance").WithVerb("GET"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -51,8 +51,8 @@ func TestIsGet(t *testing.T) {
 	}{
 		{"Name Prefix", &api.Method{Name: "GetInstance"}, true},
 		{"Name Mismatch", &api.Method{Name: "CreateInstance"}, false},
-		{"Verb Match", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"Verb Mismatch", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
+		{"Verb Match", api.NewTestMethod("GetInstance").WithVerb("GET"), true},
+		{"Verb Mismatch", api.NewTestMethod("GetInstance").WithVerb("POST"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -72,8 +72,8 @@ func TestIsList(t *testing.T) {
 	}{
 		{"Name Prefix", &api.Method{Name: "ListInstances"}, true},
 		{"Name Mismatch", &api.Method{Name: "GetInstance"}, false},
-		{"Verb Match", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"Verb Mismatch", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
+		{"Verb Match", api.NewTestMethod("ListInstances").WithVerb("GET"), true},
+		{"Verb Mismatch", api.NewTestMethod("ListInstances").WithVerb("POST"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -93,9 +93,9 @@ func TestIsUpdate(t *testing.T) {
 	}{
 		{"Name Prefix", &api.Method{Name: "UpdateInstance"}, true},
 		{"Name Mismatch", &api.Method{Name: "GetInstance"}, false},
-		{"Verb Match PATCH", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PATCH"}}}}, true},
-		{"Verb Match PUT", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PUT"}}}}, true},
-		{"Verb Mismatch", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Verb Match PATCH", api.NewTestMethod("UpdateInstance").WithVerb("PATCH"), true},
+		{"Verb Match PUT", api.NewTestMethod("UpdateInstance").WithVerb("PUT"), true},
+		{"Verb Mismatch", api.NewTestMethod("UpdateInstance").WithVerb("GET"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -115,8 +115,8 @@ func TestIsDelete(t *testing.T) {
 	}{
 		{"Name Prefix", &api.Method{Name: "DeleteInstance"}, true},
 		{"Name Mismatch", &api.Method{Name: "GetInstance"}, false},
-		{"Verb Match", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "DELETE"}}}}, true},
-		{"Verb Mismatch", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
+		{"Verb Match", api.NewTestMethod("DeleteInstance").WithVerb("DELETE"), true},
+		{"Verb Mismatch", api.NewTestMethod("DeleteInstance").WithVerb("GET"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -138,18 +138,7 @@ func TestGetCommandName(t *testing.T) {
 		{"Standard Create", &api.Method{Name: "CreateInstance"}, "create"},
 		{"Standard List", &api.Method{Name: "ListInstances"}, "list"},
 		{"Standard Get", &api.Method{Name: "GetInstance"}, "describe"},
-		{"Custom Verb in Path", &api.Method{
-			Name: "ExportData",
-			PathInfo: &api.PathInfo{
-				Bindings: []*api.PathBinding{
-					{
-						PathTemplate: &api.PathTemplate{
-							Verb: &v,
-						},
-					},
-				},
-			},
-		}, "export_data"},
+		{"Custom Verb in Path", api.NewTestMethod("ExportData").WithPathTemplate(&api.PathTemplate{Verb: &v}), "export_data"},
 		{"Fallback to Name", &api.Method{Name: "ExportData"}, "export_data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -244,20 +233,14 @@ func TestIsResourceMethod(t *testing.T) {
 		method *api.Method
 		want   bool
 	}{
-		{"Standard Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"Standard List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
-		{"Custom Resource", &api.Method{
-			Name: "CustomInstance",
-			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
-				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
-			}}},
-		}, true},
-		{"Custom Collection", &api.Method{
-			Name: "CustomCollection",
-			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
-				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
-			}}},
-		}, false},
+		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), true},
+		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), false},
+		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
+			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+		), true},
+		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
+			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+		), false},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
 		{"Nil PathTemplate", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: nil}}}}, false},
@@ -278,20 +261,14 @@ func TestIsCollectionMethod(t *testing.T) {
 		method *api.Method
 		want   bool
 	}{
-		{"Standard Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, false},
-		{"Standard List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"Custom Resource", &api.Method{
-			Name: "CustomInstance",
-			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
-				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
-			}}},
-		}, false},
-		{"Custom Collection", &api.Method{
-			Name: "CustomCollection",
-			PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{
-				PathTemplate: &api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
-			}}},
-		}, true},
+		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), false},
+		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), true},
+		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
+			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+		), false},
+		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
+			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+		), true},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
 		{"Nil PathTemplate", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{PathTemplate: nil}}}}, false},
@@ -312,12 +289,12 @@ func TestIsStandardMethod(t *testing.T) {
 		method *api.Method
 		want   bool
 	}{
-		{"Get", &api.Method{Name: "GetInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"List", &api.Method{Name: "ListInstances", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "GET"}}}}, true},
-		{"Create", &api.Method{Name: "CreateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, true},
-		{"Update", &api.Method{Name: "UpdateInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "PATCH"}}}}, true},
-		{"Delete", &api.Method{Name: "DeleteInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "DELETE"}}}}, true},
-		{"Custom", &api.Method{Name: "ExportInstance", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{{Verb: "POST"}}}}, false},
+		{"Get", api.NewTestMethod("GetInstance").WithVerb("GET"), true},
+		{"List", api.NewTestMethod("ListInstances").WithVerb("GET"), true},
+		{"Create", api.NewTestMethod("CreateInstance").WithVerb("POST"), true},
+		{"Update", api.NewTestMethod("UpdateInstance").WithVerb("PATCH"), true},
+		{"Delete", api.NewTestMethod("DeleteInstance").WithVerb("DELETE"), true},
+		{"Custom", api.NewTestMethod("ExportInstance").WithVerb("POST"), false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

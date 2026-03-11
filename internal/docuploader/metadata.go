@@ -44,10 +44,7 @@ type DocUploaderMetadata struct {
 	// https://github.com/googleapis/nodejs-storage/issues
 	IssueTracker string `json:"issueTracker,omitempty"`
 
-	// Language is the (programming) language. While this isn't enforced with an
-	// enum, you should use one of the following strings:  python, nodejs, ruby,
-	// dotnet, java, go, php, cpp. In some cases you might need to use something
-	// else, consult the docs team for guidance.
+	// Language is the (programming) language.
 	Language string `json:"language,omitempty"`
 
 	// Name is the product/API name. This *should* match the DNS name of the API

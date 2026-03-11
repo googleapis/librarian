@@ -16,10 +16,11 @@ package librarianops
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/user"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -31,13 +32,19 @@ import (
 const (
 	branchPrefix = "librarianops-generateall-"
 	commitTitle  = "chore: run librarian update and generate --all"
+	// librarianImageTemplate is a template string to format a language and
+	// version into the name of a Docker image to run when the --docker flag
+	// has been specified.
+	// TODO(https://github.com/googleapis/librarian/issues/4464): change this
+	// to an Artifact Registry image when we publish automatically.
+	librarianImageTemplate = "docker.io/library/librarian-{language}:{version}"
 )
 
 func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
 		Usage:     "generate libraries across repositories",
-		UsageText: "librarianops generate [<repo> | -C <dir>]",
+		UsageText: "librarianops generate [<repo> | -C <dir>] [--docker]",
 		Description: `Examples:
   librarianops generate google-cloud-rust
   librarianops generate -C ~/workspace/google-cloud-rust
@@ -63,6 +70,10 @@ For each repository, librarianops will:
 				Name:  "v",
 				Usage: "run librarian with verbose output",
 			},
+			&cli.BoolFlag{
+				Name:  "docker",
+				Usage: "run librarian in Docker",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			repoName, workDir, verbose, err := parseFlags(cmd)
@@ -70,19 +81,19 @@ For each repository, librarianops will:
 				return err
 			}
 			command.Verbose = verbose
-			return runGenerate(ctx, repoName, workDir)
+			return runGenerate(ctx, repoName, workDir, cmd.Bool("docker"))
 		},
 	}
 }
 
-func runGenerate(ctx context.Context, repoName, repoDir string) error {
+func runGenerate(ctx context.Context, repoName, repoDir string, runInDocker bool) error {
 	if !supportedRepositories[repoName] {
 		return fmt.Errorf("repository %q not found in supported repositories list", repoName)
 	}
-	return processRepo(ctx, repoName, repoDir, command.Verbose)
+	return processRepo(ctx, repoName, repoDir, "", command.Verbose, runInDocker)
 }
 
-func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (err error) {
+func processRepo(ctx context.Context, repoName, repoDir, librarianBin string, verbose, runInDocker bool) (err error) {
 	if repoDir == "" {
 		repoDir, err = os.MkdirTemp("", "librarianops-"+repoName+"-*")
 		if err != nil {
@@ -109,30 +120,35 @@ func processRepo(ctx context.Context, repoName, repoDir string, verbose bool) (e
 	if err := createBranch(ctx, generateBranchName(branchPrefix, time.Now())); err != nil {
 		return err
 	}
-	version, err := getLibrarianVersionAtMain(ctx)
+	cfg, err := yaml.Read[config.Config]("librarian.yaml")
 	if err != nil {
 		return err
 	}
-	if repoName != repoFake {
-		if err := runLibrarianWithVersion(ctx, version, verbose, "tidy"); err != nil {
-			return err
+	if librarianBin == "" && cfg.Version == "" {
+		return errors.New("librarian.yaml must specify the librarian version")
+	}
+	run := func(args ...string) error {
+		if librarianBin != "" {
+			return runLibrarianBin(ctx, librarianBin, verbose, args...)
 		}
+		if runInDocker {
+			return runLibrarianInDocker(ctx, cfg.Language, cfg.Version, verbose, args...)
+		}
+		return runLibrarianWithVersion(ctx, cfg.Version, verbose, args...)
 	}
 	if repoName != repoFake {
-		configPath := filepath.Join(repoDir, "librarian.yaml")
-		cfg, err := yaml.Read[config.Config](configPath)
-		if err != nil {
+		if err := run("tidy"); err != nil {
 			return err
 		}
 		sources := sourcesToUpdate(cfg)
 		if len(sources) > 0 {
 			args := append([]string{"update"}, sources...)
-			if err := runLibrarianWithVersion(ctx, version, verbose, args...); err != nil {
+			if err := run(args...); err != nil {
 				return err
 			}
 		}
 	}
-	if err := runLibrarianWithVersion(ctx, version, verbose, "generate", "--all"); err != nil {
+	if err := run("generate", "--all"); err != nil {
 		return err
 	}
 	if repoName == repoRust {
@@ -173,29 +189,55 @@ func runCargoUpdate(ctx context.Context) error {
 	return command.Run(ctx, "cargo", "update", "--workspace")
 }
 
-func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
-	output, err := command.Output(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
-	if err != nil {
-		return "", fmt.Errorf("go list: %w", err)
-	}
-	var mod struct {
-		Version string `json:"Version"`
-	}
-	if err := json.Unmarshal([]byte(output), &mod); err != nil {
-		return "", fmt.Errorf("parsing go list output: %w", err)
-	}
-	if mod.Version == "" {
-		return "", fmt.Errorf("no version in go list output: %s", output)
-	}
-	return mod.Version, nil
-}
-
 func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {
 	if verbose {
 		args = append([]string{"-v"}, args...)
 	}
 	return command.Run(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
+}
+
+func runLibrarianInDocker(ctx context.Context, language, version string, verbose bool, args ...string) error {
+	if verbose {
+		args = append([]string{"-v"}, args...)
+	}
+	dockerImage := strings.NewReplacer("{language}", language, "{version}", version).Replace(librarianImageTemplate)
+	currentUser, err := user.Current()
+	if err != nil {
+		return err
+	}
+	homeCache, err := os.UserCacheDir()
+	if err != nil {
+		return err
+	}
+	dockerArgs := []string{
+		"run",
+		// Clean up the container afterwards.
+		"--rm",
+		// Run as the current user in the container, so that files are still
+		// owned appropriately.
+		"-u",
+		fmt.Sprintf("%s:%s", currentUser.Uid, currentUser.Gid),
+		// Map the current working directory to /repo.
+		"-v",
+		".:/repo",
+		// Map the cache directory (avoids fetching sources multiple times).
+		"-v",
+		homeCache + ":/.cache",
+		// Use /repo as the working directory.
+		"-w",
+		"/repo",
+		dockerImage,
+	}
+	return command.Run(ctx, "docker", append(dockerArgs, args...)...)
+}
+
+// runLibrarianBin runs a pre-built librarian binary with the given arguments.
+func runLibrarianBin(ctx context.Context, bin string, verbose bool, args ...string) error {
+	if verbose {
+		args = append([]string{"-v"}, args...)
+	}
+	return command.Run(ctx, bin, args...)
 }
 
 func sourcesToUpdate(cfg *config.Config) []string {

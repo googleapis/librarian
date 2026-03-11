@@ -38,6 +38,7 @@ var (
 
 	errNoSourcesProvided = errors.New("at least one source must be provided")
 	errUnknownSource     = errors.New("unknown source")
+	errEmptySources      = errors.New("sources required in librarian.yaml")
 )
 
 // updateCommand returns the `update` subcommand.

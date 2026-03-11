@@ -48,7 +48,7 @@ func TestRunUpgrade(t *testing.T) {
 	repoDir := t.TempDir()
 	configPath := generateLibrarianConfigPath(t, repoDir)
 	initialConfig := sample.Config()
-	initialConfig.Language = "fake"
+	initialConfig.Language = config.LanguageFake
 	initialConfig.Version = "v0.1.0"
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)
@@ -153,7 +153,10 @@ func TestRunUpgrade_Error(t *testing.T) {
 				}
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
-				if err := yaml.Write(configPath, &config.Config{}); err != nil {
+				// Use an invalid config that will cause `librarian generate` to fail.
+				// An empty language should be invalid.
+				cfg := &config.Config{Language: config.LanguagePhp}
+				if err := yaml.Write(configPath, cfg); err != nil {
 					t.Fatal(err)
 				}
 				return repoDir
@@ -199,7 +202,7 @@ func TestUpgradeCommand(t *testing.T) {
 
 	configPath := generateLibrarianConfigPath(t, repoDir)
 	initialConfig := sample.Config()
-	initialConfig.Language = "fake"
+	initialConfig.Language = config.LanguageFake
 	initialConfig.Version = "v0.1.0"
 	if err := yaml.Write(configPath, initialConfig); err != nil {
 		t.Fatal(err)

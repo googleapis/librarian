@@ -74,7 +74,7 @@ func importMetadata(ctx context.Context, pythonRepoDir, librarianRepoDir string)
 	}
 	defaultOutputDir := filepath.Join(pythonRepoDir, pythonCfg.Default.Output)
 
-	googleapisDir, _, err := librarian.LoadSources(ctx, pythonCfg)
+	sources, err := librarian.LoadSources(ctx, pythonCfg.Sources)
 	if err != nil {
 		return fmt.Errorf("error loading sources: %w", err)
 	}
@@ -92,14 +92,14 @@ func importMetadata(ctx context.Context, pythonRepoDir, librarianRepoDir string)
 		if !found {
 			continue
 		}
-		resolvedAPI, err := serviceconfig.Find(googleapisDir, api.Path, pythonCfg.Language)
+		resolvedAPI, err := serviceconfig.Find(sources.Googleapis, api.Path, pythonCfg.Language)
 		if err != nil {
 			return fmt.Errorf("error finding service for path %s: %w", api.Path, err)
 		}
 		if resolvedAPI.NewIssueURI != "" || resolvedAPI.DocumentationURI != "" {
 			continue
 		}
-		libraryOutputDir := python.DefaultOutputByName(library.Name, defaultOutputDir)
+		libraryOutputDir := python.DefaultOutput(library.Name, defaultOutputDir)
 		repoMetadata, err := repometadata.Read(libraryOutputDir)
 		if err != nil {
 			return fmt.Errorf("error finding service for path %s: %w", api.Path, err)

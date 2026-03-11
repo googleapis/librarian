@@ -17,9 +17,7 @@ package main
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -27,7 +25,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
@@ -36,6 +33,11 @@ import (
 )
 
 type goGAPICInfo struct {
+	ClientPackageName  string
+	DisableGAPIC       bool
+	HasDiregapic       bool
+	ImportPath         string
+	NoMetadata         bool
 	NoRESTNumericEnums bool
 }
 
@@ -74,42 +76,7 @@ type MigrationInput struct {
 	googleapisDir   string
 }
 
-var (
-	addGoModules = map[string]*RepoConfigModule{
-		"ai": {
-			APIs: []*RepoConfigAPI{
-				{
-					Path:            "google/ai/generativelanguage/v1",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1alpha",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-				{
-					Path:            "google/ai/generativelanguage/v1beta2",
-					ClientDirectory: "generativelanguage",
-					ImportPath:      "ai/generativelanguage",
-				},
-			},
-		},
-	}
-
-	libraryOverrides = map[string]*config.Library{
-		"ai": {
-			ReleaseLevel: "beta",
-		},
-	}
-)
-
-func runLibrarianMigration(ctx context.Context, language, repoPath string) error {
+func runLibrarianMigration(ctx context.Context, language string, repoPath string) error {
 	librarianState, err := readState(repoPath)
 	if err != nil {
 		return err
@@ -143,7 +110,7 @@ func runLibrarianMigration(ctx context.Context, language, repoPath string) error
 
 func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*config.Config, error) {
 	repo := "googleapis/google-cloud-go"
-	if input.lang == "python" {
+	if input.lang == config.LanguagePython {
 		repo = "googleapis/google-cloud-python"
 	}
 
@@ -163,10 +130,11 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		},
 	}
 
-	if input.lang == "python" {
+	if input.lang == config.LanguagePython {
 		cfg.Default.Python = &config.PythonDefault{
 			// Declared in python.go.
 			CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+			LibraryType:      pythonDefaultLibraryType,
 		}
 		cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
 		if err != nil {
@@ -174,10 +142,9 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		}
 		cfg.Default.Output = "packages"
 		cfg.Default.ReleaseLevel = "stable"
-		cfg.Default.Transport = "grpc+rest"
+		cfg.Default.TagFormat = pythonTagFormat
 	} else {
 		input.googleapisDir = src.Dir
-		cfg.Default.Keep = []string{"CHANGES.md", "go.mod", "go.sum"}
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Libraries, err = buildGoLibraries(input)
@@ -246,7 +213,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				return mod.Name
 			})
 	}
-	maps.Copy(idToGoModule, addGoModules)
 	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
 	// subset of librarianState.Libraries.
 	for id, libState := range idToLibraryState {
@@ -263,10 +229,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
-		}
-		// The source of truth of release level is BUILD.bazel, use a map to store the special value.
-		if override, ok := libraryOverrides[id]; ok {
-			library.ReleaseLevel = override.ReleaseLevel
 		}
 
 		libGoModule, ok := idToGoModule[id]
@@ -295,8 +257,8 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				slices.Sort(enabledGenFeats)
 				enabledGenFeats = slices.Compact(enabledGenFeats)
 				goAPIs = append(goAPIs, &config.GoAPI{
-					ClientDirectory:          api.ClientDirectory,
-					DisableGAPIC:             api.DisableGAPIC,
+					ClientPackage:            api.ClientDirectory,
+					ProtoOnly:                api.DisableGAPIC,
 					EnabledGeneratorFeatures: enabledGenFeats,
 					ImportPath:               api.ImportPath,
 					NestedProtos:             api.NestedProtos,
@@ -319,12 +281,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
-			buildDir := filepath.Join(input.googleapisDir, api.Path)
-			if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
-				// Skip Not Exist error for testing purpose.
-				continue
-			}
-			info, err := parseBazel(buildDir)
+			info, err := parseGoBazel(input.googleapisDir, api.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -335,6 +292,11 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			if index == -1 {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
+			goAPI.ClientPackage = info.ClientPackageName
+			goAPI.ProtoOnly = info.DisableGAPIC
+			goAPI.DIREGAPIC = info.HasDiregapic
+			goAPI.ImportPath = info.ImportPath
+			goAPI.NoMetadata = info.NoMetadata
 			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
@@ -385,9 +347,12 @@ func isEmptyGoModule(mod *config.GoModule) bool {
 }
 
 func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return reflect.DeepEqual(info, &goGAPICInfo{
-		NoRESTNumericEnums: false,
-	})
+	return info.ClientPackageName == "" &&
+		!info.DisableGAPIC &&
+		!info.HasDiregapic &&
+		info.ImportPath == "" &&
+		!info.NoMetadata &&
+		!info.NoRESTNumericEnums
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
@@ -412,29 +377,38 @@ func readRepoConfig(path string) (*RepoConfig, error) {
 	return yaml.Read[RepoConfig](configFile)
 }
 
-// parseBazel parses the BUILD.bazel file in the given directory to extract information from
+// parseGoBazel parses the BUILD.bazel file in the given directory to extract information from
 // the go_gapic_library rule.
-func parseBazel(dir string) (*goGAPICInfo, error) {
-	path := filepath.Join(dir, "BUILD.bazel")
-	data, err := os.ReadFile(path)
+func parseGoBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
+	file, err := parseBazel(googleapisDir, dir)
 	if err != nil {
 		return nil, err
 	}
-	file, err := build.ParseBuild(path, data)
-	if err != nil {
-		return nil, err
+	if file == nil {
+		return nil, nil
 	}
 	rules := file.Rules("go_gapic_library")
 	if len(rules) == 0 {
-		return nil, nil
+		return &goGAPICInfo{DisableGAPIC: true}, nil
 	}
 	if len(rules) > 1 {
-		return nil, fmt.Errorf("file %s contains multiple go_gapic_library rules", path)
+		return nil, fmt.Errorf("%s/BUILD.bazel contains multiple go_gapic_library rules", dir)
 	}
 	rule := rules[0]
-	return &goGAPICInfo{
+	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
+	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
+	info := &goGAPICInfo{
+		HasDiregapic:       rule.AttrLiteral("diregapic") == "True",
+		NoMetadata:         rule.AttrLiteral("metadata") != "True",
 		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
-	}, nil
+	}
+	if importPath != defaultImportPath {
+		info.ImportPath = importPath
+	}
+	if clientPkg != defaultClientPkg {
+		info.ClientPackageName = clientPkg
+	}
+	return info, nil
 }
 
 // findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
@@ -459,4 +433,23 @@ func findModule(libGoModule *RepoConfigModule, apiPath string) *RepoConfigAPI {
 		}
 	}
 	return nil
+}
+
+func parseImportPathFromBuild(importPath string) (string, string) {
+	importPath = strings.TrimPrefix(importPath, "cloud.google.com/go/")
+	idx := strings.Index(importPath, ";")
+	return importPath[:idx], importPath[idx+1:]
+}
+
+func defaultImportPathFromAPI(apiPath string) (string, string) {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	if idx == -1 {
+		return "", ""
+	}
+	importPath, version := apiPath[:idx], apiPath[idx+1:]
+	idx = strings.LastIndex(importPath, "/")
+	pkg := importPath[idx+1:]
+	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }

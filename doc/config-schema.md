@@ -60,8 +60,9 @@ This document describes the schema for the librarian.yaml.
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `release_level` | string | Is either "stable" or "preview". |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
-| `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
 
@@ -81,10 +82,12 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `transport` | string | Is the transport protocol, such as "grpc+rest" or "grpc". This overrides Default.Transport. |
 | `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
+| `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
+| `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 
@@ -116,22 +119,82 @@ This document describes the schema for the librarian.yaml.
 | `title_override` | string | Overrides the API title. |
 | `version` | string | Is the version of the dart package. |
 
+## DotnetCsproj Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `snippets` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains XML fragments for .csproj files. |
+| `integration_tests` | [DotnetCsprojSnippets](#dotnetcsprojsnippets-configuration) (optional) | Contains configuration for integration test projects. |
+
+## DotnetCsprojSnippets Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `embedded_resources` | list of string | Is a list of glob patterns for embedded resources. |
+
+## DotnetPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_service_descriptors` | list of string | Is a list of extra service descriptors to include. |
+| `csproj` | [DotnetCsproj](#dotnetcsproj-configuration) (optional) | Contains configuration for .csproj file generation and overrides. |
+| `dependencies` | map[string]string | Maps NuGet package IDs to version strings. |
+| `generator` | string | Overrides the default generator (e.g., "proto"). |
+| `package_group` | list of string | Lists packages that must be released together. |
+| `postgeneration` | list of [DotnetPostgeneration](#dotnetpostgeneration-configuration) (optional) | Contains post-generation shell commands or extra protos. |
+| `pregeneration` | list of [DotnetPregeneration](#dotnetpregeneration-configuration) (optional) | Contains declarative proto mutations. |
+
+## DotnetPostgeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `run` | string | Is a shell command to execute. |
+| `extra_proto` | string | Is an extra proto file to compile. |
+
+## DotnetPregeneration Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `rename_message` | [DotnetRenameMessage](#dotnetrenamemessage-configuration) (optional) | Renames a message. |
+| `remove_field` | [DotnetRemoveField](#dotnetremovefield-configuration) (optional) | Removes a field from a message. |
+| `rename_rpc` | [DotnetRenameRPC](#dotnetrenamerpc-configuration) (optional) | Renames an RPC. |
+
+## DotnetRemoveField Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `message` | string |  |
+| `field` | string |  |
+
+## DotnetRenameMessage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+
+## DotnetRenameRPC Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `from` | string |  |
+| `to` | string |  |
+| `wire_name` | string |  |
+
 ## GoAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `client_directory` | string | Is the directory where the client is generated, relative to Library.Output. |
-| `client_package_override` | string | Overrides the default package name of the generated client. |
-| `disable_gapic` | bool | Determines whether to generate the GAPIC client. Also known as proto-only client, which does not define a service in the proto files. |
+| `client_package` | string | Is the package name of the generated client. |
+| `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
-| `has_diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums |
 | `path` | string | Is the source path. |
+| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
-| `version_suffix` | string | Is an optional suffix appended to the version part of the GAPIC import path. |
 
 ## GoModule Configuration
 
@@ -142,11 +205,59 @@ This document describes the schema for the librarian.yaml.
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
+## JavaAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `no_samples` | bool | Determines whether to generate samples for the API. |
+| `path` | string | Is the source path. |
+| `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests for the API. |
+
+## JavaModule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
+| `api_reference` | string | Is the URL for the API reference documentation. |
+| `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
+| `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
+| `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
+| `codeowner_team` | string | Is the GitHub team that owns the code. |
+| `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
+| `excluded_dependencies` | string | Is a list of dependencies to exclude. |
+| `excluded_poms` | string | Is a list of POM files to exclude. |
+| `extra_versioned_modules` | string | Is a list of extra versioned modules. |
+| `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
+| `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
+| `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
+| `min_java_version` | int | Is the minimum Java version required. |
+| `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
+| `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
+| `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
+| `recommended_package` | string | Is the recommended package name. |
+| `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
+| `rest_documentation` | string | Is the URL for the REST documentation. |
+| `rpc_documentation` | string | Is the URL for the RPC documentation. |
+
+## NodejsPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `bundle_config` | string | Is the path to a GAPIC bundle config file. |
+| `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
+| `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
+| `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
+| `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
+| `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+
 ## PythonDefault Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `common_gapic_paths` | list of string | Contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). If a library defines its own common_gapic_paths, they will be appended to the defaults. |
+| `library_type` | string | Is the type to emit in .repo-metadata.json. |
 
 ## PythonPackage Configuration
 
@@ -157,6 +268,10 @@ This document describes the schema for the librarian.yaml.
 | `proto_only_apis` | list of string | Contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `api_id_override` | string | Allows the "api_id" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
+| `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses of this field to only cases where it's really needed. |
+| `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 
@@ -181,10 +296,12 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `detailed_tracing_attributes` | bool | Indicates whether to include detailed tracing attributes. |
+| `resource_name_heuristic` | bool | Indicates whether to apply heuristics to identify and generate resource names. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Contains discovery-specific configuration for LRO polling. |
+| `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
 
 ## RustDefault Configuration
 
@@ -230,7 +347,7 @@ This document describes the schema for the librarian.yaml.
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `output` | string | Is the directory where generated code is written (e.g., "src/storage/src/generated/gapic"). |
 | `post_process_protos` | string | Contains code to post-process generated protos. |
-| `root_name` | string | Is the key for the root directory in the source map. It overrides the default root, googleapis-root, used by the rust+prost generator. |
+| `root_name` | string | Is the key for the root directory in the source map. It overrides the default root, googleapis, used by the rust+prost generator. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `service_config` | string | Is the path to the service config file. |
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation. |

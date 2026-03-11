@@ -1,0 +1,54 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Node.js
+on: [push, pull_request, merge_group]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Display Go version
+        run: go version
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Display Node.js version
+        run: node --version
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Display Python version
+        run: python3 --version
+      - uses: ./.github/actions/install-protoc
+      - name: Install gapic-generator-typescript
+        run: |
+          git clone --depth 1 https://github.com/googleapis/google-cloud-node-core.git /tmp/google-cloud-node-core
+          cd /tmp/google-cloud-node-core/generator/gapic-generator-typescript
+          npm install
+          npm run compile
+          npm link
+      - name: Install gapic-node-processing and gapic-tools
+        run: npm install -g gapic-node-processing gapic-tools
+      - name: Install synthtool
+        run: |
+          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
+      - name: Run internal/librarian/nodejs tests
+        run: go test -race ./internal/librarian/nodejs

@@ -27,6 +27,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -59,6 +60,11 @@ var pythonDefaultCommonGAPICPaths = []string{
 	"docs/summary_overview.md",
 }
 
+const (
+	pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
+	pythonTagFormat          = "{name}: v{version}"
+)
+
 // pythonGapicInfo contains information about the py_gapic_library target
 // from BUILD.bazel.
 type pythonGapicInfo struct {
@@ -89,9 +95,6 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		}
 		if len(libState.APIs) > 0 {
 			library.APIs = toAPIs(libState.APIs)
-		} else {
-			library.Output = filepath.Join("packages", library.Name)
-			library.Veneer = true
 		}
 		// Convert "preserve" regexes into "keep" paths, sorted for ease
 		// of testing.
@@ -161,16 +164,7 @@ func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*conf
 			pythonConfig.OptArgsByAPI[api.Path] = bazelGapicInfo.optArgs
 		}
 	}
-	if len(allTransports) == 1 {
-		// One consistent transport; set it library-wide if it's not the default.
-		// This assumes that where there's a mixture of GAPIC and non-GAPIC, the
-		// first path is a GAPIC API, but that happens to be true for now (and
-		// we don't care what happens post-migration).
-		transport := transportsByApi[library.APIs[0].Path]
-		if transport != "grpc+rest" {
-			library.Transport = transport
-		}
-	} else {
+	if len(allTransports) != 1 {
 		// Transport differs by API version. Add it into OptArgsByAPI, but only
 		// for non-proto-only APIs. (Proto-only APIs don't have a transport
 		// anyway.)
@@ -303,16 +297,23 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	defaultTitle := ""
 	defaultDocumentationURI := ""
 	defaultDefaultVersion := ""
+	defaultIssueTracker := ""
+	defaultAPIShortname := ""
+	defaultAPIID := ""
 	// Load the service config file for the first API if there is one, and
-	// use that
+	// use that to work out what will be generated in .repo-metadata.json by
+	// default.
 	if len(library.APIs) > 0 {
-		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, serviceconfig.LangPython)
+		apiInfo, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguagePython)
 		if err != nil {
 			return nil, err
 		}
-		defaultTitle = apiInfo.Title
+		defaultTitle = strings.TrimSuffix(strings.TrimSpace(apiInfo.Title), " API")
 		defaultDocumentationURI = apiInfo.DocumentationURI
 		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
+		defaultIssueTracker = apiInfo.NewIssueURI
+		defaultAPIShortname = apiInfo.ShortName
+		defaultAPIID = apiInfo.ServiceName
 	}
 
 	// Load the current repo metadata and apply overrides for anything that
@@ -345,6 +346,21 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	}
 	if repoMetadata.DefaultVersion != defaultDefaultVersion {
 		library.Python.DefaultVersion = repoMetadata.DefaultVersion
+	}
+	if repoMetadata.LibraryType != pythonDefaultLibraryType {
+		library.Python.LibraryType = repoMetadata.LibraryType
+	}
+	if repoMetadata.ClientDocumentation != python.BuildClientDocumentationURI(library.Name, repoMetadata.Name) {
+		library.Python.ClientDocumentationOverride = repoMetadata.ClientDocumentation
+	}
+	if repoMetadata.IssueTracker != defaultIssueTracker {
+		library.Python.IssueTrackerOverride = repoMetadata.IssueTracker
+	}
+	if repoMetadata.APIShortname != defaultAPIShortname {
+		library.Python.APIShortnameOverride = repoMetadata.APIShortname
+	}
+	if repoMetadata.APIID != defaultAPIID {
+		library.Python.APIIDOverride = repoMetadata.APIID
 	}
 
 	return library, nil

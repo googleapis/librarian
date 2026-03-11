@@ -61,6 +61,8 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Python: &config.PythonPackage{
 						MetadataNameOverride:         "secretmanager",
 						NamePrettyOverride:           "Secret Manager",
+						APIShortnameOverride:         "secretmanager",
+						APIIDOverride:                "secretmanager.googleapis.com",
 						ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
@@ -88,6 +90,9 @@ func TestBuildPythonLibraries(t *testing.T) {
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Python: &config.PythonPackage{
+						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
+					},
 				},
 			},
 		},
@@ -118,12 +123,20 @@ func TestBuildPythonLibraries(t *testing.T) {
 						NamePrettyOverride:           "Audit Log API",
 						ProductDocumentationOverride: "https://cloud.google.com/logging/docs/audit",
 						ProtoOnlyAPIs:                []string{"google/cloud/audit"},
+						APIShortnameOverride:         "auditlog",
+						ClientDocumentationOverride:  "https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log",
+						PythonDefault: config.PythonDefault{
+							LibraryType: "OTHER",
+						},
 					},
 				},
 				{
 					Name:         "google-cloud-workstations",
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Python: &config.PythonPackage{
+						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
+					},
 				},
 			},
 		},
@@ -154,7 +167,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 					DescriptionOverride: "The Cloud Billing Budget API stores Cloud Billing budgets, which define a budget plan and the rules to execute as spend is tracked against that plan.",
 					Python: &config.PythonPackage{
 						DefaultVersion:               "v1beta",
-						NamePrettyOverride:           "Cloud Billing Budget",
+						NamePrettyOverride:           "Cloud Billing Budget API",
 						ProductDocumentationOverride: "https://cloud.google.com/billing/docs/how-to/budget-api-overview",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/billing/budgets/v1":      {"transport=grpc+rest"},
@@ -188,7 +201,6 @@ func TestBuildPythonLibraries(t *testing.T) {
 					},
 					DescriptionOverride: "Manage BigQuery connections to external data sources.",
 					Python: &config.PythonPackage{
-						NamePrettyOverride:           "BigQuery Connection",
 						ProductDocumentationOverride: "https://cloud.google.com/bigquery/docs/reference/bigqueryconnection",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/bigquery/connection/v1": {
@@ -202,7 +214,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "veneer",
+			name: "no APIs",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
 				librarianState: &legacyconfig.LibrarianState{
@@ -216,10 +228,13 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name:   "google-api-core",
-					Veneer: true,
-					Output: "packages/google-api-core",
-					Python: &config.PythonPackage{NamePrettyOverride: "Google API client core library"},
+					Name: "google-api-core",
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "CORE",
+						},
+						NamePrettyOverride: "Google API client core library",
+					},
 				},
 			},
 		},

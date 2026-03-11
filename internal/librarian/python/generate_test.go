@@ -27,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -83,18 +82,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			expected: []string{
 				"--python_gapic_out=staging",
 				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
-			name: "with transport",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name:      "google-cloud-secret-manager",
-				Transport: "grpc",
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -172,7 +159,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "transport overridden in OptOptArgsByAPIArgs",
+			name: "transport specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
@@ -181,7 +168,6 @@ func TestCreateProtocOptions(t *testing.T) {
 						"google/cloud/secretmanager/v1": {"transport=rest"},
 					},
 				},
-				Transport: "grpc",
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
@@ -566,11 +552,11 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -584,7 +570,7 @@ func TestGenerateLibraries(t *testing.T) {
 	createReplacementScripts(t, repoRoot)
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -609,7 +595,7 @@ func TestGenerateLibraries(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	if err := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	for _, library := range libraries {
@@ -621,7 +607,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -635,7 +621,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	createReplacementScripts(t, repoRoot)
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -650,20 +636,20 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	gotErr := GenerateLibraries(t.Context(), cfg, libraries, googleapisDir)
+	gotErr := Generate(t.Context(), cfg, libraries, googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("GenerateLibraries error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
-// Note: this is separate to TestGenerate as there's so little that we want
-// to do here. Making TestGenerate table-driven in order to take two entirely
-// different paths doesn't feel useful.
-func TestGenerate_NoAPIs(t *testing.T) {
+// Note: this is separate to TestGenerateLibrary as there's so little that we
+// want to do here. Making TestGenerateLibrary table-driven in order to take
+// two entirely different paths doesn't feel useful.
+func TestGenerateLibrary_NoAPIs(t *testing.T) {
 	repoRoot := t.TempDir()
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -671,7 +657,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 		Name:   "no-apis",
 		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
 	}
-	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Validate that we haven't got as far as creating the output directory.
@@ -682,7 +668,7 @@ func TestGenerate_NoAPIs(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
@@ -702,7 +688,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 
@@ -718,9 +704,12 @@ func TestGenerate(t *testing.T) {
 		},
 		Python: &config.PythonPackage{
 			MetadataNameOverride: "secretmanager",
+			PythonDefault: config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
 		},
 	}
-	if err := generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)
@@ -734,7 +723,7 @@ func TestGenerate(t *testing.T) {
 		ProductDocumentation: "https://cloud.google.com/secret-manager/",
 		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 		ReleaseLevel:         "stable",
-		Language:             "python",
+		Language:             config.LanguagePython,
 		Repo:                 "googleapis/google-cloud-python",
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
@@ -750,9 +739,9 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestDefaultOutputByName(t *testing.T) {
+func TestDefaultOutput(t *testing.T) {
 	want := "packages/google-cloud-secret-manager"
-	got := DefaultOutputByName("google-cloud-secret-manager", "packages")
+	got := DefaultOutput("google-cloud-secret-manager", "packages")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -794,6 +783,13 @@ func TestCreateRepoMetadata(t *testing.T) {
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secrets/v1beta1"},
 				},
+				// In normal operation this is populated from the top-level
+				// default.
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                 "google-cloud-secret-manager",
@@ -801,7 +797,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -822,6 +818,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 						Path: "google/apps/meet/v2",
 					},
 				},
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                 "google-apps-meet",
@@ -829,7 +830,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://developers.google.com/meet/api/guides/overview",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=1216362&template=1766418",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-apps-meet",
 				APIID:                "meet.googleapis.com",
@@ -855,6 +856,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
 					ProductDocumentationOverride: "overridden product_documentation",
+					PythonDefault: config.PythonDefault{
+						LibraryType: "CORE",
+					},
 				},
 			},
 			want: &repometadata.RepoMetadata{
@@ -863,13 +867,13 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "overridden product_documentation",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "overridden description",
-				LibraryType:          "GAPIC_AUTO",
+				LibraryType:          "CORE",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
 				DefaultVersion:       "v1beta1",
 			},
@@ -884,6 +888,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 						Path: "google/cloud/secretmanager/v1",
 					},
 				},
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+				},
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                 "google-cloud-secret-manager",
@@ -891,7 +900,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -905,7 +914,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
-				Language: serviceconfig.LangPython,
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 			}
 			got, err := createRepoMetadata(cfg, test.library, googleapisDir)
@@ -921,7 +930,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 
 func TestCreateRepoMetadata_Error(t *testing.T) {
 	cfg := &config.Config{
-		Language: serviceconfig.LangPython,
+		Language: config.LanguagePython,
 		Repo:     "googleapis/google-cloud-python",
 	}
 	library := &config.Library{

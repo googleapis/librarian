@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/serviceconfig"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestFromLibrary(t *testing.T) {
@@ -44,7 +44,7 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -66,7 +66,7 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             "python",
+				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
@@ -83,7 +83,7 @@ func TestFromLibrary(t *testing.T) {
 			},
 			want: &RepoMetadata{
 				ReleaseLevel:     "stable",
-				Language:         "python",
+				Language:         config.LanguagePython,
 				Repo:             "googleapis/google-cloud-python",
 				DistributionName: "google-longrunning",
 			},
@@ -97,11 +97,14 @@ func TestFromLibrary(t *testing.T) {
 			}
 
 			cfg := &config.Config{
-				Language: serviceconfig.LangPython,
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 			}
 
-			got, err := FromLibrary(cfg, test.library, "../testdata/googleapis")
+			sources := &sidekickconfig.Sources{
+				Googleapis: "../testdata/googleapis",
+			}
+			got, err := FromLibrary(cfg, test.library, sources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -138,8 +141,11 @@ func TestFromLibrary_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Language: serviceconfig.LangPython}
-			_, gotErr := FromLibrary(cfg, test.library, "../testdata/googleapis")
+			cfg := &config.Config{Language: config.LanguagePython}
+			sources := &sidekickconfig.Sources{
+				Googleapis: "../testdata/googleapis",
+			}
+			_, gotErr := FromLibrary(cfg, test.library, sources)
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -214,7 +220,7 @@ func TestWriteAndRead(t *testing.T) {
 	want := &RepoMetadata{
 		Name:       "test-library",
 		NamePretty: "Test Library",
-		Language:   "go",
+		Language:   config.LanguageGo,
 	}
 	tmpDir := t.TempDir()
 	if err := want.Write(tmpDir); err != nil {
@@ -273,5 +279,35 @@ func TestRead_Error(t *testing.T) {
 				t.Errorf("Read() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestWriteJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	data := struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}{
+		Name:  "test",
+		Value: 123,
+	}
+	filename := "test.json"
+	err := WriteJSON(data, "  ", tmpDir, filename)
+	if err != nil {
+		t.Fatalf("WriteJSON() got err: %v, want nil", err)
+	}
+
+	path := filepath.Join(tmpDir, filename)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("os.ReadFile() got err: %v, want nil", err)
+	}
+
+	want := `{
+  "name": "test",
+  "value": 123
+}`
+	if diff := cmp.Diff(want, string(content)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -44,7 +44,7 @@ type methodAnnotations struct {
 }
 
 func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
-	rootSource := cfg.Source[codec.RootName]
+	rootSource := cfg.Source.Root(codec.RootName)
 	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, cfg.Source)
 	if err != nil {
 		return err

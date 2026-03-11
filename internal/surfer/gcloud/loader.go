@@ -20,6 +20,7 @@ import (
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"gopkg.in/yaml.v3"
 )
@@ -28,9 +29,12 @@ import (
 func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	parserConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
-		Source: map[string]string{
-			"local-root":   googleapisPath,
-			"include-list": includeList,
+		Source: sidekickconfig.SourceConfig{
+			Sources: sidekickconfig.Sources{
+				Googleapis: googleapisPath,
+			},
+			ActiveRoots: []string{"googleapis"},
+			IncludeList: []string{includeList},
 		},
 	}
 

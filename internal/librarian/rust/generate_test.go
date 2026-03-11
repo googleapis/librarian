@@ -24,7 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/source"
+	"github.com/googleapis/librarian/internal/repometadata"
+	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -67,10 +68,10 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,7 +86,69 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 }
 
-func TestSkipGenerateVeneer(t *testing.T) {
+func TestIsVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "rust modules with output",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "rust modules with api, no output",
+			lib: &config.Library{
+				Name: "google-cloud-storage",
+				APIs: []*config.API{
+					{Path: "google/storage/v2"},
+				},
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{Output: "src/storage/src/generated"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "output without api",
+			lib: &config.Library{
+				Name:   "storage-w1r3",
+				Output: "src/storage/benchmarks/w1r3",
+			},
+			want: true,
+		},
+		{
+			name: "output with api",
+			lib: &config.Library{
+				Name: "google-cloud-api",
+				APIs: []*config.API{
+					{Path: "google/api"},
+				},
+				Output: "src/generated/api/types",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsVeneer(test.lib); got != test.want {
+				t.Errorf("IsVeneer() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestGenerateVeneerNoModules(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	outDir := t.TempDir()
 	module1Dir := filepath.Join(outDir, "src", "generated", "v1")
@@ -110,10 +173,10 @@ func TestSkipGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), library, sources); err != nil {
+	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -178,11 +241,11 @@ func TestKeepVeneer(t *testing.T) {
 	}
 }
 
-// TestGenerateLibraries performs simple testing that multiple libraries can
-// be generated. Only the presence of a single expected file per library is
-// performed; TestGenerate is responsible for more detailed testing of
+// TestGenerate performs simple testing that multiple libraries can be
+// generated. Only the presence of a single expected file per library is
+// performed; TestGenerateLibrary is responsible for more detailed testing of
 // per-library generation.
-func TestGenerateLibraries(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
@@ -253,7 +316,7 @@ func TestGenerateLibraries(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
@@ -261,7 +324,8 @@ func TestGenerateLibraries(t *testing.T) {
 		library.Output = filepath.Join("generated", library.Name)
 	}
 
-	if err := GenerateLibraries(t.Context(), libraries, sources); err != nil {
+	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
+	if err := Generate(t.Context(), cfg, libraries, sources); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a Cargo.toml has been created for each library.
@@ -274,7 +338,7 @@ func TestGenerateLibraries(t *testing.T) {
 	}
 }
 
-func TestGenerateLibraries_Error(t *testing.T) {
+func TestGenerate_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
@@ -314,12 +378,13 @@ func TestGenerateLibraries_Error(t *testing.T) {
 			},
 		},
 	}
-	sources := &source.Sources{
+	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
 
-	gotErr := GenerateLibraries(t.Context(), libraries, sources)
+	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
+	gotErr := Generate(t.Context(), cfg, libraries, sources)
 	wantErrMessage := "unknown specification format \"invalid\""
 	if gotErr == nil {
 		t.Fatalf("expected error with message %s", wantErrMessage)
@@ -329,7 +394,7 @@ func TestGenerateLibraries_Error(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "rustfmt")
 	testhelper.RequireCommand(t, "taplo")
@@ -407,10 +472,10 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 			}
-			sources := &source.Sources{
+			sources := &sidekickconfig.Sources{
 				Googleapis: googleapisDir,
 			}
-			if err := generate(t.Context(), library, sources); err != nil {
+			if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 				t.Fatal(err)
 			}
 
@@ -423,6 +488,7 @@ func TestGenerate(t *testing.T) {
 				{filepath.Join(outDir, "README.md"), "# Google Cloud Client Libraries for Rust - Secret Manager API"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod model;"},
 				{filepath.Join(outDir, "src", "lib.rs"), "pub mod client;"},
+				{filepath.Join(outDir, ".repo-metadata.json"), "secretmanager.googleapis.com"},
 			} {
 				t.Run(check.path, func(t *testing.T) {
 					if _, err := os.Stat(check.path); err != nil {
@@ -507,11 +573,11 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: "target-language",
+							Language: config.LanguageRust,
 							Output:   "target-output",
 						},
 						{
-							Language: "other-language",
+							Language: config.LanguageRustStorage,
 							Output:   "other-output",
 						},
 					},
@@ -519,7 +585,7 @@ func TestFindModuleByOutput(t *testing.T) {
 			},
 			output: "target-output",
 			want: &config.RustModule{
-				Language: "target-language",
+				Language: config.LanguageRust,
 				Output:   "target-output",
 			},
 		},
@@ -530,7 +596,7 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: "other-language",
+							Language: config.LanguageRust,
 							Output:   "other-output",
 						},
 					},
@@ -546,5 +612,53 @@ func TestFindModuleByOutput(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+func TestCreateRepoMetadata(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageRust,
+		Repo:     "googleapis/google-cloud-rust",
+	}
+	library := &config.Library{
+		Name:         "google-cloud-secretmanager-v1",
+		Version:      "0.1.0",
+		ReleaseLevel: "preview",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+	sources := &sidekickconfig.Sources{
+		Googleapis: googleapisDir,
+	}
+
+	got, err := createRepoMetadata(cfg, library, sources)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &repometadata.RepoMetadata{
+		Name:                 "secretmanager",
+		NamePretty:           "Secret Manager",
+		ProductDocumentation: "https://cloud.google.com/secret-manager/",
+		ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
+		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+		ReleaseLevel:         "preview",
+		Language:             config.LanguageRust,
+		Repo:                 "googleapis/google-cloud-rust",
+		DistributionName:     "google-cloud-secretmanager-v1",
+		APIID:                "secretmanager.googleapis.com",
+		APIShortname:         "secretmanager",
+		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+		LibraryType:          "GAPIC_AUTO",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -203,7 +203,7 @@ func TestNewParam(t *testing.T) {
 	}
 }
 
-func TestShouldSkipParam(t *testing.T) {
+func TestIsIgnored(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		field  *api.Field
@@ -225,32 +225,16 @@ func TestShouldSkipParam(t *testing.T) {
 			want: false,
 		},
 		{
-			name:  "Name Field (Primary)",
-			field: api.NewTestField("name").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
-			method: api.NewTestMethod("DeleteThing").WithVerb("DELETE").WithInput(
-				api.NewTestMessage("DeleteRequest").WithFields(
-					api.NewTestField("name").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
-				),
-			),
-			want: false,
+			name:   "Name Field",
+			field:  api.NewTestField("name").WithType(api.STRING_TYPE),
+			method: api.NewTestMethod("DeleteThing").WithVerb("DELETE"),
+			want:   true,
 		},
 		{
-			name: "Parent Field (Primary in List)",
-			field: func() *api.Field {
-				f := api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Parent")
-				f.ResourceReference.ChildType = "test.googleapis.com/Thing"
-				return f
-			}(),
-			method: func() *api.Method {
-				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
-					api.NewTestMessage("ListRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Parent"),
-					),
-				)
-				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
-				return m
-			}(),
-			want: false,
+			name:   "Parent Field (List)",
+			field:  api.NewTestField("parent").WithType(api.STRING_TYPE),
+			method: api.NewTestMethod("ListThings").WithVerb("GET"),
+			want:   true,
 		},
 		{
 			name:  "Parent Field (Skipped in Create)",
@@ -312,9 +296,9 @@ func TestShouldSkipParam(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := shouldSkipParam(test.field, test.method)
+			got := isIgnored(test.field, test.method)
 			if got != test.want {
-				t.Errorf("shouldSkipParam() = %v, want %v", got, test.want)
+				t.Errorf("isIgnored() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -349,7 +333,7 @@ func TestNewOutputConfig(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := newOutputConfig(test.method, &api.API{})
+			got := newOutputConfig(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
 			}
@@ -378,7 +362,7 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := newOutputConfig(test.method, &api.API{}); got != nil {
+			if got := newOutputConfig(test.method); got != nil {
 				t.Errorf("newOutputConfig() = %v, want nil", got)
 			}
 		})
@@ -523,7 +507,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got := newPrimaryResourceParam(test.field, test.method, model, &Config{}, service)
+			got := newPrimaryResourceParam(test.field, test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
 			}
@@ -571,10 +555,9 @@ func TestNewRequest(t *testing.T) {
 			t.Parallel()
 			service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 			service.DefaultHost = "test.googleapis.com"
-			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newRequest(test.method, &Config{}, model, service)
+			got := newRequest(test.method, &Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
 			}
@@ -668,7 +651,7 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newAsync(test.method, model, &Config{}, service)
+			got := newAsync(test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
 			}
@@ -849,7 +832,7 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newResourceReferenceSpec(test.field, model, &Config{}, service)
+			got, err := newResourceReferenceSpec(test.field, model, service)
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
@@ -874,7 +857,7 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newResourceReferenceSpec(test.field, &api.API{}, &Config{}, service)
+			_, err := newResourceReferenceSpec(test.field, &api.API{}, service)
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}

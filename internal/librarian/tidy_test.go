@@ -215,7 +215,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 		config                  *config.Config
 		wantPath                string
 		wantNumLibs             int
-		wantNumChnls            int
+		wantNumAPIs             int
 		wantSpecificationFormat string
 	}{
 		{
@@ -236,7 +236,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 			},
 			wantPath:                "",
 			wantNumLibs:             1,
-			wantNumChnls:            0,
+			wantNumAPIs:             0,
 			wantSpecificationFormat: "",
 		},
 		{
@@ -254,9 +254,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "src/generated/cloud/aiplatform/schema/predict/instance",
-			wantNumLibs:  1,
-			wantNumChnls: 1,
+			wantPath:    "src/generated/cloud/aiplatform/schema/predict/instance",
+			wantNumLibs: 1,
+			wantNumAPIs: 1,
 		},
 		{
 			name: "api removed if only derivable path",
@@ -273,17 +273,37 @@ func TestTidy_DerivableFields(t *testing.T) {
 					},
 				},
 			},
-			wantPath:     "",
-			wantNumLibs:  1,
-			wantNumChnls: 0,
+			wantPath:    "",
+			wantNumLibs: 1,
+			wantNumAPIs: 0,
+		},
+		{
+			name: "do not derive api path for Python library",
+			config: &config.Config{
+				Language: config.LanguagePython,
+				Sources:  googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name: "google-shopping-type",
+						APIs: []*config.API{
+							{
+								Path: "google/shopping/type",
+							},
+						},
+					},
+				},
+			},
+			wantPath:    "google/shopping/type",
+			wantNumLibs: 1,
+			wantNumAPIs: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
-			RunTidyOnConfig(t.Context(), test.config)
-
+			if err := RunTidyOnConfig(t.Context(), test.config); err != nil {
+				t.Fatal(err)
+			}
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				t.Fatal(err)
@@ -293,10 +313,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 				t.Fatalf("wrong number of libraries")
 			}
 			lib := cfg.Libraries[0]
-			if len(lib.APIs) != test.wantNumChnls {
+			if len(lib.APIs) != test.wantNumAPIs {
 				t.Fatalf("wrong number of apis")
 			}
-			if test.wantNumChnls > 0 {
+			if test.wantNumAPIs > 0 {
 				ch := lib.APIs[0]
 				if ch.Path != test.wantPath {
 					t.Errorf("path should be %s, got %q", test.wantPath, ch.Path)
@@ -311,7 +331,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 
 func TestTidyDuplicateError(t *testing.T) {
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
@@ -343,7 +363,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -385,7 +405,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "dart",
+		Language: config.LanguageDart,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -426,7 +446,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Default: &config.Default{
 			Output: "generated/",
 		},
@@ -473,7 +493,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 		{
 			name: "empty_module_removed",
 			cfg: &config.Config{
-				Language: "rust",
+				Language: config.LanguageRust,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
@@ -495,9 +515,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 									Template: "prost",
 								},
 								{
-									Output:   "src/storage/control",
-									APIPath:  "none",
-									Template: "",
+									Output: "src/storage/control",
 								},
 							},
 						},
@@ -506,6 +524,37 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 			},
 			wantNumLibs: 1,
 			wantNumMods: 1, // Modules should be removed
+		},
+		{
+			name: "storage_module_not_removed",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+					},
+				},
+				Default: &config.Default{
+					Output: "generated/",
+				},
+				Libraries: []*config.Library{
+					{
+						Name:   "google-cloud-storage",
+						Output: "src/storage",
+						Rust: &config.RustCrate{
+							Modules: []*config.RustModule{
+								{
+									Output:   "src/storage/src/generated/protos/storage",
+									Language: config.LanguageRustStorage,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantNumLibs: 1,
+			wantNumMods: 1, // Rust storage module should NOT be removed
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -532,7 +581,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 
 func TestTidyMissingGoogleApisSource(t *testing.T) {
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Libraries: []*config.Library{
 			{
 				Name:    "google-cloud-storage-v1",
@@ -557,7 +606,7 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 	cfg := &config.Config{
-		Language: "rust",
+		Language: config.LanguageRust,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",

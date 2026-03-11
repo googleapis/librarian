@@ -100,8 +100,8 @@ func isPrimaryResource(field *api.Field, method *api.Method) bool {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
-			// TODO(https://github.com/googleapis/librarian/issues/3361): Verify that this case transformation
-			// is consistent with gcloud conventions and doesn't introduce traceability issues.
+			// Convert CamelCase resource name (e.g., "Instance") to snake_case
+			// to match the proto field naming convention (e.g., "instance_id").
 			if name != "" && field.Name == strcase.ToSnake(name)+"_id" {
 				return true
 			}

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -100,7 +101,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
-				Languages:        []string{"dart", "go", "java", "python", "rust"},
+				Languages:        []string{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguageNodejs, config.LanguagePython, config.LanguageRust},
 				Title:            "Secret Manager API",
 			},
 		},
@@ -110,7 +111,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:             "google/cloud/orgpolicy/v1",
 				Title:            "Organization Policy Types",
-				Languages:        []string{"go", "python", "rust"},
+				Languages:        []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
 				DocumentationURI: "https://cloud.google.com/resource-manager/docs/organization-policy/overview",
 			},
 		},
@@ -126,13 +127,14 @@ func TestFind(t *testing.T) {
 			name: "service config override",
 			api:  "google/cloud/aiplatform/v1/schema/predict/instance",
 			want: &API{
-				Path:          "google/cloud/aiplatform/v1/schema/predict/instance",
-				ServiceConfig: "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
-				ServiceName:   "aiplatform.googleapis.com",
-				ShortName:     "aiplatform",
-				Title:         "Vertex AI API",
-				Languages:     []string{"go", "python", "rust"},
-				Transports:    map[string]Transport{"python": "grpc"},
+				Path:               "google/cloud/aiplatform/v1/schema/predict/instance",
+				ServiceConfig:      "google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml",
+				ServiceName:        "aiplatform.googleapis.com",
+				ShortName:          "aiplatform",
+				Title:              "Vertex AI API",
+				Languages:          []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Transports:         map[string]Transport{config.LanguagePython: GRPC},
+				NoRESTNumericEnums: map[string]bool{"python": true},
 			},
 		},
 		{
@@ -144,7 +146,7 @@ func TestFind(t *testing.T) {
 				OpenAPI:          "testdata/secretmanager_openapi_v1.json",
 				ServiceConfig:    "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				Title:            "Secret Manager API",
-				Languages:        []string{"dart", "go", "java", "python", "rust"},
+				Languages:        []string{config.LanguageDart, config.LanguageGo, config.LanguageJava, config.LanguageNodejs, config.LanguagePython, config.LanguageRust},
 				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				ServiceName:      "secretmanager.googleapis.com",
@@ -155,21 +157,22 @@ func TestFind(t *testing.T) {
 			name: "discovery",
 			api:  "discoveries/compute.v1.json",
 			want: &API{
-				Discovery:        "discoveries/compute.v1.json",
-				DocumentationURI: "https://cloud.google.com/compute/",
-				NewIssueURI:      "https://issuetracker.google.com/issues/new?component=187134&template=0",
-				Path:             "google/cloud/compute/v1",
-				ServiceConfig:    "google/cloud/compute/v1/compute_v1.yaml",
-				ServiceName:      "compute.googleapis.com",
-				ShortName:        "compute",
-				Title:            "Google Compute Engine API",
-				Languages:        []string{"go", "python", "rust"},
-				Transports:       map[string]Transport{"csharp": "rest", "go": "rest", "java": "rest", "php": "rest"},
+				Discovery:          "discoveries/compute.v1.json",
+				DocumentationURI:   "https://cloud.google.com/compute/",
+				NewIssueURI:        "https://issuetracker.google.com/issues/new?component=187134&template=0",
+				Path:               "google/cloud/compute/v1",
+				ServiceConfig:      "google/cloud/compute/v1/compute_v1.yaml",
+				ServiceName:        "compute.googleapis.com",
+				ShortName:          "compute",
+				Title:              "Google Compute Engine API",
+				Languages:          []string{config.LanguageGo, config.LanguageNodejs, config.LanguagePython, config.LanguageRust},
+				Transports:         map[string]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
+				NoRESTNumericEnums: map[string]bool{"go": true, "python": true},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Find(googleapisDir, test.api, LangGo)
+			got, err := Find(googleapisDir, test.api, config.LanguageGo)
 			if err != nil {
 				if !test.wantErr {
 					t.Fatal(err)
@@ -341,35 +344,41 @@ func TestValidateAPI(t *testing.T) {
 		{
 			name:     "api in allowlist, all languages",
 			path:     "google/api",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      &API{Path: "google/api"},
 			wantErr:  false,
 		},
 		{
 			name:     "api in allowlist, restricted language allowed",
 			path:     "google/cloud/aiplatform/v1beta1",
-			language: LangPython,
-			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
-			wantErr:  false,
+			language: config.LanguagePython,
+			api: &API{
+				Path:      "google/cloud/aiplatform/v1beta1",
+				Languages: []string{config.LanguagePython},
+			},
+			wantErr: false,
 		},
 		{
 			name:     "api in allowlist, restricted language not allowed",
 			path:     "google/cloud/aiplatform/v1beta1",
-			language: LangGo,
-			api:      &API{Path: "google/cloud/aiplatform/v1beta1", Languages: []string{LangPython}},
-			wantErr:  true,
+			language: config.LanguageGo,
+			api: &API{
+				Path:      "google/cloud/aiplatform/v1beta1",
+				Languages: []string{config.LanguagePython},
+			},
+			wantErr: true,
 		},
 		{
 			name:     "api not in list, google/cloud/ prefix",
 			path:     "google/cloud/newapi/v1",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      nil,
 			wantErr:  false,
 		},
 		{
 			name:     "api not in list, no google/cloud/ prefix",
 			path:     "google/ads/newapi/v1",
-			language: LangGo,
+			language: config.LanguageGo,
 			api:      nil,
 			wantErr:  true,
 		},
@@ -382,6 +391,81 @@ func TestValidateAPI(t *testing.T) {
 			}
 			if !test.wantErr && got == nil {
 				t.Error("validateAPI() returned nil but want non-nil API")
+			}
+		})
+	}
+}
+
+func TestSortAPIs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		apis []*config.API
+		want []string
+	}{
+		{
+			name: "stable before unstable",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1beta1"},
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1",
+				"google/cloud/secretmanager/v1beta1",
+			},
+		},
+		{
+			name: "higher stable version before lower",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1"},
+				{Path: "google/cloud/secretmanager/v2"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v2",
+				"google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name: "higher unstable version before lower (string comparison)",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1beta2"},
+				{Path: "google/cloud/secretmanager/v1beta1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1beta2",
+				"google/cloud/secretmanager/v1beta1",
+			},
+		},
+		{
+			name: "no version (lower depth before higher)",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1/subpath"},
+				{Path: "google/cloud/secretmanager"},
+			},
+			want: []string{
+				"google/cloud/secretmanager",
+				"google/cloud/secretmanager/v1/subpath",
+			},
+		},
+		{
+			name: "version before no version",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager"},
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1",
+				"google/cloud/secretmanager",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			SortAPIs(test.apis)
+			var got []string
+			for _, api := range test.apis {
+				got = append(got, api.Path)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

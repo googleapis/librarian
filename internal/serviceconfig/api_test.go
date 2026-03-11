@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestAPIsNoDuplicates(t *testing.T) {
@@ -45,43 +46,43 @@ func TestGetTransport(t *testing.T) {
 		name string
 		sc   *API
 		lang string
-		want string
+		want Transport
 	}{
 		{
 			name: "empty serviceconfig",
 			sc:   &API{},
-			lang: "go",
-			want: "grpc+rest",
+			lang: config.LanguageGo,
+			want: GRPCRest,
 		},
 		{
 			name: "go specific transport",
 			sc: &API{
 				Transports: map[string]Transport{
-					"go": GRPC,
+					config.LanguageGo: GRPC,
 				},
 			},
-			lang: "go",
-			want: "grpc",
+			lang: config.LanguageGo,
+			want: GRPC,
 		},
 		{
 			name: "other language transport",
 			sc: &API{
 				Transports: map[string]Transport{
-					"go": GRPC,
+					config.LanguageGo: GRPC,
 				},
 			},
-			lang: "python",
-			want: "grpc+rest",
+			lang: config.LanguagePython,
+			want: GRPCRest,
 		},
 		{
 			name: "all language transport",
 			sc: &API{
 				Transports: map[string]Transport{
-					"all": GRPC,
+					config.LanguageAll: GRPC,
 				},
 			},
-			lang: "go",
-			want: "grpc",
+			lang: config.LanguageGo,
+			want: GRPC,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

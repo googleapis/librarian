@@ -102,13 +102,13 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 	}{
 		{
 			name:        "go_monorepo_defaults",
-			lang:        "go",
+			lang:        config.LanguageGo,
 			repoPath:    "testdata/google-cloud-go",
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "go",
+				Language: config.LanguageGo,
 				Repo:     "googleapis/google-cloud-go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -117,7 +117,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					Keep:         []string{"CHANGES.md", "go.mod", "go.sum"},
 					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
@@ -126,12 +125,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 		},
 		{
 			name:        "python_monorepo_defaults",
-			lang:        "python",
+			lang:        config.LanguagePython,
 			state:       &legacyconfig.LibrarianState{},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "python",
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -142,15 +141,17 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
-					TagFormat:    defaultTagFormat,
-					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					TagFormat:    pythonTagFormat,
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 			},
 		},
 		{
 			name: "no_librarian_config",
-			lang: "python",
+			lang: config.LanguagePython,
 			state: &legacyconfig.LibrarianState{
 				Libraries: []*legacyconfig.LibraryState{
 					{
@@ -168,7 +169,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			fetchSource: defaultFetchSource,
 			repoPath:    "testdata/google-cloud-python",
 			want: &config.Config{
-				Language: "python",
+				Language: config.LanguagePython,
 				Repo:     "googleapis/google-cloud-python",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -179,9 +180,11 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
-					TagFormat:    defaultTagFormat,
-					Transport:    "grpc+rest",
-					Python:       &config.PythonDefault{CommonGAPICPaths: pythonDefaultCommonGAPICPaths},
+					TagFormat:    pythonTagFormat,
+					Python: &config.PythonDefault{
+						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+						LibraryType:      pythonDefaultLibraryType,
+					},
 				},
 				Libraries: []*config.Library{
 					{
@@ -197,6 +200,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							MetadataNameOverride:         "secretmanager",
 							ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 							NamePrettyOverride:           "Secret Manager",
+							APIShortnameOverride:         "secretmanager",
+							APIIDOverride:                "secretmanager.googleapis.com",
 							OptArgsByAPI: map[string][]string{
 								"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 							},
@@ -232,7 +237,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 			fetchSource: defaultFetchSource,
 			want: &config.Config{
-				Language: "go",
+				Language: config.LanguageGo,
 				Repo:     "googleapis/google-cloud-go",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -241,7 +246,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					},
 				},
 				Default: &config.Default{
-					Keep:         []string{"CHANGES.md", "go.mod", "go.sum"},
 					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
@@ -355,7 +359,7 @@ func TestBuildGoLibraries(t *testing.T) {
 							APIs: []*RepoConfigAPI{
 								{
 									Path:            "google/maps/fleetengine/v1",
-									ClientDirectory: "proto_package: maps.fleetengine.v1",
+									ClientDirectory: "fleetengine",
 									DisableGAPIC:    true,
 									NestedProtos:    []string{"grafeas/grafeas.proto"},
 									ProtoPackage:    "google.cloud.translation.v3",
@@ -389,95 +393,15 @@ func TestBuildGoLibraries(t *testing.T) {
 						},
 						GoAPIs: []*config.GoAPI{
 							{
-								Path:            "google/maps/fleetengine/v1",
-								ClientDirectory: "proto_package: maps.fleetengine.v1",
-								DisableGAPIC:    true,
-								NestedProtos:    []string{"grafeas/grafeas.proto"},
-								ProtoPackage:    "google.cloud.translation.v3",
+								Path:          "google/maps/fleetengine/v1",
+								ClientPackage: "fleetengine",
+								ProtoOnly:     true,
+								NestedProtos:  []string{"grafeas/grafeas.proto"},
+								ProtoPackage:  "google.cloud.translation.v3",
 							},
 						},
 						ModulePathVersion: "v2",
 					},
-				},
-			},
-		},
-		{
-			name: "additional go module",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "ai",
-							APIs: []*legacyconfig.API{
-								{Path: "google/ai/generativelanguage/v1"},
-								{Path: "google/ai/generativelanguage/v1alpha"},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-			},
-			want: []*config.Library{
-				{
-					Name: "ai",
-					APIs: []*config.API{
-						{Path: "google/ai/generativelanguage/v1"},
-						{Path: "google/ai/generativelanguage/v1alpha"},
-					},
-					ReleaseLevel: "beta",
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								Path:            "google/ai/generativelanguage/v1",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1alpha",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-							{
-								Path:            "google/ai/generativelanguage/v1beta2",
-								ClientDirectory: "generativelanguage",
-								ImportPath:      "ai/generativelanguage",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "parse BUILD.bazel with no GAPIC rule",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "example-library",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/no-gapic",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-				googleapisDir:   "testdata/googleapis",
-			},
-			want: []*config.Library{
-				{
-					Name: "example-library",
-					APIs: []*config.API{{Path: "google/cloud/no-gapic"}},
 				},
 			},
 		},
@@ -549,12 +473,8 @@ func TestBuildGoLibraries(t *testing.T) {
 				librarianState: &legacyconfig.LibrarianState{
 					Libraries: []*legacyconfig.LibraryState{
 						{
-							ID: "bigquery",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/bigquery/analyticshub/v1",
-								},
-							},
+							ID:   "bigquery",
+							APIs: []*legacyconfig.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
 						},
 					},
 				},
@@ -563,13 +483,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Modules: []*RepoConfigModule{
 						{
 							Name: "bigquery",
-							APIs: []*RepoConfigAPI{
-								{
-									ClientDirectory: "analyticshub",
-									Path:            "google/cloud/bigquery/analyticshub/v1",
-									ImportPath:      "bigquery/analyticshub",
-								},
-							},
+							APIs: []*RepoConfigAPI{{Path: "google/cloud/bigquery/analyticshub/v1"}},
 						},
 					},
 				},
@@ -583,8 +497,6 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								ClientDirectory:    "analyticshub",
-								ImportPath:         "bigquery/analyticshub",
 								NoRESTNumericEnums: true,
 								Path:               "google/cloud/bigquery/analyticshub/v1",
 							},
@@ -721,6 +633,168 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "nested major version",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigquery/v2",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/bigquery/v2",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigquery/v2",
+							APIs: []*RepoConfigAPI{
+								{
+									Path: "google/cloud/bigquery/v2",
+									EnabledGeneratorFeatures: []string{
+										"F_wrapper_types_for_page_size",
+									},
+								},
+							},
+						},
+					},
+				},
+				repoPath:      "testdata/google-cloud-go",
+				googleapisDir: "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigquery/v2",
+					APIs: []*config.API{
+						{Path: "google/cloud/bigquery/v2"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
+								ImportPath:               "bigquery/v2/apiv2",
+								NoRESTNumericEnums:       true,
+								Path:                     "google/cloud/bigquery/v2",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse metadata from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/asset/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/asset/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								NoMetadata: true,
+								Path:       "google/cloud/asset/v1",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse disable GAPIC BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "asset",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/no-gapic",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "asset",
+					APIs: []*config.API{
+						{Path: "google/cloud/no-gapic"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								ProtoOnly: true,
+								Path:      "google/cloud/no-gapic",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "parse diregapic from BUILD.bazel",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "compute",
+							APIs: []*legacyconfig.API{
+								{
+									Path: "google/cloud/compute/v1",
+								},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "compute",
+					APIs: []*config.API{
+						{Path: "google/cloud/compute/v1"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								DIREGAPIC:          true,
+								NoRESTNumericEnums: true,
+								Path:               "google/cloud/compute/v1",
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
@@ -790,26 +864,41 @@ func TestReadRepoConfig(t *testing.T) {
 	}
 }
 
-func TestParseBazel_Success(t *testing.T) {
+func TestParseBazel(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		dir  string
-		want *goGAPICInfo
+		name          string
+		googleapisDir string
+		buildPath     string
+		want          *goGAPICInfo
 	}{
 		{
-			name: "success",
-			dir:  "testdata/parse-bazel/success",
+			name:          "success",
+			googleapisDir: "testdata/parse-bazel/success",
+			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
 				NoRESTNumericEnums: true,
 			},
 		},
 		{
-			name: "no GAPIC rules",
-			dir:  "testdata/parse-bazel/no-gapic-rule",
+			name:          "custom import path",
+			googleapisDir: "testdata/parse-bazel/custom-import-path",
+			buildPath:     "google/longrunning",
+			want: &goGAPICInfo{
+				ClientPackageName:  "longrunning",
+				ImportPath:         "longrunning/autogen",
+				NoRESTNumericEnums: true,
+			},
+		},
+		{
+			name:          "no GAPIC rules",
+			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
+			want: &goGAPICInfo{
+				DisableGAPIC: true,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseBazel(test.dir)
+			got, err := parseGoBazel(test.googleapisDir, test.buildPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -831,14 +920,9 @@ func TestParseBazel_Error(t *testing.T) {
 			dir:        "testdata/parse-bazel/error",
 			wantErrMsg: "multiple go_gapic_library rules",
 		},
-		{
-			name:       "no BUILD.bazel",
-			dir:        "non-existent-dir",
-			wantErrMsg: "no such file or directory",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := parseBazel(test.dir)
+			_, err := parseGoBazel("", test.dir)
 			if err == nil {
 				t.Fatalf("parseBazel(%q): expected error", test.dir)
 			}
