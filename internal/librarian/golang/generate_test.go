@@ -695,6 +695,52 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
+func TestHasRESTNumericEnums(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want bool
+	}{
+		{
+			name: "all languages do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					"all": true,
+				},
+			},
+		},
+		{
+			name: "go language do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					"go": true,
+				},
+			},
+		},
+		{
+			name: "another language do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					"python": true,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "empty map",
+			sc:   &serviceconfig.API{},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := hasRESTNumericEnums(test.sc)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
 		name    string
