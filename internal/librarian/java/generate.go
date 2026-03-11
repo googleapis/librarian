@@ -91,25 +91,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}
-	protocOptions, err := createProtocOptions(api, javaAPI, googleapisDir, p.protoDir, p.grpcDir, p.gapicDir)
-	if err != nil {
-		return fmt.Errorf("failed to create protoc options: %w", err)
-	}
-	args, apiProtos, err := constructProtocCommandArgs(api, javaAPI, googleapisDir, protocOptions)
-	if err != nil {
-		return fmt.Errorf("failed to construct protoc command args: %w", err)
-	}
-	p.apiProtos = apiProtos
-	if err := command.Run(ctx, args[0], args[1:]...); err != nil {
-		return fmt.Errorf("failed to run protoc: %w", err)
-	}
-	if err := postProcessAPI(ctx, p); err != nil {
-		return fmt.Errorf("failed to post process: %w", err)
-	}
-	return nil
-}
 
-func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, protocOptions []string) ([]string, []string, error) {
 	apiDir := filepath.Join(googleapisDir, api.Path)
 	// TODO(https://github.com/googleapis/librarian/issues/4198):
 	// Consider recursive gathering and explicit sorting
@@ -117,51 +99,92 @@ func constructProtocCommandArgs(api *config.API, javaAPI *config.JavaAPI, google
 	// a deterministic order in the generated gapic_metadata.json.
 	apiProtos, err := filepath.Glob(apiDir + "/*.proto")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to find protos: %w", err)
+		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(apiProtos) == 0 {
-		return nil, nil, fmt.Errorf("failed to construct protoc command args: no protos found in api %q", api.Path)
+		return fmt.Errorf("failed to generate api: no protos found in api %q", api.Path)
 	}
+	p.apiProtos = apiProtos
 
-	args := []string{
-		"protoc",
-		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
+	// 1. Generate standard Protocol Buffer Java classes.
+	if err := runProtoc(ctx, protoProtocArgs(apiProtos, googleapisDir, p.protoDir)); err != nil {
+		return fmt.Errorf("failed to generate proto: %w", err)
 	}
-	args = append(args, apiProtos...)
-	for _, p := range javaAPI.AdditionalProtos {
-		args = append(args, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-	}
-	args = append(args, protocOptions...)
-	return args, apiProtos, nil
-}
-
-func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir, protoDir, grpcDir, gapicDir string) ([]string, error) {
-	args := []string{
-		// --java_out generates standard Protocol Buffer Java classes.
-		fmt.Sprintf("--java_out=%s", protoDir),
-	}
+	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
+		return fmt.Errorf("failed to find api config: %w", err)
 	}
-
 	transport := serviceconfig.GRPCRest
 	if apiCfg != nil {
 		transport = apiCfg.Transport(config.LanguageJava)
 	}
-	// --java_grpc_out generates the gRPC service stubs.
-	// This is omitted if the transport is purely REST-based.
-	if transport != serviceconfig.Rest {
-		args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
+	if transport != "rest" {
+		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
+			return fmt.Errorf("failed to generate grpc: %w", err)
+		}
 	}
+	// 3. Generate GAPIC library.
+	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfg)
+	if err != nil {
+		return fmt.Errorf("failed to resolve gapic options: %w", err)
+	}
+	var additionalProtos []string
+	for _, p := range javaAPI.AdditionalProtos {
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
+	if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, p.gapicDir, gapicOpts)); err != nil {
+		return fmt.Errorf("failed to generate gapic: %w", err)
+	}
+
+	if err := postProcessAPI(ctx, p); err != nil {
+		return fmt.Errorf("failed to post process: %w", err)
+	}
+	return nil
+}
+
+var runProtoc = func(ctx context.Context, args []string) error {
+	return command.Run(ctx, "protoc", args...)
+}
+
+func baseProtocArgs(googleapisDir string) []string {
+	return []string{
+		"--experimental_allow_proto3_optional",
+		"-I=" + googleapisDir,
+	}
+}
+
+func protoProtocArgs(apiProtos []string, googleapisDir, protoDir string) []string {
+	args := baseProtocArgs(googleapisDir)
+	args = append(args, fmt.Sprintf("--java_out=%s", protoDir))
+	args = append(args, apiProtos...)
+	return args
+}
+
+func grpcProtocArgs(apiProtos []string, googleapisDir, grpcDir string) []string {
+	args := baseProtocArgs(googleapisDir)
+	args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
+	args = append(args, apiProtos...)
+	return args
+}
+
+func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicDir string, gapicOpts []string) []string {
+	args := baseProtocArgs(googleapisDir)
+	args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
+	args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
+	args = append(args, apiProtos...)
+	args = append(args, additionalProtos...)
+	return args
+}
+
+func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
-	if apiCfg != nil && apiCfg.ServiceConfig != "" {
+	if apiCfgs != nil && apiCfgs.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
-		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfgs.ServiceConfig)))
 	}
 
 	grpcServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
@@ -172,7 +195,12 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
 		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, grpcServiceConfig)))
 	}
+
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
+	transport := serviceconfig.GRPCRest
+	if apiCfgs != nil {
+		transport = apiCfgs.Transport(config.LanguageJava)
+	}
 	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
@@ -180,13 +208,7 @@ func createProtocOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir
 	if !javaAPI.NoRestNumericEnums {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
-
-	// --java_gapic_out invokes the GAPIC generator.
-	// The "metadata:" prefix is a parameter that tells the generator to include
-	// the metadata files mentioned above in the output srcjar/zip for GraalVM support.
-	args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
-	args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
-	return args, nil
+	return gapicOpts, nil
 }
 
 func gapicOpt(key, value string) string {

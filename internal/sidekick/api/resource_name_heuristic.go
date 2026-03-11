@@ -16,24 +16,6 @@ package api
 
 import "strings"
 
-// eligibleServices defines the service IDs (Protobuf package names) that are eligible for the gated heuristic.
-var eligibleServices = map[string]bool{
-	".google.cloud.compute":  true,
-	".google.cloud.sql":      true,
-	".google.cloud.bigquery": true,
-}
-
-// IsHeuristicEligible returns true if the given service ID is in the allowlist for the resource name heuristic.
-func IsHeuristicEligible(serviceID string) bool {
-	parts := strings.Split(serviceID, ".")
-	if len(parts) >= 4 {
-		// Extract the service prefix (e.g., ".google.cloud.compute.v1")
-		prefix := strings.Join(parts[:4], ".")
-		return eligibleServices[prefix]
-	}
-	return false
-}
-
 // BuildHeuristicVocabulary builds the vocabulary of valid resource tokens
 // based on the last literal before a variable in Get/List methods.
 func BuildHeuristicVocabulary(model *API) map[string]bool {

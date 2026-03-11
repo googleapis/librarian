@@ -15,9 +15,8 @@
 package gcloud
 
 import (
-	"fmt"
 	"os"
-	"strings"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,31 +24,36 @@ import (
 )
 
 func TestReadGcloudConfig(t *testing.T) {
-	cfg, err := yaml.Read[Config]("testdata/parallelstore/gcloud.yaml")
+	files, err := filepath.Glob("testdata/*/gcloud.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := yaml.Marshal(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, filename := range files {
+		t.Run(filename, func(t *testing.T) {
+			data, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	var index int
-	data, err := os.ReadFile("testdata/parallelstore/gcloud.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	lines := strings.Split(string(data), "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(line, "#") {
-			// Skip the header, and the new lines after the header
-			index = i + 2
-			continue
-		}
-	}
-	want := fmt.Sprintf("service_name: %s\n%s", cfg.ServiceName, strings.Join(lines[index:], "\n"))
-	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			cfg, err := yaml.Unmarshal[*Config](data)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			marshaled, err := yaml.Marshal(cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			roundTripped, err := yaml.Unmarshal[*Config](marshaled)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(cfg, roundTripped); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,6 +46,14 @@ func Bump(library *config.Library, output, version string) error {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		if _, err := os.Stat(snippetDir); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// A client may not have snippets, e.g., proto-only clients,
+				// skip updating snippets in this case.
+				return nil
+			}
+			return err
+		}
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
 			return err
 		}

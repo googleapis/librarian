@@ -46,9 +46,10 @@ func generateCommand() *cli.Command {
 service config yaml, and gcloud.yaml.`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "googleapis",
-				Value: "https://github.com/googleapis/googleapis",
-				Usage: "URL or directory path to googleapis",
+				Name:     "googleapis",
+				Value:    "https://github.com/googleapis/googleapis",
+				Usage:    "URL or directory path to googleapis",
+				Required: true,
 			},
 			&cli.StringFlag{
 				Name:  "out",

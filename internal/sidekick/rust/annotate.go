@@ -276,8 +276,6 @@ type methodAnnotation struct {
 	ResourceNameFields        []*resourceNameCandidateField
 	HasResourceNameFields     bool
 	InternalBuilders          bool
-	ResourceNameTemplate      string
-	ResourceNameArgs          []string
 	HasResourceNameGeneration bool
 }
 
@@ -416,6 +414,11 @@ type pathBindingAnnotation struct {
 
 	// The codec is configured to generated detailed tracing attributes.
 	DetailedTracingAttributes bool
+
+	// Resource name generation fields, propagated from method scope.
+	HasResourceNameGeneration bool
+	ResourceNameTemplate      string
+	ResourceNameArgs          []string
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -1605,24 +1608,37 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 // annotateResourceNameGeneration populates the method annotation with a Rust format string (ResourceNameTemplate)
 // and a list of argument accessors (ResourceNameArgs) to generate the `resource_name()` helper.
 func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *methodAnnotation) error {
+	if !annotation.DetailedTracingAttributes {
+		return nil // Constraint 1: Do nothing if detailed tracing is off.
+	}
 	if m.PathInfo != nil {
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
-				tmpl, err := formatResourceNameTemplateFromPath(m, b)
-				if err != nil {
-					return err
+				annotation.HasResourceNameGeneration = true
+				break
+			}
+		}
+
+		if annotation.HasResourceNameGeneration {
+			for _, b := range m.PathInfo.Bindings {
+				bAnn, ok := b.Codec.(*pathBindingAnnotation)
+				if !ok {
+					continue
 				}
-				annotation.ResourceNameTemplate = tmpl
-				for _, path := range b.TargetResource.FieldPaths {
-					accSegments, err := makeAccessors(path, m)
+				// To make sure the Rust code for each binding returns the same type, we set HasResourceNameGeneration = true for all bindings to cue each binding to produce the same typed result (even if this specific binding does not have a TargetResource.)
+				bAnn.HasResourceNameGeneration = true
+
+				if b.TargetResource != nil {
+					tmpl, err := formatResourceNameTemplateFromPath(m, b)
 					if err != nil {
 						return err
 					}
-					fullAcc := "Some(&req)" + strings.Join(accSegments, "") + ".unwrap_or(\"\")"
-					annotation.ResourceNameArgs = append(annotation.ResourceNameArgs, fullAcc)
+					bAnn.ResourceNameTemplate = tmpl
+					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+				} else {
+					bAnn.ResourceNameTemplate = ""
+					bAnn.ResourceNameArgs = nil
 				}
-				annotation.HasResourceNameGeneration = true
-				break
 			}
 		}
 	}
@@ -1649,6 +1665,20 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		}
 	}
 	return sb.String(), nil
+}
+
+// formatResourceNameArgs creates the corresponding Rust template variables for the resource name.
+func formatResourceNameArgs(fieldPaths [][]string) []string {
+	var args []string
+	for _, path := range fieldPaths {
+		var rustNames []string
+		for _, p := range path {
+			rustNames = append(rustNames, toSnakeNoMangling(p))
+		}
+		varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+		args = append(args, varName)
+	}
+	return args
 }
 
 // isIdempotent returns "true" if the method is idempotent by default, and "false", if not.

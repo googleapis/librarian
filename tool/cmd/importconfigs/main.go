@@ -33,6 +33,7 @@ func main() {
 		Commands: []*cli.Command{
 			addNodejsCommand(),
 			updateTransportsCommand(),
+			updateRestNumericEnumsCommand(),
 		},
 	}
 	if err := cmd.Run(ctx, os.Args); err != nil {

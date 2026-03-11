@@ -124,6 +124,8 @@
     - nodejs
     - python
     - rust
+  no_rest_numeric_enums:
+    go: true
   path: google/api/serviceusage/v1
 - languages:
     - nodejs
@@ -132,6 +134,8 @@
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/appengine/logging/v1
   transports:
     python: grpc
@@ -146,6 +150,8 @@
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/card/v1
 - languages:
     - go
@@ -173,6 +179,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type
   title: Google Apps Script Types
   transports:
@@ -183,6 +191,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/calendar
   title: Google Apps Script Types
   transports:
@@ -193,6 +203,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/docs
   title: Google Apps Script Types
   transports:
@@ -203,6 +215,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/drive
   title: Google Apps Script Types
   transports:
@@ -213,6 +227,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/gmail
   title: Google Apps Script Types
   transports:
@@ -223,6 +239,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/sheets
   title: Google Apps Script Types
   transports:
@@ -233,6 +251,8 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/apps/script/type/slides
   title: Google Apps Script Types
   transports:
@@ -263,6 +283,15 @@
     - python
   path: google/chat/v1
 - languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/abuseevent/logging/v1
+- languages:
     - go
     - nodejs
     - python
@@ -288,6 +317,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/aiplatform/v1/schema/predict/instance
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
@@ -296,6 +327,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/aiplatform/v1/schema/predict/params
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
@@ -304,6 +337,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/aiplatform/v1/schema/predict/prediction
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
@@ -312,6 +347,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/aiplatform/v1/schema/trainingjob/definition
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
@@ -326,17 +363,59 @@
   transports:
     java: grpc
 - languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/aiplatform/v1beta1/schema/predict/instance
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/aiplatform/v1beta1/schema/predict/params
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/aiplatform/v1beta1/schema/predict/prediction
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/aiplatform/v1beta1/schema/trainingjob/definition
+- languages:
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/alloydb/connectors/v1
 - languages:
     - go
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/alloydb/connectors/v1alpha
 - languages:
     - go
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/alloydb/connectors/v1beta
 - languages:
     - go
@@ -472,6 +551,15 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
   path: google/cloud/automl/v1beta1
 - languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/backupdr/logging/v1
+- languages:
     - go
     - nodejs
     - python
@@ -566,6 +654,8 @@
     - nodejs
     - python
     - rust
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/analyticshub/v1
   transports:
     python: grpc
@@ -589,6 +679,8 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/dataexchange/v1beta1
   transports:
     python: grpc
@@ -604,6 +696,8 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/datapolicies/v1beta1
   transports:
     python: grpc
@@ -630,6 +724,8 @@
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/bigquery/logging/v1
   transports:
     python: grpc
@@ -640,6 +736,8 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/migration/v2
   transports:
     go: grpc
@@ -651,6 +749,8 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/migration/v2alpha
   transports:
     python: grpc
@@ -664,6 +764,8 @@
 - languages:
     - go
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/bigquery/storage/v1
   transports:
     go: grpc
@@ -683,8 +785,24 @@
   transports:
     all: grpc
 - languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    all: true
+  path: google/cloud/bigquery/storage/v1beta1
+- languages:
     - go
     - python
+  no_rest_numeric_enums:
+    csharp: true
+    go: true
+    java: true
+    nodejs: true
+    php: true
+    python: true
   path: google/cloud/bigquery/storage/v1beta2
   transports:
     java: grpc
@@ -693,6 +811,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    go: true
   path: google/cloud/bigquery/v2
   transports:
     python: rest
@@ -807,6 +927,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/common
   transports:
     python: grpc
@@ -818,6 +940,9 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
+  no_rest_numeric_enums:
+    go: true
+    python: true
   path: google/cloud/compute/v1
   transports:
     csharp: rest
@@ -828,6 +953,9 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    go: true
+    python: true
   path: google/cloud/compute/v1beta
   transports:
     go: rest
@@ -885,12 +1013,16 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    php: true
   path: google/cloud/datacatalog/lineage/v1
 - languages:
     - go
     - nodejs
     - python
     - rust
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/datacatalog/v1
   transports:
     python: grpc
@@ -898,6 +1030,8 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/datacatalog/v1beta1
   transports:
     python: grpc
@@ -936,6 +1070,15 @@
     - python
     - rust
   path: google/cloud/dataplex/v1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/dataproc/logging
 - documentation_uri: https://cloud.google.com/dataproc
   languages:
     - go
@@ -949,7 +1092,18 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/dataqna/v1alpha
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/datastream/logging/v1
 - documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
@@ -1030,6 +1184,9 @@
     - python
     - rust
   path: google/cloud/dns/v1
+  short_name: dns
+  service_name: dns.googleapis.com
+  title: Cloud DNS
 - languages:
     - go
     - nodejs
@@ -1079,6 +1236,15 @@
     - python
     - rust
   path: google/cloud/essentialcontacts/v1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/eventarc/logging/v1
 - documentation_uri: https://cloud.google.com/eventarc/docs
   languages:
     - go
@@ -1134,6 +1300,15 @@
     - python
   path: google/cloud/geminidataanalytics/v1beta
 - languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkebackup/logging/v1
+- languages:
     - go
     - nodejs
     - python
@@ -1151,9 +1326,29 @@
     - go
     - nodejs
     - python
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/gkeconnect/gateway/v1beta1
   transports:
     all: rest
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/policycontroller/v1beta
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/servicemesh/v1beta
 - documentation_uri: https://cloud.google.com/anthos/gke/docs/
   languages:
     - go
@@ -1165,6 +1360,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/gkehub/v1/configmanagement
   title: GKE Hub Types
   transports:
@@ -1173,6 +1370,8 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/gkehub/v1/multiclusteringress
   title: GKE Hub Types
   transports:
@@ -1181,8 +1380,82 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/gkehub/v1/rbacrolebindingactuation
   title: GKE Hub Types
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1alpha/cloudauditlogging
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1alpha/configmanagement
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1alpha/metering
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1alpha/multiclusteringress
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1alpha/servicemesh
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1beta/configmanagement
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1beta/metering
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/gkehub/v1beta/multiclusteringress
 - documentation_uri: https://cloud.google.com/anthos/gke/docs/
   languages:
     - go
@@ -1194,6 +1467,8 @@
     - nodejs
     - python
     - rust
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/gkemulticloud/v1
   transports:
     go: grpc
@@ -1228,6 +1503,15 @@
     - python
     - rust
   path: google/cloud/ids/v1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/integrations/v1alpha
 - languages:
     - go
     - nodejs
@@ -1414,6 +1698,15 @@
     - python
     - rust
   path: google/cloud/netapp/v1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/networkanalyzer/logging/v1
 - documentation_uri: https://cloud.google.com/network-connectivity/
   languages:
     - go
@@ -1564,6 +1857,9 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    csharp: true
+    python: true
   path: google/cloud/oslogin/common
   title: Cloud OS Login Common Types
   transports:
@@ -1593,6 +1889,15 @@
     - python
     - rust
   path: google/cloud/parametermanager/v1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    all: true
+  path: google/cloud/paymentgateway/issuerswitch/v1
 - documentation_uri: https://cloud.google.com/phishing-protection/docs/
   languages:
     - go
@@ -1633,6 +1938,13 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    csharp: true
+    go: true
+    java: true
+    nodejs: true
+    python: true
+    ruby: true
   path: google/cloud/pubsublite/v1
   transports:
     go: grpc
@@ -1709,6 +2021,15 @@
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
   path: google/cloud/resourcemanager/v3
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  path: google/cloud/retail/logging
 - documentation_uri: https://cloud.google.com/retail/docs/
   languages:
     - go
@@ -1802,6 +2123,15 @@
     - nodejs
     - python
   path: google/cloud/security/publicca/v1beta1
+- languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    all: true
+  path: google/cloud/securitycenter/settings/v1beta1
 - languages:
     - go
     - nodejs
@@ -1971,12 +2301,16 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/texttospeech/v1
 - documentation_uri: https://cloud.google.com/text-to-speech
   languages:
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/texttospeech/v1beta1
 - languages:
     - go
@@ -2007,6 +2341,8 @@
   languages:
     - nodejs
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/cloud/tpu/v2alpha1
   transports:
     csharp: grpc
@@ -2204,6 +2540,8 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/workflows/executions/v1
   transports:
     go: grpc
@@ -2215,6 +2553,8 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
+  no_rest_numeric_enums:
+    all: true
   path: google/cloud/workflows/executions/v1beta
   transports:
     python: grpc
@@ -2298,6 +2638,8 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
+  no_rest_numeric_enums:
+    php: true
   path: google/devtools/cloudbuild/v1
 - documentation_uri: https://cloud.google.com/cloud-build/docs/
   languages:
@@ -2351,6 +2693,8 @@
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/devtools/source/v1
   transports:
     python: grpc
@@ -2361,6 +2705,8 @@
   path: google/firestore/admin/v1
 - languages:
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/firestore/bundle
   title: Cloud Firestore API
 - languages:
@@ -2371,6 +2717,8 @@
   title: Cloud Firestore API
 - languages:
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/geo/type
   transports:
     python: grpc
@@ -2401,11 +2749,16 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
+  no_rest_numeric_enums:
+    csharp: true
+    ruby: true
   path: google/iam/v1
 - documentation_uri: https://cloud.google.com/iam/docs/audit-logging
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
   path: google/iam/v1/logging
   transports:
     python: grpc
@@ -2483,6 +2836,10 @@
     - go
     - python
     - rust
+  no_rest_numeric_enums:
+    csharp: true
+    go: true
+    php: true
   path: google/longrunning
 - documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
   languages:
@@ -2757,6 +3114,8 @@
 - languages:
     - go
     - python
+  no_rest_numeric_enums:
+    python: true
   path: google/shopping/type
 - languages:
     - go

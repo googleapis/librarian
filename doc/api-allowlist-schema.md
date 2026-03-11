@@ -11,6 +11,7 @@ This document describes the schema for the API Allowlist.
 | `documentation_uri` | string | Overrides the product documentation URI from the service config's publishing section. |
 | `languages` | list of string | Restricts which languages can generate client libraries for this API. Empty means all languages can use this API. We should be explicit about supported languages when adding entries.<br><br>Restrictions exist for several reasons:<br>- Newer languages (Rust, Dart) skip older beta versions when stable versions exist<br>- Python has historical legacy APIs not available to other languages<br>- Some APIs (like DIREGAPIC protos) are only used by specific languages |
 | `new_issue_uri` | string | Overrides the new issue URI from the service config's publishing section. |
+| `no_rest_numeric_enums` | map[string]bool | Determines whether to use numeric enums in REST requests. The "No" prefix is used because the default behavior (when this field is `false` or omitted) is to generate numeric enums. Map key is the language name (e.g., "python", "rust"). Optional. If omitted, the generator default is used. |
 | `open_api` | string | Is the file path to an OpenAPI spec, currently in internal/testdata. This is not an official spec yet and exists only for Rust to validate OpenAPI support. |
 | `path` | string | Is the proto directory path in github.com/googleapis/googleapis. If ServiceConfig is empty, the service config is assumed to live at this path. |
 | `short_name` | string | Overrides the API short name from the service config's publishing section. |
