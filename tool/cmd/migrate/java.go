@@ -134,7 +134,7 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	}
 	commit := gen.GoogleapisCommitish
 	if commit == "" {
-		commit = "main"
+		commit = "master"
 	}
 	src, err := fetchSourceWithCommit(ctx, commit)
 	if err != nil {
