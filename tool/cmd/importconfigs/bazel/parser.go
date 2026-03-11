@@ -23,6 +23,16 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 )
 
+var ruleToLang = map[string]string{
+	"csharp_gapic_library":     "csharp",
+	"go_gapic_library":         "go",
+	"java_gapic_library":       "java",
+	"nodejs_gapic_library":     "nodejs",
+	"php_gapic_library":        "php",
+	"py_gapic_library":         "python",
+	"ruby_cloud_gapic_library": "ruby",
+}
+
 // Config holds configuration extracted from googleapis BUILD.bazel files.
 type Config struct {
 	// DIREGAPIC indicates whether DIREGAPIC (Discovery REST GAPICs) is used.
@@ -139,12 +149,26 @@ func ParseTransports(path string) (map[string]string, error) {
 	return transports, nil
 }
 
-var ruleToLang = map[string]string{
-	"csharp_gapic_library":     "csharp",
-	"go_gapic_library":         "go",
-	"java_gapic_library":       "java",
-	"nodejs_gapic_library":     "nodejs",
-	"php_gapic_library":        "php",
-	"py_gapic_library":         "python",
-	"ruby_cloud_gapic_library": "ruby",
+// ParseRESTNumericEnums reads a BUILD.bazel file and returns a map of languages
+// where the rest_numeric_enums attribute is explicitly set to False.
+func ParseRESTNumericEnums(path string) (map[string]bool, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
+	}
+
+	noRESTNumericEnums := make(map[string]bool)
+	for ruleName, lang := range ruleToLang {
+		for _, rule := range file.Rules(ruleName) {
+			// lang: true, if the language doesn't have rest_numeric_enums.
+			if rule.AttrLiteral("rest_numeric_enums") == "False" {
+				noRESTNumericEnums[lang] = true
+			}
+		}
+	}
+	return noRESTNumericEnums, nil
 }

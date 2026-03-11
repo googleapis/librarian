@@ -31,7 +31,7 @@ NAME:
 
 USAGE:
 
-	librarianops generate [<repo> | -C <dir>]
+	librarianops generate [<repo> | -C <dir>] [--docker]
 
 DESCRIPTION:
 
@@ -56,6 +56,7 @@ OPTIONS:
 
 	-C directory  work in directory (repo name inferred from basename)
 	-v            run librarian with verbose output
+	--docker      run librarian in Docker
 	--help, -h    show help
 */
 package main

@@ -1,0 +1,27 @@
+csharp_gapic_library(
+    rest_numeric_enums = True,
+)
+
+go_gapic_library(
+    rest_numeric_enums = True,
+)
+
+java_gapic_library(
+    rest_numeric_enums = True,
+)
+
+nodejs_gapic_library(
+    rest_numeric_enums = True,
+)
+
+php_gapic_library(
+    rest_numeric_enums = True,
+)
+
+py_gapic_library(
+    rest_numeric_enums = True,
+)
+
+ruby_cloud_gapic_library(
+    rest_numeric_enums = True,
+)

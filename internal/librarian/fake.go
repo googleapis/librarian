@@ -95,3 +95,9 @@ func fakeCreateSkeleton(library *config.Library) error {
 func fakeDefaultLibraryName(api string) string {
 	return strings.ReplaceAll(api, "/", "-")
 }
+
+func fakeClean(library *config.Library) error {
+	// We always generate a README.md file, so it's fine to delete that.
+	// This function shouldn't be called if the output directory doesn't exist.
+	return os.Remove(filepath.Join(library.Output, "README.md"))
+}

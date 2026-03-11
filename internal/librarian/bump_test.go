@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/sample"
@@ -1014,9 +1013,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 				if err := os.Remove(librarianConfigPath); err != nil {
 					t.Fatal(err)
 				}
-				if err := command.Run(t.Context(), "git", "commit", "-m", "deleted config file", "."); err != nil {
-					t.Fatal(err)
-				}
+				testhelper.RunGit(t, "commit", "-m", "deleted config file", ".")
 			},
 		},
 		{
@@ -1364,10 +1361,6 @@ func writeFileAndCommit(t *testing.T, path string, content []byte, message strin
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := command.Run(t.Context(), "git", "add", "."); err != nil {
-		t.Fatal(err)
-	}
-	if err := command.Run(t.Context(), "git", "commit", "-m", message); err != nil {
-		t.Fatal(err)
-	}
+	testhelper.RunGit(t, "add", ".")
+	testhelper.RunGit(t, "commit", "-m", message)
 }
