@@ -23,43 +23,74 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
-func TestFetchRustDartSources(t *testing.T) {
+func TestLoadSources(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		cfgSources *config.Sources
-		want       *sidekickconfig.Sources
-		wantErr    error
+		name    string
+		src     *config.Sources
+		want    *sidekickconfig.Sources
+		wantErr error
 	}{
 		{
 			name: "success with pre-configured directories",
-			cfgSources: &config.Sources{
+			src: &config.Sources{
+				Googleapis:  &config.Source{Dir: "/path/to/googleapis"},
 				Conformance: &config.Source{Dir: "/path/to/conformance"},
 				Discovery:   &config.Source{Dir: "/path/to/discovery"},
 				Showcase:    &config.Source{Dir: "/path/to/showcase"},
 				ProtobufSrc: &config.Source{Dir: "/path/to/protobuf", Subpath: "src"},
 			},
 			want: &sidekickconfig.Sources{
+				Googleapis:  "/path/to/googleapis",
 				Conformance: "/path/to/conformance",
 				Discovery:   "/path/to/discovery",
-				Googleapis:  "",
 				ProtobufSrc: "/path/to/protobuf/src",
 				Showcase:    "/path/to/showcase",
 			},
 		},
+		{
+			name:    "nil sources",
+			src:     nil,
+			wantErr: ErrMissingGoogleapisSource,
+		},
+		{
+			name:    "empty sources",
+			src:     &config.Sources{},
+			wantErr: ErrMissingGoogleapisSource,
+		},
+		{
+			name: "googleapis dir set",
+			src: &config.Sources{
+				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+			},
+			want: &sidekickconfig.Sources{
+				Googleapis: "/tmp/googleapis",
+			},
+		},
+		{
+			name: "discovery dir set",
+			src: &config.Sources{
+				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
+				Discovery:  &config.Source{Dir: "/tmp/discovery"},
+			},
+			want: &sidekickconfig.Sources{
+				Googleapis: "/tmp/googleapis",
+				Discovery:  "/tmp/discovery",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := FetchRustDartSources(t.Context(), test.cfgSources)
+			got, err := LoadSources(t.Context(), test.src)
 			if test.wantErr != nil {
-				if err == nil || !errors.Is(err, test.wantErr) {
-					t.Errorf("FetchRustDartSources() got error = %v, wantErr %v", err, test.wantErr)
+				if !errors.Is(err, test.wantErr) {
+					t.Errorf("LoadSources() got error = %v, wantErr %v", err, test.wantErr)
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("FetchRustDartSources() got unexpected error: %v", err)
+				t.Errorf("LoadSources() got unexpected error: %v", err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("FetchRustDartSources() mismatch (-want +got):%s", diff)
+				t.Errorf("LoadSources() mismatch (-want +got):%s", diff)
 			}
 		})
 	}

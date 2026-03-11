@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -26,33 +27,36 @@ import (
 )
 
 const (
-	discoveryRepo = "github.com/googleapis/discovery-artifact-manager"
-	protobufRepo  = "github.com/protocolbuffers/protobuf"
-	showcaseRepo  = "github.com/googleapis/gapic-showcase"
+	googleapisRepo = "github.com/googleapis/googleapis"
+	discoveryRepo  = "github.com/googleapis/discovery-artifact-manager"
+	protobufRepo   = "github.com/protocolbuffers/protobuf"
+	showcaseRepo   = "github.com/googleapis/gapic-showcase"
 )
 
-// FetchRustDartSources fetches all source repositories needed for Rust and Dart generation in parallel.
-// It returns a *sidekickconfig.Sources struct with all directories populated.
-func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*sidekickconfig.Sources, error) {
-	sources := &sidekickconfig.Sources{}
-	// fetchSource fetches a repository source.
-	fetchSource := func(ctx context.Context, source *config.Source, repo string) (string, error) {
-		if source == nil {
-			return "", nil
-		}
-		if source.Dir != "" {
-			return source.Dir, nil
-		}
+// ErrMissingGoogleapisSource is returned when the googleapis source is missing.
+var ErrMissingGoogleapisSource = errors.New("must specify googleapis source")
 
-		dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
-		if err != nil {
-			return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
-		}
-		return dir, nil
+// LoadSources fetches all source repositories needed for generation in parallel.
+// It returns a *sidekickconfig.Sources struct with all directories populated.
+func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sources, error) {
+	if src == nil || src.Googleapis == nil {
+		return nil, ErrMissingGoogleapisSource
 	}
+	sources := &sidekickconfig.Sources{}
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Conformance, protobufRepo)
+		dir, err := fetchSource(ctx, src.Googleapis, googleapisRepo)
+		if err != nil {
+			return err
+		}
+		if dir == "" {
+			return ErrMissingGoogleapisSource
+		}
+		sources.Googleapis = dir
+		return nil
+	})
+	g.Go(func() error {
+		dir, err := fetchSource(ctx, src.Conformance, protobufRepo)
 		if err != nil {
 			return err
 		}
@@ -60,7 +64,7 @@ func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*sid
 		return nil
 	})
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Discovery, discoveryRepo)
+		dir, err := fetchSource(ctx, src.Discovery, discoveryRepo)
 		if err != nil {
 			return err
 		}
@@ -68,20 +72,20 @@ func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*sid
 		return nil
 	})
 	g.Go(func() error {
-		dir, err := fetchSource(ctx, cfgSources.Showcase, showcaseRepo)
+		dir, err := fetchSource(ctx, src.Showcase, showcaseRepo)
 		if err != nil {
 			return err
 		}
 		sources.Showcase = dir
 		return nil
 	})
-	if cfgSources.ProtobufSrc != nil {
+	if src.ProtobufSrc != nil {
 		g.Go(func() error {
-			dir, err := fetchSource(ctx, cfgSources.ProtobufSrc, protobufRepo)
+			dir, err := fetchSource(ctx, src.ProtobufSrc, protobufRepo)
 			if err != nil {
 				return err
 			}
-			sources.ProtobufSrc = filepath.Join(dir, cfgSources.ProtobufSrc.Subpath)
+			sources.ProtobufSrc = filepath.Join(dir, src.ProtobufSrc.Subpath)
 			return nil
 		})
 	}
@@ -89,4 +93,18 @@ func FetchRustDartSources(ctx context.Context, cfgSources *config.Sources) (*sid
 		return nil, err
 	}
 	return sources, nil
+}
+
+func fetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
+	if source == nil {
+		return "", nil
+	}
+	if source.Dir != "" {
+		return source.Dir, nil
+	}
+	dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
+	}
+	return dir, nil
 }
