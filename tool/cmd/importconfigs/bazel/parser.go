@@ -149,8 +149,8 @@ func ParseTransports(path string) (map[string]string, error) {
 	return transports, nil
 }
 
-// ParseRESTNumericEnums reads a BUILD.bazel file and extracts rest_numeric_enums configuration
-// for all recognized language GAPIC rules.
+// ParseRESTNumericEnums reads a BUILD.bazel file and returns a map of languages
+// where the rest_numeric_enums attribute is explicitly set to False.
 func ParseRESTNumericEnums(path string) (map[string]bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
