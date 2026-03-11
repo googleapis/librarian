@@ -462,7 +462,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								Path: "google/cloud/bigquery/analyticshub/v1",
+								NoMetadata: true,
+								Path:       "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
 					},
