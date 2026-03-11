@@ -184,6 +184,57 @@ func TestFillDefaults(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_Java(t *testing.T) {
+	defaults := &config.Default{
+		Java: &config.JavaModule{
+			GroupID:             "com.google.cloud",
+			LibraryTypeOverride: "OTHER",
+		},
+		ReleaseLevel: "preview",
+	}
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "fills java defaults",
+			lib:  &config.Library{},
+			want: &config.Library{
+				Java: &config.JavaModule{
+					GroupID:             "com.google.cloud",
+					LibraryTypeOverride: "OTHER",
+				},
+				ReleaseLevel: "preview",
+			},
+		},
+		{
+			name: "preserves existing java values",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					GroupID:             "custom.group",
+					LibraryTypeOverride: "GAPIC_AUTO",
+				},
+				ReleaseLevel: "preview",
+			},
+			want: &config.Library{
+				Java: &config.JavaModule{
+					GroupID:             "custom.group",
+					LibraryTypeOverride: "GAPIC_AUTO",
+				},
+				ReleaseLevel: "preview",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFillDefaults_Rust(t *testing.T) {
 	defaults := &config.Default{
 		Rust: &config.RustDefault{

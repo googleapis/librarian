@@ -142,6 +142,9 @@ type Default struct {
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
+	// Java contains Java-specific default configuration.
+	Java *JavaModule `yaml:"java,omitempty"`
+
 	// Nodejs contains Node.js-specific default configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 

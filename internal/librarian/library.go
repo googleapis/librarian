@@ -47,6 +47,27 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Python != nil {
 		return fillPython(lib, d)
 	}
+	if d.Java != nil {
+		return fillJava(lib, d)
+	}
+	return lib
+}
+
+// fillJava populates empty Java-specific fields in lib from the provided
+// default.
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	if lib.Java.GroupID == "" {
+		lib.Java.GroupID = d.Java.GroupID
+	}
+	if lib.Java.LibraryTypeOverride == "" {
+		lib.Java.LibraryTypeOverride = d.Java.LibraryTypeOverride
+	}
+	if lib.ReleaseLevel == "" {
+		lib.ReleaseLevel = d.ReleaseLevel
+	}
 	return lib
 }
 
