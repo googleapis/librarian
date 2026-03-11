@@ -94,7 +94,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+					Java: &config.JavaModule{
+						LibraryTypeOverride: "GAPIC_AUTO",
+						GroupID:             "com.google.cloud",
+					},
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -124,7 +130,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+					Java: &config.JavaModule{
+						LibraryTypeOverride: "GAPIC_AUTO",
+						GroupID:             "com.google.cloud",
+					},
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -160,7 +172,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+					Java: &config.JavaModule{
+						LibraryTypeOverride: "GAPIC_AUTO",
+						GroupID:             "com.google.cloud",
+					},
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -221,7 +239,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+					Java: &config.JavaModule{
+						LibraryTypeOverride: "GAPIC_AUTO",
+						GroupID:             "com.google.cloud",
+					},
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},

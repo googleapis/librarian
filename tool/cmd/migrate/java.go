@@ -216,7 +216,13 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 	}
 	return &config.Config{
 		Language: "java",
-		Default:  &config.Default{},
+		Default: &config.Default{
+			ReleaseLevel: "preview",
+			Java: &config.JavaModule{
+				LibraryTypeOverride: "GAPIC_AUTO",
+				GroupID:             "com.google.cloud",
+			},
+		},
 		Sources: &config.Sources{
 			Googleapis: &config.Source{Dir: googleapisDir},
 		},
