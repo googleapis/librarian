@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/googleapis/librarian/tool/cmd/importconfigs/bazel"
@@ -66,20 +67,29 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 			continue
 		}
 		api, ok := apiMap[path]
-		if !ok {
-			if !strings.HasPrefix(path, "google/cloud") {
-				// Ignore a non-cloud API that is not in sdk.yaml since it is blocked.
-				continue
-			}
-			// Add the NoRESTNumericEnums to a cloud API.
-			newAPIs = append(newAPIs, &serviceconfig.API{
-				Path:               path,
-				NoRESTNumericEnums: noRESTNumericEnums,
-			})
+		if ok {
+			// Add the NoRESTNumericEnums to an existing API, regardless a cloud API or not.
+			api.NoRESTNumericEnums = noRESTNumericEnums
 			continue
 		}
-		// Add the NoRESTNumericEnums to an existing API, regardless a cloud API or not.
-		api.NoRESTNumericEnums = noRESTNumericEnums
+
+		// Ignore a non-cloud API that is not in sdk.yaml since it is blocked.
+		if !strings.HasPrefix(path, "google/cloud") {
+			continue
+		}
+		// Add the NoRESTNumericEnums to a cloud API.
+		newAPIs = append(newAPIs, &serviceconfig.API{
+			// Add languages so they won't be blocked.
+			Languages: []string{
+				config.LanguageDart,
+				config.LanguageGo,
+				config.LanguageJava,
+				config.LanguagePython,
+				config.LanguageRust,
+			},
+			Path:               path,
+			NoRESTNumericEnums: noRESTNumericEnums,
+		})
 	}
 	finalAPIs := toSlice(apiMap)
 	finalAPIs = append(finalAPIs, newAPIs...)
