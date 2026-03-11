@@ -100,7 +100,7 @@ func TestTag(t *testing.T) {
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(t, cfg)
 
-			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag); err != nil {
+			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, ""); err != nil {
 				t.Fatal(err)
 			}
 
@@ -198,7 +198,7 @@ func TestTag_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(t, cfg)
-			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag)
+			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, "")
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}

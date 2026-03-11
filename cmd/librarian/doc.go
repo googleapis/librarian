@@ -194,6 +194,7 @@ OPTIONS:
 
 	--release-commit string  the release commit to tag; default finds latest release commit
 	--create-release-tag     whether to create a tag of the form release-{PR number}
+	--push-remote string     the name of the remote to push tags to, after tagging locally
 	--help, -h               show help
 
 GLOBAL OPTIONS:
