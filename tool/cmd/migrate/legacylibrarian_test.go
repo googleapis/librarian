@@ -432,8 +432,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								Path:               "google/cloud/bigquery/analyticshub/v1",
-								NoRESTNumericEnums: true,
+								Path: "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
 					},
@@ -497,8 +496,7 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								NoRESTNumericEnums: true,
-								Path:               "google/cloud/bigquery/analyticshub/v1",
+								Path: "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
 					},
@@ -678,7 +676,6 @@ func TestBuildGoLibraries(t *testing.T) {
 							{
 								EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
 								ImportPath:               "bigquery/v2/apiv2",
-								NoRESTNumericEnums:       true,
 								Path:                     "google/cloud/bigquery/v2",
 							},
 						},
@@ -786,9 +783,8 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								DIREGAPIC:          true,
-								NoRESTNumericEnums: true,
-								Path:               "google/cloud/compute/v1",
+								DIREGAPIC: true,
+								Path:      "google/cloud/compute/v1",
 							},
 						},
 					},
