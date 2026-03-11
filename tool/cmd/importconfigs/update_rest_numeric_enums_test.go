@@ -43,41 +43,10 @@ func TestSimplifyRestNumericEnums(t *testing.T) {
 			want: map[string]bool{"all": true},
 		},
 		{
-			name: "all false",
-			restNumericEnums: map[string]bool{
-				"csharp": false,
-				"go":     false,
-				"java":   false,
-				"nodejs": false,
-				"php":    false,
-				"python": false,
-				"ruby":   false,
-			},
-			want: map[string]bool{},
-		},
-		{
-			name: "all present, different values",
-			restNumericEnums: map[string]bool{
-				"csharp": false,
-				"go":     true,
-				"java":   false,
-				"nodejs": false,
-				"php":    false,
-				"python": true,
-				"ruby":   false,
-			},
-			want: map[string]bool{
-				"go":     true,
-				"python": true,
-			},
-		},
-		{
 			name: "some present, different values",
 			restNumericEnums: map[string]bool{
-				"csharp": false,
 				"java":   true,
 				"python": true,
-				"ruby":   false,
 			},
 			want: map[string]bool{
 				"java":   true,

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -142,37 +141,18 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 }
 
 func simplifyRESTNumericEnums(restNumericEnums map[string]bool) map[string]bool {
-	var (
-		firstVal bool
-		firstSet bool
-	)
 	for lang := range langToConstant {
 		if lang == "all" {
 			continue
 		}
-		val, ok := restNumericEnums[lang]
+		_, ok := restNumericEnums[lang]
 		if !ok {
-			return removeDefaults(restNumericEnums)
+			// At least one language is not present,
+			// return as-is.
+			return restNumericEnums
 		}
-		if !firstSet {
-			firstVal = val
-			firstSet = true
-		} else if val != firstVal {
-			return removeDefaults(restNumericEnums)
-		}
-	}
-	if !firstVal {
-		// All languages need rest_numeric_enums.
-		return make(map[string]bool)
 	}
 	// All languages do not need rest_numeric_enums.
 	// Return all: true.
-	return map[string]bool{"all": firstVal}
-}
-
-func removeDefaults(restNumericEnums map[string]bool) map[string]bool {
-	maps.DeleteFunc(restNumericEnums, func(k string, v bool) bool {
-		return !v
-	})
-	return restNumericEnums
+	return map[string]bool{"all": true}
 }
