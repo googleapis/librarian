@@ -95,14 +95,11 @@ func findBuild(googleapisDir string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() {
-			return nil
-		}
-		if d.Name() != "BUILD.bazel" {
+		if d.IsDir() || d.Name() != "BUILD.bazel" {
 			return nil
 		}
 
-		res = append(res, strings.TrimPrefix(path, "googleapisDir/"))
+		res = append(res, strings.TrimPrefix(path, googleapisDir+"/"))
 		return nil
 	})
 	if err != nil {
