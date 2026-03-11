@@ -27,7 +27,7 @@ import (
 // in keep does not exist.
 func checkAndClean(dir string, keep []string) error {
 	keepSet, err := check(dir, keep)
-	if err != nil {
+	if err != nil || keepSet == nil {
 		return err
 	}
 	return clean(dir, keepSet)
