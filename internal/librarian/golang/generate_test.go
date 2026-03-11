@@ -963,7 +963,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			want: []string{
 				"go-gapic-package=cloud.google.com/go/bigquery/v2/apiv2;bigquery",
 				"metadata",
-				"rest-numeric-enums",
 				"F_wrapper_types_for_page_size",
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"transport=grpc+rest",
