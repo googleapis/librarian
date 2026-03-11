@@ -52,8 +52,6 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return nil
 	}
 
-	// Priority 1: Explicit Identification
-	// Matches google.api.resource_reference annotations.
 	target, err := identifyExplicitTarget(method, binding)
 	if err != nil {
 		return err
@@ -63,10 +61,9 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return nil
 	}
 
-	// Priority 2: Heuristic Identification
 	// Uses path segment patterns to guess the resource.
 	if enableHeuristics {
-		target, err = identifyHeuristicTarget(method, binding, vocabulary)
+		target, err := identifyHeuristicTarget(method, binding, vocabulary)
 		if err != nil {
 			return err
 		}

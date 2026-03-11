@@ -419,6 +419,7 @@ type pathBindingAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplate      string
 	ResourceNameArgs          []string
+	HasResourceNameArgs       bool
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -1635,9 +1636,11 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 					}
 					bAnn.ResourceNameTemplate = tmpl
 					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+					bAnn.HasResourceNameArgs = len(bAnn.ResourceNameArgs) > 0
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
+					bAnn.HasResourceNameArgs = false
 				}
 			}
 		}

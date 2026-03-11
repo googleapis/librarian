@@ -384,6 +384,7 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 					PathInfo: &PathInfo{
 						Bindings: []*PathBinding{{PathTemplate: p}},
 					},
+					Service: model.Services[0],
 				}
 				model.Services[0].Methods = append(model.Services[0].Methods, m)
 			}

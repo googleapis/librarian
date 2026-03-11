@@ -122,6 +122,27 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{PathInfo.Codec.IsIdempotent}},
             {{/HasAutoPopulatedFields}}
         );
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        let options = {
+            {{#Codec.HasResourceNameFields}}
+            let resource_name = Option::<&String>::None
+                {{#Codec.ResourceNameFields}}
+                .or({{{Accessor}}})
+                {{/Codec.ResourceNameFields}};
+            if let Some(rn) = resource_name {
+                use google_cloud_gax::options::internal::ResourceName;
+                let full_resource_name = format!("//{{DefaultHost}}/{}", rn);
+                options.insert_extension(ResourceName(full_resource_name))
+            } else {
+                options
+            }
+            {{/Codec.HasResourceNameFields}}
+            {{^Codec.HasResourceNameFields}}
+            options
+            {{/Codec.HasResourceNameFields}}
+        };
+        {{/Codec.DetailedTracingAttributes}}
         let extensions = {
             let mut e = Extensions::new();
             e.insert(GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));
