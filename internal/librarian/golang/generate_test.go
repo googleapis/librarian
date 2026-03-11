@@ -987,6 +987,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"metadata",
 				"F_wrapper_types_for_page_size",
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"release-level=ga",
 			},
