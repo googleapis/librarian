@@ -50,13 +50,17 @@ func tagCommand() *cli.Command {
 				Name:  "create-release-tag",
 				Usage: "whether to create a tag of the form release-{PR number}",
 			},
+			&cli.StringFlag{
+				Name:  "push-remote",
+				Usage: "the name of the remote to push tags to, after tagging locally",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}
-			return tag(ctx, cfg, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
+			return tag(ctx, cfg, cmd.String("release-commit"), cmd.Bool("create-release-tag"), cmd.String("push-remote"))
 		},
 	}
 }
@@ -64,8 +68,10 @@ func tagCommand() *cli.Command {
 // tag implements the tag command. It is provided with the configuration
 // at HEAD, just to find the git executable to use, after which it finds the
 // release commit to publish (unless already specified). The configuration at
-// the release commit is used for all further operations.
-func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createReleaseTag bool) error {
+// the release commit is used for all further operations. If pushRemote is not
+// empty, the tags are pushed to the specified remote after all tags have been
+// created locally.
+func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createReleaseTag bool, pushRemote string) error {
 	gitExe := "git"
 	if cfg.Release != nil {
 		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
@@ -109,6 +115,8 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 		return fmt.Errorf("error tagging %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
 	}
 
+	allTags := []string{}
+
 	// If we need to create a release tag, do that first - in case we can't
 	// determine the tag name.
 	if createReleaseTag {
@@ -125,6 +133,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
+		allTags = append(allTags, tagName)
 	}
 
 	tagFormat := releaseCommitCfg.Default.TagFormat
@@ -137,6 +146,12 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
+		}
+		allTags = append(allTags, tagName)
+	}
+	if pushRemote != "" {
+		if err := git.PushTags(ctx, gitExe, pushRemote, allTags); err != nil {
+			return err
 		}
 	}
 	return nil

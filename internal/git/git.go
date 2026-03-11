@@ -185,3 +185,15 @@ func GetCommitSubject(ctx context.Context, gitExe, revision string) (string, err
 	}
 	return strings.TrimSuffix(output, "\n"), nil
 }
+
+// PushTags pushs the given tags from the local repository to the specified
+// remote.
+func PushTags(ctx context.Context, gitExe, remote string, tags []string) error {
+	args := []string{
+		"push",
+		remote,
+		"tag",
+	}
+	args = append(args, tags...)
+	return command.Run(ctx, gitExe, args...)
+}
