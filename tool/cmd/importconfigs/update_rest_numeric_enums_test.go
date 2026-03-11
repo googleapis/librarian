@@ -15,6 +15,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -211,37 +212,36 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 }
 
 func TestRunUpdateRestNumericEnums_Error(t *testing.T) {
-	tmpDir := t.TempDir()
-	googleapisDir := filepath.Join(tmpDir, "googleapis")
-
 	for _, test := range []struct {
-		name      string
-		apiGo     string
-		apiGoPath string
+		name          string
+		sdkYaml       string
+		googleapisDir string
+		setup         func(*testing.T, string)
+		wantErr       error
 	}{
 		{
-			name:      "invalid go file",
-			apiGo:     "invalid go code",
-			apiGoPath: filepath.Join(tmpDir, "invalid.go"),
+			name:    "invalid yaml file",
+			sdkYaml: "non-existent.yaml",
+			wantErr: os.ErrNotExist,
 		},
 		{
-			name:      "missing APIs variable",
-			apiGo:     "package foo\nvar Other = 1",
-			apiGoPath: filepath.Join(tmpDir, "missing_apis.go"),
-		},
-		{
-			name:      "non-existent apiGoPath",
-			apiGoPath: filepath.Join(tmpDir, "non_existent.go"),
+			name:    "invalid googleapis dir",
+			sdkYaml: filepath.Join(t.TempDir(), "empty.yaml"),
+			setup: func(t *testing.T, path string) {
+				if err := os.WriteFile(path, []byte(""), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.apiGo != "" {
-				if err := os.WriteFile(test.apiGoPath, []byte(test.apiGo), 0644); err != nil {
-					t.Fatal(err)
-				}
+			if test.setup != nil {
+				test.setup(t, test.sdkYaml)
 			}
-			if err := runUpdateRestNumericEnums(test.apiGoPath, googleapisDir); err == nil {
-				t.Error("runUpdateRestNumericEnums() error = nil, want error")
+			err := runUpdateRestNumericEnums(test.sdkYaml, test.googleapisDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
