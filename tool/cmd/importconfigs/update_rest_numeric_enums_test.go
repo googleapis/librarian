@@ -17,10 +17,12 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestSimplifyRestNumericEnums(t *testing.T) {
@@ -65,204 +67,61 @@ func TestSimplifyRestNumericEnums(t *testing.T) {
 
 func TestRunUpdateRestNumericEnums(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		apiGo      string
-		buildBazel string
-		want       string
+		name          string
+		original      []*serviceconfig.API
+		googleapisDir string
+		want          []*serviceconfig.API
 	}{
 		{
-			name: "add new no rest numeric enums",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-			buildBazel: `
-go_gapic_library(
-    name = "google-cloud-foo-v1-go",
-    rest_numeric_enums = False,
-)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangGo: true}},
-}
-`,
+			name:          "add cloud api",
+			googleapisDir: "testdata/test-update-rne/add-cloud-api",
+			original: []*serviceconfig.API{
+				{
+					Path: "google/cloud/servicemanager/v1",
+					Transports: map[string]serviceconfig.Transport{
+						config.LanguageAll: serviceconfig.GRPC,
+					},
+				},
+			},
+			want: []*serviceconfig.API{
+				{
+					Path: "google/cloud/servicemanager/v1",
+					Transports: map[string]serviceconfig.Transport{
+						config.LanguageAll: serviceconfig.GRPC,
+					},
+				},
+				{
+					Languages: []string{
+						config.LanguageDart,
+						config.LanguageGo,
+						config.LanguageJava,
+						config.LanguagePython,
+						config.LanguageRust,
+					},
+					Path: "google/cloud/workstations/v1",
+					NoRESTNumericEnums: map[string]bool{
+						"all": true,
+					},
+				},
+			},
 		},
-		{
-			name: "update existing no rest numeric enums",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangAll: true}},
-}
-`,
-			buildBazel: `
-php_gapic_library(
-    name = "google-cloud-foo-v1-php",
-    rest_numeric_enums = False,
-)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangPhp: true}},
-}
-`,
-		},
-		{
-			name: "simplify all languages same (False)",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-			buildBazel: `
-csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = False)
-go_gapic_library(name = "foo-go", rest_numeric_enums = False)
-java_gapic_library(name = "foo-java", rest_numeric_enums = False)
-nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = False)
-php_gapic_library(name = "foo-php", rest_numeric_enums = False)
-py_gapic_library(name = "foo-python", rest_numeric_enums = False)
-ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = False)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangAll: true}},
-}
-`,
-		},
-		{
-			name: "remove if all languages have default",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangAll: true}},
-}
-`,
-			buildBazel: `
-csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
-go_gapic_library(name = "foo-go", rest_numeric_enums = True)
-java_gapic_library(name = "foo-java", rest_numeric_enums = True)
-nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
-php_gapic_library(name = "foo-php", rest_numeric_enums = True)
-py_gapic_library(name = "foo-python", rest_numeric_enums = True)
-ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-		},
-		{
-			name: "remove if BUILD.bazel is missing",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangAll: true}},
-}
-`,
-			buildBazel: "", // No file will be created
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-		},
-		{
-			name: "remains same if all languages have default",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-			buildBazel: `
-csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
-go_gapic_library(name = "foo-go", rest_numeric_enums = True)
-java_gapic_library(name = "foo-java")
-nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
-php_gapic_library(name = "foo-php", rest_numeric_enums = True)
-py_gapic_library(name = "foo-python")
-ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-		},
-		{
-			name: "all present, different values",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1"},
-}
-`,
-			buildBazel: `
-csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = True)
-go_gapic_library(name = "foo-go", rest_numeric_enums = False)
-java_gapic_library(name = "foo-java")
-nodejs_gapic_library(name = "foo-nodejs", rest_numeric_enums = True)
-php_gapic_library(name = "foo-php", rest_numeric_enums = False)
-py_gapic_library(name = "foo-python")
-ruby_cloud_gapic_library(name = "foo-ruby", rest_numeric_enums = True)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangGo: true, LangPhp: true}},
-}
-`,
-		},
-		{
-			name: "merge",
-			apiGo: `package serviceconfig
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangCsharp: true}},
-}
-`,
-			buildBazel: `
-csharp_gapic_library(name = "foo-csharp", rest_numeric_enums = False)
-go_gapic_library(name = "foo-go", rest_numeric_enums = False)
-`,
-			want: `package serviceconfig
-
-var APIs = []API{
-	{Path: "google/cloud/foo/v1", NoRESTNumericEnums: map[string]bool{LangCsharp: true, LangGo: true}},
-}
-`},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			apiGoPath := filepath.Join(tmpDir, "api.go")
-			if err := os.WriteFile(apiGoPath, []byte(test.apiGo), 0644); err != nil {
+			sdkYaml := filepath.Join(tmpDir, "sdk.yaml")
+			if err := yaml.Write(sdkYaml, test.original); err != nil {
 				t.Fatal(err)
 			}
 
-			googleapisDir := filepath.Join(tmpDir, "googleapis")
-			apiPath := "google/cloud/foo/v1"
-			if test.buildBazel != "" {
-				buildBazelDir := filepath.Join(googleapisDir, apiPath)
-				if err := os.MkdirAll(buildBazelDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(buildBazelDir, "BUILD.bazel"), []byte(test.buildBazel), 0644); err != nil {
-					t.Fatal(err)
-				}
+			if err := runUpdateRestNumericEnums(sdkYaml, test.googleapisDir); err != nil {
+				t.Fatal(err)
 			}
-
-			if err := runUpdateRestNumericEnums(apiGoPath, googleapisDir); err != nil {
-				t.Fatalf("runUpdateRestNumericEnums() error = %v", err)
-			}
-			got, err := os.ReadFile(apiGoPath)
+			got, err := yaml.Read[[]*serviceconfig.API](sdkYaml)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(strings.TrimSpace(test.want), strings.TrimSpace(string(got))); diff != "" {
+			if diff := cmp.Diff(test.want, *got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

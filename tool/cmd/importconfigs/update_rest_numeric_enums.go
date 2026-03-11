@@ -87,7 +87,7 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 				config.LanguagePython,
 				config.LanguageRust,
 			},
-			Path:               path,
+			Path:               strings.TrimSuffix(path, "/BUILD.bazel"),
 			NoRESTNumericEnums: noRESTNumericEnums,
 		})
 	}
