@@ -67,8 +67,6 @@ func generateLibrary(ctx context.Context, cfg *config.Config, library *config.Li
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
-	// TODO(https://github.com/googleapis/librarian/issues/4218): generate README.md
 	return postProcessLibrary(cfg, library, outdir, googleapisDir)
 }
 

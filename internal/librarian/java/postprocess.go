@@ -222,6 +222,8 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 // postProcessLibrary coordinates all library-level post-processing tasks,
 // such as generating .repo-metadata.json.
 func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
+	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
+	// TODO(https://github.com/googleapis/librarian/issues/4218): generate README.md
 	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to derive repo metadata: %w", err)
