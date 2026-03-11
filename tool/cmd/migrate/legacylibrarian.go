@@ -165,6 +165,10 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 }
 
 func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
+	return fetchGoogleapisWithCommit(ctx, fetch.DefaultBranchMaster)
+}
+
+func fetchGoogleapisWithCommit(ctx context.Context, commitish string) (*config.Source, error) {
 	endpoint := &fetch.Endpoints{
 		API:      "https://api.github.com",
 		Download: "https://github.com",
@@ -172,20 +176,20 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 	repo := &fetch.Repo{
 		Org:    "googleapis",
 		Repo:   "googleapis",
-		Branch: fetch.DefaultBranchMaster,
+		Branch: commitish,
 	}
-	latestCommit, sha256, err := fetch.LatestCommitAndChecksum(endpoint, repo)
+	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoint, repo)
 	if err != nil {
 		return nil, err
 	}
 
-	dir, err := fetch.RepoDir(ctx, googleapisRepo, latestCommit, sha256)
+	dir, err := fetch.RepoDir(ctx, googleapisRepo, commit, sha256)
 	if err != nil {
 		return nil, err
 	}
 
 	return &config.Source{
-		Commit: latestCommit,
+		Commit: commit,
 		SHA256: sha256,
 		Dir:    dir,
 	}, nil
