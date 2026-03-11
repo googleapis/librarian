@@ -139,6 +139,28 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "no change cloud api",
+			googleapisDir: "testdata/test-update-rne/no-change-cloud-api",
+			original: []*serviceconfig.API{
+				{
+					Path: "google/cloud/workstations/v1",
+					Transports: map[string]serviceconfig.Transport{
+						config.LanguageAll: serviceconfig.GRPC,
+					},
+				},
+			},
+			// No change because all languages have rest_numeric_enums,
+			// which is the default value.
+			want: []*serviceconfig.API{
+				{
+					Path: "google/cloud/workstations/v1",
+					Transports: map[string]serviceconfig.Transport{
+						config.LanguageAll: serviceconfig.GRPC,
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
