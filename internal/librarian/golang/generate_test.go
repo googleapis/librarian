@@ -879,6 +879,28 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
+			name:    "no rest numeric enums",
+			apiPath: "google/cloud/bigquery/v2",
+			library: &config.Library{
+				Name:    "bigquery/v2",
+				Version: "1.2.3",
+			},
+			goAPI: &config.GoAPI{
+				ClientPackage: "bigquery",
+				ImportPath:    "bigquery/v2/apiv2",
+				Path:          "google/cloud/bigquery/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/bigquery/v2/apiv2;bigquery",
+				"metadata",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
 			name:    "beta release level from version",
 			apiPath: "google/cloud/secretmanager/v1",
 			library: &config.Library{
