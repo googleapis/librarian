@@ -556,3 +556,37 @@ func TestPrepareLibrary(t *testing.T) {
 		})
 	}
 }
+
+func TestCanDeriveAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		want     bool
+	}{
+		{
+			name:     "dart",
+			language: config.LanguageDart,
+			want:     true,
+		},
+		{
+			name:     "go",
+			language: config.LanguageGo,
+		},
+		{
+			name:     "python",
+			language: config.LanguagePython,
+		},
+		{
+			name:     "rust",
+			language: config.LanguageRust,
+			want:     true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := canDeriveAPIPath(test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

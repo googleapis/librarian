@@ -156,6 +156,26 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
+			name: "library without Library.Go field for overrides",
+			initialFiles: map[string]string{
+				"internal/generated/snippets/secretmanager/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"internal/generated/snippets/secretmanager/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
+		{
 			name: "bump irregular version",
 			initialFiles: map[string]string{
 				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.1.0-rc1\"\n",
@@ -164,6 +184,24 @@ func TestBump(t *testing.T) {
 			version: "0.2.0",
 			wantFiles: map[string]string{
 				"test-lib/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
+			},
+		},
+		{
+			name: "ignore non existent snippet directory",
+			initialFiles: map[string]string{
+				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
+			},
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			version: "0.2.0",
+			wantFiles: map[string]string{
+				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.2.0\"\n",
 			},
 		},
 	} {
@@ -260,20 +298,17 @@ func TestBump_Error(t *testing.T) {
 			wantErr: os.ErrPermission,
 		},
 		{
-			name: "no go api",
-			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
-			},
+			name: "fill error",
 			library: &config.Library{
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
-						Path: "google/example/v1",
+						Path: "google/example/common",
 					},
 				},
 			},
 			version: "0.2.0",
-			wantErr: errGoAPINotFound,
+			wantErr: errImportPathNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

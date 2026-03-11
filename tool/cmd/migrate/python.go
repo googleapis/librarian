@@ -60,7 +60,10 @@ var pythonDefaultCommonGAPICPaths = []string{
 	"docs/summary_overview.md",
 }
 
-const pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
+const (
+	pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType
+	pythonTagFormat          = "{name}: v{version}"
+)
 
 // pythonGapicInfo contains information about the py_gapic_library target
 // from BUILD.bazel.
@@ -92,9 +95,6 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		}
 		if len(libState.APIs) > 0 {
 			library.APIs = toAPIs(libState.APIs)
-		} else {
-			library.Output = filepath.Join("packages", library.Name)
-			library.Veneer = true
 		}
 		// Convert "preserve" regexes into "keep" paths, sorted for ease
 		// of testing.

@@ -75,7 +75,7 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 		if err != nil {
 			return nil, err
 		}
-		_, sources, err := LoadSources(ctx, cfg)
+		sources, err := LoadSources(ctx, cfg.Sources)
 		if err != nil {
 			return nil, err
 		}
