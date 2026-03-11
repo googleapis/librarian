@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -237,7 +236,7 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 // deriveRepoMetadata constructs the repoMetadata for a Java library using
 // information from the primary service configuration and library-level overrides.
 func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repoMetadata, error) {
-	sortAPIs(library.APIs)
+	serviceconfig.SortAPIs(library.APIs)
 	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find primary API for path %s: %w", library.APIs[0].Path, err)
@@ -334,57 +333,4 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.Transport = "both"
 	}
 	return metadata, nil
-}
-
-// sortAPIs sorts the APIs in a library to ensure the primary version is first.
-// The sorting logic matches hermetic_build: stable versions come before
-// unstable ones, and within those groups, higher versions come before lower ones.
-func sortAPIs(apis []*config.API) {
-	sort.Slice(apis, func(i, j int) bool {
-		vi := serviceconfig.ExtractVersion(apis[i].Path)
-		vj := serviceconfig.ExtractVersion(apis[j].Path)
-		// Case 1: if both of the configs don't have a version in proto_path,
-		// the one with lower depth is smaller.
-		if vi == "" && vj == "" {
-			return strings.Count(apis[i].Path, "/") < strings.Count(apis[j].Path, "/")
-		}
-		// Case 2: if only one config has a version in proto_path, it is smaller
-		// than the other one.
-		if vi != "" && vj == "" {
-			return true
-		}
-		if vi == "" && vj != "" {
-			return false
-		}
-
-		si, sj := isStable(vi), isStable(vj)
-		// Case 3: if only one config has a stable version in proto_path, it is
-		// smaller than the other one.
-		if si && !sj {
-			return true
-		}
-		if !si && sj {
-			return false
-		}
-		// Case 4: if two configs have a non-stable version in proto_path,
-		// the one with higher version is smaller.
-		if !si && !sj {
-			return vi > vj
-		}
-		// Two configs both have a stable version in proto_path.
-		// Case 5: if two configs have different depth in proto_path, the one
-		// with lower depth is smaller.
-		di, dj := strings.Count(apis[i].Path, "/"), strings.Count(apis[j].Path, "/")
-		if di != dj {
-			return di < dj
-		}
-		// Case 6: the config with higher stable version is smaller.
-		ni, _ := strconv.Atoi(strings.TrimPrefix(vi, "v"))
-		nj, _ := strconv.Atoi(strings.TrimPrefix(vj, "v"))
-		return ni > nj
-	})
-}
-
-func isStable(v string) bool {
-	return v != "" && !strings.Contains(v, "alpha") && !strings.Contains(v, "beta")
 }

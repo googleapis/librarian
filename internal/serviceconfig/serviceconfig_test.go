@@ -393,3 +393,78 @@ func TestValidateAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestSortAPIs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		apis []*config.API
+		want []string
+	}{
+		{
+			name: "stable before unstable",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1beta1"},
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1",
+				"google/cloud/secretmanager/v1beta1",
+			},
+		},
+		{
+			name: "higher stable version before lower",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1"},
+				{Path: "google/cloud/secretmanager/v2"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v2",
+				"google/cloud/secretmanager/v1",
+			},
+		},
+		{
+			name: "higher unstable version before lower (string comparison)",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1beta2"},
+				{Path: "google/cloud/secretmanager/v1beta1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1beta2",
+				"google/cloud/secretmanager/v1beta1",
+			},
+		},
+		{
+			name: "no version (lower depth before higher)",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager/v1/subpath"},
+				{Path: "google/cloud/secretmanager"},
+			},
+			want: []string{
+				"google/cloud/secretmanager",
+				"google/cloud/secretmanager/v1/subpath",
+			},
+		},
+		{
+			name: "version before no version",
+			apis: []*config.API{
+				{Path: "google/cloud/secretmanager"},
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			want: []string{
+				"google/cloud/secretmanager/v1",
+				"google/cloud/secretmanager",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			SortAPIs(test.apis)
+			var got []string
+			for _, api := range test.apis {
+				got = append(got, api.Path)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
