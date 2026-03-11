@@ -350,8 +350,7 @@ func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 		!info.DisableGAPIC &&
 		!info.HasDiregapic &&
 		info.ImportPath == "" &&
-		!info.NoMetadata &&
-		!info.NoRESTNumericEnums
+		!info.NoMetadata
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {

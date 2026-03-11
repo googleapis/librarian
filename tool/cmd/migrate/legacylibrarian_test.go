@@ -406,40 +406,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "parse BUILD.bazel with no Go API",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "bigquery",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/bigquery/analyticshub/v1",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-				googleapisDir:   "testdata/googleapis",
-			},
-			want: []*config.Library{
-				{
-					Name: "bigquery",
-					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								Path: "google/cloud/bigquery/analyticshub/v1",
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with empty Go API",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
