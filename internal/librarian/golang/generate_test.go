@@ -705,7 +705,7 @@ func TestHasRESTNumericEnums(t *testing.T) {
 			name: "all languages do not have REST enums",
 			sc: &serviceconfig.API{
 				NoRESTNumericEnums: map[string]bool{
-					"all": true,
+					config.LanguageAll: true,
 				},
 			},
 		},
@@ -713,7 +713,7 @@ func TestHasRESTNumericEnums(t *testing.T) {
 			name: "go language do not have REST enums",
 			sc: &serviceconfig.API{
 				NoRESTNumericEnums: map[string]bool{
-					"go": true,
+					config.LanguageGo: true,
 				},
 			},
 		},
@@ -721,7 +721,7 @@ func TestHasRESTNumericEnums(t *testing.T) {
 			name: "another language do not have REST enums",
 			sc: &serviceconfig.API{
 				NoRESTNumericEnums: map[string]bool{
-					"python": true,
+					config.LanguagePython: true,
 				},
 			},
 			want: true,
