@@ -40,7 +40,9 @@ jobs:
       - name: Verify tools
         run: |
           protoc --version
-          protoc-gen-java_grpc --version || true
           google-java-format --version
+          # Verify plugins are executable (they don't support --version)
+          test -x "$(which protoc-gen-java_grpc)"
+          test -x "$(which protoc-gen-java_gapic)"
       - name: Run internal/librarian/java tests
         run: go test -race ./internal/librarian/java
