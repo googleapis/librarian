@@ -839,7 +839,7 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
-				NoRESTNumericEnums: true,
+				NoMetadata: true,
 			},
 		},
 		{
@@ -847,9 +847,8 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/custom-import-path",
 			buildPath:     "google/longrunning",
 			want: &goGAPICInfo{
-				ClientPackageName:  "longrunning",
-				ImportPath:         "longrunning/autogen",
-				NoRESTNumericEnums: true,
+				ClientPackageName: "longrunning",
+				ImportPath:        "longrunning/autogen",
 			},
 		},
 		{
