@@ -66,7 +66,8 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 			// No need to change the default value.
 			continue
 		}
-		api, ok := apiMap[path]
+		buildDir := filepath.Dir(path)
+		api, ok := apiMap[buildDir]
 		if ok {
 			// Add the NoRESTNumericEnums to an existing API, regardless a cloud API or not.
 			api.NoRESTNumericEnums = noRESTNumericEnums
@@ -74,7 +75,7 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 		}
 
 		// Ignore a non-cloud API that is not in sdk.yaml since it is blocked.
-		if !strings.HasPrefix(path, "google/cloud") {
+		if !strings.HasPrefix(buildDir, "google/cloud") {
 			continue
 		}
 		// Add the NoRESTNumericEnums to a cloud API.
@@ -87,7 +88,7 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 				config.LanguagePython,
 				config.LanguageRust,
 			},
-			Path:               strings.TrimSuffix(path, "/BUILD.bazel"),
+			Path:               buildDir,
 			NoRESTNumericEnums: noRESTNumericEnums,
 		})
 	}
