@@ -289,8 +289,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			name: "grpc+rest transport is default and not passed",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
-				Name:      "google-cloud-secretmanager",
-				Transport: "grpc+rest",
+				Name: "google-cloud-secretmanager",
 			},
 			want: []string{
 				"gapic-generator-typescript",
