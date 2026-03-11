@@ -879,29 +879,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
-			name:    "no rest numeric enums",
-			apiPath: "google/cloud/secretmanager/v1",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.3",
-			},
-			goAPI: &config.GoAPI{
-				ClientPackage:      "secretmanager",
-				ImportPath:         "secretmanager/apiv1",
-				NoRESTNumericEnums: true,
-				Path:               "google/cloud/secretmanager/v1",
-			},
-			googleapisDir: googleapisDir,
-			want: []string{
-				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
-				"metadata",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc+rest",
-				"release-level=ga",
-			},
-		},
-		{
 			name:    "beta release level from version",
 			apiPath: "google/cloud/secretmanager/v1",
 			library: &config.Library{
@@ -1024,11 +1001,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientPackage:      "compute",
-				ImportPath:         "compute/apiv1",
-				DIREGAPIC:          true,
-				NoRESTNumericEnums: true,
-				Path:               "google/cloud/compute/v1",
+				ClientPackage: "compute",
+				ImportPath:    "compute/apiv1",
+				DIREGAPIC:     true,
+				Path:          "google/cloud/compute/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
