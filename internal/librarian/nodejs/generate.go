@@ -57,7 +57,6 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-
 	if err := runPostProcessor(ctx, library, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}

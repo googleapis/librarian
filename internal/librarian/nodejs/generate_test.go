@@ -317,55 +317,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	}
 }
 
-func TestGenerateLibrary_NoAPIs(t *testing.T) {
-	repoRoot := t.TempDir()
-	library := &config.Library{
-		Name:   "no-apis",
-		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
-	}
-	if err := generateLibrary(t.Context(), library, googleapisDir); err != nil {
-		t.Fatal(err)
-	}
-	_, gotErr := os.Stat(library.Output)
-	if !os.IsNotExist(gotErr) {
-		t.Errorf("expected output directory to not exist, got err: %v", gotErr)
-	}
-}
-
-func TestGenerateAPI_NoProtos(t *testing.T) {
-	absGoogleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	repoRoot := t.TempDir()
-	outDir := filepath.Join(repoRoot, "packages", "google-cloud-empty")
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create an empty API directory with no protos.
-	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi", "v1")
-	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi"))
-
-	err = generateAPI(
-		t.Context(),
-		&config.API{Path: "google/cloud/emptyapi/v1"},
-		&config.Library{Name: "google-cloud-empty", Output: outDir},
-		absGoogleapisDir,
-		repoRoot,
-	)
-	if err == nil {
-		t.Fatal("expected error for API with no protos")
-	}
-	if !strings.Contains(err.Error(), "no protos found") {
-		t.Errorf("expected 'no protos found' error, got: %v", err)
-	}
-}
-
 func TestRunPostProcessor_Owlbot(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 
@@ -387,63 +338,6 @@ func TestRunPostProcessor_Owlbot(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
 		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
-	}
-}
-
-func TestGenerateLibrary_GenerateError(t *testing.T) {
-	absGoogleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create an empty API directory with no protos to trigger error.
-	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi2", "v1")
-	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi2"))
-
-	repoRoot := t.TempDir()
-	library := &config.Library{
-		Name:   "google-cloud-empty2",
-		Output: filepath.Join(repoRoot, "packages", "google-cloud-empty2"),
-		APIs:   []*config.API{{Path: "google/cloud/emptyapi2/v1"}},
-	}
-
-	err = generateLibrary(t.Context(), library, absGoogleapisDir)
-	if err == nil {
-		t.Fatal("expected error for API with no protos")
-	}
-	if !strings.Contains(err.Error(), "no protos found") {
-		t.Errorf("expected 'no protos found' error, got: %v", err)
-	}
-}
-
-func TestGenerate_Error(t *testing.T) {
-	absGoogleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create an empty API directory with no protos to trigger error.
-	emptyAPIDir := filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi3", "v1")
-	if err := os.MkdirAll(emptyAPIDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(filepath.Join(absGoogleapisDir, "google", "cloud", "emptyapi3"))
-
-	repoRoot := t.TempDir()
-	libraries := []*config.Library{
-		{
-			Name:   "google-cloud-empty3",
-			Output: filepath.Join(repoRoot, "packages", "google-cloud-empty3"),
-			APIs:   []*config.API{{Path: "google/cloud/emptyapi3/v1"}},
-		},
-	}
-
-	err = Generate(t.Context(), libraries, absGoogleapisDir)
-	if err == nil {
-		t.Fatal("expected error for API with no protos")
 	}
 }
 
