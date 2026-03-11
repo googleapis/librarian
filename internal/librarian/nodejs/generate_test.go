@@ -16,9 +16,7 @@ package nodejs
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -132,11 +130,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	protocPath, err := exec.LookPath("protoc")
-	if err != nil {
-		t.Skipf("skipping test: protoc not found in PATH")
-	}
-
 	for _, test := range []struct {
 		name    string
 		api     *config.API
@@ -151,10 +144,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
+				"--output_dir", "staging",
 				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/secretmanager",
@@ -172,10 +163,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
+				"--output_dir", "staging",
 				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/access-approval",
@@ -190,10 +179,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
+				"--output_dir", "staging",
 				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/secretmanager",
@@ -215,10 +202,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 			want: []string{
 				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
 				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
+				"--output_dir", "staging",
 				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/translate",
@@ -228,79 +213,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--handwritten-layer",
 				"--main-service", "translate",
 				"--mixins", "none",
-			},
-		},
-		{
-			name: "no grpc config",
-			api:  &config.API{Path: "google/cloud/apigeeconnect/v1"},
-			library: &config.Library{
-				Name: "google-cloud-apigeeconnect",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
-				"--package-name", "@google-cloud/apigeeconnect",
-				"--metadata",
-			},
-		},
-		{
-			name: "no grpc config and no service config",
-			api:  &config.API{Path: "google/cloud/fakefoo/v1"},
-			library: &config.Library{
-				Name: "google-cloud-fakefoo",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--package-name", "@google-cloud/fakefoo",
-				"--metadata",
-			},
-		},
-		{
-			name: "metadata in extra params is skipped",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Nodejs: &config.NodejsPackage{
-					ExtraProtocParameters: []string{"metadata", "some-other-param"},
-				},
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-				"--some-other-param",
-			},
-		},
-		{
-			name: "grpc+rest transport is default and not passed",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
 			},
 		},
 	} {
@@ -316,27 +228,18 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	}
 }
 
-func TestRunPostProcessor_Owlbot(t *testing.T) {
-	testhelper.RequireCommand(t, "python3")
-
+func TestGenerateLibrary_NoAPIs(t *testing.T) {
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	library := &config.Library{
+		Name:   "no-apis",
+		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
+	}
+	if err := generateLibrary(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
-
-	// Create owlbot.py that writes a marker file.
-	owlbotScript := filepath.Join(outDir, "owlbot.py")
-	if err := os.WriteFile(owlbotScript, []byte("import pathlib\npathlib.Path('owlbot-ran.txt').write_text('yes')\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
-		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
+	_, gotErr := os.Stat(library.Output)
+	if !os.IsNotExist(gotErr) {
+		t.Errorf("expected output directory to not exist, got err: %v", gotErr)
 	}
 }
 
@@ -413,153 +316,6 @@ func TestRunPostProcessor(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 		t.Error("expected owl-bot-staging to be removed after post-processing")
-	}
-}
-
-func TestRunPostProcessor_CustomScripts(t *testing.T) {
-	testhelper.RequireCommand(t, "gapic-node-processing")
-	testhelper.RequireCommand(t, "compileProtos")
-	testhelper.RequireCommand(t, "node")
-	testhelper.RequireCommand(t, "npx")
-
-	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-secretmanager"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create staging structure matching gapic-generator-typescript output.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
-	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(
-		filepath.Join(srcDir, "index.ts"),
-		[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
-		0644,
-	); err != nil {
-		t.Fatal(err)
-	}
-	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	protoContent := "syntax = \"proto3\";\npackage google.cloud.secretmanager.v1;\n"
-	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	librarianJS := filepath.Join(outDir, "librarian.js")
-	if err := os.WriteFile(librarianJS, []byte("const fs = require('fs');\nfs.writeFileSync('librarian-ran.txt', 'yes');\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	readmePath := filepath.Join(outDir, "README.md")
-	if err := os.WriteFile(readmePath, []byte("Some Title\n[//]: # \"partials.introduction\"\n[//]: # \"partials.body\"\nFooter"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if err := os.WriteFile(readmePartials, []byte("introduction: 'intro text'\nbody: 'body text'"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
-		t.Error("expected owl-bot-staging to be removed after post-processing")
-	}
-
-	if _, err := os.Stat(filepath.Join(outDir, "librarian-ran.txt")); err != nil {
-		t.Errorf("expected librarian.js to run and create librarian-ran.txt: %v", err)
-	}
-
-	content, err := os.ReadFile(readmePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	contentStr := string(content)
-	if !strings.Contains(contentStr, "intro text") {
-		t.Errorf("expected README.md to contain introduction, got:\n%s", contentStr)
-	}
-	if !strings.Contains(contentStr, "body text") {
-		t.Errorf("expected README.md to contain body, got:\n%s", contentStr)
-	}
-}
-
-func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "npm")
-
-	outDir := t.TempDir()
-	// Create a minimal package.json with a "fix" script.
-	if err := os.WriteFile(filepath.Join(outDir, "package.json"), []byte(`{"scripts":{"fix":"echo formatted"}}`), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:   "google-cloud-test",
-		Output: outDir,
-	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestRunPostProcessor_PreservesFiles(t *testing.T) {
-	testhelper.RequireCommand(t, "gapic-node-processing")
-	testhelper.RequireCommand(t, "compileProtos")
-
-	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create staging structure matching gapic-generator-typescript output.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
-	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create files that should be preserved across combine-library.
-	readmeContent := "# Test README"
-	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-	partialsContent := "introduction: ''\nbody: ''"
-	if err := os.WriteFile(filepath.Join(outDir, ".readme-partials.yaml"), []byte(partialsContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify preserved files still exist.
-	got, err := os.ReadFile(filepath.Join(outDir, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != readmeContent {
-		t.Errorf("README.md content = %q, want %q", string(got), readmeContent)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, ".readme-partials.yaml")); err != nil {
-		t.Errorf("expected .readme-partials.yaml to be preserved: %v", err)
 	}
 }
 

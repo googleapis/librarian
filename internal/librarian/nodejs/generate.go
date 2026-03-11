@@ -19,14 +19,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates all given libraries in sequence.
@@ -57,6 +55,7 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
+
 	if err := runPostProcessor(ctx, library, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
@@ -94,17 +93,10 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
 func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
-	protocPath, err := exec.LookPath("protoc")
-	if err != nil {
-		return nil, fmt.Errorf("failed to find protoc: %w", err)
-	}
-
 	args := []string{
 		"gapic-generator-typescript",
-		"--protoc=" + protocPath,
-		"--common-proto-path=" + googleapisDir,
 		"-I", googleapisDir,
-		"--output-dir", stagingDir,
+		"--output_dir", stagingDir,
 	}
 
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
@@ -161,41 +153,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		// Old way: use synthtool
-		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
-			return fmt.Errorf("owlbot.py failed: %w", err)
-		}
-		return nil
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
-	}
-
-	// Template generation and exclusions are handled at the generator level.
-	// Synthtool is only used for post-processing handled by standalone scripts
-	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
-	// Librarian CLI tool).
-
-	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the non-generated files it would delete, then
-	// restore them afterward.
-	preserveFiles := []string{"librarian.js", ".readme-partials.yaml", "README.md"}
-	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
-	if err != nil {
-		return fmt.Errorf("failed to create backup dir: %w", err)
-	}
-	defer os.RemoveAll(backupDir)
-	for _, name := range preserveFiles {
-		src := filepath.Join(outDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue // file doesn't exist, nothing to save
-		}
-		if err := os.Rename(src, filepath.Join(backupDir, name)); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
-		}
-	}
-
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
 	if err := command.Run(ctx, "gapic-node-processing",
 		"combine-library",
@@ -205,55 +162,8 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
-	// Restore non-generated files.
-	for _, name := range preserveFiles {
-		src := filepath.Join(backupDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		if err := os.Rename(src, filepath.Join(outDir, name)); err != nil {
-			return fmt.Errorf("failed to restore %s: %w", name, err)
-		}
-	}
-
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("compileProtos: %w", err)
-	}
-
-	// librarian.js is a custom script some libraries use for post-processing.
-	// It has nothing to do with the Librarian CLI tool.
-	librarianScript := filepath.Join(outDir, "librarian.js")
-	if _, err := os.Stat(librarianScript); err == nil {
-		if err := command.RunInDir(ctx, outDir, "node", "librarian.js"); err != nil {
-			return fmt.Errorf("librarian.js failed: %w", err)
-		}
-	}
-
-	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if _, err := os.Stat(readmePartials); err == nil {
-		type partials struct {
-			Introduction string `yaml:"introduction"`
-			Body         string `yaml:"body"`
-		}
-		p, err := yaml.Read[partials](readmePartials)
-		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
-		}
-		for name, replacement := range map[string]string{
-			"introduction": p.Introduction,
-			"body":         p.Body,
-		} {
-			if replacement == "" {
-				continue
-			}
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
-				fmt.Sprintf("--replacement-string=%s", replacement),
-			); err != nil {
-				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
-			}
-		}
 	}
 
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
