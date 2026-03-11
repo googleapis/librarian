@@ -161,6 +161,32 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "no change non-cloud api",
+			googleapisDir: "testdata/test-update-rne/no-change-non-cloud-api",
+			original: []*serviceconfig.API{
+				{
+					Languages: []string{
+						config.LanguageDart,
+						config.LanguageGo,
+						config.LanguageJava,
+					},
+					Path: "google/another-non-cloud/v1",
+				},
+			},
+			// No change because the non-cloud api is not listed in
+			// the original sdk.yaml.
+			want: []*serviceconfig.API{
+				{
+					Languages: []string{
+						config.LanguageDart,
+						config.LanguageGo,
+						config.LanguageJava,
+					},
+					Path: "google/another-non-cloud/v1",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
