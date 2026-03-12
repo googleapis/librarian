@@ -268,6 +268,7 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 // RunGit runs git with the specified arguments, aborting the test on any error.
 // The process output is returned on success.
 func RunGit(t *testing.T, args ...string) string {
+	t.Helper()
 	output, err := command.Output(t.Context(), "git", args...)
 	if err != nil {
 		t.Fatal(err)
