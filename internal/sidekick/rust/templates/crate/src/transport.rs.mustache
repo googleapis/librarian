@@ -155,11 +155,11 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
             {{#Codec.HasResourceNameGeneration}}
-            Some(builder.map(|b| (b, Method::{{Verb}}, path_template, resource_name)))
+            Some(builder.map(|b| (b, Method::{{Verb}}, _path_template, resource_name)))
             {{/Codec.HasResourceNameGeneration}}
             {{^Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}
-            Some(builder.map(|b| (b, Method::{{Verb}}, path_template)))
+            Some(builder.map(|b| (b, Method::{{Verb}}, _path_template)))
             {{/Codec.DetailedTracingAttributes}}
             {{^Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}})))
