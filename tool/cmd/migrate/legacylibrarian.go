@@ -288,6 +288,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				library.Go = goModule
 			}
 		}
+		mod, ok := nestedModules[id]
+		if ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.NestedModule = mod
+		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			info, err := parseGoBazel(input.googleapisDir, api.Path)
