@@ -183,21 +183,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         #[cfg(google_cloud_unstable_tracing)]
         let options = {
             use google_cloud_gax::options::internal::{RequestOptionsExt, PathTemplate};
-            {{#Codec.HasResourceNameFields}}
-            let options = {
-                let resource_name = Option::<&String>::None
-                    {{#Codec.ResourceNameFields}}
-                    .or({{{Accessor}}})
-                    {{/Codec.ResourceNameFields}};
-                if let Some(rn) = resource_name {
-                    use google_cloud_gax::options::internal::ResourceName;
-                    let full_resource_name = format!("//{{DefaultHost}}/{}", rn);
-                    options.insert_extension(ResourceName(full_resource_name))
-                } else {
-                    options
-                }
-            };
-            {{/Codec.HasResourceNameFields}}
             options.insert_extension(PathTemplate(_path_template))
         };
         {{/Codec.DetailedTracingAttributes}}
