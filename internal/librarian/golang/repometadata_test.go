@@ -240,66 +240,56 @@ func TestGoDistributionName(t *testing.T) {
 
 func TestMetadataReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		api     *serviceconfig.API
-		library *config.Library
-		want    string
+		name  string
+		api   *serviceconfig.API
+		goAPI *config.GoAPI
+		want  string
 	}{
 		{
 			name: "stable",
 			api: &serviceconfig.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
-			library: &config.Library{
-				Version: "1.2.3",
-			},
-			want: "stable",
+			want: repoMetadataReleaseLevelStable,
 		},
 		{
-			name: "preview",
+			name: "stable",
+			api:  &serviceconfig.API{},
+			want: repoMetadataReleaseLevelStable,
+		},
+		{
+			name: "preview, alpha api path",
 			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1beta1",
+				Path: "google/cloud/secretmanager/v1alpha",
 			},
-			library: &config.Library{
-				Version: "1.2.3",
+			want: repoMetadataReleaseLevelPreview,
+		},
+		{
+			name: "preview, alpha for golang",
+			api: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
 			},
-			want: "preview",
+			want: repoMetadataReleaseLevelPreview,
+		},
+		{
+			name: "preview, beta api path",
+			api: &serviceconfig.API{
+				Path: "google/cloud/secretmanager/v1beta",
+			},
+			want: repoMetadataReleaseLevelPreview,
+		},
+		{
+			name: "preview, beta for golang",
+			api: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
+			},
+			want: repoMetadataReleaseLevelPreview,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := metadataReleaseLevel(test.api, test.library)
-			if err != nil {
-				t.Fatal(err)
-			}
+			got := metadataReleaseLevel(test.api)
 			if got != test.want {
 				t.Errorf("metadataReleaseLevel() = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestMetadataReleaseLevel_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		api     *serviceconfig.API
-		library *config.Library
-		wantErr error
-	}{
-		{
-			name: "invalid version",
-			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			library: &config.Library{
-				Version: "invalid",
-			},
-			wantErr: semver.ErrInvalidVersion,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := metadataReleaseLevel(test.api, test.library)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("metadataReleaseLevel() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
