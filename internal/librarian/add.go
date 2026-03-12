@@ -41,7 +41,7 @@ func addCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
-		UsageText: "librarian add <apis...> [flags]",
+		UsageText: "librarian add <apis...>",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			apis := c.Args().Slice()
 			if len(apis) == 0 {
