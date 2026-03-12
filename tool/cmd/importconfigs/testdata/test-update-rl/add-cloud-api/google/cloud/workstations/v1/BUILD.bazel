@@ -1,0 +1,27 @@
+csharp_gapic_library(
+
+)
+
+go_gapic_library(
+    release_level = "beta",
+)
+
+java_gapic_library(
+    release_level = "ga",
+)
+
+nodejs_gapic_library(
+
+)
+
+php_gapic_library(
+
+)
+
+py_gapic_library(
+
+)
+
+ruby_cloud_gapic_library(
+
+)
