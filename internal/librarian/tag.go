@@ -153,7 +153,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 	}
 	if pushRemote != "" {
 		if err := git.PushTags(ctx, gitExe, pushRemote, allTags); err != nil {
-			return err
+			return fmt.Errorf("failed to push tags to remote %s: %w", pushRemote, err)
 		}
 	}
 	return nil
