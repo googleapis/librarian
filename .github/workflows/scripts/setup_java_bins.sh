@@ -10,16 +10,8 @@ GRPC_VERSION="1.76.2"
 GAPIC_GENERATOR_VERSION="2.66.1"
 FORMATTER_VERSION="1.25.2"
 
-# Detect OS and Architecture
-OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-if [ "$ARCH" == "x86_64" ]; then
-  ARCH="x86_64"
-elif [ "$ARCH" == "aarch64" ] || [ "$ARCH" == "arm64" ]; then
-  ARCH="aarch_64"
-fi
-
-OS_ARCHITECTURE="${OS_TYPE}-${ARCH}"
+# OS and Architecture (Hardcoded for Ubuntu)
+OS_ARCHITECTURE="linux-x86_64"
 
 # Directories
 # Use a directory that can be added to GITHUB_PATH if running in CI
