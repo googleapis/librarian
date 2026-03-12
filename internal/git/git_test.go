@@ -631,3 +631,36 @@ func TestGetCommitSubject_Error(t *testing.T) {
 		t.Fatal("wanted an error; got none")
 	}
 }
+
+func TestPushTags(t *testing.T) {
+	const pushedTag = "tag-after"
+	remoteDir := testhelper.SetupRepoWithChange(t, "tag-before")
+	testhelper.CloneRepository(t, remoteDir)
+	headCommit, err := GetCommitHash(t.Context(), "git", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Tag(t.Context(), "git", pushedTag, headCommit); err != nil {
+		t.Fatal(err)
+	}
+	if err := PushTags(t.Context(), "git", "origin", []string{pushedTag}); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(remoteDir)
+	// The tag should now exist in the remote repo.
+	taggedCommit, err := GetCommitHash(t.Context(), "git", pushedTag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if taggedCommit != headCommit {
+		t.Errorf("Commit hash for pushed tag: %q, want %q", taggedCommit, headCommit)
+	}
+}
+
+func TestPushTags_Error(t *testing.T) {
+	testhelper.SetupRepo(t)
+	err := PushTags(t.Context(), "git", "bad-remote", []string{"bad-tag"})
+	if err == nil {
+		t.Fatal("wanted an error; got none")
+	}
+}

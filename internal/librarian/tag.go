@@ -50,6 +50,8 @@ func tagCommand() *cli.Command {
 				Name:  "create-release-tag",
 				Usage: "whether to create a tag of the form release-{PR number}",
 			},
+			// TODO(https://github.com/googleapis/librarian/issues/4540): maybe
+			// move this into librarianops.
 			&cli.StringFlag{
 				Name:  "push-remote",
 				Usage: "the name of the remote to push tags to, after tagging locally",

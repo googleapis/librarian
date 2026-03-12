@@ -36,6 +36,7 @@ func TestTag(t *testing.T) {
 		releaseCommit    string
 		taggedRevision   string
 		createReleaseTag bool
+		pushRemote       string
 		wantTags         []string
 	}{
 		{
@@ -80,7 +81,7 @@ func TestTag(t *testing.T) {
 			wantTags:       []string{sample.Lib1Name + "/v1.1.0"},
 		},
 		{
-			name: "release tag",
+			name: "release tag and push to a remote",
 			setup: func(t *testing.T, cfg *config.Config) {
 				cfg.Libraries[0].Version = "1.1.0"
 				writeConfigAndCommitWithMessage(t, cfg, "chore: release a library (#12345)")
@@ -91,16 +92,18 @@ func TestTag(t *testing.T) {
 			taggedRevision:   "HEAD~",
 			createReleaseTag: true,
 			wantTags:         []string{sample.Lib1Name + "/v1.1.0", "release-12345"},
+			pushRemote:       "origin",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
 			cfg.Default.TagFormat = "{name}/v{version}"
 			cfg.Libraries[1].Version = "1.2.0"
-			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
+			remoteDir := testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
+			testhelper.CloneRepository(t, remoteDir)
 			test.setup(t, cfg)
 
-			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, ""); err != nil {
+			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, test.pushRemote); err != nil {
 				t.Fatal(err)
 			}
 
@@ -119,6 +122,27 @@ func TestTag(t *testing.T) {
 					t.Errorf("incorrect tagged commit for revision %s: got = %s; want = %s", test.taggedRevision, gotTaggedCommit, wantTaggedCommit)
 				}
 			}
+			t.Chdir(remoteDir)
+			if test.pushRemote != "" {
+				// If we've pushed to the remote, check that it's got the tags as
+				// well, with the correct hashes.
+				for _, tagName := range test.wantTags {
+					gotTaggedCommit, err := git.GetCommitHash(t.Context(), "git", tagName)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if gotTaggedCommit != wantTaggedCommit {
+						// Deliberately not using diff as the hashes are basically opaque
+						t.Errorf("incorrect tagged commit for revision %s: got = %s; want = %s", test.taggedRevision, gotTaggedCommit, wantTaggedCommit)
+					}
+				}
+			} else {
+				// Otherwise, check that there aren't any tags in the remote.
+				tags := testhelper.RunGit(t, "tag")
+				if len(tags) > 0 {
+					t.Errorf("unexpected output from 'git tag' in remote: %q", tags)
+				}
+			}
 		})
 	}
 }
@@ -131,6 +155,7 @@ func TestTag_Error(t *testing.T) {
 		setup            func(t *testing.T, cfg *config.Config)
 		releaseCommit    string
 		createReleaseTag bool
+		pushRemote       string
 		wantErr          error
 	}{
 		{
@@ -191,6 +216,15 @@ func TestTag_Error(t *testing.T) {
 			createReleaseTag: true,
 			wantErr:          errCannotDeriveReleaseTag,
 		},
+		{
+			name: "bad remote",
+			setup: func(t *testing.T, cfg *config.Config) {
+				cfg.Libraries[1].Version = "1.3.0"
+				writeConfigAndCommit(t, cfg)
+			},
+			pushRemote: "bad-remote",
+			// Can't easily check this error
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
@@ -198,7 +232,7 @@ func TestTag_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(t, cfg)
-			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, "")
+			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag, test.pushRemote)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}

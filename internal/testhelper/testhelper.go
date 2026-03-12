@@ -171,12 +171,13 @@ type SetupOptions struct {
 
 // Setup is a configurable test setup function that starts by creating a
 // fresh test repository via [SetupRepo], to which it then applies the
-// configured [SetupOptions].
-func Setup(t *testing.T, opts SetupOptions) {
+// configured [SetupOptions]. It returns the path of the remote repository.
+func Setup(t *testing.T, opts SetupOptions) string {
 	t.Helper()
 	dir := SetupRepo(t)
 	opts.remoteDir = dir
 	setup(t, opts)
+	return dir
 }
 
 func setup(t *testing.T, opts SetupOptions) {
@@ -265,8 +266,11 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 }
 
 // RunGit runs git with the specified arguments, aborting the test on any error.
-func RunGit(t *testing.T, args ...string) {
-	if err := command.Run(t.Context(), "git", args...); err != nil {
+// The process output is returned on success.
+func RunGit(t *testing.T, args ...string) string {
+	output, err := command.Output(t.Context(), "git", args...)
+	if err != nil {
 		t.Fatal(err)
 	}
+	return output
 }
