@@ -52,15 +52,6 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		return nil
 	}
 
-	target, err := identifyExplicitTarget(method, binding)
-	if err != nil {
-		return err
-	}
-	if target != nil {
-		binding.TargetResource = target
-		return nil
-	}
-
 	// Uses path segment patterns to guess the resource.
 	if enableHeuristics {
 		target, err := identifyHeuristicTarget(method, binding, vocabulary)
@@ -71,6 +62,15 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 			binding.TargetResource = target
 			return nil
 		}
+	}
+
+	target, err := identifyExplicitTarget(method, binding)
+	if err != nil {
+		return err
+	}
+	if target != nil {
+		binding.TargetResource = target
+		return nil
 	}
 	return nil
 }
