@@ -185,6 +185,8 @@ ARG GO_PROTOC_GRPC_PLUGIN_VERSION
 ARG GO_GAPIC_VERSION
 ARG GO_GOIMPORTS_VERSION
 
+ENV GO_VERSION=$GO_VERSION
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
