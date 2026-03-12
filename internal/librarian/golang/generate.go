@@ -151,7 +151,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
 	if !goAPI.ProtoOnly {
-		gapicOpts, err := buildGAPICOpts(api.Path, library, goAPI, googleapisDir)
+		gapicOpts, err := buildGAPICOpts(api.Path, goAPI, googleapisDir)
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return command.Run(ctx, args[0], args[1:]...)
 }
 
-func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGo)
 	if err != nil {
 		return nil, err

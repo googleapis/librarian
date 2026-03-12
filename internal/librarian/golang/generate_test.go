@@ -831,7 +831,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		apiPath       string
-		library       *config.Library
 		goAPI         *config.GoAPI
 		googleapisDir string
 		want          []string
@@ -839,10 +838,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "basic case with service and grpc configs",
 			apiPath: "google/cloud/secretmanager/v1",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
@@ -862,10 +857,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "no rest numeric enums",
 			apiPath: "google/cloud/bigquery/v2",
-			library: &config.Library{
-				Name:    "bigquery/v2",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "bigquery",
 				ImportPath:    "bigquery/v2/apiv2",
@@ -884,10 +875,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "transport override",
 			apiPath: "google/cloud/gkehub/v1",
-			library: &config.Library{
-				Name:    "gkehub",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
@@ -906,10 +893,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "no metadata",
 			apiPath: "google/cloud/gkehub/v1",
-			library: &config.Library{
-				Name:    "gkehub",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
@@ -928,11 +911,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "generator features",
 			apiPath: "google/cloud/bigquery/v2",
-			library: &config.Library{
-				Name:    "bigquery/v2",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/v2"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage:            "bigquery",
 				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
@@ -953,11 +931,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "no transport",
 			apiPath: "google/cloud/apigeeconnect/v1",
-			library: &config.Library{
-				Name:    "apigeeconnect",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "apigeeconnect",
 				ImportPath:    "apigeeconnect/apiv1",
@@ -975,11 +948,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "diregapic",
 			apiPath: "google/cloud/compute/v1",
-			library: &config.Library{
-				Name:    "compute",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "compute",
 				ImportPath:    "compute/apiv1",
@@ -999,7 +967,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := buildGAPICOpts(test.apiPath, test.library, test.goAPI, test.googleapisDir)
+			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
