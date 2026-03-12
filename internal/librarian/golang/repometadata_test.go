@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -96,27 +95,6 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 				Name: "secretmanager",
 			},
 			wantErr: errGoAPINotFound,
-		},
-		{
-			name: "invalid version",
-			api: &serviceconfig.API{
-				ShortName: "secretmanager",
-				Path:      "google/cloud/secretmanager/v1",
-			},
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "invalid",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ClientPackage: "secretmanager",
-							ImportPath:    "secretmanager/apiv1",
-							Path:          "google/cloud/secretmanager/v1",
-						},
-					},
-				},
-			},
-			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "invalid output directory",

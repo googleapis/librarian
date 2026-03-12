@@ -878,30 +878,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
-				"release-level=ga",
-			},
-		},
-		{
-			name:    "beta release level from version",
-			apiPath: "google/cloud/secretmanager/v1",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "0.2.3",
-			},
-			goAPI: &config.GoAPI{
-				ClientPackage: "secretmanager",
-				ImportPath:    "secretmanager/apiv1",
-				Path:          "google/cloud/secretmanager/v1",
-			},
-			googleapisDir: googleapisDir,
-			want: []string{
-				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
-				"metadata",
-				"rest-numeric-enums",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc+rest",
-				"release-level=beta",
+				"release-level=alpha",
 			},
 		},
 		{
@@ -970,7 +947,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
-				"release-level=ga",
+				"release-level=alpha",
 			},
 		},
 		{
