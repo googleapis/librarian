@@ -1,6 +1,10 @@
 #!/bin/bash
-# librarian/tool/setup_java_bins.sh
-# This script downloads Java tools and sets up wrappers in the PATH.
+# .github/workflows/scripts/install_java_tools.sh
+# Downloads and installs Java tools (protoc, gRPC, google-java-format, GAPIC).
+#
+# How it works:
+# JAR tools are installed by downloading the .jar and creating a bash wrapper
+# in bin/ that invokes java, allowing them to be used as standard commands.
 
 set -e
 

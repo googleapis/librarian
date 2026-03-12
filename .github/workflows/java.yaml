@@ -35,7 +35,7 @@ jobs:
         run: java -version
       - name: Install Java tools
         run: |
-          ./.github/workflows/scripts/setup_java_bins.sh "$HOME/java_tools"
+          ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
