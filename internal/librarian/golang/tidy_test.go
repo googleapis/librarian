@@ -206,12 +206,6 @@ func TestIsEmptyAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "not empty with NoRESTNumericEnums",
-			goAPI: &config.GoAPI{
-				NoRESTNumericEnums: true,
-			},
-		},
-		{
 			name: "not empty with ProtoOnly",
 			goAPI: &config.GoAPI{
 				ProtoOnly: true,

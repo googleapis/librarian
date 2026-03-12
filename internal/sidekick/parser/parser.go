@@ -51,7 +51,7 @@ type ModelConfig struct {
 	Discovery *api.Discovery
 
 	// Resource heuristic enablement
-	ResourceName bool
+	ResourceNameHeuristic bool
 
 	// Model overrides
 	Override api.ModelOverride
@@ -83,7 +83,7 @@ func CreateModel(cfg *ModelConfig) (*api.API, error) {
 	if err := api.CrossReference(model); err != nil {
 		return nil, err
 	}
-	if err := api.IdentifyTargetResources(model, cfg.ResourceName); err != nil {
+	if err := api.IdentifyTargetResources(model, cfg.ResourceNameHeuristic); err != nil {
 		return nil, err
 	}
 	if err := api.SkipModelElements(model, cfg.Override); err != nil {

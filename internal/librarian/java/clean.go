@@ -40,6 +40,7 @@ func Clean(library *config.Library) error {
 		fmt.Sprintf("grpc-%s-*", libraryName),
 		libraryName,
 		filepath.Join("samples", "snippets", "generated"),
+		".repo-metadata.json",
 	}
 	keepSet := make(map[string]bool)
 	for _, k := range library.Keep {

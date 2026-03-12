@@ -281,3 +281,33 @@ func TestRead_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	data := struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}{
+		Name:  "test",
+		Value: 123,
+	}
+	filename := "test.json"
+	err := WriteJSON(data, "  ", tmpDir, filename)
+	if err != nil {
+		t.Fatalf("WriteJSON() got err: %v, want nil", err)
+	}
+
+	path := filepath.Join(tmpDir, filename)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("os.ReadFile() got err: %v, want nil", err)
+	}
+
+	want := `{
+  "name": "test",
+  "value": 123
+}`
+	if diff := cmp.Diff(want, string(content)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

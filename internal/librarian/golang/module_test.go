@@ -127,8 +127,8 @@ func TestFill(t *testing.T) {
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
 						{
-							Path:               "google/cloud/example/v1",
-							NoRESTNumericEnums: true, // this value will be kept.
+							NoMetadata: true, // this value will be kept.
+							Path:       "google/cloud/example/v1",
 						},
 					},
 				},
@@ -140,10 +140,10 @@ func TestFill(t *testing.T) {
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
 						{
-							ClientPackage:      "example",
-							ImportPath:         "example/apiv1",
-							NoRESTNumericEnums: true,
-							Path:               "google/cloud/example/v1",
+							ClientPackage: "example",
+							ImportPath:    "example/apiv1",
+							NoMetadata:    true,
+							Path:          "google/cloud/example/v1",
 						},
 					},
 				},

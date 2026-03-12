@@ -171,17 +171,7 @@ func cleanTitle(title string) string {
 
 // Write writes the given RepoMetadata into libraryOutputDir/.repo-metadata.json.
 func (metadata *RepoMetadata) Write(libraryOutputDir string) error {
-	data, err := json.MarshalIndent(metadata, "", "    ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
-	metadataPath := filepath.Join(libraryOutputDir, repoMetadataFile)
-	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write metadata file: %w", err)
-	}
-
-	return nil
+	return WriteJSON(metadata, "    ", libraryOutputDir, repoMetadataFile)
 }
 
 // Read reads the .repo-metadata.json file in the given directory and unmarshals
@@ -197,4 +187,18 @@ func Read(libraryOutputDir string) (*RepoMetadata, error) {
 		return nil, err
 	}
 	return metadata, nil
+}
+
+// WriteJSON marshals the given data to JSON with indentation and writes it to
+// the specified file in the output directory.
+func WriteJSON(data interface{}, indent, libraryOutputDir, filename string) error {
+	content, err := json.MarshalIndent(data, "", indent)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
+	}
+	path := filepath.Join(libraryOutputDir, filename)
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		return fmt.Errorf("failed to write metadata file: %w", err)
+	}
+	return nil
 }

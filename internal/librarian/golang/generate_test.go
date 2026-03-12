@@ -695,6 +695,52 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
+func TestHasRESTNumericEnums(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want bool
+	}{
+		{
+			name: "all languages do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					config.LanguageAll: true,
+				},
+			},
+		},
+		{
+			name: "go language do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					config.LanguageGo: true,
+				},
+			},
+		},
+		{
+			name: "another language do not have REST enums",
+			sc: &serviceconfig.API{
+				NoRESTNumericEnums: map[string]bool{
+					config.LanguagePython: true,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "empty map",
+			sc:   &serviceconfig.API{},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := hasRESTNumericEnums(test.sc)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -834,23 +880,22 @@ func TestBuildGAPICOpts(t *testing.T) {
 		},
 		{
 			name:    "no rest numeric enums",
-			apiPath: "google/cloud/secretmanager/v1",
+			apiPath: "google/cloud/bigquery/v2",
 			library: &config.Library{
-				Name:    "secretmanager",
+				Name:    "bigquery/v2",
 				Version: "1.2.3",
 			},
 			goAPI: &config.GoAPI{
-				ClientPackage:      "secretmanager",
-				ImportPath:         "secretmanager/apiv1",
-				NoRESTNumericEnums: true,
-				Path:               "google/cloud/secretmanager/v1",
+				ClientPackage: "bigquery",
+				ImportPath:    "bigquery/v2/apiv2",
+				Path:          "google/cloud/bigquery/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
-				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
+				"go-gapic-package=cloud.google.com/go/bigquery/v2/apiv2;bigquery",
 				"metadata",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"release-level=ga",
 			},
@@ -940,9 +985,9 @@ func TestBuildGAPICOpts(t *testing.T) {
 			want: []string{
 				"go-gapic-package=cloud.google.com/go/bigquery/v2/apiv2;bigquery",
 				"metadata",
-				"rest-numeric-enums",
 				"F_wrapper_types_for_page_size",
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"release-level=ga",
 			},
@@ -978,11 +1023,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
 			},
 			goAPI: &config.GoAPI{
-				ClientPackage:      "compute",
-				ImportPath:         "compute/apiv1",
-				DIREGAPIC:          true,
-				NoRESTNumericEnums: true,
-				Path:               "google/cloud/compute/v1",
+				ClientPackage: "compute",
+				ImportPath:    "compute/apiv1",
+				DIREGAPIC:     true,
+				Path:          "google/cloud/compute/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{

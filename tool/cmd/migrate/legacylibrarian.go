@@ -32,13 +32,25 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+var (
+	// nestedModules maps specific Go libraries to their nested module path.
+	// This is a hardcoded list to handle special cases during legacy migration
+	// where this information is not available in the source configuration.
+	nestedModules = map[string]string{
+		"bigquery": "v2",
+		"compute":  "metadata",
+		"iam":      "admin",
+		"logging":  "logadmin",
+		"pubsub":   "v2",
+	}
+)
+
 type goGAPICInfo struct {
-	ClientPackageName  string
-	DisableGAPIC       bool
-	HasDiregapic       bool
-	ImportPath         string
-	NoMetadata         bool
-	NoRESTNumericEnums bool
+	ClientPackageName string
+	DisableGAPIC      bool
+	HasDiregapic      bool
+	ImportPath        string
+	NoMetadata        bool
 }
 
 // RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
@@ -279,6 +291,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				library.Go = goModule
 			}
 		}
+		mod, ok := nestedModules[id]
+		if ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.NestedModule = mod
+		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			info, err := parseGoBazel(input.googleapisDir, api.Path)
@@ -297,7 +316,6 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			goAPI.DIREGAPIC = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
 			goAPI.NoMetadata = info.NoMetadata
-			goAPI.NoRESTNumericEnums = info.NoRESTNumericEnums
 			if library.Go == nil {
 				library.Go = &config.GoModule{}
 			}
@@ -351,8 +369,7 @@ func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 		!info.DisableGAPIC &&
 		!info.HasDiregapic &&
 		info.ImportPath == "" &&
-		!info.NoMetadata &&
-		!info.NoRESTNumericEnums
+		!info.NoMetadata
 }
 
 func readState(path string) (*legacyconfig.LibrarianState, error) {
@@ -398,9 +415,8 @@ func parseGoBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
 	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
 	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
 	info := &goGAPICInfo{
-		HasDiregapic:       rule.AttrLiteral("diregapic") == "True",
-		NoMetadata:         rule.AttrLiteral("metadata") != "True",
-		NoRESTNumericEnums: rule.AttrLiteral("rest_numeric_enums") == "False",
+		HasDiregapic: rule.AttrLiteral("diregapic") == "True",
+		NoMetadata:   rule.AttrLiteral("metadata") != "True",
 	}
 	if importPath != defaultImportPath {
 		info.ImportPath = importPath
