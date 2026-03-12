@@ -417,6 +417,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
 				"RoutingRequired", "DetailedTracingAttributes",
+				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs", "HasGrpcResourceNameArgs",
 				"InternalBuilders")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
