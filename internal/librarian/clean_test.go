@@ -117,3 +117,29 @@ func TestCleanOutput(t *testing.T) {
 		})
 	}
 }
+
+// checkAndClean() needs to work when adding a library. In that case the
+// destination does not exist.
+func TestCheckAndCleanMissingDirectory(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		keep []string
+	}{
+		{
+			name: "no keep files",
+			keep: []string{},
+		},
+		{
+			name: "with keep files",
+			keep: []string{"README.md", "src/something-else-to-keep.md"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, "does-not-exist")
+			if err := checkAndClean(path, test.keep); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}

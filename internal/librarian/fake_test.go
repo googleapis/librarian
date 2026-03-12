@@ -94,6 +94,9 @@ func TestFakeClean_Error(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
+	if err := os.MkdirAll(library.Output, 0755); err != nil {
+		t.Fatal(err)
+	}
 	err := fakeClean(library)
 	wantErr := os.ErrNotExist
 	if !errors.Is(err, wantErr) {
