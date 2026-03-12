@@ -32,6 +32,16 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+var (
+	nestedModules = map[string]string{
+		"bigquery": "v2",
+		"compute":  "metadata",
+		"iam":      "admin",
+		"logging":  "logadmin",
+		"pubsub":   "v2",
+	}
+)
+
 type goGAPICInfo struct {
 	ClientPackageName string
 	DisableGAPIC      bool
