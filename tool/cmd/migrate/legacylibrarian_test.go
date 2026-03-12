@@ -429,6 +429,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+					Go:   &config.GoModule{NestedModule: "v2"},
 				},
 			},
 		},
@@ -466,6 +467,7 @@ func TestBuildGoLibraries(t *testing.T) {
 								Path:       "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
+						NestedModule: "v2",
 					},
 				},
 			},
@@ -754,6 +756,7 @@ func TestBuildGoLibraries(t *testing.T) {
 								Path:      "google/cloud/compute/v1",
 							},
 						},
+						NestedModule: "metadata",
 					},
 				},
 			},
