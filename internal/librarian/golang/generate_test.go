@@ -743,58 +743,39 @@ func TestHasRESTNumericEnums(t *testing.T) {
 
 func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		version string
-		want    string
+		name string
+		sc   *serviceconfig.API
+		want string
 	}{
 		{
-			name:    "ga",
-			apiPath: "google/cloud/secretmanager/v1",
-			version: "1.0.0",
-			want:    "ga",
+			name: "empty release levels",
+			sc:   &serviceconfig.API{},
+			want: "ga",
 		},
 		{
-			name:    "stable with pre-GA version",
-			apiPath: "google/cloud/secretmanager/v1",
-			version: "0.11.0",
-			want:    "beta",
+			name: "release levels do not have go",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguagePython: "beta"},
+			},
+			want: "ga",
 		},
 		{
-			name:    "alpha",
-			apiPath: "google/cloud/secretmanager/v1alpha1",
-			want:    "alpha",
+			name: "alpha",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
+			},
+			want: "alpha",
 		},
 		{
-			name:    "beta",
-			apiPath: "google/cloud/secretmanager/v1beta2",
-			want:    "beta",
-		},
-		{
-			name:    "alpha in api path",
-			apiPath: "google/cloud/alphabet/v1",
-			version: "1.0.0",
-			want:    "ga",
-		},
-		{
-			name:    "empty version",
-			apiPath: "google/cloud/alphabet/v1",
-			version: "",
-			want:    "alpha",
-		},
-		{
-			name:    "empty version with beta path",
-			apiPath: "google/cloud/alphabet/v1beta1",
-			version: "",
-			want:    "beta",
+			name: "beta",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
+			},
+			want: "beta",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := releaseLevel(test.apiPath, test.version)
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			got := releaseLevel(test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

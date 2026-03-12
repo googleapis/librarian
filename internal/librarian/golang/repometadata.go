@@ -34,10 +34,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 	if goAPI == nil {
 		return errGoAPINotFound
 	}
-	level, err := metadataReleaseLevel(api, library)
-	if err != nil {
-		return err
-	}
+	level := metadataReleaseLevel(api, goAPI)
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
 		ClientDocumentation: clientDocURL(library, goAPI.ImportPath),
@@ -66,15 +63,13 @@ func distributionName(importPath string) string {
 	return fmt.Sprintf("cloud.google.com/go/%s", importPath)
 }
 
-func metadataReleaseLevel(api *serviceconfig.API, library *config.Library) (string, error) {
-	apiReleaseLevel, err := releaseLevel(api.Path, library.Version)
-	if err != nil {
-		return "", err
+func metadataReleaseLevel(api *serviceconfig.API, goAPI *config.GoAPI) string {
+	version := serviceconfig.ExtractVersion(goAPI.ImportPath)
+	if strings.Contains(version, "alpha") || strings.Contains(version, "beta") {
+		return repoMetadataReleaseLevelPreview
 	}
-	switch apiReleaseLevel {
-	case releaseLevelGA:
-		return repoMetadataReleaseLevelStable, nil
-	default:
-		return repoMetadataReleaseLevelPreview, nil
+	if releaseLevel(api) != releaseLevelGA {
+		return repoMetadataReleaseLevelPreview
 	}
+	return repoMetadataReleaseLevelStable
 }
