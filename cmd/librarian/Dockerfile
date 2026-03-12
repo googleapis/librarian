@@ -138,12 +138,10 @@ RUN cargo install --locked taplo-cli@${TAPLO_CLI_VERSION} && \
     cargo install --locked cargo-minimal-versions && \
     cargo install --locked cargo-hack
 
-# TODO: Reinstate cargo clean?
-
 # Make sure the tools are executable by any user (not just root).
 # librarianops executes the docker image as the current user.
-RUN chmod a+wx /root
-RUN chmod -R a+w /root/.cargo
+RUN chmod a+wx /root && \
+    chmod -R a+w /root/.cargo
 ENV HOME=/root
 
 # ============== Python Stage ==============
@@ -205,7 +203,7 @@ RUN (export GOTOOLCHAIN='auto' && \
 
 # Make sure the tools are executable by any user (not just root).
 # librarianops executes the docker image as the current user.
-RUN chmod a+rx /root/go/bin/*
-RUN chmod a+x /root
-RUN chmod a+x /root/go
-RUN chmod a+x /root/go/bin
+RUN chmod a+rx /root/go/bin/* && \
+    chmod a+x /root && \
+    chmod a+x /root/go && \
+    chmod a+x /root/go/bin
