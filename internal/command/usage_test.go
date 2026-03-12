@@ -14,112 +14,130 @@
 
 package command
 
+// Usage text rules:
+// - <arg> = required argument
+// - [arg] = optional argument
+// - <arg...> = one or more required arguments
+// - Flags are included in the usage line if they are required
+// - Use --all for all libraries
+//
+// Note: We do not test the 'migrate' tool here because it is not built with
+// the urfave/cli library and does not follow these usage patterns.
+
 import (
 	"bytes"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestLibrarianUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/librarian"
-	tests := []struct {
+	for _, tc := range []struct {
 		desc string
 		args []string
 		want string
 	}{
-		{desc: "root", want: "librarian [command]"},
-		{desc: "add", args: []string{"add"}, want: "librarian add <apis...>"},
-		{desc: "generate", args: []string{"generate"}, want: "librarian generate <library>"},
-		{desc: "bump", args: []string{"bump"}, want: "librarian bump <library>"},
-		{desc: "tidy", args: []string{"tidy"}, want: "librarian tidy [path]"},
-		{desc: "update", args: []string{"update"}, want: "librarian update <sources...>"},
-		{desc: "version", args: []string{"version"}, want: "librarian version"},
-		{desc: "publish", args: []string{"publish"}, want: "librarian publish"},
-		{desc: "tag", args: []string{"tag"}, want: "librarian tag"},
-	}
-	for _, tc := range tests {
+		{"root", nil, "librarian [command]"},
+		{"add", []string{"add"}, "librarian add <apis...>"},
+		{"generate", []string{"generate"}, "librarian generate <library>"},
+		{"bump", []string{"bump"}, "librarian bump <library>"},
+		{"tidy", []string{"tidy"}, "librarian tidy [path]"},
+		{"update", []string{"update"}, "librarian update <sources...>"},
+		{"version", []string{"version"}, "librarian version"},
+		{"publish", []string{"publish"}, "librarian publish"},
+		{"tag", []string{"tag"}, "librarian tag"},
+	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			checkUsage(t, bin, tc.args, tc.want)
+			got := runUsage(t, bin, tc.args)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
 
 func TestLibrarianopsUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/librarianops"
-	tests := []struct {
+	for _, tc := range []struct {
 		desc string
 		args []string
 		want string
 	}{
-		{desc: "root", want: "librarianops [command]"},
-		{desc: "generate", args: []string{"generate"}, want: "librarianops generate [<repo> | -C <dir>]"},
-	}
-	for _, tc := range tests {
+		{"root", nil, "librarianops [command]"},
+		{"generate", []string{"generate"}, "librarianops generate [<repo> | -C <dir>]"},
+		{"upgrade", []string{"upgrade"}, "librarianops upgrade [<repo> | -C <dir>]"},
+	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			checkUsage(t, bin, tc.args, tc.want)
+			got := runUsage(t, bin, tc.args)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
 
 func TestSurferUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/surfer"
-	tests := []struct {
+	for _, tc := range []struct {
 		desc string
 		args []string
 		want string
 	}{
-		{desc: "root", want: "surfer [command]"},
-		{desc: "generate", args: []string{"generate"}, want: "surfer generate <path to gcloud.yaml> --googleapis <path>"},
-	}
-	for _, tc := range tests {
+		{"root", nil, "surfer [command]"},
+		{"generate", []string{"generate"}, "surfer generate <path to gcloud.yaml> --googleapis <path>"},
+	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			checkUsage(t, bin, tc.args, tc.want)
+			got := runUsage(t, bin, tc.args)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
 
 func TestToolUsage(t *testing.T) {
-	tests := []struct {
+	for _, tc := range []struct {
 		desc string
 		bin  string
 		args []string
 		want string
 	}{
-		{desc: "import-configs root", bin: "github.com/googleapis/librarian/tool/cmd/importconfigs", want: "import-configs [command]"},
-		{desc: "import-configs update-transports", bin: "github.com/googleapis/librarian/tool/cmd/importconfigs", args: []string{"update-transports"}, want: "import-configs update-transports --googleapis <path>"},
-		{desc: "import-metadata", bin: "github.com/googleapis/librarian/tool/cmd/importmetadata", want: "import-metadata --python-repo <path> --librarian-repo <path>"},
-		{desc: "migrate", bin: "github.com/googleapis/librarian/tool/cmd/migrate", want: "Usage of migrate:"},
-	}
-	for _, tc := range tests {
+		{"import-configs root", "github.com/googleapis/librarian/tool/cmd/importconfigs", nil, "import-configs [command]"},
+		{"import-configs update-transports", "github.com/googleapis/librarian/tool/cmd/importconfigs", []string{"update-transports"}, "import-configs update-transports --googleapis <path>"},
+		{"import-metadata", "github.com/googleapis/librarian/tool/cmd/importmetadata", nil, "import-metadata --python-repo <path> --librarian-repo <path>"},
+	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			checkUsage(t, tc.bin, tc.args, tc.want)
+			got := runUsage(t, tc.bin, tc.args)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
 
-func checkUsage(t *testing.T, bin string, args []string, want string) {
+// runUsage executes the binary with the given args and the appropriate help flag,
+// returning the captured usage string.
+func runUsage(t *testing.T, bin string, args []string) string {
 	t.Helper()
 	var stdout bytes.Buffer
-	helpFlag := "--help"
-	if strings.Contains(bin, "migrate") {
-		helpFlag = "-help"
-	}
 	fullArgs := append([]string{"run", bin}, args...)
-	fullArgs = append(fullArgs, helpFlag)
+	fullArgs = append(fullArgs, "--help")
 	cmd := exec.Command("go", fullArgs...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stdout // Some help might go to stderr
-	if err := cmd.Run(); err != nil && !strings.Contains(bin, "migrate") {
+	if err := cmd.Run(); err != nil {
 		t.Fatalf("go %v failed: %v\nOutput: %s", fullArgs, err, stdout.String())
 	}
-	got := captureUsage(stdout.String())
-	if !strings.Contains(got, want) {
-		t.Errorf("Usage mismatch\ngot:  %q\nwant: %q", got, want)
-	}
+	return captureUsage(t, stdout.String())
 }
 
-func captureUsage(output string) string {
+// captureUsage extracts the usage line from the command output. It looks for
+// a line containing "USAGE:" and returns the following line.
+func captureUsage(t *testing.T, output string) string {
+	t.Helper()
 	lines := strings.Split(output, "\n")
 	for i, line := range lines {
 		if strings.Contains(strings.ToUpper(line), "USAGE:") {
@@ -127,10 +145,6 @@ func captureUsage(output string) string {
 				return strings.TrimSpace(lines[i+1])
 			}
 		}
-	}
-	// Fallback for commands like migrate that might just print usage immediately
-	if len(lines) > 0 {
-		return strings.TrimSpace(lines[0])
 	}
 	return ""
 }
