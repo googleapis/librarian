@@ -80,6 +80,11 @@ type API struct {
 	// If ServiceConfig is empty, the service config is assumed to live at this path.
 	Path string `yaml:"path,omitempty"`
 
+	// ReleaseLevels is the release level per language.
+	// Map key is the language name (e.g., "python", "rust").
+	// Optional. If omitted, the generator default is used.
+	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
+
 	// ShortName overrides the API short name from the service config's
 	// publishing section.
 	ShortName string `yaml:"short_name,omitempty"`

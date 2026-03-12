@@ -1,0 +1,113 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/yaml"
+	"github.com/googleapis/librarian/tool/cmd/importconfigs/bazel"
+	"github.com/urfave/cli/v3"
+)
+
+func updateReleaseLevelCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "update-release-level",
+		Usage: "update release level values in internal/serviceconfig/api.go from BUILD.bazel files",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "googleapis",
+				Usage:    "path to googleapis dir",
+				Required: true,
+			},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			googleapisDir := cmd.String("googleapis")
+			return runUpdateReleaseLevel("internal/serviceconfig/sdk.yaml", googleapisDir)
+		},
+	}
+}
+
+func runUpdateReleaseLevel(sdkYaml, googleapisDir string) error {
+	apis, err := yaml.Read[[]*serviceconfig.API](sdkYaml)
+	if err != nil {
+		return fmt.Errorf("failed to parse %s: %w", sdkYaml, err)
+	}
+	apiMap := toMap(*apis)
+	buildFilePaths, err := findBuild(googleapisDir)
+	if err != nil {
+		return err
+	}
+	var newAPIs []*serviceconfig.API
+	for _, path := range buildFilePaths {
+		releaseLevels := readReleaseLevel(googleapisDir, path)
+		if len(releaseLevels) == 0 {
+			// No need to change the default value.
+			continue
+		}
+		buildDir := filepath.Dir(path)
+		api, ok := apiMap[buildDir]
+		if ok {
+			// Add the releaseLevels to an existing API, regardless a cloud API or not.
+			api.ReleaseLevels = releaseLevels
+			continue
+		}
+
+		// Ignore a non-cloud API that is not in sdk.yaml since it is blocked.
+		if !strings.HasPrefix(buildDir, "google/cloud") {
+			continue
+		}
+		// Add the ReleaseLevels to a cloud API.
+		newAPIs = append(newAPIs, &serviceconfig.API{
+			// Add languages so they won't be blocked.
+			Languages: []string{
+				config.LanguageDart,
+				config.LanguageGo,
+				config.LanguageJava,
+				config.LanguagePython,
+				config.LanguageRust,
+			},
+			Path:          buildDir,
+			ReleaseLevels: releaseLevels,
+		})
+	}
+	finalAPIs := toSlice(apiMap)
+	finalAPIs = append(finalAPIs, newAPIs...)
+	sort.Slice(finalAPIs, func(i, j int) bool {
+		return finalAPIs[i].Path < finalAPIs[j].Path
+	})
+	return yaml.Write(sdkYaml, finalAPIs)
+}
+
+func readReleaseLevel(googleapisDir, path string) map[string]string {
+	buildPath := filepath.Join(googleapisDir, path)
+	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
+		return nil
+	}
+	releaseLevels, err := bazel.ParseReleaseLevel(buildPath)
+	if err != nil {
+		slog.Warn("failed to parse release level", "path", buildPath, "error", err)
+		return nil
+	}
+	return releaseLevels
+}
