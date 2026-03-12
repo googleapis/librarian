@@ -150,6 +150,8 @@ func ParseTransports(path string) (map[string]string, error) {
 	return transports, nil
 }
 
+// ParseReleaseLevel reads a BUILD.bazel file and extracts release_level configuration
+// for all recognized language GAPIC rules.
 func ParseReleaseLevel(path string) (map[string]string, error) {
 	file, err := parseBuild(path)
 	if err != nil {
