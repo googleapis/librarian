@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -118,9 +117,6 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 // delegating to language-specific code to clean each library.
 func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
-		if _, err := os.Stat(library.Output); os.IsNotExist(err) {
-			continue
-		}
 		switch language {
 		case config.LanguageDart:
 			if err := checkAndClean(library.Output, library.Keep); err != nil {
