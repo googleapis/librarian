@@ -117,7 +117,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 		return fmt.Errorf("error tagging %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
 	}
 
-	allTags := []string{}
+	var allTags []string
 
 	// If we need to create a release tag, do that first - in case we can't
 	// determine the tag name.
