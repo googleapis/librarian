@@ -221,6 +221,7 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 			Googleapis: &config.Source{Dir: googleapisDir},
 		},
 		Libraries: libs,
+		Repo:      "googleapis/google-cloud-java",
 	}
 }
 
