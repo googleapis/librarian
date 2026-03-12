@@ -267,6 +267,9 @@ type methodAnnotation struct {
 	DetailedTracingAttributes bool
 	InternalBuilders          bool
 	HasResourceNameGeneration bool
+	ResourceNameTemplateGrpc  string
+	GrpcResourceNameArgs      []string
+	HasGrpcResourceNameArgs   bool
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -1467,14 +1470,38 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 		return nil // Constraint 1: Do nothing if detailed tracing is off.
 	}
 	if m.PathInfo != nil {
+		var firstBindingWithTargetResource *api.PathBinding
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
 				annotation.HasResourceNameGeneration = true
+				firstBindingWithTargetResource = b
 				break
 			}
 		}
 
 		if annotation.HasResourceNameGeneration {
+			// Populate gRPC specific template and args on the parent annotation
+			tmpl, err := formatResourceNameTemplateFromPath(m, firstBindingWithTargetResource)
+			if err != nil {
+				return err
+			}
+			annotation.ResourceNameTemplateGrpc = tmpl
+
+			var grpcArgs []string
+			for _, path := range firstBindingWithTargetResource.TargetResource.FieldPaths {
+				accessors, err := makeAccessors(path, m)
+				if err != nil {
+					return err
+				}
+				fieldAccessor := "Some(&req)"
+				for _, a := range accessors {
+					fieldAccessor += a
+				}
+				grpcArgs = append(grpcArgs, fieldAccessor)
+			}
+			annotation.GrpcResourceNameArgs = grpcArgs
+			annotation.HasGrpcResourceNameArgs = len(grpcArgs) > 0
+
 			for _, b := range m.PathInfo.Bindings {
 				bAnn, ok := b.Codec.(*pathBindingAnnotation)
 				if !ok {
