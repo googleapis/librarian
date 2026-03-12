@@ -106,7 +106,7 @@ func readReleaseLevel(googleapisDir, path string) map[string]string {
 	}
 	releaseLevels, err := bazel.ParseReleaseLevel(buildPath)
 	if err != nil {
-		slog.Warn("failed to parse rest numeric enums", "path", buildPath, "error", err)
+		slog.Warn("failed to parse release level", "path", buildPath, "error", err)
 		return nil
 	}
 	return releaseLevels
