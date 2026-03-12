@@ -122,6 +122,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.HasVariablePath}}
             let path = "{{Codec.PathFmt}}".to_string();
             {{/Codec.HasVariablePath}}
+            
             {{#Codec.DetailedTracingAttributes}}
             let path_template = "{{Codec.PathTemplate}}";
             {{/Codec.DetailedTracingAttributes}}
