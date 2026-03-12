@@ -151,15 +151,10 @@ func ParseTransports(path string) (map[string]string, error) {
 }
 
 func ParseReleaseLevel(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
-	}
-	file, err := build.ParseBuild(path, data)
+	file, err := parseBuild(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
 	}
-
 	releaseLevels := make(map[string]string)
 	for ruleName, lang := range ruleToLang {
 		for _, rule := range file.Rules(ruleName) {
@@ -180,15 +175,10 @@ func ParseReleaseLevel(path string) (map[string]string, error) {
 // ParseRESTNumericEnums reads a BUILD.bazel file and returns a map of languages
 // where the rest_numeric_enums attribute is explicitly set to False.
 func ParseRESTNumericEnums(path string) (map[string]bool, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
-	}
-	file, err := build.ParseBuild(path, data)
+	file, err := parseBuild(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
 	}
-
 	noRESTNumericEnums := make(map[string]bool)
 	for ruleName, lang := range ruleToLang {
 		for _, rule := range file.Rules(ruleName) {
@@ -199,4 +189,12 @@ func ParseRESTNumericEnums(path string) (map[string]bool, error) {
 		}
 	}
 	return noRESTNumericEnums, nil
+}
+
+func parseBuild(path string) (*build.File, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
+	}
+	return build.ParseBuild(path, data)
 }
