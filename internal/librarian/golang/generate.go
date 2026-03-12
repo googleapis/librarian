@@ -29,14 +29,11 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 const (
-	releaseLevelAlpha = "alpha"
-	releaseLevelBeta  = "beta"
-	releaseLevelGA    = "ga"
+	releaseLevelGA = "ga"
 )
 
 var (
@@ -207,10 +204,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if trans := transport(sc); trans != "" {
 		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
-	level, err := releaseLevel(apiPath, library.Version)
-	if err != nil {
-		return nil, err
-	}
+	level := releaseLevel(sc)
 	opts = append(opts, "release-level="+level)
 	return opts, nil
 }
@@ -378,27 +372,12 @@ func hasRESTNumericEnums(sc *serviceconfig.API) bool {
 	return true
 }
 
-// releaseLevel determines the release level for an API based on the API path and the library's current version.
-func releaseLevel(apiPath, version string) (string, error) {
-	apiVersion := filepath.Base(apiPath)
-	if strings.Contains(apiVersion, releaseLevelAlpha) {
-		return releaseLevelAlpha, nil
+// releaseLevel determines the release level for an API.
+func releaseLevel(sc *serviceconfig.API) string {
+	if rl, ok := sc.ReleaseLevels[config.LanguageGo]; ok {
+		return rl
 	}
-	if strings.Contains(apiVersion, releaseLevelBeta) {
-		return releaseLevelBeta, nil
-	}
-	if version == "" {
-		return releaseLevelAlpha, nil
-	}
-	semverVer, err := semver.Parse(version)
-	if err != nil {
-		return "", err
-	}
-	if semverVer.Major < 1 {
-		return releaseLevelBeta, nil
-	}
-
-	return releaseLevelGA, nil
+	return releaseLevelGA
 }
 
 // transport get transport from serviceconfig.API for language Go.
