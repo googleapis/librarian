@@ -56,10 +56,14 @@ func checkAndClean(dir string, keep []string) error {
 		}
 		return err
 	}
+	var missing []string
 	for relative, v := range keepSet {
 		if v {
-			return fmt.Errorf("keep file %q does not exist", relative)
+			missing = append(missing, relative)
 		}
+	}
+	if len(missing) != 0 {
+		return fmt.Errorf("some keep files %q do not exist", keep)
 	}
 	return nil
 }
