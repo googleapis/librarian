@@ -33,6 +33,7 @@ func main() {
 		Commands: []*cli.Command{
 			addNodejsCommand(),
 			updateTransportsCommand(),
+			updateReleaseLevelCommand(),
 			updateRestNumericEnumsCommand(),
 		},
 	}
