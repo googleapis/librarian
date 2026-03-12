@@ -135,7 +135,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 ))
             })();
             if let Some(rn) = resource_name {
-                use google_cloud_gax::options::internal::ResourceName;
+                use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
                 options.insert_extension(ResourceName(rn))
             } else {
                 options
