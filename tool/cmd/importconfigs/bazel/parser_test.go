@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestParse(t *testing.T) {
@@ -360,6 +361,59 @@ go_gapic_library(
 				t.Fatal(err)
 			}
 			got, err := ParseRESTNumericEnums(buildPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseReleaseLevel(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    map[string]string
+	}{
+		{
+			name: "Default value",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+    release_level = "ga",
+)
+`,
+			want: map[string]string{},
+		},
+		{
+			name: "missing release_level attribute",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+)
+`,
+			want: map[string]string{},
+		},
+		{
+			name: "alpha",
+			content: `
+go_gapic_library(
+    name = "asset_go_gapic",
+	release_level = "alpha",
+)
+`,
+			want: map[string]string{config.LanguageGo: "alpha"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+			if err := os.WriteFile(buildPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := ParseReleaseLevel(buildPath)
 			if err != nil {
 				t.Fatal(err)
 			}

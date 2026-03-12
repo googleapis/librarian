@@ -97,6 +97,13 @@ func fakeDefaultLibraryName(api string) string {
 }
 
 func fakeClean(library *config.Library) error {
+	// When calling `librarian generate` on new libraries the top-level directory
+	// does not exist. Clean should not treat that as an error. Otherwise we
+	// need to check the directory existence before calling clean, only to check
+	// it again because `clean()` typically walks the directory.
+	if _, err := os.Stat(library.Output); os.IsNotExist(err) {
+		return nil
+	}
 	// We always generate a README.md file, so it's fine to delete that.
 	// This function shouldn't be called if the output directory doesn't exist.
 	return os.Remove(filepath.Join(library.Output, "README.md"))

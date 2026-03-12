@@ -29,6 +29,10 @@ const (
 	generationConfigFileName = "generation_config.yaml"
 )
 
+var (
+	fetchSourceWithCommit = fetchGoogleapisWithCommit
+)
+
 type javaGAPICInfo struct {
 	NoRestNumericEnums bool
 	NoSamples          bool
@@ -119,7 +123,8 @@ type LibraryConfig struct {
 
 // GenerationConfig represents the root of generation_config.yaml.
 type GenerationConfig struct {
-	Libraries []LibraryConfig `yaml:"libraries"`
+	GoogleapisCommitish string          `yaml:"googleapis_commitish"`
+	Libraries           []LibraryConfig `yaml:"libraries"`
 }
 
 func runJavaMigration(ctx context.Context, repoPath string) error {
@@ -127,11 +132,15 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return err
 	}
-	src, err := fetchSource(ctx)
+	commit := gen.GoogleapisCommitish
+	if commit == "" {
+		commit = "master"
+	}
+	src, err := fetchSourceWithCommit(ctx, commit)
 	if err != nil {
 		return errFetchSource
 	}
-	cfg := buildConfig(gen, src.Dir)
+	cfg := buildConfig(gen, src)
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -150,7 +159,7 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
+func buildConfig(gen *GenerationConfig, src *config.Source) *config.Config {
 	var libs []*config.Library
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
@@ -165,7 +174,7 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 			}
 			apis = append(apis, &config.API{Path: g.ProtoPath})
 
-			info, err := parseJavaBazel(googleapisDir, g.ProtoPath)
+			info, err := parseJavaBazel(src.Dir, g.ProtoPath)
 			if err != nil {
 				log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", g.ProtoPath, err)
 				continue
@@ -218,9 +227,10 @@ func buildConfig(gen *GenerationConfig, googleapisDir string) *config.Config {
 		Language: "java",
 		Default:  &config.Default{},
 		Sources: &config.Sources{
-			Googleapis: &config.Source{Dir: googleapisDir},
+			Googleapis: src,
 		},
 		Libraries: libs,
+		Repo:      "googleapis/google-cloud-java",
 	}
 }
 

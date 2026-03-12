@@ -26,49 +26,11 @@ import (
 // should contain paths relative to dir. It returns an error if any file
 // in keep does not exist.
 func checkAndClean(dir string, keep []string) error {
-	keepSet, err := check(dir, keep)
-	if err != nil {
-		return err
-	}
-	return clean(dir, keepSet)
-}
-
-// check validates the given directory and returns a set of files to keep.
-// It ensures that the provided directory exists and is a directory.
-// It also verifies that all files specified in 'keep' exist within 'dir'.
-func check(dir string, keep []string) (map[string]bool, error) {
-	info, err := os.Stat(dir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("cannot access output directory %q: %w", dir, err)
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("%q is not a directory", dir)
-	}
 	keepSet := make(map[string]bool)
 	for _, k := range keep {
-		path := filepath.Join(dir, k)
-		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("keep file %q does not exist", k)
-		}
-		// Effectively get a canonical relative path. While in most cases
-		// this will be equal to k, it might not be - in particular,
-		// on Windows the directory separator in paths returned by Rel
-		// will be a backslash.
-		rel, err := filepath.Rel(dir, path)
-		if err != nil {
-			return nil, err
-		}
-		keepSet[rel] = true
+		keepSet[filepath.Clean(k)] = true
 	}
-	return keepSet, nil
-}
-
-// clean removes files from dir that are not in keepSet.
-func clean(dir string, keepSet map[string]bool) error {
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -80,8 +42,28 @@ func clean(dir string, keepSet map[string]bool) error {
 			return err
 		}
 		if keepSet[rel] {
+			keepSet[rel] = false
 			return nil
 		}
 		return os.Remove(path)
 	})
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// The top-level directory was not found. This happens when
+			// calling `librarian generate` on new libraries and it is not
+			// an error.
+			return nil
+		}
+		return err
+	}
+	var missing []string
+	for relative, v := range keepSet {
+		if v {
+			missing = append(missing, relative)
+		}
+	}
+	if len(missing) != 0 {
+		return fmt.Errorf("some keep files %q do not exist", keep)
+	}
+	return nil
 }

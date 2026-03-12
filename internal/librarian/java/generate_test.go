@@ -388,13 +388,6 @@ func TestGenerate(t *testing.T) {
 			name:      "no libraries",
 			libraries: nil,
 		},
-		{
-			name: "generation failure",
-			libraries: []*config.Library{
-				{Name: "lib1", APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}}, Output: t.TempDir()},
-			},
-			wantErr: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Language: "java"}

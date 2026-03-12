@@ -406,41 +406,6 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "parse BUILD.bazel with no Go API",
-			input: &MigrationInput{
-				librarianState: &legacyconfig.LibrarianState{
-					Libraries: []*legacyconfig.LibraryState{
-						{
-							ID: "bigquery",
-							APIs: []*legacyconfig.API{
-								{
-									Path: "google/cloud/bigquery/analyticshub/v1",
-								},
-							},
-						},
-					},
-				},
-				librarianConfig: &legacyconfig.LibrarianConfig{},
-				repoConfig:      nil,
-				repoPath:        "testdata/google-cloud-go",
-				googleapisDir:   "testdata/googleapis",
-			},
-			want: []*config.Library{
-				{
-					Name: "bigquery",
-					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								Path:               "google/cloud/bigquery/analyticshub/v1",
-								NoRESTNumericEnums: true,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "parse BUILD.bazel with empty Go API",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
@@ -464,6 +429,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+					Go:   &config.GoModule{NestedModule: "v2"},
 				},
 			},
 		},
@@ -497,10 +463,11 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								NoRESTNumericEnums: true,
-								Path:               "google/cloud/bigquery/analyticshub/v1",
+								NoMetadata: true,
+								Path:       "google/cloud/bigquery/analyticshub/v1",
 							},
 						},
+						NestedModule: "v2",
 					},
 				},
 			},
@@ -678,7 +645,6 @@ func TestBuildGoLibraries(t *testing.T) {
 							{
 								EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
 								ImportPath:               "bigquery/v2/apiv2",
-								NoRESTNumericEnums:       true,
 								Path:                     "google/cloud/bigquery/v2",
 							},
 						},
@@ -786,11 +752,34 @@ func TestBuildGoLibraries(t *testing.T) {
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
-								DIREGAPIC:          true,
-								NoRESTNumericEnums: true,
-								Path:               "google/cloud/compute/v1",
+								DIREGAPIC: true,
+								Path:      "google/cloud/compute/v1",
 							},
 						},
+						NestedModule: "metadata",
+					},
+				},
+			},
+		},
+		{
+			name: "add nested module to a library",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "pubsub",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "pubsub",
+					Go: &config.GoModule{
+						NestedModule: "v2",
 					},
 				},
 			},
@@ -876,7 +865,7 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &goGAPICInfo{
-				NoRESTNumericEnums: true,
+				NoMetadata: true,
 			},
 		},
 		{
@@ -884,9 +873,8 @@ func TestParseBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/custom-import-path",
 			buildPath:     "google/longrunning",
 			want: &goGAPICInfo{
-				ClientPackageName:  "longrunning",
-				ImportPath:         "longrunning/autogen",
-				NoRESTNumericEnums: true,
+				ClientPackageName: "longrunning",
+				ImportPath:        "longrunning/autogen",
 			},
 		},
 		{

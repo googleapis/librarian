@@ -25,9 +25,9 @@ import (
 )
 
 func TestRunJavaMigration(t *testing.T) {
-	fetchSource = func(ctx context.Context) (*config.Source, error) {
+	fetchSourceWithCommit = func(ctx context.Context, commitish string) (*config.Source, error) {
 		return &config.Source{
-			Commit: "abcd123",
+			Commit: commitish,
 			SHA256: "sha123",
 			Dir:    "../../internal/testdata/googleapis",
 		}, nil
@@ -94,6 +94,7 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
 				Default:  &config.Default{},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -124,6 +125,7 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
 				Default:  &config.Default{},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -160,6 +162,7 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
 				Default:  &config.Default{},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -221,6 +224,7 @@ func TestBuildConfig(t *testing.T) {
 			},
 			want: &config.Config{
 				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
 				Default:  &config.Default{},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -261,7 +265,7 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, "../../internal/testdata/googleapis")
+			got := buildConfig(test.gen, &config.Source{Dir: "../../internal/testdata/googleapis"})
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
