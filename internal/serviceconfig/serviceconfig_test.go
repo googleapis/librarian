@@ -111,7 +111,7 @@ func TestFind(t *testing.T) {
 			want: &API{
 				Path:             "google/cloud/orgpolicy/v1",
 				Title:            "Organization Policy Types",
-				Languages:        []string{config.LanguageGo, config.LanguagePython, config.LanguageRust},
+				Languages:        []string{config.LanguageGo, config.LanguageJava, config.LanguagePython, config.LanguageRust},
 				DocumentationURI: "https://cloud.google.com/resource-manager/docs/organization-policy/overview",
 			},
 		},
@@ -165,7 +165,7 @@ func TestFind(t *testing.T) {
 				ServiceName:        "compute.googleapis.com",
 				ShortName:          "compute",
 				Title:              "Google Compute Engine API",
-				Languages:          []string{config.LanguageGo, config.LanguageNodejs, config.LanguagePython, config.LanguageRust},
+				Languages:          []string{config.LanguageGo, config.LanguageJava, config.LanguageNodejs, config.LanguagePython, config.LanguageRust},
 				Transports:         map[string]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
 				NoRESTNumericEnums: map[string]bool{"go": true, "python": true},
 			},
