@@ -300,6 +300,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	if module.IncludeGrpcOnlyMethods {
 		codec["include-grpc-only-methods"] = "true"
 	}
+	if library.Rust != nil && library.Rust.DetailedTracingAttributes {
+		codec["detailed-tracing-attributes"] = "true"
+	}
 	if module.ModulePath != "" {
 		codec["module-path"] = module.ModulePath
 	}
