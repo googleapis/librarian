@@ -33,6 +33,9 @@ import (
 )
 
 var (
+	// nestedModules maps specific Go libraries to their nested module path.
+	// This is a hardcoded list to handle special cases during legacy migration
+	// where this information is not available in the source configuration.
 	nestedModules = map[string]string{
 		"bigquery": "v2",
 		"compute":  "metadata",
