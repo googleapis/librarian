@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 var ruleToLang = map[string]string{
@@ -147,6 +148,33 @@ func ParseTransports(path string) (map[string]string, error) {
 		}
 	}
 	return transports, nil
+}
+
+func ParseReleaseLevel(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read BUILD.bazel file %s: %w", path, err)
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse BUILD.bazel file %s: %w", path, err)
+	}
+
+	releaseLevels := make(map[string]string)
+	for ruleName, lang := range ruleToLang {
+		for _, rule := range file.Rules(ruleName) {
+			rl := rule.AttrString("release_level")
+			if rl == "" {
+				continue
+			}
+			// No need to add the default value.
+			if lang == config.LanguageGo && rl == "ga" {
+				continue
+			}
+			releaseLevels[lang] = rl
+		}
+	}
+	return releaseLevels, nil
 }
 
 // ParseRESTNumericEnums reads a BUILD.bazel file and returns a map of languages
