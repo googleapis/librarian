@@ -122,30 +122,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{PathInfo.Codec.IsIdempotent}},
             {{/HasAutoPopulatedFields}}
         );
-        {{#Codec.DetailedTracingAttributes}}
-        #[cfg(google_cloud_unstable_tracing)]
-        let options = {
-            {{#Codec.HasGrpcResourceNameArgs}}
-            let resource_name = (|| {
-                Some(format!(
-                    "{{{Codec.ResourceNameTemplateGrpc}}}",
-                    {{#Codec.GrpcResourceNameArgs}}
-                    {{{.}}}?,
-                    {{/Codec.GrpcResourceNameArgs}}
-                ))
-            })();
-            if let Some(rn) = resource_name {
-                use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
-                options.insert_extension(ResourceName(rn))
-            } else {
-                options
-            }
-            {{/Codec.HasGrpcResourceNameArgs}}
-            {{^Codec.HasGrpcResourceNameArgs}}
-            options
-            {{/Codec.HasGrpcResourceNameArgs}}
-        };
-        {{/Codec.DetailedTracingAttributes}}
         let extensions = {
             let mut e = Extensions::new();
             e.insert(GrpcMethod::new("{{SourceService.Package}}.{{SourceService.Name}}", "{{Name}}"));
@@ -188,6 +164,30 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{^ReturnsEmpty}}
         type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}};
         {{/ReturnsEmpty}}
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        let options = {
+            {{#Codec.HasGrpcResourceNameArgs}}
+            let resource_name = (|| {
+                Some(format!(
+                    "{{{Codec.ResourceNameTemplateGrpc}}}",
+                    {{#Codec.GrpcResourceNameArgs}}
+                    {{{.}}}?,
+                    {{/Codec.GrpcResourceNameArgs}}
+                ))
+            })();
+            if let Some(rn) = resource_name {
+                use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
+                options.insert_extension(ResourceName(rn))
+            } else {
+                options
+            }
+            {{/Codec.HasGrpcResourceNameArgs}}
+            {{^Codec.HasGrpcResourceNameArgs}}
+            options
+            {{/Codec.HasGrpcResourceNameArgs}}
+        };
+        {{/Codec.DetailedTracingAttributes}}
         self.inner
             .execute(
                 extensions,
