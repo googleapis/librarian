@@ -22,10 +22,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 )
 
 func TestRunJavaMigration(t *testing.T) {
-	fetchSourceWithCommit = func(ctx context.Context, commitish string) (*config.Source, error) {
+	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
 			Commit: commitish,
 			SHA256: "sha123",

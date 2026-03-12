@@ -136,7 +136,7 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if commit == "" {
 		commit = "master"
 	}
-	src, err := fetchSourceWithCommit(ctx, commit)
+	src, err := fetchSourceWithCommit(ctx, githubEndpoints, commit)
 	if err != nil {
 		return errFetchSource
 	}
