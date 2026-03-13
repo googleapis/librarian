@@ -437,7 +437,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
-	data := `{ 
+	before := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/accessapproval/apiv1",
     "version": "$VERSION",
@@ -451,7 +451,20 @@ func TestUpdateSnippetMetadata(t *testing.T) {
  }
 }
 `
-	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+	after := `{
+  "clientLibrary": {
+    "apis": [
+      {
+        "id": "google.cloud.accessapproval.v1",
+        "version": "v1"
+      }
+    ],
+    "language": "GO",
+    "name": "cloud.google.com/go/accessapproval/apiv1",
+    "version": "1.2.3"
+  }
+}`
+	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
 		return
 	}
 	if err := updateSnippetMetadata(library, tmpDir); err != nil {
@@ -462,9 +475,9 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(content)
-	if !strings.Contains(s, "1.2.3") {
-		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	got := string(content)
+	if diff := cmp.Diff(after, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

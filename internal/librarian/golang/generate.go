@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -325,6 +326,9 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		}
 		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
 		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
+			return err
+		}
+		if err := snippetmetadata.ReformatAll(baseDir); err != nil {
 			return err
 		}
 	}
