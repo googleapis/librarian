@@ -334,9 +334,6 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
 			return err
 		}
-		if err := snippetmetadata.ReformatAll(baseDir); err != nil {
-			return err
-		}
 	}
 	return nil
 }
