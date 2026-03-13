@@ -331,7 +331,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			}
 			return err
 		}
-		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
+		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
 			return err
 		}
 		if err := snippetmetadata.ReformatAll(baseDir); err != nil {
@@ -339,31 +339,6 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		}
 	}
 	return nil
-}
-
-func updateSnippetDirectory(baseDir, version string) error {
-	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
-			return nil
-		}
-		read, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		newContent := strings.Replace(string(read), "$VERSION", version, 1)
-		err = os.WriteFile(path, []byte(newContent), 0644)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
 }
 
 func hasRESTNumericEnums(sc *serviceconfig.API) bool {

@@ -654,7 +654,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 				}
 				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
 				// Do not have the write permission.
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0555); err != nil {
+				if err := os.WriteFile(snippetFile, []byte("{\"clientLibrary\": {\"language\": \"GO\"}}"), 0555); err != nil {
 					t.Fatal(err)
 				}
 			},
