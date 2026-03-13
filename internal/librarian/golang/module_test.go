@@ -452,6 +452,36 @@ func TestSnippetDirectory(t *testing.T) {
 	}
 }
 
+func TestLibraryPath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "secretmanager",
+			library: &config.Library{
+				Output: "secretmanager",
+			},
+			want: "secretmanager",
+		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Output: "bigquery/v2",
+			},
+			want: "bigquery/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryPath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestModulePath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
