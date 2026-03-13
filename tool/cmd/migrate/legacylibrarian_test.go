@@ -440,6 +440,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+					Keep: []string{"README.md"},
 					Go:   &config.GoModule{NestedModule: "v2"},
 				},
 			},
@@ -471,6 +472,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
+					Keep: []string{"README.md"},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -789,6 +791,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "pubsub",
+					Keep: []string{"internal/version.go", "README.md"},
 					Go: &config.GoModule{
 						NestedModule: "v2",
 					},
