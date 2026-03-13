@@ -482,6 +482,54 @@ func TestLibraryPath(t *testing.T) {
 	}
 }
 
+func TestRepoRootPath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "no prefix on library output",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "secretmanager",
+			},
+			want: ".",
+		},
+		{
+			name: "prefix on library output",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "tmp/secretmanager",
+			},
+			want: "tmp",
+		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "bigquery/v2",
+			},
+			want: ".",
+		},
+		{
+			name: "prefix with nested major version",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "tmp/bigquery/v2",
+			},
+			want: "tmp",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := repoRootPath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestModulePath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
