@@ -33,6 +33,24 @@ import (
 )
 
 var (
+	keep = map[string][]string{
+		"auth":              {"internal/version.go", "README.md"},
+		"auth/oauth2adapt":  {"internal/version.go"},
+		"batch":             {"apiv1/iam_policy_client.go"},
+		"bigquery":          {"README.md"},
+		"compute/metadata":  {"internal/version.go", "README.md"},
+		"containeranalysis": {"apiv1beta1/grafeas/grafeaspb/grafeas.pb.go"},
+		"datacatalog":       {"apiv1/iam_policy_client.go"},
+		"datastream":        {"apiv1/iam_policy_client.go"},
+		"grafeas":           {"internal/version.go", "README.md"},
+		"profiler":          {"internal/version.go", "README.md"},
+		"pubsub":            {"internal/version.go", "README.md"},
+		"run":               {"apiv2/locations_client.go"},
+		"spanner":           {"README.md"},
+		"storage":           {"README.md"},
+		"vertexai":          {"internal/version.go", "README.md"},
+		"vmmigration":       {"apiv1/iam_policy_client.go"},
+	}
 	// nestedModules maps specific Go libraries to their nested module path.
 	// This is a hardcoded list to handle special cases during legacy migration
 	// where this information is not available in the source configuration.
@@ -242,8 +260,12 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
-		library.Keep = append(library.Keep, libState.PreserveRegex...)
-		slices.Sort(library.Keep)
+		// Use the hardcode keep because the legacylibrarian has a different
+		// mechanism for which files to keep during generation.
+		k, ok := keep[id]
+		if ok {
+			library.Keep = k
+		}
 
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
