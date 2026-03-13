@@ -117,7 +117,7 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			},
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
 				library.Output = filepath.Join(output, "secretmanager")
-				dir := filepath.Join(output, "apiv1")
+				dir := filepath.Join(output, "secretmanager", "apiv1")
 				// Create a file where the directory should be so Write fails.
 				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
 					t.Fatal(err)
