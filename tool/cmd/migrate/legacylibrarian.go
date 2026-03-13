@@ -162,7 +162,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.TagFormat = pythonTagFormat
 	} else {
 		input.googleapisDir = src.Dir
-		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Release = &config.Release{
 			Branch: "main",
