@@ -452,6 +452,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
  }
 }
 `
+	// json is reformated.
 	after := `{
   "clientLibrary": {
     "apis": [
