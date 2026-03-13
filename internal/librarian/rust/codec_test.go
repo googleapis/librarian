@@ -42,6 +42,7 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
+// ptr() makes it easier to define test data where the values are literals but the required type is a pointer.
 func ptr[T any](v T) *T {
 	return &v
 }
