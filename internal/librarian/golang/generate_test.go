@@ -225,7 +225,7 @@ func TestGenerateLibrary(t *testing.T) {
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secret_manager_client.go"},
+				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
