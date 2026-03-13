@@ -181,13 +181,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 Some(String::new())
                 {{/Codec.ResourceNameTemplateGrpc}}
             })();
-            if let Some(rn) = resource_name {
-                if !rn.is_empty() {
-                    use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
-                    options.insert_extension(ResourceName(rn))
-                } else {
-                    options
-                }
+            if let Some(rn) = resource_name.filter(|s| !s.is_empty()) {
+                use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
+                options.insert_extension(ResourceName(rn))
             } else {
                 options
             }
