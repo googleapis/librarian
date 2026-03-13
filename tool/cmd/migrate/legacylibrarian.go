@@ -269,6 +269,7 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if ok {
 			library.Keep = k
 		}
+		slices.Sort(library.Keep)
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
