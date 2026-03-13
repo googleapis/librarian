@@ -94,15 +94,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	moduleRoot := filepath.Join(outdir, library.Name)
-	absModuleRoot, err := filepath.Abs(moduleRoot)
+	absModuleRoot, err := filepath.Abs(outdir)
 	if err != nil {
 		return err
 	}
 	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
 		return fmt.Errorf("invalid library name: path traversal detected")
 	}
-	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
+	if err := generateInternalVersionFile(outdir, library.Version); err != nil {
 		return err
 	}
 	for i, api := range library.APIs {
@@ -119,11 +118,11 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, api, moduleRoot); err != nil {
+		if err := generateREADME(library, api, outdir); err != nil {
 			return err
 		}
 	}
-	if err := updateSnippetMetadata(library, outdir); err != nil {
+	if err := updateSnippetMetadata(library); err != nil {
 		return err
 	}
 	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
@@ -313,7 +312,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
-func updateSnippetMetadata(library *config.Library, output string) error {
+func updateSnippetMetadata(library *config.Library) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
@@ -323,7 +322,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		baseDir := snippetDirectory(repoRootPath(library), clientPathFromLibraryRoot(library, goAPI))
 		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
 			return err
 		}
