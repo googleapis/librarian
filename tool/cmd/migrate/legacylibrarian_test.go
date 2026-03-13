@@ -35,11 +35,16 @@ import (
 )
 
 func TestRunMigrateLibrarian(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "testdata/googleapis",
+			Dir:    absGoogleapis,
 		}, nil
 	}
 	for _, test := range []struct {
@@ -76,20 +81,21 @@ func TestRunMigrateLibrarian(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
-			os.CopyFS(dir, os.DirFS(test.repoPath))
-			err := errRepoNotFound
-			if test.repoPath != "" {
-				err = runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate)
-			}
-			if err != nil {
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
 				t.Fatal(err)
 			}
-			config, err := yaml.Read[config.Config]("librarian.yaml")
+			// TODO(https://github.com/googleapis/librarian/issues/4569): remove
+			// this chdir when we change within the prod code.
+			t.Chdir(dir)
+			if err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate); err != nil {
+				t.Fatal(err)
+			}
+			gotConfig, err := yaml.Read[config.Config]("librarian.yaml")
 			if err != nil {
 				t.Fatal(err)
 			}
 			var gotLibraries []string
-			for _, lib := range config.Libraries {
+			for _, lib := range gotConfig.Libraries {
 				gotLibraries = append(gotLibraries, lib.Name)
 			}
 			if diff := cmp.Diff(test.wantLibraries, gotLibraries); diff != "" {
@@ -100,11 +106,15 @@ func TestRunMigrateLibrarian(t *testing.T) {
 }
 
 func TestRunMigrateLibrarian_Error(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "testdata/googleapis",
+			Dir:    absGoogleapis,
 		}, nil
 	}
 	for _, test := range []struct {
@@ -119,11 +129,6 @@ func TestRunMigrateLibrarian_Error(t *testing.T) {
 			wantErr:  errTidyFailed,
 		},
 		{
-			name:     "no_repo_path",
-			repoPath: "",
-			wantErr:  errRepoNotFound,
-		},
-		{
 			name:               "specified library doesn't exist",
 			repoPath:           "testdata/run/selective-migration",
 			librariesToMigrate: []string{"google-cloud-functions"},
@@ -132,11 +137,10 @@ func TestRunMigrateLibrarian_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
-			os.CopyFS(dir, os.DirFS(test.repoPath))
-			err := errRepoNotFound
-			if test.repoPath != "" {
-				err = runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate)
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
 			}
+			err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
 			}

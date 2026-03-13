@@ -108,7 +108,7 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 
 	// If we already have a config, we just replace the libraries which are new.
 	// (Everything else about the existing configuration is maintained.)
-	existingConfig, err := yaml.Read[config.Config](filepath.Join(repoPath, "librarian.yaml"))
+	existingConfig, err := yaml.Read[config.Config]("librarian.yaml")
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to load existing librarian.yaml: %w", err)
 	}
