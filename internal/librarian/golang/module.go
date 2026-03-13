@@ -35,6 +35,9 @@ var (
 // Fill populates empty Go-specific fields from the api path.
 // Library configurations takes precedence.
 func Fill(library *config.Library) (*config.Library, error) {
+	if library.Output == "" {
+		library.Output = library.Name
+	}
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
 	}
