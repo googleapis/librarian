@@ -270,7 +270,11 @@ type methodAnnotation struct {
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
 	HasGrpcResourceNameArgs   bool
-	HasBindings               bool
+}
+
+// HasBindings returns true if the method has path bindings.
+func (m *methodAnnotation) HasBindings() bool {
+	return m.PathInfo != nil && len(m.PathInfo.Bindings) > 0
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -988,7 +992,6 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
-		HasBindings:               m.PathInfo != nil && len(m.PathInfo.Bindings) > 0,
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
