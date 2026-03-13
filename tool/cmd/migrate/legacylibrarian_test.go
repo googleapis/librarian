@@ -791,7 +791,7 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "pubsub",
-					Keep: []string{"internal/version.go", "README.md"},
+					Keep: []string{"README.md", "internal/version.go"},
 					Go: &config.GoModule{
 						NestedModule: "v2",
 					},
