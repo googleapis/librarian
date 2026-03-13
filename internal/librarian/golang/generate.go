@@ -325,6 +325,12 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			continue
 		}
 		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		if _, err := os.Stat(baseDir); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
 		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
 			return err
 		}
@@ -338,9 +344,6 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 func updateSnippetDirectory(baseDir, version string) error {
 	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return nil
-			}
 			return err
 		}
 		if d.IsDir() {
