@@ -234,15 +234,14 @@ func fixVersioning(outputDir, library, modPath string) error {
 		return nil
 	}
 
-	srcDir := filepath.Join(outputDir, name)
-	if err := filesystem.MoveAndMerge(filepath.Join(srcDir, version), srcDir); err != nil {
+	if err := filesystem.MoveAndMerge(filepath.Join(outputDir, version), outputDir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(srcDir, version)); err != nil {
+	if err := os.RemoveAll(filepath.Join(outputDir, version)); err != nil {
 		return err
 	}
 
-	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
+	snippetDir := filepath.Join(outputDir, "..", "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
 		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
