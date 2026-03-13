@@ -266,13 +266,11 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if ok {
 			library.Keep = k
 		}
-
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
 		}
-
 		libGoModule, ok := idToGoModule[id]
 		if ok {
 			var goAPIs []*config.GoAPI
