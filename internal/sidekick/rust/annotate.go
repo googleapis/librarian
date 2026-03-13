@@ -269,7 +269,11 @@ type methodAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
-	HasGrpcResourceNameArgs   bool
+}
+
+// HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
+func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
+	return len(m.GrpcResourceNameArgs) > 0
 }
 
 // HasBindings returns true if the method has path bindings.
@@ -417,7 +421,11 @@ type pathBindingAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplate      string
 	ResourceNameArgs          []string
-	HasResourceNameArgs       bool
+}
+
+// HasResourceNameArgs returns true if the method has resource name arguments.
+func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
+	return len(b.ResourceNameArgs) > 0
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -1505,7 +1513,6 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 				grpcArgs = append(grpcArgs, fieldAccessor)
 			}
 			annotation.GrpcResourceNameArgs = grpcArgs
-			annotation.HasGrpcResourceNameArgs = len(grpcArgs) > 0
 
 			for _, b := range m.PathInfo.Bindings {
 				bAnn, ok := b.Codec.(*pathBindingAnnotation)
@@ -1522,11 +1529,9 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 					}
 					bAnn.ResourceNameTemplate = tmpl
 					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
-					bAnn.HasResourceNameArgs = len(bAnn.ResourceNameArgs) > 0
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
-					bAnn.HasResourceNameArgs = false
 				}
 			}
 		}
