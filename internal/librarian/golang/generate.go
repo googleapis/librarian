@@ -72,7 +72,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	src := filepath.Join(outdir, "cloud.google.com", "go")
+	src := filepath.Join(outdir, "cloud.google.com", "go", library.Name)
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("cannot access directory %q: %w", src, err)
 	}

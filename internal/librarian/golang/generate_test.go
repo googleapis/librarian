@@ -267,13 +267,13 @@ func TestGenerateLibrary(t *testing.T) {
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
-						ImportPath:    "customdir/apiv1",
+						ImportPath:    "secretmanager/customdir/apiv1",
 						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
 			want: []string{
-				"customdir/apiv1/secret_manager_client.go",
+				"secretmanager/customdir/apiv1/secret_manager_client.go",
 			},
 		},
 		{
@@ -330,7 +330,7 @@ func TestGenerateLibrary(t *testing.T) {
 			library := &config.Library{
 				Name:         test.libraryName,
 				Version:      "1.0.0",
-				Output:       outdir,
+				Output:       filepath.Join(outdir, test.libraryName),
 				APIs:         test.apis,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
