@@ -33,6 +33,9 @@ import (
 )
 
 var (
+	// keep maps a Go library to a list of files that should be preserved during
+	// generation. This is a hardcoded list to handle special cases during legacy
+	// migration where the legacy librarian handled file preservation differently.
 	keep = map[string][]string{
 		"auth":              {"internal/version.go", "README.md"},
 		"auth/oauth2adapt":  {"internal/version.go"},
