@@ -130,11 +130,11 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		relClientPath := clientPathFromLibraryRoot(library, goAPI)
-		clientPath := filepath.Join(library.Output, relClientPath)
+		clientPath := filepath.Join(repoRootPath(library), relClientPath)
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
-		snippetDir := snippetDirectory(library.Output, relClientPath)
+		snippetDir := snippetDirectory(repoRootPath(library), relClientPath)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}

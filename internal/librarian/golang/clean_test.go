@@ -116,7 +116,7 @@ func TestClean(t *testing.T) {
 						Path: "google/example/v1",
 					},
 				},
-				Output: root,
+				Output: outputPath,
 				Keep:   test.keep,
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
