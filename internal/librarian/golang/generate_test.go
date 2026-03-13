@@ -416,8 +416,10 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 }
 
 func TestUpdateSnippetMetadata(t *testing.T) {
+	tmpDir := t.TempDir()
 	library := &config.Library{
 		Name:    "accessapproval",
+		Output:  filepath.Join(tmpDir, "accessapproval"),
 		Version: "1.2.3",
 		APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
 		Go: &config.GoModule{
@@ -430,7 +432,6 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		},
 	}
 
-	tmpDir := t.TempDir()
 	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "accessapproval", "apiv1")
 	err := os.MkdirAll(metadataDir, 0755)
 	if err != nil {
@@ -454,7 +455,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
 		return
 	}
-	if err := updateSnippetMetadata(library, tmpDir); err != nil {
+	if err := updateSnippetMetadata(library); err != nil {
 		t.Fatal(err)
 	}
 
@@ -524,7 +525,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			tmpDir := t.TempDir()
 			library := &config.Library{
 				Name:    "bigquery",
-				Output:  tmpDir,
+				Output:  filepath.Join(tmpDir, "bigquery"),
 				Version: "1.2.3",
 				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
 				Go: &config.GoModule{
@@ -554,7 +555,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			if test.setup != nil {
 				test.setup(tmpDir, test.path, data, test.fileName)
 			}
-			if err := updateSnippetMetadata(library, tmpDir); err != nil {
+			if err := updateSnippetMetadata(library); err != nil {
 				t.Fatal(err)
 			}
 			if test.setup == nil {
@@ -650,10 +651,11 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			test.library.Output = filepath.Join(tmpDir, test.library.Name)
 			if test.setup != nil {
 				test.setup(tmpDir)
 			}
-			err := updateSnippetMetadata(test.library, tmpDir)
+			err := updateSnippetMetadata(test.library)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
 			}
