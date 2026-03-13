@@ -81,7 +81,7 @@ Examples:
 				Name:  "version",
 				Usage: "specific version to update to; not valid with --all",
 			},
-			// TODO(FIXME:issue number if we go ahead with this): remove this
+			// TODO(https://github.com/googleapis/librarian/issues/4575): remove this
 			// when we migrate fully from legacylibrarian.
 			&cli.StringFlag{
 				Name:  "legacylibrarian-pr-body",
