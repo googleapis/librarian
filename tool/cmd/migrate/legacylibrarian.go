@@ -164,6 +164,9 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		input.googleapisDir = src.Dir
 		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
+		cfg.Release = &config.Release{
+			Branch: "main",
+		}
 		cfg.Libraries, err = buildGoLibraries(input)
 		if err != nil {
 			return nil, err
