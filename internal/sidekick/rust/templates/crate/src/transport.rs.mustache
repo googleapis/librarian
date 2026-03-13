@@ -82,6 +82,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         req: {{InputType.Codec.QualifiedName}},
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
+        {{^Codec.HasBindings}}
+        let _ = req;
+        let _ = options;
+        Err(google_cloud_gax::error::Error::other("No path bindings matching this API exist").into())
+        {{/Codec.HasBindings}}
+        {{#Codec.HasBindings}}
         use google_cloud_gax::error::binding::BindingError;
         use gaxi::path_parameter::PathMismatchBuilder;
         use gaxi::http::reqwest::{Method, HeaderValue};
@@ -96,7 +102,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         );
         {{/HasAutoPopulatedFields}}
         {{#Codec.HasResourceNameGeneration}}
+        {{#Codec.DetailedTracingAttributes}}
         let (builder, method, _path_template, resource_name) = None
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
+        let (builder, method, resource_name) = None
+        {{/Codec.DetailedTracingAttributes}}
         {{/Codec.HasResourceNameGeneration}}
         {{^Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
@@ -124,8 +135,9 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.HasVariablePath}}
 
             {{#Codec.DetailedTracingAttributes}}
-            let path_template = "{{Codec.PathTemplate}}";
+            let _path_template = "{{Codec.PathTemplate}}";
             {{/Codec.DetailedTracingAttributes}}
+
             {{#Codec.HasResourceNameGeneration}}
             {{#Codec.ResourceNameTemplate}}
             let resource_name = format!(
@@ -155,7 +167,12 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             let builder = Ok(builder);
             {{/Codec.QueryParamsCanFail}}
             {{#Codec.HasResourceNameGeneration}}
+            {{#Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}}, _path_template, resource_name)))
+            {{/Codec.DetailedTracingAttributes}}
+            {{^Codec.DetailedTracingAttributes}}
+            Some(builder.map(|b| (b, Method::{{Verb}}, resource_name)))
+            {{/Codec.DetailedTracingAttributes}}
             {{/Codec.HasResourceNameGeneration}}
             {{^Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}
@@ -221,6 +238,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             crate::Response::from_parts(parts, ())
         })
         {{/ReturnsEmpty}}
+        {{/Codec.HasBindings}}
     }
 
     {{/Codec.Methods}}

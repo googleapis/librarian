@@ -209,6 +209,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToCamel:  "resourceService",
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "crate::model::Response",
+		HasBindings:         true,
 	}
 	if diff := cmp.Diff(wantMethod, method.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
@@ -227,6 +228,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ServiceNameToCamel:  "resourceService",
 		ServiceNameToSnake:  "resource_service",
 		ReturnType:          "()",
+		HasBindings:         true,
 	}
 	if diff := cmp.Diff(wantMethod, emptyMethod.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
@@ -506,7 +508,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
 	}
 
-	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
+	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType", "HasBindings")
 	wantMethod := &methodAnnotation{
 		ServiceNameToPascal: "Renamed",
 		ServiceNameToCamel:  "renamed",
