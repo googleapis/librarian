@@ -87,7 +87,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 			continue
 		}
 		got := gotMethod.Codec.(*methodAnnotation)
-		if diff := cmp.Diff(test.Want, got, cmpopts.IgnoreFields(methodAnnotation{}, "PathInfo", "SystemParameters", "HasBindings")); diff != "" {
+		if diff := cmp.Diff(test.Want, got, cmpopts.IgnoreFields(methodAnnotation{}, "PathInfo", "SystemParameters")); diff != "" {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
 		}
 	}
@@ -418,7 +418,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
 				"RoutingRequired", "DetailedTracingAttributes",
 				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs", "HasGrpcResourceNameArgs",
-				"InternalBuilders", "HasBindings")); diff != "" {
+				"InternalBuilders")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 
