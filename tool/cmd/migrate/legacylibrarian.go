@@ -43,6 +43,11 @@ var (
 		"logging":  "logadmin",
 		"pubsub":   "v2",
 	}
+
+	githubEndpoints = &fetch.Endpoints{
+		API:      "https://api.github.com",
+		Download: "https://github.com",
+	}
 )
 
 type goGAPICInfo struct {
@@ -177,20 +182,16 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 }
 
 func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
-	return fetchGoogleapisWithCommit(ctx, fetch.DefaultBranchMaster)
+	return fetchGoogleapisWithCommit(ctx, githubEndpoints, fetch.DefaultBranchMaster)
 }
 
-func fetchGoogleapisWithCommit(ctx context.Context, commitish string) (*config.Source, error) {
-	endpoint := &fetch.Endpoints{
-		API:      "https://api.github.com",
-		Download: "https://github.com",
-	}
+func fetchGoogleapisWithCommit(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 	repo := &fetch.Repo{
 		Org:    "googleapis",
 		Repo:   "googleapis",
 		Branch: commitish,
 	}
-	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoint, repo)
+	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
 	if err != nil {
 		return nil, err
 	}
