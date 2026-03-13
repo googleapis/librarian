@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -631,6 +632,33 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 				}
 			},
 			wantErr: syscall.EACCES,
+		},
+		{
+			name: "no client library field",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: snippetmetadata.ErrNoClientLibraryField,
 		},
 		{
 			name: "no permission to update snippet directory",
