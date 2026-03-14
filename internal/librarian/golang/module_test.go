@@ -520,6 +520,14 @@ func TestRepoRootPath(t *testing.T) {
 			},
 			want: "tmp",
 		},
+		{
+			name: "root module",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+			},
+			want: ".",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := repoRootPath(test.library)

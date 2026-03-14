@@ -93,6 +93,9 @@ func libraryPath(library *config.Library) string {
 }
 
 func repoRootPath(library *config.Library) string {
+	if library.Output == "." {
+		return "."
+	}
 	path := []string{library.Output}
 	for range strings.Count(library.Name, "/") + 1 {
 		path = append(path, "..")
