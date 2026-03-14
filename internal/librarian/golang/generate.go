@@ -236,7 +236,7 @@ func fixVersioning(outputDir, library, modPath string) error {
 
 	srcDir := filepath.Join(outputDir, name)
 	versionDir := filepath.Join(srcDir, version)
-	if err := filesystem.MoveAndMerge(versionDir, outputDir); err != nil {
+	if err := filesystem.MoveAndMerge(versionDir, srcDir); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(versionDir); err != nil {
