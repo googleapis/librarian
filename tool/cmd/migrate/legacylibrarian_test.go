@@ -30,59 +30,120 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestRunMigrateLibrarian(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "testdata/googleapis",
+			Dir:    absGoogleapis,
 		}, nil
 	}
 	for _, test := range []struct {
-		name     string
-		repoPath string
-		wantErr  error
+		name               string
+		repoPath           string
+		librariesToMigrate []string
+		wantLibraries      []string
 	}{
 		{
-			name:     "success",
-			repoPath: "testdata/run/success-python",
+			name:          "success",
+			repoPath:      "testdata/run/success-python",
+			wantLibraries: []string{"google-ads-admanager"},
 		},
+		{
+			name:               "selective migration",
+			repoPath:           "testdata/run/selective-migration",
+			librariesToMigrate: []string{"google-cloud-audit-log"},
+			wantLibraries:      []string{"google-cloud-audit-log"},
+		},
+		{
+			name:               "incremental migration without overlap",
+			repoPath:           "testdata/run/incremental-migration",
+			librariesToMigrate: []string{"google-cloud-audit-log"},
+			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
+			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
+		},
+		{
+			name:               "incremental migration with overlap",
+			repoPath:           "testdata/run/incremental-migration",
+			librariesToMigrate: []string{"google-ads-admanager", "google-cloud-audit-log"},
+			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
+			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
+			}
+			// TODO(https://github.com/googleapis/librarian/issues/4569): remove
+			// this chdir when we change within the prod code.
+			t.Chdir(dir)
+			if err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate); err != nil {
+				t.Fatal(err)
+			}
+			gotConfig, err := yaml.Read[config.Config]("librarian.yaml")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var gotLibraries []string
+			for _, lib := range gotConfig.Libraries {
+				gotLibraries = append(gotLibraries, lib.Name)
+			}
+			if diff := cmp.Diff(test.wantLibraries, gotLibraries); diff != "" {
+				t.Errorf("mismatch in resulting libraries (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRunMigrateLibrarian_Error(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetchSource = func(ctx context.Context) (*config.Source, error) {
+		return &config.Source{
+			Commit: "abcd123",
+			SHA256: "sha123",
+			Dir:    absGoogleapis,
+		}, nil
+	}
+	for _, test := range []struct {
+		name               string
+		repoPath           string
+		librariesToMigrate []string
+		wantErr            error
+	}{
 		{
 			name:     "tidy_failed",
 			repoPath: "testdata/run/tidy-fails-python",
 			wantErr:  errTidyFailed,
 		},
 		{
-			name:     "no_repo_path",
-			repoPath: "",
-			wantErr:  errRepoNotFound,
+			name:               "specified library doesn't exist",
+			repoPath:           "testdata/run/selective-migration",
+			librariesToMigrate: []string{"google-cloud-functions"},
+			wantErr:            librarian.ErrLibraryNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outputPath := "librarian.yaml"
-			t.Cleanup(func() {
-				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Fatalf("cleanup: remove %s: %v", outputPath, err)
-				}
-			})
-
-			err := errRepoNotFound
-			if test.repoPath != "" {
-				err = runLibrarianMigration(t.Context(), "python", test.repoPath)
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
 			}
-			if err != nil {
-				if test.wantErr == nil {
-					t.Fatal(err)
-				}
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
-				}
-			} else if test.wantErr != nil {
-				t.Fatalf("expected error containing %q, got nil", test.wantErr)
+			err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
 			}
-
 		})
 	}
 }

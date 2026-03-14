@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -80,6 +81,12 @@ Examples:
 				Name:  "version",
 				Usage: "specific version to update to; not valid with --all",
 			},
+			// TODO(https://github.com/googleapis/librarian/issues/4575): remove this
+			// when we migrate fully from legacylibrarian.
+			&cli.StringFlag{
+				Name:  "legacylibrarian-pr-body",
+				Usage: "a file to create with text to put in the body of the PR",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			all := cmd.Bool("all")
@@ -98,14 +105,14 @@ Examples:
 			if err != nil {
 				return err
 			}
-			return runBump(ctx, cfg, all, libraryName, versionOverride)
+			return runBump(ctx, cfg, all, libraryName, versionOverride, cmd.String("legacylibrarian-pr-body"))
 		},
 	}
 }
 
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
-func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
+func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride, legacylibrarianPRBodyFile string) error {
 	if cfg.Release == nil {
 		return errReleaseConfigEmpty
 	}
@@ -135,6 +142,13 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 
 	if err := postBump(ctx, cfg); err != nil {
 		return err
+	}
+
+	if legacylibrarianPRBodyFile != "" {
+		legacylibraryPRBody := createLegacylibrarianPRBody(librariesToBump)
+		if err := os.WriteFile(legacylibrarianPRBodyFile, []byte(legacylibraryPRBody), 0644); err != nil {
+			return fmt.Errorf("error writing %s: %w", legacylibrarianPRBodyFile, err)
+		}
 	}
 	return RunTidyOnConfig(ctx, cfg)
 }
@@ -448,4 +462,15 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	default:
 		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
 	}
+}
+
+// createLegacylibrarianPRBody returns a string suitable to use as the body of
+// a pull request that bumps the given libraries, such that it can be processed
+// by legacylibrarian.
+func createLegacylibrarianPRBody(bumpedLibraries []*config.Library) string {
+	var lines []string
+	for _, lib := range bumpedLibraries {
+		lines = append(lines, fmt.Sprintf("<details><summary>%s: v%s</summary></details>", lib.Name, lib.Version))
+	}
+	return strings.Join(lines, "\n")
 }
