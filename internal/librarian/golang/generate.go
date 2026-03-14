@@ -79,10 +79,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err
 	}
+	snippetDir := filepath.Join(outdir, "cloud.google.com", "go", "internal")
+	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
+	if err := filesystem.MoveAndMerge(snippetDir, internalDir); err != nil {
+		return err
+	}
 	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
 		return err
 	}
-
 	if err := fixVersioning(outdir, library.Name, modulePath(library)); err != nil {
 		return err
 	}
