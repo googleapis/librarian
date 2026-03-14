@@ -331,6 +331,9 @@ func TestGenerateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(outdir, "internal"), 0777); err != nil {
+				t.Fatal(err)
+			}
 			library := &config.Library{
 				Name:         test.libraryName,
 				Version:      "1.0.0",
