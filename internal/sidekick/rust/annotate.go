@@ -28,14 +28,6 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// resourceNameCandidateField represents a potential field to use for the resource name.
-type resourceNameCandidateField struct {
-	FieldPath []string // e.g., ["book"], ["book", "name"]
-	Field     *api.Field
-	IsNested  bool
-	Accessor  string
-}
-
 type modelAnnotations struct {
 	PackageName      string
 	PackageVersion   string
@@ -273,10 +265,20 @@ type methodAnnotation struct {
 	Attributes                []string
 	RoutingRequired           bool
 	DetailedTracingAttributes bool
-	ResourceNameFields        []*resourceNameCandidateField
-	HasResourceNameFields     bool
 	InternalBuilders          bool
 	HasResourceNameGeneration bool
+	ResourceNameTemplateGrpc  string
+	GrpcResourceNameArgs      []string
+}
+
+// HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
+func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
+	return len(m.GrpcResourceNameArgs) > 0
+}
+
+// HasBindings returns true if the method has path bindings.
+func (m *methodAnnotation) HasBindings() bool {
+	return m.PathInfo != nil && len(m.PathInfo.Bindings) > 0
 }
 
 // BuilderVisibility returns the visibility for client and request builders.
@@ -419,7 +421,11 @@ type pathBindingAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplate      string
 	ResourceNameArgs          []string
-	HasResourceNameArgs       bool
+}
+
+// HasResourceNameArgs returns true if the method has resource name arguments.
+func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
+	return len(b.ResourceNameArgs) > 0
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -823,139 +829,6 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	}
 }
 
-// makeChainAccessor generates the Rust accessor code for a chain of fields.
-// It handles optional fields and oneofs correctly.
-// parentAccessor is the accessor for the parent message (e.g. "req").
-func makeChainAccessor(fields []*api.Field, parentAccessor string) string {
-	accessor := parentAccessor
-	for i, field := range fields {
-		fieldName := toSnake(field.Name)
-		if i == 0 {
-			// First field in the chain
-			if field.IsOneOf {
-				accessor = fmt.Sprintf("%s.%s()", accessor, fieldName)
-			} else if field.Optional {
-				accessor = fmt.Sprintf("%s.%s.as_ref()", accessor, fieldName)
-			} else {
-				accessor = fmt.Sprintf("Some(&%s.%s)", accessor, fieldName)
-			}
-		} else {
-			// Subsequent fields (nested)
-			if field.IsOneOf {
-				accessor = fmt.Sprintf("%s.and_then(|s| s.%s())", accessor, fieldName)
-			} else if field.Optional {
-				accessor = fmt.Sprintf("%s.and_then(|s| s.%s.as_ref())", accessor, fieldName)
-			} else {
-				accessor = fmt.Sprintf("%s.map(|s| &s.%s)", accessor, fieldName)
-			}
-		}
-	}
-	return accessor
-}
-
-// findResourceNameCandidates identifies all fields annotated with google.api.resource_reference.
-// It searches top-level fields and fields nested one level deep.
-func (c *codec) findResourceNameCandidates(m *api.Method) []*resourceNameCandidateField {
-	var candidates []*resourceNameCandidateField
-
-	// Find top-level annotated fields
-	for _, field := range m.InputType.Fields {
-		if field.IsResourceReference() && !field.Repeated && !field.Map && field.Typez == api.STRING_TYPE {
-			candidates = append(candidates, &resourceNameCandidateField{
-				FieldPath: []string{field.Name},
-				Field:     field,
-				IsNested:  false,
-				Accessor:  makeChainAccessor([]*api.Field{field}, "req"),
-			})
-		}
-	}
-
-	// Find nested annotated fields (one level deep)
-	for _, field := range m.InputType.Fields {
-		if field.MessageType == nil || field.Repeated || field.Map {
-			continue
-		}
-		for _, nestedField := range field.MessageType.Fields {
-			if !nestedField.IsResourceReference() || nestedField.Repeated || nestedField.Map || nestedField.Typez != api.STRING_TYPE {
-				continue
-			}
-			candidates = append(candidates, &resourceNameCandidateField{
-				FieldPath: []string{field.Name, nestedField.Name},
-				Field:     nestedField,
-				IsNested:  true,
-				Accessor:  makeChainAccessor([]*api.Field{field, nestedField}, "req"),
-			})
-		}
-	}
-	return candidates
-}
-
-func (c *codec) findResourceNameFields(m *api.Method) []*resourceNameCandidateField {
-	if m.InputType == nil {
-		return nil
-	}
-
-	candidates := c.findResourceNameCandidates(m)
-
-	if len(candidates) == 0 {
-		return nil
-	}
-
-	// Check for HTTP path presence
-	var httpParams map[string]bool
-	if m.PathInfo != nil && m.PathInfo.Codec != nil {
-		if pia, ok := m.PathInfo.Codec.(*pathInfoAnnotation); ok {
-			httpParams = make(map[string]bool)
-			for _, p := range pia.UniqueParameters {
-				httpParams[p.FieldName] = true
-			}
-		}
-	}
-
-	isInPath := func(c *resourceNameCandidateField) bool {
-		if httpParams == nil {
-			return false
-		}
-		var snakeParts []string
-		for _, p := range c.FieldPath {
-			snakeParts = append(snakeParts, toSnake(p))
-		}
-		fieldName := strings.Join(snakeParts, ".")
-		return httpParams[fieldName]
-	}
-
-	slices.SortStableFunc(candidates, compareResourceNameCandidates(isInPath))
-
-	return candidates
-}
-
-// sortResourceNameCandidates sorts candidates by priority:
-// 1. Top-level fields (IsNested == false).
-// 2. Fields in HTTP path (isInPath == true).
-// 3. Proto definition order (stable sort).
-func compareResourceNameCandidates(isInPath func(*resourceNameCandidateField) bool) func(a, b *resourceNameCandidateField) int {
-	return func(a, b *resourceNameCandidateField) int {
-		// 1. Top-level before Nested.
-		if a.IsNested != b.IsNested {
-			if !a.IsNested {
-				return -1 // a is top (false), b is nested (true) -> a < b
-			}
-			return 1
-		}
-		// 2. In-Path before Not-In-Path.
-		inPathA := isInPath(a)
-		inPathB := isInPath(b)
-		if inPathA != inPathB {
-			if inPathA {
-				return -1 // a is in-path (true), b is not (false) -> a < b
-			}
-			return 1
-		}
-		// 3. Stable sort preserves proto order.
-		return 0
-	}
-}
-
 // packageToModuleName maps "google.foo.v1" to "google::foo::v1".
 func packageToModuleName(p string) string {
 	components := strings.Split(p, ".")
@@ -1100,7 +973,6 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		returnType = "()"
 	}
 	serviceName := c.ServiceName(m.Service)
-	resourceNameFields := c.findResourceNameFields(m)
 	systemParameters := slices.Clone(c.systemParameters)
 	if m.APIVersion != "" {
 		systemParameters = append(systemParameters, systemParameter{
@@ -1127,8 +999,6 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		HasVeneer:                 c.hasVeneer,
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
-		ResourceNameFields:        resourceNameFields,
-		HasResourceNameFields:     len(resourceNameFields) > 0,
 		InternalBuilders:          c.internalBuilders,
 	}
 
@@ -1613,14 +1483,37 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 		return nil // Constraint 1: Do nothing if detailed tracing is off.
 	}
 	if m.PathInfo != nil {
+		var firstBindingWithTargetResource *api.PathBinding
 		for _, b := range m.PathInfo.Bindings {
 			if b.TargetResource != nil {
 				annotation.HasResourceNameGeneration = true
+				firstBindingWithTargetResource = b
 				break
 			}
 		}
 
 		if annotation.HasResourceNameGeneration {
+			// Populate gRPC specific template and args on the parent annotation
+			tmpl, err := formatResourceNameTemplateFromPath(m, firstBindingWithTargetResource)
+			if err != nil {
+				return err
+			}
+			annotation.ResourceNameTemplateGrpc = tmpl
+
+			var grpcArgs []string
+			for _, path := range firstBindingWithTargetResource.TargetResource.FieldPaths {
+				accessors, err := makeAccessors(path, m)
+				if err != nil {
+					return err
+				}
+				fieldAccessor := "Some(&req)"
+				for _, a := range accessors {
+					fieldAccessor += a
+				}
+				grpcArgs = append(grpcArgs, fieldAccessor)
+			}
+			annotation.GrpcResourceNameArgs = grpcArgs
+
 			for _, b := range m.PathInfo.Bindings {
 				bAnn, ok := b.Codec.(*pathBindingAnnotation)
 				if !ok {
@@ -1636,11 +1529,9 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 					}
 					bAnn.ResourceNameTemplate = tmpl
 					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
-					bAnn.HasResourceNameArgs = len(bAnn.ResourceNameArgs) > 0
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
-					bAnn.HasResourceNameArgs = false
 				}
 			}
 		}

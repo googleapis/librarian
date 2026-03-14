@@ -42,6 +42,11 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
+// ptr() makes it easier to define test data where the values are literals but the required type is a pointer.
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -75,7 +80,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: true,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(true),
+					},
 				},
 			},
 			api: &config.API{
@@ -149,19 +156,20 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Keep: []string{"src/extra-module.rs"},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
-						GenerateSetterSamples:   "true",
-						GenerateRpcSamples:      "true",
+						DisabledRustdocWarnings:   []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:     "true",
+						GenerateRpcSamples:        "true",
+						DetailedTracingAttributes: ptr(true),
+						ResourceNameHeuristic:     ptr(true),
 					},
-					ModulePath:                "gcs",
-					PerServiceFeatures:        true,
-					IncludeGrpcOnlyMethods:    true,
-					DetailedTracingAttributes: true,
-					HasVeneer:                 true,
-					RoutingRequired:           true,
-					DisabledClippyWarnings:    []string{"too_many_arguments"},
-					DefaultFeatures:           []string{"default-feature"},
-					TemplateOverride:          "custom-template",
+					ModulePath:             "gcs",
+					PerServiceFeatures:     true,
+					IncludeGrpcOnlyMethods: true,
+					HasVeneer:              true,
+					RoutingRequired:        true,
+					DisabledClippyWarnings: []string{"too_many_arguments"},
+					DefaultFeatures:        []string{"default-feature"},
+					TemplateOverride:       "custom-template",
 				},
 			},
 			api: &config.API{
@@ -178,6 +186,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
 				},
+				ResourceNameHeuristic: true,
 			},
 		},
 		{
@@ -608,7 +617,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: false,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(false),
+					},
 					Modules: []*config.RustModule{
 						{
 							Language: config.LanguageRust,
@@ -630,7 +641,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: true,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(true),
+					},
 					Modules: []*config.RustModule{
 						{
 							Language: config.LanguageRust,
@@ -1094,9 +1107,11 @@ func TestBuildCodec(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						GenerateSetterSamples:   "true",
-						GenerateRpcSamples:      "true",
-						DisabledRustdocWarnings: []string{"warning1", "warning2"},
+						GenerateSetterSamples:     "true",
+						GenerateRpcSamples:        "true",
+						DetailedTracingAttributes: ptr(true),
+						ResourceNameHeuristic:     ptr(true),
+						DisabledRustdocWarnings:   []string{"warning1", "warning2"},
 						PackageDependencies: []*config.RustPackageDependency{
 							{
 								Name:    "dep1",
@@ -1114,7 +1129,6 @@ func TestBuildCodec(t *testing.T) {
 					TemplateOverride:          "custom-template",
 					IncludeGrpcOnlyMethods:    true,
 					PerServiceFeatures:        true,
-					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
 					NameOverrides:             "foo=bar",

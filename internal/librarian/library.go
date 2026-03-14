@@ -62,6 +62,12 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	if len(lib.Rust.DisabledRustdocWarnings) == 0 {
 		lib.Rust.DisabledRustdocWarnings = d.Rust.DisabledRustdocWarnings
 	}
+	if lib.Rust.DetailedTracingAttributes == nil {
+		lib.Rust.DetailedTracingAttributes = d.Rust.DetailedTracingAttributes
+	}
+	if lib.Rust.ResourceNameHeuristic == nil {
+		lib.Rust.ResourceNameHeuristic = d.Rust.ResourceNameHeuristic
+	}
 	if lib.Rust.GenerateSetterSamples == "" {
 		lib.Rust.GenerateSetterSamples = d.Rust.GenerateSetterSamples
 	}

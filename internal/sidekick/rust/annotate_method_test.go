@@ -387,19 +387,16 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 					HasResourceNameGeneration: true,
 					ResourceNameTemplate:      "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
 					ResourceNameArgs:          []string{"var_name"},
-					HasResourceNameArgs:       true,
 				},
 				{
 					HasResourceNameGeneration: true,
 					ResourceNameTemplate:      "//Test.googleapis.com/projects/{}/locations/{}/clusters/{}",
 					ResourceNameArgs:          []string{"var_project", "var_location", "var_cluster"},
-					HasResourceNameArgs:       true,
 				},
 				{
 					HasResourceNameGeneration: true,
 					ResourceNameTemplate:      "",
 					ResourceNameArgs:          nil,
-					HasResourceNameArgs:       false,
 				},
 			},
 		},
@@ -416,8 +413,9 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				"Name", "NameNoMangling", "BuilderName", "Body", "DocLines",
 				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
-				"RoutingRequired", "DetailedTracingAttributes", "ResourceNameFields",
-				"HasResourceNameFields", "InternalBuilders")); diff != "" {
+				"RoutingRequired", "DetailedTracingAttributes",
+				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs",
+				"InternalBuilders")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 

@@ -103,6 +103,12 @@ type RustDefault struct {
 
 	// GenerateRpcSamples indicates whether to generate RPC samples.
 	GenerateRpcSamples string `yaml:"generate_rpc_samples,omitempty"`
+
+	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
+	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
+
+	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
+	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 }
 
 // RustModule defines a generation target within a veneer crate.
@@ -111,6 +117,10 @@ type RustDefault struct {
 type RustModule struct {
 	// DisabledRustdocWarnings specifies rustdoc lints to disable. An empty slice explicitly enables all warnings.
 	DisabledRustdocWarnings yaml.StringSlice `yaml:"disabled_rustdoc_warnings,omitempty"`
+
+	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
+	// This overrides the crate-level setting.
+	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
@@ -159,6 +169,10 @@ type RustModule struct {
 
 	// PostProcessProtos contains code to post-process generated protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
+
+	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
+	// This overrides the crate-level setting.
+	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 
 	// RootName is the key for the root directory in the source map.
 	// It overrides the default root, googleapis, used by the rust+prost generator.
@@ -235,12 +249,6 @@ type RustCrate struct {
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
-
-	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
-	DetailedTracingAttributes bool `yaml:"detailed_tracing_attributes,omitempty"`
-
-	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
-	ResourceNameHeuristic bool `yaml:"resource_name_heuristic,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
