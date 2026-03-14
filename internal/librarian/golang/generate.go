@@ -58,7 +58,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		return nil
 	}
 
-	outdir, err := filepath.Abs(library.Output)
+	outdir, err := filepath.Abs(repoRootPath(library))
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	src := filepath.Join(outdir, "cloud.google.com", "go", library.Name)
+	src := filepath.Join(outdir, "cloud.google.com", "go")
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("cannot access directory %q: %w", src, err)
 	}
@@ -234,14 +234,16 @@ func fixVersioning(outputDir, library, modPath string) error {
 		return nil
 	}
 
-	if err := filesystem.MoveAndMerge(filepath.Join(outputDir, version), outputDir); err != nil {
+	srcDir := filepath.Join(outputDir, name)
+	versionDir := filepath.Join(srcDir, version)
+	if err := filesystem.MoveAndMerge(versionDir, outputDir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outputDir, version)); err != nil {
+	if err := os.RemoveAll(versionDir); err != nil {
 		return err
 	}
 
-	snippetDir := filepath.Join(outputDir, "..", "internal", "generated", "snippets", name)
+	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
 		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
