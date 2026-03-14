@@ -253,11 +253,10 @@ func filterLibraries(cfg *config.Config, librariesToMigrate []string) (*config.C
 	return cfg, nil
 }
 
-// mergeLibraries returns a merged slice of libraries, containing all libraries
-// from existingConfig, and libraries in newConfig which don't already exist in
-// newConfig. The order of the libraries in the slice is the libraries in
-// existingConfig, followed by newly-merged libraries from newConfig, in the
-// order in which they appear in the two configurations.
+// mergeLibraries returns a merged slice of libraries, containing all libraries from existingConfig,
+// and libraries in newConfig which don't already exist in existingConfig. The order of the libraries
+// in the slice is the libraries in existingConfig, followed by newly-merged libraries from newConfig,
+// in the order in which they appear in the two configurations.
 func mergeLibraries(existingConfig *config.Config, newConfig *config.Config) []*config.Library {
 	existingSet := make(map[string]bool)
 	for _, lib := range existingConfig.Libraries {
