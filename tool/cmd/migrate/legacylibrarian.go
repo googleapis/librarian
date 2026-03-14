@@ -180,7 +180,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.TagFormat = pythonTagFormat
 	} else {
 		input.googleapisDir = src.Dir
-		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Release = &config.Release{
 			Branch: "main",
@@ -294,6 +293,11 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
+		// Hardcode library output that is different from other libraries.
+		output, ok := outputs[id]
+		if ok {
+			library.Output = output
+		}
 		// Use the hardcode keep because the legacylibrarian has a different
 		// mechanism for which files to keep during generation.
 		k, ok := keep[id]
@@ -361,6 +365,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			library.Go.NestedModule = mod
 		}
+		deletion, ok := deleteOutputs[id]
+		if ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.DeleteGenerationOutputPaths = []string{deletion}
+		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			info, err := parseGoBazel(input.googleapisDir, api.Path)
@@ -373,6 +384,18 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			goAPI, index := findGoAPI(library, api.Path)
 			if index == -1 {
 				goAPI = &config.GoAPI{Path: api.Path}
+			}
+			// Hardcode import path that is not parsable from
+			// BUILD.bazel.
+			importPath, ok := importPaths[api.Path]
+			if ok {
+				goAPI.ImportPath = importPath
+			}
+			// Hardcode proto only API that is not parsable from
+			// BUILD.bazel.
+			_, ok = protoOnlyAPI[api.Path]
+			if ok {
+				goAPI.ProtoOnly = true
 			}
 			goAPI.ClientPackage = info.ClientPackageName
 			goAPI.ProtoOnly = info.DisableGAPIC

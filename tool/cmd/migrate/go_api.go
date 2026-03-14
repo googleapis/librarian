@@ -15,6 +15,10 @@
 package main
 
 var (
+	deleteOutputs = map[string]string{
+		"containeranalysis": "google.golang.org",
+		"storage":           "../internal/generated/snippets/storage/internal",
+	}
 	// keep maps a Go library to a list of files that should be preserved during
 	// generation. This is a hardcoded list to handle special cases during legacy
 	// migration where the legacy librarian handled file preservation differently.
@@ -36,6 +40,12 @@ var (
 		"vertexai":          {"internal/version.go", "README.md"},
 		"vmmigration":       {"apiv1/iam_policy_client.go"},
 	}
+	importPaths = map[string]string{
+		"google/shopping/type": "shopping/type",
+	}
+	outputs = map[string]string{
+		"root-module": ".",
+	}
 	// nestedModules maps specific Go libraries to their nested module path.
 	// This is a hardcoded list to handle special cases during legacy migration
 	// where this information is not available in the source configuration.
@@ -45,5 +55,9 @@ var (
 		"iam":      "admin",
 		"logging":  "logadmin",
 		"pubsub":   "v2",
+	}
+	protoOnlyAPI = map[string]bool{
+		"google/bigtable/admin/v2": true,
+		"google/bigtable/v2":       true,
 	}
 )
