@@ -44,10 +44,14 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// We need to create snippet directory root before running generation.
+	if err := os.MkdirAll(filepath.Join(outDir, "internal"), 0777); err != nil {
+		t.Fatal(err)
+	}
 
 	libraries := []*config.Library{
 		{
-			Name:          "google-cloud-secretmanager-v1",
+			Name:          "secretmanager",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -67,7 +71,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			Name:          "google-cloud-configdelivery-v1",
+			Name:          "configdelivery",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -88,14 +92,14 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = outDir
+		library.Output = filepath.Join(outDir, library.Name)
 	}
 	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a README.md file has been created for each library.
 	for _, library := range libraries {
-		expectedReadme := filepath.Join(library.Output, library.Name, "README.md")
+		expectedReadme := filepath.Join(library.Output, "README.md")
 		_, err := os.Stat(expectedReadme)
 		if err != nil {
 			t.Errorf("Stat(%s) returned error: %v", expectedReadme, err)
