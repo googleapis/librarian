@@ -62,7 +62,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, sources *side
 			Description: library.DescriptionOverride,
 			Title:       svcConfig.Title,
 		},
-		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic,
+		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic != nil && *library.Rust.ResourceNameHeuristic,
 	}
 
 	if library.Rust != nil {
@@ -138,7 +138,7 @@ func buildCodec(library *config.Library) map[string]string {
 	if len(rust.DefaultFeatures) > 0 {
 		codec["default-features"] = strings.Join(rust.DefaultFeatures, ",")
 	}
-	if rust.DetailedTracingAttributes {
+	if rust.DetailedTracingAttributes != nil && *rust.DetailedTracingAttributes {
 		codec["detailed-tracing-attributes"] = "true"
 	}
 	if rust.HasVeneer {
@@ -250,6 +250,11 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 	if module.IncludeList != "" {
 		src.IncludeList = strings.Split(module.IncludeList, ",")
 	}
+	resourceNameHeuristic := library.Rust != nil && library.Rust.ResourceNameHeuristic != nil && *library.Rust.ResourceNameHeuristic
+	if module.ResourceNameHeuristic != nil {
+		resourceNameHeuristic = *module.ResourceNameHeuristic
+	}
+
 	modelCfg := &parser.ModelConfig{
 		Language:            language,
 		SpecificationFormat: specificationFormat,
@@ -262,7 +267,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, sou
 			IncludedIDs: module.IncludedIds,
 			SkippedIDs:  module.SkippedIds,
 		},
-		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic,
+		ResourceNameHeuristic: resourceNameHeuristic,
 	}
 	if len(module.DocumentationOverrides) > 0 {
 		modelCfg.CommentOverrides = make([]api.DocumentationOverride, len(module.DocumentationOverrides))
@@ -299,6 +304,13 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.IncludeGrpcOnlyMethods {
 		codec["include-grpc-only-methods"] = "true"
+	}
+	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
+	if module.DetailedTracingAttributes != nil {
+		detailedTracingAttributes = *module.DetailedTracingAttributes
+	}
+	if detailedTracingAttributes {
+		codec["detailed-tracing-attributes"] = "true"
 	}
 	if module.ModulePath != "" {
 		codec["module-path"] = module.ModulePath

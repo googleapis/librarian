@@ -429,6 +429,16 @@ Libraries: a,b,c
 				},
 			},
 		},
+		{
+			name: "contentless releases",
+			body: `
+<details><summary>google-cloud-functions: v2.3.4</summary></details>
+<details><summary>google-cloud-storage: v1.2.3</summary></details>`,
+			want: []libraryRelease{
+				{Library: "google-cloud-functions", Version: "2.3.4"},
+				{Library: "google-cloud-storage", Version: "1.2.3"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := parsePullRequestBody(test.body)
@@ -446,6 +456,16 @@ func TestProcessPullRequest(t *testing.T) {
 	branch := "main"
 	prWithRelease := &legacygithub.PullRequest{
 		Body:           &prBody,
+		Number:         &prNumber,
+		MergeCommitSHA: &mergeCommitSHA,
+		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
+		Base: &gh.PullRequestBranch{
+			Ref: &branch,
+		},
+	}
+	bodyWithoutReleaseNotes := `<details><summary>google-cloud-storage: v1.2.3</summary></details>`
+	prWithoutReleaseNotes := &legacygithub.PullRequest{
+		Body:           &bodyWithoutReleaseNotes,
 		Number:         &prNumber,
 		MergeCommitSHA: &mergeCommitSHA,
 		Labels:         []*gh.Label{{Name: gh.Ptr(releasePendingLabel)}},
@@ -496,11 +516,22 @@ func TestProcessPullRequest(t *testing.T) {
 			wantReleaseNames:       []string{"google-cloud-storage: v1.2.3"},
 		},
 		{
+			name: "tag but no GitHub release",
+			pr:   prWithoutReleaseNotes,
+			ghClient: &mockGitHubClient{
+				librarianState: state,
+			},
+			wantCreateReleaseCalls: 0,
+			wantReplaceLabelsCalls: 1,
+			wantCreateTagCalls:     1,
+		},
+		{
 			name: "no release details",
 			pr:   prWithoutRelease,
 			ghClient: &mockGitHubClient{
 				librarianState: state,
-			}},
+			},
+		},
 		{
 			name: "library not found",
 			pr:   prWithRelease,
