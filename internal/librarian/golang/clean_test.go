@@ -290,7 +290,7 @@ func TestClean_Error(t *testing.T) {
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
 			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
-			test.library.Output = root
+			test.library.Output = outputPath
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
 			}
