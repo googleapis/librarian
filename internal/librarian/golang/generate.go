@@ -84,16 +84,15 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	// the snippets.
 	snippetDir := filepath.Join(outdir, "cloud.google.com", "go", "internal")
 	_, err = os.Stat(snippetDir)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
 	if err == nil {
 		internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
 		if err != nil {
 			return err
 		}
 		if err := filesystem.MoveAndMerge(snippetDir, internalDir); err != nil {
-			return err
-		}
-	} else {
-		if !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
 	}
