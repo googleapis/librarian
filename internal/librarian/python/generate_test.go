@@ -595,8 +595,10 @@ func TestGenerate(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	if err := Generate(t.Context(), cfg, libraries, googleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, library := range libraries {
 		expectedRepoMetadata := filepath.Join(library.Output, ".repo-metadata.json")
@@ -636,7 +638,7 @@ func TestGenerate_Error(t *testing.T) {
 			},
 		},
 	}
-	gotErr := Generate(t.Context(), cfg, libraries, googleapisDir)
+	gotErr := Generate(t.Context(), cfg, libraries[0], googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)

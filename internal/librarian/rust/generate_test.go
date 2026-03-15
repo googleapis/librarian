@@ -325,8 +325,10 @@ func TestGenerate(t *testing.T) {
 	}
 
 	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
-	if err := Generate(t.Context(), cfg, libraries, sources); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), cfg, library, sources); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Just check that a Cargo.toml has been created for each library.
 	for _, library := range libraries {
@@ -384,7 +386,7 @@ func TestGenerate_Error(t *testing.T) {
 	t.Chdir(workspaceDir)
 
 	cfg := &config.Config{Language: "rust", Repo: "google-cloud-rust"}
-	gotErr := Generate(t.Context(), cfg, libraries, sources)
+	gotErr := Generate(t.Context(), cfg, libraries[0], sources)
 	wantErrMessage := "unknown specification format \"invalid\""
 	if gotErr == nil {
 		t.Fatalf("expected error with message %s", wantErrMessage)

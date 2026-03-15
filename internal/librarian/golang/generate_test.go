@@ -91,8 +91,10 @@ func TestGenerate(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = outDir
 	}
-	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Just check that a README.md file has been created for each library.
 	for _, library := range libraries {
@@ -110,27 +112,25 @@ func TestGenerate_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		wantErr   error
+		name    string
+		library *config.Library
+		wantErr error
 	}{
 		{
 			name: "non existent api path",
-			libraries: []*config.Library{
-				{
-					Name:          "non-existent-api",
-					APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
-					Output:        t.TempDir(),
-					Version:       "0.1.0",
-					ReleaseLevel:  "preview",
-					CopyrightYear: "2025",
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								ClientPackage: "non-existent",
-								ImportPath:    "non-existent/apiv1",
-								Path:          "google/cloud/non-existent/v1",
-							},
+			library: &config.Library{
+				Name:          "non-existent-api",
+				APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
+				Output:        t.TempDir(),
+				Version:       "0.1.0",
+				ReleaseLevel:  "preview",
+				CopyrightYear: "2025",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "non-existent",
+							ImportPath:    "non-existent/apiv1",
+							Path:          "google/cloud/non-existent/v1",
 						},
 					},
 				},
@@ -139,26 +139,22 @@ func TestGenerate_Error(t *testing.T) {
 		},
 		{
 			name: "no go api",
-			libraries: []*config.Library{
-				{
-					Name:          "secretmanager",
-					APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-					Output:        t.TempDir(),
-					Version:       "0.1.0",
-					ReleaseLevel:  "preview",
-					CopyrightYear: "2025",
-				},
+			library: &config.Library{
+				Name:          "secretmanager",
+				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Output:        t.TempDir(),
+				Version:       "0.1.0",
+				ReleaseLevel:  "preview",
+				CopyrightYear: "2025",
 			},
 			wantErr: errGoAPINotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
-			for _, library := range test.libraries {
-				library.Output = outdir
-			}
+			test.library.Output = outdir
 
-			gotErr := Generate(t.Context(), test.libraries, googleapisDir)
+			gotErr := Generate(t.Context(), test.library, googleapisDir)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}

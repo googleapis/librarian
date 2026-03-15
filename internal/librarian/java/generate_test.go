@@ -380,18 +380,19 @@ func TestGenerateLibrary_Error(t *testing.T) {
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		wantErr   bool
+		name    string
+		library *config.Library
+		wantErr bool
 	}{
 		{
-			name:      "no libraries",
-			libraries: nil,
+			name:    "no apis",
+			library: &config.Library{Name: "empty-lib"},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Language: "java"}
-			err := Generate(t.Context(), cfg, test.libraries, googleapisDir)
+			err := Generate(t.Context(), cfg, test.library, googleapisDir)
 			if (err != nil) != test.wantErr {
 				t.Fatal(err)
 			}

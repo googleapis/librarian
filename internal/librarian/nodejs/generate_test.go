@@ -596,8 +596,10 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 
-	if err := Generate(t.Context(), libraries, absGoogleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), library, absGoogleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	for _, library := range libraries {

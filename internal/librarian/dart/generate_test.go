@@ -70,8 +70,10 @@ func TestGenerate(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := Generate(t.Context(), libraries, sources); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), library, sources); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Just check that a pubspec.yaml has been created for each library.
 	for _, library := range libraries {
@@ -103,7 +105,7 @@ func TestGenerate_Error(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	gotErr := Generate(t.Context(), libraries, sources)
+	gotErr := Generate(t.Context(), libraries[0], sources)
 	wantErr := errInvalidSpecificationFormat
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)

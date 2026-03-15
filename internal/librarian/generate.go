@@ -162,21 +162,15 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // concurrently.
 func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sidekickconfig.Sources) error {
 	// Languages that can be parallelized.
-	g, ctx := errgroup.WithContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 	for _, library := range libraries {
 		switch cfg.Language {
 		case config.LanguageDart:
-			g.Go(func() error {
-				return dart.Generate(ctx, library, src)
-			})
+			g.Go(func() error { return dart.Generate(gctx, library, src) })
 		case config.LanguageNodejs:
-			g.Go(func() error {
-				return nodejs.Generate(ctx, library, src.Googleapis)
-			})
+			g.Go(func() error { return nodejs.Generate(gctx, library, src.Googleapis) })
 		case config.LanguageRust:
-			g.Go(func() error {
-				return rust.Generate(ctx, cfg, library, src)
-			})
+			g.Go(func() error { return rust.Generate(gctx, cfg, library, src) })
 		}
 	}
 	if err := g.Wait(); err != nil {
@@ -202,6 +196,8 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			if err := python.Generate(ctx, cfg, library, src.Googleapis); err != nil {
 				return err
 			}
+		default:
+			return fmt.Errorf("language %q does not support generation", cfg.Language)
 		}
 	}
 	return nil
