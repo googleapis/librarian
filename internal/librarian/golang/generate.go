@@ -84,18 +84,8 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	// We need to check the internal directory's existence before moving
 	// the snippets.
 	snippetDir := filepath.Join(outdir, "cloud.google.com", "go", "internal")
-	_, err = os.Stat(snippetDir)
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := moveSnippetDirectory(library, snippetDir); err != nil {
 		return err
-	}
-	if err == nil {
-		internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
-		if err != nil {
-			return err
-		}
-		if err := filesystem.MoveAndMerge(snippetDir, internalDir); err != nil {
-			return err
-		}
 	}
 
 	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
@@ -229,6 +219,21 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 func buildGAPICImportPath(goAPI *config.GoAPI) string {
 	return fmt.Sprintf("cloud.google.com/go/%s;%s",
 		goAPI.ImportPath, goAPI.ClientPackage)
+}
+
+func moveSnippetDirectory(library *config.Library, snippetDir string) error {
+	_, err := os.Stat(snippetDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
+	if err != nil {
+		return err
+	}
+	return filesystem.MoveAndMerge(snippetDir, internalDir)
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
