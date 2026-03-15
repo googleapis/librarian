@@ -221,6 +221,8 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
+// moveSnippetDirectory moves the generated snippet directory to the internal directory
+// of the library repository if it exists.
 func moveSnippetDirectory(library *config.Library, snippetDir string) error {
 	_, err := os.Stat(snippetDir)
 	if errors.Is(err, fs.ErrNotExist) {
