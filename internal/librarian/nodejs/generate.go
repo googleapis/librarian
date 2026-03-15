@@ -29,17 +29,8 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Generate generates all given libraries in sequence.
-func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generateLibrary(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func generateLibrary(ctx context.Context, library *config.Library, googleapisDir string) error {
+// Generate generates a Node.js client library.
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
 	}

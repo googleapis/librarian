@@ -35,18 +35,8 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-// Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generateLibrary(ctx, config, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// generateLibrary generates a Python client library.
-func generateLibrary(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+// Generate generates a Python client library.
+func Generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	// If the library has no APIs, there's nothing to do.
 	if len(library.APIs) == 0 {
 		return nil

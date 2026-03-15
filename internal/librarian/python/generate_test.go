@@ -657,7 +657,7 @@ func TestGenerateLibrary_NoAPIs(t *testing.T) {
 		Name:   "no-apis",
 		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
 	}
-	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Validate that we haven't got as far as creating the output directory.
@@ -709,7 +709,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 	}
-	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)

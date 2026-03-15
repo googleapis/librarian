@@ -31,15 +31,6 @@ func fakeBumpLibrary(output, version string) error {
 	return os.WriteFile(filepath.Join(output, fakeVersionFile), []byte(content), 0644)
 }
 
-func fakeGenerateLibraries(libraries []*config.Library) error {
-	for _, library := range libraries {
-		if err := fakeGenerate(library); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func fakeGenerate(library *config.Library) error {
 	if _, err := os.Stat(library.Output); err != nil {
 		if !os.IsNotExist(err) {

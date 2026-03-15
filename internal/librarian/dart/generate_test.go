@@ -150,7 +150,7 @@ func TestGenerateLibrary(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {

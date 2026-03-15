@@ -71,7 +71,7 @@ func TestGenerateVeneer(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
+	if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,7 +176,7 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 	sources := &sidekickconfig.Sources{
 		Googleapis: googleapisDir,
 	}
-	if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
+	if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 		t.Fatal(err)
 	}
 
@@ -475,7 +475,7 @@ func TestGenerateLibrary(t *testing.T) {
 			sources := &sidekickconfig.Sources{
 				Googleapis: googleapisDir,
 			}
-			if err := generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
+			if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
 				t.Fatal(err)
 			}
 

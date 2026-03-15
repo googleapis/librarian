@@ -337,7 +337,7 @@ func TestGenerateLibrary(t *testing.T) {
 				Go:           test.goModule,
 			}
 
-			if err := generate(t.Context(), library, googleapisDir); err != nil {
+			if err := Generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 

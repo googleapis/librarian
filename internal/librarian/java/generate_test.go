@@ -369,7 +369,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{Language: "java"}
-			err := generateLibrary(t.Context(), cfg, test.library, googleapisDir)
+			err := Generate(t.Context(), cfg, test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}

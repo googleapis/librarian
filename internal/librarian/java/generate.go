@@ -35,18 +35,8 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
-// Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, cfg *config.Config, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generateLibrary(ctx, cfg, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// generateLibrary generates a Java client library.
-func generateLibrary(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
+// Generate generates a Java client library.
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("failed to generate library: no apis configured for library %q", library.Name)
 	}

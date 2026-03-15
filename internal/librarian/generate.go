@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
@@ -156,26 +158,53 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 }
 
 // generateLibraries delegates to language-specific code to generate all the
-// given libraries.
+// given libraries. Languages that support parallel generation are run
+// concurrently.
 func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sidekickconfig.Sources) error {
-	switch cfg.Language {
-	case config.LanguageDart:
-		return dart.Generate(ctx, libraries, src)
-	case config.LanguageFake:
-		return fakeGenerateLibraries(libraries)
-	case config.LanguageGo:
-		return golang.Generate(ctx, libraries, src.Googleapis)
-	case config.LanguageJava:
-		return java.Generate(ctx, cfg, libraries, src.Googleapis)
-	case config.LanguageNodejs:
-		return nodejs.Generate(ctx, libraries, src.Googleapis)
-	case config.LanguagePython:
-		return python.Generate(ctx, cfg, libraries, src.Googleapis)
-	case config.LanguageRust:
-		return rust.Generate(ctx, cfg, libraries, src)
-	default:
-		return fmt.Errorf("language %q does not support generation", cfg.Language)
+	// Languages that can be parallelized.
+	g, ctx := errgroup.WithContext(ctx)
+	for _, library := range libraries {
+		switch cfg.Language {
+		case config.LanguageDart:
+			g.Go(func() error {
+				return dart.Generate(ctx, library, src)
+			})
+		case config.LanguageNodejs:
+			g.Go(func() error {
+				return nodejs.Generate(ctx, library, src.Googleapis)
+			})
+		case config.LanguageRust:
+			g.Go(func() error {
+				return rust.Generate(ctx, cfg, library, src)
+			})
+		}
 	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	// Languages that should not be parallelized.
+	for _, library := range libraries {
+		switch cfg.Language {
+		case config.LanguageFake:
+			if err := fakeGenerate(library); err != nil {
+				return err
+			}
+		case config.LanguageGo:
+			if err := golang.Generate(ctx, library, src.Googleapis); err != nil {
+				return err
+			}
+		case config.LanguageJava:
+			if err := java.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+				return err
+			}
+		case config.LanguagePython:
+			if err := python.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // formatLibraries iterates over all the given libraries sequentially,
