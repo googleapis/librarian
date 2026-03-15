@@ -45,10 +45,14 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// We need to create snippet directory root before running generation.
+	if err := os.MkdirAll(filepath.Join(outDir, "internal"), 0777); err != nil {
+		t.Fatal(err)
+	}
 
 	libraries := []*config.Library{
 		{
-			Name:          "google-cloud-secretmanager-v1",
+			Name:          "secretmanager",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -68,7 +72,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			Name:          "google-cloud-configdelivery-v1",
+			Name:          "configdelivery",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -89,14 +93,14 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = outDir
+		library.Output = filepath.Join(outDir, library.Name)
 	}
 	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	// Just check that a README.md file has been created for each library.
 	for _, library := range libraries {
-		expectedReadme := filepath.Join(library.Output, library.Name, "README.md")
+		expectedReadme := filepath.Join(library.Output, "README.md")
 		_, err := os.Stat(expectedReadme)
 		if err != nil {
 			t.Errorf("Stat(%s) returned error: %v", expectedReadme, err)
@@ -227,7 +231,7 @@ func TestGenerateLibrary(t *testing.T) {
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secret_manager_client.go"},
+				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
@@ -269,13 +273,13 @@ func TestGenerateLibrary(t *testing.T) {
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
-						ImportPath:    "customdir/apiv1",
+						ImportPath:    "secretmanager/customdir/apiv1",
 						Path:          "google/cloud/secretmanager/v1",
 					},
 				},
 			},
 			want: []string{
-				"customdir/apiv1/secret_manager_client.go",
+				"secretmanager/customdir/apiv1/secret_manager_client.go",
 			},
 		},
 		{
@@ -329,10 +333,13 @@ func TestGenerateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(outdir, "internal"), 0777); err != nil {
+				t.Fatal(err)
+			}
 			library := &config.Library{
 				Name:         test.libraryName,
 				Version:      "1.0.0",
-				Output:       outdir,
+				Output:       filepath.Join(outdir, test.libraryName),
 				APIs:         test.apis,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
@@ -450,8 +457,10 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 }
 
 func TestUpdateSnippetMetadata(t *testing.T) {
+	tmpDir := t.TempDir()
 	library := &config.Library{
 		Name:    "accessapproval",
+		Output:  filepath.Join(tmpDir, "accessapproval"),
 		Version: "1.2.3",
 		APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
 		Go: &config.GoModule{
@@ -464,7 +473,6 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		},
 	}
 
-	tmpDir := t.TempDir()
 	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "accessapproval", "apiv1")
 	err := os.MkdirAll(metadataDir, 0755)
 	if err != nil {
@@ -502,7 +510,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
 		return
 	}
-	if err := updateSnippetMetadata(library, tmpDir); err != nil {
+	if err := updateSnippetMetadata(library); err != nil {
 		t.Fatal(err)
 	}
 
@@ -572,7 +580,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			tmpDir := t.TempDir()
 			library := &config.Library{
 				Name:    "bigquery",
-				Output:  tmpDir,
+				Output:  filepath.Join(tmpDir, "bigquery"),
 				Version: "1.2.3",
 				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
 				Go: &config.GoModule{
@@ -602,7 +610,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			if test.setup != nil {
 				test.setup(tmpDir, test.path, data, test.fileName)
 			}
-			if err := updateSnippetMetadata(library, tmpDir); err != nil {
+			if err := updateSnippetMetadata(library); err != nil {
 				t.Fatal(err)
 			}
 			if test.setup == nil {
@@ -725,10 +733,11 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			test.library.Output = filepath.Join(tmpDir, test.library.Name)
 			if test.setup != nil {
 				test.setup(tmpDir)
 			}
-			err := updateSnippetMetadata(test.library, tmpDir)
+			err := updateSnippetMetadata(test.library)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -1048,6 +1057,64 @@ func TestBuildGAPICOpts(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMoveSnippetDirectory(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, tmpDir string) (snippetDir string, lib *config.Library)
+	}{
+		{
+			name: "snippet directory does not exist",
+			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+				lib := &config.Library{
+					Name:   "foo",
+					Output: filepath.Join(tmpDir, "repo", "lib"),
+				}
+				return filepath.Join(tmpDir, "nonexistent"), lib
+			},
+		},
+		{
+			name: "snippet directory exists",
+			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				snippetDir := filepath.Join(tmpDir, "snippets")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "main.go"), []byte("package main"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				internalDir := filepath.Join(repoRoot, "internal")
+				if err := os.MkdirAll(internalDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				lib := &config.Library{
+					Name:   "foo",
+					Output: filepath.Join(repoRoot, "lib"),
+				}
+				return snippetDir, lib
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			snippetDir, lib := test.setup(t, tmpDir)
+			err := moveSnippetDirectory(lib, snippetDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if test.name == "snippet directory does not exist" {
+				return
+			}
+			repoRoot := filepath.Join(tmpDir, "repo")
+			movedFile := filepath.Join(repoRoot, "internal", "main.go")
+			if _, err := os.Stat(movedFile); err != nil {
+				t.Errorf("expected moved file %q to exist, got err: %v", movedFile, err)
 			}
 		})
 	}

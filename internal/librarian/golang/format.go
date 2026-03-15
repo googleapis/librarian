@@ -25,11 +25,7 @@ import (
 
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
-	outDir, err := filepath.Abs(library.Output)
-	if err != nil {
-		return err
-	}
-	args, err := processArgs(outDir, library.Name)
+	args, err := processArgs(library)
 	if err != nil {
 		return err
 	}
@@ -41,15 +37,15 @@ func Format(ctx context.Context, library *config.Library) error {
 	return command.Run(ctx, "goimports", args...)
 }
 
-func processArgs(outDir, libraryName string) ([]string, error) {
+func processArgs(library *config.Library) ([]string, error) {
 	args := []string{"-w"}
-	libraryDir := filepath.Join(outDir, libraryName)
+	libraryDir := filepath.Join(library.Output)
 	if _, err := os.Stat(libraryDir); err == nil {
 		args = append(args, libraryDir)
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
-	snippetDir := snippetDirectory(outDir, libraryName)
+	snippetDir := snippetDirectory(repoRootPath(library), library.Name)
 	if _, err := os.Stat(snippetDir); err == nil {
 		args = append(args, snippetDir)
 	} else if !os.IsNotExist(err) {

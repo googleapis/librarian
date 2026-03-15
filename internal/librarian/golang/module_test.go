@@ -188,6 +188,18 @@ func TestFill(t *testing.T) {
 				Go:   &config.GoModule{},
 			},
 		},
+		{
+			name: "do not override output",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+			},
+			want: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+				Go:     &config.GoModule{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)
@@ -431,6 +443,92 @@ func TestSnippetDirectory(t *testing.T) {
 	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestLibraryPath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "secretmanager",
+			library: &config.Library{
+				Output: "secretmanager",
+			},
+			want: "secretmanager",
+		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Output: "bigquery/v2",
+			},
+			want: "bigquery/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := libraryPath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRepoRootPath(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name: "no prefix on library output",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "secretmanager",
+			},
+			want: ".",
+		},
+		{
+			name: "prefix on library output",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "tmp/secretmanager",
+			},
+			want: "tmp",
+		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "bigquery/v2",
+			},
+			want: ".",
+		},
+		{
+			name: "prefix with nested major version",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "tmp/bigquery/v2",
+			},
+			want: "tmp",
+		},
+		{
+			name: "root module",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+			},
+			want: ".",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := repoRootPath(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

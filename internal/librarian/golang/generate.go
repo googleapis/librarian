@@ -73,17 +73,24 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	src := filepath.Join(outdir, "cloud.google.com", "go")
+	src := filepath.Join(outdir, "cloud.google.com", "go", library.Name)
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("cannot access directory %q: %w", src, err)
 	}
 	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
+	// If all APIs in a library is proto_only, snippets are not generated.
+	// We need to check the internal directory's existence before moving
+	// the snippets.
+	snippetDir := filepath.Join(outdir, "cloud.google.com", "go", "internal")
+	if err := moveSnippetDirectory(library, snippetDir); err != nil {
 		return err
 	}
 
+	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
+		return err
+	}
 	if err := fixVersioning(outdir, library.Name, modulePath(library)); err != nil {
 		return err
 	}
@@ -95,15 +102,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		}
 	}
 
-	moduleRoot := filepath.Join(outdir, library.Name)
-	absModuleRoot, err := filepath.Abs(moduleRoot)
+	absModuleRoot, err := filepath.Abs(outdir)
 	if err != nil {
 		return err
 	}
 	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
 		return fmt.Errorf("invalid library name: path traversal detected")
 	}
-	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
+	if err := generateInternalVersionFile(outdir, library.Version); err != nil {
 		return err
 	}
 	serviceconfig.SortAPIs(library.APIs)
@@ -121,11 +127,11 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, sc, moduleRoot); err != nil {
+		if err := generateREADME(library, sc, outdir); err != nil {
 			return err
 		}
 	}
-	if err := updateSnippetMetadata(library, outdir); err != nil {
+	if err := updateSnippetMetadata(library); err != nil {
 		return err
 	}
 	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
@@ -216,6 +222,23 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
+// moveSnippetDirectory moves the generated snippet directory to the internal directory
+// of the library repository if it exists.
+func moveSnippetDirectory(library *config.Library, snippetDir string) error {
+	_, err := os.Stat(snippetDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
+	if err != nil {
+		return err
+	}
+	return filesystem.MoveAndMerge(snippetDir, internalDir)
+}
+
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
 func fixVersioning(outputDir, library, modPath string) error {
 	// parts is the module path split by "/".
@@ -237,15 +260,15 @@ func fixVersioning(outputDir, library, modPath string) error {
 		return nil
 	}
 
-	srcDir := filepath.Join(outputDir, name)
-	if err := filesystem.MoveAndMerge(filepath.Join(srcDir, version), srcDir); err != nil {
+	versionDir := filepath.Join(outputDir, version)
+	if err := filesystem.MoveAndMerge(versionDir, outputDir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(srcDir, version)); err != nil {
+	if err := os.RemoveAll(versionDir); err != nil {
 		return err
 	}
 
-	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
+	snippetDir := filepath.Join(outputDir, "..", "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
 		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
@@ -312,7 +335,7 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // updateSnippetMetadata updates the snippet metadata files with the correct library version.
-func updateSnippetMetadata(library *config.Library, output string) error {
+func updateSnippetMetadata(library *config.Library) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
@@ -322,7 +345,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		baseDir := snippetDirectory(repoRootPath(library), clientPathFromLibraryRoot(library, goAPI))
 		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil

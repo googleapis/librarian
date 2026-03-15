@@ -97,6 +97,21 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
+func libraryPath(library *config.Library) string {
+	return filepath.Join(library.Output)
+}
+
+func repoRootPath(library *config.Library) string {
+	if library.Output == "." {
+		return "."
+	}
+	path := []string{library.Output}
+	for range strings.Count(library.Name, "/") + 1 {
+		path = append(path, "..")
+	}
+	return filepath.Join(path...)
+}
+
 // modulePath returns the Go module path for the library. ModulePathVersion is
 // set for modules at v2+, e.g. "cloud.google.com/go/pubsub/v2".
 func modulePath(library *config.Library) string {
