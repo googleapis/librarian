@@ -356,7 +356,7 @@ func TestGenerateLibrary(t *testing.T) {
 	}
 }
 
-func TestGenerateLibrary_CorrectAPIToGenerateREADME(t *testing.T) {
+func TestGenerateLibrary_SortAPIToGenerateREADME(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
