@@ -954,6 +954,39 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "delete output after generation",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "storage",
+							APIs: []*legacyconfig.API{
+								{Path: "google/storage/v2"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "storage",
+					APIs: []*config.API{
+						{Path: "google/storage/v2"},
+					},
+					Keep: []string{"README.md"},
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/storage/internal"},
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/storage/v2", ImportPath: "storage/internal/apiv2"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
