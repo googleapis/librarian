@@ -296,6 +296,7 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageRust, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 		{config.LanguageRust, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager-v1beta2"},
 		{config.LanguageFake, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
+		{config.LanguageGo, "google/cloud/secretmanager/v1", "secretmanager"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
 			got := deriveLibraryName(test.language, test.apiPath)
