@@ -390,14 +390,11 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI.ProtoOnly = info.DisableGAPIC
 			}
 			goAPI.DIREGAPIC = info.HasDiregapic
+			goAPI.ImportPath = info.ImportPath
 			// Hardcode import path that is not parsable from
 			// BUILD.bazel.
-			importPath, ok := importPaths[api.Path]
-			if ok {
+			if importPath, ok := importPaths[api.Path]; ok {
 				goAPI.ImportPath = importPath
-			} else {
-				// fallback to value parsed from BUILD.bazel
-				goAPI.ImportPath = info.ImportPath
 			}
 			goAPI.NoMetadata = info.NoMetadata
 			if library.Go == nil {
