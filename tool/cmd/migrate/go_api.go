@@ -47,7 +47,8 @@ var (
 	// This is used for cases where the import path cannot be automatically
 	// determined from BUILD.bazel files during migration.
 	importPaths = map[string]string{
-		"google/shopping/type": "shopping/type",
+		"google/cloud/oslogin/common": "oslogin/common",
+		"google/shopping/type":        "shopping/type",
 	}
 	// outputs maps a Go library to its output directory relative to the repository
 	// root.
