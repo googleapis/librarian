@@ -2,13 +2,10 @@ type: google.api.Service
 config_version: 3
 name: oslogin.googleapis.com
 title: Cloud OS Login API
-
 apis:
   - name: google.cloud.oslogin.v1.OsLoginService
-
 documentation:
   summary: You can use OS Login to manage access to your VM instances using IAM roles.
-
 authentication:
   rules:
     - selector: 'google.cloud.oslogin.v1.OsLoginService.*'
