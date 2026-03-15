@@ -73,6 +73,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 	return library, nil
 }
 
+// DefaultLibraryName derives a default library name from an API path.
+// For a versioned API path, it returns the service name. For a non-versioned
+// API path, it returns the last path segment.
 func DefaultLibraryName(api string) string {
 	path := api
 	if serviceconfig.ExtractVersion(api) != "" {
