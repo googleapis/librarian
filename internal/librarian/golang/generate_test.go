@@ -176,14 +176,13 @@ func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
 	for _, test := range []struct {
-		name            string
-		libraryName     string
-		apis            []*config.API
-		releaseLevel    string
-		goModule        *config.GoModule
-		want            []string
-		removed         []string
-		wantReadmeTitle string
+		name         string
+		libraryName  string
+		apis         []*config.API
+		releaseLevel string
+		goModule     *config.GoModule
+		want         []string
+		removed      []string
 	}{
 		{
 			name:        "basic",
