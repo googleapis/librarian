@@ -923,6 +923,37 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "shopping type import path is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "shopping",
+							APIs: []*legacyconfig.API{
+								{Path: "google/shopping/type"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "shopping",
+					APIs: []*config.API{
+						{Path: "google/shopping/type"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/shopping/type", ImportPath: "shopping/type", ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
