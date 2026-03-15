@@ -106,21 +106,22 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
+	serviceconfig.SortAPIs(library.APIs)
 	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
 		}
-		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
+		sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
 			return err
 		}
-		if err := generateRepoMetadata(api, library); err != nil {
+		if err := generateRepoMetadata(sc, library); err != nil {
 			return err
 		}
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, api, moduleRoot); err != nil {
+		if err := generateREADME(library, sc, moduleRoot); err != nil {
 			return err
 		}
 	}
@@ -284,9 +285,6 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 }
 
 func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot string) error {
-	if len(library.APIs) == 0 {
-		return fmt.Errorf("no APIs configured")
-	}
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.

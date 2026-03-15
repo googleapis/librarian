@@ -172,13 +172,14 @@ func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
 	for _, test := range []struct {
-		name         string
-		libraryName  string
-		apis         []*config.API
-		releaseLevel string
-		goModule     *config.GoModule
-		want         []string
-		removed      []string
+		name            string
+		libraryName     string
+		apis            []*config.API
+		releaseLevel    string
+		goModule        *config.GoModule
+		want            []string
+		removed         []string
+		wantReadmeTitle string
 	}{
 		{
 			name:        "basic",
@@ -352,6 +353,38 @@ func TestGenerateLibrary(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestGenerateLibrary_CorrectAPIToGenerateREADME(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:    "oslogin",
+		Version: "1.0.0",
+		Output:  filepath.Join(outDir, "oslogin"),
+		APIs:    []*config.API{{Path: "google/cloud/oslogin/common"}, {Path: "google/cloud/oslogin/v1"}},
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{Path: "google/cloud/oslogin/common", ProtoOnly: true, ImportPath: "oslogin/common"},
+				{Path: "google/cloud/oslogin/v1", ImportPath: "oslogin/apiv1", ClientPackage: "oslogin"},
+			},
+		},
+	}
+
+	if err := generate(t.Context(), library, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	readmePath := filepath.Join(library.Output, "README.md")
+	contents, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(contents), "Cloud OS Login API") {
+		t.Errorf("README.md should contain API title")
 	}
 }
 
