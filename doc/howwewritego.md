@@ -374,6 +374,30 @@ func TestTransform(t *testing.T) {
 }
 ```
 
+## Logging
+
+Do not use `slog` in this codebase. A function should either succeed or report
+failure. Logs that note progress or debug state feel useful when you write them,
+but they accumulate into noise that everyone learns to ignore. Return errors.
+
+```go
+// Good
+func parseReleaseLevel(path string) (string, error) {
+	// ...
+	return "", fmt.Errorf("parse release level in %s: %w", path, err)
+}
+
+// Bad
+func parseReleaseLevel(path string) string {
+	// ...
+	slog.Warn("failed to parse release level", "path", path, "error", err)
+	return ""
+}
+```
+
+For progress output, `internal/command` supports a `Verbose` flag that prints
+all executed commands when `-v` is passed.
+
 ## Need Help? Just Ask!
 
 This guide will continue to evolve. If something feels unclear or is missing,
