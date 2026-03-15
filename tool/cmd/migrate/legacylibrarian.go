@@ -33,17 +33,6 @@ import (
 )
 
 var (
-	// nestedModules maps specific Go libraries to their nested module path.
-	// This is a hardcoded list to handle special cases during legacy migration
-	// where this information is not available in the source configuration.
-	nestedModules = map[string]string{
-		"bigquery": "v2",
-		"compute":  "metadata",
-		"iam":      "admin",
-		"logging":  "logadmin",
-		"pubsub":   "v2",
-	}
-
 	githubEndpoints = &fetch.Endpoints{
 		API:      "https://api.github.com",
 		Download: "https://github.com",
@@ -305,15 +294,18 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
-		library.Keep = append(library.Keep, libState.PreserveRegex...)
+		// Use the hardcode keep because the legacylibrarian has a different
+		// mechanism for which files to keep during generation.
+		k, ok := keep[id]
+		if ok {
+			library.Keep = k
+		}
 		slices.Sort(library.Keep)
-
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
 		}
-
 		libGoModule, ok := idToGoModule[id]
 		if ok {
 			var goAPIs []*config.GoAPI

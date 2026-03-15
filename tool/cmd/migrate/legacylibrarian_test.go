@@ -501,6 +501,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+					Keep: []string{"README.md"},
 					Go:   &config.GoModule{NestedModule: "v2"},
 				},
 			},
@@ -532,6 +533,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
+					Keep: []string{"README.md"},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -850,9 +852,31 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "pubsub",
+					Keep: []string{"README.md", "internal/version.go"},
 					Go: &config.GoModule{
 						NestedModule: "v2",
 					},
+				},
+			},
+		},
+		{
+			name: "add keep to library",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "vmmigration",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "vmmigration",
+					Keep: []string{"apiv1/iam_policy_client.go"},
 				},
 			},
 		},
