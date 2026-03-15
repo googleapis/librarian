@@ -395,8 +395,8 @@ func parseReleaseLevel(path string) string {
 }
 ```
 
-For progress output, `internal/command` supports a `Verbose` flag that prints
-all executed commands when `-v` is passed.
+For progress output, `internal/command` provides a `Verbose` flag. When enabled
+by an application (e.g., via `-v`), all executed commands are printed.
 
 ## Need Help? Just Ask!
 
