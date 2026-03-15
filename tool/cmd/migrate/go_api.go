@@ -56,8 +56,4 @@ var (
 		"logging":  "logadmin",
 		"pubsub":   "v2",
 	}
-	protoOnlyAPI = map[string]bool{
-		"google/bigtable/admin/v2": true,
-		"google/bigtable/v2":       true,
-	}
 )
