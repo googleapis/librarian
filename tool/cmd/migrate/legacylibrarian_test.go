@@ -878,6 +878,51 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "bigtable proto_only is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigtable",
+							APIs: []*legacyconfig.API{
+								{Path: "google/bigtable/admin/v2"},
+								{Path: "google/bigtable/v2"},
+							},
+						},
+					},
+				},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigtable",
+							APIs: []*RepoConfigAPI{
+								{Path: "google/bigtable/admin/v2", DisableGAPIC: true},
+								{Path: "google/bigtable/v2", DisableGAPIC: true},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigtable",
+					APIs: []*config.API{
+						{Path: "google/bigtable/admin/v2"},
+						{Path: "google/bigtable/v2"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/bigtable/admin/v2", NoMetadata: true, ProtoOnly: true},
+							{Path: "google/bigtable/v2", NoMetadata: true, ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)
