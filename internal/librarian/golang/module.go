@@ -73,6 +73,15 @@ func Fill(library *config.Library) (*config.Library, error) {
 	return library, nil
 }
 
+func DefaultLibraryName(api string) string {
+	path := api
+	if serviceconfig.ExtractVersion(api) != "" {
+		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
+		path = filepath.Dir(api)
+	}
+	return filepath.Base(path)
+}
+
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
 		return nil
