@@ -38,9 +38,8 @@ func TestFill(t *testing.T) {
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "secretmanager",
-				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -66,8 +65,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "bigquery",
-				Output: "bigquery",
+				Name: "bigquery",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/bigquery/analyticshub/v1",
@@ -107,9 +105,8 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "example",
-				Output: "example",
-				APIs:   []*config.API{{Path: "google/cloud/example/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -137,9 +134,8 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "example",
-				Output: "example",
-				APIs:   []*config.API{{Path: "google/cloud/example/v1"}},
+				Name: "example",
+				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
 				Go: &config.GoModule{
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
@@ -169,9 +165,8 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "oslogin",
-				Output: "oslogin",
-				APIs:   []*config.API{{Path: "google/cloud/oslogin/common"}},
+				Name: "oslogin",
+				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -189,9 +184,8 @@ func TestFill(t *testing.T) {
 				Name: "auth",
 			},
 			want: &config.Library{
-				Name:   "auth",
-				Output: "auth",
-				Go:     &config.GoModule{},
+				Name: "auth",
+				Go:   &config.GoModule{},
 			},
 		},
 		{

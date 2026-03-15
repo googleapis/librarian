@@ -33,11 +33,12 @@ var (
 // Bump updates the version number in the library with the given output
 // directory.
 func Bump(library *config.Library, output, version string) error {
+	library.Output = output
 	library, err := Fill(library)
 	if err != nil {
 		return err
 	}
-	if err := bumpInternalVersion(library, output, version); err != nil {
+	if err := bumpInternalVersion(output, version); err != nil {
 		return err
 	}
 	for _, api := range library.APIs {
@@ -45,7 +46,7 @@ func Bump(library *config.Library, output, version string) error {
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		snippetDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		snippetDir := snippetDirectory(repoRootPath(library), clientPathFromLibraryRoot(library, goAPI))
 		if _, err := os.Stat(snippetDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				// A client may not have snippets, e.g., proto-only clients,
@@ -61,8 +62,8 @@ func Bump(library *config.Library, output, version string) error {
 	return nil
 }
 
-func bumpInternalVersion(library *config.Library, output, version string) error {
-	versionFilePath := filepath.Join(output, library.Name, internalVersionFile)
+func bumpInternalVersion(output, version string) error {
+	versionFilePath := filepath.Join(output, internalVersionFile)
 	if _, err := os.Stat(versionFilePath); os.IsNotExist(err) {
 		return nil
 	}
