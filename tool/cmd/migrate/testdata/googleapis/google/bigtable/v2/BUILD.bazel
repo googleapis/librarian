@@ -1,0 +1,12 @@
+go_gapic_library(
+    name = "bigtable_go_gapic",
+    srcs = [":bigtable_proto_with_info"],
+    grpc_service_config = "bigtable_grpc_service_config.json",
+    importpath = "cloud.google.com/go/bigtable/apiv2;bigtable",
+    rest_numeric_enums = True,
+    service_yaml = "bigtable_v2.yaml",
+    transport = "grpc",
+    deps = [
+        ":bigtable_go_proto",
+    ],
+)

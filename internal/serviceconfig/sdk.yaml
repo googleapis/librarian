@@ -23,6 +23,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/ads/datamanager/v1
   release_level:
@@ -561,6 +562,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/apiregistry/v1
@@ -569,6 +571,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/apiregistry/v1beta
   release_level:
@@ -624,6 +627,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/asset/v1p7beta1
@@ -1060,6 +1064,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/capacityplanner/v1beta
   release_level:
@@ -1076,6 +1081,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/ces/v1
@@ -1085,6 +1091,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/ces/v1beta
@@ -1141,6 +1148,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/cloudsecuritycompliance/v1
@@ -1212,6 +1220,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/confidentialcomputing/v1alpha1
@@ -1227,12 +1236,14 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/configdelivery/v1
   release_level:
     go: beta
 - languages:
+    - nodejs
     - python
   path: google/cloud/configdelivery/v1alpha
   release_level:
@@ -1240,6 +1251,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/configdelivery/v1beta
   release_level:
@@ -1334,6 +1346,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/datafusion/v1beta1
@@ -1533,6 +1546,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/domains/v1alpha2
@@ -1613,6 +1627,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/filestore/v1beta1
@@ -1649,6 +1664,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/functions/v2alpha
@@ -1658,6 +1674,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/functions/v2beta
@@ -1671,6 +1688,7 @@
   release_level:
     go: beta
 - languages:
+    - nodejs
     - python
   path: google/cloud/geminidataanalytics/v1alpha
   release_level:
@@ -1678,6 +1696,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/geminidataanalytics/v1beta
   release_level:
@@ -1779,6 +1798,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/gkehub/v1alpha
@@ -1833,6 +1853,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/gkehub/v1beta
@@ -1889,6 +1910,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/gkerecommender/v1
@@ -1906,6 +1928,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/hypercomputecluster/v1
@@ -1915,6 +1938,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/hypercomputecluster/v1alpha
@@ -1923,6 +1947,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/hypercomputecluster/v1beta
   release_level:
@@ -1939,6 +1964,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/iap/v1beta1
@@ -2032,6 +2058,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/locationfinder/v1
@@ -2082,6 +2109,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/managedidentities/v1beta1
@@ -2276,6 +2304,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/networkmanagement/v1beta1
@@ -2319,6 +2348,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/networkservices/v1beta1
@@ -2463,6 +2493,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/oslogin/v1beta
@@ -2530,6 +2561,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/policytroubleshooter/iam/v3beta
@@ -2601,6 +2633,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/recaptchaenterprise/v1beta1
@@ -2720,6 +2753,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/saasplatform/saasservicemgmt/v1beta1
   release_level:
@@ -2802,6 +2836,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/security/publicca/v1alpha1
@@ -2947,6 +2982,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/sql/v1beta4
@@ -3142,6 +3178,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/vectorsearch/v1
@@ -3150,6 +3187,7 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/vectorsearch/v1beta
   release_level:
@@ -3282,10 +3320,12 @@
 - languages:
     - go
     - java
+    - nodejs
     - python
   path: google/cloud/visionai/v1
 - documentation_uri: https://cloud.google.com/vision-ai/docs
   languages:
+    - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187174&pli=1&template=1161261
   path: google/cloud/visionai/v1alpha1
@@ -3393,6 +3433,7 @@
   languages:
     - go
     - java
+    - nodejs
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
@@ -3401,6 +3442,7 @@
   languages:
     - go
     - java
+    - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   path: google/cloud/workflows/v1beta
@@ -3410,6 +3452,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
     - rust
   path: google/cloud/workloadmanager/v1
@@ -3774,6 +3817,9 @@
   path: google/maps/mapsplatformdatasets/v1
   release_level:
     go: beta
+- languages:
+    - nodejs
+  path: google/maps/navconnect/v1
 - languages:
     - go
     - java

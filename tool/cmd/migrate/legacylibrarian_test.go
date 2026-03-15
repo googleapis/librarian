@@ -878,6 +878,136 @@ func TestBuildGoLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "add output",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "root-module",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name:   "root-module",
+					Output: ".",
+				},
+			},
+		},
+		{
+			name: "bigtable proto_only is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigtable",
+							APIs: []*legacyconfig.API{
+								{Path: "google/bigtable/admin/v2"},
+								{Path: "google/bigtable/v2"},
+							},
+						},
+					},
+				},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigtable",
+							APIs: []*RepoConfigAPI{
+								{Path: "google/bigtable/admin/v2", DisableGAPIC: true},
+								{Path: "google/bigtable/v2", DisableGAPIC: true},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigtable",
+					APIs: []*config.API{
+						{Path: "google/bigtable/admin/v2"},
+						{Path: "google/bigtable/v2"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/bigtable/admin/v2", NoMetadata: true, ProtoOnly: true},
+							{Path: "google/bigtable/v2", NoMetadata: true, ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "shopping type import path is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "shopping",
+							APIs: []*legacyconfig.API{
+								{Path: "google/shopping/type"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "shopping",
+					APIs: []*config.API{
+						{Path: "google/shopping/type"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/shopping/type", ImportPath: "shopping/type", ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "delete output after generation",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "storage",
+							APIs: []*legacyconfig.API{
+								{Path: "google/storage/v2"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "storage",
+					APIs: []*config.API{
+						{Path: "google/storage/v2"},
+					},
+					Keep: []string{"README.md"},
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/storage/internal"},
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/storage/v2", ImportPath: "storage/internal/apiv2"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGoLibraries(test.input)

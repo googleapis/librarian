@@ -293,6 +293,11 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
+		// Hardcode library output that is different from other libraries.
+		output, ok := outputs[id]
+		if ok {
+			library.Output = output
+		}
 		// Use the hardcode keep because the legacylibrarian has a different
 		// mechanism for which files to keep during generation.
 		k, ok := keep[id]
@@ -360,6 +365,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			library.Go.NestedModule = mod
 		}
+		deletion, ok := deleteOutputs[id]
+		if ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.DeleteGenerationOutputPaths = []string{deletion}
+		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			info, err := parseGoBazel(input.googleapisDir, api.Path)
@@ -374,9 +386,16 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
 			goAPI.ClientPackage = info.ClientPackageName
-			goAPI.ProtoOnly = info.DisableGAPIC
+			if !goAPI.ProtoOnly {
+				goAPI.ProtoOnly = info.DisableGAPIC
+			}
 			goAPI.DIREGAPIC = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
+			// Hardcode import path that is not parsable from
+			// BUILD.bazel.
+			if importPath, ok := importPaths[api.Path]; ok {
+				goAPI.ImportPath = importPath
+			}
 			goAPI.NoMetadata = info.NoMetadata
 			if library.Go == nil {
 				library.Go = &config.GoModule{}

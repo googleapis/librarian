@@ -15,6 +15,13 @@
 package main
 
 var (
+	// deleteOutputs maps a Go library to a file or directory path that should be
+	// deleted after generation. This handles special cases where the generated
+	// structure differs from the final expected layout.
+	deleteOutputs = map[string]string{
+		"containeranalysis": "google.golang.org",
+		"storage":           "../internal/generated/snippets/storage/internal",
+	}
 	// keep maps a Go library to a list of files that should be preserved during
 	// generation. This is a hardcoded list to handle special cases during legacy
 	// migration where the legacy librarian handled file preservation differently.
@@ -35,6 +42,18 @@ var (
 		"storage":           {"README.md"},
 		"vertexai":          {"internal/version.go", "README.md"},
 		"vmmigration":       {"apiv1/iam_policy_client.go"},
+	}
+	// importPaths maps a protobuf package path to its correct Go import path.
+	// This is used for cases where the import path cannot be automatically
+	// determined from BUILD.bazel files during migration.
+	importPaths = map[string]string{
+		"google/cloud/oslogin/common": "oslogin/common",
+		"google/shopping/type":        "shopping/type",
+	}
+	// outputs maps a Go library to its output directory relative to the repository
+	// root.
+	outputs = map[string]string{
+		"root-module": ".",
 	}
 	// nestedModules maps specific Go libraries to their nested module path.
 	// This is a hardcoded list to handle special cases during legacy migration
