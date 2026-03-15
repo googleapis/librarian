@@ -879,6 +879,27 @@ func TestBuildGoLibraries(t *testing.T) {
 			},
 		},
 		{
+			name: "add output",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "root-module",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name:   "root-module",
+					Output: ".",
+				},
+			},
+		},
+		{
 			name: "bigtable proto_only is not override",
 			input: &MigrationInput{
 				librarianState: &legacyconfig.LibrarianState{
