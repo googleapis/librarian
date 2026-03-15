@@ -341,6 +341,12 @@ func updateSnippetMetadata(library *config.Library) error {
 			continue
 		}
 		baseDir := snippetDirectory(repoRootPath(library), clientPathFromLibraryRoot(library, goAPI))
+		if _, err := os.Stat(baseDir); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
 		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
 			return err
 		}
