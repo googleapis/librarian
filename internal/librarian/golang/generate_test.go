@@ -373,7 +373,9 @@ func TestGenerateLibrary_SortAPIToGenerateREADME(t *testing.T) {
 		Name:    "oslogin",
 		Version: "1.0.0",
 		Output:  filepath.Join(outDir, "oslogin"),
-		APIs:    []*config.API{{Path: "google/cloud/oslogin/common"}, {Path: "google/cloud/oslogin/v1"}},
+		// google/cloud/oslogin/v1 will be used to generate README.md, even though it is the
+		// 2nd API in the list.
+		APIs: []*config.API{{Path: "google/cloud/oslogin/common"}, {Path: "google/cloud/oslogin/v1"}},
 		Go: &config.GoModule{
 			GoAPIs: []*config.GoAPI{
 				{Path: "google/cloud/oslogin/common", ProtoOnly: true, ImportPath: "oslogin/common"},
@@ -381,7 +383,10 @@ func TestGenerateLibrary_SortAPIToGenerateREADME(t *testing.T) {
 			},
 		},
 	}
-
+	// We need to create internal directory beforehand so snippets can be moved here.
+	if err := os.MkdirAll(filepath.Join(outDir, "internal"), 0777); err != nil {
+		t.Fatal(err)
+	}
 	if err := generate(t.Context(), library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
