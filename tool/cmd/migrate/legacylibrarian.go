@@ -225,14 +225,14 @@ func blockLegacyGenerationAndRelease(repoPath string, cfg *config.Config) error 
 		legacyLib.GenerateBlocked = true
 		legacyLib.ReleaseBlocked = true
 	}
-	yaml, err := yaml.Marshal(legacyConfig)
+	configYaml, err := yaml.Marshal(legacyConfig)
 	if err != nil {
 		return err
 	}
 	comment := "# This file is being migrated to librarian@latest, and is no longer maintained by hand.\n\n"
-	yaml = append([]byte(comment), yaml...)
+	configYaml = append([]byte(comment), configYaml...)
 	configFile := filepath.Join(repoPath, librarianDir, librarianConfigFile)
-	if err := os.WriteFile(configFile, yaml, 0644); err != nil {
+	if err := os.WriteFile(configFile, configYaml, 0644); err != nil {
 		return err
 	}
 	return nil
