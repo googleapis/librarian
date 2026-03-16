@@ -66,9 +66,6 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
 		return err
 	}
-	// If all APIs in a library is proto_only, snippets are not generated.
-	// We need to check the internal directory's existence before moving
-	// the snippets.
 	snippetDir := filepath.Join(outdir, "cloud.google.com", "go", "internal")
 	if err := moveSnippetDirectory(library, snippetDir); err != nil {
 		return err
@@ -210,6 +207,8 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 // moveSnippetDirectory moves the generated snippet directory to the internal directory
 // of the library repository if it exists.
 func moveSnippetDirectory(library *config.Library, snippetDir string) error {
+	// If all APIs in a library is proto_only, snippets are not generated.
+	// We need to check the internal directory's existence before moving the snippets.
 	_, err := os.Stat(snippetDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
