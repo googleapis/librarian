@@ -48,7 +48,7 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "# test-library\n\nGenerated library\n"
+	want := "# test-library\n\nGenerated library\n\n---\nFormatted\n"
 	if diff := cmp.Diff(want, string(content)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

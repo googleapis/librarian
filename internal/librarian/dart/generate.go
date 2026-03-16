@@ -26,23 +26,10 @@ import (
 	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	sidekickdart "github.com/googleapis/librarian/internal/sidekick/dart"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"golang.org/x/sync/errgroup"
 )
 
-// Generate generates all the given libraries in parallel.
-func Generate(ctx context.Context, libraries []*config.Library, sources *sidekickconfig.Sources) error {
-	// Generate all libraries in parallel.
-	g, gctx := errgroup.WithContext(ctx)
-	for _, lib := range libraries {
-		g.Go(func() error {
-			return generate(gctx, lib, sources)
-		})
-	}
-	return g.Wait()
-}
-
-// generate generates a Dart client library.
-func generate(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates a Dart client library.
+func Generate(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
 	modelConfig, err := toModelConfig(library, library.APIs[0], sources)
 	if err != nil {
 		return err

@@ -66,7 +66,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if err != nil {
 		return err
 	}
-	return RunTidyOnConfig(ctx, cfg)
+	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {

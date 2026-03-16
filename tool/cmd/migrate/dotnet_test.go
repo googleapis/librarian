@@ -349,7 +349,6 @@ func TestRunDotnetMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Chdir(t.TempDir())
 
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
@@ -374,13 +373,16 @@ func TestRunDotnetMigration(t *testing.T) {
 		},
 		{
 			name:     "missing_file",
-			repoPath: "testdata/run/non-existent",
+			repoPath: "testdata/run/no-config",
 			wantErr:  os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			repoPath := filepath.Join(wd, test.repoPath)
-			err := runDotnetMigration(t.Context(), repoPath)
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
+			}
+			err := runDotnetMigration(t.Context(), dir)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}

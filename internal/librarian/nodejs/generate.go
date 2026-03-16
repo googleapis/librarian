@@ -30,21 +30,8 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Generate generates all given libraries in sequence.
-func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generateLibrary(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func generateLibrary(ctx context.Context, library *config.Library, googleapisDir string) error {
-	if len(library.APIs) == 0 {
-		return nil
-	}
-
+// Generate generates a Node.js client library.
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
@@ -65,7 +52,8 @@ func generateLibrary(ctx context.Context, library *config.Library, googleapisDir
 }
 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	version := filepath.Base(api.Path)
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return err
 	}

@@ -150,7 +150,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 			return fmt.Errorf("error writing %s: %w", legacylibrarianPRBodyFile, err)
 		}
 	}
-	return RunTidyOnConfig(ctx, cfg)
+	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
 // findLibrariesToBump determines which versions should be bumped based on
@@ -415,7 +415,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 	if err := postBump(ctx, cfg); err != nil {
 		return err
 	}
-	return RunTidyOnConfig(ctx, cfg)
+	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
 // legacyRustBumpAll applies the legacy (but still in use) "bump all" approach

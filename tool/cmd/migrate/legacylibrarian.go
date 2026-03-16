@@ -97,7 +97,7 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 
 	// If we already have a config, we just replace the libraries which are new.
 	// (Everything else about the existing configuration is maintained.)
-	existingConfig, err := yaml.Read[config.Config]("librarian.yaml")
+	existingConfig, err := yaml.Read[config.Config](filepath.Join(repoPath, "librarian.yaml"))
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to load existing librarian.yaml: %w", err)
 	}
@@ -106,8 +106,11 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 		cfg = existingConfig
 	}
 
-	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
+	}
+	if err := blockLegacyGenerationAndRelease(repoPath, cfg); err != nil {
+		return err
 	}
 	return nil
 }
@@ -120,12 +123,12 @@ func runCompleteCleanLibrarianMigration(ctx context.Context, language string, re
 		return nil, err
 	}
 
-	librarianConfig, err := readConfig(repoPath)
+	librarianConfig, err := readLegacyConfig(repoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	repoConfig, err := readRepoConfig(repoPath)
+	repoConfig, err := readLegacyGoRepoConfig(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +202,40 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	cfg.Sources.Googleapis.Dir = ""
 
 	return cfg, nil
+}
+
+// blockLegacyGenerationAndRelease ensures that all libraries in the librarian
+// config have generation and release blocked in the legacy config, by rewriting
+// .librarian/config.yaml. This was previously a file maintained by hand, so a
+// comment line is added at the start. This function assumes that the current
+// directory is the repository root.
+func blockLegacyGenerationAndRelease(repoPath string, cfg *config.Config) error {
+	legacyConfig, err := readLegacyConfig(repoPath)
+	if err != nil {
+		return err
+	}
+	for _, lib := range cfg.Libraries {
+		legacyLib := legacyConfig.LibraryConfigFor(lib.Name)
+		if legacyLib == nil {
+			legacyLib = &legacyconfig.LibraryConfig{
+				LibraryID: lib.Name,
+			}
+			legacyConfig.Libraries = append(legacyConfig.Libraries, legacyLib)
+		}
+		legacyLib.GenerateBlocked = true
+		legacyLib.ReleaseBlocked = true
+	}
+	configYaml, err := yaml.Marshal(legacyConfig)
+	if err != nil {
+		return err
+	}
+	comment := "# This file is being migrated to librarian@latest, and is no longer maintained by hand.\n\n"
+	configYaml = append([]byte(comment), configYaml...)
+	configFile := filepath.Join(repoPath, librarianDir, librarianConfigFile)
+	if err := os.WriteFile(configFile, configYaml, 0644); err != nil {
+		return err
+	}
+	return nil
 }
 
 func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
@@ -453,17 +490,23 @@ func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
 		!info.NoMetadata
 }
 
+// readLegacyState reads the legacylibrarian state file for the given
+// repository root directory.
 func readState(path string) (*legacyconfig.LibrarianState, error) {
 	stateFile := filepath.Join(path, librarianDir, librarianStateFile)
 	return yaml.Read[legacyconfig.LibrarianState](stateFile)
 }
 
-func readConfig(path string) (*legacyconfig.LibrarianConfig, error) {
-	configFile := filepath.Join(path, librarianDir, librarianConfigFile)
+// readLegacyConfig reads the legacylibrarian configuration file for the given
+// repository root directory.
+func readLegacyConfig(repoPath string) (*legacyconfig.LibrarianConfig, error) {
+	configFile := filepath.Join(repoPath, librarianDir, librarianConfigFile)
 	return yaml.Read[legacyconfig.LibrarianConfig](configFile)
 }
 
-func readRepoConfig(path string) (*RepoConfig, error) {
+// readLegacyGoRepoConfig reads the legacylibrary Go-specific repository
+// configuration file for the given repository root directory.
+func readLegacyGoRepoConfig(path string) (*RepoConfig, error) {
 	configFile := filepath.Join(path, librarianDir, "generator-input/repo-config.yaml")
 	if _, err := os.Stat(configFile); err != nil {
 		if os.IsNotExist(err) {

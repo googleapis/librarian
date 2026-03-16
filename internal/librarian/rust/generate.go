@@ -29,7 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
-	"golang.org/x/sync/errgroup"
 )
 
 // IsVeneer reports whether the library has handwritten code wrapping generated
@@ -42,20 +41,8 @@ func IsVeneer(lib *config.Library) bool {
 	return len(lib.APIs) == 0 && lib.Output != ""
 }
 
-// Generate generates all the given libraries in parallel.
-func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, sources *sidekickconfig.Sources) error {
-	// Generate all libraries in parallel.
-	g, gctx := errgroup.WithContext(ctx)
-	for _, lib := range libraries {
-		g.Go(func() error {
-			return generate(gctx, config, lib, sources)
-		})
-	}
-	return g.Wait()
-}
-
-// generate generates a Rust client library.
-func generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
+// Generate generates a Rust client library.
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
 	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
