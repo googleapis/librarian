@@ -97,22 +97,34 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions == nil {
 		packageOptions = &config.PythonPackage{}
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4428): once
-	// repometadata exposes a FromLibrary function or similar that we can use,
-	// we should call that again, so that repometadata.FromAPI can be hidden.
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
-	if err != nil {
-		return nil, err
+	var repoMetadata *repometadata.RepoMetadata
+	if len(library.APIs) > 0 {
+		// TODO(https://github.com/googleapis/librarian/issues/4428): once
+		// repometadata exposes a FromLibrary function or similar that we can use,
+		// we should call that again, so that repometadata.FromAPI can be hidden.
+		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+		if err != nil {
+			return nil, err
+		}
+		repoMetadata = repometadata.FromAPI(cfg, api, library)
+		// Use the version of the first-listed API path as the default version,
+		// unless it's overridden later.
+		repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	} else {
+		// Handwritten library: populate from scratch (and then apply overrides
+		// as normal).
+		repoMetadata = &repometadata.RepoMetadata{
+			Name:             library.Name,
+			DistributionName: library.Name,
+			Repo:             cfg.Repo,
+			ReleaseLevel:     library.ReleaseLevel,
+		}
 	}
-	repoMetadata := repometadata.FromAPI(cfg, api, library)
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
 		repoMetadata.Name = library.Name
 	}
-	// Use the version of the first-listed API path as the default version,
-	// unless it's overridden.
-	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	if packageOptions.DefaultVersion != "" {
 		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}

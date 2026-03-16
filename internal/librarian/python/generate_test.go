@@ -891,6 +891,26 @@ func TestCreateRepoMetadata(t *testing.T) {
 				DefaultVersion:       "v1",
 			},
 		},
+		{
+			name: "handwritten library",
+			library: &config.Library{
+				Name:         "google-auth",
+				ReleaseLevel: "stable",
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "AUTH",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                "google-auth",
+				DistributionName:    "google-auth",
+				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
+				LibraryType:         "AUTH",
+				Repo:                "googleapis/google-cloud-python",
+				ReleaseLevel:        "stable",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
