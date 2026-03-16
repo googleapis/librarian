@@ -111,38 +111,35 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 // cleanLibraries iterates over all the given libraries sequentially,
 // delegating to language-specific code to clean each library.
 func cleanLibraries(language string, libraries []*config.Library) error {
+	var err error
 	for _, library := range libraries {
-		if err := cleanLibrary(language, library); err != nil {
+		switch language {
+		case config.LanguageDart:
+			err = checkAndClean(library.Output, library.Keep)
+		case config.LanguageFake:
+			err = fakeClean(library)
+		case config.LanguageGo:
+			err = golang.Clean(library)
+		case config.LanguageJava:
+			err = java.Clean(library)
+		case config.LanguageNodejs:
+			err = checkAndClean(library.Output, library.Keep)
+		case config.LanguagePython:
+			err = python.Clean(library)
+		case config.LanguageRust:
+			keep, err := rust.Keep(library)
+			if err != nil {
+				return fmt.Errorf("generating keep list: %w", err)
+			}
+			err = checkAndClean(library.Output, keep)
+		default:
+			err = fmt.Errorf("language %q does not support cleaning", language)
+		}
+		if err != nil {
 			return fmt.Errorf("clean library %q (%s): %w", library.Name, language, err)
 		}
 	}
 	return nil
-}
-
-// cleanLibrary delegates to language-specific code to clean a single library.
-func cleanLibrary(language string, library *config.Library) error {
-	switch language {
-	case config.LanguageDart:
-		return checkAndClean(library.Output, library.Keep)
-	case config.LanguageFake:
-		return fakeClean(library)
-	case config.LanguageGo:
-		return golang.Clean(library)
-	case config.LanguageJava:
-		return java.Clean(library)
-	case config.LanguageNodejs:
-		return checkAndClean(library.Output, library.Keep)
-	case config.LanguagePython:
-		return python.Clean(library)
-	case config.LanguageRust:
-		keep, err := rust.Keep(library)
-		if err != nil {
-			return fmt.Errorf("generating keep list: %w", err)
-		}
-		return checkAndClean(library.Output, keep)
-	default:
-		return fmt.Errorf("language %q does not support cleaning", language)
-	}
 }
 
 // generateLibraries generates and formats all the given libraries,
