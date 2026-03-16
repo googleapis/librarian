@@ -1166,6 +1166,7 @@ func TestRunStageCommand(t *testing.T) {
 		{
 			name: "global_file_commits_appear_in_multiple_libraries",
 			state: &legacyconfig.LibrarianState{
+				Image: "python-librarian-generator",
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:      "another-example-id",
@@ -1229,6 +1230,7 @@ func TestRunStageCommand(t *testing.T) {
 			},
 			client: &mockContainerClient{},
 			want: &legacyconfig.LibrarianState{
+				Image: "python-librarian-generator",
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:              "another-example-id",
@@ -1289,6 +1291,7 @@ func TestRunStageCommand(t *testing.T) {
 		r := &stageRunner{
 			repo:            test.repo,
 			state:           test.state,
+			image:           test.state.Image,
 			librarianConfig: test.config,
 			containerClient: test.client,
 		}
