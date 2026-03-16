@@ -103,7 +103,7 @@ NAME:
 
 USAGE:
 
-	librarian tidy [path]
+	librarian tidy
 
 OPTIONS:
 

@@ -300,11 +300,10 @@ func TestTidy_DerivableFields(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			t.Chdir(tempDir)
-			if err := RunTidyOnConfig(t.Context(), test.config); err != nil {
+			if err := RunTidyOnConfig(t.Context(), tempDir, test.config); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -329,7 +328,8 @@ func TestTidy_DerivableFields(t *testing.T) {
 	}
 }
 
-func TestTidyDuplicateError(t *testing.T) {
+func TestTidy_DuplicateError(t *testing.T) {
+	tempDir := t.TempDir()
 	cfg := &config.Config{
 		Language: config.LanguageRust,
 		Sources: &config.Sources{
@@ -350,7 +350,7 @@ func TestTidyDuplicateError(t *testing.T) {
 		},
 	}
 
-	err := RunTidyOnConfig(t.Context(), cfg)
+	err := RunTidyOnConfig(t.Context(), tempDir, cfg)
 	if err == nil {
 		t.Fatal("expected error for duplicate library")
 	}
@@ -361,7 +361,6 @@ func TestTidyDuplicateError(t *testing.T) {
 
 func TestTidy_DerivableOutput(t *testing.T) {
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
 	cfg := &config.Config{
 		Language: config.LanguageRust,
 		Default: &config.Default{
@@ -386,10 +385,10 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			},
 		},
 	}
-	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](librarianConfigPath)
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +402,6 @@ func TestTidy_DerivableOutput(t *testing.T) {
 
 func TestTidy_DerivableAPIPath(t *testing.T) {
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
 	cfg := &config.Config{
 		Language: config.LanguageDart,
 		Default: &config.Default{
@@ -427,10 +425,10 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 			},
 		},
 	}
-	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](librarianConfigPath)
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,7 +442,6 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 
 func TestTidy_DerivableRoots(t *testing.T) {
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
 	cfg := &config.Config{
 		Language: config.LanguageRust,
 		Default: &config.Default{
@@ -468,10 +465,10 @@ func TestTidy_DerivableRoots(t *testing.T) {
 			},
 		},
 	}
-	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](librarianConfigPath)
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -559,11 +556,10 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			t.Chdir(tempDir)
 
-			RunTidyOnConfig(t.Context(), test.cfg)
+			RunTidyOnConfig(t.Context(), tempDir, test.cfg)
 
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -579,7 +575,8 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 	}
 }
 
-func TestTidyMissingGoogleApisSource(t *testing.T) {
+func TestTidy_MissingGoogleApisSource(t *testing.T) {
+	tempDir := t.TempDir()
 	cfg := &config.Config{
 		Language: config.LanguageRust,
 		Libraries: []*config.Library{
@@ -593,7 +590,7 @@ func TestTidyMissingGoogleApisSource(t *testing.T) {
 			},
 		},
 	}
-	err := RunTidyOnConfig(t.Context(), cfg)
+	err := RunTidyOnConfig(t.Context(), tempDir, cfg)
 	if err == nil {
 		t.Fatalf("expected error, got %v", nil)
 	}
@@ -604,7 +601,6 @@ func TestTidyMissingGoogleApisSource(t *testing.T) {
 
 func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
 	cfg := &config.Config{
 		Language: config.LanguageRust,
 		Sources: &config.Sources{
@@ -622,10 +618,10 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 			},
 		},
 	}
-	if err := RunTidyOnConfig(t.Context(), cfg); err != nil {
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := yaml.Read[config.Config](librarianConfigPath)
+	cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
 	if err != nil {
 		t.Fatal(err)
 	}

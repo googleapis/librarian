@@ -147,7 +147,7 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
-	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
 	}
 	log.Printf("Successfully migrated %d Java libraries", len(cfg.Libraries))

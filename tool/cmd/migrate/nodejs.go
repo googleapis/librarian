@@ -93,7 +93,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 	}
 	cfg.Sources.Googleapis.Dir = ""
 
-	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("librarian tidy failed: %w", err)
 	}
 	return nil
