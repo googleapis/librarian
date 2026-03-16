@@ -26,20 +26,20 @@ const (
 
 // LibrarianConfig defines the contract for the config.yaml file.
 type LibrarianConfig struct {
-	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist"`
-	Libraries            []*LibraryConfig `yaml:"libraries"`
-	TagFormat            string           `yaml:"tag_format"`
+	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist,omitempty"`
+	Libraries            []*LibraryConfig `yaml:"libraries,omitempty"`
+	TagFormat            string           `yaml:"tag_format,omitempty"`
 }
 
 // LibraryConfig defines configuration for a single library, identified by its ID.
 type LibraryConfig struct {
-	GenerateBlocked bool   `yaml:"generate_blocked"`
-	LibraryID       string `yaml:"id"`
-	NextVersion     string `yaml:"next_version"`
-	ReleaseBlocked  bool   `yaml:"release_blocked"`
-	TagFormat       string `yaml:"tag_format"`
+	GenerateBlocked bool   `yaml:"generate_blocked,omitempty"`
+	LibraryID       string `yaml:"id,omitempty"`
+	NextVersion     string `yaml:"next_version,omitempty"`
+	ReleaseBlocked  bool   `yaml:"release_blocked,omitempty"`
+	TagFormat       string `yaml:"tag_format,omitempty"`
 	// Whether to create a GitHub release for this library.
-	SkipGitHubReleaseCreation bool `yaml:"skip_github_release_creation"`
+	SkipGitHubReleaseCreation bool `yaml:"skip_github_release_creation,omitempty"`
 }
 
 // GlobalFile defines the global files in language repositories.
