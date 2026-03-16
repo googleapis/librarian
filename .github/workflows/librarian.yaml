@@ -65,7 +65,7 @@ jobs:
       - name: Run tests
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic \
-            $(go list ./... | grep -v -E 'internal/librarian/(dart|python|rust)|internal/sidekick|internal/legacylibrarian')
+            $(go list ./... | grep -v -E 'internal/librarian/(python|rust|dart)|internal/sidekick|internal/legacylibrarian')
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
         with:
