@@ -1058,7 +1058,7 @@ func TestReadRepoConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readRepoConfig(test.repoPath)
+			got, err := readLegacyGoRepoConfig(test.repoPath)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
@@ -1155,6 +1155,92 @@ func TestToAPIs(t *testing.T) {
 	got := toAPIs(legacyAPIs)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBlockLegacyGenerationAndRelease(t *testing.T) {
+	tempDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(tempDir, librarianDir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	originalConfig := &legacyconfig.LibrarianConfig{
+		TagFormat: "xyz",
+		Libraries: []*legacyconfig.LibraryConfig{
+			{
+				LibraryID: "not-migrated",
+			},
+			{
+				LibraryID:       "not-migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:   "migrated",
+				NextVersion: "1.2.3",
+			},
+		},
+	}
+	configFile := filepath.Join(tempDir, librarianDir, librarianConfigFile)
+	if err := yaml.Write(configFile, originalConfig); err != nil {
+		t.Fatal(err)
+	}
+	migratedConfig := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "migrated-already-generate-blocked"},
+			{Name: "not-previously-in-config"},
+			{Name: "migrated"},
+		},
+	}
+	if err := blockLegacyGenerationAndRelease(tempDir, migratedConfig); err != nil {
+		t.Fatal(err)
+	}
+	wantConfig := &legacyconfig.LibrarianConfig{
+		TagFormat: "xyz",
+		Libraries: []*legacyconfig.LibraryConfig{
+			{
+				LibraryID: "not-migrated",
+			},
+			{
+				LibraryID:       "not-migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "migrated-already-generate-blocked",
+				GenerateBlocked: true,
+				ReleaseBlocked:  true,
+			},
+			{
+				LibraryID:       "migrated",
+				NextVersion:     "1.2.3",
+				GenerateBlocked: true,
+				ReleaseBlocked:  true,
+			},
+			{
+				LibraryID:       "not-previously-in-config",
+				GenerateBlocked: true,
+				ReleaseBlocked:  true,
+			},
+		},
+	}
+	gotConfig, err := readLegacyConfig(tempDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBlockLegacyGenerationAndRelease_Error(t *testing.T) {
+	tempDir := t.TempDir()
+	migratedConfig := &config.Config{}
+	gotErr := blockLegacyGenerationAndRelease(tempDir, migratedConfig)
+	wantErr := os.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("blockLegacyGenerationAndRelease error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
