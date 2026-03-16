@@ -583,3 +583,29 @@ func TestInitModule(t *testing.T) {
 		t.Errorf("expected go.sum to exist, but Stat failed: %v", err)
 	}
 }
+
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		api  string
+		want string
+	}{
+		{
+			name: "versioned api",
+			api:  "google/cloud/secretmanager/v1",
+			want: "secretmanager",
+		},
+		{
+			name: "non versioned api",
+			api:  "google/shopping/type",
+			want: "type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultLibraryName(test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

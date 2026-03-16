@@ -43,22 +43,8 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
-// Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generate(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// generate generates a Go client library.
-func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	if len(library.APIs) == 0 {
-		return nil
-	}
-
+// Generate generates a Go client library.
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return err

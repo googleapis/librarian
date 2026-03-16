@@ -37,6 +37,7 @@ var (
 		"grafeas":           {"internal/version.go", "README.md"},
 		"profiler":          {"internal/version.go", "README.md"},
 		"pubsub":            {"internal/version.go", "README.md"},
+		"root-module":       {"internal/version.go", "README.md"},
 		"run":               {"apiv2/locations_client.go"},
 		"spanner":           {"README.md"},
 		"storage":           {"README.md"},

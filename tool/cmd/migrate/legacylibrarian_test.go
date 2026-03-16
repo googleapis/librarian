@@ -896,6 +896,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name:   "root-module",
 					Output: ".",
+					Keep:   []string{"README.md", "internal/version.go"},
 				},
 			},
 		},

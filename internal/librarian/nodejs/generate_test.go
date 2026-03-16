@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -369,9 +370,49 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager")
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", "google-cloud-secretmanager", "v1")
 	if _, err := os.Stat(stagingDir); err != nil {
 		t.Errorf("expected staging directory to exist: %v", err)
+	}
+}
+
+func TestGenerateAPI_MultipleVersions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Node.js GAPIC code generation")
+	}
+
+	testhelper.RequireCommand(t, "gapic-generator-typescript")
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	repoRoot := t.TempDir()
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+			{Path: "google/cloud/secretmanager/v1beta1"},
+		},
+	}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	library.Output = outDir
+
+	for _, api := range library.APIs {
+		err = generateAPI(t.Context(), api, library, absGoogleapisDir, repoRoot)
+		if err != nil {
+			t.Fatalf("failed to generate api %q: %v", api.Path, err)
+		}
+	}
+	for _, api := range library.APIs {
+		version := filepath.Base(api.Path)
+		stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, version)
+		if _, err := os.Stat(stagingDir); err != nil {
+			t.Errorf("expected staging directory for %s to exist: %v", version, err)
+		}
 	}
 }
 
@@ -386,26 +427,28 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create staging structure matching gapic-generator-typescript output.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
-	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(
-		filepath.Join(srcDir, "index.ts"),
-		[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
-		0644,
-	); err != nil {
-		t.Fatal(err)
-	}
-	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	protoContent := "syntax = \"proto3\";\npackage google.cloud.secretmanager.v1;\n"
-	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
-		t.Fatal(err)
+	// Create staging structure matching gapic-generator-typescript output for multiple versions.
+	for _, v := range []string{"v1", "v1beta1"} {
+		stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, v)
+		srcDir := filepath.Join(stagingBase, "src", v)
+		if err := os.MkdirAll(srcDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(
+			filepath.Join(srcDir, "index.ts"),
+			[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
+			0644,
+		); err != nil {
+			t.Fatal(err)
+		}
+		protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", v)
+		if err := os.MkdirAll(protoDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		protoContent := fmt.Sprintf("syntax = \"proto3\";\npackage google.cloud.secretmanager.%s;\n", v)
+		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
@@ -491,20 +534,41 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "npm")
-
+	testhelper.RequireCommand(t, "eslint")
 	outDir := t.TempDir()
-	// Create a minimal package.json with a "fix" script.
-	if err := os.WriteFile(filepath.Join(outDir, "package.json"), []byte(`{"scripts":{"fix":"echo formatted"}}`), 0644); err != nil {
+	srcDir := filepath.Join(outDir, "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
+	eslintConfig := `{
+		"rules": {
+			"semi": ["error", "always"]
+		},
+		"parserOptions": {
+			"ecmaVersion": 2020,
+			"sourceType": "module"
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+	testFile := filepath.Join(srcDir, "index.ts")
+	if err := os.WriteFile(testFile, []byte("export const foo = 'bar'"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "google-cloud-test",
 		Output: outDir,
 	}
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+	got, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "bar';") {
+		t.Errorf("expected fixed content with semicolon, got: %q", string(got))
 	}
 }
 
@@ -596,8 +660,10 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 
-	if err := Generate(t.Context(), libraries, absGoogleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), library, absGoogleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	for _, library := range libraries {

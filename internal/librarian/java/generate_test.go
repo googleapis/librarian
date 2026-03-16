@@ -331,11 +331,6 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:    "no apis",
-			library: &config.Library{Name: "test"},
-			wantErr: "no apis configured for library \"test\"",
-		},
-		{
 			name: "invalid version",
 			library: &config.Library{
 				Name:   "test",
@@ -369,31 +364,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{Language: "java"}
-			err := generateLibrary(t.Context(), cfg, test.library, googleapisDir)
+			err := Generate(t.Context(), cfg, test.library, googleapisDir)
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestGenerate(t *testing.T) {
-	t.Parallel()
-	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		wantErr   bool
-	}{
-		{
-			name:      "no libraries",
-			libraries: nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Language: "java"}
-			err := Generate(t.Context(), cfg, test.libraries, googleapisDir)
-			if (err != nil) != test.wantErr {
-				t.Fatal(err)
 			}
 		})
 	}
