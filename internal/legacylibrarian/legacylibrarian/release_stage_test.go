@@ -1345,6 +1345,54 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 				ReleaseTriggered: true,
 			},
 		},
+		{
+			name:  "python libraries have change",
+			image: "python-librarian-generator",
+			libraryState: &legacyconfig.LibraryState{
+				ID:          "one-id",
+				Version:     "1.2.3",
+				SourceRoots: []string{"one-id"},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+					"one-id-1.2.3": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: one feat",
+						},
+						{
+							Hash:    plumbing.NewHash("654321"),
+							Message: "feat: another feat",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {"one-id/file1.txt", "one-id/file2.txt"},
+					plumbing.NewHash("654321").String(): {"one-id/file3.txt", "one-id/file4.txt"},
+				},
+			},
+			want: &legacyconfig.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "1.3.0",
+				SourceRoots:      []string{"one-id"},
+				ReleaseTriggered: true,
+				Changes: []*legacyconfig.Commit{
+					{
+						Type:       "feat",
+						Subject:    "one feat",
+						CommitHash: "1234560000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+					{
+						Type:       "feat",
+						Subject:    "another feat",
+						CommitHash: "6543210000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+				},
+			},
+		},
 	} {
 		state := &legacyconfig.LibrarianState{
 			Libraries: []*legacyconfig.LibraryState{
