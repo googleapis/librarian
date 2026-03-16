@@ -129,6 +129,10 @@ func hasLibrariesToRelease(libraryStates []*legacyconfig.LibraryState) bool {
 	return false
 }
 
+func (r *stageRunner) isPythonLibrary() bool {
+	return strings.Contains(r.image, "python-librarian-generator")
+}
+
 func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) error {
 	src := r.repo.GetDir()
 	librariesToRelease := r.state.Libraries
@@ -213,7 +217,7 @@ func (r *stageRunner) processLibrary(ctx context.Context, library *legacyconfig.
 	}
 	// Only filter commits for Python library as we migrate Go library to librarian generate and librarian doesn't
 	// create commit message.
-	if strings.Contains(r.image, "python-librarian-generator") {
+	if r.isPythonLibrary() {
 		// Filter specifically for commits relevant to a library
 		commits = filterCommitsByLibraryID(commits, library.ID)
 	}
@@ -284,7 +288,7 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 	library.PreviousVersion = library.Version
 	// Only create changes for Python library as we migrate Go library to librarian generate and librarian doesn't
 	// create commit message.
-	if strings.Contains(r.image, "python-librarian-generator") {
+	if r.isPythonLibrary() {
 		library.Changes = toCommit(commits, library.ID)
 	}
 	library.Version = nextVersion
