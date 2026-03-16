@@ -129,7 +129,7 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		relClientPath := clientPathFromLibraryRoot(library, goAPI)
+		relClientPath := clientPathFromRepoRoot(library, goAPI)
 		clientPath := filepath.Join(repoRootPath(library), relClientPath)
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err

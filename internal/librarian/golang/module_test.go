@@ -349,7 +349,7 @@ func TestDefaultImportPathAndClientPkg(t *testing.T) {
 	}
 }
 
-func TestClientPathFromLibraryRoot(t *testing.T) {
+func TestClientPathFromRepoRoot(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -428,7 +428,7 @@ func TestClientPathFromLibraryRoot(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := clientPathFromLibraryRoot(test.library, test.goAPI)
+			got := clientPathFromRepoRoot(test.library, test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

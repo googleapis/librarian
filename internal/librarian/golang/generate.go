@@ -332,7 +332,7 @@ func updateSnippetMetadata(library *config.Library) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(repoRootPath(library), clientPathFromLibraryRoot(library, goAPI))
+		baseDir := snippetDirectory(repoRootPath(library), clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil
