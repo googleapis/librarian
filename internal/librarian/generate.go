@@ -117,42 +117,37 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 // delegating to language-specific code to clean each library.
 func cleanLibraries(language string, libraries []*config.Library) error {
 	for _, library := range libraries {
-		switch language {
-		case config.LanguageDart:
-			if err := checkAndClean(library.Output, library.Keep); err != nil {
-				return err
-			}
-		case config.LanguageFake:
-			if err := fakeClean(library); err != nil {
-				return err
-			}
-		case config.LanguageGo:
-			if err := golang.Clean(library); err != nil {
-				return err
-			}
-		case config.LanguageJava:
-			if err := java.Clean(library); err != nil {
-				return err
-			}
-		case config.LanguageNodejs:
-			if err := checkAndClean(library.Output, library.Keep); err != nil {
-				return err
-			}
-		case config.LanguagePython:
-			if err := python.Clean(library); err != nil {
-				return err
-			}
-		case config.LanguageRust:
-			keep, err := rust.Keep(library)
-			if err != nil {
-				return fmt.Errorf("library %q: %w", library.Name, err)
-			}
-			if err := checkAndClean(library.Output, keep); err != nil {
-				return err
-			}
+		if err := cleanLibrary(language, library); err != nil {
+			return fmt.Errorf("clean library %q (%s): %w", library.Name, language, err)
 		}
 	}
 	return nil
+}
+
+// cleanLibrary delegates to language-specific code to clean a single library.
+func cleanLibrary(language string, library *config.Library) error {
+	switch language {
+	case config.LanguageDart:
+		return checkAndClean(library.Output, library.Keep)
+	case config.LanguageFake:
+		return fakeClean(library)
+	case config.LanguageGo:
+		return golang.Clean(library)
+	case config.LanguageJava:
+		return java.Clean(library)
+	case config.LanguageNodejs:
+		return checkAndClean(library.Output, library.Keep)
+	case config.LanguagePython:
+		return python.Clean(library)
+	case config.LanguageRust:
+		keep, err := rust.Keep(library)
+		if err != nil {
+			return fmt.Errorf("generating keep list: %w", err)
+		}
+		return checkAndClean(library.Output, keep)
+	default:
+		return fmt.Errorf("language %q does not support cleaning", language)
+	}
 }
 
 // generateLibraries delegates to language-specific code to generate all the
@@ -182,40 +177,35 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 // delegating to language-specific code to format each library.
 func formatLibraries(ctx context.Context, language string, libraries []*config.Library) error {
 	for _, library := range libraries {
-		switch language {
-		case config.LanguageDart:
-			if err := dart.Format(ctx, library); err != nil {
-				return err
-			}
-		case config.LanguageFake:
-			if err := fakeFormat(library); err != nil {
-				return err
-			}
-		case config.LanguageGo:
-			if err := golang.Format(ctx, library); err != nil {
-				return err
-			}
-		case config.LanguageJava:
-			if err := java.Format(ctx, library); err != nil {
-				return err
-			}
-		case config.LanguageNodejs:
-			if err := nodejs.Format(ctx, library); err != nil {
-				return err
-			}
-		case config.LanguagePython:
-			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
-			// generation and formatting for Python.
-			return nil
-		case config.LanguageRust:
-			if err := rust.Format(ctx, library); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("language %q does not support formatting", language)
+		if err := formatLibrary(ctx, language, library); err != nil {
+			return fmt.Errorf("format library %q (%s): %w", library.Name, language, err)
 		}
 	}
 	return nil
+}
+
+// formatLibrary delegates to language-specific code to format a single library.
+func formatLibrary(ctx context.Context, language string, library *config.Library) error {
+	switch language {
+	case config.LanguageDart:
+		return dart.Format(ctx, library)
+	case config.LanguageFake:
+		return fakeFormat(library)
+	case config.LanguageGo:
+		return golang.Format(ctx, library)
+	case config.LanguageJava:
+		return java.Format(ctx, library)
+	case config.LanguageNodejs:
+		return nodejs.Format(ctx, library)
+	case config.LanguagePython:
+		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
+		// generation and formatting for Python.
+		return nil
+	case config.LanguageRust:
+		return rust.Format(ctx, library)
+	default:
+		return fmt.Errorf("language %q does not support formatting", language)
+	}
 }
 
 // postGenerate performs repository-level actions after all individual
