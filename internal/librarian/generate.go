@@ -127,9 +127,9 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 		case config.LanguagePython:
 			err = python.Clean(library)
 		case config.LanguageRust:
-			keep, err := rust.Keep(library)
-			if err != nil {
-				return fmt.Errorf("generating keep list: %w", err)
+			keep, keepErr := rust.Keep(library)
+			if keepErr != nil {
+				return fmt.Errorf("generating keep list: %w", keepErr)
 			}
 			err = checkAndClean(library.Output, keep)
 		default:
