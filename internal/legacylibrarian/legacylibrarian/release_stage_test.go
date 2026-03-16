@@ -1303,6 +1303,69 @@ func TestRunStageCommand(t *testing.T) {
 	}
 }
 
+func TestProcessLibrary_GoMigration(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		image        string
+		libraryState *legacyconfig.LibraryState
+		repo         legacygitrepo.Repository
+		want         *legacyconfig.LibraryState
+	}{
+		{
+			name:  "go libraries do not have change",
+			image: "librarian-go",
+			libraryState: &legacyconfig.LibraryState{
+				ID:          "one-id",
+				Version:     "1.2.3",
+				SourceRoots: []string{"one-id"},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+					"one-id-1.2.3": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: one feat",
+						},
+						{
+							Hash:    plumbing.NewHash("654321"),
+							Message: "feat: another feat",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {"one-id/file1.txt", "one-id/file2.txt"},
+					plumbing.NewHash("654321").String(): {"one-id/file3.txt", "one-id/file4.txt"},
+				},
+			},
+			want: &legacyconfig.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "1.3.0",
+				SourceRoots:      []string{"one-id"},
+				ReleaseTriggered: true,
+			},
+		},
+	} {
+		state := &legacyconfig.LibrarianState{
+			Libraries: []*legacyconfig.LibraryState{
+				test.libraryState,
+			},
+		}
+		r := &stageRunner{
+			image: test.image,
+			repo:  test.repo,
+			state: state,
+		}
+		err := r.processLibrary(t.Context(), test.libraryState)
+		if err != nil {
+			t.Error(err)
+		}
+		if diff := cmp.Diff(test.want, r.state.Libraries[0]); diff != "" {
+			t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
+		}
+	}
+}
+
 func TestProcessLibrary(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
