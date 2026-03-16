@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -324,39 +325,17 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			continue
 		}
 		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
-		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func updateSnippetDirectory(baseDir, version string) error {
-	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil
 			}
 			return err
 		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
-			return nil
-		}
-		read, err := os.ReadFile(path)
-		if err != nil {
+		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
 			return err
 		}
-
-		newContent := strings.Replace(string(read), "$VERSION", version, 1)
-		err = os.WriteFile(path, []byte(newContent), 0644)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func hasRESTNumericEnums(sc *serviceconfig.API) bool {

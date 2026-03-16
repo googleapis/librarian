@@ -26,6 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -93,6 +94,8 @@ func deriveLibraryName(language string, api string) string {
 		return dart.DefaultLibraryName(api)
 	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
+	case config.LanguageGo:
+		return golang.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:

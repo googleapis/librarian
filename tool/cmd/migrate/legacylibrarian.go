@@ -33,17 +33,6 @@ import (
 )
 
 var (
-	// nestedModules maps specific Go libraries to their nested module path.
-	// This is a hardcoded list to handle special cases during legacy migration
-	// where this information is not available in the source configuration.
-	nestedModules = map[string]string{
-		"bigquery": "v2",
-		"compute":  "metadata",
-		"iam":      "admin",
-		"logging":  "logadmin",
-		"pubsub":   "v2",
-	}
-
 	githubEndpoints = &fetch.Endpoints{
 		API:      "https://api.github.com",
 		Download: "https://github.com",
@@ -93,20 +82,52 @@ type MigrationInput struct {
 	googleapisDir   string
 }
 
-func runLibrarianMigration(ctx context.Context, language string, repoPath string) error {
-	librarianState, err := readState(repoPath)
+func runLibrarianMigration(ctx context.Context, language string, repoPath string, librariesToMigrate []string) error {
+	cfg, err := runCompleteCleanLibrarianMigration(ctx, language, repoPath)
 	if err != nil {
 		return err
+	}
+
+	if len(librariesToMigrate) > 0 {
+		cfg, err = filterLibraries(cfg, librariesToMigrate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// If we already have a config, we just replace the libraries which are new.
+	// (Everything else about the existing configuration is maintained.)
+	existingConfig, err := yaml.Read[config.Config]("librarian.yaml")
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to load existing librarian.yaml: %w", err)
+	}
+	if existingConfig != nil {
+		existingConfig.Libraries = mergeLibraries(existingConfig, cfg)
+		cfg = existingConfig
+	}
+
+	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
+		return errTidyFailed
+	}
+	return nil
+}
+
+// runCompleteCleanLibrarianMigration runs migration procedures assuming there's
+// no existing librarian.yaml file, and that all libraries should be migrated.
+func runCompleteCleanLibrarianMigration(ctx context.Context, language string, repoPath string) (*config.Config, error) {
+	librarianState, err := readState(repoPath)
+	if err != nil {
+		return nil, err
 	}
 
 	librarianConfig, err := readConfig(repoPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	repoConfig, err := readRepoConfig(repoPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cfg, err := buildConfigFromLibrarian(ctx, &MigrationInput{
@@ -117,12 +138,9 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 		repoPath:        repoPath,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
-		return errTidyFailed
-	}
-	return nil
+	return cfg, nil
 }
 
 func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*config.Config, error) {
@@ -162,7 +180,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		cfg.Default.TagFormat = pythonTagFormat
 	} else {
 		input.googleapisDir = src.Dir
-		cfg.Default.Output = "."
 		cfg.Default.ReleaseLevel = "ga"
 		cfg.Release = &config.Release{
 			Branch: "main",
@@ -211,6 +228,40 @@ func fetchGoogleapisWithCommit(ctx context.Context, endpoints *fetch.Endpoints, 
 	}, nil
 }
 
+// filterLibraries reduces the list of libraries in config to those specified in
+// librariesToMigrate, returning an error if any libraries which were specified
+// to be migrated are not present. The configuration is modified in-place.
+func filterLibraries(cfg *config.Config, librariesToMigrate []string) (*config.Config, error) {
+	var result []*config.Library
+	for _, name := range librariesToMigrate {
+		library, err := librarian.FindLibrary(cfg, name)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, library)
+	}
+	cfg.Libraries = result
+	return cfg, nil
+}
+
+// mergeLibraries returns a merged slice of libraries, containing all libraries from existingConfig,
+// and libraries in newConfig which don't already exist in existingConfig. The order of the libraries
+// in the slice is the libraries in existingConfig, followed by newly-merged libraries from newConfig,
+// in the order in which they appear in the two configurations.
+func mergeLibraries(existingConfig *config.Config, newConfig *config.Config) []*config.Library {
+	existingSet := make(map[string]bool)
+	for _, lib := range existingConfig.Libraries {
+		existingSet[lib.Name] = true
+	}
+	merged := existingConfig.Libraries
+	for _, lib := range newConfig.Libraries {
+		if !existingSet[lib.Name] {
+			merged = append(merged, lib)
+		}
+	}
+	return merged
+}
+
 func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 	var libraries []*config.Library
 	idToLibraryState := sliceToMap(
@@ -242,15 +293,23 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 		if libState.APIs != nil {
 			library.APIs = toAPIs(libState.APIs)
 		}
-		library.Keep = append(library.Keep, libState.PreserveRegex...)
+		// Hardcode library output that is different from other libraries.
+		output, ok := outputs[id]
+		if ok {
+			library.Output = output
+		}
+		// Use the hardcode keep because the legacylibrarian has a different
+		// mechanism for which files to keep during generation.
+		k, ok := keep[id]
+		if ok {
+			library.Keep = k
+		}
 		slices.Sort(library.Keep)
-
 		libCfg, ok := idToLibraryConfig[id]
 		if ok {
 			library.SkipGenerate = libCfg.GenerateBlocked
 			library.SkipRelease = libCfg.ReleaseBlocked
 		}
-
 		libGoModule, ok := idToGoModule[id]
 		if ok {
 			var goAPIs []*config.GoAPI
@@ -306,6 +365,13 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 			}
 			library.Go.NestedModule = mod
 		}
+		deletion, ok := deleteOutputs[id]
+		if ok {
+			if library.Go == nil {
+				library.Go = &config.GoModule{}
+			}
+			library.Go.DeleteGenerationOutputPaths = []string{deletion}
+		}
 		// Read Go GAPIC configurations from BUILD.bazel.
 		for _, api := range library.APIs {
 			info, err := parseGoBazel(input.googleapisDir, api.Path)
@@ -320,9 +386,16 @@ func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
 				goAPI = &config.GoAPI{Path: api.Path}
 			}
 			goAPI.ClientPackage = info.ClientPackageName
-			goAPI.ProtoOnly = info.DisableGAPIC
+			if !goAPI.ProtoOnly {
+				goAPI.ProtoOnly = info.DisableGAPIC
+			}
 			goAPI.DIREGAPIC = info.HasDiregapic
 			goAPI.ImportPath = info.ImportPath
+			// Hardcode import path that is not parsable from
+			// BUILD.bazel.
+			if importPath, ok := importPaths[api.Path]; ok {
+				goAPI.ImportPath = importPath
+			}
 			goAPI.NoMetadata = info.NoMetadata
 			if library.Go == nil {
 				library.Go = &config.GoModule{}

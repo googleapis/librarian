@@ -491,20 +491,41 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "npm")
-
+	testhelper.RequireCommand(t, "eslint")
 	outDir := t.TempDir()
-	// Create a minimal package.json with a "fix" script.
-	if err := os.WriteFile(filepath.Join(outDir, "package.json"), []byte(`{"scripts":{"fix":"echo formatted"}}`), 0644); err != nil {
+	srcDir := filepath.Join(outDir, "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
+	eslintConfig := `{
+		"rules": {
+			"semi": ["error", "always"]
+		},
+		"parserOptions": {
+			"ecmaVersion": 2020,
+			"sourceType": "module"
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+	testFile := filepath.Join(srcDir, "index.ts")
+	if err := os.WriteFile(testFile, []byte("export const foo = 'bar'"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "google-cloud-test",
 		Output: outDir,
 	}
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+	got, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "bar';") {
+		t.Errorf("expected fixed content with semicolon, got: %q", string(got))
 	}
 }
 

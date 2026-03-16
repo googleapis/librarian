@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -437,7 +438,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
-	data := `{ 
+	before := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/accessapproval/apiv1",
     "version": "$VERSION",
@@ -451,7 +452,21 @@ func TestUpdateSnippetMetadata(t *testing.T) {
  }
 }
 `
-	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+	// json is reformated.
+	after := `{
+  "clientLibrary": {
+    "apis": [
+      {
+        "id": "google.cloud.accessapproval.v1",
+        "version": "v1"
+      }
+    ],
+    "language": "GO",
+    "name": "cloud.google.com/go/accessapproval/apiv1",
+    "version": "1.2.3"
+  }
+}`
+	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
 		return
 	}
 	if err := updateSnippetMetadata(library, tmpDir); err != nil {
@@ -462,9 +477,9 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(content)
-	if !strings.Contains(s, "1.2.3") {
-		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	got := string(content)
+	if diff := cmp.Diff(after, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -620,6 +635,33 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			wantErr: syscall.EACCES,
 		},
 		{
+			name: "no client library field",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: snippetmetadata.ErrNoClientLibraryField,
+		},
+		{
 			name: "no permission to update snippet directory",
 			library: &config.Library{
 				Name:    "bigquery",
@@ -641,7 +683,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 				}
 				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
 				// Do not have the write permission.
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0555); err != nil {
+				if err := os.WriteFile(snippetFile, []byte("{\"clientLibrary\": {\"language\": \"GO\"}}"), 0555); err != nil {
 					t.Fatal(err)
 				}
 			},

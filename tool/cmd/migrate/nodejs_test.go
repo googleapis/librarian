@@ -29,8 +29,9 @@ func TestBuildNodejsLibraries(t *testing.T) {
 	}
 	want := []*config.Library{
 		{
-			Name:    "google-cloud-secretmanager",
-			Version: "6.1.0",
+			Name:          "google-cloud-secretmanager",
+			Version:       "6.1.0",
+			CopyrightYear: "2019",
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
