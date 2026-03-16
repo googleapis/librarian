@@ -211,8 +211,13 @@ func (r *stageRunner) processLibrary(ctx context.Context, library *legacyconfig.
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
-	// Filter specifically for commits relevant to a library
-	commits = filterCommitsByLibraryID(commits, library.ID)
+	// Only filter commits for Python library as we migrate Go library to librarian generate and librarian doesn't
+	// create commit message.
+	if strings.Contains(r.image, "python-librarian-generator") {
+		// Filter specifically for commits relevant to a library
+		commits = filterCommitsByLibraryID(commits, library.ID)
+	}
+
 	return r.updateLibrary(ctx, library, commits)
 }
 
@@ -277,7 +282,11 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	library.Changes = toCommit(commits, library.ID)
+	// Only create changes for Python library as we migrate Go library to librarian generate and librarian doesn't
+	// create commit message.
+	if strings.Contains(r.image, "python-librarian-generator") {
+		library.Changes = toCommit(commits, library.ID)
+	}
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
 	return nil
