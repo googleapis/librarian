@@ -180,6 +180,9 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
+// buildLibraryDirectory restructures the generated files into the final module layout by moving the
+// generated package into the library directory, fixing version paths, and removing any paths configured
+// for deletion.
 func buildLibraryDirectory(library *config.Library, outDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
