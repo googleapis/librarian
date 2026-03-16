@@ -1875,6 +1875,7 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &stageRunner{
+				image:          "python-librarian-generator",
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}
