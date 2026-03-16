@@ -49,26 +49,18 @@ func TestRunJavaMigration(t *testing.T) {
 		},
 		{
 			name:     "no_generation_config",
-			repoPath: "testdata/run/non-existent",
+			repoPath: "testdata/run/no-config",
 			wantErr:  os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outputPath := "librarian.yaml"
-			t.Cleanup(func() {
-				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Fatalf("cleanup: %v", err)
-				}
-			})
-			err := runJavaMigration(t.Context(), test.repoPath)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("expected error %v, got %v", test.wantErr, err)
-				}
-				return
-			}
-			if err != nil {
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
 				t.Fatal(err)
+			}
+			err := runJavaMigration(t.Context(), dir)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}

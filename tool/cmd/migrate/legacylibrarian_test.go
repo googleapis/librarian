@@ -84,13 +84,10 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
 				t.Fatal(err)
 			}
-			// TODO(https://github.com/googleapis/librarian/issues/4569): remove
-			// this chdir when we change within the prod code.
-			t.Chdir(dir)
 			if err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate); err != nil {
 				t.Fatal(err)
 			}
-			gotConfig, err := yaml.Read[config.Config]("librarian.yaml")
+			gotConfig, err := yaml.Read[config.Config](filepath.Join(dir, "librarian.yaml"))
 			if err != nil {
 				t.Fatal(err)
 			}

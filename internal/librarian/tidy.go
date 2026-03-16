@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -37,19 +38,20 @@ func tidyCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tidy",
 		Usage:     "format and validate librarian.yaml",
-		UsageText: "librarian tidy [path]",
+		UsageText: "librarian tidy",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}
-			return RunTidyOnConfig(ctx, cfg)
+			return RunTidyOnConfig(ctx, ".", cfg)
 		},
 	}
 }
 
-// RunTidyOnConfig formats and validates the provided librarian configuration and writes it to disk.
-func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
+// RunTidyOnConfig formats and validates the provided librarian configuration
+// and writes it to disk, relative to the specified repository root directory.
+func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
-	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+	return yaml.Write(filepath.Join(repoDir, librarianConfigPath), formatConfig(cfg))
 }
 
 func tidyLibraries(cfg *config.Config) []*config.Library {
