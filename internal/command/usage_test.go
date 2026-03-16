@@ -35,7 +35,7 @@ import (
 
 func TestLibrarianUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/librarian"
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		desc string
 		args []string
 		want string
@@ -50,9 +50,9 @@ func TestLibrarianUsage(t *testing.T) {
 		{"publish", []string{"publish"}, "librarian publish"},
 		{"tag", []string{"tag"}, "librarian tag"},
 	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			got := runUsage(t, bin, tc.args)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.desc, func(t *testing.T) {
+			got := runUsage(t, bin, test.args)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -61,18 +61,17 @@ func TestLibrarianUsage(t *testing.T) {
 
 func TestLibrarianopsUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/librarianops"
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		desc string
 		args []string
 		want string
 	}{
 		{"root", nil, "librarianops [command]"},
 		{"generate", []string{"generate"}, "librarianops generate [<repo> | -C <dir>]"},
-		{"upgrade", []string{"upgrade"}, "librarianops upgrade [<repo> | -C <dir>]"},
 	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			got := runUsage(t, bin, tc.args)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.desc, func(t *testing.T) {
+			got := runUsage(t, bin, test.args)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -81,7 +80,7 @@ func TestLibrarianopsUsage(t *testing.T) {
 
 func TestSurferUsage(t *testing.T) {
 	const bin = "github.com/googleapis/librarian/cmd/surfer"
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		desc string
 		args []string
 		want string
@@ -89,9 +88,9 @@ func TestSurferUsage(t *testing.T) {
 		{"root", nil, "surfer [command]"},
 		{"generate", []string{"generate"}, "surfer generate <path to gcloud.yaml> --googleapis <path>"},
 	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			got := runUsage(t, bin, tc.args)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.desc, func(t *testing.T) {
+			got := runUsage(t, bin, test.args)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -99,7 +98,7 @@ func TestSurferUsage(t *testing.T) {
 }
 
 func TestToolUsage(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		desc string
 		bin  string
 		args []string
@@ -109,9 +108,9 @@ func TestToolUsage(t *testing.T) {
 		{"import-configs update-transports", "github.com/googleapis/librarian/tool/cmd/importconfigs", []string{"update-transports"}, "import-configs update-transports --googleapis <path>"},
 		{"import-metadata", "github.com/googleapis/librarian/tool/cmd/importmetadata", nil, "import-metadata --python-repo <path> --librarian-repo <path>"},
 	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			got := runUsage(t, tc.bin, tc.args)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+		t.Run(test.desc, func(t *testing.T) {
+			got := runUsage(t, test.bin, test.args)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
