@@ -181,7 +181,7 @@ func readVersions(path string) (map[string]string, error) {
 		}
 		parts := strings.Split(line, ":")
 		if len(parts) >= 3 {
-			versions[parts[0]] = parts[1] // released-version
+			versions[parts[0]] = parts[2] // snapshot-version
 		}
 	}
 	return versions, nil
