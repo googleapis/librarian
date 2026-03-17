@@ -184,6 +184,9 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 // generated package into the library directory, fixing version paths, and removing any paths configured
 // for deletion.
 func moveGeneratedFiles(library *config.Library, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
 	src := filepath.Join(outDir, "cloud.google.com", "go")
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("cannot access directory %q: %w", src, err)
