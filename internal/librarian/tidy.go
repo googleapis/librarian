@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -184,9 +185,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 		return strings.Compare(a.Name, b.Name)
 	})
 	for _, lib := range cfg.Libraries {
-		slices.SortFunc(lib.APIs, func(a, b *config.API) int {
-			return strings.Compare(a.Path, b.Path)
-		})
+		serviceconfig.SortAPIs(lib.APIs)
 		if lib.Rust != nil {
 			slices.SortFunc(lib.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {
 				return strings.Compare(a.Name, b.Name)

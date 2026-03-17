@@ -83,8 +83,8 @@ func TestFormatConfig(t *testing.T) {
 				Name:    "google-cloud-storage-v1",
 				Version: "1.0.0",
 				APIs: []*config.API{
-					{Path: "c"},
-					{Path: "a"},
+					{Path: "google/cloud/storage/v1"},
+					{Path: "google/cloud/storage/v2"},
 				},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
@@ -125,8 +125,8 @@ func TestFormatConfig(t *testing.T) {
 		t.Fatal("library google-cloud-storage-v1 not found after sorting")
 	}
 
-	t.Run("sorts apis by path", func(t *testing.T) {
-		want := []string{"a", "c"}
+	t.Run("sorts apis by version", func(t *testing.T) {
+		want := []string{"google/cloud/storage/v2", "google/cloud/storage/v1"}
 		var got []string
 		for _, ch := range storageLib.APIs {
 			got = append(got, ch.Path)
