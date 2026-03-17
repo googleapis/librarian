@@ -325,14 +325,6 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			versions := make(map[string]string)
-			for k, v := range test.versions {
-				versions[k] = v
-			}
-			// Add default version for hardcoded entry to avoid failure in other tests if they don't provide it
-			if _, ok := versions["google-cloud-java"]; !ok && test.name != "version lookup" {
-				// but wait, if it's not in versions, it shouldn't be in want
-			}
 			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"}, test.versions)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
