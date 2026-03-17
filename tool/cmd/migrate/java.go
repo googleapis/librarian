@@ -211,16 +211,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			name = l.APIShortName
 		}
 		output := "java-" + name
-
-		module := l.DistributionName
-		if module == "" {
-			module = "google-cloud-" + name
-		}
-		if i := strings.Index(module, ":"); i != -1 {
-			module = module[i+1:]
-		}
-		version := versions[module]
-
+		artifactID := parseArtifactID(l.DistributionName, name)
+		version := versions[artifactID]
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
 		for _, g := range l.GAPICs {
@@ -319,6 +311,17 @@ func parseOwlBotKeep(repoPath, outputDir string) []string {
 		keeps = append(keeps, strings.TrimPrefix(regex, prefix))
 	}
 	return keeps
+}
+
+func parseArtifactID(distributionName, name string) string {
+	artifactID := distributionName
+	if artifactID == "" {
+		artifactID = "google-cloud-" + name
+	}
+	if i := strings.Index(artifactID, ":"); i != -1 {
+		artifactID = artifactID[i+1:]
+	}
+	return artifactID
 }
 
 func invertBoolPtr(p *bool) bool {
