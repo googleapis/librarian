@@ -196,7 +196,11 @@ func createPR(ctx context.Context, repoName string) error {
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
 	}
-	title := fmt.Sprintf("feat: update %s and regenerate", sources)
+	prType := "chore"
+	if repoName == repoGo {
+		prType = "feat"
+	}
+	title := fmt.Sprintf("%s: update %s and regenerate", prType, sources)
 	body := fmt.Sprintf("Update %s to the latest commit and regenerate all client libraries.", sources)
 	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
 }
