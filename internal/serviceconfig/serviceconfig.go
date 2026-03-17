@@ -254,18 +254,7 @@ func defaultShortName(serviceName string) string {
 // protoc's retry-config option. Returns empty string if no config is found.
 // Returns an error if multiple matching files exist.
 func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
-	pattern := filepath.Join(googleapisDir, path, "*_grpc_service_config.json")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return "", err
-	}
-	if len(matches) == 0 {
-		return "", nil
-	}
-	if len(matches) > 1 {
-		return "", fmt.Errorf("multiple gRPC service config files found in %q", path)
-	}
-	return filepath.Rel(googleapisDir, matches[0])
+	return findConfigFile(googleapisDir, path, "*_grpc_service_config.json", "gRPC service config")
 }
 
 // FindGAPICConfig searches for GAPIC configuration files in the given API
@@ -273,7 +262,14 @@ func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
 // protoc's gapic-config option. Returns empty string if no config is found.
 // Returns an error if multiple matching files exist.
 func FindGAPICConfig(googleapisDir, path string) (string, error) {
-	pattern := filepath.Join(googleapisDir, path, "*_gapic.yaml")
+	return findConfigFile(googleapisDir, path, "*_gapic.yaml", "GAPIC config")
+}
+
+// findConfigFile searches for a file matching a pattern in the given API directory.
+// It returns the path relative to googleapisDir. Returns an empty string if no
+// config is found. Returns an error if multiple matching files exist.
+func findConfigFile(googleapisDir, path, glob, description string) (string, error) {
+	pattern := filepath.Join(googleapisDir, path, glob)
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return "", err
@@ -282,7 +278,7 @@ func FindGAPICConfig(googleapisDir, path string) (string, error) {
 		return "", nil
 	}
 	if len(matches) > 1 {
-		return "", fmt.Errorf("multiple GAPIC config files found in %q", path)
+		return "", fmt.Errorf("multiple %s files found in %q", description, path)
 	}
 	return filepath.Rel(googleapisDir, matches[0])
 }
