@@ -31,7 +31,7 @@ NAME:
 
 USAGE:
 
-	librarianops generate [<repo> | -C <dir>] [--docker]
+	librarianops generate [<repo> | -C <dir>]
 
 DESCRIPTION:
 

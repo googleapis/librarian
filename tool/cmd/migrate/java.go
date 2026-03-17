@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
@@ -140,7 +142,7 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return errFetchSource
 	}
-	cfg := buildConfig(gen, src)
+	cfg := buildConfig(gen, repoPath, src)
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -159,13 +161,14 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, src *config.Source) *config.Config {
+func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source) *config.Config {
 	var libs []*config.Library
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
 		if name == "" {
 			name = l.APIShortName
 		}
+		output := "java-" + name
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
 		for _, g := range l.GAPICs {
@@ -192,7 +195,8 @@ func buildConfig(gen *GenerationConfig, src *config.Source) *config.Config {
 		}
 		libs = append(libs, &config.Library{
 			Name:         name,
-			Output:       "java-" + name,
+			Keep:         parseOwlBotKeep(repoPath, output),
+			Output:       output,
 			APIs:         apis,
 			ReleaseLevel: l.ReleaseLevel,
 			Java: &config.JavaModule{
@@ -232,6 +236,36 @@ func buildConfig(gen *GenerationConfig, src *config.Source) *config.Config {
 		Libraries: libs,
 		Repo:      "googleapis/google-cloud-java",
 	}
+}
+
+// parseOwlBotKeep parses the .OwlBot-hermetic.yaml file for the given library
+// and extracts additional deep-preserve-regex patterns into a list of paths
+// to be preserved during generation. It filters out the standard template
+// patterns and ensures the paths are relative to the library's output directory.
+// It assumes the regex is actually a file or dir path.
+func parseOwlBotKeep(repoPath, outputDir string) []string {
+	path := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
+	if _, err := os.Stat(path); err != nil {
+		return nil
+	}
+	content, err := yaml.Read[struct {
+		DeepPreserveRegex []string `yaml:"deep-preserve-regex"`
+	}](path)
+	if err != nil {
+		log.Printf("Warning: failed to parse %s: %v", path, err)
+		return nil
+	}
+	var keeps []string
+	prefix := "/" + outputDir + "/"
+	for _, regex := range content.DeepPreserveRegex {
+		// Ignore standard template pattern:
+		// "/java-library-name/google-.*/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java"
+		if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, "/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java") {
+			continue
+		}
+		keeps = append(keeps, strings.TrimPrefix(regex, prefix))
+	}
+	return keeps
 }
 
 func invertBoolPtr(p *bool) bool {
