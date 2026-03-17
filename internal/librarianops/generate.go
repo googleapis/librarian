@@ -44,7 +44,7 @@ func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
 		Usage:     "generate libraries across repositories",
-		UsageText: "librarianops generate [<repo> | -C <dir>] [--docker]",
+		UsageText: "librarianops generate [<repo> | -C <dir>]",
 		Description: `Examples:
   librarianops generate google-cloud-rust
   librarianops generate -C ~/workspace/google-cloud-rust

@@ -46,8 +46,9 @@ const bazelLangs = 7
 
 func updateTransportsCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "update-transports",
-		Usage: "update transport values in internal/serviceconfig/api.go from BUILD.bazel files",
+		Name:      "update-transports",
+		Usage:     "update transport values in internal/serviceconfig/api.go from BUILD.bazel files",
+		UsageText: "import-configs update-transports --googleapis <path>",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "googleapis",
