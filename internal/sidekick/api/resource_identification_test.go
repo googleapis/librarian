@@ -288,7 +288,31 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/backendServices/{backend_service}"),
 			},
 		},
-
+		{
+			name:      "heuristic: path with non-variable standalone literal",
+			serviceID: ".google.cloud.example.v1.Service",
+			path: NewPathTemplate().
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithLiteral("xyz").
+				WithLiteral("global").
+				WithLiteral("foos").WithVariableNamed("foo"),
+			fields: []*Field{
+				{Name: "foo", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("v1").
+					WithLiteral("projects").
+					WithLiteral("xyz").
+					WithLiteral("global").
+					WithLiteral("foos").WithVariableNamed("foo"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"foo"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/xyz/global/foos/{foo}"),
+			},
+		},
 		{
 			name:      "heuristic: paths with un-grouped variable after version string",
 			serviceID: ".google.cloud.compute.v1.Instances",
