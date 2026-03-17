@@ -225,7 +225,6 @@ func TestBump(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			test.library.Output = libraryDir
 			err := Bump(test.library, libraryDir, test.version)
 			if err != nil {
 				t.Fatal(err)
