@@ -476,6 +476,41 @@ func TestLibraryPath(t *testing.T) {
 	}
 }
 
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		defaultOut  string
+		libraryName string
+		want        string
+	}{
+		{
+			name:        "secretmanager",
+			defaultOut:  "",
+			libraryName: "secretmanager",
+			want:        "secretmanager",
+		},
+		{
+			name:        "secretmanager",
+			defaultOut:  "prefix",
+			libraryName: "secretmanager",
+			want:        "prefix/secretmanager",
+		},
+		{
+			name:        "bigquery/v2",
+			defaultOut:  "",
+			libraryName: "bigquery/v2",
+			want:        "bigquery/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.defaultOut, test.libraryName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRepoRootPath(t *testing.T) {
 	for _, test := range []struct {
 		name    string
