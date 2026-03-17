@@ -176,7 +176,7 @@ func cloneRepo(ctx context.Context, repoDir, repoName string) error {
 }
 
 func createBranch(ctx context.Context, now time.Time) error {
-	branchName := fmt.Sprintf("%s%s", branchPrefix, now.Format("2006-01-02-15-04-05"))
+	branchName := fmt.Sprintf("%s%s", branchPrefix, time.Now().UTC().Format(time.RFC3339))
 	return command.Run(ctx, "git", "checkout", "-b", branchName)
 }
 
