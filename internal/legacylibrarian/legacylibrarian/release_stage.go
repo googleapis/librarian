@@ -215,12 +215,7 @@ func (r *stageRunner) processLibrary(ctx context.Context, library *legacyconfig.
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
-	// Only filter commits for Python library as we migrate Go library to librarian generate and librarian doesn't
-	// create commit message.
-	if r.isPythonLibrary() {
-		// Filter specifically for commits relevant to a library
-		commits = filterCommitsByLibraryID(commits, library.ID)
-	}
+	commits = filterCommitsByLibraryID(commits, library.ID)
 
 	return r.updateLibrary(ctx, library, commits)
 }
@@ -309,7 +304,8 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 		}
 		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
 	} else {
-		derivedNextVersion, err = NextVersion(commits, currentVersion)
+		migration := !r.isPythonLibrary()
+		derivedNextVersion, err = NextVersion(commits, currentVersion, migration)
 	}
 	if err != nil {
 		return "", err

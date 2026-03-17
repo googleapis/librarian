@@ -169,8 +169,14 @@ func isUnderAnyPath(file string, paths []string) bool {
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
-func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string) (string, error) {
+func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, migration bool) (string, error) {
 	highestChange := getHighestChange(commits)
+	if migration {
+		// Librarian generate does not have commit message, in order for legacylibrarian
+		// stage recognize a commit made by librarian generate, update the highestChange
+		// to minor.
+		highestChange = semver.Minor
+	}
 	return semver.DeriveNext(highestChange, currentVersion, semver.DeriveNextOptions{})
 }
 

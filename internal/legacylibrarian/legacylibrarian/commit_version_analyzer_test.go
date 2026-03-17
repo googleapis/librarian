@@ -693,7 +693,7 @@ func TestNextVersion(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotVersion, err := NextVersion(test.commits, test.currentVersion)
+			gotVersion, err := NextVersion(test.commits, test.currentVersion, false)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
 				return
