@@ -388,8 +388,8 @@ google-cloud-aiplatform:3.86.0:3.87.0-SNAPSHOT
 		t.Fatal(err)
 	}
 	want := map[string]string{
-		"google-cloud-accessapproval": "2.86.0",
-		"google-cloud-aiplatform":     "3.86.0",
+		"google-cloud-accessapproval": "2.87.0-SNAPSHOT",
+		"google-cloud-aiplatform":     "3.87.0-SNAPSHOT",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
