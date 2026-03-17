@@ -72,8 +72,10 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 
 	// Run post processor (synthtool)
 	// The post processor needs to run from the repository root, not the package directory.
-	if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to run post processor: %w", err)
+	if len(library.APIs) > 0 {
+		if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
+			return fmt.Errorf("failed to run post processor: %w", err)
+		}
 	}
 
 	// Copy README.rst to docs/README.rst
