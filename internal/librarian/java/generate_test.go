@@ -49,6 +49,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
@@ -64,6 +65,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
 				"rest-numeric-enums",
@@ -79,6 +81,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 			},
@@ -97,7 +100,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 	}
 }
 
-func TestResolveGAPICOptions_Error(t *testing.T) {
+func TestResolveGAPICOptions_GRPCError(t *testing.T) {
 	apiPath := "google/cloud/multiple/v1"
 	tmpDir := t.TempDir()
 	apiDir := filepath.Join(tmpDir, apiPath)
@@ -118,6 +121,30 @@ func TestResolveGAPICOptions_Error(t *testing.T) {
 	_, err := resolveGAPICOptions(&config.API{Path: apiPath}, &config.JavaAPI{Path: apiPath}, tmpDir, apiCfgs)
 	if err == nil || !strings.Contains(err.Error(), wantErr) {
 		t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, wantErr)
+	}
+}
+
+func TestResolveGAPICOptions_GAPICError(t *testing.T) {
+	tmpDir := t.TempDir()
+	apiPathGAPIC := "google/cloud/multiplegapic/v1"
+	apiDirGAPIC := filepath.Join(tmpDir, apiPathGAPIC)
+	if err := os.MkdirAll(apiDirGAPIC, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(apiDirGAPIC, "a_gapic.yaml"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(apiDirGAPIC, "b_gapic.yaml"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	wantErrGAPIC := "multiple GAPIC config files found"
+	apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+		config.LanguageJava: serviceconfig.GRPC,
+	}}
+	_, err := resolveGAPICOptions(&config.API{Path: apiPathGAPIC}, &config.JavaAPI{Path: apiPathGAPIC}, tmpDir, apiCfgs)
+	if err == nil || !strings.Contains(err.Error(), wantErrGAPIC) {
+		t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, wantErrGAPIC)
 	}
 }
 

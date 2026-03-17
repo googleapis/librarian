@@ -268,6 +268,25 @@ func FindGRPCServiceConfig(googleapisDir, path string) (string, error) {
 	return filepath.Rel(googleapisDir, matches[0])
 }
 
+// FindGAPICConfig searches for GAPIC configuration files in the given API
+// directory. It returns the path relative to googleapisDir for use with
+// protoc's gapic-config option. Returns empty string if no config is found.
+// Returns an error if multiple matching files exist.
+func FindGAPICConfig(googleapisDir, path string) (string, error) {
+	pattern := filepath.Join(googleapisDir, path, "*_gapic.yaml")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", err
+	}
+	if len(matches) == 0 {
+		return "", nil
+	}
+	if len(matches) > 1 {
+		return "", fmt.Errorf("multiple GAPIC config files found in %q", path)
+	}
+	return filepath.Rel(googleapisDir, matches[0])
+}
+
 // SortAPIs sorts APIs in-place to ensure the primary version is first.
 // The sorting logic: versioned APIs come before unversioned ones, stable
 // versions before unstable ones, shallower paths before deeper ones, and
