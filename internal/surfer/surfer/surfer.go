@@ -28,7 +28,7 @@ func Run(ctx context.Context, args ...string) error {
 	cmd := &cli.Command{
 		Name:        "surfer",
 		Usage:       "generates gcloud command YAML files",
-		UsageText:   "surfer generate [arguments]",
+		UsageText:   "surfer [command]",
 		Description: "surfer generates gcloud command YAML files",
 		Commands: []*cli.Command{
 			generateCommand(),
@@ -41,7 +41,7 @@ func generateCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "generate",
 		Usage:     "generates gcloud commands",
-		UsageText: "surfer generate <path to gcloud.yaml> --googleapis <path> [--out <path>]",
+		UsageText: "surfer generate <path to gcloud.yaml> --googleapis <path>",
 		Description: `generate generates gcloud command files from protobuf API specifications,
 service config yaml, and gcloud.yaml.`,
 		Flags: []cli.Flag{

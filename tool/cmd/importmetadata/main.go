@@ -35,8 +35,9 @@ import (
 func main() {
 	ctx := context.Background()
 	cmd := &cli.Command{
-		Name:  "import-metadata",
-		Usage: "commands for import configs",
+		Name:      "import-metadata",
+		Usage:     "commands for import configs",
+		UsageText: "import-metadata --python-repo <path> --librarian-repo <path>",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "python-repo",
