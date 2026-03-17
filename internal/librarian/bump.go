@@ -193,9 +193,12 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 	)
 	switch cfg.Language {
 	case config.LanguageGo:
-		output = filepath.Clean(filepath.Join(library.Output, library.Name))
+		if library.Output == "" {
+			library.Output = library.Name
+		}
+		output = filepath.Clean(filepath.Join(library.Output))
 		if library.Go != nil && library.Go.NestedModule != "" {
-			exclusion = filepath.Clean(filepath.Join(library.Output, library.Name, library.Go.NestedModule)) + "/"
+			exclusion = filepath.Clean(filepath.Join(library.Output, library.Go.NestedModule)) + "/"
 		}
 	default:
 		output = libraryOutput(cfg.Language, library, cfg.Default)
