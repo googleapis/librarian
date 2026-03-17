@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
@@ -196,16 +196,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		protos[index] = rel
 	}
 
-	cmdArgs := []string{"protoc"}
-	cmdArgs = append(cmdArgs, protos...)
-	cmdArgs = append(cmdArgs, protocOptions...)
-
-	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = googleapisDir
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", cmd.String(), err)
+	cmdArgs := append(protos, protocOptions...)
+	if err := command.RunInDir(ctx, googleapisDir, "protoc", cmdArgs...); err != nil {
+		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
 	// Copy the proto files as well as the generated code for proto-only libraries.
@@ -341,12 +334,8 @@ func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, outDir)
-	cmd := exec.CommandContext(ctx, "python3", "-c", pythonCode)
-	cmd.Dir = repoRoot
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", cmd.String(), err)
+	if err := command.RunInDir(ctx, repoRoot, "python3", "-c", pythonCode); err != nil {
+		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
 
 	// synthtool runs formatting, then applies string replacements. This leaves
@@ -355,14 +344,9 @@ python_mono_repo.owlbot_main(%q)
 	// as well... we can do all of that after migration, when we remove
 	// synthtool entirely - see
 	// https://github.com/googleapis/librarian/issues/3008)
-	noxCmd := exec.CommandContext(ctx, "nox", "-s", "format", "--no-venv", "--no-install")
-	noxCmd.Dir = outDir
-	noxCmd.Stdout = os.Stderr
-	noxCmd.Stderr = os.Stderr
-	if err := noxCmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", noxCmd.String(), err)
+	if err := command.RunInDir(ctx, outDir, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
+		return fmt.Errorf("failed to format code after post-processing: %w", err)
 	}
-
 	return nil
 }
 
