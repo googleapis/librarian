@@ -207,7 +207,7 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 }
 
 // moveSnippetDirectory moves the generated/snippets directory to the internal directory
-// of the library repository if generated/snippets directory exists.
+// of the repository, if generated/snippets directory exists.
 func moveSnippetDirectory(library *config.Library, snippetDir string) error {
 	// If all APIs in a library is proto_only, snippets are not generated.
 	// We need to check the internal directory's existence before moving the snippets.
