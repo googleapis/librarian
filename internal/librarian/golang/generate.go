@@ -92,6 +92,9 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := updateSnippetMetadata(library); err != nil {
 		return err
 	}
+	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
+		return err
+	}
 	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// New client, init the module.
@@ -180,6 +183,37 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
+// moveGeneratedFiles restructures the generated files into the final module layout by moving the
+// generated package into the library directory, fixing version paths, and removing any paths configured
+// for deletion.
+func moveGeneratedFiles(library *config.Library, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
+	src := filepath.Join(outDir, "cloud.google.com", "go", library.Name)
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("cannot access directory %q: %w", src, err)
+	}
+	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
+		return err
+	}
+	snippetDir := filepath.Join(outDir, "cloud.google.com", "go", "internal")
+	if err := moveSnippetDirectory(library, snippetDir); err != nil {
+		return err
+	}
+	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
+		return err
+	}
+	if library.Go != nil {
+		for _, p := range library.Go.DeleteGenerationOutputPaths {
+			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // moveSnippetDirectory moves the generated/snippets directory to the internal directory
 // of the library repository if generated/snippets directory exists.
 func moveSnippetDirectory(library *config.Library, snippetDir string) error {
@@ -197,37 +231,6 @@ func moveSnippetDirectory(library *config.Library, snippetDir string) error {
 		return err
 	}
 	return filesystem.MoveAndMerge(snippetDir, internalDir)
-}
-
-// moveGeneratedFiles restructures the generated files into the final module layout by moving the
-// generated package into the library directory, fixing version paths, and removing any paths configured
-// for deletion.
-func moveGeneratedFiles(library *config.Library, outDir string) error {
-	if len(library.APIs) == 0 {
-		return nil
-	}
-	src := filepath.Join(outDir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("cannot access directory %q: %w", src, err)
-	}
-	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
-		return err
-	}
-	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
-		return err
-	}
-
-	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
-		return err
-	}
-	if library.Go != nil {
-		for _, p := range library.Go.DeleteGenerationOutputPaths {
-			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
