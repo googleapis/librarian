@@ -129,11 +129,10 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 
 					// If the literal is a version string, include the variable but stop here
 					if isVersionString(prevLiteralVal) {
-						firstIndex -= 1
-						break
+						firstIndex--
 					}
 
-					// Otherwise, the chain is broken
+					// The chain is broken, so stop scanning.
 					break
 				}
 			}
