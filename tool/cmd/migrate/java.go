@@ -164,6 +164,8 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 	return yaml.Read[GenerationConfig](filepath.Join(path, generationConfigFileName))
 }
 
+// readVersions parses versions.txt and returns a map of module names to snapshot versions.
+// It expects the "module:released-version:current-version" format.
 func readVersions(path string) (map[string]string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
