@@ -99,21 +99,43 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		// beginning of a resource pattern chain.
 		firstIndex := i
 		if vocabulary[token] {
-			// Walk backwards to find the start of the (literal, variable) chain
+			// Walk backwards to find the start of the resource pattern chain
 			firstIndex = i - 1
-			for firstIndex >= 2 {
-				if tmpl.Segments[firstIndex-1].Variable == nil || tmpl.Segments[firstIndex-2].Literal == nil {
-					break
-				}
-				// Stop matching if the preceding segment isn't a known collection.
-				if !vocabulary[*tmpl.Segments[firstIndex-2].Literal] {
-					// Include root-level resource variables immediately after version string.
-					if isVersionString(*tmpl.Segments[firstIndex-2].Literal) {
-						firstIndex -= 1
+			for firstIndex > 0 {
+				prevSeg := tmpl.Segments[firstIndex-1]
+
+				// Case 1: The preceding segment is a standalone literal (e.g., "global")
+				if prevSeg.Literal != nil {
+					if isVersionString(*prevSeg.Literal) {
+						break // Stop at version strings (e.g., "v1")
 					}
+					firstIndex--
+					continue
+				}
+
+				// Case 2: The preceding segment is a variable. It must be paired with a literal.
+				if prevSeg.Variable != nil {
+					if firstIndex < 2 || tmpl.Segments[firstIndex-2].Literal == nil {
+						break // Variable near the beginning, cannot form a pair
+					}
+
+					prevLiteralVal := *tmpl.Segments[firstIndex-2].Literal
+
+					// If the literal is a known collection, include the pair and continue
+					if vocabulary[prevLiteralVal] {
+						firstIndex -= 2
+						continue
+					}
+
+					// If the literal is a version string, include the variable but stop here
+					if isVersionString(prevLiteralVal) {
+						firstIndex -= 1
+						break
+					}
+
+					// Otherwise, the chain is broken
 					break
 				}
-				firstIndex -= 2
 			}
 		}
 
