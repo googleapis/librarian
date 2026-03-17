@@ -39,8 +39,8 @@ func TestRustRead(t *testing.T) {
 				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
 			},
 			Showcase: &Source{
-				Commit: "3f4e3f4f5e2f4c6e8b6f4e2f4c6e8b6f4e2f4c6e",
-				SHA256: "d41d8cd98f00b204e9800998ecf8427e",
+				Commit: "846ec3b86067d1480b43c3b869e89aacc15dfd7d",
+				SHA256: "c43e9c0e3f4ad9aa541f73b06b5e067915277eb36cbeb9e8a3882f8677d5eec4",
 			},
 			ProtobufSrc: &Source{
 				Commit:  "4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b",
