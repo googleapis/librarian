@@ -4160,6 +4160,8 @@
   path: google/spanner/executor/v1
   release_level:
     go: beta
+  transports:
+    go: grpc
 - languages:
     - go
     - python
