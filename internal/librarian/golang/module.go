@@ -102,6 +102,7 @@ func libraryPath(library *config.Library) string {
 }
 
 func repoRootPath(library *config.Library) string {
+	// Root module has this special setup.
 	if library.Output == "." {
 		return "."
 	}
