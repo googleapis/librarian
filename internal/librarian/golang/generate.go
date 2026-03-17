@@ -45,30 +45,22 @@ var (
 
 // Generate generates a Go client library.
 func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	outdir, err := filepath.Abs(library.Output)
+	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(outdir, 0755); err != nil {
+	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
+		if err := generateAPI(ctx, api, library, googleapisDir, outDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-	if err := moveGeneratedFiles(library, outdir); err != nil {
+	if err := moveGeneratedFiles(library, outDir); err != nil {
 		return err
 	}
-	moduleRoot := filepath.Join(outdir, library.Name)
-	absModuleRoot, err := filepath.Abs(moduleRoot)
-	if err != nil {
-		return err
-	}
-	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
-		return fmt.Errorf("invalid library name: path traversal detected")
-	}
-	if err := generateInternalVersionFile(outdir, library.Version); err != nil {
+	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
 		return err
 	}
 	for i, api := range library.APIs {
@@ -85,20 +77,20 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, api, outdir); err != nil {
+		if err := generateREADME(library, api, outDir); err != nil {
 			return err
 		}
 	}
 	if err := updateSnippetMetadata(library); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
+	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
 		return err
 	}
-	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
+	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// New client, init the module.
-			return initModule(ctx, absModuleRoot, modulePath(library))
+			return initModule(ctx, outDir, modulePath(library))
 		}
 		return err
 	}
