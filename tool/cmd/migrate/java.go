@@ -142,7 +142,11 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return errFetchSource
 	}
-	cfg := buildConfig(gen, repoPath, src)
+	versions, err := readVersions(filepath.Join(repoPath, "versions.txt"))
+	if err != nil {
+		return err
+	}
+	cfg := buildConfig(gen, repoPath, src, versions)
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -160,15 +164,61 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 	return yaml.Read[GenerationConfig](filepath.Join(path, generationConfigFileName))
 }
 
+func readVersions(path string) (map[string]string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	versions := make(map[string]string)
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.Split(line, ":")
+		if len(parts) >= 3 {
+			versions[parts[0]] = parts[1] // released-version
+		}
+	}
+	return versions, nil
+}
+
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source) *config.Config {
+func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) *config.Config {
 	var libs []*config.Library
+	if v, ok := versions["google-cloud-java"]; ok {
+		libs = append(libs, &config.Library{
+			Name:         "google-cloud-java",
+			Version:      v,
+			SkipGenerate: true,
+		})
+		// Hardcode jar-parent as it follows the same version.
+		libs = append(libs, &config.Library{
+			Name:         "google-cloud-jar-parent",
+			Version:      v,
+			SkipGenerate: true,
+		})
+	}
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
 		if name == "" {
 			name = l.APIShortName
 		}
 		output := "java-" + name
+
+		module := l.DistributionName
+		if module == "" {
+			module = "google-cloud-" + name
+		}
+		if i := strings.Index(module, ":"); i != -1 {
+			module = module[i+1:]
+		}
+		version := versions[module]
+
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
 		for _, g := range l.GAPICs {
@@ -195,6 +245,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source) *co
 		}
 		libs = append(libs, &config.Library{
 			Name:         name,
+			Version:      version,
 			Keep:         parseOwlBotKeep(repoPath, output),
 			Output:       output,
 			APIs:         apis,

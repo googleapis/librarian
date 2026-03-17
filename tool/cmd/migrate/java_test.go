@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -68,9 +69,10 @@ func TestRunJavaMigration(t *testing.T) {
 
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		gen  *GenerationConfig
-		want *config.Config
+		name     string
+		gen      *GenerationConfig
+		versions map[string]string
+		want     *config.Config
 	}{
 		{
 			name: "prioritize library_name over api_shortname",
@@ -256,9 +258,82 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "version lookup",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName:     "accessapproval",
+						DistributionName: "com.google.cloud:google-cloud-accessapproval",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/accessapproval/v1"},
+						},
+					},
+					{
+						APIShortName: "aiplatform",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/aiplatform/v1"},
+						},
+					},
+				},
+			},
+			versions: map[string]string{
+				"google-cloud-java":           "1.79.0",
+				"google-cloud-accessapproval": "2.86.0",
+				"google-cloud-aiplatform":     "3.86.0",
+			},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default:  &config.Default{},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:         "google-cloud-java",
+						Version:      "1.79.0",
+						SkipGenerate: true,
+					},
+					{
+						Name:         "google-cloud-jar-parent",
+						Version:      "1.79.0",
+						SkipGenerate: true,
+					},
+					{
+						Name:    "accessapproval",
+						Output:  "java-accessapproval",
+						Version: "2.86.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/accessapproval/v1"},
+						},
+						Java: &config.JavaModule{
+							DistributionNameOverride: "com.google.cloud:google-cloud-accessapproval",
+						},
+					},
+					{
+						Name:    "aiplatform",
+						Output:  "java-aiplatform",
+						Version: "3.86.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/aiplatform/v1"},
+						},
+						Java: &config.JavaModule{},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"})
+			versions := make(map[string]string)
+			for k, v := range test.versions {
+				versions[k] = v
+			}
+			// Add default version for hardcoded entry to avoid failure in other tests if they don't provide it
+			if _, ok := versions["google-cloud-java"]; !ok && test.name != "version lookup" {
+				// but wait, if it's not in versions, it shouldn't be in want
+			}
+			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"}, test.versions)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -278,7 +353,7 @@ func TestBuildConfig_OwlBotKeep(t *testing.T) {
 			},
 		},
 	}
-	got := buildConfig(gen, repoPath, &config.Source{Dir: "../../internal/testdata/googleapis"})
+	got := buildConfig(gen, repoPath, &config.Source{Dir: "../../internal/testdata/googleapis"}, nil)
 	wantKeep := []string{
 		"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 		"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
@@ -292,6 +367,32 @@ func TestBuildConfig_OwlBotKeep(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantKeep, got.Libraries[0].Keep); diff != "" {
 		t.Errorf("mismatch in Keep field (-want +got):\n%s", diff)
+	}
+}
+
+func TestReadVersions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "versions.txt")
+	content := `# Format:
+# module:released-version:current-version
+
+google-cloud-accessapproval:2.86.0:2.87.0-SNAPSHOT
+google-cloud-aiplatform:3.86.0:3.87.0-SNAPSHOT
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := readVersions(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"google-cloud-accessapproval": "2.86.0",
+		"google-cloud-aiplatform":     "3.86.0",
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
