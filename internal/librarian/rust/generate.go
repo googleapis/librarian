@@ -96,7 +96,6 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, sources *si
 
 	// Set fields not set by FromLibrary.
 	metadata.ClientDocumentation = fmt.Sprintf("https://docs.rs/%s/latest", library.Name)
-	metadata.Repo = "googleapis/google-cloud-rust"
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 
 	return metadata, nil

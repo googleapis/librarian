@@ -258,11 +258,40 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, &config.Source{Dir: "../../internal/testdata/googleapis"})
+			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"})
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBuildConfig_OwlBotKeep(t *testing.T) {
+	repoPath := "testdata/google-cloud-java"
+	gen := &GenerationConfig{
+		Libraries: []LibraryConfig{
+			{
+				APIShortName: "vision",
+				GAPICs: []GAPICConfig{
+					{ProtoPath: "google/cloud/vision/v1"},
+				},
+			},
+		},
+	}
+	got := buildConfig(gen, repoPath, &config.Source{Dir: "../../internal/testdata/googleapis"})
+	wantKeep := []string{
+		"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+		"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
+		"google-cloud-vision/src/test/resources/city.jpg",
+		"google-cloud-vision/src/test/resources/face_no_surprise.jpg",
+		"google-cloud-vision/src/test/resources/landmark.jpg",
+		"google-cloud-vision/src/test/resources/logos.png",
+		"google-cloud-vision/src/test/resources/puppies.jpg",
+		"google-cloud-vision/src/test/resources/text.jpg",
+		"google-cloud-vision/src/test/resources/wakeupcat.jpg",
+	}
+	if diff := cmp.Diff(wantKeep, got.Libraries[0].Keep); diff != "" {
+		t.Errorf("mismatch in Keep field (-want +got):\n%s", diff)
 	}
 }
 
