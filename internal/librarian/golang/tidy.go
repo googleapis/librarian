@@ -15,15 +15,15 @@
 package golang
 
 import (
-	"strings"
-
 	"github.com/googleapis/librarian/internal/config"
 )
 
 // Tidy tidies the Go-specific configuration for a library by removing default
 // values and clearing empty Go module or API entries.
 func Tidy(library *config.Library) *config.Library {
-	library.Output = strings.TrimSuffix(library.Output, library.Name)
+	if library.Output == library.Name {
+		library.Output = ""
+	}
 	if library.Go == nil {
 		return library
 	}

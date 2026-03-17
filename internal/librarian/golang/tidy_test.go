@@ -28,13 +28,24 @@ func TestTidy(t *testing.T) {
 		want    *config.Library
 	}{
 		{
-			name: "library output suffix is removed",
+			name: "library output is removed",
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "secretmanager",
 			},
 			want: &config.Library{
 				Name: "secretmanager",
+			},
+		},
+		{
+			name: "root module output is removed",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+			},
+			want: &config.Library{
+				Name:   "root-module",
+				Output: ".",
 			},
 		},
 		{
