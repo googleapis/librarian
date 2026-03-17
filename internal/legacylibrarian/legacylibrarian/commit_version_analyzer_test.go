@@ -654,6 +654,7 @@ func TestNextVersion(t *testing.T) {
 		name           string
 		commits        []*legacygitrepo.ConventionalCommit
 		currentVersion string
+		migration      bool
 		wantVersion    string
 		wantErr        bool
 	}{
@@ -691,9 +692,36 @@ func TestNextVersion(t *testing.T) {
 			currentVersion: "1.2.3",
 			wantVersion:    "2.0.0",
 		},
+		{
+			name: "a chore commit causes a minor bump during migration",
+			commits: []*legacygitrepo.ConventionalCommit{
+				{Type: "chore"},
+			},
+			currentVersion: "1.2.3",
+			migration:      true,
+			wantVersion:    "1.3.0",
+		},
+		{
+			name: "a feat commit causes a minor bump during migration",
+			commits: []*legacygitrepo.ConventionalCommit{
+				{Type: "feat"},
+			},
+			currentVersion: "1.2.3",
+			migration:      true,
+			wantVersion:    "1.3.0",
+		},
+		{
+			name: "a fix commit causes a minor bump during migration",
+			commits: []*legacygitrepo.ConventionalCommit{
+				{Type: "fix"},
+			},
+			currentVersion: "1.2.3",
+			migration:      true,
+			wantVersion:    "1.3.0",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotVersion, err := NextVersion(test.commits, test.currentVersion, false)
+			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.migration)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
 				return
