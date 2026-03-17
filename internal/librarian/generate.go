@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -257,7 +256,7 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
-		return filepath.Join(defaultOut, name)
+		return golang.DefaultOutput(defaultOut, name)
 	case config.LanguageNodejs:
 		return nodejs.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:

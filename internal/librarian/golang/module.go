@@ -85,6 +85,10 @@ func DefaultLibraryName(api string) string {
 	return filepath.Base(path)
 }
 
+func DefaultOutput(defaultOutput, name string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
 		return nil
