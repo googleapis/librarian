@@ -1196,6 +1196,48 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				return outDir, lib
 			},
 		},
+		{
+			name: "delete generation output path",
+			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib")
+
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets", "lib")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				pathToDelete := filepath.Join(outDir, "delete")
+				if err := os.MkdirAll(pathToDelete, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				internalDir := filepath.Join(repoRoot, "internal")
+				if err := os.MkdirAll(internalDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				lib := &config.Library{
+					Name:   "lib",
+					APIs:   []*config.API{{Path: "lib/v1"}},
+					Output: outDir,
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: []string{"delete"},
+					},
+				}
+				return outDir, lib
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -1210,6 +1252,12 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			snippetDir := filepath.Join(tmpDir, "repo", "internal", "generated", "snippets", lib.Name)
 			if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); err != nil {
 				t.Errorf("expected snippet.go to exist, got err: %v", err)
+			}
+			if lib.Go == nil || len(lib.Go.DeleteGenerationOutputPaths) == 0 {
+				return
+			}
+			if _, err := os.Stat(filepath.Join(outDir, lib.Go.DeleteGenerationOutputPaths[0])); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("expected %v to be deleted", lib.Go.DeleteGenerationOutputPaths[0])
 			}
 		})
 	}
