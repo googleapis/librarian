@@ -351,39 +351,6 @@ func TestGenerateLibrary(t *testing.T) {
 	}
 }
 
-func TestGenerateLibrary_SortAPIToGenerateREADME(t *testing.T) {
-	testhelper.RequireCommand(t, "protoc")
-	testhelper.RequireCommand(t, "protoc-gen-go")
-	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
-	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
-	outDir := t.TempDir()
-	library := &config.Library{
-		Name:    "oslogin",
-		Version: "1.0.0",
-		Output:  outDir,
-		// google/cloud/oslogin/v1 will be used to generate README.md, even though it is the
-		// 2nd API in the list.
-		APIs: []*config.API{{Path: "google/cloud/oslogin/common"}, {Path: "google/cloud/oslogin/v1"}},
-		Go: &config.GoModule{
-			GoAPIs: []*config.GoAPI{
-				{Path: "google/cloud/oslogin/common", ProtoOnly: true, ImportPath: "oslogin/common"},
-				{Path: "google/cloud/oslogin/v1", ImportPath: "oslogin/apiv1", ClientPackage: "oslogin"},
-			},
-		},
-	}
-	if err := Generate(t.Context(), library, googleapisDir); err != nil {
-		t.Fatal(err)
-	}
-	readmePath := filepath.Join(library.Output, library.Name, "README.md")
-	contents, err := os.ReadFile(readmePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(contents), "Cloud OS Login API") {
-		t.Errorf("README.md should contain API title")
-	}
-}
-
 func TestGenerateREADME(t *testing.T) {
 	dir := t.TempDir()
 	moduleRoot := filepath.Join(dir, "secretmanager")

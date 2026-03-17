@@ -92,7 +92,6 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
 		return err
 	}
-	serviceconfig.SortAPIs(library.APIs)
 	for i, api := range library.APIs {
 		if err := generateClientVersionFile(library, api.Path); err != nil {
 			return err
