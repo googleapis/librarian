@@ -231,7 +231,7 @@ func TestHiddenCommandGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+		if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -295,7 +295,7 @@ func TestMethodAsyncGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+		if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -327,7 +327,7 @@ func TestMethodCustomGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+		if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -359,7 +359,7 @@ func TestMethodMinimalListGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-		if err != nil {
+	if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -431,6 +431,38 @@ func TestMethodOutputFormatGA(t *testing.T) {
 	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
 	generatedDir := filepath.Join(tmpDir, "methodoutputformat")
 	goldenDir := "testdata/method_output_format_gen_sfc_goldens/method_output_format"
+
+	// Compare the generated files with the golden files
+	goldenTestComparer(t, generatedDir, goldenDir)
+}
+
+func TestMultiServiceGA(t *testing.T) {
+	tmpDir := t.TempDir()
+	defer os.RemoveAll(tmpDir)
+
+	// Get repo root
+	repoRoot := "../../.."
+
+	// Run Surfer command from repo root
+	cmd := exec.Command(
+		"./bin/surfer-dev",
+		"generate",
+				"./test_env/multi_service_v1.yaml",
+		"--googleapis", "./test_env",
+		"--proto-files-include-list", "multi_service/v1/multi_service_first.proto,multi_service/v1/multi_service_second.proto",
+		"--out", tmpDir,
+	)
+	cmd.Dir = repoRoot
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+	}
+
+	// Define paths for comparison
+	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
+	generatedDir := filepath.Join(tmpDir, "multiservice")
+	goldenDir := "testdata/multi_service_gen_sfc_goldens/multi_service"
 
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)
