@@ -47,6 +47,16 @@ func TestNewStageRunner(t *testing.T) {
 			},
 		},
 		{
+			name: "valid config with migrate set to true",
+			cfg: &legacyconfig.Config{
+				API:       "some/api",
+				APISource: newTestGitRepo(t).GetDir(),
+				Repo:      newTestGitRepoMigration(t).GetDir(),
+				WorkRoot:  t.TempDir(),
+				Image:     "gcr.io/test/test-image",
+			},
+		},
+		{
 			name: "invalid config",
 			cfg: &legacyconfig.Config{
 				APISource: newTestGitRepo(t).GetDir(),
@@ -56,7 +66,7 @@ func TestNewStageRunner(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := newStageRunner(test.cfg)
+			runner, err := newStageRunner(test.cfg)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("newStageRunner() should return error")
@@ -70,6 +80,11 @@ func TestNewStageRunner(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("newStageRunner() = %v, want nil", err)
+			}
+			if test.name == "valid config with migrate set to true" {
+				if !runner.migrate {
+					t.Errorf("runner.migrate should be true")
+				}
 			}
 		})
 	}

@@ -245,6 +245,29 @@ func newTestGitRepo(t *testing.T) legacygitrepo.Repository {
 	return newTestGitRepoWithState(t, defaultState)
 }
 
+// newTestGitRepoMigration creates a new git repository for migration in a temporary directory.
+func newTestGitRepoMigration(t *testing.T) legacygitrepo.Repository {
+	t.Helper()
+	migrateState := &legacyconfig.LibrarianState{
+		Image:   "some/image:v1.2.3",
+		Migrate: true,
+		Libraries: []*legacyconfig.LibraryState{
+			{
+				ID: "some-library",
+				APIs: []*legacyconfig.API{
+					{
+						Path:          "some/api",
+						ServiceConfig: "api_config.yaml",
+						Status:        legacyconfig.StatusExisting,
+					},
+				},
+				SourceRoots: []string{"src/a"},
+			},
+		},
+	}
+	return newTestGitRepoWithState(t, migrateState)
+}
+
 // newTestGitRepo creates a new git repository in a temporary directory.
 func newTestGitRepoWithState(t *testing.T, state *legacyconfig.LibrarianState) legacygitrepo.Repository {
 	t.Helper()
