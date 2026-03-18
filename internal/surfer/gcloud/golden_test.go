@@ -179,3 +179,35 @@ func TestFilteredCommandGA(t *testing.T) {
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)
 }
+
+func TestHelpTextGA(t *testing.T) {
+	tmpDir := t.TempDir()
+	defer os.RemoveAll(tmpDir)
+
+	// Get repo root
+	repoRoot := "../../.."
+
+	// Run Surfer command from repo root
+	cmd := exec.Command(
+		"./bin/surfer-dev",
+		"generate",
+				"./test_env/help_text_v1.yaml",
+		"--googleapis", "./test_env",
+		"--proto-files-include-list", "help_text/v1/help_text.proto",
+		"--out", tmpDir,
+	)
+	cmd.Dir = repoRoot
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+	}
+
+	// Define paths for comparison
+	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
+	generatedDir := filepath.Join(tmpDir, "helptext")
+	goldenDir := "testdata/help_text_gen_sfc_goldens/help_text"
+
+	// Compare the generated files with the golden files
+	goldenTestComparer(t, generatedDir, goldenDir)
+}
