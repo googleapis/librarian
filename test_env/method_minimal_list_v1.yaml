@@ -1,0 +1,28 @@
+service_info:
+  title: Method Minimal List API
+  default_host: methodminimallist.googleapis.com
+  package: method_minimal_list.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: method_minimal_list/v1
+  proto_files:
+   - method_minimal_list.proto
+gcloud_info:
+  temp_cli_tree_override: method-minimal-list
+  help_text:
+    brief: Manage Method Minimal List API resources.
+    description: Manage Method Minimal List API resources.
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
