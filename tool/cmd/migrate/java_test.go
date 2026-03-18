@@ -388,6 +388,32 @@ google-cloud-aiplatform:3.86.0:3.87.0-SNAPSHOT
 	}
 }
 
+func TestReadVersions_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "too few parts",
+			content: "a:b",
+		},
+		{
+			name:    "too many parts",
+			content: "a:b:c:d",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "versions.txt")
+			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := readVersions(path); err == nil {
+				t.Errorf("readVersions(%s) error = nil, want error", test.content)
+			}
+		})
+	}
+}
+
 func TestParseJavaBazel(t *testing.T) {
 	for _, test := range []struct {
 		name          string

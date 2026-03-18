@@ -182,9 +182,10 @@ func readVersions(path string) (map[string]string, error) {
 			continue
 		}
 		parts := strings.Split(line, ":")
-		if len(parts) >= 3 {
-			versions[parts[0]] = parts[2] // snapshot-version
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("read versions in %s: line %q has %d parts, want 3", path, line, len(parts))
 		}
+		versions[parts[0]] = parts[2] // snapshot-version
 	}
 	return versions, nil
 }
