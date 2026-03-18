@@ -868,6 +868,80 @@ func TestStageRun(t *testing.T) {
 			},
 		},
 		{
+			name:             "release stage has multiple libraries all bumped due to migration",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					state: &legacyconfig.LibrarianState{
+						Libraries: []*legacyconfig.LibraryState{
+							{
+								Version:     "1.0.0",
+								ID:          "another-example-id",
+								SourceRoots: []string{"dir1"},
+							},
+							{
+								Version:     "2.0.0",
+								ID:          "example-id",
+								SourceRoots: []string{"dir2"},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*legacygitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {"dir1/file.txt"},
+							plumbing.NewHash("654321").String(): {"dir2/file.txt"},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: releasable",
+									Hash:    plumbing.NewHash("123456"),
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "chore: any message",
+									Hash:    plumbing.NewHash("654321"),
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &legacyconfig.LibrarianConfig{},
+				}
+			},
+			want: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "another-example-id",
+						Version:       "1.1.0", // version is bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir2"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
 			name:             "inputted library does not have a releasable unit, version is inputted",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
