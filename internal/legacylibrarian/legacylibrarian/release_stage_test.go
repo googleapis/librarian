@@ -868,12 +868,13 @@ func TestStageRun(t *testing.T) {
 			},
 		},
 		{
-			name:             "release stage has multiple libraries all bumped due to migration",
+			name:             "release stage has multiple libraries bumped due to migration",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
+					migrate:         true,
 					containerClient: containerClient,
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
@@ -962,7 +963,6 @@ func TestStageRun(t *testing.T) {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
-					image:           "python-librarian-generator",
 					library:         "another-example-id", // release only for this library
 					libraryVersion:  "3.0.0",
 					state: &legacyconfig.LibrarianState{
@@ -1034,7 +1034,6 @@ func TestStageRun(t *testing.T) {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
-					image:           "python-librarian-generator",
 					library:         "another-example-id", // release only for this library
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
@@ -1257,7 +1256,6 @@ func TestRunStageCommand(t *testing.T) {
 		{
 			name: "global_file_commits_appear_in_multiple_libraries",
 			state: &legacyconfig.LibrarianState{
-				Image: "python-librarian-generator",
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:      "another-example-id",
@@ -1321,7 +1319,6 @@ func TestRunStageCommand(t *testing.T) {
 			},
 			client: &mockContainerClient{},
 			want: &legacyconfig.LibrarianState{
-				Image: "python-librarian-generator",
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:              "another-example-id",
@@ -1440,8 +1437,7 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 			},
 		},
 		{
-			name:  "python libraries have change",
-			image: "python-librarian-generator",
+			name: "python libraries have change",
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
 				Version:     "1.2.3",
@@ -1969,7 +1965,6 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &stageRunner{
-				image:          "python-librarian-generator",
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}

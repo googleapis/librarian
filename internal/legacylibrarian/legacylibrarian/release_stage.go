@@ -38,6 +38,7 @@ type stageRunner struct {
 	librarianConfig *legacyconfig.LibrarianConfig
 	library         string
 	libraryVersion  string
+	migrate         bool
 	push            bool
 	repo            legacygitrepo.Repository
 	sourceRepo      legacygitrepo.Repository
@@ -59,6 +60,7 @@ func newStageRunner(cfg *legacyconfig.Config) (*stageRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
+		migrate:         runner.migrate,
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -127,10 +129,6 @@ func hasLibrariesToRelease(libraryStates []*legacyconfig.LibraryState) bool {
 		}
 	}
 	return false
-}
-
-func (r *stageRunner) isPythonLibrary() bool {
-	return strings.Contains(r.image, "python-librarian-generator")
 }
 
 func (r *stageRunner) runStageCommand(ctx context.Context, outputDir string) error {
@@ -281,9 +279,9 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	// Only create changes for Python library as we migrate Go library to librarian generate and librarian doesn't
+	// Only create changes for libraries that are not migrated to librarian as librarian generate doesn't
 	// create commit message.
-	if r.isPythonLibrary() {
+	if r.migrate {
 		library.Changes = toCommit(commits, library.ID)
 	}
 	library.Version = nextVersion
@@ -304,8 +302,7 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 		}
 		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
 	} else {
-		migration := !r.isPythonLibrary()
-		derivedNextVersion, err = NextVersion(commits, currentVersion, migration)
+		derivedNextVersion, err = NextVersion(commits, currentVersion, r.migrate)
 	}
 	if err != nil {
 		return "", err
