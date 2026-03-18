@@ -103,8 +103,11 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 	}
 	if existingConfig != nil {
 		if len(librariesToMigrate) > 0 {
+			// If we specify libraries to migrate, merge them into the existing
+			// configuration.
 			existingConfig.Libraries = mergeLibraries(existingConfig, cfg)
 		} else {
+			// Otherwise, sync the versions or copy new library entries.
 			existingConfig.Libraries = syncVersionOrCopy(existingConfig, cfg)
 		}
 		cfg = existingConfig
