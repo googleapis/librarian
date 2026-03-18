@@ -47,11 +47,11 @@ func TestNewStageRunner(t *testing.T) {
 			},
 		},
 		{
-			name: "valid config with migrate set to true",
+			name: "valid config with release mode set to true",
 			cfg: &legacyconfig.Config{
 				API:       "some/api",
 				APISource: newTestGitRepo(t).GetDir(),
-				Repo:      newTestGitRepoMigration(t).GetDir(),
+				Repo:      newTestGitRepoReleaseOnlyMode(t).GetDir(),
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
@@ -1416,7 +1416,7 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 		want            *legacyconfig.LibraryState
 	}{
 		{
-			name:            "go libraries do not have change",
+			name:            "libraries in release only mode do not have change",
 			releaseOnlyMode: true,
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
@@ -1450,7 +1450,7 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 			},
 		},
 		{
-			name: "python libraries have change",
+			name: "libraries do not in release only mode have change",
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
 				Version:     "1.2.3",

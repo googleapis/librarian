@@ -245,8 +245,8 @@ func newTestGitRepo(t *testing.T) legacygitrepo.Repository {
 	return newTestGitRepoWithState(t, defaultState)
 }
 
-// newTestGitRepoMigration creates a new git repository for migration in a temporary directory.
-func newTestGitRepoMigration(t *testing.T) legacygitrepo.Repository {
+// newTestGitRepoReleaseOnlyMode creates a new git repository for migration in a temporary directory.
+func newTestGitRepoReleaseOnlyMode(t *testing.T) legacygitrepo.Repository {
 	t.Helper()
 	migrateState := &legacyconfig.LibrarianState{
 		Image:           "some/image:v1.2.3",
