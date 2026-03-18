@@ -1,0 +1,50 @@
+service_info:
+  title: Method Custom API
+  default_host: methodcustom.googleapis.com
+  package: method_custom.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: method_custom/v1
+  proto_files:
+   - method_custom.proto
+gcloud_info:
+  temp_cli_tree_override: method-custom
+  help_text:
+    brief: Manage Method Custom API resources.
+    description: Manage Method Custom API resources.
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
+    projects.locations.resources.revisions:
+      proto_message: ResourceRevision
+      gcloud_resources:
+      - args:
+        - arg_name: revision
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: resource
+          is_parent_resource: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
+    projects.revisions:
+      proto_message: Revision
+      gcloud_resources:
+      - args:
+        - arg_name: revision
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: project
+          is_parent_resource: true
