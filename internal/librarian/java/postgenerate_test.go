@@ -1,0 +1,80 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package java
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
+)
+
+func TestPostGenerate(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Copy testdata to tmpDir
+	testdataDir := filepath.Join(originalWd, "testdata", "postgenerate")
+	if err := copyDir(testdataDir, tmpDir); err != nil {
+		t.Fatalf("failed to copy testdata: %v", err)
+	}
+	t.Chdir(tmpDir)
+	cfg := &config.Config{
+		Language: "java",
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	if err := PostGenerate(t.Context(), cfg); err != nil {
+		t.Fatalf("PostGenerate failed: %v", err)
+	}
+	// Verify root pom.xml
+	rootPom, err := os.ReadFile("pom.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootPomContent := string(rootPom)
+	if !strings.Contains(rootPomContent, "<version>0.201.0</version>") {
+		t.Errorf("root pom.xml missing correct version, got:\n%s", rootPomContent)
+	}
+	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification"}
+	for _, mod := range modules {
+		if !strings.Contains(rootPomContent, "<module>"+mod+"</module>") {
+			t.Errorf("root pom.xml missing module %s", mod)
+		}
+	}
+}
+
+func copyDir(src, dest string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dest, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, info.Mode())
+		}
+		return filesystem.CopyFile(path, target)
+	})
+}
