@@ -169,10 +169,7 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 func readVersions(path string) (map[string]string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
+		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	versions := make(map[string]string)
 	lines := strings.Split(string(content), "\n")

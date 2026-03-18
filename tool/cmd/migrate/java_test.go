@@ -59,6 +59,7 @@ func TestRunJavaMigration(t *testing.T) {
 			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
 				t.Fatal(err)
 			}
+			writeVersionsFile(t, dir, "")
 			err := runJavaMigration(t.Context(), dir)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
@@ -363,17 +364,12 @@ func TestBuildConfig_OwlBotKeep(t *testing.T) {
 }
 
 func TestReadVersions(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "versions.txt")
-	content := `# Format:
+	path := writeVersionsFile(t, t.TempDir(), `# Format:
 # module:released-version:current-version
 
 google-cloud-accessapproval:2.86.0:2.87.0-SNAPSHOT
 google-cloud-aiplatform:3.86.0:3.87.0-SNAPSHOT
-`
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+`)
 
 	got, err := readVersions(path)
 	if err != nil {
@@ -403,15 +399,28 @@ func TestReadVersions_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "versions.txt")
-			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
-				t.Fatal(err)
-			}
+			path := writeVersionsFile(t, t.TempDir(), test.content)
 			if _, err := readVersions(path); err == nil {
-				t.Errorf("readVersions(%s) error = nil, want error", test.content)
+				t.Errorf("readVersions(%q) error = nil, want error", test.content)
 			}
 		})
 	}
+}
+
+func TestReadVersions_MissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "non-existent")
+	if _, err := readVersions(path); err == nil {
+		t.Error("readVersions() error = nil, want error")
+	}
+}
+
+func writeVersionsFile(t *testing.T, dir, content string) string {
+	t.Helper()
+	path := filepath.Join(dir, "versions.txt")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func TestParseJavaBazel(t *testing.T) {
