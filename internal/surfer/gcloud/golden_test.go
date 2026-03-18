@@ -16,6 +16,8 @@ import (
 func goldenTestComparer(t *testing.T, testDir, goldenDir string) {
 	t.Helper()
 
+	goldenFiles := make(map[string]string) // Map key to golden path
+	goldenFilePaths := []string{}
 	walkErr := filepath.Walk(goldenDir, func(goldenPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -23,18 +25,54 @@ func goldenTestComparer(t *testing.T, testDir, goldenDir string) {
 		if info.IsDir() {
 			return nil
 		}
+		goldenFilePaths = append(goldenFilePaths, goldenPath)
+		return nil
+	})
+	if walkErr != nil {
+		t.Fatalf("Error walking golden directory: %v", walkErr)
+	}
 
-		relPath, err := filepath.Rel(goldenDir, goldenPath)
+	generatedFiles := make(map[string]string) // Map key to generated path
+	generatedFilePaths := []string{}
+	walkErr = filepath.Walk(testDir, func(generatedPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		generatedPath := filepath.Join(testDir, relPath)
-
-		if _, err := os.Stat(generatedPath); os.IsNotExist(err) {
-			t.Errorf("Generated file not found for golden file: %s", relPath)
+		if info.IsDir() {
 			return nil
 		}
+		generatedFilePaths = append(generatedFilePaths, generatedPath)
+		return nil
+	})
+	if walkErr != nil {
+		t.Fatalf("Error walking generated directory: %v", walkErr)
+	}
+
+	// Create a map from goldenBaseName + parentDirBaseName to goldenPath
+	for _, goldenPath := range goldenFilePaths {
+		baseName := filepath.Base(goldenPath)
+		parentDir := filepath.Dir(goldenPath)
+		parentBaseName := filepath.Base(parentDir)
+		key := baseName + parentBaseName
+		goldenFiles[key] = goldenPath
+	}
+
+	matchedGoldenFiles := make(map[string]bool)
+
+	// Iterate through generated files
+	for _, generatedPath := range generatedFilePaths {
+		baseName := filepath.Base(generatedPath)
+		parentDir := filepath.Dir(generatedPath)
+		parentBaseName := filepath.Base(parentDir)
+		key := baseName + parentBaseName
+
+		goldenPath, exists := goldenFiles[key]
+		if !exists {
+			continue
+		}
+
+		matchedGoldenFiles[goldenPath] = true
+		delete(goldenFiles, key)
 
 		goldenContent, err := os.ReadFile(goldenPath)
 		if err != nil {
@@ -45,6 +83,8 @@ func goldenTestComparer(t *testing.T, testDir, goldenDir string) {
 		if err != nil {
 			t.Fatalf("Failed to read generated file %s: %v", generatedPath, err)
 		}
+
+		relPath, _ := filepath.Rel(goldenDir, goldenPath)
 
 		if filepath.Ext(goldenPath) == ".yaml" {
 			var goldenYAML interface{}
@@ -58,22 +98,64 @@ func goldenTestComparer(t *testing.T, testDir, goldenDir string) {
 			}
 
 			if diff := cmp.Diff(goldenYAML, generatedYAML); diff != "" {
-				t.Errorf("YAML content mismatch for %s (-want +got):", relPath)
-				t.Logf("%q", diff)
+				t.Errorf("YAML content mismatch for %s (-want +got):
+%s", relPath, diff)
 			}
 		} else {
 			// For non-YAML files, do a direct string comparison
 			if diff := cmp.Diff(string(goldenContent), string(generatedContent)); diff != "" {
-				t.Errorf("Content mismatch for %s (-want +got):", relPath)
-				t.Logf("%q", diff)
+				t.Errorf("Content mismatch for %s (-want +got):
+%s", relPath, diff)
+			}
+		}
+	}
+
+	// Report any golden files not matched
+	for _, goldenPath := range goldenFilePaths {
+		if !matchedGoldenFiles[goldenPath] {
+			relPath, _ := filepath.Rel(goldenDir, goldenPath)
+			t.Errorf("Golden file not matched by any generated file: %s", relPath)
+		}
+	}
+
+	// Report any generated files not matched
+	for _, generatedPath := range generatedFilePaths {
+		baseName := filepath.Base(generatedPath)
+		parentDir := filepath.Dir(generatedPath)
+		parentBaseName := filepath.Base(parentDir)
+		key := baseName + parentBaseName
+
+		// This check is a bit redundant as items are deleted from goldenFiles, but it's clear
+		wasMatched := true
+		for _, gp := range goldenFiles {
+			gb := filepath.Base(gp)
+			gpd := filepath.Dir(gp)
+			gpbn := filepath.Base(gpd)
+			if key == gb+gpbn {
+				wasMatched = false
+				break
+			}
+		}
+		if _, ok := goldenFiles[key]; ok {
+			wasMatched = false
+		}
+
+		isMatched := false
+		for goldenFilePath := range matchedGoldenFiles {
+			gBaseName := filepath.Base(goldenFilePath)
+			gParentDir := filepath.Dir(goldenFilePath)
+			gParentBaseName := filepath.Base(gParentDir)
+			gKey := gBaseName + gParentBaseName
+			if key == gKey {
+				isMatched = true
+				break
 			}
 		}
 
-		return nil
-	})
-
-	if walkErr != nil {
-		t.Fatalf("Error walking golden directory: %v", walkErr)
+		if !isMatched {
+			relPath, _ := filepath.Rel(testDir, generatedPath)
+			t.Errorf("Extra file generated: %s", relPath)
+		}
 	}
 }
 func TestResourceStandardGA(t *testing.T) {
