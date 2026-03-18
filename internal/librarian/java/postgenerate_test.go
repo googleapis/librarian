@@ -42,6 +42,9 @@ func TestPostGenerate(t *testing.T) {
 		Language: "java",
 		Libraries: []*config.Library{
 			{Name: "google-cloud-java", Version: "1.2.3"},
+			{Name: "analytics-admin", Version: "0.98.0"},
+			{Name: "area120-tables", Version: "0.92.0"},
+			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
 	if err := PostGenerate(t.Context(), cfg); err != nil {
@@ -61,6 +64,58 @@ func TestPostGenerate(t *testing.T) {
 		if !strings.Contains(rootPomContent, "<module>"+mod+"</module>") {
 			t.Errorf("root pom.xml missing module %s", mod)
 		}
+	}
+	// Verify gapic-libraries-bom/pom.xml
+	bomPom, err := os.ReadFile(filepath.Join("gapic-libraries-bom", "pom.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bomPomContent := string(bomPom)
+	if !strings.Contains(bomPomContent, "<version>1.2.3</version>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing correct version, got:\n%s", bomPomContent)
+	}
+	// Verify inclusions
+	if !strings.Contains(bomPomContent, "<artifactId>google-analytics-admin-bom</artifactId>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-analytics-admin-bom")
+	}
+	if !strings.Contains(bomPomContent, "<version>0.98.0</version>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing analytics-admin version 0.98.0")
+	}
+	if !strings.Contains(bomPomContent, "<artifactId>google-area120-tables-bom</artifactId>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-area120-tables-bom")
+	}
+	if !strings.Contains(bomPomContent, "<version>0.92.0</version>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing area120-tables version 0.92.0")
+	}
+	if !strings.Contains(bomPomContent, "<artifactId>google-cloud-aiplatform-bom</artifactId>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-cloud-aiplatform-bom")
+	}
+	if !strings.Contains(bomPomContent, "<version>3.89.0</version>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing aiplatform version 3.89.0")
+	}
+	// java-maps-places should be excluded because of GroupID com.google.maps
+	if strings.Contains(bomPomContent, "google-maps-places-bom") {
+		t.Errorf("gapic-libraries-bom/pom.xml should NOT contain google-maps-places-bom")
+	}
+	// Verify special case java-grafeas
+	if !strings.Contains(bomPomContent, "<artifactId>grafeas</artifactId>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing artifact grafeas")
+	}
+	if !strings.Contains(bomPomContent, "<version>1.2.3</version>") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing grafeas version 1.2.3")
+	}
+	// It should NOT have type pom and scope import
+	grafeasEntry := `<dependency>
+        <groupId>io.grafeas</groupId>
+        <artifactId>grafeas</artifactId>
+        <version>1.2.3</version><!-- {x-version-update:grafeas:current} -->
+      </dependency>`
+	if !strings.Contains(bomPomContent, grafeasEntry) {
+		t.Errorf("gapic-libraries-bom/pom.xml missing expected grafeas entry, got:\n%s", bomPomContent)
+	}
+	// Verify annotations
+	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing annotation google-cloud-aiplatform, got:\n%s", bomPomContent)
 	}
 }
 
