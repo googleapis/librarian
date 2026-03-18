@@ -65,6 +65,37 @@ libraries:
 			},
 		},
 		{
+			name: "migrate set to true",
+			content: `image: gcr.io/test/image:v1.2.3
+migrate: true
+libraries:
+  - id: a/b
+    source_roots:
+      - src/a
+      - src/b
+    apis:
+      - path: a/b/v1
+        service_config: a/b/v1/service.yaml
+`,
+			source: "",
+			want: &legacyconfig.LibrarianState{
+				Image:   "gcr.io/test/image:v1.2.3",
+				Migrate: true,
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "a/b",
+						SourceRoots: []string{"src/a", "src/b"},
+						APIs: []*legacyconfig.API{
+							{
+								Path:          "a/b/v1",
+								ServiceConfig: "a/b/v1/service.yaml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid source",
 			content: `image: gcr.io/test/image:v1.2.3
 libraries:
