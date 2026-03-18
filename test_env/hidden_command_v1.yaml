@@ -1,0 +1,29 @@
+service_info:
+  title: Hidden Command API
+  default_host: hiddencommand.googleapis.com
+  package: hidden_command.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: hidden_command/v1
+  proto_files:
+   - hidden_command.proto
+gcloud_info:
+  temp_cli_tree_override: hidden-command
+  help_text:
+    brief: Manage Hidden Command API resources.
+    description: Manage Hidden Command API resources.
+  root_is_hidden: true
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
