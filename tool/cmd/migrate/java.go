@@ -142,7 +142,11 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return errFetchSource
 	}
-	cfg := buildConfig(gen, repoPath, src)
+	versions, err := readVersions(filepath.Join(repoPath, "versions.txt"))
+	if err != nil {
+		return err
+	}
+	cfg := buildConfig(gen, repoPath, src, versions)
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -160,15 +164,53 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 	return yaml.Read[GenerationConfig](filepath.Join(path, generationConfigFileName))
 }
 
+// readVersions parses versions.txt and returns a map of module names to snapshot versions.
+// It expects the "module:released-version:current-version" format.
+func readVersions(path string) (map[string]string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+	versions := make(map[string]string)
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.Split(line, ":")
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("read versions in %s: line %q has %d parts, want 3", path, line, len(parts))
+		}
+		versions[parts[0]] = parts[2] // snapshot-version
+	}
+	return versions, nil
+}
+
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source) *config.Config {
+func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) *config.Config {
 	var libs []*config.Library
+	if v, ok := versions["google-cloud-java"]; ok {
+		libs = append(libs, &config.Library{
+			Name:         "google-cloud-java",
+			Version:      v,
+			SkipGenerate: true,
+		})
+		// Hardcode jar-parent as it follows the same version.
+		libs = append(libs, &config.Library{
+			Name:         "google-cloud-jar-parent",
+			Version:      v,
+			SkipGenerate: true,
+		})
+	}
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
 		if name == "" {
 			name = l.APIShortName
 		}
 		output := "java-" + name
+		artifactID := parseArtifactID(l.DistributionName, name)
+		version := versions[artifactID]
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
 		for _, g := range l.GAPICs {
@@ -195,6 +237,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source) *co
 		}
 		libs = append(libs, &config.Library{
 			Name:         name,
+			Version:      version,
 			Keep:         parseOwlBotKeep(repoPath, output),
 			Output:       output,
 			APIs:         apis,
@@ -266,6 +309,19 @@ func parseOwlBotKeep(repoPath, outputDir string) []string {
 		keeps = append(keeps, strings.TrimPrefix(regex, prefix))
 	}
 	return keeps
+}
+
+// parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
+// or name. If distributionName is empty, it returns "google-cloud-" + name.
+func parseArtifactID(distributionName, name string) string {
+	artifactID := distributionName
+	if artifactID == "" {
+		artifactID = "google-cloud-" + name
+	}
+	if i := strings.Index(artifactID, ":"); i != -1 {
+		artifactID = artifactID[i+1:]
+	}
+	return artifactID
 }
 
 func invertBoolPtr(p *bool) bool {
