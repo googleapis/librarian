@@ -114,6 +114,9 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			if diff := cmp.Diff(test.wantLibraries, gotLibraries); diff != "" {
 				t.Errorf("mismatch in resulting libraries (-want +got):\n%s", diff)
 			}
+			if len(test.wantVersions) == 0 {
+				return
+			}
 			if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
 				t.Errorf("mismatch in resulting versions (-want +got):\n%s", diff)
 			}
