@@ -1378,7 +1378,6 @@ func TestRunStageCommand(t *testing.T) {
 		r := &stageRunner{
 			repo:            test.repo,
 			state:           test.state,
-			image:           test.state.Image,
 			librarianConfig: test.config,
 			containerClient: test.client,
 		}
