@@ -97,7 +97,7 @@ func TestResourceStandardGA(t *testing.T) {
 	}
 
 	// Log the generated directory structure
-	generatedDir := filepath.Join(tmpDir, "resource-standard", "surface", "resource-standard")
+	generatedDir := filepath.Join(tmpDir, "resourcestandard")
 	t.Logf("Generated directory structure in: %s", generatedDir)
 	filepath.Walk(generatedDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -125,7 +125,7 @@ func TestResourceStandardGA(t *testing.T) {
 	// t.Logf("Surfer output:\n%s", string(output)) // Optional: Log surfer output
 
 	// Define paths for comparison
-	goldenDir := "testdata/resource_standard_gen_sfc_goldens"
+	goldenDir := "testdata/resource_standard_gen_sfc_goldens/resource_standard"
 
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)

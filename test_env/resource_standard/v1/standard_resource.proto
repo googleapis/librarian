@@ -5,7 +5,7 @@ package resource_standard.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/api/policy.proto";
+// import "google/api/policy.proto"; // Removed as options are not in public version
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
@@ -235,19 +235,19 @@ message GetResourceRequest {
 message ListZonesRequest {
   // Parent value for ListZonesRequest
   optional string parent = 1 [
-    (google.api.resource_container).type = "RESOURCE",
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).child_type = "example.googleapis.com/Zone"
+    // (google.api.resource_container).type = "RESOURCE", // Removed
+    (.google.api.field_behavior) = REQUIRED,
+    (.google.api.resource_reference).child_type = "example.googleapis.com/Zone"
   ];
   // Requested page size. Server may return fewer items than requested.
   // If unspecified, server will pick an appropriate default.
-  optional int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+  optional int32 page_size = 2 [(.google.api.field_behavior) = OPTIONAL];
   // A token identifying a page of results the server should return.
-  optional string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional string page_token = 3 [(.google.api.field_behavior) = OPTIONAL];
   // Filtering results
-  optional string filter = 4 [(google.api.field_behavior) = OPTIONAL];
+  optional string filter = 4 [(.google.api.field_behavior) = OPTIONAL];
   // Hint for how to order the results
-  optional string order_by = 5 [(google.api.field_behavior) = OPTIONAL];
+  optional string order_by = 5 [(.google.api.field_behavior) = OPTIONAL];
 }
 
 // Message for response to listing Zones
@@ -264,9 +264,9 @@ message ListZonesResponse {
 message GetZoneRequest {
   // Name of the resource
   optional string name = 1 [
-    (google.api.resource_container).type = "RESOURCE",
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "example.googleapis.com/Zone"
+    // (google.api.resource_container).type = "RESOURCE", // Removed
+    (.google.api.field_behavior) = REQUIRED,
+    (.google.api.resource_reference).type = "example.googleapis.com/Zone"
   ];
 }
 
@@ -427,15 +427,17 @@ message DeleteResourceRequest {
 }
 
 service ResourceStandard {
+  option (google.api.default_host) = "resourcestandard.googleapis.com";
+
   // Retrieve a collection of resources.
   rpc ListResources(.resource_standard.v1.ListResourcesRequest)
       returns (.resource_standard.v1.ListResourcesResponse) {
     option (.google.api.http) = {
       get: "/v1/{parent=projects/*/locations/*}/resources"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Resource"
+    //    };
     option (.google.api.method_signature) = "parent";
   }
 
@@ -445,9 +447,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{name=projects/*/locations/*/resources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Resource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 
@@ -457,21 +459,21 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{parent=projects/*}/zones"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Zone"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Zone"
+    //    };
     option (.google.api.method_signature) = "parent";
   }
 
   // Gets details of a single Zone.
   rpc GetZone(GetZoneRequest) returns (Zone) {
     option (google.api.method_signature) = "name";
-    option (google.api.http) = {
+    option (.google.api.http) = {
       get: "/v1/{name=projects/*/zones/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Zone"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Zone"
+    //    };
     option (google.api.method_signature) = "name";
   }
 
@@ -481,9 +483,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{name=projects/*/zones/*/zoneResources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/ZoneResource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/ZoneResource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 
@@ -493,9 +495,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{name=projects/*/regions/*/regionResources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/RegionResource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/RegionResource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 
@@ -505,9 +507,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{name=projects/*/locations/*/singletonResources}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/SingletonResource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/SingletonResource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 
@@ -517,9 +519,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       get: "/v1/{name=projects/*/parents/*/global/globalResources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/GlobalResource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/GlobalResource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 
@@ -530,9 +532,9 @@ service ResourceStandard {
       post: "/v1/{parent=projects/*/locations/*}/resources",
       body: "resource"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Resource"
+    //    };
     option (.google.api.method_signature) = "parent,resource,resource_id";
   }
 
@@ -543,9 +545,9 @@ service ResourceStandard {
       patch: "/v1/{resource.name=projects/*/locations/*/resources/*}",
       body: "resource"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Resource"
+    //    };
     option (.google.api.method_signature) = "resource,update_mask";
   }
 
@@ -555,9 +557,9 @@ service ResourceStandard {
     option (.google.api.http) = {
       delete: "/v1/{name=projects/*/locations/*/resources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
+    //    option (.google.api.method_resource) = { // Removed
+    //      type: "example.googleapis.com/Resource"
+    //    };
     option (.google.api.method_signature) = "name";
   }
 }
