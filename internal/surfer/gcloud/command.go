@@ -285,7 +285,7 @@ type Request struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 	// Collection is the list of API collections that this command operates on.
 	// Origin: Constructed from the API service name and the resource's collection path.
-	Collection StringOrSlice `yaml:"collection,omitempty"`
+	Collection []string `yaml:"collection,omitempty"`
 	// Method is the name of the API method to call.
 	Method string `yaml:"method,omitempty"`
 }
@@ -295,7 +295,7 @@ type Request struct {
 type Async struct {
 	// Collection is the API collection for the long-running operation resource.
 	// Origin: Hardcoded to the standard operations collection for the service.
-	Collection StringOrSlice `yaml:"collection,omitempty"`
+	Collection []string `yaml:"collection,omitempty"`
 
 	// ExtractResourceResult indicates whether to extract the resource result from the LRO.
 	ExtractResourceResult bool `yaml:"extract_resource_result"`
