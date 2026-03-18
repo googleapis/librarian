@@ -47,7 +47,7 @@ func TestNewStageRunner(t *testing.T) {
 			},
 		},
 		{
-			name: "valid config with release only mode",
+			name: "valid config with release only mode set to true",
 			cfg: &legacyconfig.Config{
 				API:       "some/api",
 				APISource: newTestGitRepo(t).GetDir(),
