@@ -1964,6 +1964,7 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &stageRunner{
+				state:          &legacyconfig.LibrarianState{},
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}
@@ -2106,6 +2107,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := &stageRunner{
+				state:           &legacyconfig.LibrarianState{},
 				libraryVersion:  test.config.LibraryVersion,
 				librarianConfig: test.librarianConfig,
 				ghClient:        test.ghClient,
