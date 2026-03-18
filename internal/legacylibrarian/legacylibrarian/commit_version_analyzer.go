@@ -169,9 +169,9 @@ func isUnderAnyPath(file string, paths []string) bool {
 }
 
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
-func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, migration bool) (string, error) {
+func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, releaseOnlyMode bool) (string, error) {
 	highestChange := getHighestChange(commits)
-	if migration && len(commits) > 0 {
+	if releaseOnlyMode && len(commits) > 0 {
 		// Librarian generate does not have commit message, in order for legacylibrarian
 		// stage recognize a commit made by librarian generate, update the highestChange
 		// to minor.
