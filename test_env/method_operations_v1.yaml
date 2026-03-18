@@ -10,6 +10,7 @@ proto_info:
    - method_operations.proto
 gcloud_info:
   temp_cli_tree_override: method-operations
+  generate_operations: true
   help_text:
     brief: Manage Method Operations API resources.
     description: Manage Method Operations API resources.
