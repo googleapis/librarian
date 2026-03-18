@@ -881,7 +881,7 @@ func TestStageRun(t *testing.T) {
 			},
 		},
 		{
-			name:             "release stage has multiple libraries bumped due to migration",
+			name:             "release stage has multiple libraries bumped in release only mode",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
