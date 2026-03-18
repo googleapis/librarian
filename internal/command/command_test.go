@@ -16,8 +16,10 @@ package command
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +28,8 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+const invalidSubcommand = "invalid-subcommand"
+
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), "go", "version"); err != nil {
 		t.Fatal(err)
@@ -33,11 +37,11 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunError(t *testing.T) {
-	err := Run(t.Context(), "go", "invalid-subcommand-bad-bad-bad")
+	err := Run(t.Context(), "go", invalidSubcommand)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "invalid-subcommand-bad-bad-bad") {
+	if !strings.Contains(err.Error(), invalidSubcommand) {
 		t.Errorf("error should mention the invalid subcommand, got: %v", err)
 	}
 }
@@ -74,6 +78,31 @@ func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
 	if err == nil {
 		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
+	}
+}
+
+func TestOutput(t *testing.T) {
+	got, err := Output(t.Context(), "go", "version")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "go version") {
+		t.Errorf("expected output to contain %q, got: %q", "go version", got)
+	}
+}
+
+func TestOutput_Error(t *testing.T) {
+	_, err := Output(t.Context(), "go", invalidSubcommand)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("Output() error = %v, want type *exec.ExitError", err)
+	}
+	if !strings.Contains(string(exitErr.Stderr), invalidSubcommand) {
+		t.Errorf("stderr should mention the invalid subcommand; got %q", string(exitErr.Stderr))
 	}
 }
 

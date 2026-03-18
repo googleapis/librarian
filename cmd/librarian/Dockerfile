@@ -46,6 +46,8 @@ ARG CARGO_WORKSPACES_VERSION=0.4.0
 ARG CARGO_SEMVER_CHECKS_VERSION=0.46.0
 
 # Python dependency versions
+ARG PYTHON_PROTOC_VERSION=25.3
+ARG PYTHON_PROTOC_CHECKSUM=5ec3474ca09df0511bb2ca66b5ca091fa8943c30aa26285f225d0b1ba60b5665b3419be4cd2322decbb55464039ca0a0405a47e86bcc11491589405d615d280e
 ARG PYTHON_GAPIC_VERSION=1.30.11
 ARG NOX_VERSION=2025.11.12
 ARG RUFF_VERSION=0.14.14
@@ -56,6 +58,8 @@ ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
 # Go dependency versions
+ARG GO_PROTOC_VERSION=25.7
+ARG GO_PROTOC_CHECKSUM=ac571249613458e4b9598a8f2a9b3ab9e56ed04d35f610f4181c65da4ee9bfd6fe44b5b0fd0a6d5b53ca4657d443c3bd457c3ef6164df8b8b4bc537012205aec
 ARG GO_PROTOC_PLUGIN_VERSION=1.35.2
 ARG GO_PROTOC_GRPC_PLUGIN_VERSION=1.3.0
 ARG GO_GAPIC_VERSION=0.57.0
@@ -146,6 +150,8 @@ ENV HOME=/root
 
 # ============== Python Stage ==============
 FROM base AS python
+ARG PYTHON_PROTOC_VERSION
+ARG PYTHON_PROTOC_CHECKSUM
 ARG PYTHON_GAPIC_VERSION
 ARG NOX_VERSION
 ARG RUFF_VERSION
@@ -166,6 +172,12 @@ RUN curl -fsSL -o /tmp/pandoc.tar.gz \
     tar -xvf /tmp/pandoc.tar.gz -C /usr/local --strip-components=1 && \
     rm /tmp/pandoc.tar.gz
 
+# Install Python-specific protoc version
+RUN curl -fsSL -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${PYTHON_PROTOC_VERSION}/protoc-${PYTHON_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${PYTHON_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
 # Install Python dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --break-system-packages \
@@ -180,6 +192,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 FROM base AS go
 ARG GO_VERSION
 ARG TARGETARCH
+ARG GO_PROTOC_VERSION
+ARG GO_PROTOC_CHECKSUM
 ARG GO_PROTOC_PLUGIN_VERSION
 ARG GO_PROTOC_GRPC_PLUGIN_VERSION
 ARG GO_GAPIC_VERSION
@@ -202,6 +216,12 @@ RUN (export GOTOOLCHAIN='auto' && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${GO_PROTOC_GRPC_PLUGIN_VERSION} && \
     go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v${GO_GAPIC_VERSION} && \
     go install golang.org/x/tools/cmd/goimports@${GO_GOIMPORTS_VERSION})
+
+# Install Go-specific protoc version
+RUN curl -fsSL -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${GO_PROTOC_VERSION}/protoc-${GO_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${GO_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
 # Make sure the tools are executable by any user (not just root).
 # librarianops executes the docker image as the current user.

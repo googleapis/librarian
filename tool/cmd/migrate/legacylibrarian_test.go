@@ -17,67 +17,130 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestRunMigrateLibrarian(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	fetchSource = func(ctx context.Context) (*config.Source, error) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    "testdata/googleapis",
+			Dir:    absGoogleapis,
 		}, nil
 	}
 	for _, test := range []struct {
-		name     string
-		repoPath string
-		wantErr  error
+		name               string
+		repoPath           string
+		librariesToMigrate []string
+		wantLibraries      []string
 	}{
 		{
-			name:     "success",
-			repoPath: "testdata/run/success-python",
+			name:          "success",
+			repoPath:      "testdata/run/success-python",
+			wantLibraries: []string{"google-ads-admanager"},
 		},
+		{
+			name:               "selective migration",
+			repoPath:           "testdata/run/selective-migration",
+			librariesToMigrate: []string{"google-cloud-audit-log"},
+			wantLibraries:      []string{"google-cloud-audit-log"},
+		},
+		{
+			name:               "incremental migration without overlap",
+			repoPath:           "testdata/run/incremental-migration",
+			librariesToMigrate: []string{"google-cloud-audit-log"},
+			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
+			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
+		},
+		{
+			name:               "incremental migration with overlap",
+			repoPath:           "testdata/run/incremental-migration",
+			librariesToMigrate: []string{"google-ads-admanager", "google-cloud-audit-log"},
+			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
+			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
+			}
+			if err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate); err != nil {
+				t.Fatal(err)
+			}
+			gotConfig, err := yaml.Read[config.Config](filepath.Join(dir, "librarian.yaml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var gotLibraries []string
+			for _, lib := range gotConfig.Libraries {
+				gotLibraries = append(gotLibraries, lib.Name)
+			}
+			if diff := cmp.Diff(test.wantLibraries, gotLibraries); diff != "" {
+				t.Errorf("mismatch in resulting libraries (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRunMigrateLibrarian_Error(t *testing.T) {
+	absGoogleapis, err := filepath.Abs("testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetchSource = func(ctx context.Context) (*config.Source, error) {
+		return &config.Source{
+			Commit: "abcd123",
+			SHA256: "sha123",
+			Dir:    absGoogleapis,
+		}, nil
+	}
+	for _, test := range []struct {
+		name               string
+		repoPath           string
+		librariesToMigrate []string
+		wantErr            error
+	}{
 		{
 			name:     "tidy_failed",
 			repoPath: "testdata/run/tidy-fails-python",
 			wantErr:  errTidyFailed,
 		},
 		{
-			name:     "no_repo_path",
-			repoPath: "",
-			wantErr:  errRepoNotFound,
+			name:               "specified library doesn't exist",
+			repoPath:           "testdata/run/selective-migration",
+			librariesToMigrate: []string{"google-cloud-functions"},
+			wantErr:            librarian.ErrLibraryNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outputPath := "librarian.yaml"
-			t.Cleanup(func() {
-				if err := os.Remove(outputPath); err != nil && !os.IsNotExist(err) {
-					t.Fatalf("cleanup: remove %s: %v", outputPath, err)
-				}
-			})
-
-			err := errRepoNotFound
-			if test.repoPath != "" {
-				err = runLibrarianMigration(t.Context(), "python", test.repoPath)
+			dir := t.TempDir()
+			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+				t.Fatal(err)
 			}
-			if err != nil {
-				if test.wantErr == nil {
-					t.Fatal(err)
-				}
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
-				}
-			} else if test.wantErr != nil {
-				t.Fatalf("expected error containing %q, got nil", test.wantErr)
+			err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error containing %q, got: %v", test.wantErr, err)
 			}
-
 		})
 	}
 }
@@ -116,8 +179,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{
+					Branch: "main",
+				},
 				Default: &config.Default{
-					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
 				},
@@ -138,6 +203,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
@@ -177,6 +243,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
@@ -245,8 +312,10 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{
+					Branch: "main",
+				},
 				Default: &config.Default{
-					Output:       ".",
 					ReleaseLevel: "ga",
 					TagFormat:    defaultTagFormat,
 				},
@@ -429,6 +498,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/biglake/v1"}},
+					Keep: []string{"README.md"},
 					Go:   &config.GoModule{NestedModule: "v2"},
 				},
 			},
@@ -460,6 +530,7 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigquery",
 					APIs: []*config.API{{Path: "google/cloud/bigquery/analyticshub/v1"}},
+					Keep: []string{"README.md"},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -778,8 +849,161 @@ func TestBuildGoLibraries(t *testing.T) {
 			want: []*config.Library{
 				{
 					Name: "pubsub",
+					Keep: []string{"README.md", "internal/version.go"},
 					Go: &config.GoModule{
 						NestedModule: "v2",
+					},
+				},
+			},
+		},
+		{
+			name: "add keep to library",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "vmmigration",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "vmmigration",
+					Keep: []string{"apiv1/iam_policy_client.go"},
+				},
+			},
+		},
+		{
+			name: "add output",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "root-module",
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name:   "root-module",
+					Output: ".",
+					Keep:   []string{"README.md", "internal/version.go"},
+				},
+			},
+		},
+		{
+			name: "bigtable proto_only is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "bigtable",
+							APIs: []*legacyconfig.API{
+								{Path: "google/bigtable/admin/v2"},
+								{Path: "google/bigtable/v2"},
+							},
+						},
+					},
+				},
+				repoConfig: &RepoConfig{
+					Modules: []*RepoConfigModule{
+						{
+							Name: "bigtable",
+							APIs: []*RepoConfigAPI{
+								{Path: "google/bigtable/admin/v2", DisableGAPIC: true},
+								{Path: "google/bigtable/v2", DisableGAPIC: true},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "bigtable",
+					APIs: []*config.API{
+						{Path: "google/bigtable/admin/v2"},
+						{Path: "google/bigtable/v2"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/bigtable/admin/v2", NoMetadata: true, ProtoOnly: true},
+							{Path: "google/bigtable/v2", NoMetadata: true, ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "shopping type import path is not override",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "shopping",
+							APIs: []*legacyconfig.API{
+								{Path: "google/shopping/type"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "shopping",
+					APIs: []*config.API{
+						{Path: "google/shopping/type"},
+					},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/shopping/type", ImportPath: "shopping/type", ProtoOnly: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "delete output after generation",
+			input: &MigrationInput{
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "storage",
+							APIs: []*legacyconfig.API{
+								{Path: "google/storage/v2"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+				repoPath:        "testdata/google-cloud-go",
+				googleapisDir:   "testdata/googleapis",
+			},
+			want: []*config.Library{
+				{
+					Name: "storage",
+					APIs: []*config.API{
+						{Path: "google/storage/v2"},
+					},
+					Keep: []string{"README.md"},
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/storage/internal"},
+						GoAPIs: []*config.GoAPI{
+							{Path: "google/storage/v2", ImportPath: "storage/internal/apiv2"},
+						},
 					},
 				},
 			},
@@ -836,7 +1060,7 @@ func TestReadRepoConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := readRepoConfig(test.repoPath)
+			got, err := readLegacyGoRepoConfig(test.repoPath)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("expected error containing %q, got: %v", test.wantErr, err)
@@ -931,6 +1155,138 @@ func TestToAPIs(t *testing.T) {
 		{Path: "google/cloud/functions/v2"},
 	}
 	got := toAPIs(legacyAPIs)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBlockLegacyGeneration(t *testing.T) {
+	tempDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(tempDir, librarianDir), 0755); err != nil {
+		t.Fatal(err)
+	}
+	originalConfig := &legacyconfig.LibrarianConfig{
+		TagFormat: "xyz",
+		Libraries: []*legacyconfig.LibraryConfig{
+			{
+				LibraryID: "not-migrated",
+			},
+			{
+				LibraryID:       "not-migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:   "migrated",
+				NextVersion: "1.2.3",
+			},
+		},
+	}
+	configFile := filepath.Join(tempDir, librarianDir, librarianConfigFile)
+	if err := yaml.Write(configFile, originalConfig); err != nil {
+		t.Fatal(err)
+	}
+	migratedConfig := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "migrated-already-generate-blocked"},
+			{Name: "not-previously-in-config"},
+			{Name: "migrated"},
+		},
+	}
+	if err := blockLegacyGeneration(tempDir, migratedConfig); err != nil {
+		t.Fatal(err)
+	}
+	wantConfig := &legacyconfig.LibrarianConfig{
+		TagFormat: "xyz",
+		Libraries: []*legacyconfig.LibraryConfig{
+			{
+				LibraryID: "not-migrated",
+			},
+			{
+				LibraryID:       "not-migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "migrated-already-generate-blocked",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "migrated",
+				NextVersion:     "1.2.3",
+				GenerateBlocked: true,
+			},
+			{
+				LibraryID:       "not-previously-in-config",
+				GenerateBlocked: true,
+			},
+		},
+	}
+	gotConfig, err := readLegacyConfig(tempDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestBlockLegacyGeneration_Error(t *testing.T) {
+	tempDir := t.TempDir()
+	migratedConfig := &config.Config{}
+	gotErr := blockLegacyGeneration(tempDir, migratedConfig)
+	wantErr := os.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("blockLegacyGeneration error = %v, wantErr %v", gotErr, wantErr)
+	}
+}
+
+func TestFetchGoogleapisWithCommit(t *testing.T) {
+	const (
+		wantCommit = "abcd123"
+		wantSHA    = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8" // sha256 of "password"
+	)
+	// Mock GitHub server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/commits/") {
+			w.Write([]byte(wantCommit))
+			return
+		}
+		if strings.Contains(r.URL.Path, ".tar.gz") {
+			w.Write([]byte("password"))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+	endpoints := &fetch.Endpoints{
+		API:      ts.URL,
+		Download: ts.URL,
+	}
+	// Mock cache
+	tmp := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", tmp)
+	// Pre-populate cache to avoid RepoDir downloading (which ignores our mock download URL)
+	cachePath := filepath.Join(tmp, fmt.Sprintf("%s@%s", googleapisRepo, wantCommit))
+	if err := os.MkdirAll(cachePath, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cachePath, "dummy"), []byte("dummy"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := fetchGoogleapisWithCommit(t.Context(), endpoints, "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &config.Source{
+		Commit: wantCommit,
+		SHA256: wantSHA,
+		Dir:    cachePath,
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -29,14 +29,12 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
-	releaseLevelAlpha = "alpha"
-	releaseLevelBeta  = "beta"
-	releaseLevelGA    = "ga"
+	releaseLevelGA = "ga"
 )
 
 var (
@@ -45,22 +43,8 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
-// Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generate(ctx, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// generate generates a Go client library.
-func generate(ctx context.Context, library *config.Library, googleapisDir string) error {
-	if len(library.APIs) == 0 {
-		return nil
-	}
-
+// Generate generates a Go client library.
+func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return err
@@ -68,35 +52,14 @@ func generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return err
 	}
-
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-
-	src := filepath.Join(outdir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("cannot access directory %q: %w", src, err)
-	}
-	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
+	if err := moveGeneratedFiles(library, outdir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
-		return err
-	}
-
-	if err := fixVersioning(outdir, library.Name, modulePath(library)); err != nil {
-		return err
-	}
-	if library.Go != nil {
-		for _, p := range library.Go.DeleteGenerationOutputPaths {
-			if err := os.RemoveAll(filepath.Join(outdir, p)); err != nil {
-				return err
-			}
-		}
-	}
-
 	moduleRoot := filepath.Join(outdir, library.Name)
 	absModuleRoot, err := filepath.Abs(moduleRoot)
 	if err != nil {
@@ -154,7 +117,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
 	if !goAPI.ProtoOnly {
-		gapicOpts, err := buildGAPICOpts(api.Path, library, goAPI, googleapisDir)
+		gapicOpts, err := buildGAPICOpts(api.Path, goAPI, googleapisDir)
 		if err != nil {
 			return err
 		}
@@ -172,7 +135,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	return command.Run(ctx, args[0], args[1:]...)
 }
 
-func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGo)
 	if err != nil {
 		return nil, err
@@ -207,10 +170,7 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 	if trans := transport(sc); trans != "" {
 		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
-	level, err := releaseLevel(apiPath, library.Version)
-	if err != nil {
-		return nil, err
-	}
+	level := releaseLevel(sc)
 	opts = append(opts, "release-level="+level)
 	return opts, nil
 }
@@ -218,6 +178,37 @@ func buildGAPICOpts(apiPath string, library *config.Library, goAPI *config.GoAPI
 func buildGAPICImportPath(goAPI *config.GoAPI) string {
 	return fmt.Sprintf("cloud.google.com/go/%s;%s",
 		goAPI.ImportPath, goAPI.ClientPackage)
+}
+
+// moveGeneratedFiles restructures the generated files into the final module layout by moving the
+// generated package into the library directory, fixing version paths, and removing any paths configured
+// for deletion.
+func moveGeneratedFiles(library *config.Library, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
+	src := filepath.Join(outDir, "cloud.google.com", "go")
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("cannot access directory %q: %w", src, err)
+	}
+	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
+		return err
+	}
+
+	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
+		return err
+	}
+	if library.Go != nil {
+		for _, p := range library.Go.DeleteGenerationOutputPaths {
+			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
@@ -330,39 +321,17 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 			continue
 		}
 		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
-		if err := updateSnippetDirectory(baseDir, library.Version); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func updateSnippetDirectory(baseDir, version string) error {
-	return filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil
 			}
 			return err
 		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasPrefix(d.Name(), "snippet_metadata") {
-			return nil
-		}
-		read, err := os.ReadFile(path)
-		if err != nil {
+		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
 			return err
 		}
-
-		newContent := strings.Replace(string(read), "$VERSION", version, 1)
-		err = os.WriteFile(path, []byte(newContent), 0644)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func hasRESTNumericEnums(sc *serviceconfig.API) bool {
@@ -378,27 +347,12 @@ func hasRESTNumericEnums(sc *serviceconfig.API) bool {
 	return true
 }
 
-// releaseLevel determines the release level for an API based on the API path and the library's current version.
-func releaseLevel(apiPath, version string) (string, error) {
-	apiVersion := filepath.Base(apiPath)
-	if strings.Contains(apiVersion, releaseLevelAlpha) {
-		return releaseLevelAlpha, nil
+// releaseLevel determines the release level for an API.
+func releaseLevel(sc *serviceconfig.API) string {
+	if rl, ok := sc.ReleaseLevels[config.LanguageGo]; ok {
+		return rl
 	}
-	if strings.Contains(apiVersion, releaseLevelBeta) {
-		return releaseLevelBeta, nil
-	}
-	if version == "" {
-		return releaseLevelAlpha, nil
-	}
-	semverVer, err := semver.Parse(version)
-	if err != nil {
-		return "", err
-	}
-	if semverVer.Major < 1 {
-		return releaseLevelBeta, nil
-	}
-
-	return releaseLevelGA, nil
+	return releaseLevelGA
 }
 
 // transport get transport from serviceconfig.API for language Go.

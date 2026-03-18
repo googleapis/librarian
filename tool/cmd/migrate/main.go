@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	errRepoNotFound = errors.New("-repo flag is required")
+	errRepoNotFound = errors.New("repo argument is required")
 	errTidyFailed   = errors.New("librarian tidy failed")
 	errFetchSource  = errors.New("cannot fetch source")
 
@@ -52,6 +52,8 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
+	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
+	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	if err := flagSet.Parse(args); err != nil {
 		return err
@@ -66,10 +68,13 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 	base := filepath.Base(abs)
+	// TODO(https://github.com/googleapis/librarian/issues/4566): implement
+	// selective and incremental migration for languages other than Go and
+	// Python.
 	switch base {
 	case "google-cloud-python", "google-cloud-go":
 		parts := strings.SplitN(base, "-", 3)
-		return runLibrarianMigration(ctx, parts[2], abs)
+		return runLibrarianMigration(ctx, parts[2], abs, flagSet.Args()[1:])
 	case "google-cloud-java":
 		return runJavaMigration(ctx, abs)
 	case "google-cloud-node":

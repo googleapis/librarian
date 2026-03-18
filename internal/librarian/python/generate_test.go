@@ -81,7 +81,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			library: &config.Library{},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -98,7 +98,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -110,7 +110,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -123,7 +123,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -155,7 +155,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums=False,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums=False,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -184,7 +184,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -595,8 +595,10 @@ func TestGenerate(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
-	if err := Generate(t.Context(), cfg, libraries, googleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, library := range libraries {
 		expectedRepoMetadata := filepath.Join(library.Output, ".repo-metadata.json")
@@ -636,7 +638,7 @@ func TestGenerate_Error(t *testing.T) {
 			},
 		},
 	}
-	gotErr := Generate(t.Context(), cfg, libraries, googleapisDir)
+	gotErr := Generate(t.Context(), cfg, libraries[0], googleapisDir)
 	wantErr := os.ErrPermission
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
@@ -646,28 +648,6 @@ func TestGenerate_Error(t *testing.T) {
 // Note: this is separate to TestGenerateLibrary as there's so little that we
 // want to do here. Making TestGenerateLibrary table-driven in order to take
 // two entirely different paths doesn't feel useful.
-func TestGenerateLibrary_NoAPIs(t *testing.T) {
-	repoRoot := t.TempDir()
-	cfg := &config.Config{
-		Language: config.LanguagePython,
-		Repo:     "googleapis/google-cloud-python",
-	}
-
-	library := &config.Library{
-		Name:   "no-apis",
-		Output: filepath.Join(repoRoot, "packages", "will-not-be-created"),
-	}
-	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
-		t.Fatal(err)
-	}
-	// Validate that we haven't got as far as creating the output directory.
-	_, gotErr := os.Stat(library.Output)
-	wantErr := os.ErrNotExist
-	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("Stat() error after generating with no APIs = %v, wantErr %v", gotErr, wantErr)
-	}
-}
-
 func TestGenerateLibrary(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -709,7 +689,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 	}
-	if err := generateLibrary(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
 	gotMetadata, err := repometadata.Read(outdir)
@@ -909,6 +889,26 @@ func TestCreateRepoMetadata(t *testing.T) {
 				LibraryType:          "GAPIC_AUTO",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
 				DefaultVersion:       "v1",
+			},
+		},
+		{
+			name: "handwritten library",
+			library: &config.Library{
+				Name:         "google-auth",
+				ReleaseLevel: "stable",
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "AUTH",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                "google-auth",
+				DistributionName:    "google-auth",
+				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
+				LibraryType:         "AUTH",
+				Repo:                "googleapis/google-cloud-python",
+				ReleaseLevel:        "stable",
 			},
 		},
 	} {

@@ -93,7 +93,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 	}
 	cfg.Sources.Googleapis.Dir = ""
 
-	if err := librarian.RunTidyOnConfig(ctx, cfg); err != nil {
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("librarian tidy failed: %w", err)
 	}
 	return nil
@@ -137,6 +137,11 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 				return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
 			}
 			library.APIs = apis
+		}
+
+		// Extract copyright year from existing generated source files.
+		if year := extractCopyrightYear(pkgDir); year != "" {
+			library.CopyrightYear = year
 		}
 
 		// Check if the npm package name needs to be set explicitly.
@@ -298,6 +303,21 @@ func ensureNodejsPackage(l *config.Library) *config.NodejsPackage {
 		l.Nodejs = &config.NodejsPackage{}
 	}
 	return l.Nodejs
+}
+
+// copyrightYearRegex matches "Copyright YYYY Google" in a file header.
+var copyrightYearRegex = regexp.MustCompile(`Copyright (\d{4}) Google`)
+
+// extractCopyrightYear reads the copyright year from src/index.ts.
+func extractCopyrightYear(pkgDir string) string {
+	data, err := os.ReadFile(filepath.Join(pkgDir, "src", "index.ts"))
+	if err != nil {
+		return ""
+	}
+	if m := copyrightYearRegex.FindSubmatch(data); len(m) > 1 {
+		return string(m[1])
+	}
+	return ""
 }
 
 // deriveNpmPackageName derives the expected npm package name from a library

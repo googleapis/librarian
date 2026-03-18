@@ -227,10 +227,11 @@ func (r *tagRunner) processPullRequest(ctx context.Context, p *legacygithub.Pull
 		tagFormat := legacyconfig.DetermineTagFormat(release.Library, libraryState, librarianConfig)
 		tagName := legacyconfig.FormatTag(tagFormat, release.Library, release.Version)
 		releaseName := fmt.Sprintf("%s: v%s", release.Library, release.Version)
-		if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
-			return fmt.Errorf("failed to create release: %w", err)
+		if len(release.Body) > 0 {
+			if _, err := r.ghClient.CreateRelease(ctx, tagName, releaseName, release.Body, commitSha); err != nil {
+				return fmt.Errorf("failed to create release: %w", err)
+			}
 		}
-
 	}
 	return r.replaceReleasePendingLabel(ctx, p, releaseDoneLabel)
 }

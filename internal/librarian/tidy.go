@@ -18,11 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -37,19 +39,20 @@ func tidyCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tidy",
 		Usage:     "format and validate librarian.yaml",
-		UsageText: "librarian tidy [path]",
+		UsageText: "librarian tidy",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](librarianConfigPath)
 			if err != nil {
 				return err
 			}
-			return RunTidyOnConfig(ctx, cfg)
+			return RunTidyOnConfig(ctx, ".", cfg)
 		},
 	}
 }
 
-// RunTidyOnConfig formats and validates the provided librarian configuration and writes it to disk.
-func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
+// RunTidyOnConfig formats and validates the provided librarian configuration
+// and writes it to disk, relative to the specified repository root directory.
+func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) error {
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
@@ -58,7 +61,7 @@ func RunTidyOnConfig(ctx context.Context, cfg *config.Config) error {
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
-	return yaml.Write(librarianConfigPath, formatConfig(cfg))
+	return yaml.Write(filepath.Join(repoDir, librarianConfigPath), formatConfig(cfg))
 }
 
 func tidyLibraries(cfg *config.Config) []*config.Library {
@@ -182,9 +185,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 		return strings.Compare(a.Name, b.Name)
 	})
 	for _, lib := range cfg.Libraries {
-		slices.SortFunc(lib.APIs, func(a, b *config.API) int {
-			return strings.Compare(a.Path, b.Path)
-		})
+		serviceconfig.SortAPIs(lib.APIs)
 		if lib.Rust != nil {
 			slices.SortFunc(lib.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {
 				return strings.Compare(a.Name, b.Name)

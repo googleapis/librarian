@@ -1,0 +1,71 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+language: python
+repo: googleapis/google-cloud-python
+sources:
+  googleapis:
+    commit: 6f8a554039638f4a9ca78d5f0c964281a16f4166
+    sha256: ace9b15956b839f9352b95818a88b200c311e1ec3fd4df0796895f3e6355d87b
+default:
+  output: packages
+  release_level: stable
+  tag_format: '{name}: v{version}'
+  python:
+    common_gapic_paths:
+      - samples/generated_samples
+      - tests/unit/gapic
+      - testing
+      - '{neutral-source}/__init__.py'
+      - '{neutral-source}/gapic_version.py'
+      - '{neutral-source}/py.typed'
+      - tests/unit/__init__.py
+      - tests/__init__.py
+      - setup.py
+      - noxfile.py
+      - .coveragerc
+      - .flake8
+      - .repo-metadata.json
+      - mypy.ini
+      - README.rst
+      - LICENSE
+      - MANIFEST.in
+      - docs/_static/custom.css
+      - docs/_templates/layout.html
+      - docs/conf.py
+      - docs/index.rst
+      - docs/multiprocessing.rst
+      - docs/README.rst
+      - docs/summary_overview.md
+    library_type: GAPIC_AUTO
+libraries:
+  - name: google-ads-admanager
+    version: 0.8.0
+    apis:
+      - path: google/ads/admanager/v1
+    description_override: Manage your Ad Manager inventory, run reports and more.
+    keep:
+      - CHANGELOG.md
+      - docs/CHANGELOG.md
+    release_level: preview
+  - name: google-cloud-functions
+    version: 1.22.0
+    apis:
+      - path: google/cloud/functions/v1
+      - path: google/cloud/functions/v2
+    description_override: is a scalable pay as you go Functions-as-a-Service (FaaS) to run your code with zero server management.
+    keep:
+      - CHANGELOG.md
+      - docs/CHANGELOG.md
+    python:
+      metadata_name_override: cloudfunctions

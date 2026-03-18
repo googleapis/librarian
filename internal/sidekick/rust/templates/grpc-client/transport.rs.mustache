@@ -40,16 +40,15 @@ const DEFAULT_HOST: &str = "https://{{Codec.DefaultHost}}";
 mod info {
     const NAME: &str = env!("CARGO_PKG_NAME");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
-    lazy_static::lazy_static! {
-        pub(crate) static ref X_GOOG_API_CLIENT_HEADER: String = {
-            let ac = gaxi::api_header::XGoogApiClient{
-                name:          NAME,
-                version:       VERSION,
-                library_type:  gaxi::api_header::GAPIC,
+    pub(crate) static X_GOOG_API_CLIENT_HEADER: std::sync::LazyLock<String> =
+        std::sync::LazyLock::new(|| {
+            let ac = gaxi::api_header::XGoogApiClient {
+                name: NAME,
+                version: VERSION,
+                library_type: gaxi::api_header::GAPIC,
             };
             ac.grpc_header_value()
-        };
-    }
+        });
 }
 
 {{/Codec.HasServices}}
@@ -164,6 +163,35 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{^ReturnsEmpty}}
         type TR = crate::{{OutputType.Codec.PackageModuleName}}::{{OutputType.Codec.Name}};
         {{/ReturnsEmpty}}
+        {{#Codec.DetailedTracingAttributes}}
+        #[cfg(google_cloud_unstable_tracing)]
+        let options = {
+            {{#Codec.HasGrpcResourceNameArgs}}
+            let resource_name = (|| {
+                {{#Codec.ResourceNameTemplateGrpc}}
+                Some(format!(
+                    "{{{Codec.ResourceNameTemplateGrpc}}}",
+                    {{#Codec.GrpcResourceNameArgs}}
+                    {{{.}}}?,
+                    {{/Codec.GrpcResourceNameArgs}}
+                ))
+                {{/Codec.ResourceNameTemplateGrpc}}
+                {{^Codec.ResourceNameTemplateGrpc}}
+                Some(String::new())
+                {{/Codec.ResourceNameTemplateGrpc}}
+            })();
+            if let Some(rn) = resource_name.filter(|s| !s.is_empty()) {
+                use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
+                options.insert_extension(ResourceName(rn))
+            } else {
+                options
+            }
+            {{/Codec.HasGrpcResourceNameArgs}}
+            {{^Codec.HasGrpcResourceNameArgs}}
+            options
+            {{/Codec.HasGrpcResourceNameArgs}}
+        };
+        {{/Codec.DetailedTracingAttributes}}
         self.inner
             .execute(
                 extensions,

@@ -26,6 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -41,7 +42,7 @@ func addCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "add",
 		Usage:     "add a new client library to librarian.yaml",
-		UsageText: "librarian add <apis...> [flags]",
+		UsageText: "librarian add <apis...>",
 		Action: func(ctx context.Context, c *cli.Command) error {
 			apis := c.Args().Slice()
 			if len(apis) == 0 {
@@ -65,7 +66,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if err != nil {
 		return err
 	}
-	return RunTidyOnConfig(ctx, cfg)
+	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
@@ -93,6 +94,8 @@ func deriveLibraryName(language string, api string) string {
 		return dart.DefaultLibraryName(api)
 	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
+	case config.LanguageGo:
+		return golang.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:

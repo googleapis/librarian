@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -90,8 +91,10 @@ func TestGenerate(t *testing.T) {
 	for _, library := range libraries {
 		library.Output = outDir
 	}
-	if err := Generate(t.Context(), libraries, googleapisDir); err != nil {
-		t.Fatal(err)
+	for _, library := range libraries {
+		if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// Just check that a README.md file has been created for each library.
 	for _, library := range libraries {
@@ -109,27 +112,25 @@ func TestGenerate_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
-		name      string
-		libraries []*config.Library
-		wantErr   error
+		name    string
+		library *config.Library
+		wantErr error
 	}{
 		{
 			name: "non existent api path",
-			libraries: []*config.Library{
-				{
-					Name:          "non-existent-api",
-					APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
-					Output:        t.TempDir(),
-					Version:       "0.1.0",
-					ReleaseLevel:  "preview",
-					CopyrightYear: "2025",
-					Go: &config.GoModule{
-						GoAPIs: []*config.GoAPI{
-							{
-								ClientPackage: "non-existent",
-								ImportPath:    "non-existent/apiv1",
-								Path:          "google/cloud/non-existent/v1",
-							},
+			library: &config.Library{
+				Name:          "non-existent-api",
+				APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
+				Output:        t.TempDir(),
+				Version:       "0.1.0",
+				ReleaseLevel:  "preview",
+				CopyrightYear: "2025",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "non-existent",
+							ImportPath:    "non-existent/apiv1",
+							Path:          "google/cloud/non-existent/v1",
 						},
 					},
 				},
@@ -138,26 +139,22 @@ func TestGenerate_Error(t *testing.T) {
 		},
 		{
 			name: "no go api",
-			libraries: []*config.Library{
-				{
-					Name:          "secretmanager",
-					APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-					Output:        t.TempDir(),
-					Version:       "0.1.0",
-					ReleaseLevel:  "preview",
-					CopyrightYear: "2025",
-				},
+			library: &config.Library{
+				Name:          "secretmanager",
+				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Output:        t.TempDir(),
+				Version:       "0.1.0",
+				ReleaseLevel:  "preview",
+				CopyrightYear: "2025",
 			},
 			wantErr: errGoAPINotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
-			for _, library := range test.libraries {
-				library.Output = outdir
-			}
+			test.library.Output = outdir
 
-			gotErr := Generate(t.Context(), test.libraries, googleapisDir)
+			gotErr := Generate(t.Context(), test.library, googleapisDir)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -336,7 +333,7 @@ func TestGenerateLibrary(t *testing.T) {
 				Go:           test.goModule,
 			}
 
-			if err := generate(t.Context(), library, googleapisDir); err != nil {
+			if err := Generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 
@@ -437,7 +434,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
-	data := `{ 
+	before := `{ 
  "clientLibrary": {
     "name": "cloud.google.com/go/accessapproval/apiv1",
     "version": "$VERSION",
@@ -451,7 +448,21 @@ func TestUpdateSnippetMetadata(t *testing.T) {
  }
 }
 `
-	if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
+	// json is reformated.
+	after := `{
+  "clientLibrary": {
+    "apis": [
+      {
+        "id": "google.cloud.accessapproval.v1",
+        "version": "v1"
+      }
+    ],
+    "language": "GO",
+    "name": "cloud.google.com/go/accessapproval/apiv1",
+    "version": "1.2.3"
+  }
+}`
+	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
 		return
 	}
 	if err := updateSnippetMetadata(library, tmpDir); err != nil {
@@ -462,9 +473,9 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(content)
-	if !strings.Contains(s, "1.2.3") {
-		t.Errorf("want version in snippet metadata, got:\n%s", s)
+	got := string(content)
+	if diff := cmp.Diff(after, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -620,6 +631,33 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			wantErr: syscall.EACCES,
 		},
 		{
+			name: "no client library field",
+			library: &config.Library{
+				Name:    "bigquery",
+				Version: "1.2.3",
+				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ImportPath: "bigquery/storage/apiv1",
+							Path:       "google/cloud/bigquery/storage/v1",
+						},
+					},
+				},
+			},
+			setup: func(dir string) {
+				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
+				if err := os.WriteFile(snippetFile, []byte("{}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: snippetmetadata.ErrNoClientLibraryField,
+		},
+		{
 			name: "no permission to update snippet directory",
 			library: &config.Library{
 				Name:    "bigquery",
@@ -641,7 +679,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 				}
 				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
 				// Do not have the write permission.
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0555); err != nil {
+				if err := os.WriteFile(snippetFile, []byte("{\"clientLibrary\": {\"language\": \"GO\"}}"), 0555); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -743,58 +781,39 @@ func TestHasRESTNumericEnums(t *testing.T) {
 
 func TestReleaseLevel(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		apiPath string
-		version string
-		want    string
+		name string
+		sc   *serviceconfig.API
+		want string
 	}{
 		{
-			name:    "ga",
-			apiPath: "google/cloud/secretmanager/v1",
-			version: "1.0.0",
-			want:    "ga",
+			name: "empty release levels",
+			sc:   &serviceconfig.API{},
+			want: "ga",
 		},
 		{
-			name:    "stable with pre-GA version",
-			apiPath: "google/cloud/secretmanager/v1",
-			version: "0.11.0",
-			want:    "beta",
+			name: "release levels do not have go",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguagePython: "beta"},
+			},
+			want: "ga",
 		},
 		{
-			name:    "alpha",
-			apiPath: "google/cloud/secretmanager/v1alpha1",
-			want:    "alpha",
+			name: "alpha",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
+			},
+			want: "alpha",
 		},
 		{
-			name:    "beta",
-			apiPath: "google/cloud/secretmanager/v1beta2",
-			want:    "beta",
-		},
-		{
-			name:    "alpha in api path",
-			apiPath: "google/cloud/alphabet/v1",
-			version: "1.0.0",
-			want:    "ga",
-		},
-		{
-			name:    "empty version",
-			apiPath: "google/cloud/alphabet/v1",
-			version: "",
-			want:    "alpha",
-		},
-		{
-			name:    "empty version with beta path",
-			apiPath: "google/cloud/alphabet/v1beta1",
-			version: "",
-			want:    "beta",
+			name: "beta",
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
+			},
+			want: "beta",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := releaseLevel(test.apiPath, test.version)
-			if err != nil {
-				t.Error(err)
-				return
-			}
+			got := releaseLevel(test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -850,7 +869,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		apiPath       string
-		library       *config.Library
 		goAPI         *config.GoAPI
 		googleapisDir string
 		want          []string
@@ -858,10 +876,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "basic case with service and grpc configs",
 			apiPath: "google/cloud/secretmanager/v1",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
@@ -881,10 +895,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "no rest numeric enums",
 			apiPath: "google/cloud/bigquery/v2",
-			library: &config.Library{
-				Name:    "bigquery/v2",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "bigquery",
 				ImportPath:    "bigquery/v2/apiv2",
@@ -897,39 +907,12 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
-				"release-level=ga",
-			},
-		},
-		{
-			name:    "beta release level from version",
-			apiPath: "google/cloud/secretmanager/v1",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "0.2.3",
-			},
-			goAPI: &config.GoAPI{
-				ClientPackage: "secretmanager",
-				ImportPath:    "secretmanager/apiv1",
-				Path:          "google/cloud/secretmanager/v1",
-			},
-			googleapisDir: googleapisDir,
-			want: []string{
-				"go-gapic-package=cloud.google.com/go/secretmanager/apiv1;secretmanager",
-				"metadata",
-				"rest-numeric-enums",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc+rest",
-				"release-level=beta",
+				"release-level=alpha",
 			},
 		},
 		{
 			name:    "transport override",
 			apiPath: "google/cloud/gkehub/v1",
-			library: &config.Library{
-				Name:    "gkehub",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
@@ -948,10 +931,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "no metadata",
 			apiPath: "google/cloud/gkehub/v1",
-			library: &config.Library{
-				Name:    "gkehub",
-				Version: "1.2.3",
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
@@ -970,11 +949,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "generator features",
 			apiPath: "google/cloud/bigquery/v2",
-			library: &config.Library{
-				Name:    "bigquery/v2",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/v2"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage:            "bigquery",
 				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
@@ -989,17 +963,12 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_v2.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/bigquery/v2/bigquery_grpc_service_config.json"),
 				"transport=grpc+rest",
-				"release-level=ga",
+				"release-level=alpha",
 			},
 		},
 		{
 			name:    "no transport",
 			apiPath: "google/cloud/apigeeconnect/v1",
-			library: &config.Library{
-				Name:    "apigeeconnect",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "apigeeconnect",
 				ImportPath:    "apigeeconnect/apiv1",
@@ -1017,11 +986,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 		{
 			name:    "diregapic",
 			apiPath: "google/cloud/compute/v1",
-			library: &config.Library{
-				Name:    "compute",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/compute/v1"}},
-			},
 			goAPI: &config.GoAPI{
 				ClientPackage: "compute",
 				ImportPath:    "compute/apiv1",
@@ -1041,7 +1005,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := buildGAPICOpts(test.apiPath, test.library, test.goAPI, test.googleapisDir)
+			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}

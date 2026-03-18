@@ -48,6 +48,8 @@ func TestBumpCommand(t *testing.T) {
 		name         string
 		args         []string
 		withChanges  []string
+		prBodyFile   string
+		wantPRBody   string
 		wantVersions map[string]string
 	}{
 		{
@@ -144,6 +146,34 @@ func TestBumpCommandDeriveOutput(t *testing.T) {
 	}
 }
 
+func TestBumpCommandLegacylibrarianPRBodyFile(t *testing.T) {
+	testhelper.RequireCommand(t, "git")
+	cfg := sample.Config()
+	opts := testhelper.SetupOptions{
+		Clone:       cfg.Release.Branch,
+		Config:      cfg,
+		Tags:        []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
+		WithChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
+	}
+	testhelper.Setup(t, opts)
+
+	if err := Run(t.Context(), "librarian", "bump", "--all", "--legacylibrarian-pr-body=pr.txt"); err != nil {
+		t.Fatal(err)
+	}
+	prBody, err := os.ReadFile("pr.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	prBodyText := string(prBody)
+	// Exact format is tested in TestCreateLegacylibrarianPRBody
+	if !strings.Contains(prBodyText, sample.Lib1Name) {
+		t.Errorf("expected PR body to contain %s; got %s", sample.Lib1Name, prBodyText)
+	}
+	if !strings.Contains(prBodyText, sample.NextVersion) {
+		t.Errorf("expected PR body to contain %s; got %s", sample.NextVersion, prBodyText)
+	}
+}
+
 func TestBumpCommand_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
@@ -191,6 +221,12 @@ func TestBumpCommand_Error(t *testing.T) {
 				return c
 			}(),
 			wantErr: errReleaseConfigEmpty,
+		},
+		{
+			name:    "bad pr file",
+			args:    []string{"librarian", "bump", sample.Lib1Name, "--legacylibrarian-pr-body=missing-directory/pr.txt"},
+			cfg:     sample.Config(),
+			wantErr: os.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -266,7 +302,6 @@ func TestFindLibrary(t *testing.T) {
 
 func TestRunBump_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "git")
 
 	tests := []struct {
 		name            string
@@ -296,9 +331,9 @@ func TestRunBump_Error(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			gotErr := runBump(t.Context(), cfg, false, test.libraryName, test.versionOverride)
+			gotErr := runBump(t.Context(), cfg, false, test.libraryName, test.versionOverride, "")
 			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("bumpLibrary() error = %v, wantErr %v", gotErr, test.wantErr)
+				t.Errorf("runBump() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -1338,6 +1373,18 @@ func TestLibraryChanged(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestCreateLegacylibrarianPRBody(t *testing.T) {
+	libraries := []*config.Library{
+		{Name: "functions", Version: "2.3.4"},
+		{Name: "storage", Version: "1.2.3"},
+	}
+	want := "<details><summary>functions: v2.3.4</summary></details>\n<details><summary>storage: v1.2.3</summary></details>"
+	got := createLegacylibrarianPRBody(libraries)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

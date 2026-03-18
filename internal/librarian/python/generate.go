@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
@@ -35,23 +35,8 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
-// Generate generates all the given libraries in sequence.
-func Generate(ctx context.Context, config *config.Config, libraries []*config.Library, googleapisDir string) error {
-	for _, library := range libraries {
-		if err := generateLibrary(ctx, config, library, googleapisDir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// generateLibrary generates a Python client library.
-func generateLibrary(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
-	// If the library has no APIs, there's nothing to do.
-	if len(library.APIs) == 0 {
-		return nil
-	}
-
+// Generate generates a Python client library.
+func Generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
 	// Convert library.Output to absolute path since protoc runs from a
 	// different directory.
 	outdir, err := filepath.Abs(library.Output)
@@ -87,8 +72,10 @@ func generateLibrary(ctx context.Context, config *config.Config, library *config
 
 	// Run post processor (synthtool)
 	// The post processor needs to run from the repository root, not the package directory.
-	if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to run post processor: %w", err)
+	if len(library.APIs) > 0 {
+		if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
+			return fmt.Errorf("failed to run post processor: %w", err)
+		}
 	}
 
 	// Copy README.rst to docs/README.rst
@@ -112,22 +99,34 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if packageOptions == nil {
 		packageOptions = &config.PythonPackage{}
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4428): once
-	// repometadata exposes a FromLibrary function or similar that we can use,
-	// we should call that again, so that repometadata.FromAPI can be hidden.
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
-	if err != nil {
-		return nil, err
+	var repoMetadata *repometadata.RepoMetadata
+	if len(library.APIs) > 0 {
+		// TODO(https://github.com/googleapis/librarian/issues/4428): once
+		// repometadata exposes a FromLibrary function or similar that we can use,
+		// we should call that again, so that repometadata.FromAPI can be hidden.
+		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+		if err != nil {
+			return nil, err
+		}
+		repoMetadata = repometadata.FromAPI(cfg, api, library)
+		// Use the version of the first-listed API path as the default version,
+		// unless it's overridden later.
+		repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	} else {
+		// Handwritten library: populate from scratch (and then apply overrides
+		// as normal).
+		repoMetadata = &repometadata.RepoMetadata{
+			Name:             library.Name,
+			DistributionName: library.Name,
+			Repo:             cfg.Repo,
+			ReleaseLevel:     library.ReleaseLevel,
+		}
 	}
-	repoMetadata := repometadata.FromAPI(cfg, api, library)
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
 		repoMetadata.Name = library.Name
 	}
-	// Use the version of the first-listed API path as the default version,
-	// unless it's overridden.
-	repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	if packageOptions.DefaultVersion != "" {
 		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}
@@ -211,16 +210,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		protos[index] = rel
 	}
 
-	cmdArgs := []string{"protoc"}
-	cmdArgs = append(cmdArgs, protos...)
-	cmdArgs = append(cmdArgs, protocOptions...)
-
-	cmd := exec.CommandContext(ctx, cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = googleapisDir
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", cmd.String(), err)
+	cmdArgs := append(protos, protocOptions...)
+	if err := command.RunInDir(ctx, googleapisDir, "protoc", cmdArgs...); err != nil {
+		return fmt.Errorf("failed to execute protoc: %w", err)
 	}
 
 	// Copy the proto files as well as the generated code for proto-only libraries.
@@ -274,7 +266,7 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		transport = apiMetadata.Transport(config.LanguagePython)
 	}
 	restNumericEnums := true
-	addTransport := transport != serviceconfig.GRPCRest
+	addTransport := true
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, "rest-numeric-enums") {
 			restNumericEnums = false
@@ -356,12 +348,8 @@ func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, outDir)
-	cmd := exec.CommandContext(ctx, "python3", "-c", pythonCode)
-	cmd.Dir = repoRoot
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", cmd.String(), err)
+	if err := command.RunInDir(ctx, repoRoot, "python3", "-c", pythonCode); err != nil {
+		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
 
 	// synthtool runs formatting, then applies string replacements. This leaves
@@ -370,14 +358,9 @@ python_mono_repo.owlbot_main(%q)
 	// as well... we can do all of that after migration, when we remove
 	// synthtool entirely - see
 	// https://github.com/googleapis/librarian/issues/3008)
-	noxCmd := exec.CommandContext(ctx, "nox", "-s", "format", "--no-venv", "--no-install")
-	noxCmd.Dir = outDir
-	noxCmd.Stdout = os.Stderr
-	noxCmd.Stderr = os.Stderr
-	if err := noxCmd.Run(); err != nil {
-		return fmt.Errorf("%s: %w", noxCmd.String(), err)
+	if err := command.RunInDir(ctx, outDir, "nox", "-s", "format", "--no-venv", "--no-install"); err != nil {
+		return fmt.Errorf("failed to format code after post-processing: %w", err)
 	}
-
 	return nil
 }
 

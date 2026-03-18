@@ -294,8 +294,6 @@ This document describes the schema for the librarian.yaml.
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
-| `detailed_tracing_attributes` | bool | Indicates whether to include detailed tracing attributes. |
-| `resource_name_heuristic` | bool | Indicates whether to apply heuristics to identify and generate resource names. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
@@ -310,6 +308,8 @@ This document describes the schema for the librarian.yaml.
 | `disabled_rustdoc_warnings` | list of string | Is a list of rustdoc warnings to disable. |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |
+| `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
+| `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
 
 ## RustDiscovery Configuration
 
@@ -331,6 +331,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
+| `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `extend_grpc_transport` | bool | Indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
@@ -346,6 +347,7 @@ This document describes the schema for the librarian.yaml.
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
 | `output` | string | Is the directory where generated code is written (e.g., "src/storage/src/generated/gapic"). |
 | `post_process_protos` | string | Contains code to post-process generated protos. |
+| `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. This overrides the crate-level setting. |
 | `root_name` | string | Is the key for the root directory in the source map. It overrides the default root, googleapis, used by the rust+prost generator. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `service_config` | string | Is the path to the service config file. |

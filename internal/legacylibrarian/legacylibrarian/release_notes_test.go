@@ -802,6 +802,43 @@ Language Image: go:1.21
 </details>`,
 				librarianVersion, today, today, today, today, today, today, today, today, today, today),
 		},
+		{
+			name: "no library changes",
+			state: &legacyconfig.LibrarianState{
+				Image: "go:1.21",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:               "one-library",
+						PreviousVersion:  "1.1.0",
+						Version:          "1.2.3",
+						ReleaseTriggered: true,
+					},
+					{
+						ID:               "another-library",
+						PreviousVersion:  "2.1.0",
+						Version:          "2.3.4",
+						ReleaseTriggered: true,
+					},
+				},
+			},
+			ghRepo: &legacygithub.Repository{},
+			wantReleaseNote: fmt.Sprintf(`PR created by the Librarian CLI to initialize a release. Merging this PR will auto trigger a release.
+
+Librarian Version: %s
+Language Image: go:1.21
+<details><summary>one-library: v1.2.3</summary>
+
+## [v1.2.3](https://github.com///compare/one-library-1.1.0...one-library-1.2.3) (%s)
+
+</details>
+
+
+<details><summary>another-library: v2.3.4</summary>
+
+## [v2.3.4](https://github.com///compare/another-library-2.1.0...another-library-2.3.4) (%s)
+
+</details>`, librarianVersion, today, today),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

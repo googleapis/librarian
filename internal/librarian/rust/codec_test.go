@@ -42,6 +42,11 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
+// ptr() makes it easier to define test data where the values are literals but the required type is a pointer.
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -75,7 +80,9 @@ func TestLibraryToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: true,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(true),
+					},
 				},
 			},
 			api: &config.API{
@@ -149,19 +156,20 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Keep: []string{"src/extra-module.rs"},
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						DisabledRustdocWarnings: []string{"broken_intra_doc_links"},
-						GenerateSetterSamples:   "true",
-						GenerateRpcSamples:      "true",
+						DisabledRustdocWarnings:   []string{"broken_intra_doc_links"},
+						GenerateSetterSamples:     "true",
+						GenerateRpcSamples:        "true",
+						DetailedTracingAttributes: ptr(true),
+						ResourceNameHeuristic:     ptr(true),
 					},
-					ModulePath:                "gcs",
-					PerServiceFeatures:        true,
-					IncludeGrpcOnlyMethods:    true,
-					DetailedTracingAttributes: true,
-					HasVeneer:                 true,
-					RoutingRequired:           true,
-					DisabledClippyWarnings:    []string{"too_many_arguments"},
-					DefaultFeatures:           []string{"default-feature"},
-					TemplateOverride:          "custom-template",
+					ModulePath:             "gcs",
+					PerServiceFeatures:     true,
+					IncludeGrpcOnlyMethods: true,
+					HasVeneer:              true,
+					RoutingRequired:        true,
+					DisabledClippyWarnings: []string{"too_many_arguments"},
+					DefaultFeatures:        []string{"default-feature"},
+					TemplateOverride:       "custom-template",
 				},
 			},
 			api: &config.API{
@@ -178,6 +186,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{
 					Title: "Secret Manager API",
 				},
+				ResourceNameHeuristic: true,
 			},
 		},
 		{
@@ -608,7 +617,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: false,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(false),
+					},
 					Modules: []*config.RustModule{
 						{
 							Language: config.LanguageRust,
@@ -630,7 +641,9 @@ func TestModuleToModelConfig(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
-					ResourceNameHeuristic: true,
+					RustDefault: config.RustDefault{
+						ResourceNameHeuristic: ptr(true),
+					},
 					Modules: []*config.RustModule{
 						{
 							Language: config.LanguageRust,
@@ -1054,6 +1067,251 @@ func TestFormatPackageDependency(t *testing.T) {
 	}
 }
 
+func TestBuildModuleCodec(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		module  *config.RustModule
+		want    map[string]string
+	}{
+		{
+			name:    "minimal module",
+			library: &config.Library{},
+			module:  &config.RustModule{},
+			want:    map[string]string{},
+		},
+		{
+			name:    "with GenerateSetterSamples and GenerateRpcSamples",
+			library: &config.Library{},
+			module: &config.RustModule{
+				GenerateSetterSamples: "true",
+				GenerateRpcSamples:    "true",
+			},
+			want: map[string]string{
+				"generate-setter-samples": "true",
+				"generate-rpc-samples":    "true",
+			},
+		},
+		{
+			name:    "with HasVeneer",
+			library: &config.Library{},
+			module: &config.RustModule{
+				HasVeneer: true,
+			},
+			want: map[string]string{
+				"has-veneer": "true",
+			},
+		},
+		{
+			name:    "with IncludeGrpcOnlyMethods",
+			library: &config.Library{},
+			module: &config.RustModule{
+				IncludeGrpcOnlyMethods: true,
+			},
+			want: map[string]string{
+				"include-grpc-only-methods": "true",
+			},
+		},
+		{
+			name:    "with DetailedTracingAttributes set at module level",
+			library: &config.Library{},
+			module: &config.RustModule{
+				DetailedTracingAttributes: ptr(true),
+			},
+			want: map[string]string{
+				"detailed-tracing-attributes": "true",
+			},
+		},
+		{
+			name: "with DetailedTracingAttributes inherited from library level",
+			library: &config.Library{
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						DetailedTracingAttributes: ptr(true),
+					},
+				},
+			},
+			module: &config.RustModule{},
+			want: map[string]string{
+				"detailed-tracing-attributes": "true",
+			},
+		},
+		{
+			name: "with DetailedTracingAttributes false overriding library level true",
+			library: &config.Library{
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						DetailedTracingAttributes: ptr(true),
+					},
+				},
+			},
+			module: &config.RustModule{
+				DetailedTracingAttributes: ptr(false),
+			},
+			want: map[string]string{},
+		},
+		{
+			name:    "with ModulePath",
+			library: &config.Library{},
+			module: &config.RustModule{
+				ModulePath: "crate::generated::gapic::model",
+			},
+			want: map[string]string{
+				"module-path": "crate::generated::gapic::model",
+			},
+		},
+		{
+			name:    "with NameOverrides",
+			library: &config.Library{},
+			module: &config.RustModule{
+				NameOverrides: "foo=bar,baz=qux",
+			},
+			want: map[string]string{
+				"name-overrides": "foo=bar,baz=qux",
+			},
+		},
+		{
+			name:    "with PostProcessProtos",
+			library: &config.Library{},
+			module: &config.RustModule{
+				PostProcessProtos: "some-post-process",
+			},
+			want: map[string]string{
+				"post-process-protos": "some-post-process",
+			},
+		},
+		{
+			name:    "with RoutingRequired",
+			library: &config.Library{},
+			module: &config.RustModule{
+				RoutingRequired: true,
+			},
+			want: map[string]string{
+				"routing-required": "true",
+			},
+		},
+		{
+			name:    "with ExtendGrpcTransport",
+			library: &config.Library{},
+			module: &config.RustModule{
+				ExtendGrpcTransport: true,
+			},
+			want: map[string]string{
+				"extend-grpc-transport": "true",
+			},
+		},
+		{
+			name:    "with Template prepends templates/",
+			library: &config.Library{},
+			module: &config.RustModule{
+				Template: "prost",
+			},
+			want: map[string]string{
+				"template-override": "templates/prost",
+			},
+		},
+		{
+			name: "with DisabledRustdocWarnings overrides library level",
+			library: &config.Library{
+				Rust: &config.RustCrate{
+					RustDefault: config.RustDefault{
+						DisabledRustdocWarnings: []string{"lib-warning1"},
+					},
+				},
+			},
+			module: &config.RustModule{
+				DisabledRustdocWarnings: []string{"mod-warning1", "mod-warning2"},
+			},
+			want: map[string]string{
+				"disabled-rustdoc-warnings": "mod-warning1,mod-warning2",
+			},
+		},
+		{
+			name:    "with RootName",
+			library: &config.Library{},
+			module: &config.RustModule{
+				RootName: "custom-root",
+			},
+			want: map[string]string{
+				"root-name": "custom-root",
+			},
+		},
+		{
+			name:    "with InternalBuilders",
+			library: &config.Library{},
+			module: &config.RustModule{
+				InternalBuilders: true,
+			},
+			want: map[string]string{
+				"internal-builders": "true",
+			},
+		},
+		{
+			name: "all fields set",
+			library: &config.Library{
+				Name:          "google-cloud-example",
+				CopyrightYear: "2024",
+				Rust: &config.RustCrate{
+					DisabledClippyWarnings: []string{"clippy1"},
+					RustDefault: config.RustDefault{
+						DisabledRustdocWarnings: []string{"lib-warning"},
+						PackageDependencies: []*config.RustPackageDependency{
+							{
+								Name:    "dep1",
+								Package: "pkg1",
+							},
+						},
+						DetailedTracingAttributes: ptr(false),
+					},
+				},
+			},
+			module: &config.RustModule{
+				GenerateSetterSamples:     "true",
+				GenerateRpcSamples:        "false",
+				HasVeneer:                 true,
+				IncludeGrpcOnlyMethods:    true,
+				DetailedTracingAttributes: ptr(true),
+				ModulePath:                "crate::model",
+				NameOverrides:             "a=b",
+				PostProcessProtos:         "post",
+				RoutingRequired:           true,
+				ExtendGrpcTransport:       true,
+				Template:                  "grpc-client",
+				DisabledRustdocWarnings:   []string{"w1", "w2"},
+				RootName:                  "my-root",
+				InternalBuilders:          true,
+			},
+			want: map[string]string{
+				"package-name-override":       "google-cloud-example",
+				"copyright-year":              "2024",
+				"disabled-rustdoc-warnings":   "w1,w2",
+				"disabled-clippy-warnings":    "clippy1",
+				"package:dep1":                "package=pkg1",
+				"generate-setter-samples":     "true",
+				"generate-rpc-samples":        "false",
+				"has-veneer":                  "true",
+				"include-grpc-only-methods":   "true",
+				"detailed-tracing-attributes": "true",
+				"module-path":                 "crate::model",
+				"name-overrides":              "a=b",
+				"post-process-protos":         "post",
+				"routing-required":            "true",
+				"extend-grpc-transport":       "true",
+				"template-override":           "templates/grpc-client",
+				"root-name":                   "my-root",
+				"internal-builders":           "true",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := buildModuleCodec(test.library, test.module)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuildCodec(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -1094,9 +1352,11 @@ func TestBuildCodec(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						GenerateSetterSamples:   "true",
-						GenerateRpcSamples:      "true",
-						DisabledRustdocWarnings: []string{"warning1", "warning2"},
+						GenerateSetterSamples:     "true",
+						GenerateRpcSamples:        "true",
+						DetailedTracingAttributes: ptr(true),
+						ResourceNameHeuristic:     ptr(true),
+						DisabledRustdocWarnings:   []string{"warning1", "warning2"},
 						PackageDependencies: []*config.RustPackageDependency{
 							{
 								Name:    "dep1",
@@ -1114,7 +1374,6 @@ func TestBuildCodec(t *testing.T) {
 					TemplateOverride:          "custom-template",
 					IncludeGrpcOnlyMethods:    true,
 					PerServiceFeatures:        true,
-					DetailedTracingAttributes: true,
 					HasVeneer:                 true,
 					RoutingRequired:           true,
 					NameOverrides:             "foo=bar",
