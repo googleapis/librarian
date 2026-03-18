@@ -651,12 +651,12 @@ func TestGetHighestChange(t *testing.T) {
 func TestNextVersion(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name           string
-		commits        []*legacygitrepo.ConventionalCommit
-		currentVersion string
-		migration      bool
-		wantVersion    string
-		wantErr        bool
+		name            string
+		commits         []*legacygitrepo.ConventionalCommit
+		currentVersion  string
+		releaseOnlyMode bool
+		wantVersion     string
+		wantErr         bool
 	}{
 		{
 			name: "without override version",
@@ -693,35 +693,35 @@ func TestNextVersion(t *testing.T) {
 			wantVersion:    "2.0.0",
 		},
 		{
-			name: "a chore commit causes a minor bump during migration",
+			name: "a chore commit causes a minor bump in release only mode",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "chore"},
 			},
-			currentVersion: "1.2.3",
-			migration:      true,
-			wantVersion:    "1.3.0",
+			currentVersion:  "1.2.3",
+			releaseOnlyMode: true,
+			wantVersion:     "1.3.0",
 		},
 		{
-			name: "a feat commit causes a minor bump during migration",
+			name: "a feat commit causes a minor bump in release only mode",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "feat"},
 			},
-			currentVersion: "1.2.3",
-			migration:      true,
-			wantVersion:    "1.3.0",
+			currentVersion:  "1.2.3",
+			releaseOnlyMode: true,
+			wantVersion:     "1.3.0",
 		},
 		{
-			name: "a fix commit causes a minor bump during migration",
+			name: "a fix commit causes a minor bump in release only mode",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "fix"},
 			},
-			currentVersion: "1.2.3",
-			migration:      true,
-			wantVersion:    "1.3.0",
+			currentVersion:  "1.2.3",
+			releaseOnlyMode: true,
+			wantVersion:     "1.3.0",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.migration)
+			gotVersion, err := NextVersion(test.commits, test.currentVersion, test.releaseOnlyMode)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NextVersion() error = %v, wantErr %v", err, test.wantErr)
 				return
