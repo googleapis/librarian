@@ -1,0 +1,34 @@
+service_info:
+  title: Method Output Format API
+  default_host: methodoutputformat.googleapis.com
+  package: method_output_format.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: method_output_format/v1
+  proto_files:
+   - method_output_format.proto
+gcloud_info:
+  temp_cli_tree_override: method-output-format
+  help_text:
+    brief: Manage Method Output Format API resources.
+    description: Manage Method Output Format API resources.
+  output_formatting:
+  - selector: method_output_format.v1.MethodOutputFormat.ListResources
+    format: |-
+      table(name,
+            createTime,
+            updateTime)
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
