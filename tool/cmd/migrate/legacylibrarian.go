@@ -301,6 +301,9 @@ func mergeLibraries(existingConfig *config.Config, newConfig *config.Config) []*
 	return merged
 }
 
+// syncVersionOrCopy updates the Version of libraries in existingConfig with the Version from newConfig
+// for matching library names. Libraries in newConfig that do not exist in existingConfig are appended to
+// the returned slice.
 func syncVersionOrCopy(existingConfig *config.Config, newConfig *config.Config) []*config.Library {
 	existingSet := make(map[string]*config.Library)
 	for _, lib := range existingConfig.Libraries {
