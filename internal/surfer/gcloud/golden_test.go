@@ -104,8 +104,7 @@ func goldenTestComparer(t *testing.T, testDir, goldenDir string) {
 		} else {
 			// For non-YAML files, do a direct string comparison
 			if diff := cmp.Diff(string(goldenContent), string(generatedContent)); diff != "" {
-				t.Errorf("Content mismatch for %s (-want +got):
-%s", relPath, diff)
+				t.Errorf("Content mismatch for %s (-want +got): %s", relPath, diff)
 			}
 		}
 	}
