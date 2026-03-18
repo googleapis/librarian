@@ -16,6 +16,7 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,16 +25,21 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+var (
+	errModuleDiscovery   = errors.New("failed to search for java modules")
+	errRootPomGeneration = errors.New("failed to generate root pom")
+)
+
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
 func PostGenerate(ctx context.Context, cfg *config.Config) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4127):
 	// use ctx and cfg when generating gapic-libraries-bom/pom.xml.
 	modules, err := searchForJavaModules()
 	if err != nil {
-		return fmt.Errorf("failed to search for java modules: %w", err)
+		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
 	}
 	if err := generateRootPom(modules); err != nil {
-		return fmt.Errorf("failed to generate root pom: %w", err)
+		return fmt.Errorf("%w: %w", errRootPomGeneration, err)
 	}
 	return nil
 }

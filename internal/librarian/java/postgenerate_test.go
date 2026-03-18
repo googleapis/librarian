@@ -15,11 +15,13 @@
 package java
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
@@ -59,6 +61,80 @@ func TestPostGenerate(t *testing.T) {
 		if !strings.Contains(rootPomContent, "<module>"+mod+"</module>") {
 			t.Errorf("root pom.xml missing module %s", mod)
 		}
+	}
+}
+
+func TestSearchForJavaModules(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	// Setup: mix of modules, non-modules, and excluded directories
+	dirs := []string{
+		"module-b",
+		"module-a",
+		"not-a-module",
+		"gapic-libraries-bom",
+		"google-cloud-shared-deps",
+	}
+	for _, dir := range dirs {
+		if err := os.Mkdir(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Add pom.xml to modules (including an excluded one to verify filtering)
+	for _, mod := range []string{"module-a", "module-b", "gapic-libraries-bom"} {
+		if err := os.WriteFile(filepath.Join(mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := searchForJavaModules()
+	if err != nil {
+		t.Fatalf("searchForJavaModules failed: %v", err)
+	}
+	want := []string{"module-a", "module-b"}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSearchForJavaModules_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	// Make directory unreadable to cause os.ReadDir failure
+	if err := os.Chmod(tmpDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(tmpDir, 0755)
+	_, err := searchForJavaModules()
+	if err == nil {
+		t.Error("searchForJavaModules expected error, got nil")
+	}
+}
+
+func TestPostGenerate_SearchError(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	// Make directory unreadable to cause searchForJavaModules failure
+	if err := os.Chmod(tmpDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(tmpDir, 0755)
+	err := PostGenerate(t.Context(), &config.Config{})
+	if !errors.Is(err, errModuleDiscovery) {
+		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
+	}
+}
+
+func TestPostGenerate_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	// Make directory read-only to cause os.Create("pom.xml") failure
+	if err := os.Chmod(tmpDir, 0555); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(tmpDir, 0755)
+	err := PostGenerate(t.Context(), &config.Config{})
+	if !errors.Is(err, errRootPomGeneration) {
+		t.Errorf("got error %v, want %v", err, errRootPomGeneration)
 	}
 }
 
