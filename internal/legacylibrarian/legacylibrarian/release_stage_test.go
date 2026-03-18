@@ -31,11 +31,10 @@ import (
 func TestNewStageRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name                string
-		cfg                 *legacyconfig.Config
-		wantReleaseOnlyMode bool
-		wantErr             bool
-		wantErrMsg          string
+		name       string
+		cfg        *legacyconfig.Config
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "valid config",
@@ -48,17 +47,6 @@ func TestNewStageRunner(t *testing.T) {
 			},
 		},
 		{
-			name: "valid config with release only mode set to true",
-			cfg: &legacyconfig.Config{
-				API:       "some/api",
-				APISource: newTestGitRepo(t).GetDir(),
-				Repo:      newTestGitRepoReleaseOnlyMode(t).GetDir(),
-				WorkRoot:  t.TempDir(),
-				Image:     "gcr.io/test/test-image",
-			},
-			wantReleaseOnlyMode: true,
-		},
-		{
 			name: "invalid config",
 			cfg: &legacyconfig.Config{
 				APISource: newTestGitRepo(t).GetDir(),
@@ -68,7 +56,7 @@ func TestNewStageRunner(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			runner, err := newStageRunner(test.cfg)
+			_, err := newStageRunner(test.cfg)
 			if test.wantErr {
 				if err == nil {
 					t.Fatal("newStageRunner() should return error")
@@ -82,11 +70,6 @@ func TestNewStageRunner(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("newStageRunner() = %v, want nil", err)
-			}
-			if test.wantReleaseOnlyMode {
-				if !runner.state.ReleaseOnlyMode {
-					t.Errorf("runner.migrate should be true")
-				}
 			}
 		})
 	}
