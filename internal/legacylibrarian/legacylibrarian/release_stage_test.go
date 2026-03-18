@@ -31,10 +31,11 @@ import (
 func TestNewStageRunner(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name       string
-		cfg        *legacyconfig.Config
-		wantErr    bool
-		wantErrMsg string
+		name                string
+		cfg                 *legacyconfig.Config
+		wantReleaseOnlyMode bool
+		wantErr             bool
+		wantErrMsg          string
 	}{
 		{
 			name: "valid config",
@@ -55,6 +56,7 @@ func TestNewStageRunner(t *testing.T) {
 				WorkRoot:  t.TempDir(),
 				Image:     "gcr.io/test/test-image",
 			},
+			wantReleaseOnlyMode: true,
 		},
 		{
 			name: "invalid config",
@@ -81,7 +83,7 @@ func TestNewStageRunner(t *testing.T) {
 			if err != nil {
 				t.Errorf("newStageRunner() = %v, want nil", err)
 			}
-			if test.name == "valid config with migrate set to true" {
+			if test.wantReleaseOnlyMode {
 				if !runner.releaseOnlyMode {
 					t.Errorf("runner.migrate should be true")
 				}
