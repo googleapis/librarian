@@ -1397,14 +1397,14 @@ func TestRunStageCommand(t *testing.T) {
 func TestProcessLibrary_GoMigration(t *testing.T) {
 	for _, test := range []struct {
 		name         string
-		image        string
+		migrate      bool
 		libraryState *legacyconfig.LibraryState
 		repo         legacygitrepo.Repository
 		want         *legacyconfig.LibraryState
 	}{
 		{
-			name:  "go libraries do not have change",
-			image: "librarian-go",
+			name:    "go libraries do not have change",
+			migrate: true,
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
 				Version:     "1.2.3",
@@ -1490,9 +1490,9 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 			},
 		}
 		r := &stageRunner{
-			image: test.image,
-			repo:  test.repo,
-			state: state,
+			migrate: test.migrate,
+			repo:    test.repo,
+			state:   state,
 		}
 		err := r.processLibrary(t.Context(), test.libraryState)
 		if err != nil {

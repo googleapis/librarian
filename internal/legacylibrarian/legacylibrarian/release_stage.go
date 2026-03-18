@@ -281,7 +281,7 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 	library.PreviousVersion = library.Version
 	// Only create changes for libraries that are not migrated to librarian as librarian generate doesn't
 	// create commit message.
-	if r.migrate {
+	if !r.migrate {
 		library.Changes = toCommit(commits, library.ID)
 	}
 	library.Version = nextVersion
