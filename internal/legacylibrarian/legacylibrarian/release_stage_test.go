@@ -878,14 +878,19 @@ func TestStageRun(t *testing.T) {
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
 							{
-								Version:     "1.0.0",
 								ID:          "another-example-id",
+								Version:     "1.0.0",
 								SourceRoots: []string{"dir1"},
 							},
 							{
-								Version:     "2.0.0",
 								ID:          "example-id",
+								Version:     "2.0.0",
 								SourceRoots: []string{"dir2"},
+							},
+							{
+								ID:          "no-bump",
+								Version:     "1.2.3",
+								SourceRoots: []string{"dir3"},
 							},
 						},
 					},
@@ -935,6 +940,14 @@ func TestStageRun(t *testing.T) {
 						Version:       "2.1.0", // version is bumped.
 						APIs:          []*legacyconfig.API{},
 						SourceRoots:   []string{"dir2"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "no-bump",
+						Version:       "1.2.3", // version is NOT bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir3"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 					},
