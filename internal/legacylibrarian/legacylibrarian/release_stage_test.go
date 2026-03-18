@@ -947,6 +947,7 @@ func TestStageRun(t *testing.T) {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
+					image:           "python-librarian-generator",
 					library:         "another-example-id", // release only for this library
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
