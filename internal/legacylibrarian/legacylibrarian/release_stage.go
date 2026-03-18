@@ -38,7 +38,6 @@ type stageRunner struct {
 	librarianConfig *legacyconfig.LibrarianConfig
 	library         string
 	libraryVersion  string
-	releaseOnlyMode bool
 	push            bool
 	repo            legacygitrepo.Repository
 	sourceRepo      legacygitrepo.Repository
@@ -60,7 +59,6 @@ func newStageRunner(cfg *legacyconfig.Config) (*stageRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		releaseOnlyMode: runner.state.ReleaseOnlyMode,
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -284,7 +282,7 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 	// so leave the change log empty.
 	// legacylibrarian does not use change logs to determine whether to release a library, the ReleaseTriggered does.
 	// See https://github.com/googleapis/librarian/blob/d01bdbe54b46f22f2588a2077b2c278864f02e8b/internal/legacylibrarian/legacylibrarian/release_stage.go#L194
-	if !r.releaseOnlyMode {
+	if r.state == nil || !r.state.ReleaseOnlyMode {
 		library.Changes = toCommit(commits, library.ID)
 	}
 	library.Version = nextVersion
@@ -305,7 +303,11 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 		}
 		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
 	} else {
-		derivedNextVersion, err = NextVersion(commits, currentVersion, r.releaseOnlyMode)
+		releaseOnlyMode := false
+		if r.state != nil {
+			releaseOnlyMode = r.state.ReleaseOnlyMode
+		}
+		derivedNextVersion, err = NextVersion(commits, currentVersion, releaseOnlyMode)
 	}
 	if err != nil {
 		return "", err

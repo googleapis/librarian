@@ -84,7 +84,7 @@ func TestNewStageRunner(t *testing.T) {
 				t.Errorf("newStageRunner() = %v, want nil", err)
 			}
 			if test.wantReleaseOnlyMode {
-				if !runner.releaseOnlyMode {
+				if !runner.state.ReleaseOnlyMode {
 					t.Errorf("runner.migrate should be true")
 				}
 			}
@@ -889,9 +889,9 @@ func TestStageRun(t *testing.T) {
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
-					releaseOnlyMode: true,
 					containerClient: containerClient,
 					state: &legacyconfig.LibrarianState{
+						ReleaseOnlyMode: true,
 						Libraries: []*legacyconfig.LibraryState{
 							{
 								ID:          "another-example-id",
@@ -942,6 +942,7 @@ func TestStageRun(t *testing.T) {
 				}
 			},
 			want: &legacyconfig.LibrarianState{
+				ReleaseOnlyMode: true,
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:            "another-example-id",
@@ -1500,14 +1501,14 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 		},
 	} {
 		state := &legacyconfig.LibrarianState{
+			ReleaseOnlyMode: test.releaseOnlyMode,
 			Libraries: []*legacyconfig.LibraryState{
 				test.libraryState,
 			},
 		}
 		r := &stageRunner{
-			releaseOnlyMode: test.releaseOnlyMode,
-			repo:            test.repo,
-			state:           state,
+			repo:  test.repo,
+			state: state,
 		}
 		err := r.processLibrary(t.Context(), test.libraryState)
 		if err != nil {
