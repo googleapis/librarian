@@ -60,7 +60,7 @@ func newStageRunner(cfg *legacyconfig.Config) (*stageRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		releaseOnlyMode: runner.releaseOnlyMode,
+		releaseOnlyMode: runner.state.ReleaseOnlyMode,
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
