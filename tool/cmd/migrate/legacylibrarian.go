@@ -102,7 +102,11 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 		return fmt.Errorf("failed to load existing librarian.yaml: %w", err)
 	}
 	if existingConfig != nil {
-		existingConfig.Libraries = mergeLibraries(existingConfig, cfg)
+		if len(librariesToMigrate) > 0 {
+			existingConfig.Libraries = mergeLibraries(existingConfig, cfg)
+		} else {
+			existingConfig.Libraries = syncVersionOrCopy(existingConfig, cfg)
+		}
 		cfg = existingConfig
 	}
 
@@ -295,6 +299,22 @@ func mergeLibraries(existingConfig *config.Config, newConfig *config.Config) []*
 		}
 	}
 	return merged
+}
+
+func syncVersionOrCopy(existingConfig *config.Config, newConfig *config.Config) []*config.Library {
+	existingSet := make(map[string]*config.Library)
+	for _, lib := range existingConfig.Libraries {
+		existingSet[lib.Name] = lib
+	}
+	res := existingConfig.Libraries
+	for _, lib := range newConfig.Libraries {
+		if existingLib, ok := existingSet[lib.Name]; ok {
+			existingLib.Version = lib.Version
+		} else {
+			res = append(res, lib)
+		}
+	}
+	return res
 }
 
 func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
