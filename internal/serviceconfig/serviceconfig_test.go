@@ -412,14 +412,14 @@ func TestValidateAPI(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:     "api in allowlist, restricted language not allowed",
+			name:     "api in allowlist, google/cloud/ prefix, language restrictions not enforced",
 			path:     "google/cloud/aiplatform/v1beta1",
 			language: config.LanguageGo,
 			api: &API{
 				Path:      "google/cloud/aiplatform/v1beta1",
 				Languages: []string{config.LanguagePython},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name:     "api not in list, google/cloud/ prefix",
@@ -434,6 +434,16 @@ func TestValidateAPI(t *testing.T) {
 			language: config.LanguageGo,
 			api:      nil,
 			wantErr:  true,
+		},
+		{
+			name:     "api in allowlist, non-cloud, restricted language not allowed",
+			path:     "google/ads/newapi/v1",
+			language: config.LanguageGo,
+			api: &API{
+				Path:      "google/ads/newapi/v1",
+				Languages: []string{config.LanguagePython},
+			},
+			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

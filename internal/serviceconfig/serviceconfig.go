@@ -203,9 +203,8 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 
 // validateAPI checks if the given API path is allowed for the specified language.
 //
-// API paths starting with "google/cloud/" are allowed for all languages by default.
-// If such a path is explicitly included in the allowlist, it must satisfy any
-// language restrictions defined there.
+// API paths starting with "google/cloud/" are allowed for all languages. There
+// are no language restrictions enforced for Cloud APIs.
 //
 // API paths not starting with "google/cloud/" must be explicitly included in the
 // allowlist and satisfy its language restrictions.
@@ -216,7 +215,7 @@ func validateAPI(path string, language string, api *API) (*API, error) {
 	if api == nil {
 		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
-	if len(api.Languages) == 0 {
+	if len(api.Languages) == 0 || strings.HasPrefix(path, "google/cloud/") {
 		return api, nil
 	}
 	for _, l := range api.Languages {
