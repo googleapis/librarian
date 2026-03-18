@@ -1233,13 +1233,13 @@ func TestBlockLegacyGeneration(t *testing.T) {
 	}
 }
 
-func TestBlockLegacyGenerationAndRelease_Error(t *testing.T) {
+func TestBlockLegacyGeneration_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	migratedConfig := &config.Config{}
 	gotErr := blockLegacyGeneration(tempDir, migratedConfig)
 	wantErr := os.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("blockLegacyGenerationAndRelease error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("blockLegacyGeneration error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 
