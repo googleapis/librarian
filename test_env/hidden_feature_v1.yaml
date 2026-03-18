@@ -1,0 +1,47 @@
+service_info:
+  title: Hidden Feature API
+  default_host: hiddenfeature.googleapis.com
+  package: hidden_feature.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: hidden_feature/v1
+  proto_files:
+   - hidden_feature.proto
+gcloud_info:
+  temp_cli_tree_override: hidden-feature
+  help_text:
+    brief: Manage Hidden Feature API resources.
+    description: Manage Hidden Feature API resources.
+  hidden_features:
+    methods:
+    - hidden_feature.v1.HiddenFeature.GetVisibleResource
+    messages:
+    - hidden_feature.v1.HiddenResource
+    fields:
+    - hidden_feature.v1.VisibleResource.hidden_field
+    - hidden_feature.v1.VisibleResource.hidden_message_field
+resource_info:
+  resources:
+    projects.locations.visibleResources:
+      proto_message: VisibleResource
+      gcloud_resources:
+      - args:
+        - arg_name: visibleResource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
+    projects.locations.hiddenResources:
+      proto_message: HiddenResource
+      gcloud_resources:
+      - args:
+        - arg_name: hiddenResource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
