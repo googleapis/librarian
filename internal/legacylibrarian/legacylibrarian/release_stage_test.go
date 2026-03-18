@@ -1405,11 +1405,11 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 					"one-id-1.2.3": {
 						{
 							Hash:    plumbing.NewHash("123456"),
-							Message: "feat: one feat",
+							Message: "chore: one feat",
 						},
 						{
 							Hash:    plumbing.NewHash("654321"),
-							Message: "feat: another feat",
+							Message: "fix: another feat",
 						},
 					},
 				},
