@@ -1407,7 +1407,7 @@ func TestRunStageCommand(t *testing.T) {
 	}
 }
 
-func TestProcessLibrary_GoMigration(t *testing.T) {
+func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 	for _, test := range []struct {
 		name            string
 		releaseOnlyMode bool
