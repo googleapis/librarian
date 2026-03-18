@@ -136,13 +136,45 @@ func TestFieldSimpleTypesGA(t *testing.T) {
 
 	output, err := cmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 		}
 
 		// Define paths for comparison
 	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
 	generatedDir := filepath.Join(tmpDir, "fieldsimpletypes")
 	goldenDir := "testdata/field_simple_types_gen_sfc_goldens/field_simple_types"
+
+	// Compare the generated files with the golden files
+	goldenTestComparer(t, generatedDir, goldenDir)
+}
+
+func TestFilteredCommandGA(t *testing.T) {
+	tmpDir := t.TempDir()
+	defer os.RemoveAll(tmpDir)
+
+	// Get repo root
+	repoRoot := "../../.."
+
+	// Run Surfer command from repo root
+	cmd := exec.Command(
+		"./bin/surfer-dev",
+		"generate",
+				"./test_env/filtered_command_v1.yaml",
+		"--googleapis", "./test_env",
+		"--proto-files-include-list", "filtered_command/v1/filtered_command.proto",
+		"--out", tmpDir,
+	)
+	cmd.Dir = repoRoot
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+	}
+
+	// Define paths for comparison
+	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
+	generatedDir := filepath.Join(tmpDir, "filteredcommand")
+	goldenDir := "testdata/filtered_command_gen_sfc_goldens/filtered_command"
 
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)

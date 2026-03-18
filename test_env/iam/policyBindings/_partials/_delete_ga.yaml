@@ -1,0 +1,61 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: Delete PolicyBinding instance.
+    description: |
+      Delete PolicyBinding instance.
+    examples: |-
+      To delete `my-binding` instance in organization `123` run:
+
+      $ {command} my-binding --organization=123 --location=global
+  arguments:
+    params:
+      - help_text: The policy_binding to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          name: policy_binding
+          plural_name: policyBindings
+          collection: iam.organizations.locations.policyBindings
+          attributes:
+            - parameter_name: organizationsId
+              attribute_name: organization
+              help: The organization id of the {resource} resource.
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: policyBindingsId
+              attribute_name: policy_binding
+              help: The policy_binding id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: etag
+        api_field: etag
+        help_text: Value for the `etag` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: validate-only
+        api_field: validateOnly
+        help_text: Value for the `validate-only` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+  request:
+    api_version: v3
+    collection:
+      - iam.folders.locations.policyBindings
+      - iam.organizations.locations.policyBindings
+      - iam.projects.locations.policyBindings
+  async:
+    collection:
+      - iam.folders.locations.operations
+      - iam.organizations.locations.operations
+      - iam.projects.locations.operations
+    extract_resource_result: false

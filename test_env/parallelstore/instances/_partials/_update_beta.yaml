@@ -1,0 +1,70 @@
+- release_tracks:
+    - BETA
+  auto_generated: true
+  hidden: true
+  help_text:
+    brief: Updates the parameters of a single Parallelstore instance
+    description: |
+      Updates the parameters of a single Parallelstore instance.
+    examples: |-
+      To update the description of an instance `my-instance` in location `us-central1-a` run:
+
+      $ {command} my-instance --location=us-central1-a --description="<updated description>"
+  arguments:
+    params:
+      - help_text: The instance to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          name: instance
+          plural_name: instances
+          collection: parallelstore.projects.locations.instances
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: instancesId
+              attribute_name: instance
+              help: The instance id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: description
+        api_field: instance.description
+        help_text: Value for the `description` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: labels
+        api_field: instance.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+  request:
+    api_version: v1beta
+    collection: parallelstore.projects.locations.instances
+  async:
+    collection: parallelstore.projects.locations.operations
+    extract_resource_result: true
+  update:
+    read_modify_update: true

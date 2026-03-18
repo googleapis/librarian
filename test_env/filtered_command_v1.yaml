@@ -1,0 +1,39 @@
+service_info:
+  title: Filtered Command API
+  default_host: filteredcommand.googleapis.com
+  package: filtered_command.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: filtered_command/v1
+  proto_files:
+   - filtered_command.proto
+gcloud_info:
+  temp_cli_tree_override: filtered-command
+  help_text:
+    brief: Manage Filtered Command API resources.
+    description: Manage Filtered Command API resources.
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
+    projects.locations.filteredResources:
+      proto_message: FilteredResource
+      gcloud_resources:
+      - args:
+        - arg_name: filteredResource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true

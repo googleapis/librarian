@@ -1,0 +1,817 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: Create a connection resource
+    description: |
+      Create a connection resource.
+    examples: |-
+      To create a GitHub connection named `my-connection` in `us-central1` run:
+
+      $ {command} my-connection --github-config-app=developer-connect --github-config-authorizer-credential-oauth-token-secret-version=projects/my-project/secrets/my-oauth-token/versions/1 --github-config-app-installation-id=12345 --location=us-central1
+  arguments:
+    params:
+      - help_text: The connection to create.
+        is_positional: true
+        is_primary_resource: true
+        request_id_field: connectionId
+        resource_spec:
+          name: connection
+          plural_name: connections
+          collection: developerconnect.projects.locations.connections
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: connectionsId
+              attribute_name: connection
+              help: The connection id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: github-app
+        api_field: connection.githubConfig.githubApp
+        help_text: Value for the `github-app` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        choices:
+          - arg_value: developer-connect
+            enum_value: DEVELOPER_CONNECT
+          - arg_value: firebase
+            enum_value: FIREBASE
+          - arg_value: gemini-code-assist
+            enum_value: GEMINI_CODE_ASSIST
+      - arg_name: oauth-token-secret-version
+        api_field: connection.githubConfig.authorizerCredential.oauthTokenSecretVersion
+        help_text: Value for the `oauth-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.githubConfig.authorizerCredential.oauthTokenSecretVersion: '{__relative_name__}'
+      - arg_name: app-installation-id
+        api_field: connection.githubConfig.appInstallationId
+        help_text: Value for the `app-installation-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: long
+      - arg_name: host-uri
+        api_field: connection.githubEnterpriseConfig.hostUri
+        help_text: Value for the `host-uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: app-id
+        api_field: connection.githubEnterpriseConfig.appId
+        help_text: Value for the `app-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: long
+      - arg_name: private-key-secret-version
+        api_field: connection.githubEnterpriseConfig.privateKeySecretVersion
+        help_text: Value for the `private-key-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          connection.githubEnterpriseConfig.privateKeySecretVersion: '{__relative_name__}'
+      - arg_name: webhook-secret-secret-version
+        api_field: connection.githubEnterpriseConfig.webhookSecretSecretVersion
+        help_text: Value for the `webhook-secret-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          connection.githubEnterpriseConfig.webhookSecretSecretVersion: '{__relative_name__}'
+      - arg_name: app-installation-id
+        api_field: connection.githubEnterpriseConfig.appInstallationId
+        help_text: Value for the `app-installation-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: long
+      - arg_name: service
+        api_field: connection.githubEnterpriseConfig.serviceDirectoryConfig.service
+        help_text: Value for the `service` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: service
+          plural_name: services
+          collection: developerconnect.projects.locations.namespaces.services
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: namespacesId
+              attribute_name: namespace
+              help: The namespace id of the {resource} resource.
+            - parameter_name: servicesId
+              attribute_name: service
+              help: The service id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.githubEnterpriseConfig.serviceDirectoryConfig.service: '{__relative_name__}'
+      - arg_name: ssl-ca-certificate
+        api_field: connection.githubEnterpriseConfig.sslCaCertificate
+        help_text: Value for the `ssl-ca-certificate` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: organization
+        api_field: connection.githubEnterpriseConfig.organization
+        help_text: Value for the `organization` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: webhook-secret-secret-version
+        api_field: connection.gitlabConfig.webhookSecretSecretVersion
+        help_text: Value for the `webhook-secret-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabConfig.webhookSecretSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.gitlabConfig.readAuthorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabConfig.readAuthorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.gitlabConfig.authorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabConfig.authorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: host-uri
+        api_field: connection.gitlabEnterpriseConfig.hostUri
+        help_text: Value for the `host-uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: webhook-secret-secret-version
+        api_field: connection.gitlabEnterpriseConfig.webhookSecretSecretVersion
+        help_text: Value for the `webhook-secret-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabEnterpriseConfig.webhookSecretSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.gitlabEnterpriseConfig.readAuthorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabEnterpriseConfig.readAuthorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.gitlabEnterpriseConfig.authorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabEnterpriseConfig.authorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: service
+        api_field: connection.gitlabEnterpriseConfig.serviceDirectoryConfig.service
+        help_text: Value for the `service` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: service
+          plural_name: services
+          collection: developerconnect.projects.locations.namespaces.services
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: namespacesId
+              attribute_name: namespace
+              help: The namespace id of the {resource} resource.
+            - parameter_name: servicesId
+              attribute_name: service
+              help: The service id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.gitlabEnterpriseConfig.serviceDirectoryConfig.service: '{__relative_name__}'
+      - arg_name: ssl-ca-certificate
+        api_field: connection.gitlabEnterpriseConfig.sslCaCertificate
+        help_text: Value for the `ssl-ca-certificate` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: host-uri
+        api_field: connection.bitbucketDataCenterConfig.hostUri
+        help_text: Value for the `host-uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: webhook-secret-secret-version
+        api_field: connection.bitbucketDataCenterConfig.webhookSecretSecretVersion
+        help_text: Value for the `webhook-secret-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketDataCenterConfig.webhookSecretSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.bitbucketDataCenterConfig.readAuthorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketDataCenterConfig.readAuthorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.bitbucketDataCenterConfig.authorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketDataCenterConfig.authorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: service
+        api_field: connection.bitbucketDataCenterConfig.serviceDirectoryConfig.service
+        help_text: Value for the `service` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: service
+          plural_name: services
+          collection: developerconnect.projects.locations.namespaces.services
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: namespacesId
+              attribute_name: namespace
+              help: The namespace id of the {resource} resource.
+            - parameter_name: servicesId
+              attribute_name: service
+              help: The service id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketDataCenterConfig.serviceDirectoryConfig.service: '{__relative_name__}'
+      - arg_name: ssl-ca-certificate
+        api_field: connection.bitbucketDataCenterConfig.sslCaCertificate
+        help_text: Value for the `ssl-ca-certificate` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: workspace
+        api_field: connection.bitbucketCloudConfig.workspace
+        help_text: Value for the `workspace` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: webhook-secret-secret-version
+        api_field: connection.bitbucketCloudConfig.webhookSecretSecretVersion
+        help_text: Value for the `webhook-secret-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketCloudConfig.webhookSecretSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.bitbucketCloudConfig.readAuthorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketCloudConfig.readAuthorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: user-token-secret-version
+        api_field: connection.bitbucketCloudConfig.authorizerCredential.userTokenSecretVersion
+        help_text: Value for the `user-token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.bitbucketCloudConfig.authorizerCredential.userTokenSecretVersion: '{__relative_name__}'
+      - arg_name: instance
+        api_field: connection.secureSourceManagerInstanceConfig.instance
+        help_text: Value for the `instance` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: instance
+          plural_name: instances
+          collection: developerconnect.projects.locations.instances
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: instancesId
+              attribute_name: instance
+              help: The instance id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.secureSourceManagerInstanceConfig.instance: '{__relative_name__}'
+      - arg_name: password-secret-version
+        api_field: connection.httpConfig.basicAuthentication.passwordSecretVersion
+        help_text: Value for the `password-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          connection.httpConfig.basicAuthentication.passwordSecretVersion: '{__relative_name__}'
+      - arg_name: username
+        api_field: connection.httpConfig.basicAuthentication.username
+        help_text: Value for the `username` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: token-secret-version
+        api_field: connection.httpConfig.bearerTokenAuthentication.tokenSecretVersion
+        help_text: Value for the `token-secret-version` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: secret_version
+          plural_name: versions
+          collection: developerconnect.projects.secrets.versions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: secretsId
+              attribute_name: secret
+              help: The secret id of the {resource} resource.
+            - parameter_name: versionsId
+              attribute_name: secret_version
+              help: The secret_version id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          connection.httpConfig.bearerTokenAuthentication.tokenSecretVersion: '{__relative_name__}'
+      - arg_name: host-uri
+        api_field: connection.httpConfig.hostUri
+        help_text: Value for the `host-uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: str
+      - arg_name: service
+        api_field: connection.httpConfig.serviceDirectoryConfig.service
+        help_text: Value for the `service` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: service
+          plural_name: services
+          collection: developerconnect.projects.locations.namespaces.services
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: namespacesId
+              attribute_name: namespace
+              help: The namespace id of the {resource} resource.
+            - parameter_name: servicesId
+              attribute_name: service
+              help: The service id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.httpConfig.serviceDirectoryConfig.service: '{__relative_name__}'
+      - arg_name: ssl-ca-certificate
+        api_field: connection.httpConfig.sslCaCertificate
+        help_text: Value for the `ssl-ca-certificate` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: labels
+        api_field: connection.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: disabled
+        api_field: connection.disabled
+        help_text: Value for the `disabled` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: annotations
+        api_field: connection.annotations
+        help_text: Value for the `annotations` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: etag
+        api_field: connection.etag
+        help_text: Value for the `etag` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: key-reference
+        api_field: connection.cryptoKeyConfig.keyReference
+        help_text: Value for the `key-reference` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: crypto_key
+          plural_name: cryptoKeys
+          collection: developerconnect.projects.locations.keyRings.cryptoKeys
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: keyRingsId
+              attribute_name: key_ring
+              help: The key_ring id of the {resource} resource.
+            - parameter_name: cryptoKeysId
+              attribute_name: crypto_key
+              help: The crypto_key id of the {resource} resource.
+          disable_auto_completers: true
+        required: true
+        repeated: false
+        resource_method_params:
+          connection.cryptoKeyConfig.keyReference: '{__relative_name__}'
+      - arg_name: enabled
+        api_field: connection.gitProxyConfig.enabled
+        help_text: Value for the `enabled` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: validate-only
+        api_field: validateOnly
+        help_text: Value for the `validate-only` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+  request:
+    api_version: v1
+    collection: developerconnect.projects.locations.connections
+  async:
+    collection: developerconnect.projects.locations.operations
+    extract_resource_result: true

@@ -1,0 +1,337 @@
+## Copyright 2026 Google LLC
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##     https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+config_version: v2.0
+service_name: iam.googleapis.com
+generate_operations: false
+regional_endpoint_compatibility: NOT_SUPPORTED
+apis:
+    - name: PolicyBindings
+      api_version: v3
+      supports_star_update_masks: false
+      release_tracks:
+        - GA
+      field_generation_filters:
+        - selector: google.iam.v3.DeletePolicyBindingRequest.validate_only
+        - selector: google.iam.v3.CreatePolicyBindingRequest.validate_only
+        - selector: google.iam.v3.UpdatePolicyBindingRequest.validate_only
+      help_text:
+        service_rules:
+            - selector: google.iam.v3.PolicyBindings
+              help_text:
+                brief: The super-group for the IAM CLI.
+                description: |- # Provide additional surface/service level details here.
+                    Manage IAM service accounts and keys.
+
+                    The gcloud iam command group lets you manage Google Cloud Identity &
+                    Access Management (IAM) service accounts and keys.
+
+                    Cloud IAM authorizes who can take action on specific resources, giving you
+                    full control and visibility to manage cloud resources centrally. For
+                    established enterprises with complex organizational structures, hundreds of
+                    workgroups and potentially many more projects, Cloud IAM provides a unified
+                    view into security policy across your entire organization, with built-in
+                    auditing to ease compliance processes.
+
+                    More information on Cloud IAM can be found here:
+                    https://cloud.google.com/iam and detailed documentation can be found here:
+                    https://cloud.google.com/iam/docs/
+        method_rules:
+            - selector: google.iam.v3.PolicyBindings.GetPolicyBinding
+              help_text:
+                brief: Get PolicyBinding instance.
+                description: | # Provide additional Content and context for the command here.
+                    Get PolicyBinding instance.
+                examples:
+                    - |-
+                      To get the details of a single policy binding `my-binding` in organization `123` run:
+
+                      $ {command} my-binding --organization=123 --location=global
+            - selector: google.iam.v3.PolicyBindings.ListPolicyBindings
+              help_text:
+                brief: List PolicyBinding instances.
+                description: | # Provide additional Content and context for the command here.
+                    List PolicyBinding instances.
+                examples:
+                    - |-
+                      To list all policy binding instances in project `my-project` run:
+
+                      $ {command} --project=my-project --location=global
+            - selector: google.iam.v3.PolicyBindings.CreatePolicyBinding
+              help_text:
+                brief: Create PolicyBinding instance.
+                description: | # Provide additional Content and context for the command here.
+                    Create PolicyBinding instance.
+                examples:
+                    - |-
+                      To create a policy binding instance called `my-binding` that references a principal
+                      access boundary policy run:
+
+                      $ {command} my-binding --organization=123 --location=global \
+                        --policy=organizations/123/locations/global/principalAccessBoundaryPolicies/my-policy \
+                        --target-principal-set=//cloudresourcemanager.googleapis.com/organizations/123
+            - selector: google.iam.v3.PolicyBindings.UpdatePolicyBinding
+              help_text:
+                brief: Update PolicyBinding instance.
+                description: | # Provide additional Content and context for the command here.
+                    Update PolicyBinding instance.
+                examples:
+                    - |-
+                      To update display name of `my-binding` in organization `123` run:
+
+                      $ {command} my-binding --organization=123 --location=global --display-name=new-display-name
+            - selector: google.iam.v3.PolicyBindings.DeletePolicyBinding
+              help_text:
+                brief: Delete PolicyBinding instance.
+                description: | # Provide additional Content and context for the command here.
+                    Delete PolicyBinding instance.
+                examples:
+                    - |-
+                      To delete `my-binding` instance in organization `123` run:
+
+                      $ {command} my-binding --organization=123 --location=global
+            - selector: google.iam.v3.PolicyBindings.SearchTargetPolicyBindings
+              help_text:
+                brief: Search policy bindings by target.
+                description: | # Provide additional Content and context for the command here.
+                    Search policy bindings by target.
+                examples:
+                    - |-
+                      To search for policy bindings with target, run:
+
+                      $ {command} --organization=123 --location=global --target=//cloudresourcemanager.googleapis.com/organizations/123
+        message_rules:
+            - selector: google.iam.v3.PolicyBinding
+              help_text:
+                brief: Manage policy bindings.
+                description: |- # Provide additional Content and context for the command here.
+                    Manage policy bindings.
+      output_formatting:
+        - selector: google.iam.v3.PolicyBindings.ListPolicyBindings
+          format: |-
+            table(name,
+                  uid,
+                  etag,
+                  displayName,
+                  annotations,
+                  target.principalSet:label=principalSet,
+                  policyKind,
+                  policy,
+                  policy_uid,
+                  condition,
+                  createTime,
+                  updateTime)
+    - name: PrincipalAccessBoundaryPolicies
+      api_version: v3
+      supports_star_update_masks: false
+      release_tracks:
+        - GA
+      field_generation_filters:
+        - selector: google.iam.v3.CreatePrincipalAccessBoundaryPolicyRequest.validate_only
+        - selector: google.iam.v3.UpdatePrincipalAccessBoundaryPolicyRequest.validate_only
+        - selector: google.iam.v3.DeletePrincipalAccessBoundaryPolicyRequest.validate_only
+      help_text:
+        service_rules:
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies
+              help_text:
+                brief: The super-group for the IAM CLI.
+                description: |- # Provide additional surface/service level details here.
+                    Manage IAM service accounts and keys.
+
+                    The gcloud iam command group lets you manage Google Cloud Identity &
+                    Access Management (IAM) service accounts and keys.
+
+                    Cloud IAM authorizes who can take action on specific resources, giving you
+                    full control and visibility to manage cloud resources centrally. For
+                    established enterprises with complex organizational structures, hundreds of
+                    workgroups and potentially many more projects, Cloud IAM provides a unified
+                    view into security policy across your entire organization, with built-in
+                    auditing to ease compliance processes.
+
+                    More information on Cloud IAM can be found here:
+                    https://cloud.google.com/iam and detailed documentation can be found here:
+                    https://cloud.google.com/iam/docs/
+        method_rules:
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.GetPrincipalAccessBoundaryPolicy
+              help_text:
+                brief: Get PrincipalAccessBoundaryPolicy instance.
+                description: | # Provide additional Content and context for the command here.
+                    Get PrincipalAccessBoundaryPolicy instance.
+                examples:
+                    - |-
+                      To get the details of a single policy `my-policy` in organization `123`, run:
+
+                      $ {command} my-policy --organization=123 --location=global
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
+              help_text:
+                brief: List PrincipalAccessBoundaryPolicy instances.
+                description: | # Provide additional Content and context for the command here.
+                    List PrincipalAccessBoundaryPolicy instances.
+                examples:
+                    - |-
+                      To list all policy instances in organization `123`, run:
+
+                      $ {command} --organization=123 --location=global
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.CreatePrincipalAccessBoundaryPolicy
+              help_text:
+                brief: Create PrincipalAccessBoundaryPolicy instance.
+                description: | # Provide additional Content and context for the command here.
+                    Create PrincipalAccessBoundaryPolicy instance.
+                examples:
+                    - |-
+                      To create a policy instance called `my-policy`, run:
+
+                      $ {command} my-policy --organization=123 --location=global
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.UpdatePrincipalAccessBoundaryPolicy
+              help_text:
+                brief: Update PrincipalAccessBoundaryPolicy instance.
+                description: | # Provide additional Content and context for the command here.
+                    Update PrincipalAccessBoundaryPolicy instance.
+                examples:
+                    - |-
+                      To update display name of `my-policy` in organization `123`, run:
+
+                      $ {command} my-policy --organization=123 --location=global --display-name=new-display-name
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.DeletePrincipalAccessBoundaryPolicy
+              help_text:
+                brief: Delete PrincipalAccessBoundaryPolicy instance.
+                description: | # Provide additional Content and context for the command here.
+                    Delete PrincipalAccessBoundaryPolicy instance.
+                examples:
+                    - |-
+                      To delete `my-policy` instance in organization `123`, run:
+
+                      $ {command} my-policy --organization=123 --location=global
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.SearchPrincipalAccessBoundaryPolicyBindings
+              help_text:
+                brief: Search Principal Access Boundary Policy Bindings.
+                description: | # Provide additional Content and context for the command here.
+                    Search all policy bindings that bind a specific policy if a user has searchPolicyBindings permission on that policy.
+                examples:
+                    - |-
+                      To search policy bindings associated with Principal Access Boundary Policy, run:
+
+                      $ {command} my-policy --organization=123 --location=global
+        message_rules:
+            - selector: google.iam.v3.PrincipalAccessBoundaryPolicy
+              help_text:
+                brief: Manage principal access boundary policies.
+                description: |- # Provide additional Content and context for the command here.
+                    Manage principal access boundary policies.
+      output_formatting:
+        - selector: google.iam.v3.PrincipalAccessBoundaryPolicies.ListPrincipalAccessBoundaryPolicies
+          format: |-
+            table(name,
+                  uid,
+                  etag,
+                  displayName,
+                  annotations,
+                  createTime,
+                  updateTime,
+                  state,
+                  details.rules:label=rules)
+    # Regional Access Boundary Policies
+    - name: RegionalAccessBoundaryPolicies
+      api_version: v3
+      supports_star_update_masks: false
+      # TODO(b/459877895): Remove this once the feature is ready for public preview.
+      root_is_hidden: true
+      release_tracks:
+        - GA
+      field_generation_filters:
+        - selector: google.iam.v3.CreateRegionalAccessBoundaryPolicyRequest.validate_only
+        - selector: google.iam.v3.UpdateRegionalAccessBoundaryPolicyRequest.validate_only
+        - selector: google.iam.v3.DeleteRegionalAccessBoundaryPolicyRequest.validate_only
+      hidden_features:
+        messages:
+            - google.iam.v3.RegionalAccessBoundaryPolicy
+      help_text:
+        service_rules:
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies
+              help_text:
+                brief: Manage Regional Access Boundary policies.
+                description: |-
+                    The gcloud iam regional-access-boundary-policies command group lets you manage Google Cloud Regional Access Boundary policies.
+        method_rules:
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.ListRegionalAccessBoundaryPolicies
+              help_text:
+                brief: List Regional Access Boundary policies.
+                description: List all Regional Access Boundary policies in an organization.
+                examples:
+                    - |-
+                      To list all policies in organization 123, run:
+
+                        $ {command} --organization=123 --location=global
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.CreateRegionalAccessBoundaryPolicy
+              help_text:
+                brief: Create a Regional Access Boundary policy.
+                description: Create a new Regional Access Boundary policy.
+                examples:
+                    - |-
+                      To create a policy called my-rab-policy with rules from a file, run:
+
+                        $ {command} my-rab-policy --organization=123 --location=global --display-name=ACME Regional Access Boundary --details-rules=rules.json
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.UpdateRegionalAccessBoundaryPolicy
+              help_text:
+                brief: Update a Regional Access Boundary policy.
+                description: Update an existing Regional Access Boundary policy.
+                examples:
+                    - |-
+                      To update the policy my-rab-policy with rules from a new file, run:
+
+                        $ {command} my-rab-policy --organization=123 --location=global --details-rules=new-rules.json
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.DeleteRegionalAccessBoundaryPolicy
+              help_text:
+                brief: Delete a Regional Access Boundary policy.
+                description: Delete a Regional Access Boundary policy.
+                examples:
+                    - |-
+                      To delete the policy my-rab-policy in organization 123, run:
+
+                        $ {command} my-rab-policy --organization=123 --location=global
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.GetRegionalAccessBoundaryPolicy
+              help_text:
+                brief: Get a Regional Access Boundary policy.
+                description: Describe a Regional Access Boundary policy.
+                examples:
+                    - |-
+                      To get the details of a single policy my-rab-policy in organization 123, run:
+
+                        $ {command} my-rab-policy --organization=123 --location=global
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies.SearchRegionalAccessBoundaryPolicyBindings
+              help_text:
+                brief: Search Regional Access Boundary policy bindings.
+                description: Search all policy bindings that bind a specific policy.
+                examples:
+                    - |-
+                      To search for bindings associated with policy my-rab-policy in organization 123, run:
+
+                        $ {command} my-rab-policy --organization=123 --location=global
+        message_rules:
+            - selector: google.iam.v3.RegionalAccessBoundaryPolicies
+              help_text:
+                brief: Manage RegionalAccessBoundaryPolicy instances.
+                description: |- # Provide additional Content and context for the command here.
+                    Manage RegionalAccessBoundaryPolicy instances.
+      output_formatting:
+        - selector: google.iam.v3.RegionalAccessBoundaryPolicies.ListRegionalAccessBoundaryPolicies
+          format: |-
+            table(name,
+                  uid,
+                  etag,
+                  displayName,
+                  annotations,
+                  createTime,
+                  updateTime,
+                  state,
+                  details.rules:label=rules)
