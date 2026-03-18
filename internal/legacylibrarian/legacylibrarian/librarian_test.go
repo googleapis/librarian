@@ -245,29 +245,6 @@ func newTestGitRepo(t *testing.T) legacygitrepo.Repository {
 	return newTestGitRepoWithState(t, defaultState)
 }
 
-// newTestGitRepoReleaseOnlyMode creates a new git repository configured for release only mode.
-func newTestGitRepoReleaseOnlyMode(t *testing.T) legacygitrepo.Repository {
-	t.Helper()
-	releaseOnlyState := &legacyconfig.LibrarianState{
-		Image:           "some/image:v1.2.3",
-		ReleaseOnlyMode: true,
-		Libraries: []*legacyconfig.LibraryState{
-			{
-				ID: "some-library",
-				APIs: []*legacyconfig.API{
-					{
-						Path:          "some/api",
-						ServiceConfig: "api_config.yaml",
-						Status:        legacyconfig.StatusExisting,
-					},
-				},
-				SourceRoots: []string{"src/a"},
-			},
-		},
-	}
-	return newTestGitRepoWithState(t, releaseOnlyState)
-}
-
 // newTestGitRepo creates a new git repository in a temporary directory.
 func newTestGitRepoWithState(t *testing.T, state *legacyconfig.LibrarianState) legacygitrepo.Repository {
 	t.Helper()
