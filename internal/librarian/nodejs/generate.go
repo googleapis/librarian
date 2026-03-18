@@ -17,6 +17,7 @@ package nodejs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -45,7 +46,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	if err := runPostProcessor(ctx, library, repoRoot, outdir); err != nil {
+	if err := runPostProcessor(ctx, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
 	return nil
@@ -149,7 +150,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
-func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+func runPostProcessor(ctx context.Context, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err == nil {
 		// Old way: use synthtool
@@ -205,6 +206,10 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 		}
 	}
 
+	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
+		return fmt.Errorf("copyMissingProtos: %w", err)
+	}
+
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("compileProtos: %w", err)
 	}
@@ -251,7 +256,64 @@ func runPostProcessor(ctx context.Context, library *config.Library, repoRoot, ou
 	return nil
 }
 
-// Format runs eslint --fix on the library directory.
+// copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
+// any referenced protos that are missing from outDir/protos/ using the source
+// files in googleapisDir. The generator copies the API's own protos but not
+// transitive dependencies (e.g. google/logging/type/log_severity.proto).
+func copyMissingProtos(googleapisDir, outDir string) error {
+	googleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve googleapis directory: %w", err)
+	}
+
+	lists, err := filepath.Glob(filepath.Join(outDir, "src", "*", "*_proto_list.json"))
+	if err != nil {
+		return fmt.Errorf("failed to glob proto list files: %w", err)
+	}
+
+	for _, listPath := range lists {
+		data, err := os.ReadFile(listPath)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %w", listPath, err)
+		}
+		var entries []string
+		if err := json.Unmarshal(data, &entries); err != nil {
+			return fmt.Errorf("failed to parse %s: %w", listPath, err)
+		}
+
+		listDir := filepath.Dir(listPath)
+		for _, entry := range entries {
+			absPath := filepath.Join(listDir, entry)
+			absPath = filepath.Clean(absPath)
+			if _, err := os.Stat(absPath); err == nil {
+				continue
+			}
+
+			// Extract the proto-relative path after "protos/".
+			const protosPrefix = "protos/"
+			idx := strings.Index(entry, protosPrefix)
+			if idx < 0 {
+				continue
+			}
+			relPath := entry[idx+len(protosPrefix):]
+
+			srcPath := filepath.Join(googleapisDir, relPath)
+			content, err := os.ReadFile(srcPath)
+			if err != nil {
+				return fmt.Errorf("failed to read source proto %s: %w", srcPath, err)
+			}
+			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
+			}
+			if err := os.WriteFile(absPath, content, 0644); err != nil {
+				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
+			}
+		}
+	}
+	return nil
+}
+
+// Format runs gts (npm run fix) on the library directory.
 func Format(ctx context.Context, library *config.Library) error {
 	if err := ctx.Err(); err != nil {
 		return err
