@@ -777,7 +777,6 @@ func TestStageRun(t *testing.T) {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
-					image:           "python-librarian-generator",
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
 							{
@@ -820,7 +819,6 @@ func TestStageRun(t *testing.T) {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
-					image:           "python-librarian-generator",
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
 							{
