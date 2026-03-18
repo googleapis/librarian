@@ -452,7 +452,7 @@ func TestMultiServiceGA(t *testing.T) {
 		"generate",
 				"./test_env/multi_service_v1.yaml",
 		"--googleapis", "./test_env",
-		"--proto-files-include-list", "multi_service/v1/multi_service_first.proto multi_service/v1/multi_service_second.proto",
+		"--proto-files-include-list", "multi_service/v1/multi_service_first.proto", "multi_service/v1/multi_service_second.proto",
 		"--out", tmpDir,
 	)
 	cmd.Dir = repoRoot
