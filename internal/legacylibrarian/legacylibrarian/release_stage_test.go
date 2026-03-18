@@ -1418,7 +1418,7 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 		want            *legacyconfig.LibraryState
 	}{
 		{
-			name:            "libraries in release only mode do not have change",
+			name:            "libraries in repo with release only mode do not have changelogs",
 			releaseOnlyMode: true,
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
@@ -1452,7 +1452,7 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 			},
 		},
 		{
-			name: "libraries do not in release only mode have change",
+			name: "libraries in repo with normal mode have changelogs",
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
 				Version:     "1.2.3",
