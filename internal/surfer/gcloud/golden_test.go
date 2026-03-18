@@ -93,39 +93,56 @@ func TestResourceStandardGA(t *testing.T) {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Surfer command failed: %v\nOutput:\n%s", err, string(output))
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
 	// Log the generated directory structure
 	generatedDir := filepath.Join(tmpDir, "resourcestandard")
-	t.Logf("Generated directory structure in: %s", generatedDir)
-	filepath.Walk(generatedDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			t.Logf("Error accessing path %s: %v", path, err)
-			return nil
-		}
-		relPath, _ := filepath.Rel(generatedDir, path)
-		t.Logf("  - %s (IsDir: %v)", relPath, info.IsDir())
-		return nil
-	})
-
-	// Log the ENTIRE tmpDir content for debugging
-	t.Logf("Contents of tmpDir: %s", tmpDir)
-	filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			// Just log error and continue
-			t.Logf("  Error accessing path %s: %v", path, err)
-			return nil
-		}
-		relPath, _ := filepath.Rel(tmpDir, path)
-		t.Logf("  - %s (IsDir: %v)", relPath, info.IsDir())
-		return nil
-	})
-
-	// t.Logf("Surfer output:\n%s", string(output)) // Optional: Log surfer output
+	// t.Logf("Generated directory structure in: %s", generatedDir)
+	// filepath.Walk(generatedDir, func(path string, info os.FileInfo, err error) error {
+	// 	if err != nil {
+	// 		t.Logf("Error accessing path %s: %v", path, err)
+	// 		return nil
+	// 	}
+	// 	relPath, _ := filepath.Rel(generatedDir, path)
+	// 	t.Logf("  - %s (IsDir: %v)", relPath, info.IsDir())
+	// 	return nil
+	// })
 
 	// Define paths for comparison
 	goldenDir := "testdata/resource_standard_gen_sfc_goldens/resource_standard"
+
+	// Compare the generated files with the golden files
+	goldenTestComparer(t, generatedDir, goldenDir)
+}
+
+func TestFieldSimpleTypesGA(t *testing.T) {
+	tmpDir := t.TempDir()
+	defer os.RemoveAll(tmpDir)
+
+	// Get repo root
+	repoRoot := "../../.."
+
+	// Run Surfer command from repo root
+	cmd := exec.Command(
+		"./bin/surfer-dev",
+		"generate",
+				"./test_env/field_simple_types_v1.yaml",
+		"--googleapis", "./test_env",
+		"--proto-files-include-list", "field_simple_types/v1/field_simple_types.proto",
+		"--out", tmpDir,
+	)
+	cmd.Dir = repoRoot
+
+	output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+		}
+
+		// Define paths for comparison
+	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
+	generatedDir := filepath.Join(tmpDir, "fieldsimpletypes")
+	goldenDir := "testdata/field_simple_types_gen_sfc_goldens/field_simple_types"
 
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)
