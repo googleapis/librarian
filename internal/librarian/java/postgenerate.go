@@ -65,10 +65,10 @@ func searchForJavaModules() ([]string, error) {
 
 // generateRootPom writes the aggregator pom.xml for the monorepo root, including
 // all discovered Java modules.
-func generateRootPom(modules []string) error {
+func generateRootPom(modules []string) (err error) {
 	f, err := os.Create("pom.xml")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create root pom.xml: %w", err)
 	}
 	defer func() {
 		cerr := f.Close()
@@ -81,5 +81,8 @@ func generateRootPom(modules []string) error {
 	}{
 		Modules: modules,
 	}
-	return templates.ExecuteTemplate(f, "root-pom.xml.tmpl", data)
+	if terr := templates.ExecuteTemplate(f, "root-pom.xml.tmpl", data); terr != nil {
+		return fmt.Errorf("failed to execute root-pom template: %w", terr)
+	}
+	return nil
 }
