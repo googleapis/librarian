@@ -67,7 +67,7 @@ libraries:
 		{
 			name: "migrate set to true",
 			content: `image: gcr.io/test/image:v1.2.3
-migrate: true
+release_only_mode: true
 libraries:
   - id: a/b
     source_roots:
@@ -79,8 +79,8 @@ libraries:
 `,
 			source: "",
 			want: &legacyconfig.LibrarianState{
-				Image:   "gcr.io/test/image:v1.2.3",
-				Migrate: true,
+				Image:           "gcr.io/test/image:v1.2.3",
+				ReleaseOnlyMode: true,
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:          "a/b",

@@ -82,7 +82,7 @@ func TestNewStageRunner(t *testing.T) {
 				t.Errorf("newStageRunner() = %v, want nil", err)
 			}
 			if test.name == "valid config with migrate set to true" {
-				if !runner.migrate {
+				if !runner.releaseOnlyMode {
 					t.Errorf("runner.migrate should be true")
 				}
 			}
@@ -887,7 +887,7 @@ func TestStageRun(t *testing.T) {
 			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
 				return &stageRunner{
 					workRoot:        os.TempDir(),
-					migrate:         true,
+					releaseOnlyMode: true,
 					containerClient: containerClient,
 					state: &legacyconfig.LibrarianState{
 						Libraries: []*legacyconfig.LibraryState{
@@ -1409,15 +1409,15 @@ func TestRunStageCommand(t *testing.T) {
 
 func TestProcessLibrary_GoMigration(t *testing.T) {
 	for _, test := range []struct {
-		name         string
-		migrate      bool
-		libraryState *legacyconfig.LibraryState
-		repo         legacygitrepo.Repository
-		want         *legacyconfig.LibraryState
+		name            string
+		releaseOnlyMode bool
+		libraryState    *legacyconfig.LibraryState
+		repo            legacygitrepo.Repository
+		want            *legacyconfig.LibraryState
 	}{
 		{
-			name:    "go libraries do not have change",
-			migrate: true,
+			name:            "go libraries do not have change",
+			releaseOnlyMode: true,
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
 				Version:     "1.2.3",
@@ -1503,9 +1503,9 @@ func TestProcessLibrary_GoMigration(t *testing.T) {
 			},
 		}
 		r := &stageRunner{
-			migrate: test.migrate,
-			repo:    test.repo,
-			state:   state,
+			releaseOnlyMode: test.releaseOnlyMode,
+			repo:            test.repo,
+			state:           state,
 		}
 		err := r.processLibrary(t.Context(), test.libraryState)
 		if err != nil {

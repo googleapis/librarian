@@ -249,8 +249,8 @@ func newTestGitRepo(t *testing.T) legacygitrepo.Repository {
 func newTestGitRepoMigration(t *testing.T) legacygitrepo.Repository {
 	t.Helper()
 	migrateState := &legacyconfig.LibrarianState{
-		Image:   "some/image:v1.2.3",
-		Migrate: true,
+		Image:           "some/image:v1.2.3",
+		ReleaseOnlyMode: true,
 		Libraries: []*legacyconfig.LibraryState{
 			{
 				ID: "some-library",

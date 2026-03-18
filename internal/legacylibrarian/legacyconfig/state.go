@@ -33,8 +33,9 @@ const (
 // LibrarianState defines the contract for the state.yaml file.
 type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
-	Image   string `yaml:"image" json:"image"`
-	Migrate bool   `yaml:"migrate,omitempty" json:"-"`
+	Image string `yaml:"image" json:"image"`
+
+	ReleaseOnlyMode bool `yaml:"release_only_mode,omitempty" json:"-"`
 	// A list of library configurations.
 	Libraries []*LibraryState `yaml:"libraries" json:"libraries"`
 }

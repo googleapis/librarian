@@ -38,7 +38,7 @@ type stageRunner struct {
 	librarianConfig *legacyconfig.LibrarianConfig
 	library         string
 	libraryVersion  string
-	migrate         bool
+	releaseOnlyMode bool
 	push            bool
 	repo            legacygitrepo.Repository
 	sourceRepo      legacygitrepo.Repository
@@ -60,7 +60,7 @@ func newStageRunner(cfg *legacyconfig.Config) (*stageRunner, error) {
 		librarianConfig: runner.librarianConfig,
 		library:         cfg.Library,
 		libraryVersion:  cfg.LibraryVersion,
-		migrate:         runner.migrate,
+		releaseOnlyMode: runner.releaseOnlyMode,
 		push:            cfg.Push,
 		repo:            runner.repo,
 		sourceRepo:      runner.sourceRepo,
@@ -281,7 +281,7 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 	library.PreviousVersion = library.Version
 	// Only create changes for libraries that are not migrated to librarian as librarian generate doesn't
 	// create commit message.
-	if !r.migrate {
+	if !r.releaseOnlyMode {
 		library.Changes = toCommit(commits, library.ID)
 	}
 	library.Version = nextVersion
@@ -302,7 +302,7 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 		}
 		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
 	} else {
-		derivedNextVersion, err = NextVersion(commits, currentVersion, r.migrate)
+		derivedNextVersion, err = NextVersion(commits, currentVersion, r.releaseOnlyMode)
 	}
 	if err != nil {
 		return "", err

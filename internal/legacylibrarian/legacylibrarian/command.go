@@ -142,7 +142,7 @@ type commandRunner struct {
 	containerClient ContainerClient
 	image           string
 	workRoot        string
-	migrate         bool
+	releaseOnlyMode bool
 }
 
 func newCommandRunner(cfg *legacyconfig.Config) (*commandRunner, error) {
@@ -197,7 +197,7 @@ func newCommandRunner(cfg *legacyconfig.Config) (*commandRunner, error) {
 		state:           state,
 		librarianConfig: librarianConfig,
 		image:           image,
-		migrate:         state.Migrate,
+		releaseOnlyMode: state.ReleaseOnlyMode,
 		ghClient:        ghClient,
 		containerClient: container,
 	}, nil
