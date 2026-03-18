@@ -209,13 +209,16 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 // API paths not starting with "google/cloud/" must be explicitly included in the
 // allowlist and satisfy its language restrictions.
 func validateAPI(path string, language string, api *API) (*API, error) {
-	if api == nil && strings.HasPrefix(path, "google/cloud/") {
-		return &API{Path: path}, nil
+	if strings.HasPrefix(path, "google/cloud/") {
+		if api == nil {
+			api = &API{Path: path}
+		}
+		return api, nil
 	}
 	if api == nil {
 		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
-	if len(api.Languages) == 0 || strings.HasPrefix(path, "google/cloud/") {
+	if len(api.Languages) == 0 {
 		return api, nil
 	}
 	for _, l := range api.Languages {
