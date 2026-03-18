@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package multi_version_multi_track.v1main;
+
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/api/versioning.proto";
+import "google/protobuf/timestamp.proto";
+
+// Resource example for multiple versions and multiple release tracks.
+// Resource One will be available for v1 and v1alpha version.
+// v1 version will be mapped to GA release track.
+// v1alpha version will be mapped to ALPHA release track.
+message ResourceOne {
+  option (google.api.resource) = {
+    type: "multiversionmultitrack.googleapis.com/ResourceOne",
+    pattern: "projects/{project}/locations/{location}/resourceOnes/{resourceOne}"
+  };
+
+  // Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Resource one field.
+  optional string resource_one_field = 2;
+}
+
+// Resource example for multiple versions and multiple release tracks.
+// Resource Two will be only available for v1alpha version.
+// v1alpha version will be mapped to ALPHA release track.
+message ResourceTwo {
+  option (google.api.resource) = {
+    type: "multiversionmultitrack.googleapis.com/ResourceTwo",
+    pattern: "projects/{project}/locations/{location}/resourceTwos/{resourceTwo}"
+    plural: "resourceTwos"
+  };
+
+  // Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Resource two field.
+  optional string resource_two_field = 2;
+}
+
+// Represents the metadata of the long-running operation.
+message OperationMetadata {
+  // The time the operation was created.
+  google.protobuf.Timestamp create_time = 1
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The time the operation finished running.
+  google.protobuf.Timestamp end_time = 2
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Server-defined resource path for the target of the operation.
+  optional string target = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Name of the verb executed by the operation.
+  optional string verb = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Human-readable status of the operation, if any.
+  optional string status_message = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Identifies whether the user has requested cancellation
+  // of the operation. Operations that have been cancelled successfully
+  // have [Operation.error][] value with a [google.rpc.Status.code][] of 1,
+  // corresponding to `Code.CANCELLED`.
+  optional bool requested_cancellation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // API version used to start the operation.
+  optional string api_version = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

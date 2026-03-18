@@ -1,0 +1,62 @@
+service_info:
+  title: Multi Version Multi Track API
+  default_host: multiversionmultitrack.googleapis.com
+  # package: multi_version_multi_track.v1main  # This will be per-version
+  # version: v1main # This will be per-version
+  release_tracks: [ALPHA, GA]
+
+proto_info:
+  proto_library_path: multi_version_multi_track
+  # proto_files: This will be per-version
+
+api_versions:
+  v1alpha:
+    package: multi_version_multi_track.v1alpha
+    proto_files:
+      - v1alpha/resources.proto
+      - v1alpha/services.proto
+    release_tracks: [ALPHA]
+  v1beta:
+    package: multi_version_multi_track.v1beta
+    proto_files:
+      - v1beta/resources.proto
+      - v1beta/services.proto
+    release_tracks: [BETA] # BETA track is not in the original gcloud_config.yaml, adding for completeness
+  v1:
+    package: multi_version_multi_track.v1
+    proto_files:
+      - v1/resources.proto
+      - v1/services.proto
+    release_tracks: [GA]
+
+gcloud_info:
+  temp_cli_tree_override: multi-version-multi-track
+  help_text:
+    brief: Manage Multi Version Multi Track API resources.
+    description: Manage Multi Version Multi Track API resources.
+  generate_operations: true
+
+resource_info:
+  resources:
+    projects.locations.resourceOnes:
+      proto_message: ResourceOne
+      gcloud_resources:
+      - args:
+        - arg_name: resourceOne
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
+    projects.locations.resourceTwos:
+      proto_message: ResourceTwo
+      gcloud_resources:
+      - args:
+        - arg_name: resourceTwo
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
