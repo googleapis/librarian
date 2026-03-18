@@ -26,6 +26,8 @@ import (
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
 func PostGenerate(ctx context.Context, cfg *config.Config) error {
+	// TODO(https://github.com/googleapis/librarian/issues/4127):
+	// use ctx and cfg when generating gapic-libraries-bom/pom.xml.
 	modules, err := searchForJavaModules()
 	if err != nil {
 		return fmt.Errorf("failed to search for java modules: %w", err)
