@@ -135,7 +135,7 @@ func TestFieldSimpleTypesGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-		if err != nil {
+	if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 		}
 
@@ -231,7 +231,7 @@ func TestHiddenCommandGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-		if err != nil {
+	if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -295,7 +295,7 @@ func TestMethodAsyncGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-		if err != nil {
+	if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -359,7 +359,7 @@ func TestMethodMinimalListGA(t *testing.T) {
 	cmd.Dir = repoRoot
 
 	output, err := cmd.CombinedOutput()
-	if err != nil {
+		if err != nil {
 		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
 	}
 
@@ -367,6 +367,38 @@ func TestMethodMinimalListGA(t *testing.T) {
 	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
 	generatedDir := filepath.Join(tmpDir, "methodminimallist")
 	goldenDir := "testdata/method_minimal_list_gen_sfc_goldens/method_minimal_list"
+
+	// Compare the generated files with the golden files
+	goldenTestComparer(t, generatedDir, goldenDir)
+}
+
+func TestMethodOperationsGA(t *testing.T) {
+	tmpDir := t.TempDir()
+	defer os.RemoveAll(tmpDir)
+
+	// Get repo root
+	repoRoot := "../../.."
+
+	// Run Surfer command from repo root
+	cmd := exec.Command(
+		"./bin/surfer-dev",
+		"generate",
+				"./test_env/method_operations_v1.yaml",
+		"--googleapis", "./test_env",
+		"--proto-files-include-list", "method_operations/v1/method_operations.proto",
+		"--out", tmpDir,
+	)
+	cmd.Dir = repoRoot
+
+	output, err := cmd.CombinedOutput()
+		if err != nil {
+		t.Fatalf("Surfer command failed: %v Output: %s", err, string(output))
+	}
+
+	// Define paths for comparison
+	// NOTE: Surfer currently outputs to a dir matching the service name, not the override
+	generatedDir := filepath.Join(tmpDir, "methodoperations")
+	goldenDir := "testdata/method_operations_gen_sfc_goldens/method_operations"
 
 	// Compare the generated files with the golden files
 	goldenTestComparer(t, generatedDir, goldenDir)

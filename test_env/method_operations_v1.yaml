@@ -1,0 +1,28 @@
+service_info:
+  title: Method Operations API
+  default_host: methodoperations.googleapis.com
+  package: method_operations.v1
+  version: v1
+  release_tracks: [GA]
+proto_info:
+  proto_library_path: method_operations/v1
+  proto_files:
+   - method_operations.proto
+gcloud_info:
+  temp_cli_tree_override: method-operations
+  help_text:
+    brief: Manage Method Operations API resources.
+    description: Manage Method Operations API resources.
+resource_info:
+  resources:
+    projects.locations.resources:
+      proto_message: Resource
+      gcloud_resources:
+      - args:
+        - arg_name: resource
+          is_parent_resource: false
+          resource_id_spec: true
+        - arg_name: location
+          is_parent_resource: true
+        - arg_name: project
+          is_parent_resource: true
