@@ -65,7 +65,7 @@ libraries:
 			},
 		},
 		{
-			name: "migrate set to true",
+			name: "release only mode set to true",
 			content: `image: gcr.io/test/image:v1.2.3
 release_only_mode: true
 libraries:
