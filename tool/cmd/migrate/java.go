@@ -313,6 +313,8 @@ func parseOwlBotKeep(repoPath, outputDir string) []string {
 	return keeps
 }
 
+// parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
+// or name. If distributionName is empty, it returns "google-cloud-" + name.
 func parseArtifactID(distributionName, name string) string {
 	artifactID := distributionName
 	if artifactID == "" {
