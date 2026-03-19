@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,11 @@ func TestRun(t *testing.T) {
 								},
 							},
 						},
+					},
+					{
+						Name:    "apigeeconnect",
+						Version: "1.7.7",
+						APIs:    []*config.API{{Path: "google/cloud/apigeeconnect/v1"}},
 					},
 				},
 			},

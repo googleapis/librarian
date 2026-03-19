@@ -29,3 +29,7 @@ libraries:
       go_apis:
         - import_path: accesscontextmanager/apiv1
           path: google/identity/accesscontextmanager/v1
+  - name: apigeeconnect
+    version: 1.7.7
+    apis:
+      - path: google/cloud/apigeeconnect/v1
