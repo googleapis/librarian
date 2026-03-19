@@ -20,8 +20,8 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// getGcloudType maps an API field type to the corresponding gcloud argparse type.
-func getGcloudType(t api.Typez) string {
+// GetGcloudType maps an API field type to the corresponding gcloud argparse type.
+func GetGcloudType(t api.Typez) string {
 	switch t {
 	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
 		return "float"
@@ -42,9 +42,9 @@ func getGcloudType(t api.Typez) string {
 	}
 }
 
-// isSafeName checks if a name contains only safe characters (alphanumeric, underscores, dots).
+// IsSafeName checks if a name contains only safe characters (alphanumeric, underscores, dots).
 // This prevents injection vulnerabilities when generating code or templates.
-func isSafeName(name string) bool {
+func IsSafeName(name string) bool {
 	for _, r := range name {
 		switch {
 		case r >= 'a' && r <= 'z':

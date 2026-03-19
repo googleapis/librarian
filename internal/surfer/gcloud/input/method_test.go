@@ -35,7 +35,7 @@ func TestIsCreate(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isCreate(test.method)
+			got := IsCreate(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -77,7 +77,7 @@ func TestIsList(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isList(test.method)
+			got := IsList(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -99,7 +99,7 @@ func TestIsUpdate(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isUpdate(test.method)
+			got := IsUpdate(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -143,7 +143,7 @@ func TestGetCommandName(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := getCommandName(test.method)
+			got, err := GetCommandName(test.method)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -190,7 +190,7 @@ func TestFindResourceMessage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := findResourceMessage(test.outputType)
+			got := FindResourceMessage(test.outputType)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -212,16 +212,16 @@ func TestGetCommandName_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, gotErr := getCommandName(test.method)
+			_, gotErr := GetCommandName(test.method)
 			if test.wantErr != nil {
 				if gotErr == nil {
-					t.Fatalf("getCommandName() returned nil error, want %v", test.wantErr)
+					t.Fatalf("GetCommandName() returned nil error, want %v", test.wantErr)
 				}
 				if gotErr.Error() != test.wantErr.Error() {
-					t.Errorf("getCommandName() error = %q, want %q", gotErr.Error(), test.wantErr.Error())
+					t.Errorf("GetCommandName() error = %q, want %q", gotErr.Error(), test.wantErr.Error())
 				}
 			} else if gotErr != nil {
-				t.Errorf("getCommandName() returned error %v, want nil", gotErr)
+				t.Errorf("GetCommandName() returned error %v, want nil", gotErr)
 			}
 		})
 	}
@@ -298,7 +298,7 @@ func TestIsStandardMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isStandardMethod(test.method)
+			got := IsStandardMethod(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

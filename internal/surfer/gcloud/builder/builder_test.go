@@ -21,6 +21,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/input"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/output"
 )
 
 func TestNewArguments(t *testing.T) {
@@ -53,7 +55,7 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newArguments(test.method, &Config{}, model, service)
+			got, err := newArguments(test.method, &input.Config{}, model, service)
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
@@ -89,7 +91,7 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newArguments(test.method, &Config{}, model, service)
+			_, err := newArguments(test.method, &input.Config{}, model, service)
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
 			}
@@ -118,15 +120,15 @@ func TestNewParam(t *testing.T) {
 		field     *api.Field
 		apiField  string
 		method    *api.Method
-		overrides *Config
-		want      Param
+		overrides *input.Config
+		want      output.Param
 	}{
 		{
 			name:     "String Field",
 			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "description",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: output.Param{
 				ArgName:  "description",
 				APIField: "description",
 				Type:     "str",
@@ -140,15 +142,15 @@ func TestNewParam(t *testing.T) {
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: output.Param{
 				ArgName:  "network",
 				APIField: "network",
 				HelpText: "Value for the `network` field.",
-				ResourceSpec: &ResourceSpec{
+				ResourceSpec: &output.ResourceSpec{
 					Name:       "network",
 					PluralName: "networks",
 					Collection: "test.projects.networks",
-					Attributes: []Attribute{
+					Attributes: []output.Attribute{
 						{AttributeName: "project", ParameterName: "projectsId", Help: "The project id of the {resource} resource.", Property: "core/project"},
 						{AttributeName: "network", ParameterName: "networksId", Help: "The network id of the {resource} resource."},
 					},
@@ -164,12 +166,12 @@ func TestNewParam(t *testing.T) {
 				f.ID = "test.foo"
 				return f
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
-								{Selector: "test.foo", HelpText: &HelpTextElement{Brief: "Override Foo"}},
+						HelpText: &input.HelpTextRules{
+							FieldRules: []*input.HelpTextRule{
+								{Selector: "test.foo", HelpText: &input.HelpTextElement{Brief: "Override Foo"}},
 							},
 						},
 					},
@@ -177,7 +179,7 @@ func TestNewParam(t *testing.T) {
 			},
 			apiField: "foo",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: output.Param{
 				ArgName:  "foo",
 				APIField: "foo",
 				Type:     "str",
@@ -189,7 +191,7 @@ func TestNewParam(t *testing.T) {
 			t.Parallel()
 			overrides := test.overrides
 			if overrides == nil {
-				overrides = &Config{}
+				overrides = &input.Config{}
 			}
 			got, err := newParam(test.field, test.apiField, overrides, model, service, test.method)
 			if err != nil {
@@ -308,7 +310,7 @@ func TestNewOutputConfig(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
-		want   *OutputConfig
+		want   *output.OutputConfig
 	}{
 		{
 			name: "standard list method",
@@ -322,7 +324,7 @@ func TestNewOutputConfig(t *testing.T) {
 					),
 				),
 			),
-			want: &OutputConfig{
+			want: &output.OutputConfig{
 				Format: "table(\nname,\ndescription)",
 			},
 		},
@@ -375,7 +377,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 		field        *api.Field
 		method       *api.Method
 		resourceDefs []*api.Resource
-		want         Param
+		want         output.Param
 	}{
 		{
 			name:  "Create Instance (Positional)",
@@ -419,17 +421,17 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: output.Param{
 				HelpText:          "The thing to create.",
 				IsPositional:      true,
 				IsPrimaryResource: true,
 				Required:          true,
 				RequestIDField:    "thingId",
-				ResourceSpec: &ResourceSpec{
+				ResourceSpec: &output.ResourceSpec{
 					Name:       "thing",
 					PluralName: "things",
 					Collection: "test.projects.things",
-					Attributes: []Attribute{
+					Attributes: []output.Attribute{
 						{
 							ParameterName: "projectsId",
 							AttributeName: "project",
@@ -476,16 +478,16 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: output.Param{
 				HelpText:          "The project and location for which to retrieve projects information.",
 				IsPositional:      false,
 				IsPrimaryResource: true,
 				Required:          true,
-				ResourceSpec: &ResourceSpec{
+				ResourceSpec: &output.ResourceSpec{
 					Name:       "project",
 					PluralName: "projects",
 					Collection: "test.projects",
-					Attributes: []Attribute{
+					Attributes: []output.Attribute{
 						{
 							ParameterName: "projectsId",
 							AttributeName: "project",
@@ -519,14 +521,14 @@ func TestNewRequest(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
-		want   *Request
+		want   *output.Request
 	}{
 		{
 			name: "Standard Create",
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 			),
-			want: &Request{
+			want: &output.Request{
 				Collection: []string{"test.projects.things"},
 			},
 		},
@@ -535,7 +537,7 @@ func TestNewRequest(t *testing.T) {
 			method: api.NewTestMethod("ImportData").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
 			),
-			want: &Request{
+			want: &output.Request{
 				Collection: []string{"test.projects"},
 				Method:     "importData",
 			},
@@ -545,7 +547,7 @@ func TestNewRequest(t *testing.T) {
 			method: api.NewTestMethod("ExportData").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
 			),
-			want: &Request{
+			want: &output.Request{
 				Collection: []string{"test.projects"},
 				Method:     "exportData",
 			},
@@ -557,7 +559,7 @@ func TestNewRequest(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := newRequest(test.method, &Config{}, service)
+			got := newRequest(test.method, &input.Config{}, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
 			}
@@ -571,7 +573,7 @@ func TestNewAsync(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
-		want   *Async
+		want   *output.Async
 	}{
 		{
 			name: "Create returns Resource",
@@ -588,7 +590,7 @@ func TestNewAsync(t *testing.T) {
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "Thing"}
 				return m
 			}(),
-			want: &Async{
+			want: &output.Async{
 				Collection:            []string{"test.projects.operations"},
 				ExtractResourceResult: true,
 			},
@@ -602,7 +604,7 @@ func TestNewAsync(t *testing.T) {
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: ".google.protobuf.Empty"}
 				return m
 			}(),
-			want: &Async{
+			want: &output.Async{
 				Collection:            []string{"test.projects.operations"},
 				ExtractResourceResult: false,
 			},
@@ -623,7 +625,7 @@ func TestNewAsync(t *testing.T) {
 				m.Service = service
 				return m
 			}(),
-			want: &Async{
+			want: &output.Async{
 				Collection:            []string{"test.projects.operations"},
 				ExtractResourceResult: false,
 			},
@@ -638,7 +640,7 @@ func TestNewAsync(t *testing.T) {
 				m.Service = service
 				return m
 			}(),
-			want: &Async{
+			want: &output.Async{
 				Collection:            []string{"test.projects.operations"},
 				ExtractResourceResult: false,
 			},
@@ -683,7 +685,7 @@ func TestAddFlattenedParams(t *testing.T) {
 		name    string
 		field   *api.Field
 		prefix  string
-		want    []Param
+		want    []output.Param
 		wantErr bool
 	}{
 		{
@@ -696,7 +698,7 @@ func TestAddFlattenedParams(t *testing.T) {
 			name:   "Handles Primary Resource ID",
 			field:  createMethod.InputType.Fields[0],
 			prefix: "thingId",
-			want: []Param{
+			want: []output.Param{
 				{
 					ArgName:           "",
 					APIField:          "",
@@ -725,7 +727,7 @@ func TestAddFlattenedParams(t *testing.T) {
 				},
 			},
 			prefix: "networkConfig",
-			want: []Param{
+			want: []output.Param{
 				{
 					ArgName:  "foo",
 					APIField: "networkConfig.foo",
@@ -737,12 +739,12 @@ func TestAddFlattenedParams(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			args := &output.Arguments{}
+			err := addFlattenedParams(test.field, test.prefix, args, &input.Config{}, model, service, createMethod)
 			if err != nil {
 				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
 			}
-			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
+			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(output.Param{}), cmpopts.IgnoreFields(output.Param{}, "ResourceSpec")); diff != "" {
 				t.Errorf("addFlattenedParams() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -781,8 +783,8 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			args := &output.Arguments{}
+			err := addFlattenedParams(test.field, test.prefix, args, &input.Config{}, model, service, createMethod)
 			if err == nil {
 				t.Fatalf("addFlattenedParams() expected error, got nil")
 			}
@@ -813,17 +815,17 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		field *api.Field
-		want  *ResourceSpec
+		want  *output.ResourceSpec
 	}{
 		{
 			name:  "Handles valid resource reference",
 			field: api.NewTestField("other_thing").WithResourceReference("test.googleapis.com/OtherThing"),
-			want: &ResourceSpec{
+			want: &output.ResourceSpec{
 				Name:                  "other_thing",
 				PluralName:            "otherThings",
 				Collection:            "test.projects.otherThings",
 				DisableAutoCompleters: true,
-				Attributes: []Attribute{
+				Attributes: []output.Attribute{
 					{ParameterName: "projectsId", AttributeName: "project", Help: "The project id of the {resource} resource.", Property: "core/project"},
 					{ParameterName: "otherThingsId", AttributeName: "other_thing", Help: "The other_thing id of the {resource} resource."},
 				},
@@ -962,24 +964,24 @@ func TestFindHelpTextRule(t *testing.T) {
 
 	for _, test := range []struct {
 		name      string
-		overrides *Config
-		want      *HelpTextRule
+		overrides *input.Config
+		want      *input.HelpTextRule
 	}{
 		{
 			name:      "No APIs in config",
-			overrides: &Config{},
+			overrides: &input.Config{},
 			want:      nil,
 		},
 		{
 			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
+						HelpText: &input.HelpTextRules{
+							MethodRules: []*input.HelpTextRule{
 								{
 									Selector: "google.cloud.test.v1.Service.CreateInstance",
-									HelpText: &HelpTextElement{
+									HelpText: &input.HelpTextElement{
 										Brief: "Override Brief",
 									},
 								},
@@ -988,9 +990,9 @@ func TestFindHelpTextRule(t *testing.T) {
 					},
 				},
 			},
-			want: &HelpTextRule{
+			want: &input.HelpTextRule{
 				Selector: "google.cloud.test.v1.Service.CreateInstance",
-				HelpText: &HelpTextElement{
+				HelpText: &input.HelpTextElement{
 					Brief: "Override Brief",
 				},
 			},
@@ -1012,24 +1014,24 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 
 	for _, test := range []struct {
 		name      string
-		overrides *Config
-		want      *HelpTextRule
+		overrides *input.Config
+		want      *input.HelpTextRule
 	}{
 		{
 			name:      "No APIs in config",
-			overrides: &Config{},
+			overrides: &input.Config{},
 			want:      nil,
 		},
 		{
 			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
+						HelpText: &input.HelpTextRules{
+							FieldRules: []*input.HelpTextRule{
 								{
 									Selector: ".google.cloud.test.v1.Request.instance_id",
-									HelpText: &HelpTextElement{
+									HelpText: &input.HelpTextElement{
 										Brief: "Override Field Brief",
 									},
 								},
@@ -1038,9 +1040,9 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 					},
 				},
 			},
-			want: &HelpTextRule{
+			want: &input.HelpTextRule{
 				Selector: ".google.cloud.test.v1.Request.instance_id",
-				HelpText: &HelpTextElement{
+				HelpText: &input.HelpTextElement{
 					Brief: "Override Field Brief",
 				},
 			},
@@ -1059,18 +1061,18 @@ func TestFindFieldHelpTextRule(t *testing.T) {
 func TestAPIVersion(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		overrides *Config
+		overrides *input.Config
 		want      string
 	}{
 		{
 			name:      "No APIs in config",
-			overrides: &Config{},
+			overrides: &input.Config{},
 			want:      "",
 		},
 		{
 			name: "API version found",
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{APIVersion: "v2beta1"},
 				},
 			},
@@ -1091,8 +1093,8 @@ func TestNewCommand(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		method    *api.Method
-		overrides *Config
-		want      *Command
+		overrides *input.Config
+		want      *output.Command
 	}{
 		{
 			name: "List Command",
@@ -1116,15 +1118,15 @@ func TestNewCommand(t *testing.T) {
 				m.OutputType.Pagination = &api.PaginationInfo{PageableItem: m.OutputType.Fields[0]}
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{RootIsHidden: false},
 				},
 			},
-			want: &Command{
+			want: &output.Command{
 				Hidden:   false,
-				Response: &Response{IDField: "name"},
-				Output:   &OutputConfig{Format: "table(\nname)"},
+				Response: &output.Response{IDField: "name"},
+				Output:   &output.OutputConfig{Format: "table(\nname)"},
 			},
 		},
 		{
@@ -1146,24 +1148,24 @@ func TestNewCommand(t *testing.T) {
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &input.Config{
+				APIs: []input.API{
 					{
 						RootIsHidden: true,
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
+						HelpText: &input.HelpTextRules{
+							MethodRules: []*input.HelpTextRule{
 								{
 									Selector: "google.cloud.test.v1.Service.UpdateThing",
-									HelpText: &HelpTextElement{Brief: "Updated Brief"},
+									HelpText: &input.HelpTextElement{Brief: "Updated Brief"},
 								},
 							},
 						},
 					},
 				},
 			},
-			want: &Command{
+			want: &output.Command{
 				Hidden: true,
-				Update: &UpdateConfig{ReadModifyUpdate: true},
+				Update: &output.UpdateConfig{ReadModifyUpdate: true},
 			},
 		},
 		{
@@ -1182,10 +1184,10 @@ func TestNewCommand(t *testing.T) {
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "Thing", MetadataTypeID: "Metadata"}
 				return m
 			}(),
-			overrides: &Config{},
-			want: &Command{
+			overrides: &input.Config{},
+			want: &output.Command{
 				Hidden: true,
-				Async: &Async{
+				Async: &output.Async{
 					Collection:            []string{"test.projects.operations"},
 					ExtractResourceResult: false,
 				},
@@ -1207,7 +1209,7 @@ func TestNewCommand(t *testing.T) {
 
 			// Compare the important pieces that are shaped uniquely by NewCommand
 			// to avoid asserting on deeply nested auto-generated boilerplate like Arguments.
-			opts := cmpopts.IgnoreFields(Command{}, "AutoGenerated", "ReleaseTracks", "Arguments", "Request", "HelpText")
+			opts := cmpopts.IgnoreFields(output.Command{}, "AutoGenerated", "ReleaseTracks", "Arguments", "Request", "HelpText")
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
 				t.Errorf("NewCommand() mismatch (-want +got):\n%s", diff)
 			}

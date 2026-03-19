@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud generates gcloud command YAML files.
+// Package input parses gcloud config files and creates API models.
 package input
 
 // Config represents the top-level schema of a gcloud config YAML file.

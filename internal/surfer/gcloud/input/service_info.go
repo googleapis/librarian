@@ -21,10 +21,10 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// inferTrackFromPackage infers the release track from the proto package name.
+// InferTrackFromPackage infers the release track from the proto package name.
 // as mandated per AIP-185
 // e.g. "google.cloud.parallelstore.v1beta" -> "beta".
-func inferTrackFromPackage(pkg string) string {
+func InferTrackFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
 	version := parts[len(parts)-1]
 
@@ -42,9 +42,9 @@ func inferTrackFromPackage(pkg string) string {
 	return "ga"
 }
 
-// getServiceTitle returns the service title for documentation.
+// GetServiceTitle returns the service title for documentation.
 // It tries to use the API title, falling back to a CamelCase version of the short service name.
-func getServiceTitle(model *api.API, shortServiceName string) string {
+func GetServiceTitle(model *api.API, shortServiceName string) string {
 	if t := strings.TrimSuffix(model.Title, " API"); t != "" {
 		return t
 	}

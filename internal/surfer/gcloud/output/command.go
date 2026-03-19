@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package output defines the AST and YAML structure for gcloud commands.
 package output
 
 // Command represents the top-level structure for a gcloud command definition.
