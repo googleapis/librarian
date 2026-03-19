@@ -188,14 +188,15 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
 	if err := command.Run(ctx, "gapic-node-processing",
-		"combine-library",
-		"--source-path", stagingDir,
-		"--destination-path", outDir,
-	); err != nil {
-		return fmt.Errorf("combine-library: %w", err)
+		"--staging-dir", stagingDir,
+		"--destination-dir", outDir); err != nil {
+		return fmt.Errorf("gapic-node-processing failed: %w", err)
+	}
+	if err := os.RemoveAll(stagingDir); err != nil {
+		return fmt.Errorf("failed to remove staging directory: %w", err)
 	}
 
-	// Restore non-generated files.
+	// Restore preserved files.
 	for _, name := range preserveFiles {
 		src := filepath.Join(backupDir, name)
 		if _, err := os.Stat(src); err != nil {
@@ -206,117 +207,42 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		}
 	}
 
-	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
-		return fmt.Errorf("copyMissingProtos: %w", err)
-	}
-
-	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
-		return fmt.Errorf("compileProtos: %w", err)
-	}
-
-	// librarian.js is a custom script some libraries use for post-processing.
-	// It has nothing to do with the Librarian CLI tool.
-	librarianScript := filepath.Join(outDir, "librarian.js")
-	if _, err := os.Stat(librarianScript); err == nil {
+	// Librarian scripts: run librarian.js if it exists.
+	librarianJS := filepath.Join(outDir, "librarian.js")
+	if _, err := os.Stat(librarianJS); err == nil {
 		if err := command.RunInDir(ctx, outDir, "node", "librarian.js"); err != nil {
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check for librarian.js: %w", err)
 	}
 
+	if err := command.RunInDir(ctx, outDir, "compileProtos", "."); err != nil {
+		return fmt.Errorf("compileProtos failed: %w", err)
+	}
+
+	// Readme partials: if .readme-partials.yaml exists, run npx readme-generate.
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
 	if _, err := os.Stat(readmePartials); err == nil {
-		type partials struct {
-			Introduction string `yaml:"introduction"`
-			Body         string `yaml:"body"`
+		if err := command.RunInDir(ctx, outDir, "npx", "readme-generate"); err != nil {
+			return fmt.Errorf("readme-generate failed: %w", err)
 		}
-		p, err := yaml.Read[partials](readmePartials)
-		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
-		}
-		for name, replacement := range map[string]string{
-			"introduction": p.Introduction,
-			"body":         p.Body,
-		} {
-			if replacement == "" {
-				continue
-			}
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
-				fmt.Sprintf("--replacement-string=%s", replacement),
-			); err != nil {
-				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
-			}
-		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check for .readme-partials.yaml: %w", err)
 	}
 
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
-	}
 	return nil
 }
 
-// copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
-// any referenced protos that are missing from outDir/protos/ using the source
-// files in googleapisDir. The generator copies the API's own protos but not
-// transitive dependencies (e.g. google/logging/type/log_severity.proto).
-func copyMissingProtos(googleapisDir, outDir string) error {
-	googleapisDir, err := filepath.Abs(googleapisDir)
-	if err != nil {
-		return fmt.Errorf("failed to resolve googleapis directory: %w", err)
-	}
-
-	lists, err := filepath.Glob(filepath.Join(outDir, "src", "*", "*_proto_list.json"))
-	if err != nil {
-		return fmt.Errorf("failed to glob proto list files: %w", err)
-	}
-
-	for _, listPath := range lists {
-		data, err := os.ReadFile(listPath)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", listPath, err)
-		}
-		var entries []string
-		if err := json.Unmarshal(data, &entries); err != nil {
-			return fmt.Errorf("failed to parse %s: %w", listPath, err)
-		}
-
-		listDir := filepath.Dir(listPath)
-		for _, entry := range entries {
-			absPath := filepath.Join(listDir, entry)
-			absPath = filepath.Clean(absPath)
-			if _, err := os.Stat(absPath); err == nil {
-				continue
-			}
-
-			// Extract the proto-relative path after "protos/".
-			const protosPrefix = "protos/"
-			idx := strings.Index(entry, protosPrefix)
-			if idx < 0 {
-				continue
-			}
-			relPath := entry[idx+len(protosPrefix):]
-
-			srcPath := filepath.Join(googleapisDir, relPath)
-			content, err := os.ReadFile(srcPath)
-			if err != nil {
-				return fmt.Errorf("failed to read source proto %s: %w", srcPath, err)
-			}
-			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
-				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
-			}
-			if err := os.WriteFile(absPath, content, 0644); err != nil {
-				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
-			}
-		}
-	}
-	return nil
-}
-
-// Format runs gts (npm run fix) on the library directory.
+// Format formats the generated Node.js library using eslint. It runs 'npm install'
+// followed by 'eslint --fix' in the output directory.
 func Format(ctx context.Context, library *config.Library) error {
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+
+	if err := command.RunInDir(ctx, library.Output, "npm", "install"); err != nil {
+		return fmt.Errorf("npm install failed: %w", err)
 	}
 
 	// ESLint exit codes:
