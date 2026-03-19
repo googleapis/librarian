@@ -160,6 +160,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	cfg := &config.Config{
 		Language: input.lang,
 		Repo:     repo,
+		Version:  librarian.Version(),
 		Sources: &config.Sources{
 			Googleapis: src,
 		},

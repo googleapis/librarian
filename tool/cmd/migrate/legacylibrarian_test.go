@@ -379,6 +379,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// The tests don't specify a version; ensure there is one, but
+			// then clear the field for further comparisons.
+			if got.Version == "" {
+				t.Errorf("expected non-empty version; was empty")
+			}
+			got.Version = ""
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
