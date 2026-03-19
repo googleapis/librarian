@@ -33,6 +33,8 @@ var (
 // Bump updates the version number in the library with the given output
 // directory.
 func Bump(library *config.Library, output, version string) error {
+	// Set library output so that we can find the repo root directory.
+	// We need repo root to find the snippet directory.
 	library.Output = output
 	library, err := Fill(library)
 	if err != nil {
