@@ -254,6 +254,8 @@ func fixVersioning(outputDir, library, modPath string) error {
 		return err
 	}
 
+	// {outputDir}/.. is the repo root directory because a nested library, e.g., bigquery/v2,
+	// will not reach this line.
 	snippetDir := filepath.Join(outputDir, "..", "internal", "generated", "snippets", name)
 	snippetVersionDir := filepath.Join(snippetDir, version)
 	if _, err := os.Stat(snippetVersionDir); err == nil {
