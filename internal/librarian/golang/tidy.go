@@ -21,6 +21,9 @@ import (
 // Tidy tidies the Go-specific configuration for a library by removing default
 // values and clearing empty Go module or API entries.
 func Tidy(library *config.Library) *config.Library {
+	if library.Name == rootModule {
+		return library
+	}
 	if library.Output == library.Name {
 		library.Output = ""
 	}

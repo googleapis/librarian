@@ -38,14 +38,16 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
-			name: "root module output is removed",
+			name: "root module does not change",
 			library: &config.Library{
 				Name:   "root-module",
-				Output: ".",
+				Output: "/home/repo",
+				Keep:   []string{"README.md", "internal/version.go"},
 			},
 			want: &config.Library{
 				Name:   "root-module",
-				Output: ".",
+				Output: "/home/repo",
+				Keep:   []string{"README.md", "internal/version.go"},
 			},
 		},
 		{
