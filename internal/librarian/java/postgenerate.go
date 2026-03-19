@@ -146,14 +146,14 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 			}
 		}
 	}
-	// handle edge case: java-dns
+	// handle edge case before sort: java-dns
 	conf, err := handleSpecialBOM("java-dns", "com.google.cloud", "google-cloud-dns")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-dns: %w", err)
 	}
 	configs = append(configs, conf)
 
-	// handle edge case: java-notification
+	// handle edge case before sort: java-notification
 	conf, err = handleSpecialBOM("java-notification", "com.google.cloud", "google-cloud-notification")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-notification: %w", err)
@@ -163,13 +163,12 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
-	// handle edge case: java-grafeas and add to the end
+	// handle edge case after sort: java-grafeas and add to the end
 	conf, err = handleSpecialBOM("java-grafeas", "io.grafeas", "grafeas")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-grafeas: %w", err)
 	}
 	configs = append(configs, conf)
-
 	return configs, nil
 }
 
@@ -248,7 +247,7 @@ func generateRootPom(modules []string) (err error) {
 
 // generateGapicLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGapicLibrariesBOM(version string, bomConfigs []bomConfig) error {
+func generateGapicLibrariesBOM(version string, bomConfigs []bomConfig) (err error) {
 	bomDir := "gapic-libraries-bom"
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
@@ -270,5 +269,8 @@ func generateGapicLibrariesBOM(version string, bomConfigs []bomConfig) error {
 		Version:    version,
 		BOMConfigs: bomConfigs,
 	}
-	return templates.ExecuteTemplate(f, "gapic-libraries-bom.xml.tmpl", data)
+	if terr := templates.ExecuteTemplate(f, "gapic-libraries-bom.xml.tmpl", data); terr != nil {
+		return terr
+	}
+	return nil
 }
