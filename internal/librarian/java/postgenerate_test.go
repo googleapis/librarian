@@ -203,6 +203,58 @@ func TestPostGenerate_Error(t *testing.T) {
 	}
 }
 
+func TestExtractBOMConfig_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	for _, test := range []struct {
+		name    string
+		library string
+		bom     string
+		pom     string
+		wantErr string
+	}{
+		{
+			name:    "missing pom.xml",
+			library: "lib",
+			bom:     "lib-bom",
+			wantErr: "no such file or directory",
+		},
+		{
+			name:    "invalid xml",
+			library: "lib",
+			bom:     "lib-bom",
+			pom:     "<project xmlns=\"http://maven.apache.org/POM/4.0.0\">invalid",
+			wantErr: "XML syntax error",
+		},
+		{
+			name:    "invalid artifact id (no dash)",
+			library: "lib",
+			bom:     "lib-bom",
+			pom:     "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><artifactId>nodash</artifactId></project>",
+			wantErr: "expected at least one dash",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.pom != "" {
+				dir := filepath.Join(test.library, test.bom)
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte(test.pom), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := extractBOMConfig(test.library, test.bom)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), test.wantErr) {
+				t.Errorf("got error %v, want to contain %q", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func copyDir(src, dest string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

@@ -105,6 +105,12 @@ type mavenProject struct {
 	Version    string   `xml:"version"`
 }
 
+var groupInclusions = map[string]bool{
+	"com.google.cloud":     true,
+	"com.google.analytics": true,
+	"com.google.area120":   true,
+}
+
 // searchForBOMArtifacts scans the current directory for subdirectories that contain a -bom subdirectory
 // with a pom.xml. It also includes specific special-case modules like dns, notification, and grafeas.
 // Returns a list of bomConfig objects sorted by ArtifactID.
@@ -114,12 +120,6 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 		return nil, err
 	}
 	var configs []bomConfig
-	groupInclusions := map[string]bool{
-		"com.google.cloud":     true,
-		"com.google.analytics": true,
-		"com.google.area120":   true,
-	}
-
 	for _, entry := range entries {
 		if !entry.IsDir() || entry.Name() == "gapic-libraries-bom" {
 			continue
@@ -172,18 +172,18 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 	return configs, nil
 }
 
+// handleSpecialBOM for special cases, such as java-dns, java-notification, and java-grafeas,
+// only version is parsed from pom.xml in the module.
 func handleSpecialBOM(module, groupID, artifactID string) (bomConfig, error) {
 	pomPath := filepath.Join(module, "pom.xml")
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
 		return bomConfig{}, err
 	}
-
 	var p mavenProject
 	if err := xml.Unmarshal(data, &p); err != nil {
 		return bomConfig{}, err
 	}
-
 	return bomConfig{
 		GroupID:           groupID,
 		ArtifactID:        artifactID,
@@ -193,6 +193,8 @@ func handleSpecialBOM(module, groupID, artifactID string) (bomConfig, error) {
 	}, nil
 }
 
+// extractBOMConfig parses a pom.xml file within a library's -bom subdirectory to
+// produce a bomConfig object.
 func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 	pomPath := filepath.Join(libraryDir, bomDir, "pom.xml")
 	data, err := os.ReadFile(pomPath)
@@ -203,15 +205,11 @@ func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 	if err := xml.Unmarshal(data, &p); err != nil {
 		return bomConfig{}, err
 	}
-
-	// Calculate VersionAnnotation: artifactId without the last segment (assumed to be -bom)
-	// Following hermetic_build logic: artifact_id[:artifact_id.rfind("-")]
-	lastDash := strings.LastIndex(p.ArtifactID, "-")
-	versionAnnotation := p.ArtifactID
-	if lastDash != -1 {
-		versionAnnotation = p.ArtifactID[:lastDash]
+	// Derive version annotation from artifactId.
+	versionAnnotation, err := deriveVersionAnnotation(p.ArtifactID)
+	if err != nil {
+		return bomConfig{}, fmt.Errorf("%w in %s", err, pomPath)
 	}
-
 	return bomConfig{
 		GroupID:           p.GroupID,
 		ArtifactID:        p.ArtifactID,
@@ -219,6 +217,16 @@ func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 		VersionAnnotation: versionAnnotation,
 		IsImport:          true,
 	}, nil
+}
+
+// deriveVersionAnnotation extracts the version annotation from a Maven artifact ID
+// by removing the last segment (assumed to be -bom).
+func deriveVersionAnnotation(artifactID string) (string, error) {
+	lastDash := strings.LastIndex(artifactID, "-")
+	if lastDash == -1 {
+		return "", fmt.Errorf("invalid BOM artifact ID %q: expected at least one dash", artifactID)
+	}
+	return artifactID[:lastDash], nil
 }
 
 // generateRootPom writes the aggregator pom.xml for the monorepo root, including
