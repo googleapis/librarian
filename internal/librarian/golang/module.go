@@ -102,10 +102,6 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-func libraryPath(library *config.Library) string {
-	return filepath.Join(library.Output)
-}
-
 func repoRootPath(library *config.Library) string {
 	// Root module has this special setup.
 	if library.Output == "." {

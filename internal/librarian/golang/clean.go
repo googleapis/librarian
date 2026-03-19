@@ -51,7 +51,7 @@ var (
 
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) error {
-	libraryDir := libraryPath(library)
+	libraryDir := library.Output
 	keepSet, err := check(libraryDir, library.Keep)
 	if err != nil {
 		return err
