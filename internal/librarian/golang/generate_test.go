@@ -796,14 +796,13 @@ func TestMoveSnippetDirectory(t *testing.T) {
 func TestMoveGeneratedFiles(t *testing.T) {
 	for _, test := range []struct {
 		name  string
-		setup func(t *testing.T, tmpDir string) (outDir string, lib *config.Library)
+		setup func(t *testing.T, tmpDir string) (outDir, snippetDir string, lib *config.Library)
 	}{
 		{
 			name: "moves files successfully",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+			setup: func(t *testing.T, tmpDir string) (string, string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
-
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib")
 				if err := os.MkdirAll(srcDir, 0755); err != nil {
 					t.Fatal(err)
@@ -811,34 +810,29 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
 					t.Fatal(err)
 				}
-
-				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets", "lib")
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
 				if err := os.MkdirAll(snippetDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
 					t.Fatal(err)
 				}
-
-				internalDir := filepath.Join(repoRoot, "internal")
-				if err := os.MkdirAll(internalDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-
 				lib := &config.Library{
-					Name:   "lib",
-					APIs:   []*config.API{{Path: "lib/v1"}},
-					Output: outDir,
+					Name: "lib",
+					APIs: []*config.API{{Path: "lib/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{{Path: "lib/v1", ImportPath: "lib/apiv1"}},
+					},
 				}
-				return outDir, lib
+				return outDir, filepath.Join(repoRoot, snippetDirSuffix), lib
 			},
 		},
 		{
 			name: "nested major version",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+			setup: func(t *testing.T, tmpDir string) (string, string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib", "v2")
-
 				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "v2")
 				if err := os.MkdirAll(srcDir, 0755); err != nil {
 					t.Fatal(err)
@@ -846,31 +840,29 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
 					t.Fatal(err)
 				}
-
-				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets", "lib", "v2")
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "v2", "apiv2")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
 				if err := os.MkdirAll(snippetDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
 					t.Fatal(err)
 				}
-
-				internalDir := filepath.Join(repoRoot, "internal")
-				if err := os.MkdirAll(internalDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-
 				lib := &config.Library{
-					Name:   "lib/v2",
-					APIs:   []*config.API{{Path: "lib/v2"}},
-					Output: outDir,
+					Name: "lib/v2",
+					APIs: []*config.API{{Path: "lib/v2"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "lib/v2", ImportPath: "lib/v2/apiv2"},
+						},
+					},
 				}
-				return outDir, lib
+				return outDir, filepath.Join(repoRoot, snippetDirSuffix), lib
 			},
 		},
 		{
 			name: "library configured with a versioned module path",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+			setup: func(t *testing.T, tmpDir string) (string, string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
 
@@ -903,12 +895,12 @@ func TestMoveGeneratedFiles(t *testing.T) {
 						ModulePathVersion: "v2",
 					},
 				}
-				return outDir, lib
+				return outDir, "", lib
 			},
 		},
 		{
 			name: "library configured paths to delete after generation",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
+			setup: func(t *testing.T, tmpDir string) (string, string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
 
@@ -945,13 +937,13 @@ func TestMoveGeneratedFiles(t *testing.T) {
 						DeleteGenerationOutputPaths: []string{"delete"},
 					},
 				}
-				return outDir, lib
+				return outDir, "", lib
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			outDir, lib := test.setup(t, tmpDir)
+			outDir, snippetDir, lib := test.setup(t, tmpDir)
 			err := moveGeneratedFiles(lib, outDir)
 			if err != nil {
 				t.Fatal(err)
@@ -959,7 +951,6 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(outDir, "main.go")); err != nil {
 				t.Errorf("expected main.go to exist, got err: %v", err)
 			}
-			snippetDir := filepath.Join(tmpDir, "repo", "internal", "generated", "snippets", lib.Name)
 			if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); err != nil {
 				t.Errorf("expected snippet.go to exist, got err: %v", err)
 			}

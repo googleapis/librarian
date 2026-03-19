@@ -190,8 +190,7 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
 		return err
 	}
-	snippetDir := filepath.Join(outDir, "cloud.google.com", "go", "internal")
-	if err := moveSnippetDirectory(library, snippetDir); err != nil {
+	if err := moveSnippetDirectory(library, outDir); err != nil {
 		return err
 	}
 	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
@@ -207,23 +206,30 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 	return nil
 }
 
-// moveSnippetDirectory moves the generated/snippets directory to the internal directory
-// of the repository, if generated/snippets directory exists.
-func moveSnippetDirectory(library *config.Library, snippetDir string) error {
-	// If all APIs in a library is proto_only, snippets are not generated.
-	// We need to check the internal directory's existence before moving the snippets.
-	_, err := os.Stat(snippetDir)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+func moveSnippetDirectory(library *config.Library, outDir string) error {
+	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
+	repoRoot := repoRootPath(outDir, library.Name)
+	for _, api := range library.APIs {
+		snippetDesc, err := findSnippetDirectory(library, api.Path, outDir)
+		if err != nil {
+			return err
+		}
+		if snippetDesc == "" {
+			continue
+		}
+		if err := os.MkdirAll(snippetDesc, 0755); err != nil {
+			return err
+		}
+		relSnippetDir, err := filepath.Rel(repoRoot, snippetDesc)
+		if err != nil {
+			return err
+		}
+		snippetSrc := filepath.Join(snippetDirPrefix, relSnippetDir)
+		if err := filesystem.MoveAndMerge(snippetSrc, snippetDesc); err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return err
-	}
-	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library.Output, library.Name), "internal"))
-	if err != nil {
-		return err
-	}
-	return filesystem.MoveAndMerge(snippetDir, internalDir)
+	return nil
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
