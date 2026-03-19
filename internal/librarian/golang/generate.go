@@ -228,6 +228,8 @@ func moveSnippetDirectory(library *config.Library, snippetDir string) error {
 }
 
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
+// No-op for nested modules, e.g., bigquery/v2, because the files are already in the
+// right place.
 func fixVersioning(outputDir, libraryName, modPath string) error {
 	// parts is the module path split by "/".
 	// For example, "cloud.google.com/go/bigquery/v2" becomes:
@@ -244,6 +246,7 @@ func fixVersioning(outputDir, libraryName, modPath string) error {
 	}
 
 	name, version := parts[2], parts[3]
+	// A nested module, e.g., bigquery/v2, returns here.
 	if libraryName == name+"/"+version {
 		return nil
 	}
