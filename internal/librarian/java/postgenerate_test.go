@@ -173,7 +173,12 @@ func TestPostGenerate_SearchError(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Chmod(tmpDir, 0755)
-	err := PostGenerate(t.Context(), &config.Config{})
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	err := PostGenerate(t.Context(), cfg)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
@@ -187,7 +192,12 @@ func TestPostGenerate_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Chmod(tmpDir, 0755)
-	err := PostGenerate(t.Context(), &config.Config{})
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	err := PostGenerate(t.Context(), cfg)
 	if !errors.Is(err, errRootPomGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPomGeneration)
 	}
