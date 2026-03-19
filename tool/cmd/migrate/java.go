@@ -272,7 +272,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 	}
 	return &config.Config{
 		Language: "java",
-		Default:  &config.Default{},
+		Default: &config.Default{
+			ReleaseLevel: "preview",
+		},
 		Sources: &config.Sources{
 			Googleapis: src,
 		},
