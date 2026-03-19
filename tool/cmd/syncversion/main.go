@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -87,7 +88,7 @@ func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*confi
 		if maxVersion == lib.Version && newVersion != lib.Version {
 			// lib.Version is greater than newVersion, something is
 			// wrong, fail in this case.
-			return nil, errVersionRegression
+			return nil, fmt.Errorf("library %s, version in state, %s, is smaller than version in librarian.yaml, %s: %w", lib.Name, lib.Version, newVersion, errVersionRegression)
 		}
 		lib.Version = newVersion
 	}
