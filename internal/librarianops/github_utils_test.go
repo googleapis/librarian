@@ -358,7 +358,7 @@ func TestCreatePR_Error(t *testing.T) {
 
 func TestGenerateBranchName(t *testing.T) {
 	got := generateBranchName("pref-", time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC))
-	want := "pref-2026-01-02"
+	want := "pref-20260102T000000Z"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
