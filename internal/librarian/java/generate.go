@@ -174,6 +174,16 @@ func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir
 		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfgs.ServiceConfig)))
 	}
 
+	gapicConfig, err := serviceconfig.FindGAPICConfig(googleapisDir, api.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find gapic config: %w", err)
+	}
+	if gapicConfig != "" {
+		// gapic-config specifies the GAPIC configuration (e.g., logging_gapic.yaml) which
+		// contains batching, LRO retries, and language settings.
+		gapicOpts = append(gapicOpts, gapicOpt("gapic-config", filepath.Join(googleapisDir, gapicConfig)))
+	}
+
 	grpcServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find grpc service config: %w", err)

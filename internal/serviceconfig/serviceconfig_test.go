@@ -239,6 +239,59 @@ func TestFindGRPCServiceConfigMultipleFiles(t *testing.T) {
 	}
 }
 
+func TestFindGAPICConfig(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "found",
+			path: "google/cloud/secretmanager/v1",
+			want: "google/cloud/secretmanager/v1/secretmanager_gapic.yaml",
+		},
+		{
+			name: "not found",
+			path: "google/cloud/orgpolicy/v1",
+			want: "",
+		},
+		{
+			name: "directory does not exist",
+			path: "google/cloud/nonexistent/v1",
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindGAPICConfig(googleapisDir, test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestFindGAPICConfigMultipleFiles(t *testing.T) {
+	dir := t.TempDir()
+	apiPath := "google/example/v1"
+	apiDir := filepath.Join(dir, apiPath)
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"foo_gapic.yaml", "bar_gapic.yaml"} {
+		if err := os.WriteFile(filepath.Join(apiDir, name), []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err := FindGAPICConfig(dir, apiPath)
+	if err == nil {
+		t.Fatal("expected error for multiple GAPIC config files")
+	}
+}
+
 func TestPopulateFromServiceConfig(t *testing.T) {
 	for _, test := range []struct {
 		name string

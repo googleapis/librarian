@@ -109,7 +109,7 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
 	}
-	if err := blockLegacyGenerationAndRelease(repoPath, cfg); err != nil {
+	if err := blockLegacyGeneration(repoPath, cfg); err != nil {
 		return err
 	}
 	return nil
@@ -166,6 +166,9 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		Default: &config.Default{
 			TagFormat: defaultTagFormat,
 		},
+		Release: &config.Release{
+			Branch: "main",
+		},
 	}
 
 	if input.lang == config.LanguagePython {
@@ -184,9 +187,6 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	} else {
 		input.googleapisDir = src.Dir
 		cfg.Default.ReleaseLevel = "ga"
-		cfg.Release = &config.Release{
-			Branch: "main",
-		}
 		cfg.Libraries, err = buildGoLibraries(input)
 		if err != nil {
 			return nil, err
@@ -204,12 +204,11 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	return cfg, nil
 }
 
-// blockLegacyGenerationAndRelease ensures that all libraries in the librarian
-// config have generation and release blocked in the legacy config, by rewriting
-// .librarian/config.yaml. This was previously a file maintained by hand, so a
-// comment line is added at the start. This function assumes that the current
-// directory is the repository root.
-func blockLegacyGenerationAndRelease(repoPath string, cfg *config.Config) error {
+// blockLegacyGeneration ensures that all libraries in the librarian config have generation blocked in the legacy
+// config, by rewriting .librarian/config.yaml.
+// This was previously a file maintained by hand, so a comment line is added at the start. This function assumes that
+// the current directory is the repository root.
+func blockLegacyGeneration(repoPath string, cfg *config.Config) error {
 	legacyConfig, err := readLegacyConfig(repoPath)
 	if err != nil {
 		return err
@@ -223,7 +222,6 @@ func blockLegacyGenerationAndRelease(repoPath string, cfg *config.Config) error 
 			legacyConfig.Libraries = append(legacyConfig.Libraries, legacyLib)
 		}
 		legacyLib.GenerateBlocked = true
-		legacyLib.ReleaseBlocked = true
 	}
 	configYaml, err := yaml.Marshal(legacyConfig)
 	if err != nil {
