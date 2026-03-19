@@ -735,64 +735,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 	}
 }
 
-func TestMoveSnippetDirectory(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T, tmpDir string) (snippetDir string, lib *config.Library)
-	}{
-		{
-			name: "snippet directory does not exist",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
-				lib := &config.Library{
-					Name:   "foo",
-					Output: filepath.Join(tmpDir, "repo", "lib"),
-				}
-				return filepath.Join(tmpDir, "nonexistent"), lib
-			},
-		},
-		{
-			name: "snippet directory exists",
-			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
-				repoRoot := filepath.Join(tmpDir, "repo")
-				snippetDir := filepath.Join(tmpDir, "snippets")
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(snippetDir, "main.go"), []byte("package main"), 0644); err != nil {
-					t.Fatal(err)
-				}
-				internalDir := filepath.Join(repoRoot, "internal")
-				if err := os.MkdirAll(internalDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				lib := &config.Library{
-					Name:   "foo",
-					Output: filepath.Join(repoRoot, "lib"),
-				}
-				return snippetDir, lib
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			snippetDir, lib := test.setup(t, tmpDir)
-			err := moveSnippetDirectory(lib, snippetDir)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if test.name == "snippet directory does not exist" {
-				return
-			}
-			repoRoot := filepath.Join(tmpDir, "repo")
-			movedFile := filepath.Join(repoRoot, "internal", "main.go")
-			if _, err := os.Stat(movedFile); err != nil {
-				t.Errorf("expected moved file %q to exist, got err: %v", movedFile, err)
-			}
-		})
-	}
-}
-
 func TestMoveGeneratedFiles(t *testing.T) {
 	for _, test := range []struct {
 		name  string
