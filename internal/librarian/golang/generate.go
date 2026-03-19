@@ -218,7 +218,7 @@ func moveSnippetDirectory(library *config.Library, snippetDir string) error {
 	if err != nil {
 		return err
 	}
-	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library), "internal"))
+	internalDir, err := filepath.Abs(filepath.Join(repoRootPath(library.Output, library.Name), "internal"))
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func updateSnippetMetadata(library *config.Library) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(repoRootPath(library), clientPathFromRepoRoot(library, goAPI))
+		baseDir := snippetDirectory(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil

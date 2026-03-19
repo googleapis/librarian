@@ -48,7 +48,7 @@ func processArgs(library *config.Library) ([]string, error) {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		snippetDir := snippetDirectory(repoRootPath(library), clientPathFromRepoRoot(library, goAPI))
+		snippetDir := snippetDirectory(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
 		skip := false
 		// No need to format the snippet directory if the directory is within one of
 		// paths to delete after generation. The snippet directory does not exist.

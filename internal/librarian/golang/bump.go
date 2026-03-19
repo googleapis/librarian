@@ -33,9 +33,6 @@ var (
 // Bump updates the version number in the library with the given output
 // directory.
 func Bump(library *config.Library, output, version string) error {
-	// Set library output so that we can find the repo root directory.
-	// We need repo root to find the snippet directory.
-	library.Output = output
 	library, err := Fill(library)
 	if err != nil {
 		return err
@@ -48,7 +45,7 @@ func Bump(library *config.Library, output, version string) error {
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		snippetDir := snippetDirectory(repoRootPath(library), clientPathFromRepoRoot(library, goAPI))
+		snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(snippetDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				// A client may not have snippets, e.g., proto-only clients,
