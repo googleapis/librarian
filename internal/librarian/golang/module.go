@@ -174,6 +174,8 @@ func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
 
+// updateSnippetDirectory updates the library version in all snippet metadata files
+// for the given library.
 func updateSnippetDirectory(library *config.Library, output, version string) error {
 	for _, api := range library.APIs {
 		snippetDir, err := findSnippetDirectory(library, api.Path, output)
