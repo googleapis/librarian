@@ -327,14 +327,14 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outdir := t.TempDir()
-			if err := os.MkdirAll(filepath.Join(outdir, "internal"), 0777); err != nil {
+			repoRoot := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 				t.Fatal(err)
 			}
 			library := &config.Library{
 				Name:         test.libraryName,
 				Version:      "1.0.0",
-				Output:       filepath.Join(outdir, test.libraryName),
+				Output:       filepath.Join(repoRoot, test.libraryName),
 				APIs:         test.apis,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
@@ -345,12 +345,12 @@ func TestGenerateLibrary(t *testing.T) {
 			}
 
 			for _, path := range test.want {
-				if _, err := os.Stat(filepath.Join(outdir, path)); err != nil {
+				if _, err := os.Stat(filepath.Join(repoRoot, path)); err != nil {
 					t.Errorf("missing %s", path)
 				}
 			}
 			for _, path := range test.removed {
-				if _, err := os.Stat(filepath.Join(outdir, path)); err == nil {
+				if _, err := os.Stat(filepath.Join(repoRoot, path)); err == nil {
 					t.Errorf("%s should not exist", path)
 				}
 			}
