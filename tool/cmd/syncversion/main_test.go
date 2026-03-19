@@ -158,6 +158,20 @@ func TestSyncVersion(t *testing.T) {
 				{Name: "lib2", Version: "2.2.0"},
 			},
 		},
+		{
+			name: "empty version is not synced",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1"},
+			},
+			libraries: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+				{Name: "lib2", Version: "2.2.0"},
+			},
+			want: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+				{Name: "lib2", Version: "2.2.0"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			state := &legacyconfig.LibrarianState{Libraries: test.legacyLibraries}

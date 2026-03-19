@@ -76,7 +76,7 @@ func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) *config
 	}
 	for _, lib := range cfg.Libraries {
 		newVersion, ok := legacyLibraries[lib.Name]
-		if !ok {
+		if !ok || newVersion == "" {
 			continue
 		}
 		maxVersion := semver.MaxVersion(lib.Version, newVersion)
