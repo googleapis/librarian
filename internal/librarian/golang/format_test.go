@@ -172,7 +172,8 @@ func TestProcessArgs(t *testing.T) {
 					{Path: "example/v1"},
 				},
 				Go: &config.GoModule{
-					DeleteGenerationOutputPaths: []string{"internal/generated/snippets/example/apiv1"},
+					// DeleteGenerationOutputPaths should relative to library output directory.
+					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
 					GoAPIs: []*config.GoAPI{
 						{Path: "example/v1", ImportPath: "example/apiv1"},
 					},

@@ -17,6 +17,7 @@ package golang
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -50,8 +51,8 @@ func processArgs(library *config.Library) ([]string, error) {
 		snippetDir := snippetDirectory(repoRootPath(library), clientPathFromRepoRoot(library, goAPI))
 		skip := false
 		for _, path := range library.Go.DeleteGenerationOutputPaths {
-			pathToDelete := filepath.Join(repoRootPath(library), path)
-			if pathToDelete == snippetDir {
+			pathToDelete := filepath.Join(library.Output, path)
+			if strings.HasPrefix(snippetDir, pathToDelete) {
 				skip = true
 			}
 		}
