@@ -95,6 +95,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
+	if cfg.Default != nil && lib.ReleaseLevel != "" && lib.ReleaseLevel == cfg.Default.ReleaseLevel {
+		lib.ReleaseLevel = ""
+	}
 	return tidyLanguageConfig(lib, cfg.Language)
 }
 
