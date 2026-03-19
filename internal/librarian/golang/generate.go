@@ -207,8 +207,7 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 }
 
 func moveSnippetDirectory(library *config.Library, outDir string) error {
-	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
-	repoRoot := repoRootPath(outDir, library.Name)
+	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
 	for _, api := range library.APIs {
 		snippetDesc, err := findSnippetDirectory(library, api.Path, outDir)
 		if err != nil {
@@ -220,11 +219,11 @@ func moveSnippetDirectory(library *config.Library, outDir string) error {
 		if err := os.MkdirAll(snippetDesc, 0755); err != nil {
 			return err
 		}
-		relSnippetDir, err := filepath.Rel(repoRoot, snippetDesc)
-		if err != nil {
-			return err
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
 		}
-		snippetSrc := filepath.Join(snippetDirPrefix, relSnippetDir)
+		snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
 		if err := filesystem.MoveAndMerge(snippetSrc, snippetDesc); err != nil {
 			return err
 		}
