@@ -32,7 +32,8 @@ import (
 )
 
 var (
-	errRepoNotFound = errors.New("repo argument is required")
+	errRepoNotFound      = errors.New("repo argument is required")
+	errVersionRegression = errors.New("version is regression")
 )
 
 func main() {
@@ -65,11 +66,14 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	cfg = syncVersion(state, cfg)
+	cfg, err = syncVersion(state, cfg)
+	if err != nil {
+		return err
+	}
 	return librarian.RunTidyOnConfig(ctx, repoPath, cfg)
 }
 
-func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) *config.Config {
+func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*config.Config, error) {
 	legacyLibraries := make(map[string]string)
 	for _, lib := range state.Libraries {
 		legacyLibraries[lib.ID] = lib.Version
@@ -80,11 +84,12 @@ func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) *config
 			continue
 		}
 		maxVersion := semver.MaxVersion(lib.Version, newVersion)
-		if maxVersion == lib.Version {
-			// Do not sync if newVersion is smaller than lib.Version.
-			continue
+		if maxVersion == lib.Version && newVersion != lib.Version {
+			// lib.Version is greater than newVersion, something is
+			// wrong, fail in this case.
+			return nil, errVersionRegression
 		}
 		lib.Version = newVersion
 	}
-	return cfg
+	return cfg, nil
 }

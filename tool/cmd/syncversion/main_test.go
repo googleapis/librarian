@@ -144,21 +144,6 @@ func TestSyncVersion(t *testing.T) {
 			},
 		},
 		{
-			name: "smaller version is not synced",
-			legacyLibraries: []*legacyconfig.LibraryState{
-				{ID: "lib1", Version: "1.1.0"},
-				{ID: "lib2", Version: "2.1.0"},
-			},
-			libraries: []*config.Library{
-				{Name: "lib1", Version: "1.0.0"},
-				{Name: "lib2", Version: "2.2.0"},
-			},
-			want: []*config.Library{
-				{Name: "lib1", Version: "1.1.0"},
-				{Name: "lib2", Version: "2.2.0"},
-			},
-		},
-		{
 			name: "empty version is not synced",
 			legacyLibraries: []*legacyconfig.LibraryState{
 				{ID: "lib1"},
@@ -172,14 +157,46 @@ func TestSyncVersion(t *testing.T) {
 				{Name: "lib2", Version: "2.2.0"},
 			},
 		},
+		{
+			name: "same version is not changed",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.0.0"},
+			},
+			libraries: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+			},
+			want: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			state := &legacyconfig.LibrarianState{Libraries: test.legacyLibraries}
 			cfg := &config.Config{Libraries: test.libraries}
-			got := syncVersion(state, cfg)
+			got, err := syncVersion(state, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got.Libraries); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestSyncVersion_Error(t *testing.T) {
+	state := &legacyconfig.LibrarianState{
+		Libraries: []*legacyconfig.LibraryState{
+			{ID: "lib1", Version: "1.0.0"},
+		},
+	}
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "lib1", Version: "1.1.0"},
+		},
+	}
+	_, err := syncVersion(state, cfg)
+	if !errors.Is(err, errVersionRegression) {
+		t.Errorf("got error %v, want %v", err, errVersionRegression)
 	}
 }
