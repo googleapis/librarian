@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package input parses gcloud config files and creates API models.
-package input
+// Package provider parses gcloud config files and creates API models.
+package provider
 
 // Config represents the top-level schema of a gcloud config YAML file.
 type Config struct {

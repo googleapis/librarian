@@ -30,9 +30,9 @@ func TestRun(t *testing.T) {
 			args: []string{
 				"surfer",
 				"generate",
-				"../gcloud/testdata/parallelstore/gcloud.yaml",
-				"--googleapis", "../gcloud/testdata/googleapis",
-				"--out", "../gcloud/testdata/parallelstore/surface",
+				"gcloud/testdata/parallelstore/gcloud.yaml",
+				"--googleapis", "gcloud/testdata/googleapis",
+				"--out", "gcloud/testdata/parallelstore/surface",
 			},
 		},
 		{
@@ -41,18 +41,18 @@ func TestRun(t *testing.T) {
 				"surfer",
 				"generate",
 				"invalidpath/gcloud.yaml",
-				"--googleapis", "../gcloud/testdata/googleapis",
+				"--googleapis", "gcloud/testdata/googleapis",
 			},
 			wantErr: true,
 		},
 		{
 			name:    "missing config arg",
-			args:    []string{"surfer", "generate", "--googleapis", "../gcloud/testdata/googleapis"},
+			args:    []string{"surfer", "generate", "--googleapis", "gcloud/testdata/googleapis"},
 			wantErr: true,
 		},
 		{
 			name:    "missing googleapis flag",
-			args:    []string{"surfer", "generate", "../gcloud/testdata/parallelstore/gcloud.yaml"},
+			args:    []string{"surfer", "generate", "gcloud/testdata/parallelstore/gcloud.yaml"},
 			wantErr: true,
 		},
 	} {

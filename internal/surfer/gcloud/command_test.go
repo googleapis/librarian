@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package output
+package gcloud
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 )
 
 func TestCommandYAML(t *testing.T) {
-	const root = "../testdata/parallelstore/surface"
+	const root = "testdata/parallelstore/surface"
 	var files []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

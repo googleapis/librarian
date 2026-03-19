@@ -25,9 +25,7 @@ import (
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/builder"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/input"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/output"
+	"github.com/googleapis/librarian/internal/surfer/provider"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/iancoleman/strcase"
 )
@@ -38,12 +36,12 @@ const partialsHeader = "_PARTIALS_: true\n"
 
 // Generate generates gcloud commands for a service.
 func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
-	overrides, err := input.ReadGcloudConfig(gcloudconfig)
+	overrides, err := provider.ReadGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
 	}
 
-	model, err := input.CreateAPIModel(googleapis, includeList)
+	model, err := provider.CreateAPIModel(googleapis, includeList)
 	if err != nil {
 		return err
 	}
@@ -61,7 +59,7 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 	return nil
 }
 
-func generateService(service *api.Service, overrides *input.Config, model *api.API, output string) error {
+func generateService(service *api.Service, overrides *provider.Config, model *api.API, output string) error {
 	shortServiceName, _, found := strings.Cut(service.DefaultHost, ".")
 	if !found {
 		return fmt.Errorf("failed to determine short service name for service %q: default_host is empty", service.Name)
@@ -73,9 +71,9 @@ func generateService(service *api.Service, overrides *input.Config, model *api.A
 		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
 	}
 
-	track := strings.ToUpper(input.InferTrackFromPackage(service.Package))
+	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:    input.GetServiceTitle(model, shortServiceName),
+		ServiceTitle:    provider.GetServiceTitle(model, shortServiceName),
 		ClassNamePrefix: strcase.ToCamel(shortServiceName),
 		Tracks:          []string{track},
 	}
@@ -89,7 +87,7 @@ func generateService(service *api.Service, overrides *input.Config, model *api.A
 	methodsByResource := make(map[string][]*api.Method)
 
 	for _, method := range service.Methods {
-		collectionID := input.GetPluralResourceNameForMethod(method, model)
+		collectionID := provider.GetPluralResourceNameForMethod(method, model)
 
 		if collectionID != "" {
 			methodsByResource[collectionID] = append(methodsByResource[collectionID], method)
@@ -110,7 +108,7 @@ func generateService(service *api.Service, overrides *input.Config, model *api.A
 //
 // For a given collectionID like "instances", this function will create a directory
 // `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
-func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *input.Config, model *api.API, service *api.Service) error {
+func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *provider.Config, model *api.API, service *api.Service) error {
 	if len(methods) == 0 {
 		return nil
 	}
@@ -121,13 +119,13 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
 	}
 
-	singular := input.GetSingularResourceNameForMethod(methods[0], model)
+	singular := provider.GetSingularResourceNameForMethod(methods[0], model)
 
 	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
 
-	track := strings.ToUpper(input.InferTrackFromPackage(service.Package))
+	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 	data := commandGroupData{
-		ServiceTitle:     input.GetServiceTitle(model, shortServiceName),
+		ServiceTitle:     provider.GetServiceTitle(model, shortServiceName),
 		ResourceSingular: singular,
 		ClassNamePrefix:  strcase.ToCamel(collectionID),
 		Tracks:           []string{track},
@@ -144,21 +142,21 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	}
 
 	for _, method := range methods {
-		verb, err := input.GetCommandName(method)
+		verb, err := provider.GetCommandName(method)
 		if err != nil {
 			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.
 			continue
 		}
 
-		cmd, err := builder.NewCommand(method, overrides, model, service)
+		cmd, err := NewCommand(method, overrides, model, service)
 		if err != nil {
 			return err
 		}
 
 		// In gcloud convention, the final YAML file must contain a list of commands,
 		// even if there is only one.
-		cmdList := []*output.Command{cmd}
+		cmdList := []*Command{cmd}
 
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
 		if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {

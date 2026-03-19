@@ -20,7 +20,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/googleapis/librarian/internal/surfer/surfer"
+	"github.com/googleapis/librarian/internal/surfer"
 )
 
 func main() {

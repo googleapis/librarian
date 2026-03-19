@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/input"
+	"github.com/googleapis/librarian/internal/surfer/provider"
 )
 
 func TestGenerateService(t *testing.T) {
@@ -69,7 +69,7 @@ func TestGenerateService(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			err := generateService(test.service, &input.Config{}, test.model, tmpDir)
+			err := generateService(test.service, &provider.Config{}, test.model, tmpDir)
 			if (err != nil) != test.wantErr {
 				t.Errorf("generateService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -95,7 +95,7 @@ func TestGenerateResourceCommands(t *testing.T) {
 				}},
 			},
 		},
-	}, tmpDir, &input.Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
+	}, tmpDir, &provider.Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
 
 	if err != nil {
 		t.Fatalf("generateResourceCommands() error = %v", err)
