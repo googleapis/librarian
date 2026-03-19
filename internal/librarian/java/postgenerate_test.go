@@ -35,7 +35,7 @@ func TestPostGenerate(t *testing.T) {
 	// Copy testdata to tmpDir
 	testdataDir := filepath.Join(originalWd, "testdata", "postgenerate")
 	if err := copyDir(testdataDir, tmpDir); err != nil {
-		t.Fatalf("failed to copy testdata: %v", err)
+		t.Fatal(err)
 	}
 	t.Chdir(tmpDir)
 	cfg := &config.Config{
@@ -45,7 +45,7 @@ func TestPostGenerate(t *testing.T) {
 		},
 	}
 	if err := PostGenerate(t.Context(), cfg); err != nil {
-		t.Fatalf("PostGenerate failed: %v", err)
+		t.Fatal(err)
 	}
 	// Verify root pom.xml
 	rootPom, err := os.ReadFile("pom.xml")
@@ -88,7 +88,7 @@ func TestSearchForJavaModules(t *testing.T) {
 	}
 	got, err := searchForJavaModules()
 	if err != nil {
-		t.Fatalf("searchForJavaModules failed: %v", err)
+		t.Fatal(err)
 	}
 	want := []string{"module-a", "module-b"}
 	if diff := cmp.Diff(want, got); diff != "" {

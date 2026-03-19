@@ -44,6 +44,13 @@ func PostGenerate(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
+var ignoredDirs = map[string]bool{
+	"gapic-libraries-bom":      true,
+	"google-cloud-jar-parent":  true,
+	"google-cloud-pom-parent":  true,
+	"google-cloud-shared-deps": true,
+}
+
 // searchForJavaModules scans top-level subdirectories in the current directory for those that
 // contain a pom.xml file, excluding known non-library directories. Returns a sorted list of
 // subdirectory names as module names.
@@ -53,14 +60,8 @@ func searchForJavaModules() ([]string, error) {
 		return nil, err
 	}
 	var modules []string
-	exclusions := map[string]bool{
-		"gapic-libraries-bom":      true,
-		"google-cloud-jar-parent":  true,
-		"google-cloud-pom-parent":  true,
-		"google-cloud-shared-deps": true,
-	}
 	for _, entry := range entries {
-		if !entry.IsDir() || exclusions[entry.Name()] {
+		if !entry.IsDir() || ignoredDirs[entry.Name()] {
 			continue
 		}
 		if _, err := os.Stat(filepath.Join(entry.Name(), "pom.xml")); err == nil {
