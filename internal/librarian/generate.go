@@ -151,20 +151,23 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := generateLibrary(gctx, cfg, library, src); err != nil {
-					return err
+				if err := dart.Generate(gctx, library, src); err != nil {
+					return generateError(library.Name, cfg.Language, err)
 				}
-				return formatLibrary(gctx, cfg.Language, library)
+				if err := dart.Format(gctx, library); err != nil {
+					return formatError(library.Name, cfg.Language, err)
+				}
+				return nil
 			})
 		}
 		return g.Wait()
 	case config.LanguageFake:
 		for _, library := range libraries {
-			if err := generateLibrary(ctx, cfg, library, src); err != nil {
-				return err
+			if err := fakeGenerate(library); err != nil {
+				return generateError(library.Name, cfg.Language, err)
 			}
-			if err := formatLibrary(ctx, cfg.Language, library); err != nil {
-				return err
+			if err := fakeFormat(library); err != nil {
+				return formatError(library.Name, cfg.Language, err)
 			}
 		}
 	case config.LanguageGo:
@@ -172,42 +175,49 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			// Generation cannot be parallelized because protoc writes to a
 			// shared cloud.google.com/go directory tree under each library's
 			// output, and concurrent MoveAndMerge calls would race.
-			if err := generateLibrary(ctx, cfg, library, src); err != nil {
-				return err
+			if err := golang.Generate(ctx, library, src.Googleapis); err != nil {
+				return generateError(library.Name, cfg.Language, err)
 			}
 		}
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
-			g.Go(func() error { return formatLibrary(gctx, cfg.Language, library) })
+			g.Go(func() error {
+				if err := golang.Format(gctx, library); err != nil {
+					return formatError(library.Name, cfg.Language, err)
+				}
+				return nil
+			})
 		}
 		return g.Wait()
 	case config.LanguageJava:
 		for _, library := range libraries {
-			if err := generateLibrary(ctx, cfg, library, src); err != nil {
-				return err
+			if err := java.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+				return generateError(library.Name, cfg.Language, err)
 			}
-			if err := formatLibrary(ctx, cfg.Language, library); err != nil {
-				return err
+			if err := java.Format(ctx, library); err != nil {
+				return formatError(library.Name, cfg.Language, err)
 			}
 		}
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := generateLibrary(gctx, cfg, library, src); err != nil {
-					return err
+				if err := nodejs.Generate(gctx, library, src.Googleapis); err != nil {
+					return generateError(library.Name, cfg.Language, err)
 				}
-				return formatLibrary(gctx, cfg.Language, library)
+				if err := nodejs.Format(gctx, library); err != nil {
+					return formatError(library.Name, cfg.Language, err)
+				}
+				return nil
 			})
 		}
 		return g.Wait()
 	case config.LanguagePython:
 		for _, library := range libraries {
-			if err := generateLibrary(ctx, cfg, library, src); err != nil {
-				return err
-			}
-			if err := formatLibrary(ctx, cfg.Language, library); err != nil {
-				return err
+			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
+			// generation and formatting for Python.
+			if err := python.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+				return generateError(library.Name, cfg.Language, err)
 			}
 		}
 	case config.LanguageRust:
@@ -215,75 +225,23 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		// cargo fmt shares the Cargo.toml workspace file across libraries.
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
-			g.Go(func() error { return generateLibrary(gctx, cfg, library, src) })
+			g.Go(func() error {
+				if err := rust.Generate(gctx, cfg, library, src); err != nil {
+					return generateError(library.Name, cfg.Language, err)
+				}
+				return nil
+			})
 		}
 		if err := g.Wait(); err != nil {
 			return err
 		}
 		for _, library := range libraries {
-			if err := formatLibrary(ctx, cfg.Language, library); err != nil {
-				return err
+			if err := rust.Format(ctx, library); err != nil {
+				return formatError(library.Name, cfg.Language, err)
 			}
 		}
 	default:
 		return fmt.Errorf("language %q does not support generation", cfg.Language)
-	}
-	return nil
-}
-
-// generateLibrary delegates to language-specific code to generate a single
-// library.
-func generateLibrary(ctx context.Context, cfg *config.Config, library *config.Library, src *sidekickconfig.Sources) error {
-	var err error
-	switch cfg.Language {
-	case config.LanguageDart:
-		err = dart.Generate(ctx, library, src)
-	case config.LanguageFake:
-		err = fakeGenerate(library)
-	case config.LanguageGo:
-		err = golang.Generate(ctx, library, src.Googleapis)
-	case config.LanguageJava:
-		err = java.Generate(ctx, cfg, library, src.Googleapis)
-	case config.LanguageNodejs:
-		err = nodejs.Generate(ctx, library, src.Googleapis)
-	case config.LanguagePython:
-		err = python.Generate(ctx, cfg, library, src.Googleapis)
-	case config.LanguageRust:
-		err = rust.Generate(ctx, cfg, library, src)
-	default:
-		return fmt.Errorf("language %q does not support generation", cfg.Language)
-	}
-	if err != nil {
-		return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-	}
-	return nil
-}
-
-// formatLibrary delegates to language-specific code to format a single library.
-func formatLibrary(ctx context.Context, language string, library *config.Library) error {
-	var err error
-	switch language {
-	case config.LanguageDart:
-		err = dart.Format(ctx, library)
-	case config.LanguageFake:
-		err = fakeFormat(library)
-	case config.LanguageGo:
-		err = golang.Format(ctx, library)
-	case config.LanguageJava:
-		err = java.Format(ctx, library)
-	case config.LanguageNodejs:
-		err = nodejs.Format(ctx, library)
-	case config.LanguagePython:
-		// TODO(https://github.com/googleapis/librarian/issues/3730): separate
-		// generation and formatting for Python.
-		return nil
-	case config.LanguageRust:
-		err = rust.Format(ctx, library)
-	default:
-		return fmt.Errorf("language %q does not support formatting", language)
-	}
-	if err != nil {
-		return fmt.Errorf("format library %q (%s): %w", library.Name, language, err)
 	}
 	return nil
 }
@@ -332,4 +290,12 @@ func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
 		return false
 	}
 	return all || lib.Name == libraryName
+}
+
+func generateError(libraryName, language string, err error) error {
+	return fmt.Errorf("generate library %q (%s): %w", libraryName, language, err)
+}
+
+func formatError(libraryName, language string, err error) error {
+	return fmt.Errorf("format library %q (%s): %w", libraryName, language, err)
 }
