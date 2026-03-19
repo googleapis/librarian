@@ -198,6 +198,9 @@ func TestBump(t *testing.T) {
 						Path: "google/cloud/secretmanager/v1",
 					},
 				},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/secretmanager/apiv1"},
+				},
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{

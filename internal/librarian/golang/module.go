@@ -203,7 +203,7 @@ func findSnippetDirectory(library *config.Library, apiPath, output string) (stri
 	// No need to format the snippet directory if the directory is within one of
 	// paths to delete after generation. The snippet directory does not exist.
 	for _, path := range library.Go.DeleteGenerationOutputPaths {
-		pathToDelete := filepath.Join(library.Output, path)
+		pathToDelete := filepath.Join(output, path)
 		if strings.HasPrefix(snippetDir, pathToDelete) {
 			skip = true
 		}
