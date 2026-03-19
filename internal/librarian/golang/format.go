@@ -30,14 +30,14 @@ func Format(ctx context.Context, library *config.Library) error {
 	if library.Name == rootModule {
 		return nil
 	}
-	args, err := processArgs(library)
+	args, err := buildFormatArgs(library)
 	if err != nil {
 		return err
 	}
 	return command.Run(ctx, "goimports", args...)
 }
 
-func processArgs(library *config.Library) ([]string, error) {
+func buildFormatArgs(library *config.Library) ([]string, error) {
 	args := []string{"-w"}
 	args = append(args, library.Output)
 	for _, api := range library.APIs {

@@ -125,7 +125,7 @@ func main() {
 	}
 }
 
-func TestProcessArgs(t *testing.T) {
+func TestBuildFormatArgs(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -183,7 +183,7 @@ func TestProcessArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := processArgs(test.library)
+			got, err := buildFormatArgs(test.library)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -194,14 +194,14 @@ func TestProcessArgs(t *testing.T) {
 	}
 }
 
-func TestProcessArgs_Error(t *testing.T) {
+func TestBuildFormatArgs_Error(t *testing.T) {
 	library := &config.Library{
 		Name: "example",
 		APIs: []*config.API{
 			{Path: "example/v1"},
 		},
 	}
-	_, err := processArgs(library)
+	_, err := buildFormatArgs(library)
 	if !errors.Is(err, errGoAPINotFound) {
 		t.Errorf("got %v, want errGoAPINotFound", err)
 	}
