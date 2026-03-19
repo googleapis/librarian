@@ -535,20 +535,24 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 
 func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "eslint")
+	testhelper.RequireCommand(t, "npm")
 	outDir := t.TempDir()
 	srcDir := filepath.Join(outDir, "src")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(outDir, "package.json"), []byte(`{"name": "test"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
 	eslintConfig := `{
-		"rules": {
-			"semi": ["error", "always"]
-		},
-		"parserOptions": {
-			"ecmaVersion": 2020,
-			"sourceType": "module"
-		}
-	}`
+                "rules": {
+                        "semi": ["error", "always"]
+                },
+                "parserOptions": {
+                        "ecmaVersion": 2020,
+                        "sourceType": "module"
+                }
+        }`
 	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
 		t.Fatal(err)
 	}
