@@ -40,13 +40,13 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
-	outDir := t.TempDir()
+	repoRoot := t.TempDir()
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// We need to create snippet directory root before running generation.
-	if err := os.MkdirAll(filepath.Join(outDir, "internal"), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,7 +93,7 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = filepath.Join(outDir, library.Name)
+		library.Output = filepath.Join(repoRoot, library.Name)
 	}
 	for _, library := range libraries {
 		if err := Generate(t.Context(), library, googleapisDir); err != nil {
