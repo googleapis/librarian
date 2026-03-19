@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The syncversions command synchronizes library versions from the legacy
+// librarian state file into the new librarian.yaml configuration file.
 package main
 
 import (
