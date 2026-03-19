@@ -65,3 +65,39 @@ func TestHasHeader(t *testing.T) {
 		})
 	}
 }
+
+func TestReplaceYear(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		year    string
+		want    string
+	}{
+		{
+			name:    "slash comments",
+			content: "// Copyright 2023 Google LLC\n//\n// Licensed under the Apache License...",
+			year:    "2026",
+			want:    "// Copyright 2026 Google LLC\n//\n// Licensed under the Apache License...",
+		},
+		{
+			name:    "block comments",
+			content: "/*\n * Copyright 2024 Google LLC\n */",
+			year:    "2025",
+			want:    "/*\n * Copyright 2025 Google LLC\n */",
+		},
+		{
+			name:    "no copyright",
+			content: "package main\n\nfunc main() {}",
+			year:    "2026",
+			want:    "package main\n\nfunc main() {}",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := ReplaceYear([]byte(test.content), test.year)
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("ReplaceYear() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

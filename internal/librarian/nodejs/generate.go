@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -374,13 +373,10 @@ func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
-var copyrightRegexp = regexp.MustCompile(`// Copyright \d{4} Google LLC`)
-
 func restoreCopyrightYear(library *config.Library, outDir string) error {
 	if library.CopyrightYear == "" {
 		return nil
 	}
-	want := fmt.Sprintf("// Copyright %s Google LLC", library.CopyrightYear)
 	return filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -399,10 +395,7 @@ func restoreCopyrightYear(library *config.Library, outDir string) error {
 		if !license.HasHeader(content) {
 			return nil
 		}
-		if !copyrightRegexp.Match(content) {
-			return nil
-		}
-		newContent := copyrightRegexp.ReplaceAll(content, []byte(want))
+		newContent := license.ReplaceYear(content, library.CopyrightYear)
 		return os.WriteFile(path, newContent, info.Mode())
 	})
 }

@@ -18,12 +18,20 @@ package license
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 )
+
+var yearRegexp = regexp.MustCompile(`Copyright \d{4} Google LLC`)
 
 // HasHeader returns true if the content contains the Apache 2.0 license header.
 // It checks for the presence of a specific, static line from the license text.
 func HasHeader(content []byte) bool {
 	return bytes.Contains(content, []byte("Licensed under the Apache License, Version 2.0"))
+}
+
+// ReplaceYear replaces the year in the copyright string with the specified year.
+func ReplaceYear(content []byte, year string) []byte {
+	return yearRegexp.ReplaceAll(content, []byte(fmt.Sprintf("Copyright %s Google LLC", year)))
 }
 
 // Header returns the license header with the given year.
