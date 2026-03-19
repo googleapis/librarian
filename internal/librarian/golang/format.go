@@ -16,8 +16,6 @@ package golang
 
 import (
 	"context"
-	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -41,27 +39,13 @@ func buildFormatArgs(library *config.Library) ([]string, error) {
 	args := []string{"-w"}
 	args = append(args, library.Output)
 	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
-		if goAPI == nil {
-			return nil, errGoAPINotFound
+		snippetDir, err := findSnippetDirectory(library, api.Path, library.Output)
+		if err != nil {
+			return nil, err
 		}
-		if goAPI.ProtoOnly {
-			continue
+		if snippetDir != "" {
+			args = append(args, snippetDir)
 		}
-		snippetDir := snippetDirectory(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
-		skip := false
-		// No need to format the snippet directory if the directory is within one of
-		// paths to delete after generation. The snippet directory does not exist.
-		for _, path := range library.Go.DeleteGenerationOutputPaths {
-			pathToDelete := filepath.Join(library.Output, path)
-			if strings.HasPrefix(snippetDir, pathToDelete) {
-				skip = true
-			}
-		}
-		if skip {
-			continue
-		}
-		args = append(args, snippetDir)
 	}
 	return args, nil
 }

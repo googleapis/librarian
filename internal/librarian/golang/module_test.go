@@ -627,7 +627,7 @@ func TestDefaultLibraryName(t *testing.T) {
 	}
 }
 
-func TestUpdateSnippetMetadata(t *testing.T) {
+func TestUpdateSnippetDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	library := &config.Library{
 		Name:    "accessapproval",
@@ -695,13 +695,14 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	}
 }
 
-func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
+func TestUpdateSnippetDirectory_Skipped(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		protoOnly bool
-		path      string
-		fileName  string
-		setup     func(base, path, data, fileName string)
+		name         string
+		protoOnly    bool
+		pathToDelete []string
+		path         string
+		fileName     string
+		setup        func(base, path, data, fileName string)
 	}{
 		{
 			name:     "skip non import path",
@@ -742,7 +743,8 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			// checking the existence of the directory.
 		},
 		{
-			name: "snippet directory does not exist",
+			name:         "snippet directory does not exist",
+			pathToDelete: []string{"../internal/generated/snippets/bigquery/storage/apiv1"},
 			// Do not create snippet directory to verify the function doesn't
 			// return error in such ase.
 		},
@@ -755,6 +757,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 				Version: "1.2.3",
 				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
 				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: test.pathToDelete,
 					GoAPIs: []*config.GoAPI{
 						{
 							ImportPath: "bigquery/storage/apiv1",

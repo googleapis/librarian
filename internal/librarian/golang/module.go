@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -177,28 +176,40 @@ func snippetDirectory(output, importPath string) string {
 
 func updateSnippetDirectory(library *config.Library, output, version string) error {
 	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
-		if goAPI == nil {
-			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
-		}
-		// Proto-only API does not create a snippet directory.
-		if goAPI.ProtoOnly {
-			continue
-		}
-		snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
-		_, err := os.Stat(snippetDir)
-		// Even though a GAPIC API will create a snippet directory, the library configuration may specify
-		// the snippet directory deleted after generation so it is possible that a snippet directory does
-		// not exist.
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
+		snippetDir, err := findSnippetDirectory(library, api.Path, output)
 		if err != nil {
 			return err
+		}
+		if snippetDir == "" {
+			continue
 		}
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func findSnippetDirectory(library *config.Library, apiPath, output string) (string, error) {
+	goAPI := findGoAPI(library, apiPath)
+	if goAPI == nil {
+		return "", errGoAPINotFound
+	}
+	if goAPI.ProtoOnly {
+		return "", nil
+	}
+	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+	skip := false
+	// No need to format the snippet directory if the directory is within one of
+	// paths to delete after generation. The snippet directory does not exist.
+	for _, path := range library.Go.DeleteGenerationOutputPaths {
+		pathToDelete := filepath.Join(library.Output, path)
+		if strings.HasPrefix(snippetDir, pathToDelete) {
+			skip = true
+		}
+	}
+	if skip {
+		return "", nil
+	}
+	return snippetDir, nil
 }
