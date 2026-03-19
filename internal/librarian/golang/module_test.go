@@ -491,7 +491,7 @@ func TestRepoRootPath(t *testing.T) {
 		{
 			name:        "no prefix on library output",
 			libraryName: "secretmanager",
-			output:      "",
+			output:      "secretmanager",
 			want:        ".",
 		},
 		{
@@ -503,7 +503,7 @@ func TestRepoRootPath(t *testing.T) {
 		{
 			name:        "nested major version",
 			libraryName: "bigquery/v2",
-			output:      ".",
+			output:      "bigquery/v2",
 			want:        ".",
 		},
 		{
