@@ -23,10 +23,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -253,6 +255,11 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
+	if library.CopyrightYear != "" {
+		if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
+			return fmt.Errorf("restoreCopyrightYear: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -370,4 +377,49 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// restoreCopyrightYear replaces the generated copyright year with the original year
+// for files that already existed, if a valid Apache 2.0 license header is present.
+func restoreCopyrightYear(outDir string, year string) error {
+	return filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		if ext != ".js" && ext != ".ts" {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		if license.HasHeader(content) {
+			lines := strings.Split(string(content), "\n")
+			modified := false
+			for i, line := range lines {
+				if strings.Contains(line, "Copyright ") && strings.Contains(line, " Google LLC") {
+					re := regexp.MustCompile(`Copyright \d{4} Google LLC`)
+					newLine := re.ReplaceAllString(line, "Copyright "+year+" Google LLC")
+					if newLine != line {
+						lines[i] = newLine
+						modified = true
+					}
+					break
+				}
+			}
+			if modified {
+				newContent := strings.Join(lines, "\n")
+				if err := os.WriteFile(path, []byte(newContent), info.Mode()); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }

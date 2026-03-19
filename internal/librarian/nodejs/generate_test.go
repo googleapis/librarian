@@ -672,3 +672,75 @@ func TestGenerate(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreCopyrightYear(t *testing.T) {
+	outDir := t.TempDir()
+	// Create a dummy JS file with the Apache license
+	jsFile := filepath.Join(outDir, "test.js")
+	jsContent := []byte(`// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+const foo = "bar";
+`)
+	if err := os.WriteFile(jsFile, jsContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a dummy file without license
+	noLicenseFile := filepath.Join(outDir, "no_license.js")
+	noLicenseContent := []byte(`// Copyright 2026 Google LLC
+const bar = "foo";
+`)
+	if err := os.WriteFile(noLicenseFile, noLicenseContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a dummy file that is not JS/TS
+	otherFile := filepath.Join(outDir, "test.txt")
+	otherContent := jsContent
+	if err := os.WriteFile(otherFile, otherContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := restoreCopyrightYear(outDir, "2024"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check jsFile
+	gotJS, err := os.ReadFile(jsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gotJS), "Copyright 2024 Google LLC") {
+		t.Errorf("expected jsFile to have restored copyright year, got:\n%s", string(gotJS))
+	}
+
+	// Check noLicenseFile
+	gotNoLicense, err := os.ReadFile(noLicenseFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gotNoLicense), "Copyright 2026 Google LLC") {
+		t.Errorf("expected noLicenseFile to be unmodified, got:\n%s", string(gotNoLicense))
+	}
+
+	// Check otherFile
+	gotOther, err := os.ReadFile(otherFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gotOther), "Copyright 2026 Google LLC") {
+		t.Errorf("expected otherFile to be unmodified, got:\n%s", string(gotOther))
+	}
+}
