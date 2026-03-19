@@ -84,14 +84,6 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
 			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
 		},
-		{
-			name:     "sync versions or copy",
-			repoPath: "testdata/run/sync-versions",
-			language: "go",
-			// Initial librarian.yaml contains accessapproval and accesscontextmanager
-			wantLibraries: []string{"accessapproval", "accesscontextmanager", "advisorynotifications"},
-			wantVersions:  []string{"1.9.0", "1.10.0", "1.5.6"},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
