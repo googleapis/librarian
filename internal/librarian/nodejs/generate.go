@@ -28,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -345,7 +346,7 @@ func Format(ctx context.Context, library *config.Library) error {
 
 // DerivePackageName returns the npm package name for a library. It uses
 // nodejs.package_name if set, otherwise derives it by splitting the library
-// name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
+// name on the second dash (e.g. "google-cloud-batch" -> "@google-cloud/batch").
 func DerivePackageName(library *config.Library) string {
 	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
 		return library.Nodejs.PackageName
@@ -373,7 +374,7 @@ func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
-var copyrightRegexp = regexp.MustCompile(\`// Copyright \d{4} Google LLC\`)
+var copyrightRegexp = regexp.MustCompile(`// Copyright \d{4} Google LLC`)
 
 func restoreCopyrightYear(library *config.Library, outDir string) error {
 	if library.CopyrightYear == "" {
@@ -394,6 +395,9 @@ func restoreCopyrightYear(library *config.Library, outDir string) error {
 		content, err := os.ReadFile(path)
 		if err != nil {
 			return err
+		}
+		if !license.HasHeader(content) {
+			return nil
 		}
 		if !copyrightRegexp.Match(content) {
 			return nil

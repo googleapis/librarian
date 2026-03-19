@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -676,7 +677,17 @@ func TestGenerate(t *testing.T) {
 func TestRestoreCopyrightYear(t *testing.T) {
 	outDir := t.TempDir()
 	tsFile := filepath.Join(outDir, "index.ts")
-	content := "// Copyright 2026 Google LLC\nexport const foo = 'bar';\n"
+
+	headerLines := license.Header("2026")
+	for i, line := range headerLines {
+		if line == "" {
+			headerLines[i] = "//"
+		} else {
+			headerLines[i] = "//" + line
+		}
+	}
+	headerText := strings.Join(headerLines, "\n") + "\n"
+	content := headerText + "export const foo = 'bar';\n"
 	if err := os.WriteFile(tsFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -693,14 +704,24 @@ func TestRestoreCopyrightYear(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	wantLines := license.Header("2025")
+	for i, line := range wantLines {
+		if line == "" {
+			wantLines[i] = "//"
+		} else {
+			wantLines[i] = "//" + line
+		}
+	}
+	wantHeader := strings.Join(wantLines, "\n") + "\n"
+	want := wantHeader + "export const foo = 'bar';\n"
+
 	for _, file := range []string{tsFile, jsFile} {
 		got, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := "// Copyright 2025 Google LLC\nexport const foo = 'bar';\n"
 		if string(got) != want {
-			t.Errorf("mismatch in %s: got %q, want %q", file, string(got), want)
+			t.Errorf("mismatch in %s:\n got %q\n want %q", file, string(got), want)
 		}
 	}
 }
