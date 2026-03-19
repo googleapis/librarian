@@ -105,7 +105,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if err := generateLibraries(ctx, cfg, libraries, sources); err != nil {
 		return err
 	}
-	return postGenerate(ctx, cfg.Language)
+	return postGenerate(ctx, cfg.Language, cfg)
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
@@ -240,10 +240,12 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 
 // postGenerate performs repository-level actions after all individual
 // libraries have been generated.
-func postGenerate(ctx context.Context, language string) error {
+func postGenerate(ctx context.Context, language string, cfg *config.Config) error {
 	switch language {
 	case config.LanguageFake:
 		return fakePostGenerate()
+	case config.LanguageJava:
+		return java.PostGenerate(ctx, cfg)
 	case config.LanguageRust:
 		return rust.UpdateWorkspace(ctx)
 	default:

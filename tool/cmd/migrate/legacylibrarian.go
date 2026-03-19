@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -160,6 +161,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 	cfg := &config.Config{
 		Language: input.lang,
 		Repo:     repo,
+		Version:  librarian.Version(),
 		Sources: &config.Sources{
 			Googleapis: src,
 		},
@@ -470,9 +472,7 @@ func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 	// Formatting the library will sort the APIs by path later anyway, so let's
 	// do that now. That way the migration code will observe the list of APIs
 	// in the same order that it will eventually be saved.
-	slices.SortFunc(apis, func(a, b *config.API) int {
-		return strings.Compare(a.Path, b.Path)
-	})
+	serviceconfig.SortAPIs(apis)
 	return apis
 }
 

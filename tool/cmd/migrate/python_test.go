@@ -238,6 +238,36 @@ func TestBuildPythonLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "functions (multiple versions, pick the right default)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-functions",
+							APIs: []*legacyconfig.API{
+								{Path: "google/cloud/functions/v1"},
+								{Path: "google/cloud/functions/v2"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-functions",
+					APIs: []*config.API{
+						{Path: "google/cloud/functions/v2"},
+						{Path: "google/cloud/functions/v1"},
+					},
+					Python: &config.PythonPackage{
+						DefaultVersion: "v1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildPythonLibraries(test.input, "testdata/googleapis")

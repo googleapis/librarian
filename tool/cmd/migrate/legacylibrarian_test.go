@@ -379,6 +379,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// The tests don't specify a version; ensure there is one, but
+			// then clear the field for further comparisons.
+			if got.Version == "" {
+				t.Errorf("expected non-empty version; was empty")
+			}
+			got.Version = ""
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -932,8 +938,8 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigtable",
 					APIs: []*config.API{
-						{Path: "google/bigtable/admin/v2"},
 						{Path: "google/bigtable/v2"},
+						{Path: "google/bigtable/admin/v2"},
 					},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
@@ -1147,12 +1153,12 @@ func TestParseBazel_Error(t *testing.T) {
 
 func TestToAPIs(t *testing.T) {
 	legacyAPIs := []*legacyconfig.API{
-		{Path: "google/cloud/functions/v2"},
 		{Path: "google/cloud/functions/v1"},
+		{Path: "google/cloud/functions/v2"},
 	}
 	want := []*config.API{
-		{Path: "google/cloud/functions/v1"},
 		{Path: "google/cloud/functions/v2"},
+		{Path: "google/cloud/functions/v1"},
 	}
 	got := toAPIs(legacyAPIs)
 	if diff := cmp.Diff(want, got); diff != "" {
