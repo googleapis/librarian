@@ -176,8 +176,7 @@ func createGithubDetails(repoName string) GithubDetails {
 		sources = "googleapis and discovery-artifact-manager"
 	}
 	title := fmt.Sprintf("chore: update %s and regenerate", sources)
-	body := fmt.Sprintf(`
-Update %s to the latest commit and regenerate all client libraries.`, sources)
+	body := fmt.Sprintf("Update %s to the latest commit and regenerate all client libraries.", sources)
 	return GithubDetails{
 		PrTitle:    title,
 		PrBody:     body,

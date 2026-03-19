@@ -47,7 +47,6 @@ func formatCmd(name string, args ...string) string {
 }
 
 func TestUploadToGithub(t *testing.T) {
-	t.Parallel()
 
 	for _, test := range []struct {
 		name     string
@@ -108,7 +107,6 @@ func TestUploadToGithub(t *testing.T) {
 }
 
 func TestUploadToGithub_Error(t *testing.T) {
-	t.Parallel()
 	const (
 		branch = "fix-branch"
 		title  = "fix: bug"
@@ -117,7 +115,6 @@ func TestUploadToGithub_Error(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		wantResults map[string]error
-		wantErr     string
 	}{
 		{
 			name: "branch creation fails",
@@ -161,15 +158,11 @@ func TestUploadToGithub_Error(t *testing.T) {
 			if err == nil {
 				t.Error("expected error, got nil")
 			}
-			if !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("error %q does not contain expected string %q", err, test.wantErr)
-			}
 		})
 	}
 }
 
 func TestCloneRepoInDir(t *testing.T) {
-	t.Parallel()
 	const (
 		repoName = "librarian"
 		repoDir  = "/tmp/repo"
@@ -187,7 +180,6 @@ func TestCloneRepoInDir(t *testing.T) {
 }
 
 func TestCloneRepoInDir_Error(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		wantErr error
@@ -207,7 +199,6 @@ func TestCloneRepoInDir_Error(t *testing.T) {
 }
 
 func TestCreateBranch(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name   string
 		branch string
@@ -232,7 +223,6 @@ func TestCreateBranch(t *testing.T) {
 }
 
 func TestCreateBranch_Error(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		wantErr error
@@ -282,14 +272,14 @@ func TestCommitChanges_Error(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		wantResults map[string]error
-		wantErr     string
+		wantErr     error
 	}{
 		{
 			name: "add fails",
 			wantResults: map[string]error{
 				formatCmd("git", "add", "."): fmt.Errorf("add fail"),
 			},
-			wantErr: "add fail",
+			wantErr: fmt.Errorf("add fail"),
 		},
 		{
 			name: "commit fails",
@@ -297,14 +287,14 @@ func TestCommitChanges_Error(t *testing.T) {
 				formatCmd("git", "add", "."):            nil,
 				formatCmd("git", "commit", "-m", "msg"): fmt.Errorf("commit fail"),
 			},
-			wantErr: "commit fail",
+			wantErr: fmt.Errorf("commit fail"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testRun, _ := testRunCommand(test.wantResults, nil)
 			runCommand = testRun
 			err := commitChanges(context.Background(), "msg")
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+			if err == nil || !strings.Contains(err.Error(), test.wantErr.Error()) {
 				t.Errorf("got error %v, want %q", err, test.wantErr)
 			}
 		})
