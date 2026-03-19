@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package gcloud generates gcloud command YAML files.
-package gcloud
+package input
 
 // Config represents the top-level schema of a gcloud config YAML file.
 type Config struct {

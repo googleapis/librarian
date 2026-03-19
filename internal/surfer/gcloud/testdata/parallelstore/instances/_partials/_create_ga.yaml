@@ -1,0 +1,165 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  hidden: true
+  help_text:
+    brief: Creates a Parallelstore instance
+    description: |
+      Creates a Parallelstore instance.
+    examples: |-
+      To create an instance `my-instance` in location `us-central1-a` with 12000 Gib capacity run:
+
+      $ {command} my-instance --capacity-gib=12000 --location=us-central1-a
+  arguments:
+    params:
+      - help_text: The instance to create.
+        is_positional: true
+        is_primary_resource: true
+        request_id_field: instanceId
+        resource_spec:
+          name: instance
+          plural_name: instances
+          collection: parallelstore.projects.locations.instances
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: instancesId
+              attribute_name: instance
+              help: The instance id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: description
+        api_field: instance.description
+        help_text: Value for the `description` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: labels
+        api_field: instance.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: capacity-gib
+        api_field: instance.capacityGib
+        help_text: Value for the `capacity-gib` field.
+        is_positional: false
+        is_primary_resource: false
+        required: true
+        repeated: false
+        type: long
+      - arg_name: network
+        api_field: instance.network
+        help_text: Value for the `network` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: network
+          plural_name: networks
+          collection: parallelstore.projects.networks
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: networksId
+              attribute_name: network
+              help: The network id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          instance.network: '{__relative_name__}'
+      - arg_name: reserved-ip-range
+        api_field: instance.reservedIpRange
+        help_text: Value for the `reserved-ip-range` field.
+        is_positional: false
+        is_primary_resource: false
+        resource_spec:
+          name: address
+          plural_name: addresses
+          collection: parallelstore.projects.regions.addresses
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: regionsId
+              attribute_name: region
+              help: The region id of the {resource} resource.
+            - parameter_name: addressesId
+              attribute_name: address
+              help: The address id of the {resource} resource.
+          disable_auto_completers: true
+        required: false
+        repeated: false
+        resource_method_params:
+          instance.reservedIpRange: '{__relative_name__}'
+      - arg_name: file-stripe-level
+        api_field: instance.fileStripeLevel
+        help_text: Value for the `file-stripe-level` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        choices:
+          - arg_value: file-stripe-level-min
+            enum_value: FILE_STRIPE_LEVEL_MIN
+          - arg_value: file-stripe-level-balanced
+            enum_value: FILE_STRIPE_LEVEL_BALANCED
+          - arg_value: file-stripe-level-max
+            enum_value: FILE_STRIPE_LEVEL_MAX
+      - arg_name: directory-stripe-level
+        api_field: instance.directoryStripeLevel
+        help_text: Value for the `directory-stripe-level` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        choices:
+          - arg_value: directory-stripe-level-min
+            enum_value: DIRECTORY_STRIPE_LEVEL_MIN
+          - arg_value: directory-stripe-level-balanced
+            enum_value: DIRECTORY_STRIPE_LEVEL_BALANCED
+          - arg_value: directory-stripe-level-max
+            enum_value: DIRECTORY_STRIPE_LEVEL_MAX
+      - arg_name: deployment-type
+        api_field: instance.deploymentType
+        help_text: Value for the `deployment-type` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        choices:
+          - arg_value: scratch
+            enum_value: SCRATCH
+          - arg_value: persistent
+            enum_value: PERSISTENT
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+  request:
+    api_version: v1alpha
+    collection:
+      - parallelstore.projects.locations.instances
+  async:
+    collection:
+      - parallelstore.projects.locations.operations
+    extract_resource_result: true

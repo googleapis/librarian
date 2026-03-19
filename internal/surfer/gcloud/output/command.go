@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package output
 
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is designed to be marshaled into a YAML file that the gcloud generator can
