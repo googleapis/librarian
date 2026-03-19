@@ -35,42 +35,47 @@ func TestFormat(t *testing.T) {
 			name: "library path and snippet directory exist",
 			library: &config.Library{
 				Name: "example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/v1", ImportPath: "example/apiv1"},
+					},
+				},
 			},
 			goFilePath: []string{
 				"example",
-				"internal/generated/snippets/example",
+				"internal/generated/snippets/example/apiv1",
 			},
 		},
 		{
-			// This is true for the root module, though the snippet
-			// directory should also not exist.
-			name: "library path does not exist",
+			name: "root module",
 			library: &config.Library{
-				Name: "example",
-			},
-			goFilePath: []string{
-				"internal/generated/snippets/example",
+				Name: rootModule,
 			},
 		},
 		{
-			name: "snippet directory does not exist",
+			name: "proto only API",
 			library: &config.Library{
 				Name: "example",
+				APIs: []*config.API{
+					{Path: "example/common"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/common", ProtoOnly: true},
+					},
+				},
 			},
 			goFilePath: []string{
 				"example",
-			},
-		},
-		{
-			name: "library path and snippet directory do not exist",
-			library: &config.Library{
-				Name: "example",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outDir := t.TempDir()
-			test.library.Output = outDir
+			repoRoot := t.TempDir()
+			test.library.Output = filepath.Join(repoRoot, test.library.Name)
 			unformatted := `package main
 
 import (
@@ -93,7 +98,7 @@ func main() {
 }
 `
 			for _, aPath := range test.goFilePath {
-				path := filepath.Join(outDir, aPath)
+				path := filepath.Join(repoRoot, aPath)
 				if err := os.MkdirAll(path, 0755); err != nil {
 					t.Fatal(err)
 				}
@@ -105,7 +110,7 @@ func main() {
 				t.Fatal(err)
 			}
 			for _, aPath := range test.goFilePath {
-				goFile := filepath.Join(outDir, aPath, "example.go")
+				goFile := filepath.Join(repoRoot, aPath, "example.go")
 				gotBytes, err := os.ReadFile(goFile)
 				if err != nil {
 					t.Fatal(err)
