@@ -473,7 +473,7 @@ func TestDefaultOutput(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DefaultOutput(test.defaultOut, test.libraryName)
+			got := DefaultOutput(test.libraryName, test.defaultOut)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
