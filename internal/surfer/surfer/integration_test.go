@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+// TODO: make test table driven
+// write test struc with the information about the test (path, name, etc)
+// go has this thing has a main test testing.M you can define setup and teardown
+
 func TestIntegration(t *testing.T) {
 	testdata := "testdata"
 
@@ -49,8 +53,8 @@ func TestIntegration(t *testing.T) {
 		if configFile == "" {
 			return nil
 		}
-		expectedDir := filepath.Join(path, "expected", "surface")
-		if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
+		expectedRoot := filepath.Join(path, "expected", "surface")
+		if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
 			return nil
 		}
 
@@ -101,13 +105,22 @@ func TestIntegration(t *testing.T) {
 				t.Fatalf("surfer generation failed: %v", err)
 			}
 
-			// Find actual generated service directory
-			genServiceDir := findGeneratedServiceDir(outDir)
-			if genServiceDir == "" {
+			// Service directories in 'expected' might have different naming (e.g. confirmation_prompt vs confirmationprompt).
+			// We find the service dir in generated and compare it with the service dir in expected.
+			gotServiceDir, gotServiceName := findFirstSubdir(outDir)
+			if gotServiceDir == "" {
 				t.Fatalf("no output generated in %s", outDir)
 			}
 
-			compareDirectories(t, expectedDir, genServiceDir)
+			expectedServiceDir := findMatchingExpectedServiceDir(expectedRoot, gotServiceName)
+			if expectedServiceDir == "" {
+				// Fallback to directly comparing with expectedRoot if we can't find a service dir.
+				expectedServiceDir = expectedRoot
+			}
+
+			if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
+				t.Logf("Generated directory tree for %s:\n%s", scenarioName, getDirTree(gotServiceDir))
+			}
 		})
 
 		return nil
@@ -181,25 +194,62 @@ func findProtos(t *testing.T, root string) []string {
 	return protos
 }
 
-func findGeneratedServiceDir(outDir string) string {
-	var found string
-	filepath.WalkDir(outDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || found != "" {
+func getDirTree(root string) string {
+	var sb strings.Builder
+	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
 			return nil
 		}
-		if d.IsDir() && path != outDir {
-			// Check if this dir contains YAML files or subdirs with YAML files.
-			// surfer usually generates service_name/resource_name/...
-			found = path
-			return filepath.SkipDir
+		rel, _ := filepath.Rel(root, path)
+		if rel == "." {
+			return nil
+		}
+		depth := strings.Count(rel, string(os.PathSeparator))
+		sb.WriteString(strings.Repeat("  ", depth))
+		if d.IsDir() {
+			sb.WriteString(d.Name() + "/\n")
+		} else {
+			sb.WriteString(d.Name() + "\n")
 		}
 		return nil
 	})
-	return found
+	return sb.String()
 }
 
-func compareDirectories(t *testing.T, expectedDir, gotDir string) {
+func findFirstSubdir(dir string) (string, string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", ""
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			return filepath.Join(dir, entry.Name()), entry.Name()
+		}
+	}
+	return "", ""
+}
+
+func findMatchingExpectedServiceDir(root, targetName string) string {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return ""
+	}
+	normalizedTarget := normalize(targetName)
+	for _, entry := range entries {
+		if entry.IsDir() && normalize(entry.Name()) == normalizedTarget {
+			return filepath.Join(root, entry.Name())
+		}
+	}
+	return ""
+}
+
+func normalize(s string) string {
+	return strings.ReplaceAll(strings.ToLower(s), "_", "")
+}
+
+func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 	t.Helper()
+	allPass := true
 	filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
@@ -214,15 +264,21 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) {
 		gotPath := filepath.Join(gotDir, relPath)
 		if _, err := os.Stat(gotPath); os.IsNotExist(err) {
 			t.Errorf("%s: missing in output", relPath)
+			allPass = false
 			return nil
 		}
 
-		compareFiles(t, path, gotPath, relPath)
+		if !compareFiles(t, path, gotPath, relPath) {
+			allPass = false
+		} else {
+			t.Logf("%s: MATCH", relPath)
+		}
 		return nil
 	})
+	return allPass
 }
 
-func compareFiles(t *testing.T, expected, got, rel string) {
+func compareFiles(t *testing.T, expected, got, rel string) bool {
 	t.Helper()
 	wantContent, _ := os.ReadFile(expected)
 	gotContent, _ := os.ReadFile(got)
@@ -231,18 +287,21 @@ func compareFiles(t *testing.T, expected, got, rel string) {
 		var wantYAML, gotYAML interface{}
 		if err := yaml.Unmarshal(wantContent, &wantYAML); err != nil {
 			t.Errorf("%s: failed to unmarshal expected YAML: %v", rel, err)
-			return
+			return false
 		}
 		if err := yaml.Unmarshal(gotContent, &gotYAML); err != nil {
 			t.Errorf("%s: failed to unmarshal generated YAML: %v", rel, err)
-			return
+			return false
 		}
 		if diff := cmp.Diff(wantYAML, gotYAML); diff != "" {
 			t.Errorf("%s mismatch (-want +got):\n%s", rel, diff)
+			return false
 		}
 	} else {
 		if string(wantContent) != string(gotContent) {
 			t.Errorf("%s content mismatch", rel)
+			return false
 		}
 	}
+	return true
 }
