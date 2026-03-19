@@ -1159,7 +1159,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			},
 		},
 		{
-			name: "fixes versioning",
+			name: "move files when module path version exists",
 			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
