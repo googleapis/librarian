@@ -528,10 +528,26 @@ func TestRepoRootPath(t *testing.T) {
 			want: ".",
 		},
 		{
-			name: "root module has an absolute output directory",
+			name: "root module has an absolute output path",
 			library: &config.Library{
 				Name:   "root-module",
 				Output: "/home/anyone/repo",
+			},
+			want: "/home/anyone/repo",
+		},
+		{
+			name: "library output has an absolute output path",
+			library: &config.Library{
+				Name:   "library-name",
+				Output: "/home/anyone/repo/lib",
+			},
+			want: "/home/anyone/repo",
+		},
+		{
+			name: "nested library output has an absolute output path",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "/home/anyone/repo/lib/v2",
 			},
 			want: "/home/anyone/repo",
 		},
