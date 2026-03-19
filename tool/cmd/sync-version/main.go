@@ -41,7 +41,7 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	flagSet := flag.NewFlagSet("sync-version", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("syncversions", flag.ContinueOnError)
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
