@@ -15,9 +15,11 @@
 package java
 
 import (
+	"encoding/xml"
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -65,57 +67,75 @@ func TestPostGenerate(t *testing.T) {
 			t.Errorf("root pom.xml missing module %s", mod)
 		}
 	}
-	// Verify gapic-libraries-bom/pom.xml
+	// Unmarshal and verify gapic-libraries-bom/pom.xml
+	wantDeps := []bomDependency{
+		{GroupID: "com.google.analytics", ArtifactID: "google-analytics-admin-bom", Version: "0.98.0", Type: "pom", Scope: "import"},
+		{GroupID: "com.google.area120", ArtifactID: "google-area120-tables-bom", Version: "0.92.0", Type: "pom", Scope: "import"},
+		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-aiplatform-bom", Version: "3.89.0", Type: "pom", Scope: "import"},
+		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-dns", Version: "2.86.0", Type: "", Scope: ""},
+		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
+		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
+	}
+	verifyBOM(t, filepath.Join("gapic-libraries-bom", "pom.xml"), "1.2.3", wantDeps)
+	// Verify annotations are present in the raw XML
 	bomPom, err := os.ReadFile(filepath.Join("gapic-libraries-bom", "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	bomPomContent := string(bomPom)
-	if !strings.Contains(bomPomContent, "<version>1.2.3</version>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing correct version, got:\n%s", bomPomContent)
+	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
+		t.Errorf("gapic-libraries-bom/pom.xml missing annotation google-cloud-aiplatform")
 	}
-	// Verify inclusions
-	if !strings.Contains(bomPomContent, "<artifactId>google-analytics-admin-bom</artifactId>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-analytics-admin-bom")
+}
+
+type bomDependency struct {
+	GroupID    string `xml:"groupId"`
+	ArtifactID string `xml:"artifactId"`
+	Version    string `xml:"version"`
+	Type       string `xml:"type"`
+	Scope      string `xml:"scope"`
+}
+
+type bomPom struct {
+	Version      string          `xml:"version"`
+	Dependencies []bomDependency `xml:"dependencyManagement>dependencies>dependency"`
+}
+
+func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDependency) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(bomPomContent, "<version>0.98.0</version>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing analytics-admin version 0.98.0")
+	var p bomPom
+	if err := xml.Unmarshal(data, &p); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(bomPomContent, "<artifactId>google-area120-tables-bom</artifactId>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-area120-tables-bom")
+	if p.Version != wantVersion {
+		t.Errorf("%s version = %q, want %q", path, p.Version, wantVersion)
 	}
-	if !strings.Contains(bomPomContent, "<version>0.92.0</version>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing area120-tables version 0.92.0")
+	// Filter out dependencies we are not testing (there might be others from searchForBOMArtifacts)
+	var gotDeps []bomDependency
+	for _, d := range p.Dependencies {
+		for _, w := range wantDeps {
+			if d.ArtifactID == w.ArtifactID {
+				gotDeps = append(gotDeps, d)
+				break
+			}
+		}
 	}
-	if !strings.Contains(bomPomContent, "<artifactId>google-cloud-aiplatform-bom</artifactId>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing artifact google-cloud-aiplatform-bom")
-	}
-	if !strings.Contains(bomPomContent, "<version>3.89.0</version>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing aiplatform version 3.89.0")
+	// Sort for comparison
+	sort.Slice(gotDeps, func(i, j int) bool { return gotDeps[i].ArtifactID < gotDeps[j].ArtifactID })
+	sort.Slice(wantDeps, func(i, j int) bool { return wantDeps[i].ArtifactID < wantDeps[j].ArtifactID })
+
+	if diff := cmp.Diff(wantDeps, gotDeps); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// java-maps-places should be excluded because of GroupID com.google.maps
-	if strings.Contains(bomPomContent, "google-maps-places-bom") {
-		t.Errorf("gapic-libraries-bom/pom.xml should NOT contain google-maps-places-bom")
-	}
-	// Verify special case java-grafeas
-	if !strings.Contains(bomPomContent, "<artifactId>grafeas</artifactId>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing artifact grafeas")
-	}
-	if !strings.Contains(bomPomContent, "<version>1.2.3</version>") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing grafeas version 1.2.3")
-	}
-	// It should NOT have type pom and scope import
-	grafeasEntry := `<dependency>
-        <groupId>io.grafeas</groupId>
-        <artifactId>grafeas</artifactId>
-        <version>1.2.3</version><!-- {x-version-update:grafeas:current} -->
-      </dependency>`
-	if !strings.Contains(bomPomContent, grafeasEntry) {
-		t.Errorf("gapic-libraries-bom/pom.xml missing expected grafeas entry, got:\n%s", bomPomContent)
-	}
-	// Verify annotations
-	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing annotation google-cloud-aiplatform, got:\n%s", bomPomContent)
+	for _, d := range p.Dependencies {
+		if d.ArtifactID == "google-maps-places-bom" {
+			t.Errorf("%s should NOT contain google-maps-places-bom", path)
+		}
 	}
 }
 
