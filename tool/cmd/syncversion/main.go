@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The syncversions command synchronizes library versions from the legacy
+// The syncversion command synchronizes library versions from the legacy
 // librarian state file into the new librarian.yaml configuration file.
 package main
 
@@ -43,7 +43,7 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
-	flagSet := flag.NewFlagSet("syncversions", flag.ContinueOnError)
+	flagSet := flag.NewFlagSet("syncversion", flag.ContinueOnError)
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
