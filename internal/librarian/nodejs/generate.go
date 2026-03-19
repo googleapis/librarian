@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -253,7 +254,7 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
-	return nil
+	return restoreCopyrightYear(library, outDir)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
@@ -370,4 +371,34 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+var copyrightRegexp = regexp.MustCompile(\`// Copyright \d{4} Google LLC\`)
+
+func restoreCopyrightYear(library *config.Library, outDir string) error {
+	if library.CopyrightYear == "" {
+		return nil
+	}
+	want := fmt.Sprintf("// Copyright %s Google LLC", library.CopyrightYear)
+	return filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		if ext != ".ts" && ext != ".js" {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if !copyrightRegexp.Match(content) {
+			return nil
+		}
+		newContent := copyrightRegexp.ReplaceAll(content, []byte(want))
+		return os.WriteFile(path, newContent, info.Mode())
+	})
 }

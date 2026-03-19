@@ -672,3 +672,35 @@ func TestGenerate(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreCopyrightYear(t *testing.T) {
+	outDir := t.TempDir()
+	tsFile := filepath.Join(outDir, "index.ts")
+	content := "// Copyright 2026 Google LLC\nexport const foo = 'bar';\n"
+	if err := os.WriteFile(tsFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	jsFile := filepath.Join(outDir, "index.js")
+	if err := os.WriteFile(jsFile, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:          "google-cloud-test",
+		CopyrightYear: "2025",
+	}
+	if err := restoreCopyrightYear(library, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, file := range []string{tsFile, jsFile} {
+		got, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "// Copyright 2025 Google LLC\nexport const foo = 'bar';\n"
+		if string(got) != want {
+			t.Errorf("mismatch in %s: got %q, want %q", file, string(got), want)
+		}
+	}
+}
