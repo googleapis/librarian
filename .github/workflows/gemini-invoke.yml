@@ -38,12 +38,10 @@ jobs:
         with:
           gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
           workflow_name: 'gemini-invoke'
-          github_pr_number: '${{ github.event.pull_request.number }}'
-          github_issue_number: '${{ github.event.issue.number }}'
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 100
               },
               "mcpServers": {
                 "github": {
