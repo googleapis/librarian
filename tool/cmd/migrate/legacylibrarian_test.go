@@ -50,28 +50,23 @@ func TestRunMigrateLibrarian(t *testing.T) {
 	for _, test := range []struct {
 		name               string
 		repoPath           string
-		language           string
 		librariesToMigrate []string
 		wantLibraries      []string
-		wantVersions       []string
 	}{
 		{
 			name:          "success",
 			repoPath:      "testdata/run/success-python",
-			language:      "python",
 			wantLibraries: []string{"google-ads-admanager"},
 		},
 		{
 			name:               "selective migration",
 			repoPath:           "testdata/run/selective-migration",
-			language:           "python",
 			librariesToMigrate: []string{"google-cloud-audit-log"},
 			wantLibraries:      []string{"google-cloud-audit-log"},
 		},
 		{
 			name:               "incremental migration without overlap",
 			repoPath:           "testdata/run/incremental-migration",
-			language:           "python",
 			librariesToMigrate: []string{"google-cloud-audit-log"},
 			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
 			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
@@ -79,7 +74,6 @@ func TestRunMigrateLibrarian(t *testing.T) {
 		{
 			name:               "incremental migration with overlap",
 			repoPath:           "testdata/run/incremental-migration",
-			language:           "python",
 			librariesToMigrate: []string{"google-ads-admanager", "google-cloud-audit-log"},
 			// Initial librarian.yaml contains google-ads-admanager and google-cloud-functions
 			wantLibraries: []string{"google-ads-admanager", "google-cloud-audit-log", "google-cloud-functions"},
@@ -90,7 +84,7 @@ func TestRunMigrateLibrarian(t *testing.T) {
 			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
 				t.Fatal(err)
 			}
-			if err := runLibrarianMigration(t.Context(), test.language, dir, test.librariesToMigrate); err != nil {
+			if err := runLibrarianMigration(t.Context(), "python", dir, test.librariesToMigrate); err != nil {
 				t.Fatal(err)
 			}
 			gotConfig, err := yaml.Read[config.Config](filepath.Join(dir, "librarian.yaml"))
@@ -98,19 +92,11 @@ func TestRunMigrateLibrarian(t *testing.T) {
 				t.Fatal(err)
 			}
 			var gotLibraries []string
-			var gotVersions []string
 			for _, lib := range gotConfig.Libraries {
 				gotLibraries = append(gotLibraries, lib.Name)
-				gotVersions = append(gotVersions, lib.Version)
 			}
 			if diff := cmp.Diff(test.wantLibraries, gotLibraries); diff != "" {
 				t.Errorf("mismatch in resulting libraries (-want +got):\n%s", diff)
-			}
-			if len(test.wantVersions) == 0 {
-				return
-			}
-			if diff := cmp.Diff(test.wantVersions, gotVersions); diff != "" {
-				t.Errorf("mismatch in resulting versions (-want +got):\n%s", diff)
 			}
 		})
 	}
