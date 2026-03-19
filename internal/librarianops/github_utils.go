@@ -46,7 +46,7 @@ func cloneRepoInDir(ctx context.Context, repoName string, repoDir string) error 
 }
 
 func generateBranchName(prefix string, time time.Time) string {
-	return fmt.Sprintf("%s%s", prefix, time.Format("2006-01-02"))
+	return fmt.Sprintf("%s%s", prefix, time.UTC().Format("20060102T150405Z"))
 }
 
 func createBranch(ctx context.Context, branchName string) error {
