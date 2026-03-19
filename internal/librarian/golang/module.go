@@ -18,12 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -171,4 +173,26 @@ func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string
 // for the given library output directory and Go import path.
 func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
+}
+
+func updateSnippetDirectory(library *config.Library, version, output string) error {
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
+		}
+		snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+		if _, err := os.Stat(snippetDir); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// A client may not have snippets, e.g., proto-only clients,
+				// skip updating snippets in this case.
+				return nil
+			}
+			return err
+		}
+		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
+			return err
+		}
+	}
+	return nil
 }

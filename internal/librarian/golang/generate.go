@@ -30,7 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -83,7 +82,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			return err
 		}
 	}
-	if err := updateSnippetMetadata(library); err != nil {
+	if err := updateSnippetDirectory(library, outdir, library.Version); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
@@ -328,31 +327,6 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
-}
-
-// updateSnippetMetadata updates the snippet metadata files with the correct library version.
-func updateSnippetMetadata(library *config.Library) error {
-	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
-		if goAPI == nil {
-			return fmt.Errorf("error finding Go API %s: %w", api.Path, errGoAPINotFound)
-		}
-		// Proto-only client doesn't have generated snippets, skip updating.
-		if goAPI.ProtoOnly {
-			continue
-		}
-		baseDir := snippetDirectory(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
-		if _, err := os.Stat(baseDir); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return nil
-			}
-			return err
-		}
-		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func hasRESTNumericEnums(sc *serviceconfig.API) bool {
