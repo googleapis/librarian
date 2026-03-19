@@ -1159,7 +1159,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			},
 		},
 		{
-			name: "library configured with module path version",
+			name: "library configured with a versioned module path",
 			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
@@ -1197,7 +1197,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			},
 		},
 		{
-			name: "library configured delete generation output path",
+			name: "library configured paths to delete after generation",
 			setup: func(t *testing.T, tmpDir string) (string, *config.Library) {
 				repoRoot := filepath.Join(tmpDir, "repo")
 				outDir := filepath.Join(repoRoot, "lib")
