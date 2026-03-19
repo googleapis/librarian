@@ -1,0 +1,9 @@
+type: google.api.Service
+config_version: 3
+name: cloudfunctions.googleapis.com
+title: Cloud Functions API
+
+documentation:
+  summary: 'Manages lightweight user-provided functions executed in response to events.'
+  overview: 'Manages lightweight user-provided functions executed in response to
+events.'

@@ -932,8 +932,8 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigtable",
 					APIs: []*config.API{
-						{Path: "google/bigtable/admin/v2"},
 						{Path: "google/bigtable/v2"},
+						{Path: "google/bigtable/admin/v2"},
 					},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
@@ -1147,12 +1147,12 @@ func TestParseBazel_Error(t *testing.T) {
 
 func TestToAPIs(t *testing.T) {
 	legacyAPIs := []*legacyconfig.API{
-		{Path: "google/cloud/functions/v2"},
 		{Path: "google/cloud/functions/v1"},
+		{Path: "google/cloud/functions/v2"},
 	}
 	want := []*config.API{
-		{Path: "google/cloud/functions/v1"},
 		{Path: "google/cloud/functions/v2"},
+		{Path: "google/cloud/functions/v1"},
 	}
 	got := toAPIs(legacyAPIs)
 	if diff := cmp.Diff(want, got); diff != "" {
