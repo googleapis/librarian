@@ -853,7 +853,7 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *ap
 		typeName := annotate.resolveEnumName(state.EnumByID[typeid])
 		return fmt.Sprintf("%s.fromJson", typeName)
 	case api.MESSAGE_TYPE:
-		typeName := annotate.resolveMessageName(state.MessageByID[typeid], true)
+		typeName := annotate.resolveMessageName(state.MessageByID[typeid], false)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -1244,7 +1244,7 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			val := annotate.fieldType(message.Fields[1])
 			out = "Map<" + key + ", " + val + ">"
 		} else {
-			out = annotate.resolveMessageName(message, true)
+			out = annotate.resolveMessageName(message, false)
 		}
 	case api.ENUM_TYPE:
 		e, ok := annotate.state.EnumByID[f.TypezID]
