@@ -15,12 +15,78 @@
 package main
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/yaml"
 )
+
+func TestRun(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		want     *config.Config
+	}{
+		{
+			name:     "success",
+			repoPath: "testdata/sync-version",
+			want: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "6c3dce4a02401667e9dd6d28304fee3f98e20ff8",
+						SHA256: "c119da87c44afc55cd7afc0829c7e321a0fb03ff5c8bdbe0c00d27e7f30a8c63",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "accessapproval",
+						Version: "1.9.0",
+						APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
+					},
+					{
+						Name:    "accesscontextmanager",
+						Version: "1.10.0",
+						APIs:    []*config.API{{Path: "google/identity/accesscontextmanager/v1"}},
+						Go: &config.GoModule{
+							GoAPIs: []*config.GoAPI{
+								{
+									Path:       "google/identity/accesscontextmanager/v1",
+									ImportPath: "accesscontextmanager/apiv1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfgPath := filepath.Join(test.repoPath, "librarian.yaml")
+			original, err := yaml.Read[config.Config](cfgPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := yaml.Write(cfgPath, original); err != nil {
+					t.Fatal()
+				}
+			})
+			if err := run(t.Context(), []string{test.repoPath}); err != nil {
+				t.Fatal(err)
+			}
+			got, err := yaml.Read[config.Config](cfgPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 func TestSyncVersion(t *testing.T) {
 	for _, test := range []struct {
