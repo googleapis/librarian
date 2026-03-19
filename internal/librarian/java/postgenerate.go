@@ -146,25 +146,28 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 			}
 		}
 	}
-	// handle edge case before sort: java-dns
-	conf, err := handleSpecialBOM("java-dns", "com.google.cloud", "google-cloud-dns")
-	if err != nil {
-		return nil, fmt.Errorf("failed to handle special BOM for java-dns: %w", err)
+	// handle edge case before sort
+	specialBOMs := []struct {
+		module     string
+		groupID    string
+		artifactID string
+	}{
+		{"java-dns", "com.google.cloud", "google-cloud-dns"},
+		{"java-notification", "com.google.cloud", "google-cloud-notification"},
 	}
-	configs = append(configs, conf)
-
-	// handle edge case before sort: java-notification
-	conf, err = handleSpecialBOM("java-notification", "com.google.cloud", "google-cloud-notification")
-	if err != nil {
-		return nil, fmt.Errorf("failed to handle special BOM for java-notification: %w", err)
+	for _, bom := range specialBOMs {
+		conf, err := handleSpecialBOM(bom.module, bom.groupID, bom.artifactID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to handle special BOM for %s: %w", bom.module, err)
+		}
+		configs = append(configs, conf)
 	}
-	configs = append(configs, conf)
 	// Sort by ArtifactID for determinism
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
 	// handle edge case after sort: java-grafeas and add to the end
-	conf, err = handleSpecialBOM("java-grafeas", "io.grafeas", "grafeas")
+	conf, err := handleSpecialBOM("java-grafeas", "io.grafeas", "grafeas")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-grafeas: %w", err)
 	}
