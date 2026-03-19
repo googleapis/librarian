@@ -1,22 +1,33 @@
 type: google.api.Service
-name: regionalendpoints.googleapis.com
 config_version: 3
+name: regionalendpoints.googleapis.com
 title: Regional Endpoints Resource API
 
-legacy:
-  origin_product_id: 70096748  # http://product/70096748
-  mdb: cloud-control2-strawberry-frontend
-  healthz: /healthz?tenantservice=regionalendpoints.googleapis.com
-  bug_component_id: 147788
-  oncall: nobody-oncall@google.com
-
 apis:
-- name: regional_endpoints.v1.RegionalEndpoints
 - name: google.longrunning.Operations
+- name: regional_endpoints.v1.RegionalEndpoints
+
+documentation:
+  summary: An API with documentation.
 
 http:
-  fully_decode_reserved_expansion: true
   rules:
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+    additional_bindings:
+    - post: '/v1/{name=projects/*/regions/*/operations/*}:cancel'
+      body: '*'
+    - post: '/v1/{name=projects/*/zones/*/operations/*}:cancel'
+      body: '*'
+    - post: '/v1/{name=projects/*/operations/*}:cancel'
+      body: '*'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+    additional_bindings:
+    - delete: '/v1/{name=projects/*/regions/*/operations/*}'
+    - delete: '/v1/{name=projects/*/zones/*/operations/*}'
+    - delete: '/v1/{name=projects/*/operations/*}'
   - selector: google.longrunning.Operations.GetOperation
     get: '/v1/{name=projects/*/locations/*/operations/*}'
     additional_bindings:
@@ -29,38 +40,3 @@ http:
     - get: '/v1/{name=projects/*/regions/*}/operations'
     - get: '/v1/{name=projects/*/zones/*}/operations'
     - get: '/v1/{name=projects/*}/operations'
-  - selector: google.longrunning.Operations.DeleteOperation
-    delete: '/v1/{name=projects/*/locations/*/operations/*}'
-    additional_bindings:
-    - delete: '/v1/{name=projects/*/regions/*/operations/*}'
-    - delete: '/v1/{name=projects/*/zones/*/operations/*}'
-    - delete: '/v1/{name=projects/*/operations/*}'
-  - selector: google.longrunning.Operations.CancelOperation
-    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
-    body: '*'
-    additional_bindings:
-    - post: '/v1/{name=projects/*/regions/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=projects/*/zones/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=projects/*/operations/*}:cancel'
-      body: '*'
-
-documentation:
-  summary:
-    An API with documentation.
-
-supported_location:
-  regions: "us-central1, us-east1"
-
-endpoints:
-- name: "regionalendpoints.{$supported_location.regions}.rep.googleapis.com"
-  url_map: "regionalendpoints-url-map-{$supported_location.regions}"
-  project_id: regionalendpoints-{$region.short_region_name}
-  location: "{$supported_location.regions}"
-
-url_maps:
-- name: "regionalendpoints-url-map-{$supported_location.regions}"
-  description: "For regionalendpoints regional APIs"
-  default_backend:
-    target: "main-cloud-{$supported_location.regions}:regionalendpoints-prod-{$supported_location.regions}-rslb"

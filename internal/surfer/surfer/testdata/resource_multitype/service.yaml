@@ -1,17 +1,38 @@
 type: google.api.Service
-name: resourcemultitype.googleapis.com
 config_version: 3
+name: resourcemultitype.googleapis.com
 title: Multitype Resource API
 
 apis:
+- name: google.longrunning.Operations
 - name: resource_multitype.v1.ResourceMultitype
 - name: resource_multitype.v1.ResourceMultitypeDeep
 - name: resource_multitype.v1.ResourceMultitypeOrganization
-- name: google.longrunning.Operations
+
+documentation:
+  summary: An API with documentation.
 
 http:
-  fully_decode_reserved_expansion: true
   rules:
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+    additional_bindings:
+    - post: '/v1/{name=projects/*/nesteds/*/operations/*}:cancel'
+      body: '*'
+    - post: '/v1/{name=projects/*/deeps/*/operations/*}:cancel'
+      body: '*'
+    - post: '/v1/{name=folders/*/locations/*/operations/*}:cancel'
+      body: '*'
+    - post: '/v1/{name=organizations/*/locations/*/operations/*}:cancel'
+      body: '*'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+    additional_bindings:
+    - delete: '/v1/{name=projects/*/nesteds/*/operations/*}'
+    - delete: '/v1/{name=projects/*/deeps/*/operations/*}'
+    - delete: '/v1/{name=folders/*/locations/*/operations/*}'
+    - delete: '/v1/{name=organizations/*/locations/*/operations/*}'
   - selector: google.longrunning.Operations.GetOperation
     get: '/v1/{name=projects/*/locations/*/operations/*}'
     additional_bindings:
@@ -26,26 +47,3 @@ http:
     - get: '/v1/{name=projects/*/deeps/*}/operations'
     - get: '/v1/{name=folders/*/locations/*}/operations'
     - get: '/v1/{name=organizations/*/locations/*}/operations'
-  - selector: google.longrunning.Operations.DeleteOperation
-    delete: '/v1/{name=projects/*/locations/*/operations/*}'
-    additional_bindings:
-    - delete: '/v1/{name=projects/*/nesteds/*/operations/*}'
-    - delete: '/v1/{name=projects/*/deeps/*/operations/*}'
-    - delete: '/v1/{name=folders/*/locations/*/operations/*}'
-    - delete: '/v1/{name=organizations/*/locations/*/operations/*}'
-  - selector: google.longrunning.Operations.CancelOperation
-    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
-    body: '*'
-    additional_bindings:
-    - post: '/v1/{name=projects/*/nesteds/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=projects/*/deeps/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=folders/*/locations/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=organizations/*/locations/*/operations/*}:cancel'
-      body: '*'
-
-documentation:
-  summary:
-    An API with documentation.

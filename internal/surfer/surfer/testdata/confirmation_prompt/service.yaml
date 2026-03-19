@@ -1,10 +1,10 @@
 type: google.api.Service
-name: confirmationprompt.googleapis.com
 config_version: 3
+name: confirmationprompt.googleapis.com
 title: Standard Resource API
 
 apis:
 - name: confirmation_prompt.v1.ConfirmationPrompt
+
 documentation:
-  summary:
-    An API with documentation.
+  summary: An API with documentation.

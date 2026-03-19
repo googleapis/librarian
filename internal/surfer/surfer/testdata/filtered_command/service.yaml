@@ -1,10 +1,10 @@
 type: google.api.Service
-name: filteredcommand.googleapis.com
 config_version: 3
+name: filteredcommand.googleapis.com
 title: Standard Resource API
 
 apis:
 - name: filtered_command.v1.FilteredCommand
+
 documentation:
-  summary:
-    An API with documentation.
+  summary: An API with documentation.

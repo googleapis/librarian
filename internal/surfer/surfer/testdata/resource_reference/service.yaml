@@ -1,10 +1,10 @@
 type: google.api.Service
-name: resourcereference.googleapis.com
 config_version: 3
+name: resourcereference.googleapis.com
 title: Standard Resource API
 
 apis:
 - name: resource_reference.v1.ResourceReference
+
 documentation:
-  summary:
-    An API with documentation.
+  summary: An API with documentation.

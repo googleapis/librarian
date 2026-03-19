@@ -1,4 +1,18 @@
-edition = "2023";
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
 
 package private_preview.v1;
 
@@ -6,136 +20,75 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/api/visibility.proto";
-import "google/longrunning/operations.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
-option features.field_presence = IMPLICIT;
+option go_package = "google.golang.org/genproto/googleapis/private_preview/v1;private_preview";
 
 // Public message where the field is private in proto annotation.
 message PublicProtoMessage {
-  // Private message in service config.
-  message ProtoPrivateMessage {
-    option (google.api.message_visibility).restriction = "TRUSTED_TESTER";
-
-    // Public field that should be private due to message.
-    string public_field = 1;
-  }
-
   // Public enum.
   enum PublicEnum {
     // Unspecified enum.
     PUBLIC_ENUM_UNSPECIFIED = 0;
+
     // Enum value.
     ONE = 1;
+
     // Enum value.
     TWO = 2;
-  }
-
-  // Private enum.
-  enum PrivateEnum {
-    option (google.api.enum_visibility).restriction = "TRUSTED_TESTER";
-
-    // Unspecified enum.
-    PRIVATE_ENUM_UNSPECIFIED = 0;
-    // Enum value.
-    THREE = 1;
-    // Enum value.
-    FOUR = 2;
   }
 
   // Private enum value.
   enum PrivateEnumValue {
     // Unspecified enum.
     PRIVATE_ENUM_VALUE_UNSPECIFIED = 0;
+
     // Enum value.
     FIVE = 1;
-    // Enum value.
-    SIX = 2 [(google.api.value_visibility).restriction = "TRUSTED_TESTER"];
   }
 
   // Always visible field.
   string public_field = 1;
 
-  // Private field.
-  string private_field = 2
-      [(google.api.field_visibility).restriction = "TRUSTED_TESTER"];
-
-  // Private field with multiple visibility annotations.
-  string private_field_multiple_annotations = 3
-      [(google.api.field_visibility).restriction =
-           "TRUSTED_TESTER,GOOGLE_INTERNAL"];
-
   // Always visible enum.
   PublicEnum public_enum = 4;
 
-  // Private enum.
-  PrivateEnum private_enum = 5
-      [(google.api.field_visibility).restriction = "TRUSTED_TESTER"];
-
   // Private enum value.
   PrivateEnumValue private_enum_value = 6;
-
-  // Private message.
-  // Since PrivateMessage is not visible, this field will cause a build error
-  // unless annotated with TRUSTED_TESTER too.
-  ProtoPrivateMessage private_proto_message = 7
-      [(google.api.field_visibility).restriction = "TRUSTED_TESTER"];
 }
 
 // Public message where the field is private in service config.
 message PublicServiceConfigMessage {
   // Private message in service config.
-  message ServiceConfigPrivateMessage {
-    // Public field that should be private due to message.
-    string public_field = 1;
-  }
+  message ServiceConfigPrivateMessage {}
 
   // Public enum.
   enum PublicEnum {
     // Unspecified enum.
     PUBLIC_ENUM_UNSPECIFIED = 0;
+
     // Enum value.
     ONE = 1;
+
     // Enum value.
     TWO = 2;
-  }
-
-  // Private enum.
-  enum PrivateEnum {
-    // Unspecified enum.
-    PRIVATE_ENUM_UNSPECIFIED = 0;
-    // Enum value.
-    THREE = 1;
-    // Enum value.
-    FOUR = 2;
   }
 
   // Private enum value.
   enum PrivateEnumValue {
     // Unspecified enum.
     PRIVATE_ENUM_VALUE_UNSPECIFIED = 0;
+
     // Enum value.
     FIVE = 1;
-    // Enum value.
-    SIX = 2;
   }
 
   // Always visible field.
   string public_field = 1;
 
-  // Private field.
-  string private_field = 2;
-
-  // Private field with multiple visibility annotations.
-  string private_field_multiple_annotations = 3;
-
   // Always visible enum.
   PublicEnum public_enum = 4;
-
-  // Private enum.
-  PublicEnum private_enum = 5;
 
   // Private enum value.
   PrivateEnumValue private_enum_value = 6;
@@ -145,39 +98,39 @@ message PublicServiceConfigMessage {
 }
 
 message Resource {
-  option (.google.api.resource) = {
-    type: "example.googleapis.com/Resource",
+  option (google.api.resource) = {
+    type: "example.googleapis.com/Resource"
     pattern: "projects/{project}/locations/{location}/resources/{resource}"
   };
 
-  // Resource name.
-  string name = 1 [(.google.api.field_behavior) = IDENTIFIER];
+  // Identifier. Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // The labels on the resource, which can be used for categorization.
   // similar to Kubernetes resource labels.
   map<string, string> labels = 2;
 
-  // The unique identifier of the resource. UID is unique in the time
-  // and space for this resource within the scope of the service. It is
+  // Output only. The unique identifier of the resource. UID is unique in the
+  // time and space for this resource within the scope of the service. It is
   // typically generated by the server on successful creation of a resource
   // and must not be changed. UID is used to uniquely identify resources
   // with resource name reuses. This should be a UUID4.
-  string uid = 3 [(.google.api.field_behavior) = OUTPUT_ONLY];
+  string uid = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Output only. An opaque value that uniquely identifies a version or
   // generation of a resource. It can be used to confirm that the client
   // and server agree on the ordering of a resource being written.
-  string etag = 4 [(.google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Output only. The timestamp when the resource was created.
-  .google.protobuf.Timestamp create_time = 5
-      [(.google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 5
+      [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Output only. The timestamp when the resource was last updated. Any
   // change to the resource made by users must refresh this value.
   // Changes to a resource made by the service should refresh this value.
-  .google.protobuf.Timestamp update_time = 6
-      [(.google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 6
+      [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Publicly visible message field.
   PublicProtoMessage public_proto_message = 7;
@@ -186,97 +139,21 @@ message Resource {
   PublicServiceConfigMessage public_service_message = 8;
 }
 
-// The request structure for the ListResources method.
-message ListResourcesRequest {
-  // The parent of the resource.
-  string parent = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
-      child_type: "example.googleapis.com/Resource"
-    }
-  ];
-
-  // The maximum number of resources to send per page.
-  int32 page_size = 2;
-
-  // The page token: If the next_page_token from a previous response
-  // is provided, this request will send the subsequent page.
-  string page_token = 3;
-
-  // Filter the list as specified in https://google.aip.dev/160.
-  string filter = 4;
-
-  // Order results as specified in https://google.aip.dev/132.
-  string order_by = 5;
-}
-
-// The response structure for the ListResources method.
-message ListResourcesResponse {
-  // The resulting resources.
-  repeated .private_preview.v1.Resource resources = 1;
-
-  // If present, the next page token can be provided to a subsequent
-  // ListResources call to list the next page.
-  // If empty, there are no more pages.
-  string next_page_token = 2;
-
-  // Locations that could not be reached.
-  repeated string unreachable = 3;
-}
-
 // The request structure for the GetResource method.
 message GetResourceRequest {
-  // The resource name of the resource within a service.
+  // Required. The resource name of the resource within a service.
   string name = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       type: "example.googleapis.com/Resource"
     }
   ];
 }
 
-// The request structure for the CreateResource method.
-message CreateResourceRequest {
-  // The parent of the resource.
-  string parent = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
-      child_type: "example.googleapis.com/Resource"
-    }
-  ];
-
-  // The ID value for the new resource.
-  string resource_id = 2 [(.google.api.field_behavior) = REQUIRED];
-
-  // The desired state for the resource.
-  .private_preview.v1.Resource resource = 3
-      [(.google.api.field_behavior) = REQUIRED];
-
-  // If "validate_only" is set to true, the service will try to validate
-  // that this request would succeed, but will not actually make changes.
-  bool validate_only = 4;
-
-  // An optional request ID to identify requests. Specify a unique request ID
-  // so that if you must retry your request, the server will know to ignore
-  // the request if it has already been completed. The server will guarantee
-  // that for at least 60 minutes since the first request.
-  //
-  // For example, consider a situation where you make an initial request and the
-  // request times out. If you make the request again with the same request
-  // ID, the server can check if original operation with the same request ID
-  // was received, and if so, will ignore the second request. This prevents
-  // clients from accidentally creating duplicate commitments.
-  //
-  // The request ID must be a valid UUID with the exception that zero UUID is
-  // not supported (00000000-0000-0000-0000-000000000000).
-  string request_id = 5;
-}
-
 // The request structure for the UpdateResource method.
 message UpdateResourceRequest {
-  // The desired state for the resource.
-  .private_preview.v1.Resource resource = 1
-      [(.google.api.field_behavior) = REQUIRED];
+  // Required. The desired state for the resource.
+  Resource resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The etag known to the client for the expected state of the resource. This
   // is used with state-changing methods to prevent accidental overwrites when
@@ -315,144 +192,31 @@ message UpdateResourceRequest {
   //
   // If the user does not provide a mask then all fields in the
   // Resource will be overwritten.
-  .google.protobuf.FieldMask update_mask = 5;
-}
-
-// The request structure for the DeleteResource method.
-message DeleteResourceRequest {
-  // The resource name of the resource within a service.
-  string name = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
-      type: "example.googleapis.com/Resource"
-    }
-  ];
-
-  // The etag known to the client for the expected state of the resource. This
-  // is used with state-changing methods to prevent accidental overwrites when
-  // multiple user agents might be acting in parallel on the same resource.
-  //
-  // An etag wildcard provide optimistic concurrency based on the expected
-  // existence of the resource. The Any wildcard (`*`) requires that the
-  // resource must already exists, and the Not Any wildcard (`!*`) requires that
-  // it must not.
-  string etag = 2;
-
-  // If "validate_only" is set to true, the service will try to validate
-  // that this request would succeed, but will not actually make changes.
-  bool validate_only = 3;
-
-  // An optional request ID to identify requests. Specify a unique request ID
-  // so that if you must retry your request, the server will know to ignore
-  // the request if it has already been completed. The server will guarantee
-  // that for at least 60 minutes since the first request.
-  //
-  // For example, consider a situation where you make an initial request and the
-  // request times out. If you make the request again with the same request
-  // ID, the server can check if original operation with the same request ID
-  // was received, and if so, will ignore the second request. This prevents
-  // clients from accidentally creating duplicate commitments.
-  //
-  // The request ID must be a valid UUID with the exception that zero UUID is
-  // not supported (00000000-0000-0000-0000-000000000000).
-  string request_id = 4;
-}
-
-// The request structure for the UndeleteResource method.
-message UndeleteResourceRequest {
-  // The resource name of the resource within a service.
-  string name = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
-      type: "example.googleapis.com/Resource"
-    }
-  ];
-}
-
-// Api service with private visibility.
-service PrivateServiceProto {
-  option (google.api.api_visibility).restriction = "TRUSTED_TESTER";
-
-  // Retrieve a collection of resources.
-  rpc ListResources(.private_preview.v1.ListResourcesRequest)
-      returns (.private_preview.v1.ListResourcesResponse) {
-    option (.google.api.http) = {
-      get: "/v1/{parent=projects/*/locations/*}/resources"
-    };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "parent";
-  }
+  google.protobuf.FieldMask update_mask = 5;
 }
 
 // Api service with private visibility in service config.
 service PrivateServiceConfig {
-  // Undeletes the given resource.
-  rpc UndeleteResource(.private_preview.v1.UndeleteResourceRequest)
-      returns (.private_preview.v1.Resource) {
-    option (.google.api.http) = {
-      post: "/v1/{name=projects/*/locations/*/resources/*}:undelete"
-      body: "*"
-    };
-  }
+  option (google.api.default_host) = "privatepreview.googleapis.com";
 }
 
 service PublicService {
+  option (google.api.default_host) = "privatepreview.googleapis.com";
+
   // Retrieve a single resource.
-  rpc GetResource(.private_preview.v1.GetResourceRequest)
-      returns (.private_preview.v1.Resource) {
-    option (.google.api.http) = {
+  rpc GetResource(GetResourceRequest) returns (Resource) {
+    option (google.api.http) = {
       get: "/v1/{name=projects/*/locations/*/resources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "name";
-  }
-
-  // Create a new resource.
-  // Method has restricted vsibility in service config.
-  rpc CreateResource(.private_preview.v1.CreateResourceRequest)
-      returns (.private_preview.v1.Resource) {
-    option (.google.api.http) = {
-      post: "/v1/{parent=projects/*/locations/*}/resources",
-      body: "resource"
-    };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "parent,resource,resource_id";
+    option (google.api.method_signature) = "name";
   }
 
   // Update a single resource.
-  rpc UpdateResource(.private_preview.v1.UpdateResourceRequest)
-      returns (.private_preview.v1.Resource) {
-    option (.google.api.http) = {
-      patch: "/v1/{resource.name=projects/*/locations/*/resources/*}",
+  rpc UpdateResource(UpdateResourceRequest) returns (Resource) {
+    option (google.api.http) = {
+      patch: "/v1/{resource.name=projects/*/locations/*/resources/*}"
       body: "resource"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "resource,update_mask";
-  }
-
-  // Delete a single resource.
-  // Method has restricted vsibility.
-  rpc DeleteResource(.private_preview.v1.DeleteResourceRequest)
-      returns (.google.longrunning.Operation) {
-    option (google.api.method_visibility).restriction = "TRUSTED_TESTER";
-    option (.google.api.http) = {
-      delete: "/v1/{name=projects/*/locations/*/resources/*}"
-    };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "name";
-    option (.google.longrunning.operation_info) = {
-      response_type: "google.protobuf.Empty",
-      metadata_type: "OperationMetadata"
-    };
+    option (google.api.method_signature) = "resource,update_mask";
   }
 }

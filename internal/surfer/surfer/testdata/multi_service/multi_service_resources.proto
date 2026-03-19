@@ -1,29 +1,36 @@
-edition = "2023";
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
 
 package multi_service.v1;
 
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 
-option features.field_presence = IMPLICIT;
+option go_package = "google.golang.org/genproto/googleapis/multi_service/v1;multi_service";
 
 // Resource message shared between multiple service interfaces.
-// (-- This example is somewhat contrived since the CreateResource method
-// belongs to FirstService, whereas GetResource belongs to SecondService,
-// but the idea is to include a resource referenced in more than one service,
-// since resources are not tied to any particular service and thus the
-// service:resource mapping is not one-to-many. In practice this is more likely
-// to come up for custom methods in different services that reference the same
-// resource. --)
 message Resource {
   option (google.api.resource) = {
-    type: "multiservice.googleapis.com/Resource",
+    type: "multiservice.googleapis.com/Resource"
     pattern: "projects/{project}/locations/{location}/resources/{resource}"
-    singular: "resource"
     plural: "resources"
+    singular: "resource"
   };
 
-  // Resource name.
+  // Identifier. Resource name.
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // Shared resource field.
@@ -32,13 +39,13 @@ message Resource {
 
 message FirstResource {
   option (google.api.resource) = {
-    type: "multiservice.googleapis.com/FirstResource",
+    type: "multiservice.googleapis.com/FirstResource"
     pattern: "projects/{project}/locations/{location}/firsts/{first}/resources/{resource}"
-    singular: "firstResource"
     plural: "firstResources"
+    singular: "firstResource"
   };
 
-  // Resource name.
+  // Identifier. Resource name.
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // Resource one field.
@@ -47,13 +54,13 @@ message FirstResource {
 
 message SecondResource {
   option (google.api.resource) = {
-    type: "multiservice.googleapis.com/SecondResource",
+    type: "multiservice.googleapis.com/SecondResource"
     pattern: "projects/{project}/locations/{location}/seconds/{second}/resources/{resource}"
-    singular: "secondResource"
     plural: "secondResources"
+    singular: "secondResource"
   };
 
-  // Resource name.
+  // Identifier. Resource name.
   string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // Resource two field.

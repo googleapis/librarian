@@ -1,4 +1,18 @@
-edition = "2023";
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
 
 package method_operations.v1;
 
@@ -7,46 +21,47 @@ import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/longrunning/operations.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
-option features.field_presence = IMPLICIT;
+option go_package = "google.golang.org/genproto/googleapis/method_operations/v1;method_operations";
 
 message Resource {
-  option (.google.api.resource) = {
-    type: "example.googleapis.com/Resource",
+  option (google.api.resource) = {
+    type: "example.googleapis.com/Resource"
     pattern: "projects/{project}/locations/{location}/resources/{resource}"
   };
 
-  // Resource name.
-  string name = 1 [(.google.api.field_behavior) = IDENTIFIER];
+  // Identifier. Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
-  // The labels on the resource, which can be used for categorization.
+  // Optional. The labels on the resource, which can be used for categorization.
   // similar to Kubernetes resource labels.
-  map<string, string> labels = 2 [(.google.api.field_behavior) = OPTIONAL];
+  map<string, string> labels = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Output only. An opaque value that uniquely identifies a version or
   // generation of a resource. It can be used to confirm that the client
   // and server agree on the ordering of a resource being written.
-  string etag = 3 [(.google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Output only. The timestamp when the resource was created.
-  .google.protobuf.Timestamp create_time = 4
-      [(.google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 4
+      [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Output only. The timestamp when the resource was last updated. Any
   // change to the resource made by users must refresh this value.
   // Changes to a resource made by the service should refresh this value.
-  .google.protobuf.Timestamp update_time = 5
-      [(.google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 5
+      [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // The request structure for the ListResources method.
 message ListResourcesRequest {
-  // The parent of the resource.
+  // Required. The parent of the resource.
   string parent = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       child_type: "example.googleapis.com/Resource"
     }
   ];
@@ -68,7 +83,7 @@ message ListResourcesRequest {
 // The response structure for the ListResources method.
 message ListResourcesResponse {
   // The resulting resources.
-  repeated .method_operations.v1.Resource resources = 1;
+  repeated Resource resources = 1;
 
   // If present, the next page token can be provided to a subsequent
   // ListResources call to list the next page.
@@ -81,10 +96,10 @@ message ListResourcesResponse {
 
 // The request structure for the GetResource method.
 message GetResourceRequest {
-  // The resource name of the resource within a service.
+  // Required. The resource name of the resource within a service.
   string name = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       type: "example.googleapis.com/Resource"
     }
   ];
@@ -92,20 +107,19 @@ message GetResourceRequest {
 
 // The request structure for the CreateResource method.
 message CreateResourceRequest {
-  // The parent of the resource.
+  // Required. The parent of the resource.
   string parent = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       child_type: "example.googleapis.com/Resource"
     }
   ];
 
-  // The ID value for the new resource.
-  string resource_id = 2 [(.google.api.field_behavior) = REQUIRED];
+  // Required. The ID value for the new resource.
+  string resource_id = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // The desired state for the resource.
-  .method_operations.v1.Resource resource = 3
-      [(.google.api.field_behavior) = REQUIRED];
+  // Required. The desired state for the resource.
+  Resource resource = 3 [(google.api.field_behavior) = REQUIRED];
 
   // If "validate_only" is set to true, the service will try to validate
   // that this request would succeed, but will not actually make changes.
@@ -129,9 +143,8 @@ message CreateResourceRequest {
 
 // The request structure for the UpdateResource method.
 message UpdateResourceRequest {
-  // The desired state for the resource.
-  .method_operations.v1.Resource resource = 1
-      [(.google.api.field_behavior) = REQUIRED];
+  // Required. The desired state for the resource.
+  Resource resource = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The etag known to the client for the expected state of the resource. This
   // is used with state-changing methods to prevent accidental overwrites when
@@ -170,15 +183,15 @@ message UpdateResourceRequest {
   //
   // If the user does not provide a mask then all fields in the
   // Resource will be overwritten.
-  .google.protobuf.FieldMask update_mask = 5;
+  google.protobuf.FieldMask update_mask = 5;
 }
 
 // The request structure for the DeleteResource method.
 message DeleteResourceRequest {
-  // The resource name of the resource within a service.
+  // Required. The resource name of the resource within a service.
   string name = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       type: "example.googleapis.com/Resource"
     }
   ];
@@ -215,104 +228,90 @@ message DeleteResourceRequest {
 
 // Represents the metadata of the long-running operation.
 message OperationMetadata {
-  // The time the operation was created.
+  // Output only. The time the operation was created.
   google.protobuf.Timestamp create_time = 1
       [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The time the operation finished running.
+  // Output only. The time the operation finished running.
   google.protobuf.Timestamp end_time = 2
       [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Server-defined resource path for the target of the operation.
+  // Output only. Server-defined resource path for the target of the operation.
   string target = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Name of the verb executed by the operation.
+  // Output only. Name of the verb executed by the operation.
   string verb = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Human-readable status of the operation, if any.
+  // Output only. Human-readable status of the operation, if any.
   string status_message = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Identifies whether the user has requested cancellation
+  // Output only. Identifies whether the user has requested cancellation
   // of the operation. Operations that have been cancelled successfully
-  // have [Operation.error][] value with a [google.rpc.Status.code][] of 1,
-  // corresponding to `Code.CANCELLED`.
+  // have [Operation.error][] value with a
+  // [google.rpc.Status.code][google.rpc.Status.code] of 1, corresponding to
+  // `Code.CANCELLED`.
   bool requested_cancellation = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // API version used to start the operation.
+  // Output only. API version used to start the operation.
   string api_version = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 service MethodOperations {
+  option (google.api.default_host) = "methodoperations.googleapis.com";
+
   // Retrieve a collection of resources.
-  rpc ListResources(.method_operations.v1.ListResourcesRequest)
-      returns (.method_operations.v1.ListResourcesResponse) {
-    option (.google.api.http) = {
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
+    option (google.api.http) = {
       get: "/v1/{parent=projects/*/locations/*}/resources"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "parent";
+    option (google.api.method_signature) = "parent";
   }
 
   // Retrieve a single resource.
-  rpc GetResource(.method_operations.v1.GetResourceRequest)
-      returns (.method_operations.v1.Resource) {
-    option (.google.api.http) = {
+  rpc GetResource(GetResourceRequest) returns (Resource) {
+    option (google.api.http) = {
       get: "/v1/{name=projects/*/locations/*/resources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "name";
+    option (google.api.method_signature) = "name";
   }
 
   // Create a new resource.
-  rpc CreateResource(.method_operations.v1.CreateResourceRequest)
-      returns (.google.longrunning.Operation) {
-    option (.google.api.http) = {
-      post: "/v1/{parent=projects/*/locations/*}/resources",
+  rpc CreateResource(CreateResourceRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*/locations/*}/resources"
       body: "resource"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "parent,resource,resource_id";
-    option (.google.longrunning.operation_info) = {
-      response_type: "Resource",
+    option (google.api.method_signature) = "parent,resource,resource_id";
+    option (google.longrunning.operation_info) = {
+      response_type: "Resource"
       metadata_type: "OperationMetadata"
     };
   }
 
   // Update a single resource.
-  rpc UpdateResource(.method_operations.v1.UpdateResourceRequest)
-      returns (.google.longrunning.Operation) {
-    option (.google.api.http) = {
-      patch: "/v1/{resource.name=projects/*/locations/*/resources/*}",
+  rpc UpdateResource(UpdateResourceRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      patch: "/v1/{resource.name=projects/*/locations/*/resources/*}"
       body: "resource"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "resource,update_mask";
-    option (.google.longrunning.operation_info) = {
-      response_type: "Resource",
+    option (google.api.method_signature) = "resource,update_mask";
+    option (google.longrunning.operation_info) = {
+      response_type: "Resource"
       metadata_type: "OperationMetadata"
     };
   }
 
   // Delete a single resource.
-  rpc DeleteResource(.method_operations.v1.DeleteResourceRequest)
-      returns (.google.longrunning.Operation) {
-    option (.google.api.http) = {
+  rpc DeleteResource(DeleteResourceRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
       delete: "/v1/{name=projects/*/locations/*/resources/*}"
     };
-    option (.google.api.method_resource) = {
-      type: "example.googleapis.com/Resource"
-    };
-    option (.google.api.method_signature) = "name";
-    option (.google.longrunning.operation_info) = {
-      response_type: "google.protobuf.Empty",
+    option (google.api.method_signature) = "name";
+    option (google.longrunning.operation_info) = {
+      response_type: "google.protobuf.Empty"
       metadata_type: "OperationMetadata"
     };
   }
