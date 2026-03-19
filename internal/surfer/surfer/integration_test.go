@@ -2,7 +2,6 @@ package surfer
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"gopkg.in/yaml.v3"
 	"io/fs"
@@ -14,82 +13,115 @@ import (
 	"time"
 )
 
-// TODO: make test table driven
-// write test struc with the information about the test (path, name, etc)
-// go has this thing has a main test testing.M you can define setup and teardown
+var (
+	coreGoogleapisPath string
+	protocFound        bool
+)
+
+func TestMain(m *testing.M) {
+	// Look for protoc in PATH only.
+	if _, err := exec.LookPath("protoc"); err == nil {
+		protocFound = true
+	}
+
+	// Locate core googleapis. Support SURFER_GOOGLEAPIS fallback.
+	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
+		coreGoogleapisPath = env
+	} else {
+		// Try relative path from this directory.
+		relPath := "../../testdata/googleapis"
+		if _, err := os.Stat(relPath); err == nil {
+			abs, _ := filepath.Abs(relPath)
+			coreGoogleapisPath = abs
+		}
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestIntegration(t *testing.T) {
-	testdata := "testdata"
-
-	// Runtime discovery of protoc
-	protocPath := os.Getenv("SURFER_PROTOC")
-	if protocPath == "" {
-		var err error
-		protocPath, err = exec.LookPath("protoc")
-		if err != nil {
-			t.Log("protoc not found in PATH and SURFER_PROTOC not set")
-			t.Skip("skipping integration tests because protoc is not available")
-		}
-	} else {
-		// Ensure the directory containing the custom protoc is in PATH for surfer's internal calls.
-		os.Setenv("PATH", os.Getenv("PATH")+":"+filepath.Dir(protocPath))
+	if !protocFound {
+		t.Skip("protoc not found in PATH")
 	}
-	_ = protocPath
-
-	coreGoogleapis, err := findCoreGoogleapis()
-	if err != nil {
-		t.Fatalf("failed to find core googleapis: %v", err)
+	if coreGoogleapisPath == "" {
+		t.Fatal("core googleapis not found via repo layout or SURFER_GOOGLEAPIS env var")
 	}
 
-	err = filepath.WalkDir(testdata, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() {
-			return nil
-		}
-
-		configFile := findGcloudConfig(path)
-		if configFile == "" {
-			return nil
-		}
-		expectedRoot := filepath.Join(path, "expected", "surface")
-		if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
-			return nil
-		}
-
-		scenarioName, _ := filepath.Rel(testdata, path)
-		t.Run(scenarioName, func(t *testing.T) {
-			if scenarioName == "cyclic_messages" {
-				t.Skip("skipping cyclic_messages due to known hang in surfer parser")
+	for _, test := range []struct {
+		name string
+		skip string // Reason for skipping.
+	}{
+		{name: "confirmation_prompt"},
+		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
+		{name: "field_attributes"},
+		{name: "field_complex_types"},
+		{name: "field_flag_names"},
+		{name: "field_oneof"},
+		{name: "field_simple_types"},
+		{name: "filtered_command"},
+		{name: "help_text"},
+		{name: "hidden_command"},
+		{name: "hidden_feature"},
+		{name: "method_async"},
+		{name: "method_custom"},
+		{name: "method_minimal_list"},
+		{name: "method_operations"},
+		{name: "method_output_format"},
+		{name: "multi_service"},
+		{name: "multi_version_multi_track"},
+		{name: "private_preview"},
+		{name: "public_only"},
+		{name: "regional_endpoints/global_only"},
+		{name: "regional_endpoints/regional_required"},
+		{name: "regional_endpoints/regional_supported"},
+		{name: "resource_multitype"},
+		{name: "resource_non_standard"},
+		{name: "resource_reference"},
+		{name: "resource_standard"},
+		{name: "update_mask"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if test.skip != "" {
+				t.Skip(test.skip)
 			}
 
-			// Set a timeout per scenario to avoid hangs.
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			scenarioPath := filepath.Join("testdata", test.name)
+			configFile := findGcloudConfig(scenarioPath)
+			if configFile == "" {
+				t.Fatal("gcloud configuration file not found in scenario directory")
+			}
+
+			expectedRoot := filepath.Join(scenarioPath, "expected", "surface")
+			if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
+				t.Fatal("expected output directory not found in scenario directory")
+			}
+
+			// Set a timeout per scenario.
+			ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 			defer cancel()
 
 			tmpDir := t.TempDir()
 			outDir := filepath.Join(tmpDir, "out")
 			protoRoot := filepath.Join(tmpDir, "proto_root")
 			if err := os.MkdirAll(protoRoot, 0755); err != nil {
-				t.Fatalf("failed to create proto root: %v", err)
+				t.Fatal(err)
 			}
 
 			// Symlink core googleapis
-			absCore, _ := filepath.Abs(filepath.Join(coreGoogleapis, "google"))
-			if err := os.Symlink(absCore, filepath.Join(protoRoot, "google")); err != nil {
-				t.Fatalf("failed to symlink core googleapis: %v", err)
+			if err := os.Symlink(filepath.Join(coreGoogleapisPath, "google"), filepath.Join(protoRoot, "google")); err != nil {
+				t.Fatal(err)
 			}
 
 			// Symlink scenario protos
-			copyProtos(t, path, protoRoot)
-			if parent := filepath.Dir(path); parent != testdata {
+			copyProtos(t, scenarioPath, protoRoot)
+			if parent := filepath.Dir(scenarioPath); parent != "testdata" {
 				copyProtos(t, parent, protoRoot)
 			}
 
 			protoFiles := findProtos(t, protoRoot)
 			if len(protoFiles) == 0 {
-				t.Fatalf("no proto files found for scenario %s", scenarioName)
+				t.Fatal("no proto files found for scenario")
 			}
 
 			args := []string{
@@ -105,8 +137,7 @@ func TestIntegration(t *testing.T) {
 				t.Fatalf("surfer generation failed: %v", err)
 			}
 
-			// Service directories in 'expected' might have different naming (e.g. confirmation_prompt vs confirmationprompt).
-			// We find the service dir in generated and compare it with the service dir in expected.
+			// Find actual generated service directory.
 			gotServiceDir, gotServiceName := findFirstSubdir(outDir)
 			if gotServiceDir == "" {
 				t.Fatalf("no output generated in %s", outDir)
@@ -114,32 +145,14 @@ func TestIntegration(t *testing.T) {
 
 			expectedServiceDir := findMatchingExpectedServiceDir(expectedRoot, gotServiceName)
 			if expectedServiceDir == "" {
-				// Fallback to directly comparing with expectedRoot if we can't find a service dir.
 				expectedServiceDir = expectedRoot
 			}
 
 			if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
-				t.Logf("Generated directory tree for %s:\n%s", scenarioName, getDirTree(gotServiceDir))
+				t.Logf("Generated directory tree for %s:\n%s", test.name, getDirTree(gotServiceDir))
 			}
 		})
-
-		return nil
-	})
-
-	if err != nil {
-		t.Fatalf("failed to walk testdata: %v", err)
 	}
-}
-
-func findCoreGoogleapis() (string, error) {
-	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
-		return env, nil
-	}
-	path := "../../testdata/googleapis"
-	if _, err := os.Stat(path); err == nil {
-		return path, nil
-	}
-	return "", fmt.Errorf("could not find core googleapis at ../../testdata/googleapis and SURFER_GOOGLEAPIS not set")
 }
 
 func findGcloudConfig(dir string) string {
@@ -293,7 +306,7 @@ func compareFiles(t *testing.T, expected, got, rel string) bool {
 			t.Errorf("%s: failed to unmarshal generated YAML: %v", rel, err)
 			return false
 		}
-		if diff := cmp.Diff(wantYAML, gotYAML); diff != "" {
+		if diff := cmp.Diff(wantYAML, gotYAML, cmp.AllowUnexported()); diff != "" {
 			t.Errorf("%s mismatch (-want +got):\n%s", rel, diff)
 			return false
 		}
