@@ -681,7 +681,7 @@ func TestUpdateSnippetMetadata(t *testing.T) {
 	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
 		return
 	}
-	if err := updateSnippetDirectory(library, library.Version, library.Output); err != nil {
+	if err := updateSnippetDirectory(library, library.Output, library.Version); err != nil {
 		t.Fatal(err)
 	}
 
@@ -781,7 +781,7 @@ func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
 			if test.setup != nil {
 				test.setup(tmpDir, test.path, data, test.fileName)
 			}
-			if err := updateSnippetDirectory(library, library.Version, library.Output); err != nil {
+			if err := updateSnippetDirectory(library, library.Output, library.Version); err != nil {
 				t.Fatal(err)
 			}
 			if test.setup == nil {
@@ -908,7 +908,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(tmpDir)
 			}
-			err := updateSnippetDirectory(test.library, test.library.Version, output)
+			err := updateSnippetDirectory(test.library, output, test.library.Version)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
 			}

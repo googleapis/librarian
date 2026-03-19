@@ -175,7 +175,7 @@ func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
 
-func updateSnippetDirectory(library *config.Library, version, output string) error {
+func updateSnippetDirectory(library *config.Library, output, version string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
