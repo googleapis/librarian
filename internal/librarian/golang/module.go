@@ -106,13 +106,13 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	return nil
 }
 
-func repoRootPath(library *config.Library) string {
+func repoRootPath(output, name string) string {
 	// Root module has this special setup.
-	if library.Name == rootModule {
-		return library.Output
+	if name == rootModule {
+		return output
 	}
-	path := []string{library.Output}
-	for range strings.Count(library.Name, "/") + 1 {
+	path := []string{output}
+	for range strings.Count(name, "/") + 1 {
 		path = append(path, "..")
 	}
 	return filepath.Join(path...)

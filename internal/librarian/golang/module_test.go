@@ -483,77 +483,62 @@ func TestDefaultOutput(t *testing.T) {
 
 func TestRepoRootPath(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    string
+		name        string
+		libraryName string
+		output      string
+		want        string
 	}{
 		{
-			name: "no prefix on library output",
-			library: &config.Library{
-				Name:   "secretmanager",
-				Output: "secretmanager",
-			},
-			want: ".",
+			name:        "no prefix on library output",
+			libraryName: "secretmanager",
+			output:      "",
+			want:        ".",
 		},
 		{
-			name: "prefix on library output",
-			library: &config.Library{
-				Name:   "secretmanager",
-				Output: "tmp/secretmanager",
-			},
-			want: "tmp",
+			name:        "prefix on library output",
+			libraryName: "secretmanager",
+			output:      "tmp/secretmanager",
+			want:        "tmp",
 		},
 		{
-			name: "nested major version",
-			library: &config.Library{
-				Name:   "bigquery/v2",
-				Output: "bigquery/v2",
-			},
-			want: ".",
+			name:        "nested major version",
+			libraryName: "bigquery/v2",
+			output:      ".",
+			want:        ".",
 		},
 		{
-			name: "prefix with nested major version",
-			library: &config.Library{
-				Name:   "bigquery/v2",
-				Output: "tmp/bigquery/v2",
-			},
-			want: "tmp",
+			name:        "prefix with nested major version",
+			libraryName: "bigquery/v2",
+			output:      "tmp/bigquery/v2",
+			want:        "tmp",
 		},
 		{
-			name: "root module",
-			library: &config.Library{
-				Name:   "root-module",
-				Output: ".",
-			},
-			want: ".",
+			name:        "root module",
+			libraryName: "root-module",
+			output:      ".",
+			want:        ".",
 		},
 		{
-			name: "root module has an absolute output path",
-			library: &config.Library{
-				Name:   "root-module",
-				Output: "/home/anyone/repo",
-			},
-			want: "/home/anyone/repo",
+			name:        "root module has an absolute output path",
+			libraryName: "root-module",
+			output:      "/home/anyone/repo",
+			want:        "/home/anyone/repo",
 		},
 		{
-			name: "library output has an absolute output path",
-			library: &config.Library{
-				Name:   "library-name",
-				Output: "/home/anyone/repo/lib",
-			},
-			want: "/home/anyone/repo",
+			name:        "library output has an absolute output path",
+			libraryName: "library-name",
+			output:      "/home/anyone/repo/lib",
+			want:        "/home/anyone/repo",
 		},
 		{
-			name: "nested library output has an absolute output path",
-			library: &config.Library{
-				Name:   "bigquery/v2",
-				Output: "/home/anyone/repo/lib/v2",
-			},
-			want: "/home/anyone/repo",
+			name:        "nested library output has an absolute output path",
+			libraryName: "bigquery/v2",
+			output:      "/home/anyone/repo/lib/v2",
+			want:        "/home/anyone/repo",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := repoRootPath(test.library)
+			got := repoRootPath(test.output, test.libraryName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
