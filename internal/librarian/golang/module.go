@@ -181,13 +181,19 @@ func updateSnippetDirectory(library *config.Library, output, version string) err
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
+		// Proto-only API does not create a snippet directory.
+		if goAPI.ProtoOnly {
+			continue
+		}
 		snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
-		if _, err := os.Stat(snippetDir); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				// A client may not have snippets, e.g., proto-only clients,
-				// skip updating snippets in this case.
-				return nil
-			}
+		_, err := os.Stat(snippetDir)
+		// Even though a GAPIC API will create a snippet directory, the library configuration may specify
+		// the snippet directory deleted after generation so it is possible that a snippet directory does
+		// not exist.
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
 			return err
 		}
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
