@@ -26,6 +26,10 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	rootModule = "root-module"
+)
+
 var (
 	errGoAPINotFound         = errors.New("go API not found")
 	errImportPathNotFound    = errors.New("import path not found")
@@ -104,8 +108,8 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 
 func repoRootPath(library *config.Library) string {
 	// Root module has this special setup.
-	if library.Output == "." {
-		return "."
+	if library.Name == rootModule {
+		return library.Output
 	}
 	path := []string{library.Output}
 	for range strings.Count(library.Name, "/") + 1 {

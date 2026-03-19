@@ -527,6 +527,14 @@ func TestRepoRootPath(t *testing.T) {
 			},
 			want: ".",
 		},
+		{
+			name: "root module has an absolute output directory",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: "/home/anyone/repo",
+			},
+			want: "/home/anyone/repo",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := repoRootPath(test.library)
