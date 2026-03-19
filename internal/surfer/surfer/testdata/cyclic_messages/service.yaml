@@ -1,0 +1,56 @@
+type: google.api.Service
+name: cyclicmessages.googleapis.com
+config_version: 3
+title: Cyclic message API
+
+apis:
+- name: cyclic_messages.v1.CyclicMessages
+- name: google.longrunning.Operations
+
+documentation:
+  summary:
+    API with cyclic messages.
+
+http:
+  fully_decode_reserved_expansion: true
+  rules:
+  - selector: google.longrunning.Operations.GetOperation
+    get: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.ListOperations
+    get: '/v1/{name=projects/*/locations/*}/operations'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+
+rpc_security_policy:
+  mapping:
+  # All methods are in scope for CPE in private CCFE
+  - action: "cyclic_messages.v1.CyclicMessages.*"
+    # This setting enables Cloud Policy Enforcement.
+    authorization_mode: CLOUD_POLICY_ENFORCEMENT
+    # Configure how RpcSecurityPolicy handles incoming Stubby requests.
+    authentication_policy:
+      # UberMint specific. Enables UberMint support for RpcSecurityPolicy.
+      authentication_methods:
+        use_default_methods: true
+        cloud_ubermint:
+          mode: ENABLED
+      creds_policy:
+        rules:
+        - description: "Only allow frontend running under the same LOAS role to pass EUC."
+          permissions: auth.creds.useNormalUserEUC
+          action: ALLOW
+          in: self
+        - description: "Allow all LOAS roles to call this API (subject to IAM authorization)."
+          permissions: auth.creds.useLOAS
+          action: ALLOW
+          in: allUsers
+    esf_config:
+      # Configure which borg roles are allowed to run ESF.
+      # Add all the roles that ESF use as a comma separated list in the square
+      # bracket.
+      trusted_esf_roles: [self]
+      # Determine whether the requests from ESF run by an untrusted role should be allowed.
+      allow_untrusted_requests: false

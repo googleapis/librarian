@@ -1,0 +1,10 @@
+type: google.api.Service
+name: methodcustom.googleapis.com
+config_version: 3
+title: Custom Methods
+
+apis:
+- name: method_custom.v1.MethodCustom
+documentation:
+  summary:
+    An API with documentation.

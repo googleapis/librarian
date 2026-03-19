@@ -1,0 +1,14 @@
+config_version: v2.0
+service_name: fieldcomplextypes.googleapis.com
+apis:
+- name: FieldComplexTypes
+  api_version: v1
+  release_tracks:
+  - GA
+  generated_flags:
+  - selector: field_complex_types.v1.Resource.repeated_file_field
+    from_file: true
+  - selector: field_complex_types.v1.Message.file_field
+    from_file: true
+  - selector: field_complex_types.v1.Resource.my_message
+    settable: true

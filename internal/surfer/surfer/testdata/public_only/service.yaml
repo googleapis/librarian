@@ -1,0 +1,48 @@
+type: google.api.Service
+name: publiconly.googleapis.com
+config_version: 3
+title: Private Preview Resource API
+
+apis:
+- name: public_only.v1.PrivateServiceProto
+- name: public_only.v1.PrivateServiceConfig
+- name: public_only.v1.PublicService
+- name: google.longrunning.Operations
+
+http:
+  fully_decode_reserved_expansion: true
+  rules:
+  - selector: google.longrunning.Operations.GetOperation
+    get: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.ListOperations
+    get: '/v1/{name=projects/*/locations/*}/operations'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+
+documentation:
+  summary:
+    An API with documentation.
+
+visibility:
+  rules:
+  - selector: public_only.v1.PrivateServiceConfig.*
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicService.CreateResource
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.ServiceConfigPrivateMessage.*
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.PrivateEnum.*
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.PrivateEnumValue.SIX
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.private_enum
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.private_field
+    restriction: TRUSTED_TESTER
+  - selector: public_only.v1.PublicServiceConfigMessage.private_field_multiple_annotations
+    restriction: TRUSTED_TESTER, GOOGLE_INTERNAL
+  - selector: google.longrunning.Operations.*
+    restriction: TRUSTED_TESTER

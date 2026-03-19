@@ -1,0 +1,16 @@
+config_version: v2.0
+service_name: publiconly.googleapis.com
+generate_operations: false
+apis:
+- name: PrivateServiceProto
+  api_version: v1
+  release_tracks:
+  - GA
+- name: PublicServiceConfig
+  api_version: v1
+  release_tracks:
+  - GA
+- name: PublicService
+  api_version: v1
+  release_tracks:
+  - GA

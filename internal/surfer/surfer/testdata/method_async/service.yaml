@@ -1,0 +1,25 @@
+type: google.api.Service
+name: methodasync.googleapis.com
+config_version: 3
+title: Async Methods API
+
+apis:
+- name: method_async.v1.MethodAsync
+- name: google.longrunning.Operations
+
+http:
+  fully_decode_reserved_expansion: true
+  rules:
+  - selector: google.longrunning.Operations.GetOperation
+    get: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.ListOperations
+    get: '/v1/{name=projects/*/locations/*}/operations'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+
+documentation:
+  summary:
+    An API with documentation.

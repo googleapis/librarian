@@ -1,0 +1,10 @@
+type: google.api.Service
+name: resourcestandard.googleapis.com
+config_version: 3
+title: Standard Resource API
+
+apis:
+- name: resource_standard.v1.ResourceStandard
+documentation:
+  summary:
+    An API with documentation.

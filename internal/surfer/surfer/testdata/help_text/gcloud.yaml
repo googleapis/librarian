@@ -1,0 +1,25 @@
+config_version: v2.0
+service_name: helptext.googleapis.com
+generate_operations: false
+apis:
+- name: HelpText
+  api_version: v1
+  release_tracks:
+  - GA
+  help_text:
+    service_rules:
+    - selector: help_text.v1.HelpText
+      help_text:
+        brief: Manage my help text!!
+        description: |-
+          Manage my help text resources!!
+    method_rules:
+    - selector: help_text.v1.HelpText.CreateResource
+      help_text:
+        brief: Create help text resource!!
+        description: Create help text resource!!
+        examples:
+        - |-
+          To create a help text resource:
+
+              $ {command} --foo=bar

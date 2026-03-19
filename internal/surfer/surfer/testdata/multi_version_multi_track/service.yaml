@@ -1,0 +1,58 @@
+type: google.api.Service
+name: multiversiontrack.googleapis.com
+config_version: 3
+title: Multi Version Multi Track Service API
+
+discovery:
+  public_discovery: false
+  canonical_name: Multi Version Multi Track
+  discovery_per_version:
+  - version: v1alpha
+    public_directory: false
+    rules:
+    - selector: multi_version_multi_track.v1alpha.*
+      schema_name_template: ${package_name}${outer_message_name}${message_name}
+  - version: v1
+    public_directory: false
+    rules:
+    - selector: multi_version_multi_track.v1.*
+      schema_name_template: ${package_name}${outer_message_name}${message_name}
+
+apis:
+- name: multi_version_multi_track.v1.ServiceOne
+- name: multi_version_multi_track.v1alpha.ServiceOne
+- name: multi_version_multi_track.v1alpha.ServiceTwo
+- name: google.longrunning.Operations
+
+documentation:
+  summary:
+    An API with more than one service interface.
+
+http:
+  fully_decode_reserved_expansion: true
+  rules:
+  - selector: google.longrunning.Operations.GetOperation
+    get: '/v1/{name=projects/*/locations/*/operations/*}'
+    additional_bindings:
+    - get: '/v1alpha/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.ListOperations
+    get: '/v1/{name=projects/*/locations/*}/operations'
+    additional_bindings:
+    - get: '/v1alpha/{name=projects/*/locations/*}/operations'
+  - selector: google.longrunning.Operations.DeleteOperation
+    delete: '/v1/{name=projects/*/locations/*/operations/*}'
+    additional_bindings:
+    - delete: '/v1alpha/{name=projects/*/locations/*/operations/*}'
+  - selector: google.longrunning.Operations.CancelOperation
+    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+    body: '*'
+    additional_bindings:
+    - post: '/v1alpha/{name=projects/*/locations/*/operations/*}:cancel'
+      body: '*'
+
+legacy:
+  email: gcloud-cli-autogen@google.com
+  mdb: cloud-sdk-build
+  oncall: gcloud-cli-autogen+oncall@google.com
+  devconsole:
+    learnmore_url: https://goto.google.com/gcloud:autogen-integration-tests

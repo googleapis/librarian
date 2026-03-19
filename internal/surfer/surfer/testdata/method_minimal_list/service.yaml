@@ -1,0 +1,10 @@
+type: google.api.Service
+name: methodminimallist.googleapis.com
+config_version: 3
+title: Minimal list method API
+
+apis:
+- name: method_minimal_list.v1.MethodMinimalList
+documentation:
+  summary:
+    An API with documentation.

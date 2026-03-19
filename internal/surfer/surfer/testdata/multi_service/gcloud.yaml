@@ -1,0 +1,11 @@
+config_version: v2.0
+service_name: multiservice.googleapis.com
+apis:
+- name: FirstService
+  api_version: v1
+  release_tracks:
+  - GA
+- name: SecondService
+  api_version: v1
+  release_tracks:
+  - GA
