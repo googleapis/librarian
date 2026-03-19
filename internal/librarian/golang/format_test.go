@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -121,5 +122,69 @@ func main() {
 				}
 			}
 		})
+	}
+}
+
+func TestProcessArgs(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    []string
+	}{
+		{
+			name: "library with a GAPIC API",
+			library: &config.Library{
+				Name:   "example",
+				Output: "/home/repo/example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/v1", ImportPath: "example/apiv1"},
+					},
+				},
+			},
+			want: []string{"-w", "/home/repo/example", "/home/repo/internal/generated/snippets/example/apiv1"},
+		},
+		{
+			name: "library with a proto only API",
+			library: &config.Library{
+				Name:   "example",
+				Output: "example",
+				APIs: []*config.API{
+					{Path: "example/common"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/common", ProtoOnly: true},
+					},
+				},
+			},
+			want: []string{"-w", "example"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := processArgs(test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestProcessArgs_Error(t *testing.T) {
+	library := &config.Library{
+		Name: "example",
+		APIs: []*config.API{
+			{Path: "example/v1"},
+		},
+	}
+	_, err := processArgs(library)
+	if !errors.Is(err, errGoAPINotFound) {
+		t.Errorf("got %v, want errGoAPINotFound", err)
 	}
 }
