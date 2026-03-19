@@ -196,7 +196,7 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 		if library.Output == "" {
 			library.Output = library.Name
 		}
-		output = filepath.Clean(filepath.Join(library.Output))
+		output = filepath.Clean(library.Output)
 		if library.Go != nil && library.Go.NestedModule != "" {
 			exclusion = filepath.Clean(filepath.Join(library.Output, library.Go.NestedModule)) + "/"
 		}
