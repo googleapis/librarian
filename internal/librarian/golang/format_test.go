@@ -163,6 +163,23 @@ func TestProcessArgs(t *testing.T) {
 			},
 			want: []string{"-w", "example"},
 		},
+		{
+			name: "snippet directory is one of the deleted path after generation",
+			library: &config.Library{
+				Name:   "example",
+				Output: "repo/example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"internal/generated/snippets/example/apiv1"},
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/v1", ImportPath: "example/apiv1"},
+					},
+				},
+			},
+			want: []string{"-w", "repo/example"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := processArgs(test.library)
