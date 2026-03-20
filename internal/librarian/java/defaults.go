@@ -20,10 +20,15 @@ import (
 
 const javaPrefix = "java-"
 
+// deriveOutput computes the default output directory name for a given library name.
+func deriveOutput(name string) string {
+	return javaPrefix + name
+}
+
 // Fill populates Java-specific default values for the library.
 func Fill(library *config.Library) (*config.Library, error) {
 	if library.Output == "" {
-		library.Output = javaPrefix + library.Name
+		library.Output = deriveOutput(library.Name)
 	}
 	return library, nil
 }
@@ -31,7 +36,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) *config.Library {
-	if library.Output == javaPrefix+library.Name {
+	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
 	return library
