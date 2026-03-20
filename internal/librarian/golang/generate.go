@@ -23,7 +23,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -183,17 +182,10 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	src := filepath.Join(outDir, "cloud.google.com", "go", library.Name)
-	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("cannot access directory %q: %w", src, err)
-	}
-	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
+	if err := moveAPIDirectory(library, outDir); err != nil {
 		return err
 	}
 	if err := moveSnippetDirectory(library, outDir); err != nil {
-		return err
-	}
-	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
 		return err
 	}
 	if library.Go != nil {
@@ -201,6 +193,25 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func moveAPIDirectory(library *config.Library, outDir string) error {
+	libraryDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
+		}
+		librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
+		libraryDesc := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
+		if err := os.MkdirAll(libraryDesc, 0755); err != nil {
+			return err
+		}
+		if err := filesystem.MoveAndMerge(librarySrc, libraryDesc); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -225,53 +236,6 @@ func moveSnippetDirectory(library *config.Library, outDir string) error {
 		}
 		snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
 		if err := filesystem.MoveAndMerge(snippetSrc, snippetDesc); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
-// No-op for nested modules, e.g., bigquery/v2, because the files are already in the
-// right place.
-func fixVersioning(outputDir, libraryName, modPath string) error {
-	// parts is the module path split by "/".
-	// For example, "cloud.google.com/go/bigquery/v2" becomes:
-	// parts[0]: "cloud.google.com"
-	// parts[1]: "go"
-	// parts[2]: library ID (e.g., "bigquery")
-	// parts[3]: version (e.g., "v2")
-	parts := strings.Split(modPath, "/")
-	if len(parts) == 3 {
-		return nil
-	}
-	if len(parts) != 4 {
-		return fmt.Errorf("unexpected module path: %s", modPath)
-	}
-
-	name, version := parts[2], parts[3]
-	// A nested module, e.g., bigquery/v2, returns here.
-	if libraryName == name+"/"+version {
-		return nil
-	}
-
-	versionDir := filepath.Join(outputDir, version)
-	if err := filesystem.MoveAndMerge(versionDir, outputDir); err != nil {
-		return err
-	}
-	if err := os.RemoveAll(versionDir); err != nil {
-		return err
-	}
-
-	// {outputDir}/.. is the repo root directory because a nested library, e.g., bigquery/v2,
-	// will not reach this line.
-	snippetDir := filepath.Join(outputDir, "..", "internal", "generated", "snippets", name)
-	snippetVersionDir := filepath.Join(snippetDir, version)
-	if _, err := os.Stat(snippetVersionDir); err == nil {
-		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
-			return err
-		}
-		if err := os.RemoveAll(snippetVersionDir); err != nil {
 			return err
 		}
 	}
