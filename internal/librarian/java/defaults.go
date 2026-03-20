@@ -18,7 +18,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-var javaPrefix = "java-"
+const javaPrefix = "java-"
 
 // Fill populates Java-specific default values for the library.
 func Fill(library *config.Library) (*config.Library, error) {
