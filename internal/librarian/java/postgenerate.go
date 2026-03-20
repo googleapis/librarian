@@ -43,6 +43,20 @@ var (
 	errMalformedBOM         = errors.New("malformed BOM")
 )
 
+// legacyBOM represents a library that does not have a -bom module
+// and included directly in the GAPIC BOM.
+type legacyBOM struct {
+	module     string
+	groupID    string
+	artifactID string
+}
+
+var (
+	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
+	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
+	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
+)
+
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
 func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
 	monorepoVersion := ""
@@ -83,21 +97,21 @@ var ignoredDirs = map[string]bool{
 // contain a pom.xml file, excluding known non-library directories. Returns a sorted list of
 // subdirectory names as module names.
 func searchForJavaModules(repoPath string) ([]string, error) {
-	entries, err := os.ReadDir(repoPath)
+	modules, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	var modules []string
-	for _, entry := range entries {
-		if !entry.IsDir() || ignoredDirs[entry.Name()] {
+	var names []string
+	for _, module := range modules {
+		if !module.IsDir() || ignoredDirs[module.Name()] {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(repoPath, entry.Name(), "pom.xml")); err == nil {
-			modules = append(modules, entry.Name())
+		if _, err := os.Stat(filepath.Join(repoPath, module.Name(), "pom.xml")); err == nil {
+			names = append(names, module.Name())
 		}
 	}
-	sort.Strings(modules)
-	return modules, nil
+	sort.Strings(names)
+	return names, nil
 }
 
 type bomConfig struct {
@@ -126,87 +140,91 @@ var groupInclusions = map[string]bool{
 // with a pom.xml file. It also includes specific special-case modules like dns, notification, and grafeas.
 // It returns a list of bomConfig objects sorted by ArtifactID.
 func searchForBOMArtifacts(repoPath string) ([]bomConfig, error) {
-	entries, err := os.ReadDir(repoPath)
+	modules, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
 	}
 	var configs []bomConfig
-	for _, entry := range entries {
-		if !entry.IsDir() || entry.Name() == gapicBOM {
+	for _, module := range modules {
+		if !module.IsDir() || module.Name() == gapicBOM {
 			continue
 		}
-		// Search for -bom subdirectories.
-		subEntries, err := os.ReadDir(filepath.Join(repoPath, entry.Name()))
+		moduleConfigs, err := searchModuleForBOM(repoPath, module.Name())
 		if err != nil {
-			return nil, fmt.Errorf("failed to read directory %s: %w", entry.Name(), err)
+			return nil, err
 		}
-		for _, subEntry := range subEntries {
-			if !subEntry.IsDir() || !strings.HasSuffix(subEntry.Name(), "-bom") {
-				continue
-			}
-			pomPath := filepath.Join(repoPath, entry.Name(), subEntry.Name(), "pom.xml")
-			if _, err := os.Stat(pomPath); err != nil {
-				continue
-			}
-			conf, err := extractBOMConfig(repoPath, entry.Name(), subEntry.Name())
-			if err != nil {
-				return nil, fmt.Errorf("failed to extract BOM config from %s: %w", pomPath, err)
-			}
-			if groupInclusions[conf.GroupID] {
-				configs = append(configs, conf)
-			}
-		}
+		configs = append(configs, moduleConfigs...)
 	}
-	// Handle edge cases before sorting. These are older libraries that do not have a BOM module;
-	// their clients are included directly in the GAPIC BOM.
-	specialBOMs := []struct {
-		module     string
-		groupID    string
-		artifactID string
-	}{
-		{"java-dns", "com.google.cloud", "google-cloud-dns"},
-		{"java-notification", "com.google.cloud", "google-cloud-notification"},
+
+	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM)
+	if err != nil {
+		return nil, err
 	}
-	for _, bom := range specialBOMs {
-		conf, err := handleSpecialBOM(repoPath, bom.module, bom.groupID, bom.artifactID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to handle special BOM for %s: %w", bom.module, err)
-		}
-		configs = append(configs, conf)
-	}
+	configs = append(configs, legacies...)
+
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
-	// Handle edge cases. This is done after sorting to match the current order in google-cloud-java.
-	// It is without a BOM and included directly in the GAPIC BOM.
+
+	// Add Grafeas last. This is done after sorting to match the current order in google-cloud-java.
 	// TODO(https://github.com/googleapis/librarian/issues/4706): Move this prior to sort.
-	conf, err := handleSpecialBOM(repoPath, "java-grafeas", "io.grafeas", "grafeas")
+	grafeas, err := collectLegacyBOMs(repoPath, grafeasBOM)
 	if err != nil {
-		return nil, fmt.Errorf("failed to handle special BOM for java-grafeas: %w", err)
+		return nil, err
 	}
-	configs = append(configs, conf)
+	return append(configs, grafeas...), nil
+}
+
+// searchModuleForBOM scans a specific module's directory for submodules that end in "-bom"
+// and contain a pom.xml file. Returns a list of bomConfig objects for any discovered BOMs.
+func searchModuleForBOM(repoPath, moduleName string) ([]bomConfig, error) {
+	submodules, err := os.ReadDir(filepath.Join(repoPath, moduleName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory %s: %w", moduleName, err)
+	}
+	var configs []bomConfig
+	for _, submodule := range submodules {
+		if !submodule.IsDir() || !strings.HasSuffix(submodule.Name(), "-bom") {
+			continue
+		}
+		pomPath := filepath.Join(repoPath, moduleName, submodule.Name(), "pom.xml")
+		if _, err := os.Stat(pomPath); err != nil {
+			continue
+		}
+		conf, err := extractBOMConfig(repoPath, moduleName, submodule.Name())
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract BOM config from %s: %w", pomPath, err)
+		}
+		if groupInclusions[conf.GroupID] {
+			configs = append(configs, conf)
+		}
+	}
 	return configs, nil
 }
 
-// handleSpecialBOM for special cases, such as java-dns, java-notification, and java-grafeas,
-// only version is parsed from pom.xml in the module.
-func handleSpecialBOM(repoPath, module, groupID, artifactID string) (bomConfig, error) {
-	pomPath := filepath.Join(repoPath, module, "pom.xml")
-	data, err := os.ReadFile(pomPath)
-	if err != nil {
-		return bomConfig{}, err
+// collectLegacyBOMs parses pom.xml files for legacy libraries that do not have
+// -bom modules and returns their BOM configurations.
+func collectLegacyBOMs(repoPath string, boms ...legacyBOM) ([]bomConfig, error) {
+	var configs []bomConfig
+	for _, b := range boms {
+		pomPath := filepath.Join(repoPath, b.module, "pom.xml")
+		data, err := os.ReadFile(pomPath)
+		if err != nil {
+			return nil, fmt.Errorf("read legacy pom %s: %w", pomPath, err)
+		}
+		var p mavenProject
+		if err := xml.Unmarshal(data, &p); err != nil {
+			return nil, fmt.Errorf("unmarshal legacy pom %s: %w", pomPath, err)
+		}
+		configs = append(configs, bomConfig{
+			GroupID:           b.groupID,
+			ArtifactID:        b.artifactID,
+			Version:           p.Version,
+			VersionAnnotation: b.artifactID,
+			IsImport:          false,
+		})
 	}
-	var p mavenProject
-	if err := xml.Unmarshal(data, &p); err != nil {
-		return bomConfig{}, err
-	}
-	return bomConfig{
-		GroupID:           groupID,
-		ArtifactID:        artifactID,
-		Version:           p.Version,
-		VersionAnnotation: artifactID,
-		IsImport:          false,
-	}, nil
+	return configs, nil
 }
 
 // extractBOMConfig parses a pom.xml file within a library's -bom subdirectory to
