@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: 'Checkout Code'
         uses: 'actions/checkout@v6'
+      - name: 'Create Gemini config directory'
+        run: 'mkdir -p ~/.gemini'
       - name: 'Run Gemini CLI'
         id: 'run_gemini'
         uses: 'google-github-actions/run-gemini-cli@v0'
@@ -84,6 +86,7 @@ jobs:
                 "core": [
                   "run_shell_command(cat)",
                   "run_shell_command(echo)",
+                  "run_shell_command(gh)",
                   "run_shell_command(grep)",
                   "run_shell_command(head)",
                   "run_shell_command(tail)"

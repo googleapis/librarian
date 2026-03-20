@@ -530,6 +530,74 @@ func TestRunPostProcessor(t *testing.T) {
 	}
 }
 
+func TestRunPostProcessor_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	requireSynthtool(t)
+
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, repoRoot, outputDir string)
+		wantErr error
+	}{
+		{
+			name: "error copying scripts",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				// Can't copy scripts into a "scripts" directory if that's a
+				// file...
+				if err := os.WriteFile(filepath.Join(outputDir, "scripts"), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "synthtool failure",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				// synthtool requires .repo-metadata.json to be present
+				if err := os.Remove(filepath.Join(outputDir, ".repo-metadata.json")); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "nox failure",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				// nox requires noxfile.py to be present
+				if err := os.Remove(filepath.Join(outputDir, "noxfile.py")); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			outputDir := filepath.Join(repoRoot, "packages", "test")
+			if err := os.MkdirAll(outputDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			createReplacementScripts(t, repoRoot)
+			createMinimalNoxFile(t, outputDir)
+			if err := os.WriteFile(filepath.Join(outputDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if test.setup != nil {
+				test.setup(t, repoRoot, outputDir)
+			}
+			gotErr := runPostProcessor(t.Context(), repoRoot, outputDir)
+			// Not all errors are easy to specify. (Most come from other
+			// packages, and we're just testing they're propagated.)
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("GenerateAPI error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+			// Fall back to just checking for any error.
+			if gotErr == nil {
+				t.Fatal("expected error; got none")
+			}
+		})
+	}
+}
+
 func TestGenerateAPI(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -552,11 +620,91 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
-// TestGenerate performs simple testing that multiple libraries can be
+func TestGenerateAPI_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, repoRoot, outputDir string)
+		api     *config.API
+		library *config.Library
+		wantErr error
+	}{
+
+		{
+			name: "error creating owl-bot-staging",
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
+				if err := os.WriteFile(stagingDir, []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "pkg",
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "no protos (path is to parent directory)",
+			api:  &config.API{Path: "google/cloud/secretmanager"},
+			library: &config.Library{
+				Name: "pkg",
+			},
+		},
+		{
+			name: "bad option provokes protoc failure",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "pkg",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"transport=coach"},
+					},
+				},
+			},
+		},
+		{
+			name: "stage protos fails due to proto file being a directory name in existing package",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "pkg",
+				Python: &config.PythonPackage{
+					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, repoRoot, outputDir string) {
+				expectedProtoFile := filepath.Join(repoRoot, "owl-bot-staging", "pkg", "v1", "google", "cloud", "secretmanager", "v1", "resources.proto")
+				if err := os.MkdirAll(expectedProtoFile, 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EISDIR,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			outputDir := filepath.Join(repoRoot, "packages", test.library.Name)
+			if test.setup != nil {
+				test.setup(t, repoRoot, outputDir)
+			}
+			gotErr := generateAPI(t.Context(), test.api, test.library, googleapisDir, repoRoot)
+			// Not all errors are easy to specify. (Most come from other
+			// packages, and we're just testing they're propagated.)
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("GenerateAPI error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+			// Fall back to just checking for any error.
+			if gotErr == nil {
+				t.Fatal("expected error; got none")
+			}
+		})
+	}
+}
+
+// TestGenerate_Multiple performs simple testing that multiple libraries can be
 // generated. Only the presence of a single expected file per library is
-// performed; TestGenerateLibrary is responsible for more detailed testing of
-// per-library generation.
-func TestGenerate(t *testing.T) {
+// performed; TestGenerate and TestGenerateAPI are responsible for more detailed
+// testing of per-library generation.
+func TestGenerate_Multiple(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
 	}
@@ -609,6 +757,8 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
+// TestGenerate_Error mostly provokes errors in lower-level functions, and
+// validates that they propagate up.
 func TestGenerate_Error(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
@@ -619,36 +769,122 @@ func TestGenerate_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "python3")
 	testhelper.RequireCommand(t, "nox")
 	requireSynthtool(t)
-	repoRoot := t.TempDir()
-	createReplacementScripts(t, repoRoot)
 
-	cfg := &config.Config{
-		Language: config.LanguagePython,
-		Repo:     "googleapis/google-cloud-python",
-	}
-
-	libraries := []*config.Library{
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		setup   func(*testing.T, *config.Library)
+		wantErr error
+	}{
 		{
-			Name:   "bad-output",
-			Output: "/../bad-output",
-			APIs: []*config.API{
-				{
-					Path: "google/cloud/configdelivery/v1",
+			name: "can't create output directory",
+			library: &config.Library{
+				Name:   "test",
+				Output: "exists-as-file",
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				if err := os.WriteFile(lib.Output, []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "unknown api path",
+			library: &config.Library{
+				Name:   "test",
+				Output: "packages/test",
+				APIs: []*config.API{
+					{Path: "bogus/"},
 				},
 			},
 		},
-	}
-	gotErr := Generate(t.Context(), cfg, libraries[0], googleapisDir)
-	wantErr := os.ErrPermission
-	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
+		{
+			name: "read-only .repo-metadata.json",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				if err := os.MkdirAll(lib.Output, 0755); err != nil {
+					t.Fatal(err)
+				}
+				metadataFile := filepath.Join(lib.Output, ".repo-metadata.json")
+				if err := os.WriteFile(metadataFile, []byte{}, 0444); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: os.ErrPermission,
+		},
+		{
+			name: "break post-processing script",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				postProcessorScript := filepath.Join(".librarian", "generator-input", "client-post-processing", "bad.yaml")
+				if err := os.WriteFile(postProcessorScript, []byte("-"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "provoke doc-copying error",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				if err := os.MkdirAll(filepath.Join(lib.Output, "docs", "README.rst"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EISDIR,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			absGoogleapisDir, err := filepath.Abs(googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			repoRoot := t.TempDir()
+			t.Chdir(repoRoot)
+			var lib = test.library
+			createReplacementScripts(t, repoRoot)
+			if test.setup != nil {
+				test.setup(t, lib)
+			}
+
+			cfg := &config.Config{
+				Language: config.LanguagePython,
+				Repo:     "googleapis/google-cloud-python",
+			}
+
+			gotErr := Generate(t.Context(), cfg, lib, absGoogleapisDir)
+			// Not all errors are easy to specify. (Most come from other
+			// packages, and we're just testing they're propagated.)
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Fatalf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+			// Fall back to just checking for any error.
+			if gotErr == nil {
+				t.Fatal("expected error; got none")
+			}
+		})
 	}
 }
 
-// Note: this is separate to TestGenerateLibrary as there's so little that we
-// want to do here. Making TestGenerateLibrary table-driven in order to take
-// two entirely different paths doesn't feel useful.
-func TestGenerateLibrary(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
 		t.Skip("slow test: Python code generation")
@@ -835,7 +1071,11 @@ func TestCreateRepoMetadata(t *testing.T) {
 					DefaultVersion:               "v1beta1",
 					MetadataNameOverride:         "secretmanager",
 					NamePrettyOverride:           "overridden name_pretty",
+					ClientDocumentationOverride:  "overridden client_documentation",
+					IssueTrackerOverride:         "overridden issue_tracker",
 					ProductDocumentationOverride: "overridden product_documentation",
+					APIShortnameOverride:         "overridden api_shortname",
+					APIIDOverride:                "overridden api_id",
 					PythonDefault: config.PythonDefault{
 						LibraryType: "CORE",
 					},
@@ -845,16 +1085,16 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Name:                 "secretmanager",
 				NamePretty:           "overridden name_pretty",
 				ProductDocumentation: "overridden product_documentation",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				IssueTracker:         "overridden issue_tracker",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
+				APIID:                "overridden api_id",
+				APIShortname:         "overridden api_shortname",
 				APIDescription:       "overridden description",
 				LibraryType:          "CORE",
-				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				ClientDocumentation:  "overridden client_documentation",
 				DefaultVersion:       "v1beta1",
 			},
 		},
