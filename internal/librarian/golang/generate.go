@@ -50,7 +50,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return err
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4677), group all operations for an API into
+	// TODO(https://github.com/googleapis/librarian/issues/4677), Group all operations for an API into
 	// a helper function.
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
