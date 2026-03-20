@@ -9,10 +9,10 @@ List commands without `filter` and `order_by` fields.
 ```
 // The request structure for the ListResources method.
 message ListResourcesRequest {
-  // The parent of the resource.
+  // Required. The parent of the resource.
   string parent = 1 [
-    (.google.api.field_behavior) = REQUIRED,
-    (.google.api.resource_reference) = {
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
       child_type: "example.googleapis.com/Resource"
     }
   ];

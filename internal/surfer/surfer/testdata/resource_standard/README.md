@@ -24,7 +24,6 @@ message Resource {
 ```
 
 **NOTE:** Singleton resources are not supported in autogen at this time.
-go/gcloud:autogen-ux-features#unsupported-features
 
 ## YAML Output:
 * The _name_ field triggers the resource argument to be rendered as a CLI

@@ -37,12 +37,11 @@ message Resource {
 }
 ```
 
-**NOTE:** Singleton resources are not supported in autogen at this time
-go/gcloud:autogen-ux-features#unsupported-features.
+**NOTE:** Singleton resources are not supported in autogen at this time.
 Resources where the parent is a singleton are supported i.e.
 `projects/{project}/global/networks/{network}`.
 
-## YAML Output go/multiple-resource-args:
+## YAML Output:
 * Renders string fields with resource reference as a resource argument
 * Resource_method_params is used to map the resource argument to the correct
 location

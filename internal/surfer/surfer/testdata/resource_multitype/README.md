@@ -89,7 +89,7 @@ rpc CreateResource(.resource_multitype.v1.CreateResourceRequest)
 }
 ```
 
-## YAML Output go/multitype:
+## YAML Output:
 
 * Multiple patterns are added to the resources.yaml file.
 * Auto completers are disabled for each multitype resource.

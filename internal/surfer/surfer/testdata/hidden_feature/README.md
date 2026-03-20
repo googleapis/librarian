@@ -1,23 +1,23 @@
 ## Hidden Features
 
 gcloud commands can be marked as
-[hidden](https://g3doc.corp.google.com/company/teams/cloud-sdk/cli/contrib/develop/implement/advanced.md?#hiding-commands-and-command-groups)
+hidden
 (not easily discoverable).
 
 ## gcloud Config
 
-[`api`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=195;rcl=663465290)
+`api`
 interface. As an alternative, it is possible to explicitly hide certain methods
 or resources using
-[`hidden_features`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=232;rcl=663465290)
+`hidden_features`
 definition and the following attributes:
 
--   [`messages`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=241;rcl=663465290).
+-   `messages`.
     Used to mark as hidden a resource that corresponds to a command group
     (`__init__.py`).
     <br/> *Each API definition will have one resource*.
 
--   [`methods`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=238;rcl=663465290).
+-   `methods`.
     Used to mark as hidden an RPC that corresponds to a command
     (`command.yaml`).
     <br/>

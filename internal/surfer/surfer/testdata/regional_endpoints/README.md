@@ -24,8 +24,7 @@ regional_endpoint_compatibility: REQUIRED
 
 `add_regional_endpoint_flag` determines which commands should add an
 `--endpoint-location` flag. Most commands do need the `--endpoint-location`
-flag. For more information, refer to [Cloud SDK: gcloud REP design](https://docs.google.com/document/d/1GYh33uE_BZjyje9bFw1S8qYLIn6V8Cdhc5X87UGbyMM/edit?resourcekey=0-IWPozTPdD1105D_THjDwTA&tab=t.0#heading=h.9z8nxi2jmqcq).
-
+flag.
 ```
 apis:
 - name: RegionalEndpoints
@@ -68,4 +67,4 @@ $ gcloud regional-endpoins-regional-supported projects/my-project/resources/my-r
 `add_regional_endpoint_flag` to true. Most commands do not need the
 `--endpoint-location` flag.
 
-More information can be found in [Cloud SDK: gcloud REP design](https://docs.google.com/document/d/1GYh33uE_BZjyje9bFw1S8qYLIn6V8Cdhc5X87UGbyMM/edit?resourcekey=0-IWPozTPdD1105D_THjDwTA&tab=t.0#heading=h.9z8nxi2jmqcq).
+

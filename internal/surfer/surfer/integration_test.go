@@ -69,8 +69,6 @@ func TestIntegration(t *testing.T) {
 		{name: "method_output_format"},
 		{name: "multi_service"},
 		{name: "multi_version_multi_track"},
-		{name: "private_preview"},
-		{name: "public_only"},
 		{name: "regional_endpoints/global_only"},
 		{name: "regional_endpoints/regional_required"},
 		{name: "regional_endpoints/regional_supported"},

@@ -1,6 +1,6 @@
 # Help Text
 
-gcloud commands must have [help text](http://go/cloud-sdk-help-text).
+gcloud commands must have help text.
 
 ## Proto Requirements:
 
@@ -27,22 +27,22 @@ message Resource {
 
 Help text can be overridden and prove examples and additional information in the
 gcloud_config file using
-[`help_text_rule`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=51;rcl=663465290)
+`help_text_rule`
 definition and the following attributes:
 
--   [`service_rules`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=276;rcl=663465290).
+-   `service_rules`.
     Help text for the main surface (root `__init__.py`).
     <br/> *When multiple API interfaces are defined, it will use the first one.*.
 
--   [`message_rules`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=282;rcl=663465290).
+-   `message_rules`.
     Help text for a resource that corresponds to a command group (`__init__.py`).
     <br/> *Each API definition will have one resource*.
 
--   [`method_rules`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=279;rcl=663465290).
+-   `method_rules`.
     Help text for an RPC that corresponds to a command (`command.yaml`).
     <br/> *Each API definition can have multiple methods acting upon the resource*.
 
--   [`field_rules`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=285;rcl=663465290).
+-   `field_rules`.
     Help text for a field of a resource that corresponds to a flag of a command.
     <br/> *Each API definition can have multiple fields for a resource*.
 

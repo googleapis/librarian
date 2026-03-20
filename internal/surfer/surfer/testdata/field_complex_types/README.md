@@ -60,8 +60,7 @@ generated_flags:
 * Message fields traverse the message tree and prefix the flag name with the
 path traveled.
 * Repeated primitives are type ArgList.
-* Repeated message fields and map fields are automatically ArgObject type
-go/gcloud-arg-object.
+* Repeated message fields and map fields are automatically ArgObject type.
 * Update commands with ArgObject and ArgList flags automatically generate
 update flags using _clearable_ go/gcloud-update-flags.
 
@@ -202,8 +201,7 @@ update commands.
 $ gcloud field-comples-types resources update --clear-my-message
 ```
 
-* File flags will contain `-from-file` or `FromFile` suffix
-go/autogen-file-type.
+* File flags will contain `-from-file` or `FromFile` suffix.
 
 ```
 $ gcloud field-comples-types resources create \

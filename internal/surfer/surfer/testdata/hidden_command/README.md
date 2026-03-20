@@ -1,13 +1,13 @@
 # Hidden Commands
 
 gcloud commands can be marked as
-[hidden](https://g3doc.corp.google.com/company/teams/cloud-sdk/cli/contrib/develop/implement/advanced.md?#hiding-commands-and-command-groups)
+hidden
 (not easily discoverable).
 
 ## gcloud Config
 
 Use the
-[`root_is_hidden`](https://source.corp.google.com/piper///depot/google3/cloud/sdk/tools/gen_sfc/config/gcloud_config_schema_v2.yaml;l=212;rcl=663465290)
+`root_is_hidden`
 attribute to hide all commands and command groups for your service, and make
 sure it is defined in every
 
