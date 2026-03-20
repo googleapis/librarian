@@ -23,6 +23,63 @@ import (
 	"github.com/googleapis/librarian/internal/surfer/provider"
 )
 
+type argBuilder struct {
+	parent   *commandBuilder
+	field    *api.Field
+	apiField string
+
+	arg Arg
+	err error
+}
+
+// newArg maps a single terminal field to an Arg.
+// It acts as the builder director.
+func (b *commandBuilder) newArg(field *api.Field, prefix string) (*Arg, error) {
+	builder := &argBuilder{
+		parent:   b,
+		field:    field,
+		apiField: prefix,
+		arg: Arg{
+			ArgName:  field.Name,
+			APIField: prefix,
+			Required: field.DocumentAsRequired(),
+			Repeated: field.Repeated,
+		},
+	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
+	builder.ApplyBehaviors().ApplyHelpText()
+
+	// TODO(sheacock): This logic is still too complicated.
+	if builder.isPrimary() {
+		arg, err := builder.ApplyPrimary().Build()
+		if err != nil {
+			return nil, err
+		}
+		return &arg, nil
+	}
+
+	if builder.isIgnored() {
+		return nil, nil
+	}
+
+	if field.Map {
+		builder.ApplyMap()
+	} else if field.EnumType != nil {
+		builder.ApplyEnum()
+	} else if field.ResourceReference != nil {
+		builder.ApplyResourceReference()
+	} else {
+		builder.ApplyType()
+	}
+
+	arg, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+	return &arg, nil
+}
+
 // isIgnored determines if a field should be excluded from the generated command arguments.
 // These are fields that are either implicit in the command context or handled
 // automatically by the gcloud framework.
@@ -63,57 +120,100 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 	return false
 }
 
-// newArg creates a single command-line argument (a `Arg` struct) from a proto field.
-func (b *commandBuilder) newArg(field *api.Field, apiField string) (Arg, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
-	arg := Arg{
-		ArgName:  field.Name,
-		APIField: apiField,
-		Required: field.DocumentAsRequired(),
-		Repeated: field.Repeated,
-	}
+func (b *argBuilder) isPrimary() bool {
+	return b.parent.method.IsPrimaryResource(b.field)
+}
 
-	if field.ResourceReference != nil {
-		spec, err := b.newResourceReferenceSpec(field)
-		if err != nil {
-			return Arg{}, err
-		}
-		arg.ResourceSpec = spec
-		arg.ResourceMethodParams = map[string]string{
-			apiField: "{__relative_name__}",
-		}
-	} else if field.Map {
-		arg.Repeated = true
-		arg.Spec = []ArgSpec{
-			{APIField: "key"},
-			{APIField: "value"},
-		}
-	} else if field.EnumType != nil {
-		for _, v := range field.EnumType.Values {
-			// Skip the default "UNSPECIFIED" value.
-			if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
-				continue
-			}
-			arg.Choices = append(arg.Choices, Choice{
-				ArgValue:  v.Name,
-				EnumValue: v.Name,
-			})
-		}
-	} else {
-		arg.Type = provider.GetGcloudType(field.Typez)
-	}
+func (b *argBuilder) isIgnored() bool {
+	return b.parent.isIgnored(b.field)
+}
 
-	if (b.method.Type() == provider.MethodTypeUpdate) && arg.Repeated {
-		arg.Clearable = true
+func (b *argBuilder) ApplyBehaviors() *argBuilder {
+	if b.err != nil {
+		return b
 	}
+	if (b.parent.method.Type() == provider.MethodTypeUpdate) && b.arg.Repeated {
+		b.arg.Clearable = true
+	}
+	return b
+}
 
-	if rule := b.findFieldHelpTextRule(field); rule != nil {
-		arg.HelpText = rule.HelpText.Brief
+func (b *argBuilder) ApplyHelpText() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	if rule := b.parent.findFieldHelpTextRule(b.field); rule != nil {
+		b.arg.HelpText = rule.HelpText.Brief
 	} else {
 		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		arg.HelpText = fmt.Sprintf("Value for the `%s` field.", field.Name)
+		b.arg.HelpText = fmt.Sprintf("Value for the `%s` field.", b.field.Name)
 	}
-	return arg, nil
+	return b
+}
+
+func (b *argBuilder) ApplyPrimary() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	b.arg = b.parent.newPrimaryResourceArg(b.field)
+	return b
+}
+
+func (b *argBuilder) ApplyMap() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	b.arg.Repeated = true
+	b.arg.Spec = []ArgSpec{
+		{APIField: "key"},
+		{APIField: "value"},
+	}
+	return b
+}
+
+func (b *argBuilder) ApplyEnum() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	for _, v := range b.field.EnumType.Values {
+		// Skip the default "UNSPECIFIED" value.
+		if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
+			continue
+		}
+		b.arg.Choices = append(b.arg.Choices, Choice{
+			ArgValue:  v.Name,
+			EnumValue: v.Name,
+		})
+	}
+	return b
+}
+
+func (b *argBuilder) ApplyResourceReference() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	spec, err := b.parent.newResourceReferenceSpec(b.field)
+	if err != nil {
+		b.err = err
+		return b
+	}
+	b.arg.ResourceSpec = spec
+	b.arg.ResourceMethodParams = map[string]string{
+		b.apiField: "{__relative_name__}",
+	}
+	return b
+}
+
+func (b *argBuilder) ApplyType() *argBuilder {
+	if b.err != nil {
+		return b
+	}
+	b.arg.Type = provider.GetGcloudType(b.field.Typez)
+	return b
+}
+
+func (b *argBuilder) Build() (Arg, error) {
+	return b.arg, b.err
 }
 
 // newPrimaryResourceArg creates the main positional resource argument for a command.

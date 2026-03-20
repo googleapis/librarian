@@ -125,14 +125,14 @@ func TestNewArg(t *testing.T) {
 		apiField  string
 		method    *api.Method
 		overrides *provider.Config
-		want      Arg
+		want      *Arg
 	}{
 		{
 			name:     "String Field",
 			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "description",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Arg{
+			want: &Arg{
 				ArgName:  "description",
 				APIField: "description",
 				Type:     "str",
@@ -146,7 +146,7 @@ func TestNewArg(t *testing.T) {
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Arg{
+			want: &Arg{
 				ArgName:  "network",
 				APIField: "network",
 				HelpText: "Value for the `network` field.",
@@ -183,7 +183,7 @@ func TestNewArg(t *testing.T) {
 			},
 			apiField: "foo",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Arg{
+			want: &Arg{
 				ArgName:  "foo",
 				APIField: "foo",
 				Type:     "str",

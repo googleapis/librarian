@@ -123,14 +123,6 @@ func (b *commandBuilder) newArgs(fields []*api.Field, prefix string) ([]Arg, err
 			currentPrefix = fmt.Sprintf("%s.%s", prefix, currentPrefix)
 		}
 
-		// Primary resource args are checked first because fields like "parent"
-		// and "name" are primary resources in certain method types (e.g., List
-		// and Get/Delete/Update respectively) and must not be ignored.
-		if b.method.IsPrimaryResource(field) {
-			args = append(args, b.newPrimaryResourceArg(field))
-			continue
-		}
-
 		if b.isIgnored(field) {
 			continue
 		}
@@ -151,7 +143,9 @@ func (b *commandBuilder) newArgs(fields []*api.Field, prefix string) ([]Arg, err
 		if err != nil {
 			return nil, err
 		}
-		args = append(args, arg)
+		if arg != nil {
+			args = append(args, *arg)
+		}
 	}
 	return args, nil
 }

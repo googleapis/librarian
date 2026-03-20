@@ -12,27 +12,6 @@
       $ {command} my-instance
   arguments:
     params:
-      - help_text: The instance to operate on.
-        is_positional: true
-        is_primary_resource: true
-        resource_spec:
-          name: instance
-          plural_name: instances
-          collection: parallelstore.projects.locations.instances
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: instancesId
-              attribute_name: instance
-              help: The instance id of the {resource} resource.
-          disable_auto_completers: false
-        required: true
-        repeated: false
       - arg_name: request-id
         api_field: requestId
         help_text: Value for the `request_id` field.
