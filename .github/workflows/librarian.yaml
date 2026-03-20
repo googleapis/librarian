@@ -62,6 +62,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
+      - name: Install Go tools
+        run: go install tool
       - name: Run tests
         run: |
           go test -race -coverprofile=coverage.out -covermode=atomic \
