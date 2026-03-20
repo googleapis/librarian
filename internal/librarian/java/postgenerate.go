@@ -147,6 +147,8 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 		}
 	}
 	// handle edge case before sort
+	// these are older libraries that do not have a BOM module, their client are included
+	// directly in the gapic BOM
 	specialBOMs := []struct {
 		module     string
 		groupID    string
@@ -166,7 +168,9 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
-	// handle edge case after sort: java-grafeas and add to the end
+	// handle edge case, this is done after sort to match current order in google-cloud-java
+	// also without BOM and included directly in gapic BOM
+	// TODO(): move this before sort
 	conf, err := handleSpecialBOM("java-grafeas", "io.grafeas", "grafeas")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-grafeas: %w", err)
@@ -211,7 +215,7 @@ func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 	// Derive version annotation from artifactId.
 	versionAnnotation, err := deriveVersionAnnotation(p.ArtifactID)
 	if err != nil {
-		return bomConfig{}, fmt.Errorf("%w in %s", err, pomPath)
+		return bomConfig{}, fmt.Errorf("%s: %w", pomPath, err)
 	}
 	return bomConfig{
 		GroupID:           p.GroupID,
