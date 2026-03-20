@@ -54,8 +54,10 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service}
-			got, err := b.newArguments()
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service, cmd: &Command{}}
+			b.WithArguments()
+			got := b.cmd.Arguments
+			err := b.err
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
@@ -91,8 +93,9 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service}
-			_, err := b.newArguments()
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service, cmd: &Command{}}
+			b.WithArguments()
+			err := b.err
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
 			}
@@ -338,8 +341,9 @@ func TestNewOutputConfig(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}}
-			got := b.newOutputConfig()
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, cmd: &Command{}}
+			b.WithOutputConfig()
+			got := b.cmd.Output
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
 			}
@@ -368,8 +372,9 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}}
-			if got := b.newOutputConfig(); got != nil {
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, cmd: &Command{}}
+			b.WithOutputConfig()
+			if got := b.cmd.Output; got != nil {
 				t.Errorf("newOutputConfig() = %v, want nil", got)
 			}
 		})
@@ -565,10 +570,11 @@ func TestNewRequest(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, service: service}
-			got := b.newRequest()
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, service: service, cmd: &Command{}}
+			b.WithRequest()
+			got := b.cmd.Request
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
+				t.Errorf("WithRequest() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -660,8 +666,9 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service}
-			got := b.newAsync()
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service, cmd: &Command{}}
+			b.WithAsync()
+			got := b.cmd.Async
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
 			}
@@ -669,7 +676,7 @@ func TestNewAsync(t *testing.T) {
 	}
 }
 
-func TestAddFlattenedParams(t *testing.T) {
+func TestFlattenField(t *testing.T) {
 	service := api.NewTestService("TestService")
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
@@ -747,20 +754,19 @@ func TestAddFlattenedParams(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
 			b := &commandBuilder{method: &provider.MethodAdapter{Method: createMethod}, config: &provider.Config{}, model: model, service: service}
-			err := b.addFlattenedParams(test.field, test.prefix, args)
+			params, err := b.flattenField(test.field, test.prefix)
 			if err != nil {
-				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
+				t.Fatalf("flattenField() unexpected error = %v", err)
 			}
-			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
-				t.Errorf("addFlattenedParams() mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
+				t.Errorf("flattenField() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestAddFlattenedParams_Error(t *testing.T) {
+func TestFlattenField_Error(t *testing.T) {
 	service := api.NewTestService("TestService")
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
@@ -792,11 +798,10 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
 			b := &commandBuilder{method: &provider.MethodAdapter{Method: createMethod}, config: &provider.Config{}, model: model, service: service}
-			err := b.addFlattenedParams(test.field, test.prefix, args)
+			_, err := b.flattenField(test.field, test.prefix)
 			if err == nil {
-				t.Fatalf("addFlattenedParams() expected error, got nil")
+				t.Fatalf("flattenField() expected error, got nil")
 			}
 		})
 	}

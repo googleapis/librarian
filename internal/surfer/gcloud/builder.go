@@ -98,11 +98,22 @@ func (b *commandBuilder) WithArguments() *commandBuilder {
 	if b.err != nil {
 		return b
 	}
-	args, err := b.newArguments()
-	if err != nil {
-		b.err = err
+
+	args := Arguments{}
+	if b.method.Method.InputType == nil {
+		b.cmd.Arguments = args
 		return b
 	}
+
+	for _, field := range b.method.Method.InputType.Fields {
+		params, err := b.flattenField(field, field.JSONName)
+		if err != nil {
+			b.err = err
+			return b
+		}
+		args.Params = append(args.Params, params...)
+	}
+
 	b.cmd.Arguments = args
 	return b
 }
@@ -111,7 +122,22 @@ func (b *commandBuilder) WithRequest() *commandBuilder {
 	if b.err != nil {
 		return b
 	}
-	b.cmd.Request = b.newRequest()
+	req := &Request{
+		APIVersion: b.apiVersion(),
+		Collection: b.newCollectionPath(false),
+	}
+
+	// For custom methods (AIP-136), the `method` field in the request configuration
+	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
+	if len(b.method.Method.PathInfo.Bindings) > 0 && b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		req.Method = *b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !b.method.IsStandardMethod() {
+		commandName, _ := b.method.GetCommandName()
+		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
+		req.Method = strcase.ToLowerCamel(commandName)
+	}
+
+	b.cmd.Request = req
 	// Special logic historically bound here for List requests
 	if b.method.Type() == provider.MethodTypeList {
 		// List commands should have an id_field to enable the --uri flag.
@@ -126,9 +152,19 @@ func (b *commandBuilder) WithOutputConfig() *commandBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.method.Type() == provider.MethodTypeList {
-		b.cmd.Output = b.newOutputConfig()
+	if b.method.Type() != provider.MethodTypeList {
+		return b
 	}
+
+	resourceMsg := provider.FindResourceMessage(b.method.Method.OutputType)
+	if resourceMsg != nil {
+		if format := newFormat(resourceMsg); format != "" {
+			b.cmd.Output = &OutputConfig{
+				Format: format,
+			}
+		}
+	}
+
 	return b
 }
 
@@ -149,323 +185,11 @@ func (b *commandBuilder) WithAsync() *commandBuilder {
 	if b.err != nil {
 		return b
 	}
-	if b.method.Method.OperationInfo != nil {
-		b.cmd.Async = b.newAsync()
-	}
-	return b
-}
 
-func (b *commandBuilder) Build() (*Command, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-	return b.cmd, nil
-}
-
-// newArguments generates the set of arguments for a command by parsing the
-// fields of the method's request message.
-func (b *commandBuilder) newArguments() (Arguments, error) {
-	args := Arguments{}
-	if b.method.Method.InputType == nil {
-		return args, nil
+	if b.method.Method.OperationInfo == nil {
+		return b
 	}
 
-	for _, field := range b.method.Method.InputType.Fields {
-		if err := b.addFlattenedParams(field, field.JSONName, &args); err != nil {
-			return Arguments{}, err
-		}
-	}
-	return args, nil
-}
-
-// isIgnored determines if a field should be excluded from the generated command arguments.
-// These are fields that are either implicit in the command context or handled
-// automatically by the gcloud framework.
-func (b *commandBuilder) isIgnored(field *api.Field) bool {
-	// The "parent" field is usually implicit in the command context (handled by the primary resource or hierarchy).
-	if field.Name == "parent" {
-		return true
-	}
-
-	// The "name" field is usually the primary resource identifier, handled separately.
-	if field.Name == "name" {
-		return true
-	}
-
-	// The "update_mask" field is handled automatically by the gcloud framework.
-	if field.Name == "update_mask" {
-		return true
-	}
-
-	// For List methods, standard pagination/filtering arguments are handled by gcloud.
-	if b.method.Type() == provider.MethodTypeList {
-		switch field.Name {
-		case "page_size", "page_token", "filter", "order_by":
-			return true
-		}
-	}
-
-	// Output-only fields are read-only and should not be settable via CLI flags.
-	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
-		return true
-	}
-
-	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
-	if (b.method.Type() == provider.MethodTypeUpdate) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
-		return true
-	}
-
-	return false
-}
-
-// addFlattenedParams recursively processes a field and its sub-fields to generate
-// command-line flags. It uses a dispatch pattern to classify each field:
-//  1. Primary resource arguments (positional resource identifiers).
-//  2. Ignored fields (implicit or framework-handled).
-//  3. Nested messages (flattened into top-level flags).
-//  4. Standard arguments (scalars, maps, enums, resource references).
-//
-// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
-// handling strategy (Error vs Skip) and messaging.
-func (b *commandBuilder) addFlattenedParams(field *api.Field, prefix string, args *Arguments) error {
-	// Primary resource args are checked first because fields like "parent"
-	// and "name" are primary resources in certain method types (e.g., List
-	// and Get/Delete/Update respectively) and must not be ignored.
-	if b.method.IsPrimaryResource(field) {
-		args.Params = append(args.Params, b.newPrimaryResourceParam(field))
-		return nil
-	}
-
-	if b.isIgnored(field) {
-		return nil
-	}
-
-	// Nested messages are flattened into top-level flags.
-	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
-	if field.MessageType != nil && !field.Map {
-		for _, f := range field.MessageType.Fields {
-			if err := b.addFlattenedParams(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	// Standard arguments: scalars, maps, enums, and resource references.
-	param, err := b.newParam(field, prefix)
-	if err != nil {
-		return err
-	}
-	args.Params = append(args.Params, param)
-	return nil
-}
-
-// newParam creates a single command-line argument (a `Param` struct) from a proto field.
-func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
-	param := Param{
-		ArgName:  strcase.ToKebab(field.Name),
-		APIField: apiField,
-		Required: field.DocumentAsRequired(),
-		Repeated: field.Repeated,
-	}
-
-	if field.ResourceReference != nil {
-		spec, err := b.newResourceReferenceSpec(field)
-		if err != nil {
-			return Param{}, err
-		}
-		param.ResourceSpec = spec
-		param.ResourceMethodParams = map[string]string{
-			apiField: "{__relative_name__}",
-		}
-	} else if field.Map {
-		param.Repeated = true
-		param.Spec = []ArgSpec{
-			{APIField: "key"},
-			{APIField: "value"},
-		}
-	} else if field.EnumType != nil {
-		for _, v := range field.EnumType.Values {
-			// Skip the default "UNSPECIFIED" value.
-			if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
-				continue
-			}
-			param.Choices = append(param.Choices, Choice{
-				ArgValue:  strcase.ToKebab(v.Name),
-				EnumValue: v.Name,
-			})
-		}
-	} else {
-		param.Type = provider.GetGcloudType(field.Typez)
-	}
-
-	if (b.method.Type() == provider.MethodTypeUpdate) && param.Repeated {
-		param.Clearable = true
-	}
-
-	if rule := b.findFieldHelpTextRule(field); rule != nil {
-		param.HelpText = rule.HelpText.Brief
-	} else {
-		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		param.HelpText = fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(field.Name))
-	}
-	return param, nil
-}
-
-// newPrimaryResourceParam creates the main positional resource argument for a command.
-// This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
-	resource := b.method.GetResource(b.model)
-	var segments []api.PathSegment
-	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
-	if resource != nil && len(resource.Patterns) > 0 {
-		segments = resource.Patterns[0]
-	}
-
-	// For List methods, the primary resource is the parent of the method's resource.
-	if b.method.Type() == provider.MethodTypeList {
-		segments = provider.GetParentFromSegments(segments)
-	}
-
-	resourceName := strings.TrimSuffix(field.Name, "_id")
-	if field.Name == "name" || (b.method.Type() == provider.MethodTypeList) {
-		resourceName = provider.GetSingularFromSegments(segments)
-	}
-
-	var helpText string
-	switch {
-	case (b.method.Type() == provider.MethodTypeCreate):
-		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case (b.method.Type() == provider.MethodTypeList):
-		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", provider.GetPluralFromSegments(segments))
-	default:
-		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
-	}
-
-	collectionPath := provider.GetCollectionPathFromSegments(segments)
-	hostParts := strings.Split(b.service.DefaultHost, ".")
-	shortServiceName := hostParts[0]
-
-	param := Param{
-		HelpText:          helpText,
-		IsPositional:      b.method.Type() != provider.MethodTypeList,
-		IsPrimaryResource: true,
-		Required:          true,
-		ResourceSpec: &ResourceSpec{
-			Name:                  resourceName,
-			PluralName:            provider.GetPluralFromSegments(segments),
-			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
-			DisableAutoCompleters: false,
-			Attributes:            newAttributesFromSegments(segments),
-		},
-	}
-
-	if b.method.Type() == provider.MethodTypeCreate {
-		param.RequestIDField = strcase.ToLowerCamel(field.Name)
-	}
-
-	return param
-}
-
-// newResourceReferenceSpec creates a ResourceSpec for a field that references
-// another resource type (e.g., a `--network` flag).
-func (b *commandBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSpec, error) {
-	for _, def := range b.model.ResourceDefinitions {
-		if def.Type == field.ResourceReference.Type {
-			if len(def.Patterns) == 0 {
-				return nil, fmt.Errorf("resource definition for %q has no patterns", def.Type)
-			}
-			// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
-			segments := def.Patterns[0]
-
-			pluralName := def.Plural
-			if pluralName == "" {
-				pluralName = provider.GetPluralFromSegments(segments)
-			}
-
-			name := provider.GetSingularFromSegments(segments)
-
-			hostParts := strings.Split(b.service.DefaultHost, ".")
-			shortServiceName := hostParts[0]
-			baseCollectionPath := provider.GetCollectionPathFromSegments(segments)
-			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
-
-			return &ResourceSpec{
-				Name:       name,
-				PluralName: pluralName,
-				Collection: fullCollectionPath,
-				// TODO(https://github.com/googleapis/librarian/issues/3416): Investigate and enable auto-completers for referenced resources.
-				DisableAutoCompleters: true,
-				Attributes:            newAttributesFromSegments(segments),
-			}, nil
-		}
-	}
-	return nil, fmt.Errorf("resource definition not found for type %q", field.ResourceReference.Type)
-}
-
-// newAttributesFromSegments parses a structured resource pattern and extracts the attributes
-// that make up the resource's name.
-func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
-	var attributes []Attribute
-
-	for i, part := range segments {
-		if part.Variable == nil {
-			continue
-		}
-
-		if len(part.Variable.FieldPath) == 0 {
-			continue
-		}
-		name := part.Variable.FieldPath[len(part.Variable.FieldPath)-1]
-		var parameterName string
-
-		// The `parameter_name` is derived from the preceding literal segment
-		// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
-		if i > 0 && segments[i-1].Literal != nil {
-			parameterName = *segments[i-1].Literal + "Id"
-		} else {
-			parameterName = name + "sId"
-		}
-
-		attr := Attribute{
-			AttributeName: name,
-			ParameterName: parameterName,
-			Help:          fmt.Sprintf("The %s id of the {resource} resource.", name),
-		}
-
-		// Standard gcloud property fallback so users don't need to specify --project
-		// if it's already configured.
-		if name == "project" {
-			attr.Property = "core/project"
-		}
-		attributes = append(attributes, attr)
-	}
-	return attributes
-}
-
-// newRequest creates the `Request` part of the command definition.
-func (b *commandBuilder) newRequest() *Request {
-	req := &Request{
-		APIVersion: b.apiVersion(),
-		Collection: b.newCollectionPath(false),
-	}
-
-	// For custom methods (AIP-136), the `method` field in the request configuration
-	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if len(b.method.Method.PathInfo.Bindings) > 0 && b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		req.Method = *b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !b.method.IsStandardMethod() {
-		commandName, _ := b.method.GetCommandName()
-		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
-		req.Method = strcase.ToLowerCamel(commandName)
-	}
-
-	return req
-}
-
-// newAsync creates the `Async` part of the command definition for long-running operations.
-func (b *commandBuilder) newAsync() *Async {
 	async := &Async{
 		Collection: b.newCollectionPath(true),
 	}
@@ -474,7 +198,8 @@ func (b *commandBuilder) newAsync() *Async {
 	// method's resource type.
 	resource := b.method.GetResource(b.model)
 	if resource == nil {
-		return async
+		b.cmd.Async = async
+		return b
 	}
 
 	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
@@ -493,7 +218,15 @@ func (b *commandBuilder) newAsync() *Async {
 		async.ExtractResourceResult = false
 	}
 
-	return async
+	b.cmd.Async = async
+	return b
+}
+
+func (b *commandBuilder) Build() (*Command, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
+	return b.cmd, nil
 }
 
 // newCollectionPath constructs the gcloud collection path(s) for a request or async operation.
@@ -535,27 +268,6 @@ func (b *commandBuilder) newCollectionPath(isAsync bool) []string {
 	// Remove duplicates if any.
 	slices.Sort(collections)
 	return slices.Compact(collections)
-}
-
-// newOutputConfig generates the output configuration for List commands.
-func (b *commandBuilder) newOutputConfig() *OutputConfig {
-	if b.method.Type() != provider.MethodTypeList {
-		return nil
-	}
-
-	resourceMsg := provider.FindResourceMessage(b.method.Method.OutputType)
-	if resourceMsg == nil {
-		return nil
-	}
-
-	format := newFormat(resourceMsg)
-	if format == "" {
-		return nil
-	}
-
-	return &OutputConfig{
-		Format: format,
-	}
 }
 
 // newFormat generates a gcloud table format string from a message definition.
