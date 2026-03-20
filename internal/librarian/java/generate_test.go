@@ -386,6 +386,17 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			wantErr: "failed to create output directory",
 		},
+		{
+			name: "no protos found",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			wantErr: "no protos found in api",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.setup != nil {
