@@ -664,8 +664,8 @@ func TestUpdateSnippetDirectory(t *testing.T) {
  }
 }
 `
-	// json is reformated.
-	after := `{
+	// json is formatted by writeMetadata function in snippetmetadata package.
+	want := `{
   "clientLibrary": {
     "apis": [
       {
@@ -690,7 +690,7 @@ func TestUpdateSnippetDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(content)
-	if diff := cmp.Diff(after, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
