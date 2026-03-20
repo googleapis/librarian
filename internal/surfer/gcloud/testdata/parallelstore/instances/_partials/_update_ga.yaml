@@ -27,6 +27,7 @@
         is_primary_resource: false
         required: false
         repeated: true
+        clearable: true
         spec:
           - api_field: key
           - api_field: value

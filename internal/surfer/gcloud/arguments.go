@@ -23,6 +23,8 @@ import (
 	"github.com/googleapis/librarian/internal/surfer/provider"
 )
 
+// argBuilder is a structured builder for evaluating an individual
+// proto field and determining its corresponding gcloud command-line parameters.
 type argBuilder struct {
 	parent   *commandBuilder
 	field    *api.Field
@@ -33,7 +35,6 @@ type argBuilder struct {
 }
 
 // newArg maps a single terminal field to an Arg.
-// It acts as the builder director.
 func (b *commandBuilder) newArg(field *api.Field, prefix string) (*Arg, error) {
 	builder := &argBuilder{
 		parent:   b,
@@ -46,38 +47,87 @@ func (b *commandBuilder) newArg(field *api.Field, prefix string) (*Arg, error) {
 			Repeated: field.Repeated,
 		},
 	}
+	return builder.Build()
+}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
-	builder.ApplyBehaviors().ApplyHelpText()
-
-	// TODO(sheacock): This logic is still too complicated.
-	if builder.isPrimary() {
-		arg, err := builder.ApplyPrimary().Build()
-		if err != nil {
-			return nil, err
-		}
-		return &arg, nil
+func (b *argBuilder) Build() (*Arg, error) {
+	if b.parent.method.IsPrimaryResource(b.field) {
+		b.applyPrimaryResourceArg()
+		return &b.arg, nil
 	}
-
-	if builder.isIgnored() {
+	if b.parent.isIgnored(b.field) {
 		return nil, nil
 	}
 
-	if field.Map {
-		builder.ApplyMap()
-	} else if field.EnumType != nil {
-		builder.ApplyEnum()
-	} else if field.ResourceReference != nil {
-		builder.ApplyResourceReference()
-	} else {
-		builder.ApplyType()
+	switch {
+	case b.field.ResourceReference != nil:
+		b.applyResourceReference()
+	case b.field.Map:
+		b.applyMap()
+	case b.field.EnumType != nil:
+		b.applyEnum()
+	default:
+		b.applyScalar()
 	}
 
-	arg, err := builder.Build()
-	if err != nil {
-		return nil, err
+	if b.err != nil {
+		return nil, b.err
 	}
-	return &arg, nil
+
+	b.applyUniversalRules()
+	return &b.arg, nil
+}
+
+func (b *argBuilder) applyResourceReference() {
+	spec, err := b.resourceSpec()
+	if err != nil {
+		b.err = err
+		return
+	}
+	b.arg.ResourceSpec = spec
+	b.arg.ResourceMethodParams = map[string]string{
+		b.apiField: "{__relative_name__}",
+	}
+}
+
+func (b *argBuilder) applyMap() {
+	b.arg.Repeated = true
+	b.arg.Spec = []ArgSpec{
+		{APIField: "key"},
+		{APIField: "value"},
+	}
+}
+
+func (b *argBuilder) applyEnum() {
+	for _, v := range b.field.EnumType.Values {
+		// Skip the default "UNSPECIFIED" value.
+		if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
+			continue
+		}
+		b.arg.Choices = append(b.arg.Choices, Choice{
+			ArgValue:  v.Name,
+			EnumValue: v.Name,
+		})
+	}
+}
+
+func (b *argBuilder) applyScalar() {
+	b.arg.Type = provider.GetGcloudType(b.field.Typez)
+}
+
+func (b *argBuilder) applyUniversalRules() {
+	// Apply Behaviors
+	if b.parent.method.Type() == provider.MethodTypeUpdate && b.arg.Repeated {
+		b.arg.Clearable = true
+	}
+
+	// Apply HelpText
+	if rule := b.parent.findFieldHelpTextRule(b.field); rule != nil {
+		b.arg.HelpText = rule.HelpText.Brief
+	} else {
+		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
+		b.arg.HelpText = fmt.Sprintf("Value for the `%s` field.", b.field.Name)
+	}
 }
 
 // isIgnored determines if a field should be excluded from the generated command arguments.
@@ -120,106 +170,10 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 	return false
 }
 
-func (b *argBuilder) isPrimary() bool {
-	return b.parent.method.IsPrimaryResource(b.field)
-}
-
-func (b *argBuilder) isIgnored() bool {
-	return b.parent.isIgnored(b.field)
-}
-
-func (b *argBuilder) ApplyBehaviors() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	if (b.parent.method.Type() == provider.MethodTypeUpdate) && b.arg.Repeated {
-		b.arg.Clearable = true
-	}
-	return b
-}
-
-func (b *argBuilder) ApplyHelpText() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	if rule := b.parent.findFieldHelpTextRule(b.field); rule != nil {
-		b.arg.HelpText = rule.HelpText.Brief
-	} else {
-		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		b.arg.HelpText = fmt.Sprintf("Value for the `%s` field.", b.field.Name)
-	}
-	return b
-}
-
-func (b *argBuilder) ApplyPrimary() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	b.arg = b.parent.newPrimaryResourceArg(b.field)
-	return b
-}
-
-func (b *argBuilder) ApplyMap() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	b.arg.Repeated = true
-	b.arg.Spec = []ArgSpec{
-		{APIField: "key"},
-		{APIField: "value"},
-	}
-	return b
-}
-
-func (b *argBuilder) ApplyEnum() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	for _, v := range b.field.EnumType.Values {
-		// Skip the default "UNSPECIFIED" value.
-		if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
-			continue
-		}
-		b.arg.Choices = append(b.arg.Choices, Choice{
-			ArgValue:  v.Name,
-			EnumValue: v.Name,
-		})
-	}
-	return b
-}
-
-func (b *argBuilder) ApplyResourceReference() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	spec, err := b.parent.newResourceReferenceSpec(b.field)
-	if err != nil {
-		b.err = err
-		return b
-	}
-	b.arg.ResourceSpec = spec
-	b.arg.ResourceMethodParams = map[string]string{
-		b.apiField: "{__relative_name__}",
-	}
-	return b
-}
-
-func (b *argBuilder) ApplyType() *argBuilder {
-	if b.err != nil {
-		return b
-	}
-	b.arg.Type = provider.GetGcloudType(b.field.Typez)
-	return b
-}
-
-func (b *argBuilder) Build() (Arg, error) {
-	return b.arg, b.err
-}
-
-// newPrimaryResourceArg creates the main positional resource argument for a command.
+// applyPrimaryResourceArg mutates the arg to be the primary positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *commandBuilder) newPrimaryResourceArg(field *api.Field) Arg {
-	resource := b.method.GetResource(b.model)
+func (b *argBuilder) applyPrimaryResourceArg() {
+	resource := b.parent.method.GetResource(b.parent.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
@@ -227,55 +181,51 @@ func (b *commandBuilder) newPrimaryResourceArg(field *api.Field) Arg {
 	}
 
 	// For List methods, the primary resource is the parent of the method's resource.
-	if b.method.Type() == provider.MethodTypeList {
+	if b.parent.method.Type() == provider.MethodTypeList {
 		segments = provider.GetParentFromSegments(segments)
 	}
 
-	resourceName := strings.TrimSuffix(field.Name, "_id")
-	if field.Name == "name" || (b.method.Type() == provider.MethodTypeList) {
+	resourceName := strings.TrimSuffix(b.field.Name, "_id")
+	if b.field.Name == "name" || (b.parent.method.Type() == provider.MethodTypeList) {
 		resourceName = provider.GetSingularFromSegments(segments)
 	}
 
 	var helpText string
 	switch {
-	case (b.method.Type() == provider.MethodTypeCreate):
+	case (b.parent.method.Type() == provider.MethodTypeCreate):
 		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case (b.method.Type() == provider.MethodTypeList):
+	case (b.parent.method.Type() == provider.MethodTypeList):
 		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", provider.GetPluralFromSegments(segments))
 	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
-	hostParts := strings.Split(b.service.DefaultHost, ".")
+	hostParts := strings.Split(b.parent.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
-	arg := Arg{
-		HelpText:          helpText,
-		IsPositional:      b.method.Type() != provider.MethodTypeList,
-		IsPrimaryResource: true,
-		Required:          true,
-		ResourceSpec: &ResourceSpec{
-			Name:                  resourceName,
-			PluralName:            provider.GetPluralFromSegments(segments),
-			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
-			DisableAutoCompleters: false,
-			Attributes:            newAttributesFromSegments(segments),
-		},
+	b.arg.HelpText = helpText
+	b.arg.IsPositional = b.parent.method.Type() != provider.MethodTypeList
+	b.arg.IsPrimaryResource = true
+	b.arg.Required = true
+	b.arg.ResourceSpec = &ResourceSpec{
+		Name:                  resourceName,
+		PluralName:            provider.GetPluralFromSegments(segments),
+		Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
+		DisableAutoCompleters: false,
+		Attributes:            newAttributesFromSegments(segments),
 	}
 
-	if b.method.Type() == provider.MethodTypeCreate {
-		arg.RequestIDField = field.Name
+	if b.parent.method.Type() == provider.MethodTypeCreate {
+		b.arg.RequestIDField = b.field.Name
 	}
-
-	return arg
 }
 
-// newResourceReferenceSpec creates a ResourceSpec for a field that references
-// another resource type (e.g., a `--network` flag).
-func (b *commandBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSpec, error) {
-	for _, def := range b.model.ResourceDefinitions {
-		if def.Type == field.ResourceReference.Type {
+// resourceSpec creates a ResourceSpec for a field that references
+// another resource type (e.g., a  flag).
+func (b *argBuilder) resourceSpec() (*ResourceSpec, error) {
+	for _, def := range b.parent.model.ResourceDefinitions {
+		if def.Type == b.field.ResourceReference.Type {
 			if len(def.Patterns) == 0 {
 				return nil, fmt.Errorf("resource definition for %q has no patterns", def.Type)
 			}
@@ -289,7 +239,7 @@ func (b *commandBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSp
 
 			name := provider.GetSingularFromSegments(segments)
 
-			hostParts := strings.Split(b.service.DefaultHost, ".")
+			hostParts := strings.Split(b.parent.service.DefaultHost, ".")
 			shortServiceName := hostParts[0]
 			baseCollectionPath := provider.GetCollectionPathFromSegments(segments)
 			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
@@ -304,7 +254,7 @@ func (b *commandBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSp
 			}, nil
 		}
 	}
-	return nil, fmt.Errorf("resource definition not found for type %q", field.ResourceReference.Type)
+	return nil, fmt.Errorf("resource definition not found for type %q", b.field.ResourceReference.Type)
 }
 
 // newAttributesFromSegments parses a structured resource pattern and extracts the attributes

@@ -520,7 +520,9 @@ func TestNewPrimaryResourceArg(t *testing.T) {
 			test.method.Model = model
 
 			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service}
-			got := b.newPrimaryResourceArg(test.field)
+			builder := &argBuilder{parent: b, field: test.field}
+			builder.applyPrimaryResourceArg()
+			got := builder.arg
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceArg() mismatch (-want +got):\n%s", diff)
 			}
@@ -719,7 +721,8 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			b := &commandBuilder{model: model, service: service}
-			got, err := b.newResourceReferenceSpec(test.field)
+			builder := &argBuilder{parent: b, field: test.field}
+			got, err := builder.resourceSpec()
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
@@ -745,7 +748,8 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			b := &commandBuilder{model: &api.API{}, service: service}
-			_, err := b.newResourceReferenceSpec(test.field)
+			builder := &argBuilder{parent: b, field: test.field}
+			_, err := builder.resourceSpec()
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}

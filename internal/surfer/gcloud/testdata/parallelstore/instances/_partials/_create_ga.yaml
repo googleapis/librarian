@@ -12,7 +12,9 @@
       $ {command} my-instance --capacity-gib=12000 --location=us-central1-a
   arguments:
     params:
-      - help_text: The instance to create.
+      - arg_name: instance-id
+        api_field: instanceId
+        help_text: The instance to create.
         is_positional: true
         is_primary_resource: true
         request_id_field: instanceId
