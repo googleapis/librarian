@@ -97,7 +97,7 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "language-v1",
+						Name: "language-v1",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -127,7 +127,7 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "language",
+						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -163,14 +163,14 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "vision",
+						Name: "vision",
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
 						Java: &config.JavaModule{},
 					},
 					{
-						Name:   "language",
+						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
