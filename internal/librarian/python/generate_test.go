@@ -1146,6 +1146,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Name:                "google-auth",
 				DistributionName:    "google-auth",
 				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
+				Language:            config.LanguagePython,
 				LibraryType:         "AUTH",
 				Repo:                "googleapis/google-cloud-python",
 				ReleaseLevel:        "stable",
