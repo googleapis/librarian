@@ -61,8 +61,8 @@ func TestNewArguments(t *testing.T) {
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
-			if len(got.Params) != test.want {
-				t.Errorf("newArguments() generated %d params, want %d", len(got.Params), test.want)
+			if len(got) != test.want {
+				t.Errorf("newArguments() generated %d params, want %d", len(got), test.want)
 			}
 		})
 	}
@@ -106,7 +106,7 @@ func TestNewArguments_Error(t *testing.T) {
 	}
 }
 
-func TestNewParam(t *testing.T) {
+func TestNewArg(t *testing.T) {
 	model := &api.API{
 		ResourceDefinitions: []*api.Resource{
 			{
@@ -125,14 +125,14 @@ func TestNewParam(t *testing.T) {
 		apiField  string
 		method    *api.Method
 		overrides *provider.Config
-		want      Param
+		want      Arg
 	}{
 		{
 			name:     "String Field",
 			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "description",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Arg{
 				ArgName:  "description",
 				APIField: "description",
 				Type:     "str",
@@ -146,7 +146,7 @@ func TestNewParam(t *testing.T) {
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Arg{
 				ArgName:  "network",
 				APIField: "network",
 				HelpText: "Value for the `network` field.",
@@ -183,7 +183,7 @@ func TestNewParam(t *testing.T) {
 			},
 			apiField: "foo",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Arg{
 				ArgName:  "foo",
 				APIField: "foo",
 				Type:     "str",
@@ -198,13 +198,13 @@ func TestNewParam(t *testing.T) {
 				overrides = &provider.Config{}
 			}
 			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: overrides, model: model, service: service}
-			got, err := b.newParam(test.field, test.apiField)
+			got, err := b.newArg(test.field, test.apiField)
 			if err != nil {
-				t.Errorf("newParam(%s) unexpected error: %v", test.name, err)
+				t.Errorf("newArg(%s) unexpected error: %v", test.name, err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("newArg() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -381,13 +381,13 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	}
 }
 
-func TestNewPrimaryResourceParam(t *testing.T) {
+func TestNewPrimaryResourceArg(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		field        *api.Field
 		method       *api.Method
 		resourceDefs []*api.Resource
-		want         Param
+		want         Arg
 	}{
 		{
 			name:  "Create Instance (Positional)",
@@ -431,7 +431,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: Arg{
 				HelpText:          "The thing to create.",
 				IsPositional:      true,
 				IsPrimaryResource: true,
@@ -488,7 +488,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: Arg{
 				HelpText:          "The project and location for which to retrieve projects information.",
 				IsPositional:      false,
 				IsPrimaryResource: true,
@@ -520,9 +520,9 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Model = model
 
 			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service}
-			got := b.newPrimaryResourceParam(test.field)
+			got := b.newPrimaryResourceArg(test.field)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("newPrimaryResourceArg() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -700,7 +700,7 @@ func TestFlattenField(t *testing.T) {
 		name    string
 		field   *api.Field
 		prefix  string
-		want    []Param
+		want    []Arg
 		wantErr bool
 	}{
 		{
@@ -713,7 +713,7 @@ func TestFlattenField(t *testing.T) {
 			name:   "Handles Primary Resource ID",
 			field:  createMethod.InputType.Fields[0],
 			prefix: "thingId",
-			want: []Param{
+			want: []Arg{
 				{
 					ArgName:           "",
 					APIField:          "",
@@ -742,7 +742,7 @@ func TestFlattenField(t *testing.T) {
 				},
 			},
 			prefix: "networkConfig",
-			want: []Param{
+			want: []Arg{
 				{
 					ArgName:  "foo",
 					APIField: "networkConfig.foo",
@@ -759,7 +759,7 @@ func TestFlattenField(t *testing.T) {
 			if err != nil {
 				t.Fatalf("flattenField() unexpected error = %v", err)
 			}
-			if diff := cmp.Diff(test.want, params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
+			if diff := cmp.Diff(test.want, params, cmpopts.IgnoreUnexported(Arg{}), cmpopts.IgnoreFields(Arg{}, "ResourceSpec")); diff != "" {
 				t.Errorf("flattenField() mismatch (-want +got):\n%s", diff)
 			}
 		})

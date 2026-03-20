@@ -300,18 +300,18 @@ func EmitCommand(cmd *Command) *YAMLCommand {
 	return y
 }
 
-func emitArguments(args Arguments) YAMLArguments {
+func emitArguments(args []Arg) YAMLArguments {
 	yArgs := YAMLArguments{}
-	if len(args.Params) > 0 {
-		yArgs.Params = make([]YAMLParam, len(args.Params))
-		for i, p := range args.Params {
+	if len(args) > 0 {
+		yArgs.Params = make([]YAMLParam, len(args))
+		for i, p := range args {
 			yArgs.Params[i] = emitParam(p)
 		}
 	}
 	return yArgs
 }
 
-func emitParam(p Param) YAMLParam {
+func emitParam(p Arg) YAMLParam {
 	y := YAMLParam{
 		ArgName:           strcase.ToKebab(p.ArgName),
 		APIField:          p.APIField,

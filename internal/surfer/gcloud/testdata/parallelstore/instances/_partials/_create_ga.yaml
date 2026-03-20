@@ -54,7 +54,7 @@
           - api_field: value
       - arg_name: capacity-gib
         api_field: instance.capacityGib
-        help_text: Value for the `capacity-gib` field.
+        help_text: Value for the `capacity_gib` field.
         is_positional: false
         is_primary_resource: false
         required: true
@@ -84,7 +84,7 @@
           instance.network: '{__relative_name__}'
       - arg_name: reserved-ip-range
         api_field: instance.reservedIpRange
-        help_text: Value for the `reserved-ip-range` field.
+        help_text: Value for the `reserved_ip_range` field.
         is_positional: false
         is_primary_resource: false
         resource_spec:
@@ -109,7 +109,7 @@
           instance.reservedIpRange: '{__relative_name__}'
       - arg_name: file-stripe-level
         api_field: instance.fileStripeLevel
-        help_text: Value for the `file-stripe-level` field.
+        help_text: Value for the `file_stripe_level` field.
         is_positional: false
         is_primary_resource: false
         required: false
@@ -123,7 +123,7 @@
             enum_value: FILE_STRIPE_LEVEL_MAX
       - arg_name: directory-stripe-level
         api_field: instance.directoryStripeLevel
-        help_text: Value for the `directory-stripe-level` field.
+        help_text: Value for the `directory_stripe_level` field.
         is_positional: false
         is_primary_resource: false
         required: false
@@ -137,7 +137,7 @@
             enum_value: DIRECTORY_STRIPE_LEVEL_MAX
       - arg_name: deployment-type
         api_field: instance.deploymentType
-        help_text: Value for the `deployment-type` field.
+        help_text: Value for the `deployment_type` field.
         is_positional: false
         is_primary_resource: false
         required: false
@@ -149,7 +149,7 @@
             enum_value: PERSISTENT
       - arg_name: request-id
         api_field: requestId
-        help_text: Value for the `request-id` field.
+        help_text: Value for the `request_id` field.
         is_positional: false
         is_primary_resource: false
         required: false

@@ -51,7 +51,7 @@
         repeated: false
       - arg_name: request-id
         api_field: requestId
-        help_text: Value for the `request-id` field.
+        help_text: Value for the `request_id` field.
         is_positional: false
         is_primary_resource: false
         required: false
@@ -59,7 +59,7 @@
         type: str
       - arg_name: service-account
         api_field: serviceAccount
-        help_text: Value for the `service-account` field.
+        help_text: Value for the `service_account` field.
         is_positional: false
         is_primary_resource: false
         resource_spec:

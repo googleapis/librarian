@@ -98,19 +98,19 @@ func (b *commandBuilder) WithArguments() *commandBuilder {
 		return b
 	}
 
-	args := Arguments{}
+	var args []Arg
 	if b.method.Method.InputType == nil {
 		b.cmd.Arguments = args
 		return b
 	}
 
 	for _, field := range b.method.Method.InputType.Fields {
-		params, err := b.flattenField(field, field.JSONName)
+		fieldArgs, err := b.flattenField(field, field.JSONName)
 		if err != nil {
 			b.err = err
 			return b
 		}
-		args.Params = append(args.Params, params...)
+		args = append(args, fieldArgs...)
 	}
 
 	b.cmd.Arguments = args

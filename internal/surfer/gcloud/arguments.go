@@ -72,12 +72,12 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 //
 // TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
 // handling strategy (Error vs Skip) and messaging.
-func (b *commandBuilder) flattenField(field *api.Field, prefix string) ([]Param, error) {
+func (b *commandBuilder) flattenField(field *api.Field, prefix string) ([]Arg, error) {
 	// Primary resource args are checked first because fields like "parent"
 	// and "name" are primary resources in certain method types (e.g., List
 	// and Get/Delete/Update respectively) and must not be ignored.
 	if b.method.IsPrimaryResource(field) {
-		return []Param{b.newPrimaryResourceParam(field)}, nil
+		return []Arg{b.newPrimaryResourceArg(field)}, nil
 	}
 
 	if b.isIgnored(field) {
@@ -87,29 +87,29 @@ func (b *commandBuilder) flattenField(field *api.Field, prefix string) ([]Param,
 	// Nested messages are flattened into top-level flags.
 	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
 	if field.MessageType != nil && !field.Map {
-		var params []Param
+		var args []Arg
 		for _, f := range field.MessageType.Fields {
-			nestedParams, err := b.flattenField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
+			nestedArgs, err := b.flattenField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
 			if err != nil {
 				return nil, err
 			}
-			params = append(params, nestedParams...)
+			args = append(args, nestedArgs...)
 		}
-		return params, nil
+		return args, nil
 	}
 
 	// Standard arguments: scalars, maps, enums, and resource references.
-	param, err := b.newParam(field, prefix)
+	arg, err := b.newArg(field, prefix)
 	if err != nil {
 		return nil, err
 	}
-	return []Param{param}, nil
+	return []Arg{arg}, nil
 }
 
-// newParam creates a single command-line argument (a `Param` struct) from a proto field.
-func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, error) {
+// newArg creates a single command-line argument (a `Arg` struct) from a proto field.
+func (b *commandBuilder) newArg(field *api.Field, apiField string) (Arg, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
-	param := Param{
+	arg := Arg{
 		ArgName:  field.Name,
 		APIField: apiField,
 		Required: field.DocumentAsRequired(),
@@ -119,15 +119,15 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 	if field.ResourceReference != nil {
 		spec, err := b.newResourceReferenceSpec(field)
 		if err != nil {
-			return Param{}, err
+			return Arg{}, err
 		}
-		param.ResourceSpec = spec
-		param.ResourceMethodParams = map[string]string{
+		arg.ResourceSpec = spec
+		arg.ResourceMethodParams = map[string]string{
 			apiField: "{__relative_name__}",
 		}
 	} else if field.Map {
-		param.Repeated = true
-		param.Spec = []ArgSpec{
+		arg.Repeated = true
+		arg.Spec = []ArgSpec{
 			{APIField: "key"},
 			{APIField: "value"},
 		}
@@ -137,31 +137,31 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 			if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
 				continue
 			}
-			param.Choices = append(param.Choices, Choice{
+			arg.Choices = append(arg.Choices, Choice{
 				ArgValue:  v.Name,
 				EnumValue: v.Name,
 			})
 		}
 	} else {
-		param.Type = provider.GetGcloudType(field.Typez)
+		arg.Type = provider.GetGcloudType(field.Typez)
 	}
 
-	if (b.method.Type() == provider.MethodTypeUpdate) && param.Repeated {
-		param.Clearable = true
+	if (b.method.Type() == provider.MethodTypeUpdate) && arg.Repeated {
+		arg.Clearable = true
 	}
 
 	if rule := b.findFieldHelpTextRule(field); rule != nil {
-		param.HelpText = rule.HelpText.Brief
+		arg.HelpText = rule.HelpText.Brief
 	} else {
 		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		param.HelpText = fmt.Sprintf("Value for the `%s` field.", field.Name)
+		arg.HelpText = fmt.Sprintf("Value for the `%s` field.", field.Name)
 	}
-	return param, nil
+	return arg, nil
 }
 
-// newPrimaryResourceParam creates the main positional resource argument for a command.
+// newPrimaryResourceArg creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
+func (b *commandBuilder) newPrimaryResourceArg(field *api.Field) Arg {
 	resource := b.method.GetResource(b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
@@ -193,7 +193,7 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 	hostParts := strings.Split(b.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
-	param := Param{
+	arg := Arg{
 		HelpText:          helpText,
 		IsPositional:      b.method.Type() != provider.MethodTypeList,
 		IsPrimaryResource: true,
@@ -208,10 +208,10 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 	}
 
 	if b.method.Type() == provider.MethodTypeCreate {
-		param.RequestIDField = field.Name
+		arg.RequestIDField = field.Name
 	}
 
-	return param
+	return arg
 }
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
