@@ -1218,7 +1218,7 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := NewCommand(test.method, test.overrides, model, service)
+			got, err := NewCommand(&provider.MethodAdapter{Method: test.method}, test.overrides, model, service)
 			if err != nil {
 				t.Fatalf("NewCommand() unexpected error = %v", err)
 			}

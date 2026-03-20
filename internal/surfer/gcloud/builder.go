@@ -34,9 +34,9 @@ type commandBuilder struct {
 // NewCommand constructs a single gcloud command definition from an API method.
 // This function assembles all the necessary pieces: help text, arguments,
 // request details, and async configuration.
-func NewCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+func NewCommand(method *provider.MethodAdapter, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
 	b := &commandBuilder{
-		method:  &provider.MethodAdapter{Method: method},
+		method:  method,
 		config:  overrides,
 		model:   model,
 		service: service,
@@ -169,7 +169,7 @@ func (b *commandBuilder) addFlattenedParams(field *api.Field, prefix string, arg
 	// Primary resource args are checked first because fields like "parent"
 	// and "name" are primary resources in certain method types (e.g., List
 	// and Get/Delete/Update respectively) and must not be ignored.
-	if provider.IsPrimaryResource(field, b.method.Method) {
+	if b.method.IsPrimaryResource(field) {
 		args.Params = append(args.Params, b.newPrimaryResourceParam(field))
 		return nil
 	}
@@ -254,7 +254,7 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 // newPrimaryResourceParam creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
 func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
-	resource := provider.GetResourceForMethod(b.method.Method, b.model)
+	resource := b.method.GetResource(b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
@@ -410,7 +410,7 @@ func (b *commandBuilder) newAsync() *Async {
 
 	// Extract the resource result if the LRO response type matches the
 	// method's resource type.
-	resource := provider.GetResourceForMethod(b.method.Method, b.model)
+	resource := b.method.GetResource(b.model)
 	if resource == nil {
 		return async
 	}
@@ -424,7 +424,7 @@ func (b *commandBuilder) newAsync() *Async {
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := provider.GetSingularResourceNameForMethod(b.method.Method, b.model)
+	singular := b.method.GetSingularResourceName(b.model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	} else {

@@ -84,13 +84,14 @@ func generateService(service *api.Service, overrides *provider.Config, model *ap
 
 	// gcloud commands are resource-centric, so group methods by the resource
 	// they operate on.
-	methodsByResource := make(map[string][]*api.Method)
+	methodsByResource := make(map[string][]*provider.MethodAdapter)
 
 	for _, method := range service.Methods {
-		collectionID := provider.GetPluralResourceNameForMethod(method, model)
+		adapter := &provider.MethodAdapter{Method: method}
+		collectionID := adapter.GetPluralResourceName(model)
 
 		if collectionID != "" {
-			methodsByResource[collectionID] = append(methodsByResource[collectionID], method)
+			methodsByResource[collectionID] = append(methodsByResource[collectionID], adapter)
 		}
 	}
 
@@ -108,7 +109,7 @@ func generateService(service *api.Service, overrides *provider.Config, model *ap
 //
 // For a given collectionID like "instances", this function will create a directory
 // `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
-func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *provider.Config, model *api.API, service *api.Service) error {
+func generateResourceCommands(collectionID string, methods []*provider.MethodAdapter, baseDir string, overrides *provider.Config, model *api.API, service *api.Service) error {
 	if len(methods) == 0 {
 		return nil
 	}
@@ -119,7 +120,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
 	}
 
-	singular := provider.GetSingularResourceNameForMethod(methods[0], model)
+	singular := methods[0].GetSingularResourceName(model)
 
 	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
 
@@ -142,7 +143,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	}
 
 	for _, method := range methods {
-		verb, err := (&provider.MethodAdapter{Method: method}).GetCommandName()
+		verb, err := method.GetCommandName()
 		if err != nil {
 			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.
@@ -160,7 +161,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
 		if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {
-			return fmt.Errorf("failed to write main command file for %q: %w", method.Name, err)
+			return fmt.Errorf("failed to write main command file for %q: %w", method.Method.Name, err)
 		}
 
 		// Generate a partial file for each release track.
@@ -171,11 +172,11 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 
 			b, err := yaml.Marshal(cmdList)
 			if err != nil {
-				return fmt.Errorf("failed to marshal partial command for %q: %w", method.Name, err)
+				return fmt.Errorf("failed to marshal partial command for %q: %w", method.Method.Name, err)
 			}
 
 			if err := os.WriteFile(partialCmdPath, b, 0644); err != nil {
-				return fmt.Errorf("failed to write partial command file for %q: %w", method.Name, err)
+				return fmt.Errorf("failed to write partial command file for %q: %w", method.Method.Name, err)
 			}
 		}
 	}

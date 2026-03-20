@@ -305,3 +305,359 @@ func TestIsStandardMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPrimaryResource(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		field  *api.Field
+		method *api.Method
+		want   bool
+	}{
+		{
+			name:  "Create Method - Primary Resource ID",
+			field: &api.Field{Name: "instance_id"},
+			method: &api.Method{
+				Name: "CreateInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							MessageType: &api.Message{
+								Name: "Instance",
+								Resource: &api.Resource{
+									Type: "example.googleapis.com/Instance",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name:  "Create Method - Not Primary Resource",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name: "CreateInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							MessageType: &api.Message{
+								Name: "Instance",
+								Resource: &api.Resource{
+									Type: "example.googleapis.com/Instance",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name:  "Get Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name: "GetInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{{Name: "name"}},
+				},
+			},
+			want: true,
+		},
+		{
+			name:  "Delete Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name: "DeleteInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{{Name: "name"}},
+				},
+			},
+			want: true,
+		},
+		{
+			name:  "Update Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name: "UpdateInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{{Name: "name"}},
+				},
+			},
+			want: true,
+		},
+		{
+			name:  "List Method - Primary Resource",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name: "ListInstances",
+				InputType: &api.Message{
+					Fields: []*api.Field{{Name: "parent"}},
+				},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := (&MethodAdapter{Method: test.method}).IsPrimaryResource(test.field)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetResource(t *testing.T) {
+	instanceResource := &api.Resource{Type: "example.googleapis.com/Instance"}
+	otherResource := &api.Resource{Type: "example.googleapis.com/Other"}
+
+	for _, test := range []struct {
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		messages     []*api.Message
+		want         *api.Resource
+	}{
+		{
+			name: "Create Method - Resource in Message",
+			method: &api.Method{
+				Name: "CreateInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						{
+							MessageType: &api.Message{
+								Name:     "Instance",
+								Resource: instanceResource,
+							},
+						},
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
+		},
+		{
+			name: "Get Method - Resource Reference",
+			method: &api.Method{
+				Name: "GetInstance",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("name").WithResourceReference("example.googleapis.com/Instance"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
+		},
+		{
+			name: "List Method - Child Type Reference",
+			method: &api.Method{
+				Name: "ListInstances",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         instanceResource,
+		},
+		{
+			name: "Unknown Resource",
+			method: &api.Method{
+				Name: "Unknown",
+				InputType: &api.Message{
+					Fields: []*api.Field{{Name: "foo"}},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         nil,
+		},
+		{
+			name: "Nil InputType",
+			method: &api.Method{
+				Name:      "NoInput",
+				InputType: nil,
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         nil,
+		},
+		{
+			name: "Resource on Message Directly",
+			method: &api.Method{
+				Name: "GetOther",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("name").WithResourceReference("example.googleapis.com/Other"),
+					},
+				},
+			},
+			messages: []*api.Message{
+				{
+					Name:     "OtherMessage",
+					Resource: otherResource,
+				},
+			},
+			want: otherResource,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+				Messages:            test.messages,
+			}
+			got := (&MethodAdapter{Method: test.method}).GetResource(model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetPluralResourceName(t *testing.T) {
+	instanceResource := &api.Resource{
+		Type: "example.googleapis.com/Instance",
+		Patterns: []api.ResourcePattern{
+			parseResourcePattern("instances/{instance}"),
+		},
+	}
+
+	for _, test := range []struct {
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		want         string
+	}{
+		{
+			name: "Inferred from Pattern",
+			method: &api.Method{
+				Name: "ListInstances",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "instances",
+		},
+		{
+			name: "Explicit Plural",
+			method: &api.Method{
+				Name: "ListBooks",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Book"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{
+				instanceResource,
+				{
+					Type:   "example.googleapis.com/Book",
+					Plural: "books",
+				},
+			},
+			want: "books",
+		},
+		{
+			name: "Resource Not Found",
+			method: &api.Method{
+				Name: "ListUnknown",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Unknown"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+			}
+			got := (&MethodAdapter{Method: test.method}).GetPluralResourceName(model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetSingularResourceName(t *testing.T) {
+	instanceResource := &api.Resource{
+		Type: "example.googleapis.com/Instance",
+		Patterns: []api.ResourcePattern{
+			parseResourcePattern("instances/{instance}"),
+		},
+	}
+
+	for _, test := range []struct {
+		name         string
+		method       *api.Method
+		resourceDefs []*api.Resource
+		want         string
+	}{
+		{
+			name: "Inferred from Pattern",
+			method: &api.Method{
+				Name: "ListInstances",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Instance"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "instance",
+		},
+		{
+			name: "Explicit Singular",
+			method: &api.Method{
+				Name: "ListBooks",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Book"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{
+				instanceResource,
+				{
+					Type:     "example.googleapis.com/Book",
+					Singular: "book",
+				},
+			},
+			want: "book",
+		},
+		{
+			name: "Resource Not Found",
+			method: &api.Method{
+				Name: "ListUnknown",
+				InputType: &api.Message{
+					Fields: []*api.Field{
+						api.NewTestField("parent").WithChildTypeReference("example.googleapis.com/Unknown"),
+					},
+				},
+			},
+			resourceDefs: []*api.Resource{instanceResource},
+			want:         "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			model := &api.API{
+				ResourceDefinitions: test.resourceDefs,
+			}
+			got := (&MethodAdapter{Method: test.method}).GetSingularResourceName(model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

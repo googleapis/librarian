@@ -82,17 +82,19 @@ func TestGenerateResourceCommands(t *testing.T) {
 	// This tests the file writing logic specifically.
 	tmpDir := t.TempDir()
 
-	err := generateResourceCommands("instances", []*api.Method{
+	err := generateResourceCommands("instances", []*provider.MethodAdapter{
 		{
-			Name: "CreateInstance",
-			Service: &api.Service{
-				Package: "google.cloud.parallelstore.v1",
-			},
-			InputType: &api.Message{},
-			PathInfo: &api.PathInfo{
-				Bindings: []*api.PathBinding{{
-					PathTemplate: &api.PathTemplate{},
-				}},
+			Method: &api.Method{
+				Name: "CreateInstance",
+				Service: &api.Service{
+					Package: "google.cloud.parallelstore.v1",
+				},
+				InputType: &api.Message{},
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						PathTemplate: &api.PathTemplate{},
+					}},
+				},
 			},
 		},
 	}, tmpDir, &provider.Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})

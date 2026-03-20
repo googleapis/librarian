@@ -15,11 +15,9 @@
 package provider
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/iancoleman/strcase"
 )
 
 // GetPluralFromSegments infers the plural name of a resource from its structured path segments.
@@ -89,147 +87,12 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	return strings.Join(collectionParts, ".")
 }
 
-// IsPrimaryResource determines if a field represents the primary resource of a method.
-func IsPrimaryResource(field *api.Field, method *api.Method) bool {
-	if method.InputType == nil {
-		return false
-	}
-	// For `Create` methods, the primary resource is identified by a field named
-	// in the format "{resource}_id" (e.g., "instance_id").
-	if (&MethodAdapter{Method: method}).Type() == MethodTypeCreate {
-		resource, err := getResourceFromMethod(method)
-		if err == nil {
-			name := getResourceNameFromType(resource.Type)
-			// Convert CamelCase resource name (e.g., "Instance") to snake_case
-			// to match the proto field naming convention (e.g., "instance_id").
-			if name != "" && field.Name == strcase.ToSnake(name)+"_id" {
-				return true
-			}
-		}
-	}
-
-	// For collection-based methods (List and custom collection methods),
-	// the primary resource scope is identified by the "parent" field.
-	// Note: Create is collection-based but uses the new resource ID (e.g. "instance_id")
-	// as the primary positional argument, so "parent" is not the primary resource arg.
-	if (&MethodAdapter{Method: method}).isCollectionMethod() && !((&MethodAdapter{Method: method}).Type() == MethodTypeCreate) && field.Name == "parent" {
-		return true
-	}
-
-	// For resource-based methods (Get, Delete, Update, and custom resource methods),
-	// the primary resource is identified by the "name" field.
-	if (&MethodAdapter{Method: method}).isResourceMethod() && field.Name == "name" {
-		return true
-	}
-
-	return false
-}
-
 // getResourceNameFromType extracts the singular resource name from a resource type string.
 // According to AIP-123, the format of a resource type is {Service Name}/{Type}, where
 // {Type} is the singular form of the resource noun.
 func getResourceNameFromType(typeStr string) string {
 	parts := strings.Split(typeStr, "/")
 	return parts[len(parts)-1]
-}
-
-// getResourceFromMethod extracts the resource definition from a method's input message if it exists.
-func getResourceFromMethod(method *api.Method) (*api.Resource, error) {
-	for _, f := range method.InputType.Fields {
-		if f.MessageType != nil && f.MessageType.Resource != nil {
-			return f.MessageType.Resource, nil
-		}
-	}
-	return nil, fmt.Errorf("resource message not found in input type for method %q", method.Name)
-}
-
-// GetResourceForMethod finds the `api.Resource` definition associated with a method.
-// This is a crucial function for linking a method to the resource it operates on.
-func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
-	if method.InputType == nil {
-		return nil
-	}
-
-	// Strategy 1: For Create (AIP-133) and Update (AIP-134), the request message
-	// usually contains a field that *is* the resource message.
-	if resource, err := getResourceFromMethod(method); err == nil {
-		return resource
-	}
-
-	// Strategy 2: For Get (AIP-131), Delete (AIP-135), and List (AIP-132), the
-	// request message has a `name` or `parent` field with a `(google.api.resource_reference)`.
-	var resourceType string
-	for _, field := range method.InputType.Fields {
-		if (field.Name == "name" || field.Name == "parent") && field.ResourceReference != nil {
-			// AIP-132 (List): The "parent" field refers to the parent collection, but the
-			// annotation's `child_type` field (if present) points to the resource being listed.
-			if field.ResourceReference.ChildType != "" {
-				resourceType = field.ResourceReference.ChildType
-			} else {
-				resourceType = field.ResourceReference.Type
-			}
-			break
-		}
-	}
-
-	if resourceType == "" {
-		return nil
-	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/3363): Avoid this lookup by linking the ResourceReference
-	// to the Resource definition during model creation or post-processing.
-
-	// Use the API model's indexed maps for an efficient lookup.
-	for _, r := range model.ResourceDefinitions {
-		if r.Type == resourceType {
-			return r
-		}
-	}
-
-	// Also check resources defined on messages directly.
-	for _, m := range model.Messages {
-		if m.Resource != nil && m.Resource.Type == resourceType {
-			return m.Resource
-		}
-	}
-
-	return nil
-}
-
-// GetPluralResourceNameForMethod determines the plural name of a resource. It follows a clear
-// hierarchy of truth: first, the explicit `plural` field in the resource
-// definition, and second, inference from the resource pattern.
-func GetPluralResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := GetResourceForMethod(method, model)
-	if resource != nil {
-		// The `plural` field in the `(google.api.resource)` annotation is the
-		// most authoritative source.
-		if resource.Plural != "" {
-			return resource.Plural
-		}
-		// If the `plural` field is not present, we fall back to inferring the
-		// plural name from the resource's pattern string, as per AIP-122.
-		if len(resource.Patterns) > 0 {
-			return GetPluralFromSegments(resource.Patterns[0])
-		}
-	}
-	return ""
-}
-
-// GetSingularResourceNameForMethod determines the singular name of a resource. It follows a clear
-// hierarchy of truth: first, the explicit `singular` field in the resource
-// definition, and second, inference from the resource pattern.
-func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string {
-	resource := GetResourceForMethod(method, model)
-	if resource != nil {
-		if resource.Singular != "" {
-			return resource.Singular
-		}
-		if len(resource.Patterns) > 0 {
-			return GetSingularFromSegments(resource.Patterns[0])
-		}
-	}
-	return ""
 }
 
 // ExtractPathFromSegments extracts the dot-separated collection path from path segments.
