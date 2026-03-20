@@ -30,8 +30,6 @@ option java_outer_classname = "CloudTasksProto";
 option java_package = "com.google.cloud.tasks.v2";
 option objc_class_prefix = "TASKS";
 
-// Cloud Tasks allows developers to manage the execution of background
-// work in their applications.
 service CloudTasks {
   option (google.api.default_host) = "cloudtasks.googleapis.com";
   option (google.api.oauth_scopes) =
@@ -46,8 +44,6 @@ service CloudTasks {
 }
 
 message ListQueuesRequest {
-  // Required. The location name.
-  // For example: `projects/PROJECT_ID/locations/LOCATION_ID`
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {
@@ -60,8 +56,6 @@ message ListQueuesRequest {
   string page_token = 4;
 }
 
-// Response message for
-// [ListQueues][google.cloud.tasks.v2.CloudTasks.ListQueues].
 message ListQueuesResponse {
   repeated Queue queues = 1;
   string next_page_token = 2;
