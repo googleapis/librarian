@@ -307,11 +307,6 @@ func TestBuildConfig(t *testing.T) {
 						SkipGenerate: true,
 					},
 					{
-						Name:         "google-cloud-jar-parent",
-						Version:      "1.79.0",
-						SkipGenerate: true,
-					},
-					{
 						Name:    "accessapproval",
 						Output:  "java-accessapproval",
 						Version: "2.86.0",

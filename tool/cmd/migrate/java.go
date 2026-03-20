@@ -196,12 +196,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			Version:      v,
 			SkipGenerate: true,
 		})
-		// Hardcode jar-parent as it follows the same version.
-		libs = append(libs, &config.Library{
-			Name:         "google-cloud-jar-parent",
-			Version:      v,
-			SkipGenerate: true,
-		})
 	}
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
