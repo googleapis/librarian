@@ -30,17 +30,13 @@ import (
 )
 
 func TestPostGenerate(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
-	originalWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
 	// Copy testdata to tmpDir
-	testdataDir := filepath.Join(originalWd, "testdata", "postgenerate")
+	testdataDir := filepath.Join("testdata", "postgenerate")
 	if err := copyDir(testdataDir, tmpDir); err != nil {
 		t.Fatal(err)
 	}
-	t.Chdir(tmpDir)
 	cfg := &config.Config{
 		Language: "java",
 		Libraries: []*config.Library{
@@ -50,11 +46,11 @@ func TestPostGenerate(t *testing.T) {
 			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
-	if err := PostGenerate(t.Context(), ".", cfg); err != nil {
+	if err := PostGenerate(t.Context(), tmpDir, cfg); err != nil {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
-	rootPom, err := os.ReadFile("pom.xml")
+	rootPom, err := os.ReadFile(filepath.Join(tmpDir, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,9 +73,9 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
-	verifyBOM(t, filepath.Join(gapicBom, "pom.xml"), "1.2.3", wantDeps)
+	verifyBOM(t, filepath.Join(tmpDir, gapicBom, "pom.xml"), "1.2.3", wantDeps)
 	// Verify annotations are present in the raw XML
-	bomPom, err := os.ReadFile(filepath.Join(gapicBom, "pom.xml"))
+	bomPom, err := os.ReadFile(filepath.Join(tmpDir, gapicBom, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,6 +135,7 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 }
 
 func TestSearchForJavaModules(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	// Setup: mix of modules, non-modules, and excluded directories
 	dirs := []string{
@@ -170,6 +167,7 @@ func TestSearchForJavaModules(t *testing.T) {
 }
 
 func TestSearchForJavaModules_Error(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	// Make directory unreadable to cause os.ReadDir failure
 	if err := os.Chmod(tmpDir, 0000); err != nil {
@@ -183,8 +181,8 @@ func TestSearchForJavaModules_Error(t *testing.T) {
 }
 
 func TestPostGenerate_SearchError(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
 	// Make directory unreadable to cause searchForJavaModules failure
 	if err := os.Chmod(tmpDir, 0000); err != nil {
 		t.Fatal(err)
@@ -195,15 +193,15 @@ func TestPostGenerate_SearchError(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), ".", cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
 }
 
 func TestPostGenerate_Error(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
 	// Make directory read-only to cause os.Create("pom.xml") failure
 	if err := os.Chmod(tmpDir, 0555); err != nil {
 		t.Fatal(err)
@@ -214,14 +212,13 @@ func TestPostGenerate_Error(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), ".", cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg)
 	if !errors.Is(err, errRootPomGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPomGeneration)
 	}
 }
 
 func TestExtractBOMConfig_Error(t *testing.T) {
-	tmpDir := t.TempDir()
 	for _, test := range []struct {
 		name    string
 		library string
@@ -251,6 +248,8 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
 			if test.pom != "" {
 				dir := filepath.Join(tmpDir, test.library, test.bom)
 				if err := os.MkdirAll(dir, 0755); err != nil {
