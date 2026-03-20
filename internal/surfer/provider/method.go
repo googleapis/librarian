@@ -22,112 +22,87 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+type MethodType int
+
+const (
+	MethodTypeUnknown MethodType = iota
+	MethodTypeGet
+	MethodTypeList
+	MethodTypeCreate
+	MethodTypeUpdate
+	MethodTypeDelete
+	MethodTypeCustom
+)
+
+// MethodAdapter wraps sidekick's api.Method to encapsulate its evaluation logic.
+type MethodAdapter struct {
+	Method *api.Method
+}
+
+// Type returns the standard AIP method type of the underlying method.
+func (a *MethodAdapter) Type() MethodType {
+	verb := a.getHTTPVerb()
+	name := a.Method.Name
+
+	if a.Method.IsAIPStandardGet || (strings.HasPrefix(name, "Get") && (verb == "" || verb == "GET")) {
+		return MethodTypeGet
+	}
+	if strings.HasPrefix(name, "List") && (verb == "" || verb == "GET") {
+		return MethodTypeList
+	}
+	if strings.HasPrefix(name, "Create") && (verb == "" || verb == "POST") {
+		return MethodTypeCreate
+	}
+	if strings.HasPrefix(name, "Update") && (verb == "" || verb == "PATCH" || verb == "PUT") {
+		return MethodTypeUpdate
+	}
+	if a.Method.IsAIPStandardDelete || (strings.HasPrefix(name, "Delete") && (verb == "" || verb == "DELETE")) {
+		return MethodTypeDelete
+	}
+	return MethodTypeCustom
+}
+
 // GetCommandName maps an API method to a standard gcloud command name (in snake_case).
 // This name is typically used for the command's file name.
-func GetCommandName(method *api.Method) (string, error) {
-	if method == nil {
+func (a *MethodAdapter) GetCommandName() (string, error) {
+	if a.Method == nil {
 		return "", fmt.Errorf("method cannot be nil")
 	}
-	switch {
-	case isGet(method):
+	switch a.Type() {
+	case MethodTypeGet:
 		return "describe", nil
-	case IsList(method):
+	case MethodTypeList:
 		return "list", nil
-	case IsCreate(method):
+	case MethodTypeCreate:
 		return "create", nil
-	case IsUpdate(method):
+	case MethodTypeUpdate:
 		return "update", nil
-	case isDelete(method):
+	case MethodTypeDelete:
 		return "delete", nil
 	default:
 		// For custom methods (AIP-136), we try to extract the custom verb from the HTTP path.
 		// The custom verb is the part after the colon (e.g., .../instances/*:exportData).
-		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
-			binding := method.PathInfo.Bindings[0]
+		if a.Method.PathInfo != nil && len(a.Method.PathInfo.Bindings) > 0 {
+			binding := a.Method.PathInfo.Bindings[0]
 			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
 				return strcase.ToSnake(*binding.PathTemplate.Verb), nil
 			}
 		}
 		// Fallback: use the method name converted to snake_case.
-		return strcase.ToSnake(method.Name), nil
+		return strcase.ToSnake(a.Method.Name), nil
 	}
-}
-
-// IsCreate determines if the method is a standard Create method (AIP-133).
-func IsCreate(m *api.Method) bool {
-	if !strings.HasPrefix(m.Name, "Create") {
-		return false
-	}
-	if verb := getHTTPVerb(m); verb != "" {
-		return verb == "POST"
-	}
-	return true
-}
-
-// isGet determines if the method is a standard Get method (AIP-131).
-func isGet(m *api.Method) bool {
-	// Use sidekick's robust AIP check if available.
-	if m.IsAIPStandardGet {
-		return true
-	}
-	// Fallback heuristic
-	if !strings.HasPrefix(m.Name, "Get") {
-		return false
-	}
-	if verb := getHTTPVerb(m); verb != "" {
-		return verb == "GET"
-	}
-	return true
-}
-
-// IsList determines if the method is a standard List method (AIP-132).
-func IsList(m *api.Method) bool {
-	if !strings.HasPrefix(m.Name, "List") {
-		return false
-	}
-	if verb := getHTTPVerb(m); verb != "" {
-		return verb == "GET"
-	}
-	return true
-}
-
-// IsUpdate determines if the method is a standard Update method (AIP-134).
-func IsUpdate(m *api.Method) bool {
-	if !strings.HasPrefix(m.Name, "Update") {
-		return false
-	}
-	if verb := getHTTPVerb(m); verb != "" {
-		return verb == "PATCH" || verb == "PUT"
-	}
-	return true
-}
-
-// isDelete determines if the method is a standard Delete method (AIP-135).
-func isDelete(m *api.Method) bool {
-	// Use sidekick's robust AIP check if available.
-	if m.IsAIPStandardDelete {
-		return true
-	}
-	// Fallback heuristic
-	if !strings.HasPrefix(m.Name, "Delete") {
-		return false
-	}
-	if verb := getHTTPVerb(m); verb != "" {
-		return verb == "DELETE"
-	}
-	return true
 }
 
 // IsStandardMethod determines if the method is one of the standard AIP methods
 // (Get, List, Create, Update, Delete).
-func IsStandardMethod(m *api.Method) bool {
-	return isGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || isDelete(m)
+func (a *MethodAdapter) IsStandardMethod() bool {
+	return a.Type() != MethodTypeCustom
 }
 
 // getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
-func getHTTPVerb(m *api.Method) string {
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb
+func (a *MethodAdapter) getHTTPVerb() string {
+	if a.Method.PathInfo != nil && len(a.Method.PathInfo.Bindings) > 0 {
+		return a.Method.PathInfo.Bindings[0].Verb
 	}
 	return ""
 }
@@ -135,18 +110,18 @@ func getHTTPVerb(m *api.Method) string {
 // isResourceMethod determines if the method operates on a specific resource instance.
 // This includes standard Get, Update, Delete methods, and custom methods where the
 // HTTP path ends with a variable segment (e.g. `.../instances/{instance}`).
-func isResourceMethod(m *api.Method) bool {
-	switch {
-	case isGet(m), IsUpdate(m), isDelete(m):
+func (a *MethodAdapter) isResourceMethod() bool {
+	switch a.Type() {
+	case MethodTypeGet, MethodTypeUpdate, MethodTypeDelete:
 		return true
-	case IsCreate(m), IsList(m):
+	case MethodTypeCreate, MethodTypeList:
 		return false
 	default:
 		// Fallback for custom methods
-		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+		if a.Method.PathInfo == nil || len(a.Method.PathInfo.Bindings) == 0 {
 			return false
 		}
-		template := m.PathInfo.Bindings[0].PathTemplate
+		template := a.Method.PathInfo.Bindings[0].PathTemplate
 		if template == nil || len(template.Segments) == 0 {
 			return false
 		}
@@ -159,18 +134,18 @@ func isResourceMethod(m *api.Method) bool {
 // isCollectionMethod determines if the method operates on a collection of resources.
 // This includes standard List and Create methods, and custom methods where the
 // HTTP path ends with a literal segment (e.g. `.../instances`).
-func isCollectionMethod(m *api.Method) bool {
-	switch {
-	case IsList(m), IsCreate(m):
+func (a *MethodAdapter) isCollectionMethod() bool {
+	switch a.Type() {
+	case MethodTypeList, MethodTypeCreate:
 		return true
-	case isGet(m), IsUpdate(m), isDelete(m):
+	case MethodTypeGet, MethodTypeUpdate, MethodTypeDelete:
 		return false
 	default:
 		// Fallback for custom methods
-		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+		if a.Method.PathInfo == nil || len(a.Method.PathInfo.Bindings) == 0 {
 			return false
 		}
-		template := m.PathInfo.Bindings[0].PathTemplate
+		template := a.Method.PathInfo.Bindings[0].PathTemplate
 		if template == nil || len(template.Segments) == 0 {
 			return false
 		}

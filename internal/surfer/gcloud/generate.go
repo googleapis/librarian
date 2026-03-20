@@ -142,7 +142,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	}
 
 	for _, method := range methods {
-		verb, err := provider.GetCommandName(method)
+		verb, err := (&provider.MethodAdapter{Method: method}).GetCommandName()
 		if err != nil {
 			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.

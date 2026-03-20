@@ -35,7 +35,7 @@ func TestIsCreate(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsCreate(test.method)
+			got := (&MethodAdapter{Method: test.method}).Type() == MethodTypeCreate
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -56,7 +56,7 @@ func TestIsGet(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isGet(test.method)
+			got := (&MethodAdapter{Method: test.method}).Type() == MethodTypeGet
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -77,7 +77,7 @@ func TestIsList(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsList(test.method)
+			got := (&MethodAdapter{Method: test.method}).Type() == MethodTypeList
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -99,7 +99,7 @@ func TestIsUpdate(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsUpdate(test.method)
+			got := (&MethodAdapter{Method: test.method}).Type() == MethodTypeUpdate
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -120,7 +120,7 @@ func TestIsDelete(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isDelete(test.method)
+			got := (&MethodAdapter{Method: test.method}).Type() == MethodTypeDelete
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -143,7 +143,7 @@ func TestGetCommandName(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := GetCommandName(test.method)
+			got, err := (&MethodAdapter{Method: test.method}).GetCommandName()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -212,7 +212,7 @@ func TestGetCommandName_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, gotErr := GetCommandName(test.method)
+			_, gotErr := (&MethodAdapter{Method: test.method}).GetCommandName()
 			if test.wantErr != nil {
 				if gotErr == nil {
 					t.Fatalf("GetCommandName() returned nil error, want %v", test.wantErr)
@@ -248,7 +248,7 @@ func TestIsResourceMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := isResourceMethod(test.method); got != test.want {
+			if got := (&MethodAdapter{Method: test.method}).isResourceMethod(); got != test.want {
 				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
 			}
 		})
@@ -276,7 +276,7 @@ func TestIsCollectionMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := isCollectionMethod(test.method); got != test.want {
+			if got := (&MethodAdapter{Method: test.method}).isCollectionMethod(); got != test.want {
 				t.Errorf("mismatch (-want +got):\n%s", cmp.Diff(test.want, got))
 			}
 		})
@@ -298,7 +298,7 @@ func TestIsStandardMethod(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsStandardMethod(test.method)
+			got := (&MethodAdapter{Method: test.method}).IsStandardMethod()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

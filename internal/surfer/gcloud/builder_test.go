@@ -54,7 +54,7 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: test.method, config: &provider.Config{}, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service}
 			got, err := b.newArguments()
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
@@ -91,7 +91,7 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: test.method, config: &provider.Config{}, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, model: model, service: service}
 			_, err := b.newArguments()
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
@@ -194,7 +194,7 @@ func TestNewParam(t *testing.T) {
 			if overrides == nil {
 				overrides = &provider.Config{}
 			}
-			b := &commandBuilder{method: test.method, config: overrides, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: overrides, model: model, service: service}
 			got, err := b.newParam(test.field, test.apiField)
 			if err != nil {
 				t.Errorf("newParam(%s) unexpected error: %v", test.name, err)
@@ -300,7 +300,7 @@ func TestIsIgnored(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: test.method}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}}
 			got := b.isIgnored(test.field)
 			if got != test.want {
 				t.Errorf("isIgnored() = %v, want %v", got, test.want)
@@ -338,7 +338,7 @@ func TestNewOutputConfig(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			b := &commandBuilder{method: test.method}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}}
 			got := b.newOutputConfig()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
@@ -368,7 +368,7 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: test.method}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}}
 			if got := b.newOutputConfig(); got != nil {
 				t.Errorf("newOutputConfig() = %v, want nil", got)
 			}
@@ -514,7 +514,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			b := &commandBuilder{method: test.method, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service}
 			got := b.newPrimaryResourceParam(test.field)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
@@ -565,7 +565,7 @@ func TestNewRequest(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			b := &commandBuilder{method: test.method, config: &provider.Config{}, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, config: &provider.Config{}, service: service}
 			got := b.newRequest()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
@@ -660,7 +660,7 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			b := &commandBuilder{method: test.method, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, model: model, service: service}
 			got := b.newAsync()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
@@ -748,7 +748,7 @@ func TestAddFlattenedParams(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			b := &commandBuilder{method: createMethod, config: &provider.Config{}, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: createMethod}, config: &provider.Config{}, model: model, service: service}
 			err := b.addFlattenedParams(test.field, test.prefix, args)
 			if err != nil {
 				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
@@ -793,7 +793,7 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			args := &Arguments{}
-			b := &commandBuilder{method: createMethod, config: &provider.Config{}, model: model, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: createMethod}, config: &provider.Config{}, model: model, service: service}
 			err := b.addFlattenedParams(test.field, test.prefix, args)
 			if err == nil {
 				t.Fatalf("addFlattenedParams() expected error, got nil")
@@ -962,7 +962,7 @@ func TestNewCollectionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: test.method, service: service}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: test.method}, service: service}
 			got := b.newCollectionPath(test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
@@ -1013,7 +1013,7 @@ func TestFindHelpTextRule(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			b := &commandBuilder{method: method, config: test.overrides}
+			b := &commandBuilder{method: &provider.MethodAdapter{Method: method}, config: test.overrides}
 			got := b.findHelpTextRule()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("findHelpTextRule() mismatch (-want +got):\n%s", diff)

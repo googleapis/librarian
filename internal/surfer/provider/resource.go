@@ -96,7 +96,7 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	}
 	// For `Create` methods, the primary resource is identified by a field named
 	// in the format "{resource}_id" (e.g., "instance_id").
-	if IsCreate(method) {
+	if (&MethodAdapter{Method: method}).Type() == MethodTypeCreate {
 		resource, err := getResourceFromMethod(method)
 		if err == nil {
 			name := getResourceNameFromType(resource.Type)
@@ -112,13 +112,13 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	// the primary resource scope is identified by the "parent" field.
 	// Note: Create is collection-based but uses the new resource ID (e.g. "instance_id")
 	// as the primary positional argument, so "parent" is not the primary resource arg.
-	if isCollectionMethod(method) && !IsCreate(method) && field.Name == "parent" {
+	if (&MethodAdapter{Method: method}).isCollectionMethod() && !((&MethodAdapter{Method: method}).Type() == MethodTypeCreate) && field.Name == "parent" {
 		return true
 	}
 
 	// For resource-based methods (Get, Delete, Update, and custom resource methods),
 	// the primary resource is identified by the "name" field.
-	if isResourceMethod(method) && field.Name == "name" {
+	if (&MethodAdapter{Method: method}).isResourceMethod() && field.Name == "name" {
 		return true
 	}
 

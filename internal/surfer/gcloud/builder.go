@@ -25,7 +25,7 @@ import (
 )
 
 type commandBuilder struct {
-	method  *api.Method
+	method  *provider.MethodAdapter
 	config  *provider.Config
 	model   *api.API
 	service *api.Service
@@ -36,7 +36,7 @@ type commandBuilder struct {
 // request details, and async configuration.
 func NewCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
 	b := &commandBuilder{
-		method:  method,
+		method:  &provider.MethodAdapter{Method: method},
 		config:  overrides,
 		model:   model,
 		service: service,
@@ -68,7 +68,7 @@ func (b *commandBuilder) build() (*Command, error) {
 
 	// Infer default release track from proto package.
 	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := provider.InferTrackFromPackage(b.method.Service.Package)
+	inferredTrack := provider.InferTrackFromPackage(b.method.Method.Service.Package)
 	cmd.ReleaseTracks = []string{strings.ToUpper(inferredTrack)}
 
 	args, err := b.newArguments()
@@ -78,7 +78,7 @@ func (b *commandBuilder) build() (*Command, error) {
 	cmd.Arguments = args
 	cmd.Request = b.newRequest()
 
-	if provider.IsList(b.method) {
+	if b.method.Type() == provider.MethodTypeList {
 		// List commands should have an id_field to enable the --uri flag.
 		cmd.Response = &Response{
 			IDField: "name",
@@ -86,14 +86,14 @@ func (b *commandBuilder) build() (*Command, error) {
 		cmd.Output = b.newOutputConfig()
 	}
 
-	if provider.IsUpdate(b.method) {
+	if b.method.Type() == provider.MethodTypeUpdate {
 		// Standard Update methods in gcloud use the Read-Modify-Update pattern.
 		cmd.Update = &UpdateConfig{
 			ReadModifyUpdate: true,
 		}
 	}
 
-	if b.method.OperationInfo != nil {
+	if b.method.Method.OperationInfo != nil {
 		cmd.Async = b.newAsync()
 	}
 
@@ -104,11 +104,11 @@ func (b *commandBuilder) build() (*Command, error) {
 // fields of the method's request message.
 func (b *commandBuilder) newArguments() (Arguments, error) {
 	args := Arguments{}
-	if b.method.InputType == nil {
+	if b.method.Method.InputType == nil {
 		return args, nil
 	}
 
-	for _, field := range b.method.InputType.Fields {
+	for _, field := range b.method.Method.InputType.Fields {
 		if err := b.addFlattenedParams(field, field.JSONName, &args); err != nil {
 			return Arguments{}, err
 		}
@@ -136,7 +136,7 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 	}
 
 	// For List methods, standard pagination/filtering arguments are handled by gcloud.
-	if provider.IsList(b.method) {
+	if b.method.Type() == provider.MethodTypeList {
 		switch field.Name {
 		case "page_size", "page_token", "filter", "order_by":
 			return true
@@ -149,7 +149,7 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 	}
 
 	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
-	if provider.IsUpdate(b.method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if (b.method.Type() == provider.MethodTypeUpdate) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
 		return true
 	}
 
@@ -169,7 +169,7 @@ func (b *commandBuilder) addFlattenedParams(field *api.Field, prefix string, arg
 	// Primary resource args are checked first because fields like "parent"
 	// and "name" are primary resources in certain method types (e.g., List
 	// and Get/Delete/Update respectively) and must not be ignored.
-	if provider.IsPrimaryResource(field, b.method) {
+	if provider.IsPrimaryResource(field, b.method.Method) {
 		args.Params = append(args.Params, b.newPrimaryResourceParam(field))
 		return nil
 	}
@@ -238,7 +238,7 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 		param.Type = provider.GetGcloudType(field.Typez)
 	}
 
-	if provider.IsUpdate(b.method) && param.Repeated {
+	if (b.method.Type() == provider.MethodTypeUpdate) && param.Repeated {
 		param.Clearable = true
 	}
 
@@ -254,7 +254,7 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 // newPrimaryResourceParam creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
 func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
-	resource := provider.GetResourceForMethod(b.method, b.model)
+	resource := provider.GetResourceForMethod(b.method.Method, b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
@@ -262,20 +262,20 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 	}
 
 	// For List methods, the primary resource is the parent of the method's resource.
-	if provider.IsList(b.method) {
+	if b.method.Type() == provider.MethodTypeList {
 		segments = provider.GetParentFromSegments(segments)
 	}
 
 	resourceName := strings.TrimSuffix(field.Name, "_id")
-	if field.Name == "name" || provider.IsList(b.method) {
+	if field.Name == "name" || (b.method.Type() == provider.MethodTypeList) {
 		resourceName = provider.GetSingularFromSegments(segments)
 	}
 
 	var helpText string
 	switch {
-	case provider.IsCreate(b.method):
+	case (b.method.Type() == provider.MethodTypeCreate):
 		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case provider.IsList(b.method):
+	case (b.method.Type() == provider.MethodTypeList):
 		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", provider.GetPluralFromSegments(segments))
 	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
@@ -287,7 +287,7 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 
 	param := Param{
 		HelpText:          helpText,
-		IsPositional:      !provider.IsList(b.method),
+		IsPositional:      !(b.method.Type() == provider.MethodTypeList),
 		IsPrimaryResource: true,
 		Required:          true,
 		ResourceSpec: &ResourceSpec{
@@ -299,7 +299,7 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 		},
 	}
 
-	if provider.IsCreate(b.method) {
+	if b.method.Type() == provider.MethodTypeCreate {
 		param.RequestIDField = strcase.ToLowerCamel(field.Name)
 	}
 
@@ -391,10 +391,10 @@ func (b *commandBuilder) newRequest() *Request {
 
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		req.Method = *b.method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !provider.IsStandardMethod(b.method) {
-		commandName, _ := provider.GetCommandName(b.method)
+	if len(b.method.Method.PathInfo.Bindings) > 0 && b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		req.Method = *b.method.Method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !b.method.IsStandardMethod() {
+		commandName, _ := b.method.GetCommandName()
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		req.Method = strcase.ToLowerCamel(commandName)
 	}
@@ -410,21 +410,21 @@ func (b *commandBuilder) newAsync() *Async {
 
 	// Extract the resource result if the LRO response type matches the
 	// method's resource type.
-	resource := provider.GetResourceForMethod(b.method, b.model)
+	resource := provider.GetResourceForMethod(b.method.Method, b.model)
 	if resource == nil {
 		return async
 	}
 
 	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
 	// matches the resource singular name or type.
-	responseTypeID := b.method.OperationInfo.ResponseTypeID
+	responseTypeID := b.method.Method.OperationInfo.ResponseTypeID
 	// Extract short name from FQN (last element after dot)
 	responseTypeName := responseTypeID
 	if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := provider.GetSingularResourceNameForMethod(b.method, b.model)
+	singular := provider.GetSingularResourceNameForMethod(b.method.Method, b.model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	} else {
@@ -443,7 +443,7 @@ func (b *commandBuilder) newCollectionPath(isAsync bool) []string {
 	shortServiceName := hostParts[0]
 
 	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
-	for _, binding := range b.method.PathInfo.Bindings {
+	for _, binding := range b.method.Method.PathInfo.Bindings {
 		if binding.PathTemplate == nil {
 			continue
 		}
@@ -477,11 +477,11 @@ func (b *commandBuilder) newCollectionPath(isAsync bool) []string {
 
 // newOutputConfig generates the output configuration for List commands.
 func (b *commandBuilder) newOutputConfig() *OutputConfig {
-	if !provider.IsList(b.method) {
+	if !(b.method.Type() == provider.MethodTypeList) {
 		return nil
 	}
 
-	resourceMsg := provider.FindResourceMessage(b.method.OutputType)
+	resourceMsg := provider.FindResourceMessage(b.method.Method.OutputType)
 	if resourceMsg == nil {
 		return nil
 	}
@@ -554,7 +554,7 @@ func (b *commandBuilder) findHelpTextRule() *provider.HelpTextRule {
 			continue
 		}
 		for _, rule := range api.HelpText.MethodRules {
-			if rule.Selector == strings.TrimPrefix(b.method.ID, ".") {
+			if rule.Selector == strings.TrimPrefix(b.method.Method.ID, ".") {
 				return rule
 			}
 		}
