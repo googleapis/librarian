@@ -43,7 +43,11 @@ jobs:
       - name: Run sidekick tests
         run: go test -race ./internal/sidekick/...
       - name: Run internal/librarian/rust tests
-        run: go test -race ./internal/librarian/rust
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/rust
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
