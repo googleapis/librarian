@@ -33,7 +33,7 @@ NAME:
 
 USAGE:
 
-	librarian add <apis...> [flags]
+	librarian add <apis...>
 
 OPTIONS:
 
@@ -51,7 +51,7 @@ NAME:
 
 USAGE:
 
-	librarian generate [library] [--all]
+	librarian generate <library>
 
 OPTIONS:
 
@@ -70,7 +70,7 @@ NAME:
 
 USAGE:
 
-	librarian bump [library] [--all] [--version=<version>]
+	librarian bump <library>
 
 DESCRIPTION:
 

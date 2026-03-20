@@ -49,6 +49,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
@@ -64,6 +65,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
 				"rest-numeric-enums",
@@ -79,6 +81,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 			},
@@ -97,27 +100,52 @@ func TestResolveGAPICOptions(t *testing.T) {
 	}
 }
 
-func TestResolveGAPICOptions_Error(t *testing.T) {
-	apiPath := "google/cloud/multiple/v1"
-	tmpDir := t.TempDir()
-	apiDir := filepath.Join(tmpDir, apiPath)
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(apiDir, "a_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(apiDir, "b_grpc_service_config.json"), []byte("{}"), 0644); err != nil {
-		t.Fatal(err)
+func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
+	testCases := []struct {
+		name    string
+		files   []string
+		apiPath string
+		wantErr string
+	}{
+		{
+			name:    "multiple grpc configs",
+			files:   []string{"a_grpc_service_config.json", "b_grpc_service_config.json"},
+			apiPath: "google/cloud/multiple/v1",
+			wantErr: "multiple gRPC service config files found",
+		},
+		{
+			name:    "multiple gapic configs",
+			files:   []string{"a_gapic.yaml", "b_gapic.yaml"},
+			apiPath: "google/cloud/multiplegapic/v1",
+			wantErr: "multiple GAPIC config files found",
+		},
 	}
 
-	wantErr := "multiple gRPC service config files found"
-	apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
-		config.LanguageJava: serviceconfig.GRPC,
-	}}
-	_, err := resolveGAPICOptions(&config.API{Path: apiPath}, &config.JavaAPI{Path: apiPath}, tmpDir, apiCfgs)
-	if err == nil || !strings.Contains(err.Error(), wantErr) {
-		t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, wantErr)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			apiDir := filepath.Join(tmpDir, tc.apiPath)
+			if err := os.MkdirAll(apiDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			for _, file := range tc.files {
+				content := []byte("")
+				if strings.HasSuffix(file, ".json") {
+					content = []byte("{}")
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, file), content, 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
+				config.LanguageJava: serviceconfig.GRPC,
+			}}
+			_, err := resolveGAPICOptions(&config.API{Path: tc.apiPath}, &config.JavaAPI{Path: tc.apiPath}, tmpDir, apiCfgs)
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
 	}
 }
 

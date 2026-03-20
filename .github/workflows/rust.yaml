@@ -22,7 +22,7 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -59,7 +59,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/install-taplo
       - name: Checkout google-cloud-rust
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: googleapis/google-cloud-rust
           path: google-cloud-rust

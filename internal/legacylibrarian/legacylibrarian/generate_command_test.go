@@ -896,6 +896,24 @@ func TestGenerateScenarios(t *testing.T) {
 			wantErr:                  true,
 			wantErrMsg:               "all 1 libraries failed to generate",
 		},
+		{
+			name: "generate in release only mode returns error",
+			state: &legacyconfig.LibrarianState{
+				Image:           "gcr.io/test/image:v1.2.3",
+				ReleaseOnlyMode: true,
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:   "some-library",
+						APIs: []*legacyconfig.API{{Path: "some/api"}},
+						// We need the LastGeneratedCommit to force shouldGenerate
+						// to ask the source repo for the head hash.
+						LastGeneratedCommit: "LastGeneratedCommit",
+					},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "generate in release only mode",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repo := newTestGitRepoWithState(t, test.state)
