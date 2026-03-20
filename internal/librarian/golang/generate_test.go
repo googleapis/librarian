@@ -171,6 +171,7 @@ func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		libraryName  string
@@ -327,6 +328,7 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			repoRoot := t.TempDir()
 			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 				t.Fatal(err)
