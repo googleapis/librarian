@@ -50,7 +50,7 @@ func TestPostGenerate(t *testing.T) {
 			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
-	if err := PostGenerate(t.Context(), cfg); err != nil {
+	if err := PostGenerate(t.Context(), ".", cfg); err != nil {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
@@ -140,7 +140,6 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 
 func TestSearchForJavaModules(t *testing.T) {
 	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
 	// Setup: mix of modules, non-modules, and excluded directories
 	dirs := []string{
 		"module-b",
@@ -150,17 +149,17 @@ func TestSearchForJavaModules(t *testing.T) {
 		"google-cloud-shared-deps",
 	}
 	for _, dir := range dirs {
-		if err := os.Mkdir(dir, 0755); err != nil {
+		if err := os.Mkdir(filepath.Join(tmpDir, dir), 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Add pom.xml to modules (including an excluded one to verify filtering)
 	for _, mod := range []string{"module-a", "module-b", gapicBOM} {
-		if err := os.WriteFile(filepath.Join(mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmpDir, mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
-	got, err := searchForJavaModules()
+	got, err := searchForJavaModules(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,13 +171,12 @@ func TestSearchForJavaModules(t *testing.T) {
 
 func TestSearchForJavaModules_Error(t *testing.T) {
 	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
 	// Make directory unreadable to cause os.ReadDir failure
 	if err := os.Chmod(tmpDir, 0000); err != nil {
 		t.Fatal(err)
 	}
 	defer os.Chmod(tmpDir, 0755)
-	_, err := searchForJavaModules()
+	_, err := searchForJavaModules(tmpDir)
 	if err == nil {
 		t.Error("searchForJavaModules expected error, got nil")
 	}
@@ -197,7 +195,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), cfg)
+	err := PostGenerate(t.Context(), ".", cfg)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
@@ -216,7 +214,7 @@ func TestPostGenerate_Error(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), cfg)
+	err := PostGenerate(t.Context(), ".", cfg)
 	if !errors.Is(err, errRootPomGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPomGeneration)
 	}
@@ -224,7 +222,6 @@ func TestPostGenerate_Error(t *testing.T) {
 
 func TestExtractBOMConfig_Error(t *testing.T) {
 	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
 	for _, test := range []struct {
 		name    string
 		library string
@@ -255,7 +252,7 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.pom != "" {
-				dir := filepath.Join(test.library, test.bom)
+				dir := filepath.Join(tmpDir, test.library, test.bom)
 				if err := os.MkdirAll(dir, 0755); err != nil {
 					t.Fatal(err)
 				}
@@ -263,7 +260,7 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := extractBOMConfig(test.library, test.bom)
+			_, err := extractBOMConfig(tmpDir, test.library, test.bom)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}

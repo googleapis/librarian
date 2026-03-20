@@ -245,7 +245,7 @@ func postGenerate(ctx context.Context, language string, cfg *config.Config) erro
 	case config.LanguageFake:
 		return fakePostGenerate()
 	case config.LanguageJava:
-		return java.PostGenerate(ctx, cfg)
+		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageRust:
 		return rust.UpdateWorkspace(ctx)
 	default:

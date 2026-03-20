@@ -44,7 +44,7 @@ var (
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, cfg *config.Config) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
 	monorepoVersion := ""
 	for _, lib := range cfg.Libraries {
 		if lib.Name == rootLibrary {
@@ -55,18 +55,18 @@ func PostGenerate(ctx context.Context, cfg *config.Config) error {
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
-	modules, err := searchForJavaModules()
+	modules, err := searchForJavaModules(repoPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
 	}
-	if err := generateRootPom(modules); err != nil {
+	if err := generateRootPom(repoPath, modules); err != nil {
 		return fmt.Errorf("%w: %w", errRootPomGeneration, err)
 	}
-	bomConfigs, err := searchForBOMArtifacts()
+	bomConfigs, err := searchForBOMArtifacts(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to search for BOM artifacts: %w", err)
 	}
-	if err := generateGapicLibrariesBOM(monorepoVersion, bomConfigs); err != nil {
+	if err := generateGapicLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
@@ -79,11 +79,11 @@ var ignoredDirs = map[string]bool{
 	"google-cloud-shared-deps": true,
 }
 
-// searchForJavaModules scans top-level subdirectories in the current directory for those that
+// searchForJavaModules scans top-level subdirectories in the repoPath for those that
 // contain a pom.xml file, excluding known non-library directories. Returns a sorted list of
 // subdirectory names as module names.
-func searchForJavaModules() ([]string, error) {
-	entries, err := os.ReadDir(".")
+func searchForJavaModules(repoPath string) ([]string, error) {
+	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func searchForJavaModules() ([]string, error) {
 		if !entry.IsDir() || ignoredDirs[entry.Name()] {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(entry.Name(), "pom.xml")); err == nil {
+		if _, err := os.Stat(filepath.Join(repoPath, entry.Name(), "pom.xml")); err == nil {
 			modules = append(modules, entry.Name())
 		}
 	}
@@ -122,11 +122,11 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
-// searchForBOMArtifacts scans the current directory for subdirectories that contain a -bom subdirectory
+// searchForBOMArtifacts scans the repoPath for subdirectories that contain a -bom subdirectory
 // with a pom.xml file. It also includes specific special-case modules like dns, notification, and grafeas.
 // It returns a list of bomConfig objects sorted by ArtifactID.
-func searchForBOMArtifacts() ([]bomConfig, error) {
-	entries, err := os.ReadDir(".")
+func searchForBOMArtifacts(repoPath string) ([]bomConfig, error) {
+	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 			continue
 		}
 		// Search for -bom subdirectories.
-		subEntries, err := os.ReadDir(entry.Name())
+		subEntries, err := os.ReadDir(filepath.Join(repoPath, entry.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read directory %s: %w", entry.Name(), err)
 		}
@@ -144,11 +144,11 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 			if !subEntry.IsDir() || !strings.HasSuffix(subEntry.Name(), "-bom") {
 				continue
 			}
-			pomPath := filepath.Join(entry.Name(), subEntry.Name(), "pom.xml")
+			pomPath := filepath.Join(repoPath, entry.Name(), subEntry.Name(), "pom.xml")
 			if _, err := os.Stat(pomPath); err != nil {
 				continue
 			}
-			conf, err := extractBOMConfig(entry.Name(), subEntry.Name())
+			conf, err := extractBOMConfig(repoPath, entry.Name(), subEntry.Name())
 			if err != nil {
 				return nil, fmt.Errorf("failed to extract BOM config from %s: %w", pomPath, err)
 			}
@@ -168,7 +168,7 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 		{"java-notification", "com.google.cloud", "google-cloud-notification"},
 	}
 	for _, bom := range specialBOMs {
-		conf, err := handleSpecialBOM(bom.module, bom.groupID, bom.artifactID)
+		conf, err := handleSpecialBOM(repoPath, bom.module, bom.groupID, bom.artifactID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle special BOM for %s: %w", bom.module, err)
 		}
@@ -180,7 +180,7 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 	// Handle edge cases. This is done after sorting to match the current order in google-cloud-java.
 	// It is without a BOM and included directly in the GAPIC BOM.
 	// TODO(https://github.com/googleapis/librarian/issues/4706): Move this prior to sort.
-	conf, err := handleSpecialBOM("java-grafeas", "io.grafeas", "grafeas")
+	conf, err := handleSpecialBOM(repoPath, "java-grafeas", "io.grafeas", "grafeas")
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle special BOM for java-grafeas: %w", err)
 	}
@@ -190,8 +190,8 @@ func searchForBOMArtifacts() ([]bomConfig, error) {
 
 // handleSpecialBOM for special cases, such as java-dns, java-notification, and java-grafeas,
 // only version is parsed from pom.xml in the module.
-func handleSpecialBOM(module, groupID, artifactID string) (bomConfig, error) {
-	pomPath := filepath.Join(module, "pom.xml")
+func handleSpecialBOM(repoPath, module, groupID, artifactID string) (bomConfig, error) {
+	pomPath := filepath.Join(repoPath, module, "pom.xml")
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
 		return bomConfig{}, err
@@ -211,8 +211,8 @@ func handleSpecialBOM(module, groupID, artifactID string) (bomConfig, error) {
 
 // extractBOMConfig parses a pom.xml file within a library's -bom subdirectory to
 // produce a bomConfig object.
-func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
-	pomPath := filepath.Join(libraryDir, bomDir, "pom.xml")
+func extractBOMConfig(repoPath, libraryDir, bomDir string) (bomConfig, error) {
+	pomPath := filepath.Join(repoPath, libraryDir, bomDir, "pom.xml")
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
 		return bomConfig{}, err
@@ -247,8 +247,8 @@ func deriveVersionAnnotation(artifactID string) (string, error) {
 
 // generateRootPom writes the aggregator pom.xml for the monorepo root, including
 // all discovered Java modules.
-func generateRootPom(modules []string) (err error) {
-	f, err := os.Create("pom.xml")
+func generateRootPom(repoPath string, modules []string) (err error) {
+	f, err := os.Create(filepath.Join(repoPath, "pom.xml"))
 	if err != nil {
 		return fmt.Errorf("failed to create root pom.xml: %w", err)
 	}
@@ -271,8 +271,8 @@ func generateRootPom(modules []string) (err error) {
 
 // generateGapicLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGapicLibrariesBOM(version string, bomConfigs []bomConfig) (err error) {
-	bomDir := gapicBOM
+func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []bomConfig) (err error) {
+	bomDir := filepath.Join(repoPath, gapicBOM)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
 	}
