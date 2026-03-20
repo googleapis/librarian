@@ -232,7 +232,7 @@ func moveSnippetDirectory(library *config.Library, outDir string) error {
 		}
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
+			return fmt.Errorf("error finding Go package directory for API path %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
 		if err := filesystem.MoveAndMerge(snippetSrc, snippetDest); err != nil {
