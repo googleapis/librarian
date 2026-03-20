@@ -134,15 +134,19 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		}
 
 		// Apply any information from the BUILD.bazel files in the various API
-		// directories. This also detects if there are any non-GAPIC APIs (e.g
-		// pure proto "type" packages) as they cannot currently be migrated.
+		// directories.
 		library, err = applyBuildBazelConfig(library, googleapisDir)
 		if err != nil {
 			return nil, err
 		}
-		// Skip anything that can't be migrated yet.
-		if library == nil {
-			continue
+		// Skip copying the readme file if it doesn't already exist.
+		_, err = os.Stat(filepath.Join(input.repoPath, "packages", library.Name, "docs", "README.rst"))
+		if err != nil {
+			if os.IsNotExist(err) {
+				library.Python.SkipReadmeCopy = true
+			} else {
+				return nil, err
+			}
 		}
 
 		// Canonicalize to avoid odd empty collections etc.
@@ -158,10 +162,7 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 
 // applyBuildBazelConfig applies the information from BUILD.bazel files
 // associated with the APIs in the library, adding GAPIC generator arguments,
-// discovering non-default transports etc. If any APIs within the library are
-// not GAPIC APIs (e.g. they're just protos), applyBuildBazelConfig returns nil
-// instead of returning the a pointer to the library config; the caller should
-// then skip this library as it cannot yet be migrated.
+// discovering non-default transports etc.
 func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*config.Library, error) {
 	pythonConfig := library.Python
 	pythonConfig.OptArgsByAPI = make(map[string][]string)
