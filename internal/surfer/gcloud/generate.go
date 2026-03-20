@@ -157,7 +157,7 @@ func generateResourceCommands(collectionID string, methods []*provider.MethodAda
 
 		// In gcloud convention, the final YAML file must contain a list of commands,
 		// even if there is only one.
-		cmdList := []*Command{cmd}
+		cmdList := []*YAMLCommand{EmitCommand(cmd)}
 
 		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
 		if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {

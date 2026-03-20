@@ -22,15 +22,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// MethodType enumerates the structural intent of an API method.
 type MethodType int
 
 const (
+	// MethodTypeUnknown implies an unparseable method pattern.
 	MethodTypeUnknown MethodType = iota
+	// MethodTypeGet represents standard GET/READ requests.
 	MethodTypeGet
+	// MethodTypeList represents standard LIST metadata requests.
 	MethodTypeList
+	// MethodTypeCreate represents standard POST/CREATE requests.
 	MethodTypeCreate
+	// MethodTypeUpdate represents standard PATCH/UPDATE requests.
 	MethodTypeUpdate
+	// MethodTypeDelete represents standard DELETE requests.
 	MethodTypeDelete
+	// MethodTypeCustom represents custom verbs acting on resources.
 	MethodTypeCustom
 )
 

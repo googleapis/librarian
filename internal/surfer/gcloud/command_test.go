@@ -58,7 +58,7 @@ func TestCommandYAML(t *testing.T) {
 				return
 			}
 
-			commands, err := yaml.Unmarshal[[]*Command](data)
+			commands, err := yaml.Unmarshal[[]*YAMLCommand](data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -68,7 +68,7 @@ func TestCommandYAML(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			roundTripped, err := yaml.Unmarshal[[]*Command](marshaled)
+			roundTripped, err := yaml.Unmarshal[[]*YAMLCommand](marshaled)
 			if err != nil {
 				t.Fatal(err)
 			}
