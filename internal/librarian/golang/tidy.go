@@ -24,6 +24,8 @@ func Tidy(library *config.Library) *config.Library {
 	if library.Name == rootModule {
 		return library
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/4692), refactor
+	// how to tidy output for abs path.
 	if library.Output == library.Name {
 		library.Output = ""
 	}
