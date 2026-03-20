@@ -36,6 +36,13 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+var (
+	// ErrExtractVersion is returned when an API version cannot be extracted from its path.
+	ErrExtractVersion = errors.New("failed to extract version")
+	// ErrNoProtos is returned when no proto files are found in an API directory.
+	ErrNoProtos = errors.New("no protos found")
+)
+
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	outdir, err := filepath.Abs(library.Output)
@@ -61,7 +68,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
-		return errors.New("failed to extract version")
+		return ErrExtractVersion
 	}
 	javaAPI := resolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -90,7 +97,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(apiProtos) == 0 {
-		return errors.New("no protos found")
+		return ErrNoProtos
 	}
 	p.apiProtos = apiProtos
 
