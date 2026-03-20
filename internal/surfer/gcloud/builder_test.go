@@ -436,7 +436,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 				IsPositional:      true,
 				IsPrimaryResource: true,
 				Required:          true,
-				RequestIDField:    "thingId",
+				RequestIDField:    "thing_id",
 				ResourceSpec: &ResourceSpec{
 					Name:       "thing",
 					PluralName: "things",
@@ -560,7 +560,7 @@ func TestNewRequest(t *testing.T) {
 			),
 			want: &Request{
 				Collection: []string{"test.projects"},
-				Method:     "exportData",
+				Method:     "export_data",
 			},
 		},
 	} {
@@ -721,7 +721,7 @@ func TestFlattenField(t *testing.T) {
 					IsPositional:      true,
 					IsPrimaryResource: true,
 					Required:          true,
-					RequestIDField:    "thingId",
+					RequestIDField:    "thing_id",
 				},
 			},
 		},

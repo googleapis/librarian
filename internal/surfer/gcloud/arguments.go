@@ -21,7 +21,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/provider"
-	"github.com/iancoleman/strcase"
 )
 
 // isIgnored determines if a field should be excluded from the generated command arguments.
@@ -111,7 +110,7 @@ func (b *commandBuilder) flattenField(field *api.Field, prefix string) ([]Param,
 func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	param := Param{
-		ArgName:  strcase.ToKebab(field.Name),
+		ArgName:  field.Name,
 		APIField: apiField,
 		Required: field.DocumentAsRequired(),
 		Repeated: field.Repeated,
@@ -139,7 +138,7 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 				continue
 			}
 			param.Choices = append(param.Choices, Choice{
-				ArgValue:  strcase.ToKebab(v.Name),
+				ArgValue:  v.Name,
 				EnumValue: v.Name,
 			})
 		}
@@ -155,7 +154,7 @@ func (b *commandBuilder) newParam(field *api.Field, apiField string) (Param, err
 		param.HelpText = rule.HelpText.Brief
 	} else {
 		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		param.HelpText = fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(field.Name))
+		param.HelpText = fmt.Sprintf("Value for the `%s` field.", field.Name)
 	}
 	return param, nil
 }
@@ -209,7 +208,7 @@ func (b *commandBuilder) newPrimaryResourceParam(field *api.Field) Param {
 	}
 
 	if b.method.Type() == provider.MethodTypeCreate {
-		param.RequestIDField = strcase.ToLowerCamel(field.Name)
+		param.RequestIDField = field.Name
 	}
 
 	return param

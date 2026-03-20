@@ -21,7 +21,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/provider"
-	"github.com/iancoleman/strcase"
 )
 
 type commandBuilder struct {
@@ -134,7 +133,7 @@ func (b *commandBuilder) WithRequest() *commandBuilder {
 	} else if !b.method.IsStandardMethod() {
 		commandName, _ := b.method.GetCommandName()
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
-		req.Method = strcase.ToLowerCamel(commandName)
+		req.Method = commandName
 	}
 
 	b.cmd.Request = req

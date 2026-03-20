@@ -14,6 +14,8 @@
 
 package gcloud
 
+import "github.com/iancoleman/strcase"
+
 // YAMLCommand represents the top-level structure for a gcloud command definition.
 // This struct is designed to be marshaled into a YAML file that the gcloud generator can
 // understand and use to generate a command-line interface.
@@ -270,7 +272,7 @@ func EmitCommand(cmd *Command) *YAMLCommand {
 		y.Request = &YAMLRequest{
 			APIVersion: cmd.Request.APIVersion,
 			Collection: cmd.Request.Collection,
-			Method:     cmd.Request.Method,
+			Method:     strcase.ToLowerCamel(cmd.Request.Method),
 		}
 	}
 	if cmd.Async != nil {
@@ -311,12 +313,12 @@ func emitArguments(args Arguments) YAMLArguments {
 
 func emitParam(p Param) YAMLParam {
 	y := YAMLParam{
-		ArgName:           p.ArgName,
+		ArgName:           strcase.ToKebab(p.ArgName),
 		APIField:          p.APIField,
 		HelpText:          p.HelpText,
 		IsPositional:      p.IsPositional,
 		IsPrimaryResource: p.IsPrimaryResource,
-		RequestIDField:    p.RequestIDField,
+		RequestIDField:    strcase.ToLowerCamel(p.RequestIDField),
 		Required:          p.Required,
 		Repeated:          p.Repeated,
 		Clearable:         p.Clearable,
@@ -339,7 +341,10 @@ func emitParam(p Param) YAMLParam {
 	if len(p.Choices) > 0 {
 		y.Choices = make([]YAMLChoice, len(p.Choices))
 		for i, c := range p.Choices {
-			y.Choices[i] = YAMLChoice(c)
+			y.Choices[i] = YAMLChoice{
+				ArgValue:  strcase.ToKebab(c.ArgValue),
+				EnumValue: c.EnumValue,
+			}
 		}
 	} else if p.Choices != nil {
 		y.Choices = []YAMLChoice{}
