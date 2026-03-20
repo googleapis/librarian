@@ -338,7 +338,7 @@ func TestGenerateLibrary(t *testing.T) {
 				Go:           test.goModule,
 			}
 			for _, file := range library.Keep {
-				src := filepath.Join("../..", "testdata/golang-generate", file)
+				src := filepath.Join("..", "..", "testdata/golang-generate", file)
 				dst := filepath.Join(repoRoot, test.libraryName, file)
 				if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 					t.Fatal(err)
