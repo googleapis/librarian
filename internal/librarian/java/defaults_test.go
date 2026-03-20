@@ -60,3 +60,41 @@ func TestFill(t *testing.T) {
 		})
 	}
 }
+
+func TestTidy(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "tidy default output",
+			lib: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "",
+			},
+		},
+		{
+			name: "do not tidy custom output",
+			lib: &config.Library{
+				Name:   "secretmanager",
+				Output: "custom-output",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "custom-output",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := Tidy(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

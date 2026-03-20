@@ -27,3 +27,12 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	return library, nil
 }
+
+// Tidy tidies the Java-specific configuration for a library by removing default
+// values.
+func Tidy(library *config.Library) *config.Library {
+	if library.Output == javaPrefix+library.Name {
+		library.Output = ""
+	}
+	return library
+}
