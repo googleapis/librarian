@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// rootModule is the name of the root module in the configuration.
 	rootModule = "root-module"
 )
 
