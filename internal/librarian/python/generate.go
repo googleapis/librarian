@@ -118,6 +118,7 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		repoMetadata = &repometadata.RepoMetadata{
 			Name:             library.Name,
 			DistributionName: library.Name,
+			Language:         cfg.Language,
 			Repo:             cfg.Repo,
 			ReleaseLevel:     library.ReleaseLevel,
 		}

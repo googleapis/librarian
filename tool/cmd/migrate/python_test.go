@@ -268,6 +268,58 @@ func TestBuildPythonLibraries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "firestore (extra keep paths)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-firestore",
+							SourceRoots: []string{"packages/google-cloud-firestore"},
+							PreserveRegex: []string{
+								"^packages/google-cloud-firestore/CHANGELOG.md",
+								"^packages/google-cloud-firestore/docs/CHANGELOG.md",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-firestore",
+					Keep: []string{
+						"CHANGELOG.md",
+						"docs/CHANGELOG.md",
+						"docs/firestore_admin_v1/admin_client.rst",
+						"docs/firestore_v1/aggregation.rst",
+						"docs/firestore_v1/batch.rst",
+						"docs/firestore_v1/bulk_writer.rst",
+						"docs/firestore_v1/client.rst",
+						"docs/firestore_v1/collection.rst",
+						"docs/firestore_v1/document.rst",
+						"docs/firestore_v1/field_path.rst",
+						"docs/firestore_v1/query.rst",
+						"docs/firestore_v1/transaction.rst",
+						"docs/firestore_v1/transforms.rst",
+						"docs/firestore_v1/types.rst",
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "GAPIC_COMBO",
+						},
+						NamePrettyOverride:           "Cloud Firestore API",
+						ProductDocumentationOverride: "https://cloud.google.com/firestore",
+						APIShortnameOverride:         "firestore",
+						APIIDOverride:                "firestore.googleapis.com",
+						IssueTrackerOverride:         "https://issuetracker.google.com/savedsearches/5337669",
+						MetadataNameOverride:         "firestore",
+						DefaultVersion:               "v1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildPythonLibraries(test.input, "testdata/googleapis")

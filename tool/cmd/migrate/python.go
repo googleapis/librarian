@@ -102,6 +102,26 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		if err != nil {
 			return nil, err
 		}
+		if library.Name == "google-cloud-firestore" {
+			// Hard-coded list of additional files to keep for
+			// Firestore; it's not worth writing tricky logic to
+			// detect these.
+			firestoreDocs := []string{
+				"docs/firestore_admin_v1/admin_client.rst",
+				"docs/firestore_v1/aggregation.rst",
+				"docs/firestore_v1/batch.rst",
+				"docs/firestore_v1/bulk_writer.rst",
+				"docs/firestore_v1/client.rst",
+				"docs/firestore_v1/collection.rst",
+				"docs/firestore_v1/document.rst",
+				"docs/firestore_v1/field_path.rst",
+				"docs/firestore_v1/query.rst",
+				"docs/firestore_v1/transaction.rst",
+				"docs/firestore_v1/transforms.rst",
+				"docs/firestore_v1/types.rst",
+			}
+			keep = append(keep, firestoreDocs...)
+		}
 		slices.Sort(keep)
 		library.Keep = keep
 

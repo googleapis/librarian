@@ -21,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 )
 
@@ -246,6 +247,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 	switch language {
 	case config.LanguageGo:
 		return golang.Fill(lib)
+	case config.LanguageJava:
+		return java.Fill(lib)
 	default:
 		return lib, nil
 	}

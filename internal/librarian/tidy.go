@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -142,6 +143,7 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
 	config.LanguageGo:   golang.Tidy,
+	config.LanguageJava: java.Tidy,
 	config.LanguageRust: tidyRustConfig,
 }
 
