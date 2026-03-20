@@ -255,7 +255,7 @@ func extractBOMConfig(repoPath, libraryDir, bomDir string) (bomConfig, error) {
 // by removing the last segment (assumed to be -bom).
 func deriveVersionAnnotation(artifactID string) (string, error) {
 	if !strings.HasSuffix(artifactID, bomSuffix) {
-		return "", fmt.Errorf("%w: %s", errInvalidBOMArtifactID, artifactID)
+		return "", fmt.Errorf("%s: %w", artifactID, errInvalidBOMArtifactID)
 	}
 	return strings.TrimSuffix(artifactID, bomSuffix), nil
 }
