@@ -57,6 +57,7 @@ jobs:
                   ],
                   "includeTools": [
                     "add_issue_comment",
+                    "create_issue",
                     "issue_read",
                     "list_issues",
                     "search_issues",

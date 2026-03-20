@@ -1584,3 +1584,240 @@ func TestAnnotateEnum(t *testing.T) {
 		}
 	}
 }
+
+func TestAnnotateField(t *testing.T) {
+	enumState := &api.Enum{
+		ID:   "State",
+		Name: "State",
+	}
+	message := &api.Message{
+		ID:   "Message",
+		Name: "Message",
+	}
+	mapMessage := &api.Message{
+		ID:    "..MapMessage",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.STRING_TYPE},
+			{Name: "value", Typez: api.INT32_TYPE},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  *fieldAnnotation
+	}{
+		{
+			name: "implicit presence primitive",
+			field: &api.Field{
+				Name:     "int32_field",
+				JSONName: "int32Field",
+				Typez:    api.INT32_TYPE,
+			},
+			want: &fieldAnnotation{
+				Name:                  "int32Field",
+				Type:                  "int",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "0",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "required primitive",
+			field: &api.Field{
+				Name:     "int32_field",
+				JSONName: "int32Field",
+				Typez:    api.INT32_TYPE,
+				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			want: &fieldAnnotation{
+				Name:                  "int32Field",
+				Type:                  "int",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: true,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "optional primitive",
+			field: &api.Field{
+				Name:     "int32_field",
+				JSONName: "int32Field",
+				Typez:    api.INT32_TYPE,
+				Optional: true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "int32Field",
+				Type:                  "int",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "repeated",
+			field: &api.Field{
+				Name:     "int32_list",
+				JSONName: "int32List",
+				Typez:    api.INT32_TYPE,
+				Repeated: true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "int32List",
+				Type:                  "List<int>",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "const []",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "map",
+			field: &api.Field{
+				Name:     "map_field",
+				JSONName: "mapField",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  "..MapMessage",
+				Map:      true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "mapField",
+				Type:                  "Map<String, int>",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "const {}",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "message",
+			field: &api.Field{
+				Name:     "message_field",
+				JSONName: "messageField",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  "Message",
+			},
+			want: &fieldAnnotation{
+				Name:                  "messageField",
+				Type:                  "Message",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "required message",
+			field: &api.Field{
+				Name:     "message_field",
+				JSONName: "messageField",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  "Message",
+				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			want: &fieldAnnotation{
+				Name:                  "messageField",
+				Type:                  "Message",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: true,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "enum",
+			field: &api.Field{
+				Name:     "enum_field",
+				JSONName: "enumField",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  "State",
+			},
+			want: &fieldAnnotation{
+				Name:                  "enumField",
+				Type:                  "State",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "State.$default",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "required enum",
+			field: &api.Field{
+				Name:     "enum_field",
+				JSONName: "enumField",
+				Typez:    api.ENUM_TYPE,
+				TypezID:  "State",
+				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+			},
+			want: &fieldAnnotation{
+				Name:                  "enumField",
+				Type:                  "State",
+				DocLines:              []string{},
+				Required:              true,
+				Nullable:              false,
+				FieldBehaviorRequired: true,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			// `google.protobuf.Empty` is a special because, in some cases, it is
+			// converted to the `void` Dart type. `void` is not nullable in Dart.
+			name: "google.protobuf.Empty",
+			field: &api.Field{
+				Name:     "empty_field",
+				JSONName: "emptyField",
+				Typez:    api.MESSAGE_TYPE,
+				TypezID:  ".google.protobuf.Empty",
+			},
+			want: &fieldAnnotation{
+				Name:                  "emptyField",
+				Type:                  "Empty",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{enumState}, []*api.Service{})
+			annotate := newAnnotateModel(model)
+			registerMissingWkt(annotate.state)
+
+			annotate.annotateField(test.field)
+			got := test.field.Codec.(*fieldAnnotation)
+			// `FromJson` and `ToJson` have their own tests.
+			// Clear them rather than using `IgnoreFields` so that they do not appear in the diff.
+			got.FromJson = ""
+			got.ToJson = ""
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch in TestAnnotateField(-want, +got)\n:%s", diff)
+			}
+		})
+	}
+}
