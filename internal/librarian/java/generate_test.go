@@ -367,7 +367,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			wantErr: "failed to extract version from api path",
+			wantErr: "failed to extract version",
 		},
 		{
 			name: "mkdir failure for output dir",
