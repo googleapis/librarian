@@ -45,11 +45,6 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// We need to create snippet directory root before running generation.
-	if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
-		t.Fatal(err)
-	}
-
 	libraries := []*config.Library{
 		{
 			Name:          "secretmanager",
