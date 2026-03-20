@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 
@@ -45,7 +44,7 @@ func TestPostGenerate(t *testing.T) {
 	cfg := &config.Config{
 		Language: "java",
 		Libraries: []*config.Library{
-			{Name: "google-cloud-java", Version: "1.2.3"},
+			{Name: rootLibrary, Version: "1.2.3"},
 			{Name: "analytics-admin", Version: "0.98.0"},
 			{Name: "area120-tables", Version: "0.92.0"},
 			{Name: "aiplatform", Version: "3.89.0"},
@@ -78,15 +77,15 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
-	verifyBOM(t, filepath.Join("gapic-libraries-bom", "pom.xml"), "1.2.3", wantDeps)
+	verifyBOM(t, filepath.Join(gapicBOM, "pom.xml"), "1.2.3", wantDeps)
 	// Verify annotations are present in the raw XML
-	bomPom, err := os.ReadFile(filepath.Join("gapic-libraries-bom", "pom.xml"))
+	bomPom, err := os.ReadFile(filepath.Join(gapicBOM, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	bomPomContent := string(bomPom)
 	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
-		t.Errorf("gapic-libraries-bom/pom.xml missing annotation google-cloud-aiplatform")
+		t.Errorf("%s/pom.xml missing annotation google-cloud-aiplatform", gapicBOM)
 	}
 }
 
@@ -126,14 +125,12 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 			}
 		}
 	}
-	// Sort for comparison
-	sort.Slice(gotDeps, func(i, j int) bool { return gotDeps[i].ArtifactID < gotDeps[j].ArtifactID })
-	sort.Slice(wantDeps, func(i, j int) bool { return wantDeps[i].ArtifactID < wantDeps[j].ArtifactID })
 
 	if diff := cmp.Diff(wantDeps, gotDeps); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-	// java-maps-places should be excluded because of GroupID com.google.maps
+	// Verify that libraries like java-maps-places are excluded because their
+	// GroupID (com.google.maps) is not in the allowed groupInclusions list.
 	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
 		return d.ArtifactID == "google-maps-places-bom"
 	}) {
@@ -149,7 +146,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		"module-b",
 		"module-a",
 		"not-a-module",
-		"gapic-libraries-bom",
+		gapicBOM,
 		"google-cloud-shared-deps",
 	}
 	for _, dir := range dirs {
@@ -158,7 +155,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		}
 	}
 	// Add pom.xml to modules (including an excluded one to verify filtering)
-	for _, mod := range []string{"module-a", "module-b", "gapic-libraries-bom"} {
+	for _, mod := range []string{"module-a", "module-b", gapicBOM} {
 		if err := os.WriteFile(filepath.Join(mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -197,7 +194,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 	defer os.Chmod(tmpDir, 0755)
 	cfg := &config.Config{
 		Libraries: []*config.Library{
-			{Name: "google-cloud-java", Version: "1.2.3"},
+			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), cfg)
@@ -216,7 +213,7 @@ func TestPostGenerate_Error(t *testing.T) {
 	defer os.Chmod(tmpDir, 0755)
 	cfg := &config.Config{
 		Libraries: []*config.Library{
-			{Name: "google-cloud-java", Version: "1.2.3"},
+			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), cfg)
@@ -267,9 +264,6 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 				}
 			}
 			_, err := extractBOMConfig(test.library, test.bom)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
