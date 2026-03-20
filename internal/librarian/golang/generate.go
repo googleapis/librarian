@@ -206,11 +206,11 @@ func moveAPIDirectory(library *config.Library, outDir string) error {
 			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
 		}
 		librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
-		libraryDesc := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
-		if err := os.MkdirAll(libraryDesc, 0755); err != nil {
+		libraryDest := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
+		if err := os.MkdirAll(libraryDest, 0755); err != nil {
 			return err
 		}
-		if err := filesystem.MoveAndMerge(librarySrc, libraryDesc); err != nil {
+		if err := filesystem.MoveAndMerge(librarySrc, libraryDest); err != nil {
 			return err
 		}
 	}
@@ -220,14 +220,14 @@ func moveAPIDirectory(library *config.Library, outDir string) error {
 func moveSnippetDirectory(library *config.Library, outDir string) error {
 	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
 	for _, api := range library.APIs {
-		snippetDesc, err := findSnippetDirectory(library, api.Path, outDir)
+		snippetDest, err := findSnippetDirectory(library, api.Path, outDir)
 		if err != nil {
 			return err
 		}
-		if snippetDesc == "" {
+		if snippetDest == "" {
 			continue
 		}
-		if err := os.MkdirAll(snippetDesc, 0755); err != nil {
+		if err := os.MkdirAll(snippetDest, 0755); err != nil {
 			return err
 		}
 		goAPI := findGoAPI(library, api.Path)
@@ -235,7 +235,7 @@ func moveSnippetDirectory(library *config.Library, outDir string) error {
 			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
-		if err := filesystem.MoveAndMerge(snippetSrc, snippetDesc); err != nil {
+		if err := filesystem.MoveAndMerge(snippetSrc, snippetDest); err != nil {
 			return err
 		}
 	}
