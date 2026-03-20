@@ -98,7 +98,6 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:   "language-v1",
-						Output: "java-language-v1",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -129,7 +128,6 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:   "language",
-						Output: "java-language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -166,7 +164,6 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:   "vision",
-						Output: "java-vision",
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
@@ -174,7 +171,6 @@ func TestBuildConfig(t *testing.T) {
 					},
 					{
 						Name:   "language",
-						Output: "java-language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -228,7 +224,6 @@ func TestBuildConfig(t *testing.T) {
 				Libraries: []*config.Library{
 					{
 						Name:         "pubsub",
-						Output:       "java-pubsub",
 						ReleaseLevel: "stable",
 						APIs: []*config.API{
 							{Path: "google/pubsub/v1"},
@@ -303,7 +298,6 @@ func TestBuildConfig(t *testing.T) {
 					},
 					{
 						Name:    "accessapproval",
-						Output:  "java-accessapproval",
 						Version: "2.86.0",
 						APIs: []*config.API{
 							{Path: "google/cloud/accessapproval/v1"},
@@ -314,7 +308,6 @@ func TestBuildConfig(t *testing.T) {
 					},
 					{
 						Name:    "aiplatform",
-						Output:  "java-aiplatform",
 						Version: "3.86.0",
 						APIs: []*config.API{
 							{Path: "google/cloud/aiplatform/v1"},

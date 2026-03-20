@@ -239,7 +239,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			Name:         name,
 			Version:      version,
 			Keep:         parseOwlBotKeep(repoPath, output),
-			Output:       output,
 			APIs:         apis,
 			ReleaseLevel: l.ReleaseLevel,
 			Java: &config.JavaModule{
