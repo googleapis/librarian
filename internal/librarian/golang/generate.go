@@ -203,7 +203,7 @@ func moveAPIDirectory(library *config.Library, outDir string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return fmt.Errorf("error finding goAPI for %s: %w", api.Path, errGoAPINotFound)
+			return fmt.Errorf("error finding Go package directory for API path %s: %w", api.Path, errGoAPINotFound)
 		}
 		librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
 		libraryDest := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
