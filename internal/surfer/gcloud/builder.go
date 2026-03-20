@@ -104,17 +104,56 @@ func (b *commandBuilder) WithArguments() *commandBuilder {
 		return b
 	}
 
-	for _, field := range b.method.Method.InputType.Fields {
-		fieldArgs, err := b.flattenField(field, field.JSONName)
-		if err != nil {
-			b.err = err
-			return b
-		}
-		args = append(args, fieldArgs...)
+	args, err := b.newArgs(b.method.Method.InputType.Fields, "")
+	if err != nil {
+		b.err = err
+		return b
 	}
 
 	b.cmd.Arguments = args
 	return b
+}
+
+// newArgs recursively processes fields and nested messages to generate command-line arguments.
+func (b *commandBuilder) newArgs(fields []*api.Field, prefix string) ([]Arg, error) {
+	var args []Arg
+	for _, field := range fields {
+		currentPrefix := field.JSONName
+		if prefix != "" {
+			currentPrefix = fmt.Sprintf("%s.%s", prefix, currentPrefix)
+		}
+
+		// Primary resource args are checked first because fields like "parent"
+		// and "name" are primary resources in certain method types (e.g., List
+		// and Get/Delete/Update respectively) and must not be ignored.
+		if b.method.IsPrimaryResource(field) {
+			args = append(args, b.newPrimaryResourceArg(field))
+			continue
+		}
+
+		if b.isIgnored(field) {
+			continue
+		}
+
+		// Nested messages are flattened into top-level flags.
+		// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
+		if field.MessageType != nil && !field.Map {
+			nestedArgs, err := b.newArgs(field.MessageType.Fields, currentPrefix)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, nestedArgs...)
+			continue
+		}
+
+		// Standard arguments: scalars, maps, enums, and resource references.
+		arg, err := b.newArg(field, currentPrefix)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, arg)
+	}
+	return args, nil
 }
 
 func (b *commandBuilder) WithRequest() *commandBuilder {

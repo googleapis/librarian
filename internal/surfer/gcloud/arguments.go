@@ -63,49 +63,6 @@ func (b *commandBuilder) isIgnored(field *api.Field) bool {
 	return false
 }
 
-// addFlattenedParams recursively processes a field and its sub-fields to generate
-// command-line flags. It uses a dispatch pattern to classify each field:
-//  1. Primary resource arguments (positional resource identifiers).
-//  2. Ignored fields (implicit or framework-handled).
-//  3. Nested messages (flattened into top-level flags).
-//  4. Standard arguments (scalars, maps, enums, resource references).
-//
-// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
-// handling strategy (Error vs Skip) and messaging.
-func (b *commandBuilder) flattenField(field *api.Field, prefix string) ([]Arg, error) {
-	// Primary resource args are checked first because fields like "parent"
-	// and "name" are primary resources in certain method types (e.g., List
-	// and Get/Delete/Update respectively) and must not be ignored.
-	if b.method.IsPrimaryResource(field) {
-		return []Arg{b.newPrimaryResourceArg(field)}, nil
-	}
-
-	if b.isIgnored(field) {
-		return nil, nil
-	}
-
-	// Nested messages are flattened into top-level flags.
-	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
-	if field.MessageType != nil && !field.Map {
-		var args []Arg
-		for _, f := range field.MessageType.Fields {
-			nestedArgs, err := b.flattenField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
-			if err != nil {
-				return nil, err
-			}
-			args = append(args, nestedArgs...)
-		}
-		return args, nil
-	}
-
-	// Standard arguments: scalars, maps, enums, and resource references.
-	arg, err := b.newArg(field, prefix)
-	if err != nil {
-		return nil, err
-	}
-	return []Arg{arg}, nil
-}
-
 // newArg creates a single command-line argument (a `Arg` struct) from a proto field.
 func (b *commandBuilder) newArg(field *api.Field, apiField string) (Arg, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
