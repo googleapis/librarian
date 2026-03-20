@@ -323,6 +323,17 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			targetErr: ErrExtractVersion,
 		},
 		{
+			name: "no protos found",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			targetErr: ErrNoProtos,
+		},
+		{
 			name: "mkdir failure for output dir",
 			library: &config.Library{
 				Name:   "test",
