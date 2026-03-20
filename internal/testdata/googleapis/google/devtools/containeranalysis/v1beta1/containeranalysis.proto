@@ -20,33 +20,17 @@ package google.devtools.containeranalysis.v1beta1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
-import "google/iam/v1/iam_policy.proto";
-import "google/iam/v1/policy.proto";
 
 option go_package = "cloud.google.com/go/containeranalysis/apiv1beta1/containeranalysispb;containeranalysispb";
 option java_multiple_files = true;
 option java_package = "com.google.containeranalysis.v1beta1";
 option objc_class_prefix = "GCA";
 
-// Retrieves analysis results of Cloud components such as Docker container
-// images. The Container Analysis API is an implementation of the
-// [Grafeas](https://grafeas.io) API.
-//
-// Analysis results are stored as a series of occurrences. An `Occurrence`
-// contains information about a specific analysis instance on a resource. An
-// occurrence refers to a `Note`. A note contains details describing the
-// analysis and is generally stored in a separate project, called a `Provider`.
-// Multiple occurrences can refer to the same note.
-//
-// For example, an SSL vulnerability could affect multiple images. In this case,
-// there would be one note for the vulnerability and an occurrence for each
-// image with the vulnerability referring to that note.
 service ContainerAnalysisV1Beta1 {
   option (google.api.default_host) = "containeranalysis.googleapis.com";
   option (google.api.oauth_scopes) =
       "https://www.googleapis.com/auth/cloud-platform";
 
-  // Gets a summary of the packages within a given resource.
   rpc GeneratePackagesSummary(GeneratePackagesSummaryRequest)
       returns (PackagesSummaryResponse) {
     option (google.api.http) = {
@@ -60,32 +44,15 @@ service ContainerAnalysisV1Beta1 {
   }
 }
 
-// GeneratePackagesSummaryRequest is the request body for the
-// GeneratePackagesSummary API method. It just takes a single name argument,
-// referring to the resource.
 message GeneratePackagesSummaryRequest {
-  // Required. The name of the resource to get a packages summary for in the
-  // form of `projects/[PROJECT_ID]/resources/[RESOURCE_URL]`.
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-// A summary of the packages found within the given resource.
 message PackagesSummaryResponse {
-  // Per license count
   message LicensesSummary {
-    // The license of the package. Note that the format of this value is not
-    // guaranteed. It may be nil, an empty string, a boolean value (A | B), a
-    // differently formed boolean value (A OR B), etc...
     string license = 1;
-
-    // The number of fixable vulnerabilities associated with this resource.
     int64 count = 2;
   }
-
-  // The unique URL of the image or the container for which this summary
-  // applies.
   string resource_url = 1;
-
-  // A listing by license name of each of the licenses and their counts.
   repeated LicensesSummary licenses_summary = 2;
 }
