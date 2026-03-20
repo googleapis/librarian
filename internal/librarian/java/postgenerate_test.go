@@ -17,8 +17,10 @@ package java
 import (
 	"encoding/xml"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -132,10 +134,10 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// java-maps-places should be excluded because of GroupID com.google.maps
-	for _, d := range p.Dependencies {
-		if d.ArtifactID == "google-maps-places-bom" {
-			t.Errorf("%s should NOT contain google-maps-places-bom", path)
-		}
+	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
+		return d.ArtifactID == "google-maps-places-bom"
+	}) {
+		t.Errorf("%s should NOT contain google-maps-places-bom", path)
 	}
 }
 
@@ -231,27 +233,27 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 		library string
 		bom     string
 		pom     string
-		wantErr string
+		wantErr error
 	}{
 		{
 			name:    "missing pom.xml",
 			library: "lib",
 			bom:     "lib-bom",
-			wantErr: "no such file or directory",
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name:    "invalid xml",
 			library: "lib",
 			bom:     "lib-bom",
 			pom:     "<project xmlns=\"http://maven.apache.org/POM/4.0.0\">invalid",
-			wantErr: "XML syntax error",
+			wantErr: errMalformedBOM,
 		},
 		{
 			name:    "invalid artifact id (no dash)",
 			library: "lib",
 			bom:     "lib-bom",
 			pom:     "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><artifactId>nodash</artifactId></project>",
-			wantErr: "expected at least one dash",
+			wantErr: errInvalidBOMArtifactID,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -268,8 +270,8 @@ func TestExtractBOMConfig_Error(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
-			if !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("got error %v, want to contain %q", err, test.wantErr)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}

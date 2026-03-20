@@ -28,8 +28,10 @@ import (
 )
 
 var (
-	errModuleDiscovery   = errors.New("failed to search for java modules")
-	errRootPomGeneration = errors.New("failed to generate root pom")
+	errModuleDiscovery      = errors.New("failed to search for java modules")
+	errRootPomGeneration    = errors.New("failed to generate root pom")
+	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
+	errMalformedBOM         = errors.New("malformed BOM")
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
@@ -210,12 +212,12 @@ func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 	}
 	var p mavenProject
 	if err := xml.Unmarshal(data, &p); err != nil {
-		return bomConfig{}, err
+		return bomConfig{}, fmt.Errorf("%w: %w", errMalformedBOM, err)
 	}
 	// Derive version annotation from artifactId.
 	versionAnnotation, err := deriveVersionAnnotation(p.ArtifactID)
 	if err != nil {
-		return bomConfig{}, fmt.Errorf("%s: %w", pomPath, err)
+		return bomConfig{}, err
 	}
 	return bomConfig{
 		GroupID:           p.GroupID,
@@ -229,11 +231,11 @@ func extractBOMConfig(libraryDir, bomDir string) (bomConfig, error) {
 // deriveVersionAnnotation extracts the version annotation from a Maven artifact ID
 // by removing the last segment (assumed to be -bom).
 func deriveVersionAnnotation(artifactID string) (string, error) {
-	lastDash := strings.LastIndex(artifactID, "-")
-	if lastDash == -1 {
-		return "", fmt.Errorf("invalid BOM artifact ID %q: expected at least one dash", artifactID)
+	bomSuffix := "-bom"
+	if !strings.HasSuffix(artifactID, bomSuffix) {
+		return "", fmt.Errorf("%w", errInvalidBOMArtifactID)
 	}
-	return artifactID[:lastDash], nil
+	return strings.TrimSuffix(artifactID, bomSuffix), nil
 }
 
 // generateRootPom writes the aggregator pom.xml for the monorepo root, including
