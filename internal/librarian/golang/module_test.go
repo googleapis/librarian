@@ -442,22 +442,28 @@ func TestDefaultOutput(t *testing.T) {
 		want        string
 	}{
 		{
-			name:        "secretmanager",
+			name:        "no prefix",
 			defaultOut:  "",
 			libraryName: "secretmanager",
 			want:        "secretmanager",
 		},
 		{
-			name:        "secretmanager",
+			name:        "no prefix",
 			defaultOut:  "prefix",
 			libraryName: "secretmanager",
 			want:        "prefix/secretmanager",
 		},
 		{
-			name:        "bigquery/v2",
+			name:        "library name with slashes",
 			defaultOut:  "",
 			libraryName: "bigquery/v2",
 			want:        "bigquery/v2",
+		},
+		{
+			name:        "prefix and library name with slashes",
+			defaultOut:  "app/repo",
+			libraryName: "bigquery/v2",
+			want:        "app/repo/bigquery/v2",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
