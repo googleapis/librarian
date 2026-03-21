@@ -85,6 +85,11 @@ func DefaultLibraryName(api string) string {
 	return filepath.Base(path)
 }
 
+// DefaultOutput returns the default output directory for a Go library.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
 		return nil
