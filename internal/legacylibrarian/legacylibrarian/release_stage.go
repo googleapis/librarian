@@ -303,11 +303,7 @@ func (r *stageRunner) determineNextVersion(ctx context.Context, commits []*legac
 		}
 		derivedNextVersion, err = semver.DeriveNextPreview(currentVersion, stableVersion, semver.DeriveNextOptions{})
 	} else {
-		releaseOnlyMode := false
-		if r.librarianConfig != nil {
-			releaseOnlyMode = r.librarianConfig.ReleaseOnlyMode
-		}
-		derivedNextVersion, err = NextVersion(commits, currentVersion, releaseOnlyMode)
+		derivedNextVersion, err = NextVersion(commits, currentVersion, r.librarianConfig != nil && r.librarianConfig.ReleaseOnlyMode)
 	}
 	if err != nil {
 		return "", err
