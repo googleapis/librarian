@@ -92,7 +92,7 @@ func newGenerateRunner(cfg *legacyconfig.Config) (*generateRunner, error) {
 // command-line flags. If an API or library is specified, it generates a single library. Otherwise,
 // it iterates through all libraries defined in the state and generates them.
 func (r *generateRunner) run(ctx context.Context) error {
-	if r.state.ReleaseOnlyMode {
+	if r.librarianConfig.ReleaseOnlyMode {
 		return errGenerateInReleaseOnlyMode
 	}
 	outputDir := filepath.Join(r.workRoot, "output")
