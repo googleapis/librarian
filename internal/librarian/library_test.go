@@ -482,7 +482,7 @@ func TestPrepareLibrary(t *testing.T) {
 			name:       "empty output uses default for non-rust",
 			language:   config.LanguageGo,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated",
+			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
 		{
 			name:        "rust with no apis creates default and derives path",
@@ -521,7 +521,7 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:       "Go lib without api path",
 			language:   config.LanguageGo,
-			wantOutput: "src/generated",
+			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
