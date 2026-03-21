@@ -127,63 +127,44 @@ func main() {
 
 func TestBuildFormatArgs(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    []string
+		name     string
+		goModule *config.GoModule
+		want     []string
 	}{
 		{
 			name: "library with a GAPIC API",
-			library: &config.Library{
-				Name:   "example",
-				Output: "/home/repo/example",
-				APIs: []*config.API{
-					{Path: "example/v1"},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{Path: "example/v1", ImportPath: "example/apiv1"},
-					},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
 				},
 			},
-			want: []string{"-w", "/home/repo/example", "/home/repo/internal/generated/snippets/example/apiv1"},
+			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
 		},
 		{
 			name: "library with a proto only API",
-			library: &config.Library{
-				Name:   "example",
-				Output: "example",
-				APIs: []*config.API{
-					{Path: "example/common"},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{Path: "example/common", ProtoOnly: true},
-					},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ProtoOnly: true},
 				},
 			},
-			want: []string{"-w", "example"},
+			want: []string{"-w", "repo/example"},
 		},
 		{
 			name: "snippet directory is one of the deleted path after generation",
-			library: &config.Library{
-				Name:   "example",
-				Output: "repo/example",
-				APIs: []*config.API{
-					{Path: "example/v1"},
-				},
-				Go: &config.GoModule{
-					// DeleteGenerationOutputPaths should relative to library output directory.
-					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
-					GoAPIs: []*config.GoAPI{
-						{Path: "example/v1", ImportPath: "example/apiv1"},
-					},
+			goModule: &config.GoModule{
+				// DeleteGenerationOutputPaths should relative to library output directory.
+				DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
 				},
 			},
 			want: []string{"-w", "repo/example"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildFormatArgs(test.library)
+			library := createLibrary(t)
+			library.Go = test.goModule
+			got, err := buildFormatArgs(library)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -204,5 +185,16 @@ func TestBuildFormatArgs_Error(t *testing.T) {
 	_, err := buildFormatArgs(library)
 	if !errors.Is(err, errGoAPINotFound) {
 		t.Errorf("got %v, want errGoAPINotFound", err)
+	}
+}
+
+func createLibrary(t *testing.T) *config.Library {
+	t.Helper()
+	return &config.Library{
+		Name:   "example",
+		Output: "repo/example",
+		APIs: []*config.API{
+			{Path: "example/v1"},
+		},
 	}
 }
