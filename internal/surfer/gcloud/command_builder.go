@@ -23,72 +23,109 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// NewCommand constructs a single gcloud command definition from an API method.
+// CommandBuilder encapsulates the state required to build a gcloud command
+// definition from an API method.
+type CommandBuilder struct {
+	method    *api.Method
+	overrides *Config
+	model     *api.API
+	service   *api.Service
+}
+
+// NewCommandBuilder constructs a new CommandBuilder for a specific method execution.
+func NewCommandBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *CommandBuilder {
+	return &CommandBuilder{
+		method:    method,
+		overrides: overrides,
+		model:     model,
+		service:   service,
+	}
+}
+
+// Build constructs a single gcloud command definition from an API method.
 // This function assembles all the necessary pieces: help text, arguments,
 // request details, and async configuration.
-func NewCommand(method *api.Method, overrides *Config, model *api.API, service *api.Service) (*Command, error) {
-	rule := findHelpTextRule(method, overrides)
-
-	cmd := &Command{}
-
-	if len(overrides.APIs) > 0 {
-		cmd.Hidden = overrides.APIs[0].RootIsHidden
-	} else {
-		// Default to hidden if no API overrides are provided.
-		cmd.Hidden = true
+func (b *CommandBuilder) Build() (*Command, error) {
+	args, err := NewArgumentBuilder(b.method, b.overrides, b.model, b.service).Build()
+	if err != nil {
+		return nil, err
 	}
 
+	return &Command{
+		Hidden:           b.isHidden(),
+		HelpText:         b.buildHelpText(),
+		ReleaseTracks:    b.releaseTracks(),
+		Request:          b.newRequest(),
+		Arguments:        args,
+		ResponseIDField:  b.responseIDField(),
+		OutputFormat:     b.outputFormat(),
+		ReadModifyUpdate: isUpdate(b.method),
+		Async:            b.async(),
+	}, nil
+}
+
+func (b *CommandBuilder) responseIDField() string {
+	if isList(b.method) {
+		// List commands should have an id_field to enable the --uri flag.
+		return "name"
+	}
+	return ""
+}
+
+func (b *CommandBuilder) outputFormat() string {
+	if isList(b.method) {
+		return b.newOutputFormat()
+	}
+	return ""
+}
+
+func (b *CommandBuilder) async() *Async {
+	if b.method.OperationInfo != nil {
+		return b.newAsync()
+	}
+	return nil
+}
+
+func (b *CommandBuilder) isHidden() bool {
+	if len(b.overrides.APIs) > 0 {
+		return b.overrides.APIs[0].RootIsHidden
+	}
+	// Default to hidden if no API overrides are provided.
+	return true
+}
+
+func (b *CommandBuilder) buildHelpText() HelpText {
+	rule := findHelpTextRule(b.method, b.overrides)
 	if rule != nil {
-		cmd.HelpText = HelpText{
+		return HelpText{
 			Brief:       rule.HelpText.Brief,
 			Description: rule.HelpText.Description,
 			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
 		}
 	}
+	return HelpText{}
+}
 
+func (b *CommandBuilder) releaseTracks() []string {
 	// Infer default release track from proto package.
 	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := inferTrackFromPackage(method.Service.Package)
-	cmd.ReleaseTracks = []string{strings.ToUpper(inferredTrack)}
-
-	args, err := newArguments(method, overrides, model, service)
-	if err != nil {
-		return nil, err
-	}
-	cmd.Arguments = args
-	cmd.Request = newRequest(method, overrides, service)
-
-	if isList(method) {
-		// List commands should have an id_field to enable the --uri flag.
-		cmd.ResponseIDField = "name"
-		cmd.OutputFormat = newOutputFormat(method)
-	}
-
-	if isUpdate(method) {
-		// Standard Update methods in gcloud use the Read-Modify-Update pattern.
-		cmd.ReadModifyUpdate = true
-	}
-
-	if method.OperationInfo != nil {
-		cmd.Async = newAsync(method, model, service)
-	}
-
-	return cmd, nil
+	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
+	return []string{strings.ToUpper(inferredTrack)}
 }
 
 // newRequest creates the `Request` part of the command definition.
-func newRequest(method *api.Method, overrides *Config, service *api.Service) *Request {
+func (b *CommandBuilder) newRequest() *Request {
 	req := &Request{
-		APIVersion: apiVersion(overrides),
-		Collection: newCollectionPath(method, service, false),
+		APIVersion: apiVersion(b.overrides),
+		Collection: b.newCollectionPath(false),
 	}
 
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		req.Method = *method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !isStandardMethod(method) {
-		commandName, _ := getCommandName(method)
+	if len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		req.Method = *b.method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !isStandardMethod(b.method) {
+		commandName, _ := getCommandName(b.method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		req.Method = strcase.ToLowerCamel(commandName)
 	}
@@ -97,28 +134,28 @@ func newRequest(method *api.Method, overrides *Config, service *api.Service) *Re
 }
 
 // newAsync creates the `Async` part of the command definition for long-running operations.
-func newAsync(method *api.Method, model *api.API, service *api.Service) *Async {
+func (b *CommandBuilder) newAsync() *Async {
 	async := &Async{
-		Collection: newCollectionPath(method, service, true),
+		Collection: b.newCollectionPath(true),
 	}
 
 	// Extract the resource result if the LRO response type matches the
 	// method's resource type.
-	resource := getResourceForMethod(method, model)
+	resource := getResourceForMethod(b.method, b.model)
 	if resource == nil {
 		return async
 	}
 
 	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
 	// matches the resource singular name or type.
-	responseTypeID := method.OperationInfo.ResponseTypeID
+	responseTypeID := b.method.OperationInfo.ResponseTypeID
 	// Extract short name from FQN (last element after dot)
 	responseTypeName := responseTypeID
 	if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := getSingularResourceNameForMethod(method, model)
+	singular := getSingularResourceNameForMethod(b.method, b.model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	} else {
@@ -131,13 +168,13 @@ func newAsync(method *api.Method, model *api.API, service *api.Service) *Async {
 // newCollectionPath constructs the gcloud collection path(s) for a request or async operation.
 // It follows AIP-127 and AIP-132 by extracting the collection structure directly from
 // the method's HTTP annotation (PathInfo).
-func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) []string {
+func (b *CommandBuilder) newCollectionPath(isAsync bool) []string {
 	var collections []string
-	hostParts := strings.Split(service.DefaultHost, ".")
+	hostParts := strings.Split(b.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
 	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
-	for _, binding := range method.PathInfo.Bindings {
+	for _, binding := range b.method.PathInfo.Bindings {
 		if binding.PathTemplate == nil {
 			continue
 		}
@@ -170,12 +207,12 @@ func newCollectionPath(method *api.Method, service *api.Service, isAsync bool) [
 }
 
 // newOutputFormat generates the string output format for List commands.
-func newOutputFormat(method *api.Method) string {
-	if !isList(method) {
+func (b *CommandBuilder) newOutputFormat() string {
+	if !isList(b.method) {
 		return ""
 	}
 
-	resourceMsg := findResourceMessage(method.OutputType)
+	resourceMsg := findResourceMessage(b.method.OutputType)
 	if resourceMsg == nil {
 		return ""
 	}

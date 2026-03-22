@@ -140,7 +140,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 			continue
 		}
 
-		cmd, err := NewCommand(method, overrides, model, service)
+		cmd, err := NewCommandBuilder(method, overrides, model, service).Build()
 		if err != nil {
 			return err
 		}

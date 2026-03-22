@@ -49,7 +49,7 @@ func TestNewOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := newOutputFormat(test.method)
+			got := NewCommandBuilder(test.method, nil, nil, nil).newOutputFormat()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newOutputFormat() mismatch (-want +got):\n%s", diff)
 			}
@@ -78,7 +78,7 @@ func TestNewOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := newOutputFormat(test.method); got != "" {
+			if got := NewCommandBuilder(test.method, nil, nil, nil).newOutputFormat(); got != "" {
 				t.Errorf("newOutputFormat() = %v, want empty string", got)
 			}
 		})
@@ -127,7 +127,7 @@ func TestNewRequest(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := newRequest(test.method, &Config{}, service)
+			got := NewCommandBuilder(test.method, &Config{}, nil, service).newRequest()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
 			}
@@ -221,7 +221,7 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newAsync(test.method, model, service)
+			got := NewCommandBuilder(test.method, nil, model, service).newAsync()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
 			}
@@ -312,7 +312,7 @@ func TestNewCollectionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := newCollectionPath(test.method, service, test.isAsync)
+			got := NewCommandBuilder(test.method, nil, nil, service).newCollectionPath(test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
 			}
@@ -564,7 +564,7 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := NewCommand(test.method, test.overrides, model, service)
+			got, err := NewCommandBuilder(test.method, test.overrides, model, service).Build()
 			if err != nil {
 				t.Fatalf("NewCommand() unexpected error = %v", err)
 			}
