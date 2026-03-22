@@ -57,8 +57,8 @@ func TestNewArguments(t *testing.T) {
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
-			if len(got.Params) != test.want {
-				t.Errorf("newArguments() generated %d params, want %d", len(got.Params), test.want)
+			if len(got) != test.want {
+				t.Errorf("newArguments() generated %d params, want %d", len(got), test.want)
 			}
 		})
 	}
@@ -100,7 +100,7 @@ func TestNewArguments_Error(t *testing.T) {
 	}
 }
 
-func TestNewParam(t *testing.T) {
+func TestNewArgument(t *testing.T) {
 	model := &api.API{
 		ResourceDefinitions: []*api.Resource{
 			{
@@ -119,14 +119,14 @@ func TestNewParam(t *testing.T) {
 		apiField  string
 		method    *api.Method
 		overrides *Config
-		want      Param
+		want      Argument
 	}{
 		{
 			name:     "String Field",
 			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
 			apiField: "description",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Argument{
 				ArgName:  "description",
 				APIField: "description",
 				Type:     "str",
@@ -140,7 +140,7 @@ func TestNewParam(t *testing.T) {
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Argument{
 				ArgName:  "network",
 				APIField: "network",
 				HelpText: "Value for the `network` field.",
@@ -177,7 +177,7 @@ func TestNewParam(t *testing.T) {
 			},
 			apiField: "foo",
 			method:   api.NewTestMethod("CreateInstance"),
-			want: Param{
+			want: Argument{
 				ArgName:  "foo",
 				APIField: "foo",
 				Type:     "str",
@@ -191,13 +191,13 @@ func TestNewParam(t *testing.T) {
 			if overrides == nil {
 				overrides = &Config{}
 			}
-			got, err := newParam(test.field, test.apiField, overrides, model, service, test.method)
+			got, err := newArgument(test.field, test.apiField, overrides, model, service, test.method)
 			if err != nil {
-				t.Errorf("newParam(%s) unexpected error: %v", test.name, err)
+				t.Errorf("newArgument(%s) unexpected error: %v", test.name, err)
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("newArgument() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -304,11 +304,11 @@ func TestIsIgnored(t *testing.T) {
 	}
 }
 
-func TestNewOutputConfig(t *testing.T) {
+func TestNewOutputFormat(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
-		want   *OutputConfig
+		want   string
 	}{
 		{
 			name: "standard list method",
@@ -322,9 +322,7 @@ func TestNewOutputConfig(t *testing.T) {
 					),
 				),
 			),
-			want: &OutputConfig{
-				Format: "table(\nname,\ndescription)",
-			},
+			want: "table(\nname,\ndescription)",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -333,15 +331,15 @@ func TestNewOutputConfig(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := newOutputConfig(test.method)
+			got := newOutputFormat(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newOutputConfig() mismatch (-want +got):\n%s", diff)
+				t.Errorf("newOutputFormat() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestNewOutputConfig_Error(t *testing.T) {
+func TestNewOutputFormat_Error(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -362,20 +360,20 @@ func TestNewOutputConfig_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := newOutputConfig(test.method); got != nil {
-				t.Errorf("newOutputConfig() = %v, want nil", got)
+			if got := newOutputFormat(test.method); got != "" {
+				t.Errorf("newOutputFormat() = %v, want empty string", got)
 			}
 		})
 	}
 }
 
-func TestNewPrimaryResourceParam(t *testing.T) {
+func TestNewPrimaryResourceArgument(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		field        *api.Field
 		method       *api.Method
 		resourceDefs []*api.Resource
-		want         Param
+		want         Argument
 	}{
 		{
 			name:  "Create Instance (Positional)",
@@ -419,7 +417,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: Argument{
 				HelpText:          "The thing to create.",
 				IsPositional:      true,
 				IsPrimaryResource: true,
@@ -476,7 +474,7 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 					},
 				},
 			},
-			want: Param{
+			want: Argument{
 				HelpText:          "The project and location for which to retrieve projects information.",
 				IsPositional:      false,
 				IsPrimaryResource: true,
@@ -507,9 +505,9 @@ func TestNewPrimaryResourceParam(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got := newPrimaryResourceParam(test.field, test.method, model, service)
+			got := newPrimaryResourceArgument(test.field, test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPrimaryResourceParam() mismatch (-want +got):\n%s", diff)
+				t.Errorf("newPrimaryResourceArgument() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -659,7 +657,7 @@ func TestNewAsync(t *testing.T) {
 	}
 }
 
-func TestAddFlattenedParams(t *testing.T) {
+func TestAddFlattenedArguments(t *testing.T) {
 	service := api.NewTestService("TestService")
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
@@ -683,7 +681,7 @@ func TestAddFlattenedParams(t *testing.T) {
 		name    string
 		field   *api.Field
 		prefix  string
-		want    []Param
+		want    []Argument
 		wantErr bool
 	}{
 		{
@@ -696,7 +694,7 @@ func TestAddFlattenedParams(t *testing.T) {
 			name:   "Handles Primary Resource ID",
 			field:  createMethod.InputType.Fields[0],
 			prefix: "thingId",
-			want: []Param{
+			want: []Argument{
 				{
 					ArgName:           "",
 					APIField:          "",
@@ -725,7 +723,7 @@ func TestAddFlattenedParams(t *testing.T) {
 				},
 			},
 			prefix: "networkConfig",
-			want: []Param{
+			want: []Argument{
 				{
 					ArgName:  "foo",
 					APIField: "networkConfig.foo",
@@ -737,19 +735,19 @@ func TestAddFlattenedParams(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			var args []Argument
+			err := addFlattenedArguments(test.field, test.prefix, &args, &Config{}, model, service, createMethod)
 			if err != nil {
-				t.Fatalf("addFlattenedParams() unexpected error = %v", err)
+				t.Fatalf("addFlattenedArguments() unexpected error = %v", err)
 			}
-			if diff := cmp.Diff(test.want, args.Params, cmpopts.IgnoreUnexported(Param{}), cmpopts.IgnoreFields(Param{}, "ResourceSpec")); diff != "" {
-				t.Errorf("addFlattenedParams() mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, args, cmpopts.IgnoreUnexported(Argument{}), cmpopts.IgnoreFields(Argument{}, "ResourceSpec")); diff != "" {
+				t.Errorf("addFlattenedArguments() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestAddFlattenedParams_Error(t *testing.T) {
+func TestAddFlattenedArguments_Error(t *testing.T) {
 	service := api.NewTestService("TestService")
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
@@ -781,10 +779,10 @@ func TestAddFlattenedParams_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args := &Arguments{}
-			err := addFlattenedParams(test.field, test.prefix, args, &Config{}, model, service, createMethod)
+			var args []Argument
+			err := addFlattenedArguments(test.field, test.prefix, &args, &Config{}, model, service, createMethod)
 			if err == nil {
-				t.Fatalf("addFlattenedParams() expected error, got nil")
+				t.Fatalf("addFlattenedArguments() expected error, got nil")
 			}
 		})
 	}
@@ -1122,9 +1120,9 @@ func TestNewCommand(t *testing.T) {
 				},
 			},
 			want: &Command{
-				Hidden:   false,
-				Response: &Response{IDField: "name"},
-				Output:   &OutputConfig{Format: "table(\nname)"},
+				Hidden:          false,
+				ResponseIDField: "name",
+				OutputFormat:    "table(\nname)",
 			},
 		},
 		{
@@ -1162,8 +1160,8 @@ func TestNewCommand(t *testing.T) {
 				},
 			},
 			want: &Command{
-				Hidden: true,
-				Update: &UpdateConfig{ReadModifyUpdate: true},
+				Hidden:           true,
+				ReadModifyUpdate: true,
 			},
 		},
 		{
@@ -1207,7 +1205,7 @@ func TestNewCommand(t *testing.T) {
 
 			// Compare the important pieces that are shaped uniquely by NewCommand
 			// to avoid asserting on deeply nested auto-generated boilerplate like Arguments.
-			opts := cmpopts.IgnoreFields(Command{}, "AutoGenerated", "ReleaseTracks", "Arguments", "Request", "HelpText")
+			opts := cmpopts.IgnoreFields(Command{}, "ReleaseTracks", "Arguments", "Request", "HelpText")
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
 				t.Errorf("NewCommand() mismatch (-want +got):\n%s", diff)
 			}
