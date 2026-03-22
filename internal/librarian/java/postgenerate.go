@@ -140,12 +140,12 @@ var groupInclusions = map[string]bool{
 // searchForBOMArtifacts scans the repoPath for subdirectories that contain a -bom subdirectory
 // with a pom.xml file. It also includes specific special-case modules like dns, notification, and grafeas.
 // It returns a list of bomConfig objects sorted by ArtifactID.
-func searchForBOMArtifacts(repoPath string) ([]bomConfig, error) {
+func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	modules, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	var configs []bomConfig
+	configs := make([]*bomConfig, 0, len(modules)+3)
 	for _, module := range modules {
 		if !module.IsDir() || module.Name() == gapicBom {
 			continue
@@ -176,12 +176,12 @@ func searchForBOMArtifacts(repoPath string) ([]bomConfig, error) {
 
 // searchModuleForBOM scans a specific module's directory for submodules that end in "-bom"
 // and contain a pom.xml file. Returns a list of bomConfig objects for any discovered BOMs.
-func searchModuleForBOM(repoPath, moduleName string) ([]bomConfig, error) {
+func searchModuleForBOM(repoPath, moduleName string) ([]*bomConfig, error) {
 	submodules, err := os.ReadDir(filepath.Join(repoPath, moduleName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory %s: %w", moduleName, err)
 	}
-	var configs []bomConfig
+	configs := make([]*bomConfig, 0, len(submodules))
 	for _, submodule := range submodules {
 		if !submodule.IsDir() || !strings.HasSuffix(submodule.Name(), bomSuffix) {
 			continue
@@ -203,8 +203,8 @@ func searchModuleForBOM(repoPath, moduleName string) ([]bomConfig, error) {
 
 // collectLegacyBOMs parses pom.xml files for legacy libraries that do not have
 // -bom modules and returns their BOM configurations.
-func collectLegacyBOMs(repoPath string, boms ...legacyBOM) ([]bomConfig, error) {
-	var configs []bomConfig
+func collectLegacyBOMs(repoPath string, boms ...legacyBOM) ([]*bomConfig, error) {
+	configs := make([]*bomConfig, 0, len(boms))
 	for _, b := range boms {
 		pomPath := filepath.Join(repoPath, b.module, "pom.xml")
 		data, err := os.ReadFile(pomPath)
@@ -215,7 +215,7 @@ func collectLegacyBOMs(repoPath string, boms ...legacyBOM) ([]bomConfig, error) 
 		if err := xml.Unmarshal(data, &p); err != nil {
 			return nil, fmt.Errorf("unmarshal legacy pom %s: %w", pomPath, err)
 		}
-		configs = append(configs, bomConfig{
+		configs = append(configs, &bomConfig{
 			GroupID:           b.groupID,
 			ArtifactID:        b.artifactID,
 			Version:           p.Version,
@@ -228,21 +228,21 @@ func collectLegacyBOMs(repoPath string, boms ...legacyBOM) ([]bomConfig, error) 
 
 // extractBOMConfig parses a pom.xml file within a library's -bom subdirectory to
 // produce a bomConfig object.
-func extractBOMConfig(repoPath, libraryDir, bomDir string) (bomConfig, error) {
+func extractBOMConfig(repoPath, libraryDir, bomDir string) (*bomConfig, error) {
 	pomPath := filepath.Join(repoPath, libraryDir, bomDir, "pom.xml")
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
-		return bomConfig{}, err
+		return nil, err
 	}
 	var p mavenProject
 	if err := xml.Unmarshal(data, &p); err != nil {
-		return bomConfig{}, fmt.Errorf("%w: %w", errMalformedBOM, err)
+		return nil, fmt.Errorf("%w: %w", errMalformedBOM, err)
 	}
 	versionAnnotation, err := deriveVersionAnnotation(p.ArtifactID)
 	if err != nil {
-		return bomConfig{}, err
+		return nil, err
 	}
-	return bomConfig{
+	return &bomConfig{
 		GroupID:           p.GroupID,
 		ArtifactID:        p.ArtifactID,
 		Version:           p.Version,
@@ -286,7 +286,7 @@ func generateRootPom(repoPath string, modules []string) (err error) {
 
 // generateGapicLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []bomConfig) (err error) {
+func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) (err error) {
 	bomDir := filepath.Join(repoPath, gapicBom)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
@@ -303,7 +303,7 @@ func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []bomConfig)
 	}()
 	data := struct {
 		Version    string
-		BOMConfigs []bomConfig
+		BOMConfigs []*bomConfig
 	}{
 		Version:    version,
 		BOMConfigs: bomConfigs,
