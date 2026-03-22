@@ -113,6 +113,33 @@ func (b *CommandBuilder) releaseTracks() []string {
 	return []string{strings.ToUpper(inferredTrack)}
 }
 
+func (b *CommandBuilder) isHidden() bool {
+	if len(b.overrides.APIs) > 0 {
+		return b.overrides.APIs[0].RootIsHidden
+	}
+	// Default to hidden if no API overrides are provided.
+	return true
+}
+
+func (b *CommandBuilder) buildHelpText() HelpText {
+	rule := findHelpTextRule(b.method, b.overrides)
+	if rule != nil {
+		return HelpText{
+			Brief:       rule.HelpText.Brief,
+			Description: rule.HelpText.Description,
+			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
+		}
+	}
+	return HelpText{}
+}
+
+func (b *CommandBuilder) releaseTracks() []string {
+	// Infer default release track from proto package.
+	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
+	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
+	return []string{strings.ToUpper(inferredTrack)}
+}
+
 // newRequest creates the `Request` part of the command definition.
 func (b *CommandBuilder) newRequest() *Request {
 	req := &Request{
