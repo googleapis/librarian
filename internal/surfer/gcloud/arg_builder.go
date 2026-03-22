@@ -75,6 +75,10 @@ func (b *argBuilder) Build() (*Arg, error) {
 	}
 
 	b.applyUniversalRules()
+
+	if b.err != nil {
+		return nil, b.err
+	}
 	return &b.arg, nil
 }
 

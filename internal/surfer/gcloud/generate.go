@@ -16,18 +16,15 @@
 package gcloud
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/provider"
 	"github.com/googleapis/librarian/internal/yaml"
-	"github.com/iancoleman/strcase"
 )
 
 // partialsHeader is the directive that tells gcloud to look in the `_partials` directory
@@ -50,168 +47,89 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 		return fmt.Errorf("no services found in the provided protos")
 	}
 
+	var methods []*provider.MethodAdapter
 	for _, service := range model.Services {
-		// TODO(https://github.com/googleapis/librarian/issues/3291): Ensure output directories don't collide if multiple services share a name.
-		if err := generateService(service, overrides, model, output); err != nil {
-			return fmt.Errorf("failed to generate commands for service %q: %w", service.Name, err)
-		}
-	}
-	return nil
-}
-
-func generateService(service *api.Service, overrides *provider.Config, model *api.API, output string) error {
-	shortServiceName, _, found := strings.Cut(service.DefaultHost, ".")
-	if !found {
-		return fmt.Errorf("failed to determine short service name for service %q: default_host is empty", service.Name)
-	}
-
-	surfaceDir := filepath.Join(output, shortServiceName)
-
-	if err := os.MkdirAll(surfaceDir, 0755); err != nil {
-		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
-	}
-
-	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
-	data := commandGroupData{
-		ServiceTitle:    provider.GetServiceTitle(model, shortServiceName),
-		ClassNamePrefix: strcase.ToCamel(shortServiceName),
-		Tracks:          []string{track},
-	}
-
-	if err := writeCommandGroupFile(surfaceDir, data); err != nil {
-		return fmt.Errorf("failed to write command group file for service %q: %w", shortServiceName, err)
-	}
-
-	// gcloud commands are resource-centric, so group methods by the resource
-	// they operate on.
-	methodsByResource := make(map[string][]*provider.MethodAdapter)
-
-	for _, method := range service.Methods {
-		adapter := &provider.MethodAdapter{Method: method}
-		collectionID := adapter.GetPluralResourceName(model)
-
-		if collectionID != "" {
-			methodsByResource[collectionID] = append(methodsByResource[collectionID], adapter)
+		for _, method := range service.Methods {
+			methods = append(methods, &provider.MethodAdapter{Method: method})
 		}
 	}
 
-	for collectionID, methods := range methodsByResource {
-		err := generateResourceCommands(collectionID, methods, surfaceDir, overrides, model, service)
-		if err != nil {
+	for _, service := range model.Services {
+		// 1. Generate the Surface Tree from the methods belonging to this service
+		var serviceMethods []*provider.MethodAdapter
+		for _, m := range methods {
+			// Find methods for this service.
+			// Currently simplified; typically you'd filter by m.Method.Service.Package == service.Package.
+			if m.Method.Service.Package == service.Package {
+				serviceMethods = append(serviceMethods, m)
+			}
+		}
+
+		tree := buildSurfaceTree(service, serviceMethods, model, output)
+
+		// 2. Render the Tree via DFS node traversal
+		if err := renderTree(tree, overrides, model, service); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
-// generateResourceCommands creates the directory structure and YAML files for a
-// single resource's commands (e.g., create, delete, list).
-//
-// For a given collectionID like "instances", this function will create a directory
-// `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
-func generateResourceCommands(collectionID string, methods []*provider.MethodAdapter, baseDir string, overrides *provider.Config, model *api.API, service *api.Service) error {
-	if len(methods) == 0 {
-		return nil
-	}
-
-	resourceDir := filepath.Join(baseDir, collectionID)
-
-	if err := os.MkdirAll(resourceDir, 0755); err != nil {
-		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
-	}
-
-	singular := methods[0].GetSingularResourceName(model)
-
-	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
-
-	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
-	data := commandGroupData{
-		ServiceTitle:     provider.GetServiceTitle(model, shortServiceName),
-		ResourceSingular: singular,
-		ClassNamePrefix:  strcase.ToCamel(collectionID),
-		Tracks:           []string{track},
-	}
-
-	if err := writeCommandGroupFile(resourceDir, data); err != nil {
-		return fmt.Errorf("failed to write command group file for resource %q: %w", collectionID, err)
-	}
-
-	// Partials allow sharing command definitions across release tracks.
-	partialsDir := filepath.Join(resourceDir, "_partials")
-	if err := os.MkdirAll(partialsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create partials directory for %q: %w", collectionID, err)
-	}
-
-	for _, method := range methods {
-		verb, err := method.GetCommandName()
-		if err != nil {
-			// Continue to the next method if we can't determine a command name,
-			// logging the issue might be useful here in the future.
-			continue
-		}
-
-		cmd, err := NewCommand(method, overrides, model, service)
-		if err != nil {
-			return err
-		}
-
-		// In gcloud convention, the final YAML file must contain a list of commands,
-		// even if there is only one.
-		cmdList := []*YAMLCommand{EmitCommand(cmd)}
-
-		mainCmdPath := filepath.Join(resourceDir, fmt.Sprintf("%s.yaml", verb))
-		if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {
-			return fmt.Errorf("failed to write main command file for %q: %w", method.Method.Name, err)
-		}
-
-		// Generate a partial file for each release track.
-		for _, track := range cmd.ReleaseTracks {
-			trackName := strings.ToLower(track)
-			partialFileName := fmt.Sprintf("_%s_%s.yaml", verb, trackName)
-			partialCmdPath := filepath.Join(partialsDir, partialFileName)
-
-			b, err := yaml.Marshal(cmdList)
-			if err != nil {
-				return fmt.Errorf("failed to marshal partial command for %q: %w", method.Method.Name, err)
-			}
-
-			if err := os.WriteFile(partialCmdPath, b, 0644); err != nil {
-				return fmt.Errorf("failed to write partial command file for %q: %w", method.Method.Name, err)
-			}
-		}
-	}
-	return nil
-}
-
-func writeCommandGroupFile(dir string, data commandGroupData) error {
-	var buf bytes.Buffer
-	if err := commandGroupTemplate.Execute(&buf, data); err != nil {
+// renderTree traverses the SurfaceNode hierarchy. Group nodes emit __init__.py,
+// leaf methods construct commandBuilder rules and emit YAMLs.
+func renderTree(node *SurfaceNode, overrides *provider.Config, model *api.API, service *api.Service) error {
+	// Root or intermediate group node.
+	groupBuilder := NewCommandGroupBuilder(node)
+	if err := groupBuilder.Build(); err != nil {
 		return err
 	}
-	path := filepath.Join(dir, "__init__.py")
-	return os.WriteFile(path, buf.Bytes(), 0644)
-}
 
-var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{
-	"toCamel": strcase.ToCamel,
-}).Parse(`# NOTE: This file is autogenerated and should not be edited by hand.
-"""Manage {{.ServiceTitle}}{{if .ResourceSingular}} {{.ResourceSingular}}{{end}} resources."""
+	if len(node.Methods) > 0 {
+		partialsDir := filepath.Join(node.Path, "_partials")
+		if err := os.MkdirAll(partialsDir, 0755); err != nil {
+			return fmt.Errorf("failed to create partials directory for %q: %w", node.Name, err)
+		}
 
-from googlecloudsdk.calliope import base
+		for _, method := range node.Methods {
+			verb, err := method.GetCommandName()
+			if err != nil {
+				continue
+			}
 
+			cmd, err := NewCommand(method, overrides, model, service)
+			if err != nil {
+				return err
+			}
 
-{{range .Tracks}}@base.ReleaseTracks(base.ReleaseTrack.{{.}})
-@base.Autogenerated
-@base.Hidden
-class {{$.ClassNamePrefix}}{{. | toCamel}}(base.Group):
-  """Manage {{$.ServiceTitle}}{{if $.ResourceSingular}} {{$.ResourceSingular}}{{end}} resources."""
+			cmdList := []*YAMLCommand{EmitCommand(cmd)}
+			mainCmdPath := filepath.Join(node.Path, fmt.Sprintf("%s.yaml", verb))
+			if err := os.WriteFile(mainCmdPath, []byte(partialsHeader), 0644); err != nil {
+				return fmt.Errorf("failed to write main command file for %q: %w", method.Method.Name, err)
+			}
 
+			for _, track := range cmd.ReleaseTracks {
+				trackName := strings.ToLower(track)
+				partialFileName := fmt.Sprintf("_%s_%s.yaml", verb, trackName)
+				partialCmdPath := filepath.Join(partialsDir, partialFileName)
 
-{{end}}`))
+				b, err := yaml.Marshal(cmdList)
+				if err != nil {
+					return fmt.Errorf("failed to marshal partial command for %q: %w", method.Method.Name, err)
+				}
+				if err := os.WriteFile(partialCmdPath, b, 0644); err != nil {
+					return fmt.Errorf("failed to write partial command file for %q: %w", method.Method.Name, err)
+				}
+			}
+		}
+	}
 
-type commandGroupData struct {
-	ServiceTitle     string
-	ResourceSingular string
-	ClassNamePrefix  string
-	Tracks           []string
+	// Recurse children.
+	for _, child := range node.Children {
+		if err := renderTree(child, overrides, model, service); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
