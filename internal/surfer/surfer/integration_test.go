@@ -2,6 +2,7 @@ package surfer
 
 import (
 	"context"
+	"flag"
 	"github.com/google/go-cmp/cmp"
 	"gopkg.in/yaml.v3"
 	"io/fs"
@@ -14,11 +15,13 @@ import (
 )
 
 var (
-	coreGoogleapisPath string
-	protocFound        bool
+	coreGoogleapisPath   string
+	protocFound          bool
+	runAutogenComparison = flag.Bool("run-with-autogen-comparison", false, "if true, run integration tests that compare generated output with golden files")
 )
 
 func TestMain(m *testing.M) {
+	flag.Parse()
 	// Look for protoc in PATH only.
 	if _, err := exec.LookPath("protoc"); err == nil {
 		protocFound = true
@@ -40,6 +43,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration(t *testing.T) {
+	if !*runAutogenComparison {
+		t.Skip("skipping integration test; use --run-with-autogen-comparison to enable")
+	}
 	if !protocFound {
 		t.Skip("protoc not found in PATH")
 	}
