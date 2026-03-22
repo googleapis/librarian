@@ -17,6 +17,7 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,6 +36,13 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+var (
+	// ErrExtractVersion is returned when an API version cannot be extracted from its path.
+	ErrExtractVersion = errors.New("failed to extract version")
+	// ErrNoProtos is returned when no proto files are found in an API directory.
+	ErrNoProtos = errors.New("no protos found")
+)
+
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	outdir, err := filepath.Abs(library.Output)
@@ -47,7 +55,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
 	if err := os.MkdirAll(outdir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
@@ -60,7 +68,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
-		return fmt.Errorf("failed to generate api: failed to extract version from api path %q", api.Path)
+		return ErrExtractVersion
 	}
 	javaAPI := resolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -75,7 +83,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	}
 	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
 	}
 
@@ -89,7 +97,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(apiProtos) == 0 {
-		return fmt.Errorf("failed to generate api: no protos found in api %q", api.Path)
+		return ErrNoProtos
 	}
 	p.apiProtos = apiProtos
 
@@ -228,7 +236,7 @@ func Format(ctx context.Context, library *config.Library) error {
 
 	args := append([]string{"--replace"}, files...)
 	if err := command.Run(ctx, "google-java-format", args...); err != nil {
-		return fmt.Errorf("formatting failed: %w", err)
+		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil
 }

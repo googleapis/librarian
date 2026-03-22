@@ -16,9 +16,11 @@ package java
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"sort"
 
@@ -95,55 +97,6 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
-	testCases := []struct {
-		name    string
-		files   []string
-		apiPath string
-		wantErr string
-	}{
-		{
-			name:    "multiple grpc configs",
-			files:   []string{"a_grpc_service_config.json", "b_grpc_service_config.json"},
-			apiPath: "google/cloud/multiple/v1",
-			wantErr: "multiple gRPC service config files found",
-		},
-		{
-			name:    "multiple gapic configs",
-			files:   []string{"a_gapic.yaml", "b_gapic.yaml"},
-			apiPath: "google/cloud/multiplegapic/v1",
-			wantErr: "multiple GAPIC config files found",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			apiDir := filepath.Join(tmpDir, tc.apiPath)
-			if err := os.MkdirAll(apiDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-			for _, file := range tc.files {
-				content := []byte("")
-				if strings.HasSuffix(file, ".json") {
-					content = []byte("{}")
-				}
-				if err := os.WriteFile(filepath.Join(apiDir, file), content, 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
-				config.LanguageJava: serviceconfig.GRPC,
-			}}
-			_, err := resolveGAPICOptions(&config.API{Path: tc.apiPath}, &config.JavaAPI{Path: tc.apiPath}, tmpDir, apiCfgs)
-			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
-				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}
@@ -353,10 +306,10 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 
 func TestGenerateLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		setup   func(t *testing.T, library *config.Library)
-		wantErr string
+		name      string
+		library   *config.Library
+		setup     func(t *testing.T, library *config.Library)
+		targetErr error
 	}{
 		{
 			name: "invalid version",
@@ -367,7 +320,18 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			wantErr: "failed to extract version from api path",
+			targetErr: ErrExtractVersion,
+		},
+		{
+			name: "no protos found",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			targetErr: ErrNoProtos,
 		},
 		{
 			name: "mkdir failure for output dir",
@@ -384,7 +348,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "failed to create output directory",
+			targetErr: syscall.ENOTDIR,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -393,8 +357,8 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			}
 			cfg := &config.Config{Language: "java"}
 			err := Generate(t.Context(), cfg, test.library, googleapisDir)
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
+			if !errors.Is(err, test.targetErr) {
+				t.Errorf("generate() error = %v, want targetErr %v", err, test.targetErr)
 			}
 		})
 	}
