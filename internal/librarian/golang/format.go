@@ -24,7 +24,7 @@ import (
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
 	// No need to format the root module because it does not
-	// have a dedicated output directory.
+	// have generated code.
 	if library.Name == rootModule {
 		return nil
 	}
@@ -36,8 +36,7 @@ func Format(ctx context.Context, library *config.Library) error {
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {
-	args := []string{"-w"}
-	args = append(args, library.Output)
+	args := []string{"-w", library.Output}
 	for _, api := range library.APIs {
 		snippetDir, err := findSnippetDirectory(library, api.Path, library.Output)
 		if err != nil {
