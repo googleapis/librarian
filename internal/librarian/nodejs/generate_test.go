@@ -15,6 +15,9 @@
 package nodejs
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +27,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -184,24 +188,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 		},
 		{
-			name: "default transport not passed",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-			},
-		},
-		{
 			name: "with bundle config and extra params",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -286,24 +272,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--some-other-param",
 			},
 		},
-		{
-			name: "grpc+rest transport is default and not passed",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
-				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging")
@@ -327,7 +295,6 @@ func TestRunPostProcessor_Owlbot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create owlbot.py that writes a marker file.
 	owlbotScript := filepath.Join(outDir, "owlbot.py")
 	if err := os.WriteFile(owlbotScript, []byte("import pathlib\npathlib.Path('owlbot-ran.txt').write_text('yes')\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -392,7 +359,7 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 		Name: "google-cloud-secretmanager",
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
-			{Path: "google/cloud/secretmanager/v1beta1"},
+			{Path: "google/cloud/secretmanager/v1beta2"},
 		},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -402,10 +369,11 @@ func TestGenerateAPI_MultipleVersions(t *testing.T) {
 	library.Output = outDir
 
 	for _, api := range library.APIs {
-		err = generateAPI(t.Context(), api, library, absGoogleapisDir, repoRoot)
-		if err != nil {
-			t.Fatalf("failed to generate api %q: %v", api.Path, err)
-		}
+		t.Run(api.Path, func(t *testing.T) {
+			if err := generateAPI(t.Context(), api, library, absGoogleapisDir, repoRoot); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 	for _, api := range library.APIs {
 		version := filepath.Base(api.Path)
@@ -427,35 +395,52 @@ func TestRunPostProcessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create staging structure matching gapic-generator-typescript output for multiple versions.
-	for _, v := range []string{"v1", "v1beta1"} {
-		stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, v)
-		srcDir := filepath.Join(stagingBase, "src", v)
-		if err := os.MkdirAll(srcDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(
-			filepath.Join(srcDir, "index.ts"),
-			[]byte("export {SecretManagerServiceClient} from './secret_manager_service_client';\n"),
-			0644,
-		); err != nil {
-			t.Fatal(err)
-		}
-		protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "secretmanager", v)
-		if err := os.MkdirAll(protoDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		protoContent := fmt.Sprintf("syntax = \"proto3\";\npackage google.cloud.secretmanager.%s;\n", v)
-		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
+	createStagingFixture(t, repoRoot, library.Name, []string{"v1", "v1beta1"})
 
 	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 		t.Error("expected owl-bot-staging to be removed after post-processing")
+	}
+}
+
+func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{Name: "google-cloud-test"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create staging structure with a .OwlBot.yaml file.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stagingBase, ".OwlBot.yaml"), []byte("deep-copy-regex:\n  - source: /owl-bot-staging\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, ".OwlBot.yaml")); !errors.Is(err, os.ErrNotExist) {
+		t.Error("expected .OwlBot.yaml to be removed after post-processing")
 	}
 }
 
@@ -472,7 +457,6 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create staging structure matching gapic-generator-typescript output.
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
@@ -583,24 +567,8 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create staging structure matching gapic-generator-typescript output.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
-	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	createStagingFixture(t, repoRoot, library.Name, []string{"v1"})
 
-	// Create files that should be preserved across combine-library.
 	readmeContent := "# Test README"
 	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
 		t.Fatal(err)
@@ -614,7 +582,6 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify preserved files still exist.
 	got, err := os.ReadFile(filepath.Join(outDir, "README.md"))
 	if err != nil {
 		t.Fatal(err)
@@ -711,7 +678,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, absGoogleapisDir); err != nil {
+		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -719,6 +686,172 @@ func TestGenerate(t *testing.T) {
 	for _, library := range libraries {
 		if _, err := os.Stat(library.Output); err != nil {
 			t.Errorf("expected output directory for %q to exist: %v", library.Name, err)
+		}
+	}
+}
+
+func TestCopyMissingProtos(t *testing.T) {
+	googleapisDir := t.TempDir()
+	outDir := t.TempDir()
+
+	srcProto := filepath.Join(googleapisDir, "google", "logging", "type", "log_severity.proto")
+	if err := os.MkdirAll(filepath.Dir(srcProto), 0755); err != nil {
+		t.Fatal(err)
+	}
+	srcContent := []byte("syntax = \"proto3\";\npackage google.logging.type;\n")
+	if err := os.WriteFile(srcProto, srcContent, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	listDir := filepath.Join(outDir, "src", "v1")
+	if err := os.MkdirAll(listDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	existingProto := filepath.Join(outDir, "protos", "google", "cloud", "foo", "v1", "existing.proto")
+	if err := os.MkdirAll(filepath.Dir(existingProto), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(existingProto, []byte("existing"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	entries := []string{
+		// Already exists relative to listDir - should be skipped.
+		"../../protos/google/cloud/foo/v1/existing.proto",
+		// Missing proto with "protos/" prefix - should be copied.
+		"../../protos/google/logging/type/log_severity.proto",
+		// Entry without "protos/" prefix - should be skipped.
+		"../../other/google/cloud/foo/v1/no_protos_prefix.proto",
+	}
+	listData, err := json.Marshal(entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	listPath := filepath.Join(listDir, "foo_proto_list.json")
+	if err := os.WriteFile(listPath, listData, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	copiedPath := filepath.Join(outDir, "protos", "google", "logging", "type", "log_severity.proto")
+	got, err := os.ReadFile(copiedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(srcContent), string(got)); diff != "" {
+		t.Errorf("copied proto content mismatch (-want +got):\n%s", diff)
+	}
+
+	existingContent, err := os.ReadFile(existingProto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("existing", string(existingContent)); diff != "" {
+		t.Errorf("existing proto should not be overwritten (-want +got):\n%s", diff)
+	}
+}
+
+func TestFormat_CanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	library := &config.Library{
+		Name:   "google-cloud-test",
+		Output: t.TempDir(),
+	}
+	err := Format(ctx, library)
+	if err == nil {
+		t.Fatal("expected error from canceled context, got nil")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected context.Canceled, got: %v", err)
+	}
+}
+
+func TestFormat_ExitCode1(t *testing.T) {
+	testhelper.RequireCommand(t, "eslint")
+
+	outDir := t.TempDir()
+	srcDir := filepath.Join(outDir, "src")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Configure eslint with an "error" rule that cannot be auto-fixed.
+	// eslint exits 1 when unfixable errors remain after --fix.
+	eslintConfig := `{
+		"rules": {
+			"no-eval": "error"
+		},
+		"parserOptions": {
+			"ecmaVersion": 2020,
+			"sourceType": "module"
+		}
+	}`
+	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// eval() triggers no-eval warning which --fix cannot remove.
+	if err := os.WriteFile(filepath.Join(srcDir, "index.js"), []byte("eval('1+1');\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "google-cloud-test",
+		Output: outDir,
+	}
+	// Format should tolerate exit code 1 (lint warnings).
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGenerateAPI_NoProtos(t *testing.T) {
+	googleapisDir := t.TempDir()
+	repoRoot := t.TempDir()
+
+	// Create an API directory with no .proto files.
+	apiPath := "google/cloud/emptyapi/v1"
+	apiDir := filepath.Join(googleapisDir, apiPath)
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Write a non-proto file so the directory is not empty.
+	if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte("# empty"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:   "google-cloud-emptyapi",
+		Output: filepath.Join(repoRoot, "packages", "google-cloud-emptyapi"),
+	}
+	if err := generateAPI(t.Context(), &config.API{Path: apiPath}, library, googleapisDir, repoRoot); err == nil {
+		t.Fatal("expected error for API directory with no proto files")
+	}
+}
+
+func createStagingFixture(t *testing.T, repoRoot, libName string, versions []string) {
+	t.Helper()
+	for _, v := range versions {
+		stagingBase := filepath.Join(repoRoot, "owl-bot-staging", libName, v)
+		srcDir := filepath.Join(stagingBase, "src", v)
+		if err := os.MkdirAll(srcDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", v)
+		if err := os.MkdirAll(protoDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		protoContent := fmt.Sprintf("syntax = \"proto3\";\npackage google.cloud.test.%s;\n", v)
+		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

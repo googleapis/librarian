@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -731,6 +732,7 @@ func TestGenerate_Multiple(t *testing.T) {
 					Path: "google/cloud/secretmanager/v1",
 				},
 			},
+			Python: &config.PythonPackage{DefaultVersion: "v1"},
 		},
 		{
 			Name: "configdelivery",
@@ -739,13 +741,14 @@ func TestGenerate_Multiple(t *testing.T) {
 					Path: "google/cloud/configdelivery/v1",
 				},
 			},
+			Python: &config.PythonPackage{DefaultVersion: "v1"},
 		},
 	}
 	for _, library := range libraries {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -798,6 +801,7 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{Path: "bogus/"},
 				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 		},
 		{
@@ -808,6 +812,7 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
 				if err := os.MkdirAll(lib.Output, 0755); err != nil {
@@ -828,6 +833,7 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
 				postProcessorScript := filepath.Join(".librarian", "generator-input", "client-post-processing", "bad.yaml")
@@ -844,6 +850,7 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 			setup: func(t *testing.T, lib *config.Library) {
 				if err := os.MkdirAll(filepath.Join(lib.Output, "docs", "README.rst"), 0755); err != nil {
@@ -871,7 +878,7 @@ func TestGenerate_Error(t *testing.T) {
 				Repo:     "googleapis/google-cloud-python",
 			}
 
-			gotErr := Generate(t.Context(), cfg, lib, absGoogleapisDir)
+			gotErr := Generate(t.Context(), cfg, lib, &sources.Sources{Googleapis: absGoogleapisDir})
 			// Not all errors are easy to specify. (Most come from other
 			// packages, and we're just testing they're propagated.)
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
@@ -940,9 +947,13 @@ func TestGenerate(t *testing.T) {
 						LibraryType: "GAPIC_AUTO",
 					},
 					SkipReadmeCopy: test.skipReadmeCopy,
+					DefaultVersion: "v1",
 				},
 			}
-			if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+			srcs := &sources.Sources{
+				Googleapis: googleapisDir,
+			}
+			if err := Generate(t.Context(), cfg, library, srcs); err != nil {
 				t.Fatal(err)
 			}
 			gotMetadata, err := repometadata.Read(outdir)
@@ -1019,12 +1030,13 @@ func TestGenerate_APIOrder(t *testing.T) {
 			{Path: "google/cloud/workflows/executions/v1"},
 		},
 		Python: &config.PythonPackage{
+			DefaultVersion: "v1",
 			PythonDefault: config.PythonDefault{
 				LibraryType: "GAPIC_AUTO",
 			},
 		},
 	}
-	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 		t.Fatal(err)
 	}
 	setupContent, err := os.ReadFile(filepath.Join(outdir, "setup.py"))
@@ -1083,6 +1095,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				// In normal operation this is populated from the top-level
 				// default.
 				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
 					PythonDefault: config.PythonDefault{
 						LibraryType: "GAPIC_AUTO",
 					},
@@ -1116,6 +1129,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 					},
 				},
 				Python: &config.PythonPackage{
+					DefaultVersion: "v2",
 					PythonDefault: config.PythonDefault{
 						LibraryType: "GAPIC_AUTO",
 					},
@@ -1180,39 +1194,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "default version",
-			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				ReleaseLevel: "stable",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-				},
-				Python: &config.PythonPackage{
-					PythonDefault: config.PythonDefault{
-						LibraryType: "GAPIC_AUTO",
-					},
-				},
-			},
-			want: &repometadata.RepoMetadata{
-				Name:                 "google-cloud-secret-manager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguagePython,
-				Repo:                 "googleapis/google-cloud-python",
-				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				LibraryType:          "GAPIC_AUTO",
-				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
-				DefaultVersion:       "v1",
-			},
-		},
-		{
 			name: "handwritten library",
 			library: &config.Library{
 				Name:         "google-auth",
@@ -1225,6 +1206,29 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                "google-auth",
+				DistributionName:    "google-auth",
+				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
+				Language:            config.LanguagePython,
+				LibraryType:         "AUTH",
+				Repo:                "googleapis/google-cloud-python",
+				ReleaseLevel:        "stable",
+			},
+		},
+		{
+			name: "handwritten library with default version",
+			library: &config.Library{
+				Name:         "google-auth",
+				ReleaseLevel: "stable",
+				Python: &config.PythonPackage{
+					DefaultVersion: "oauth2",
+					PythonDefault: config.PythonDefault{
+						LibraryType: "AUTH",
+					},
+				},
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                "google-auth",
+				DefaultVersion:      "oauth2",
 				DistributionName:    "google-auth",
 				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
 				Language:            config.LanguagePython,
@@ -1251,21 +1255,46 @@ func TestCreateRepoMetadata(t *testing.T) {
 }
 
 func TestCreateRepoMetadata_Error(t *testing.T) {
-	cfg := &config.Config{
-		Language: config.LanguagePython,
-		Repo:     "googleapis/google-cloud-python",
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "invalid API path",
+			library: &config.Library{
+				Name:         "android-library",
+				ReleaseLevel: "stable",
+				APIs:         []*config.API{{Path: "android/notallowed/v1"}},
+				Python:       &config.PythonPackage{DefaultVersion: "v1"},
+			},
+		},
+		{
+			name: "generated library with no default version",
+			library: &config.Library{
+				Name:         "google-cloud-secret-manager",
+				ReleaseLevel: "stable",
+				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			wantErr: errNoDefaultVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: config.LanguagePython,
+				Repo:     "googleapis/google-cloud-python",
+			}
+			_, gotErr := createRepoMetadata(cfg, test.library, googleapisDir)
+			// For errors we can't specify
+			if gotErr == nil {
+				t.Fatal("expected error; got nil")
+			}
+			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("stageProtoFiles error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
 	}
-	library := &config.Library{
-		Name:         "google-cloud-secret-manager",
-		ReleaseLevel: "stable",
-		APIs:         []*config.API{{Path: "android/notallowed/v1"}},
-	}
-	// We don't check what the error is here; there's only one place it can
-	// come, and it's not an error we create ourselves.
-	_, err := createRepoMetadata(cfg, library, googleapisDir)
-	if err == nil {
-		t.Error("expected error, got nil")
-	}
+
 }
 
 func requireSynthtool(t *testing.T) {

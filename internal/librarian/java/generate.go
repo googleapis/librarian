@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -36,13 +37,14 @@ const (
 )
 
 // Generate generates a Java client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 	// Ensure googleapisDir is absolute to avoid issues with relative paths in protoc.
-	googleapisDir, err = filepath.Abs(googleapisDir)
+	var googleapisDir string
+	googleapisDir, err = filepath.Abs(srcs.Googleapis)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
