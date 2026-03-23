@@ -755,6 +755,80 @@ func TestCopyMissingProtos(t *testing.T) {
 	}
 }
 
+func TestCopySamplesFromStaging(t *testing.T) {
+	stagingDir := t.TempDir()
+	outDir := t.TempDir()
+
+	// Create v1 with a sample .js file and a snippet_metadata_ file.
+	v1SamplesDir := filepath.Join(stagingDir, "v1", "samples", "generated", "v1")
+	if err := os.MkdirAll(v1SamplesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(v1SamplesDir, "sample.js"), []byte("console.log('v1');"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(v1SamplesDir, "snippet_metadata_google.cloud.test.v1.json"), []byte(`{"snippets":[]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create v1beta1 with a snippet_metadata_ file.
+	v1beta1SamplesDir := filepath.Join(stagingDir, "v1beta1", "samples", "generated", "v1beta1")
+	if err := os.MkdirAll(v1beta1SamplesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(v1beta1SamplesDir, "snippet_metadata_google.cloud.test.v1beta1.json"), []byte(`{"snippets":["beta"]}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "v1 sample file",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "sample.js"),
+			want: "console.log('v1');",
+		},
+		{
+			name: "v1 renamed metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata.google.cloud.test.v1.json"),
+			want: `{"snippets":[]}`,
+		},
+		{
+			name: "v1beta1 renamed metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata.google.cloud.test.v1beta1.json"),
+			want: `{"snippets":["beta"]}`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := os.ReadFile(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	// Verify the old underscore-prefixed names do not exist.
+	oldV1 := filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json")
+	if _, err := os.Stat(oldV1); !errors.Is(err, os.ErrNotExist) {
+		t.Error("expected snippet_metadata_ file to be renamed, but old name still exists")
+	}
+}
+
+func TestCopySamplesFromStaging_NonExistentDir(t *testing.T) {
+	if err := copySamplesFromStaging(filepath.Join(t.TempDir(), "does-not-exist"), t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestFormat_CanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()

@@ -210,6 +210,13 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		}
 	}
 
+	// Copy generated samples from staging into the output directory.
+	// combine-library only handles src/ and protos/; samples are generated
+	// by gapic-generator-typescript but left in staging.
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy samples from staging: %w", err)
+	}
+
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
 	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -352,6 +359,54 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 			if err := os.WriteFile(absPath, content, 0644); err != nil {
 				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
 			}
+		}
+	}
+	return nil
+}
+
+// copySamplesFromStaging copies generated sample files from the staging
+// directory into the output directory. The generator writes samples to
+// owl-bot-staging/<lib>/<version>/samples/generated/<version>/ but
+// combine-library does not move them.
+func copySamplesFromStaging(stagingDir, outDir string) error {
+	versions, err := os.ReadDir(stagingDir)
+	if err != nil {
+		return nil // staging dir may not exist
+	}
+	for _, v := range versions {
+		if !v.IsDir() {
+			continue
+		}
+		samplesDir := filepath.Join(stagingDir, v.Name(), "samples")
+		if _, err := os.Stat(samplesDir); err != nil {
+			continue
+		}
+		if err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(samplesDir, path)
+			if err != nil {
+				return err
+			}
+			// The generator produces snippet_metadata_<api>.json but the
+			// existing convention uses snippet_metadata.<api>.json.
+			base := filepath.Base(rel)
+			if strings.HasPrefix(base, "snippet_metadata_") {
+				renamed := "snippet_metadata." + strings.TrimPrefix(base, "snippet_metadata_")
+				rel = filepath.Join(filepath.Dir(rel), renamed)
+			}
+			dst := filepath.Join(outDir, "samples", rel)
+			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+				return err
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(dst, content, 0644)
+		}); err != nil {
+			return err
 		}
 	}
 	return nil
