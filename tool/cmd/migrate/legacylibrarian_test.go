@@ -264,6 +264,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 							},
 						},
 						Python: &config.PythonPackage{
+							DefaultVersion:               "v1",
 							MetadataNameOverride:         "secretmanager",
 							ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
 							NamePrettyOverride:           "Secret Manager",

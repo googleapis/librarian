@@ -17,6 +17,7 @@ package python
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,6 +35,8 @@ const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
+
+var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
 
 // Generate generates a Python client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
@@ -118,9 +121,18 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		if err != nil {
 			return nil, err
 		}
-		// Use the version of the first-listed API path as the default version,
-		// unless it's overridden later.
-		repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+		// Require the DefaultVersion field, even if we could have inferred
+		// it. The default version affects the final code, and changes to it
+		// should be explicit - if adding a new version of an API changes the
+		// inferred default version, that would cause compatibility issues. This
+		// in itself is far from ideal; keeping the default version is "safe"
+		// but toilsome operationally.
+		// TODO(https://github.com/googleapis/librarian/issues/4772): design away
+		// from default versions.
+		if packageOptions.DefaultVersion == "" {
+			return nil, fmt.Errorf("error creating metadata for %s: %w", library.Name, errNoDefaultVersion)
+		}
+		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	} else {
 		// Handwritten library: populate from scratch (and then apply overrides
 		// as normal).
@@ -130,15 +142,16 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 			Language:         cfg.Language,
 			Repo:             cfg.Repo,
 			ReleaseLevel:     library.ReleaseLevel,
+			// Allow even handwritten libraries to specify a default value in
+			// the package options if they want to. This would be unusual, but
+			// if it's specified, we should honor it.
+			DefaultVersion: packageOptions.DefaultVersion,
 		}
 	}
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
 		repoMetadata.Name = library.Name
-	}
-	if packageOptions.DefaultVersion != "" {
-		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}
 	repoMetadata.LibraryType = packageOptions.LibraryType
 	repoMetadata.ClientDocumentation = BuildClientDocumentationURI(library.Name, repoMetadata.Name)
