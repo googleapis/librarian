@@ -60,31 +60,56 @@ func TestIntegration(t *testing.T) {
 		name string
 		skip string // Reason for skipping.
 	}{
+		// https://github.com/googleapis/librarian/issues/3553
 		{name: "confirmation_prompt"},
 		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
+		// https://github.com/googleapis/librarian/issues/4522
 		{name: "field_attributes"},
+		// https://github.com/googleapis/librarian/issues/4525
 		{name: "field_complex_types"},
+		// https://github.com/googleapis/librarian/issues/3288
 		{name: "field_flag_names"},
+		// https://github.com/googleapis/librarian/issues/3553
 		{name: "field_oneof"},
+		// https://github.com/googleapis/librarian/issues/3553
 		{name: "field_simple_types"},
+		// https://github.com/googleapis/librarian/issues/4529
 		{name: "filtered_command"},
+		// https://github.com/googleapis/librarian/issues/3033
 		{name: "help_text"},
+		// https://github.com/googleapis/librarian/issues/4532
 		{name: "hidden_command"},
+		// https://github.com/googleapis/librarian/issues/4528
 		{name: "hidden_feature"},
+		// https://github.com/googleapis/librarian/issues/3417
 		{name: "method_async"},
+		// https://github.com/googleapis/librarian/issues/4523
 		{name: "method_custom"},
+		// https://github.com/googleapis/librarian/issues/3393
 		{name: "method_minimal_list"},
+		// https://github.com/googleapis/librarian/issues/4526
 		{name: "method_operations"},
+		// https://github.com/googleapis/librarian/issues/4532
 		{name: "method_output_format"},
-		{name: "multi_service"},
-		{name: "multi_version_multi_track"},
+		// https://github.com/googleapis/librarian/issues/3291
+		{name: "multi_service", skip: "https://github.com/googleapis/librarian/issues/3291"},
+		// https://github.com/googleapis/librarian/issues/4530
+		{name: "multi_version_multi_track", skip: "https://github.com/googleapis/librarian/issues/4530"},
+		// https://github.com/googleapis/librarian/issues/4526
 		{name: "regional_endpoints/global_only"},
+		// https://github.com/googleapis/librarian/issues/4526
 		{name: "regional_endpoints/regional_required"},
+		// https://github.com/googleapis/librarian/issues/4526
 		{name: "regional_endpoints/regional_supported"},
+		// https://github.com/googleapis/librarian/issues/4617
 		{name: "resource_multitype"},
+		// https://github.com/googleapis/librarian/issues/3258
 		{name: "resource_non_standard"},
+		// https://github.com/googleapis/librarian/issues/3363
 		{name: "resource_reference"},
+		// https://github.com/googleapis/librarian/issues/4641
 		{name: "resource_standard"},
+		// https://github.com/googleapis/librarian/issues/3553
 		{name: "update_mask"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
