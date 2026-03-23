@@ -26,7 +26,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -110,7 +110,7 @@ type RepoMetadata struct {
 //
 // Any other fields required by the caller's language should be populated by the
 // caller before writing to disk.
-func FromLibrary(config *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*RepoMetadata, error) {
+func FromLibrary(config *config.Config, library *config.Library, sources *sources.Sources) (*RepoMetadata, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.

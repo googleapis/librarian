@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -32,7 +32,7 @@ func TestResolveDependencies_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 

@@ -19,15 +19,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	libconfig "github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestParseOptions(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
-		Source: sidekickconfig.SourceConfig{
+		Source: &sources.SourceConfig{
 			IncludeList: []string{"f1.proto", "f2.proto"},
 		},
 		Codec: map[string]string{
