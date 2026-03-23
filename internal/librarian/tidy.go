@@ -157,10 +157,6 @@ func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
 
 // isEmptyRustModule returns true if the module is a placeholder that can be removed.
 func isEmptyRustModule(module *config.RustModule) bool {
-	if module.Language == config.LanguageRustStorage {
-		// The Rust storage module has hardcoded API paths and templates, so it is never empty.
-		return false
-	}
 	return module.APIPath == "" && module.Template == ""
 }
 

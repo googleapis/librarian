@@ -102,14 +102,11 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	}
 	var repoMetadata *repometadata.RepoMetadata
 	if len(library.APIs) > 0 {
-		// TODO(https://github.com/googleapis/librarian/issues/4428): once
-		// repometadata exposes a FromLibrary function or similar that we can use,
-		// we should call that again, so that repometadata.FromAPI can be hidden.
-		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+		var err error
+		repoMetadata, err = repometadata.FromLibrary(cfg, library, googleapisDir)
 		if err != nil {
 			return nil, err
 		}
-		repoMetadata = repometadata.FromAPI(cfg, api, library)
 		// Use the version of the first-listed API path as the default version,
 		// unless it's overridden later.
 		repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)

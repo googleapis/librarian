@@ -342,7 +342,7 @@ This document describes the schema for the librarian.yaml.
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
-| `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
+| `language` | string | Can be used to select a variation of the Rust generator. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
@@ -355,7 +355,7 @@ This document describes the schema for the librarian.yaml.
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation. |
 | `specification_format` | string | Overrides the library-level specification format. |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
-| `template` | string | Specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
+| `template` | string | Specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage". |
 
 ## RustPackageDependency Configuration
 

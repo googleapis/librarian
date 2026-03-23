@@ -89,7 +89,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
-	metadata, err := repometadata.FromLibrary(cfg, library, sources)
+	googleapisDir := sources.Googleapis
+	if len(library.APIs) > 0 && library.APIs[0].Path == "schema/google/showcase/v1beta1" {
+		googleapisDir = sources.Showcase
+	}
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +128,9 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
+		if module.Template == "storage" {
+			return generateRustStorage(ctx, library, module.Output, sources)
+		}
 		modelConfig, err := moduleToModelConfig(library, module, sources)
 		if err != nil {
 			return fmt.Errorf("moduleToModelConfig %q: %w", module.Output, err)
@@ -132,17 +139,10 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		if err != nil {
 			return fmt.Errorf("CreateModel %q: %w", module.Output, err)
 		}
-		switch modelConfig.Language {
-		case config.LanguageRust:
-			if module.Template == "prost" {
-				err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
-			} else {
-				err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
-			}
-		case config.LanguageRustStorage:
-			return generateRustStorage(ctx, library, module.Output, sources)
-		default:
-			err = fmt.Errorf("language %q not supported", modelConfig.Language)
+		if module.Template == "prost" {
+			err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
+		} else {
+			err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
 		}
 		if err != nil {
 			return fmt.Errorf("module %q: %w", module.Output, err)
