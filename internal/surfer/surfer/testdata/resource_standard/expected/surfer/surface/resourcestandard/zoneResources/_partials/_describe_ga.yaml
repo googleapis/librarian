@@ -1,0 +1,33 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The zoneResource to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          name: zoneResource
+          plural_name: zoneResources
+          collection: resourcestandard.projects.zones.zoneResources
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: zonesId
+              attribute_name: zone
+              help: The zone id of the {resource} resource.
+            - parameter_name: zoneResourcesId
+              attribute_name: zoneResource
+              help: The zoneResource id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+  request:
+    api_version: v1
+    collection:
+      - resourcestandard.projects.zones.zoneResources

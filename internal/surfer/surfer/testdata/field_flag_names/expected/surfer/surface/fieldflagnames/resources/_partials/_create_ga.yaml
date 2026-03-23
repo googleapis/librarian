@@ -1,0 +1,116 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - arg_name: uri
+        api_field: uri
+        help_text: Value for the `uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - help_text: The resource to create.
+        is_positional: true
+        is_primary_resource: true
+        request_id_field: resourceId
+        resource_spec:
+          name: resource
+          plural_name: resources
+          collection: fieldflagnames.projects.locations.resources
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: resourcesId
+              attribute_name: resource
+              help: The resource id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: field-with-no-parent
+        api_field: resource.fieldWithNoParent
+        help_text: Value for the `field-with-no-parent` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: duplicate-message
+        api_field: resource.msg.duplicateMessage.duplicateMessage
+        help_text: Value for the `duplicate-message` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: redundant-string-field
+        api_field: resource.msg.redundantMessage.redundantStringField
+        help_text: Value for the `redundant-string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: string-field
+        api_field: resource.msg.excluded.stringField
+        help_text: Value for the `string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: quiet
+        api_field: resource.quiet
+        help_text: Value for the `quiet` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: project
+        api_field: resource.billingInfo.billing.project
+        help_text: Value for the `project` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: labels
+        api_field: resource.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: validate-only
+        api_field: validateOnly
+        help_text: Value for the `validate-only` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+  request:
+    api_version: v1
+    collection:
+      - fieldflagnames.projects.locations.resources
