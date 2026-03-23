@@ -903,6 +903,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 	want := sample.RepoMetadata()
 	want.DistributionName = "@google-cloud/secretmanager"
 	want.Language = config.LanguageNodejs
+	want.Repo = config.Repo
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
