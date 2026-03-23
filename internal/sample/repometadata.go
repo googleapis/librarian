@@ -32,6 +32,5 @@ func RepoMetadata() *repometadata.RepoMetadata {
 		NamePretty:           "Secret Manager",
 		ProductDocumentation: "https://cloud.google.com/secret-manager/",
 		ReleaseLevel:         "stable",
-		Repo:                 "googleapis/google-cloud-node",
 	}
 }
