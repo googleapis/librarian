@@ -234,6 +234,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 							LibraryType: "CORE",
 						},
 						NamePrettyOverride: "Google API client core library",
+						SkipReadmeCopy:     true,
 					},
 				},
 			},
