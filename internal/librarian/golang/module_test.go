@@ -673,7 +673,7 @@ func TestUpdateSnippetDirectory(t *testing.T) {
   }
 }`
 	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
-		return
+		t.Fatal(err)
 	}
 	if err := updateSnippetDirectory(library, library.Output, library.Version); err != nil {
 		t.Fatal(err)
