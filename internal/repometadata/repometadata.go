@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -110,7 +109,7 @@ type RepoMetadata struct {
 //
 // Any other fields required by the caller's language should be populated by the
 // caller before writing to disk.
-func FromLibrary(config *config.Config, library *config.Library, sources *sources.Sources) (*RepoMetadata, error) {
+func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir string) (*RepoMetadata, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3146):
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
@@ -118,15 +117,11 @@ func FromLibrary(config *config.Config, library *config.Library, sources *source
 		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
 	}
 	firstAPIPath := library.APIs[0].Path
-	root := sources.Googleapis
-	if firstAPIPath == "schema/google/showcase/v1beta1" {
-		root = sources.Showcase
-	}
-	api, err := serviceconfig.Find(root, firstAPIPath, config.Language)
+	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, cfg.Language)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
 	}
-	return FromAPI(config, api, library), nil
+	return FromAPI(cfg, api, library), nil
 }
 
 // FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.

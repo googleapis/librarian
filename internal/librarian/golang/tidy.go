@@ -14,7 +14,9 @@
 
 package golang
 
-import "github.com/googleapis/librarian/internal/config"
+import (
+	"github.com/googleapis/librarian/internal/config"
+)
 
 // Tidy tidies configuration for a library by removing default values and clearing
 // empty Go module or API entries.

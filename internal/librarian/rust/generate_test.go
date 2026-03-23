@@ -561,6 +561,47 @@ func TestDeriveAPIPath(t *testing.T) {
 	}
 }
 
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		api           string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "typical api with google prefix",
+			api:           "google/cloud/secretmanager/v1",
+			defaultOutput: "src/generated",
+			want:          "src/generated/cloud/secretmanager/v1",
+		},
+		{
+			name:          "api without google prefix",
+			api:           "other/service/v1",
+			defaultOutput: "src/generated",
+			want:          "src/generated/other/service/v1",
+		},
+		{
+			name:          "empty api",
+			api:           "",
+			defaultOutput: "src/generated",
+			want:          "src/generated",
+		},
+		{
+			name:          "empty default output",
+			api:           "google/cloud/secretmanager/v1",
+			defaultOutput: "",
+			want:          "cloud/secretmanager/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.api, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFindModuleByOutput(t *testing.T) {
 	for _, test := range []struct {
 		name   string
@@ -621,46 +662,89 @@ func TestCreateRepoMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg := &config.Config{
-		Language: config.LanguageRust,
-		Repo:     "googleapis/google-cloud-rust",
-	}
-	library := &config.Library{
-		Name:         "google-cloud-secretmanager-v1",
-		Version:      "0.1.0",
-		ReleaseLevel: "preview",
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-			},
-		},
-	}
-	sources := &sources.Sources{
-		Googleapis: googleapisDir,
-	}
-
-	got, err := createRepoMetadata(cfg, library, sources)
+	showcaseDir, err := filepath.Abs("../../testdata/gapic-showcase")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := &repometadata.RepoMetadata{
-		Name:                 "secretmanager",
-		NamePretty:           "Secret Manager",
-		ProductDocumentation: "https://cloud.google.com/secret-manager/",
-		ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
-		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-		ReleaseLevel:         "preview",
-		Language:             config.LanguageRust,
-		Repo:                 "googleapis/google-cloud-rust",
-		DistributionName:     "google-cloud-secretmanager-v1",
-		APIID:                "secretmanager.googleapis.com",
-		APIShortname:         "secretmanager",
-		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-		LibraryType:          "GAPIC_AUTO",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		sources *sources.Sources
+		want    *repometadata.RepoMetadata
+	}{
+		{
+			name: "googleapis",
+			library: &config.Library{
+				Name:         "google-cloud-secretmanager-v1",
+				Version:      "0.1.0",
+				ReleaseLevel: "preview",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			sources: &sources.Sources{
+				Googleapis: googleapisDir,
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                 "secretmanager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "preview",
+				Language:             config.LanguageRust,
+				Repo:                 "googleapis/google-cloud-rust",
+				DistributionName:     "google-cloud-secretmanager-v1",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          "GAPIC_AUTO",
+			},
+		},
+		{
+			name: "showcase",
+			library: &config.Library{
+				Name:         "google-cloud-showcase-v1beta1",
+				Version:      "0.1.0",
+				ReleaseLevel: "preview",
+				APIs: []*config.API{
+					{
+						Path: "schema/google/showcase/v1beta1",
+					},
+				},
+			},
+			sources: &sources.Sources{
+				Showcase: showcaseDir,
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                "showcase",
+				NamePretty:          "Client Libraries Showcase",
+				ClientDocumentation: "https://docs.rs/google-cloud-showcase-v1beta1/latest",
+				ReleaseLevel:        "preview",
+				Language:            config.LanguageRust,
+				Repo:                "googleapis/google-cloud-rust",
+				DistributionName:    "google-cloud-showcase-v1beta1",
+				APIID:               "showcase.googleapis.com",
+				APIShortname:        "showcase",
+				LibraryType:         "GAPIC_AUTO",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: config.LanguageRust,
+				Repo:     "googleapis/google-cloud-rust",
+			}
+			got, err := createRepoMetadata(cfg, test.library, test.sources)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

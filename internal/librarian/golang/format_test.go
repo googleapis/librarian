@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -35,42 +36,47 @@ func TestFormat(t *testing.T) {
 			name: "library path and snippet directory exist",
 			library: &config.Library{
 				Name: "example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/v1", ImportPath: "example/apiv1"},
+					},
+				},
 			},
 			goFilePath: []string{
 				"example",
-				"internal/generated/snippets/example",
+				"internal/generated/snippets/example/apiv1",
 			},
 		},
 		{
-			// This is true for the root module, though the snippet
-			// directory should also not exist.
-			name: "library path does not exist",
+			name: "root module",
 			library: &config.Library{
-				Name: "example",
-			},
-			goFilePath: []string{
-				"internal/generated/snippets/example",
+				Name: rootModule,
 			},
 		},
 		{
-			name: "snippet directory does not exist",
+			name: "proto only API",
 			library: &config.Library{
 				Name: "example",
+				APIs: []*config.API{
+					{Path: "example/common"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/common", ProtoOnly: true},
+					},
+				},
 			},
 			goFilePath: []string{
 				"example",
-			},
-		},
-		{
-			name: "library path and snippet directory do not exist",
-			library: &config.Library{
-				Name: "example",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outDir := t.TempDir()
-			test.library.Output = outDir
+			repoRoot := t.TempDir()
+			test.library.Output = filepath.Join(repoRoot, test.library.Name)
 			unformatted := `package main
 
 import (
@@ -93,7 +99,7 @@ func main() {
 }
 `
 			for _, aPath := range test.goFilePath {
-				path := filepath.Join(outDir, aPath)
+				path := filepath.Join(repoRoot, aPath)
 				if err := os.MkdirAll(path, 0755); err != nil {
 					t.Fatal(err)
 				}
@@ -105,7 +111,7 @@ func main() {
 				t.Fatal(err)
 			}
 			for _, aPath := range test.goFilePath {
-				goFile := filepath.Join(outDir, aPath, "example.go")
+				goFile := filepath.Join(repoRoot, aPath, "example.go")
 				gotBytes, err := os.ReadFile(goFile)
 				if err != nil {
 					t.Fatal(err)
@@ -116,5 +122,84 @@ func main() {
 				}
 			}
 		})
+	}
+}
+
+func TestBuildFormatArgs(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		goModule *config.GoModule
+		want     []string
+	}{
+		{
+			name: "library with a GAPIC API",
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
+				},
+			},
+			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
+		},
+		{
+			name: "library with a proto only API",
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ProtoOnly: true},
+				},
+			},
+			want: []string{"-w", "repo/example"},
+		},
+		{
+			name: "library with multiple APIs, one is GAPIC and one is proto only",
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
+					{Path: "example/common", ProtoOnly: true},
+				},
+			},
+			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
+		},
+		{
+			name: "snippet directory is one of the deleted path after generation",
+			goModule: &config.GoModule{
+				// DeleteGenerationOutputPaths should relative to library output directory.
+				DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
+				},
+			},
+			want: []string{"-w", "repo/example"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := &config.Library{
+				Name:   "example",
+				Output: "repo/example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+			}
+			library.Go = test.goModule
+			got, err := buildFormatArgs(library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestBuildFormatArgs_Error(t *testing.T) {
+	library := &config.Library{
+		Name: "example",
+		APIs: []*config.API{
+			{Path: "example/v1"},
+		},
+	}
+	_, err := buildFormatArgs(library)
+	if !errors.Is(err, errGoAPINotFound) {
+		t.Errorf("got %v, want errGoAPINotFound", err)
 	}
 }
