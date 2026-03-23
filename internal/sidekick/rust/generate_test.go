@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	libconfig "github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 var (
@@ -187,8 +187,8 @@ func TestRustFromProtobuf(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				Googleapis: path.Join(testdataDir, "googleapis"),
 			},
 			ActiveRoots: []string{"googleapis"},
@@ -230,8 +230,8 @@ func TestRustClient(t *testing.T) {
 			SpecificationFormat: libconfig.SpecProtobuf,
 			ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			SpecificationSource: "google/cloud/secretmanager/v1",
-			Source: sidekickconfig.SourceConfig{
-				Sources: sidekickconfig.Sources{
+			Source: &sources.SourceConfig{
+				Sources: &sources.Sources{
 					Googleapis: path.Join(testdataDir, "googleapis"),
 				},
 				ActiveRoots: []string{"googleapis"},
@@ -281,8 +281,8 @@ func TestRustNosvc(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				Googleapis: path.Join(testdataDir, "googleapis"),
 			},
 			ActiveRoots: []string{"googleapis"},
@@ -325,8 +325,8 @@ func TestRustModuleRpc(t *testing.T) {
 		SpecificationFormat: libconfig.SpecProtobuf,
 		ServiceConfig:       "google/rpc/rpc_publish.yaml",
 		SpecificationSource: "google/rpc",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				Googleapis: path.Join(testdataDir, "googleapis"),
 			},
 			ActiveRoots: []string{"googleapis"},
@@ -365,8 +365,8 @@ func TestRustBootstrapWkt(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "google/protobuf",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				ProtobufSrc: localTestdataDir,
 			},
 			ActiveRoots: []string{"protobuf-src"},

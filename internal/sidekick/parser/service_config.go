@@ -16,7 +16,7 @@ package parser
 
 import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func loadServiceConfig(cfg *ModelConfig) (*serviceconfig.Service, error) {
@@ -30,6 +30,6 @@ func loadServiceConfig(cfg *ModelConfig) (*serviceconfig.Service, error) {
 //
 // The service config files are specified as relative to the `googleapis`
 // path. This finds the right path given a configuration.
-func findServiceConfigPath(serviceConfigFile string, sourceCfg config.SourceConfig) string {
+func findServiceConfigPath(serviceConfigFile string, sourceCfg *sources.SourceConfig) string {
 	return sourceCfg.Resolve(serviceConfigFile)
 }

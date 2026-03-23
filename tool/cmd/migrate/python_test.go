@@ -234,6 +234,89 @@ func TestBuildPythonLibraries(t *testing.T) {
 							LibraryType: "CORE",
 						},
 						NamePrettyOverride: "Google API client core library",
+						SkipReadmeCopy:     true,
+					},
+				},
+			},
+		},
+		{
+			name: "functions (multiple versions, pick the right default)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID: "google-cloud-functions",
+							APIs: []*legacyconfig.API{
+								{Path: "google/cloud/functions/v1"},
+								{Path: "google/cloud/functions/v2"},
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-functions",
+					APIs: []*config.API{
+						{Path: "google/cloud/functions/v2"},
+						{Path: "google/cloud/functions/v1"},
+					},
+					Python: &config.PythonPackage{
+						DefaultVersion: "v1",
+					},
+				},
+			},
+		},
+		{
+			name: "firestore (extra keep paths)",
+			input: &MigrationInput{
+				repoPath: "testdata/google-cloud-python",
+				librarianState: &legacyconfig.LibrarianState{
+					Libraries: []*legacyconfig.LibraryState{
+						{
+							ID:          "google-cloud-firestore",
+							SourceRoots: []string{"packages/google-cloud-firestore"},
+							PreserveRegex: []string{
+								"^packages/google-cloud-firestore/CHANGELOG.md",
+								"^packages/google-cloud-firestore/docs/CHANGELOG.md",
+							},
+						},
+					},
+				},
+				librarianConfig: &legacyconfig.LibrarianConfig{},
+			},
+			want: []*config.Library{
+				{
+					Name: "google-cloud-firestore",
+					Keep: []string{
+						"CHANGELOG.md",
+						"docs/CHANGELOG.md",
+						"docs/firestore_admin_v1/admin_client.rst",
+						"docs/firestore_v1/aggregation.rst",
+						"docs/firestore_v1/batch.rst",
+						"docs/firestore_v1/bulk_writer.rst",
+						"docs/firestore_v1/client.rst",
+						"docs/firestore_v1/collection.rst",
+						"docs/firestore_v1/document.rst",
+						"docs/firestore_v1/field_path.rst",
+						"docs/firestore_v1/query.rst",
+						"docs/firestore_v1/transaction.rst",
+						"docs/firestore_v1/transforms.rst",
+						"docs/firestore_v1/types.rst",
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "GAPIC_COMBO",
+						},
+						NamePrettyOverride:           "Cloud Firestore API",
+						ProductDocumentationOverride: "https://cloud.google.com/firestore",
+						APIShortnameOverride:         "firestore",
+						APIIDOverride:                "firestore.googleapis.com",
+						IssueTrackerOverride:         "https://issuetracker.google.com/savedsearches/5337669",
+						MetadataNameOverride:         "firestore",
+						DefaultVersion:               "v1",
 					},
 				},
 			},

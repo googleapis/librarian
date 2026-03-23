@@ -31,6 +31,10 @@ const (
 	generateCmdName = "generate"
 )
 
+var (
+	errGenerateInReleaseOnlyMode = errors.New("generate in release only mode")
+)
+
 type generateRunner struct {
 	api               string
 	branch            string
@@ -88,6 +92,9 @@ func newGenerateRunner(cfg *legacyconfig.Config) (*generateRunner, error) {
 // command-line flags. If an API or library is specified, it generates a single library. Otherwise,
 // it iterates through all libraries defined in the state and generates them.
 func (r *generateRunner) run(ctx context.Context) error {
+	if r.librarianConfig != nil && r.librarianConfig.ReleaseOnlyMode {
+		return errGenerateInReleaseOnlyMode
+	}
 	outputDir := filepath.Join(r.workRoot, "output")
 	if err := os.Mkdir(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to make output directory, %s: %w", outputDir, err)

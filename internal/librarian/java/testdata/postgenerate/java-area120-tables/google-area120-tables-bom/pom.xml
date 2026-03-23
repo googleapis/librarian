@@ -1,0 +1,5 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>com.google.area120</groupId>
+  <artifactId>google-area120-tables-bom</artifactId>
+  <version>0.92.0</version>
+</project>

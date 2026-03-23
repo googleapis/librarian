@@ -22,11 +22,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 // DetermineInputFiles determines the input files from the source config.
-func DetermineInputFiles(source string, cfg config.SourceConfig) ([]string, error) {
+func DetermineInputFiles(source string, cfg *sources.SourceConfig) ([]string, error) {
 
 	source = cfg.ResolveDir(source)
 
@@ -34,7 +34,11 @@ func DetermineInputFiles(source string, cfg config.SourceConfig) ([]string, erro
 	if err := findFiles(files, source); err != nil {
 		return nil, err
 	}
-	applyIncludeList(files, source, cfg.IncludeList)
+	var includeList []string
+	if cfg != nil {
+		includeList = cfg.IncludeList
+	}
+	applyIncludeList(files, source, includeList)
 	var list []string
 	for name, ok := range files {
 		if ok {

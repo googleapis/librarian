@@ -30,7 +30,7 @@ func upgradeCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "upgrade",
 		Usage:     "upgrade librarian version in librarian.yaml",
-		UsageText: "librarianops upgrade [<repo> | -C <dir> ]",
+		UsageText: "librarianops upgrade [<repo> | -C <dir>]",
 		Description: `Examples:
   librarianops upgrade google-cloud-rust
   librarianops upgrade -C ~/workspace/google-cloud-rust

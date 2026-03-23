@@ -35,6 +35,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
+			Keep: []string{".eslintrc.json", ".gitignore"},
 			Nodejs: &config.NodejsPackage{
 				ExtraProtocParameters: []string{"metadata"},
 				PackageName:           "@google-cloud/secret-manager",
@@ -46,6 +47,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/speech/v1"},
 			},
+			Keep: []string{".prettierrc.js"},
 			Nodejs: &config.NodejsPackage{
 				Dependencies: map[string]string{
 					"@google-cloud/common": "^6.0.0",

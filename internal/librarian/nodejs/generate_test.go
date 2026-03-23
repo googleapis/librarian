@@ -333,7 +333,7 @@ func TestRunPostProcessor_Owlbot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
@@ -451,7 +451,7 @@ func TestRunPostProcessor(t *testing.T) {
 		}
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -509,7 +509,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -610,7 +610,7 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -624,6 +624,56 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outDir, ".readme-partials.yaml")); err != nil {
 		t.Errorf("expected .readme-partials.yaml to be preserved: %v", err)
+	}
+}
+
+func TestRestoreCopyrightYear(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		year  string
+		input string
+		want  string
+	}{
+		{
+			name:  "replaces year",
+			year:  "2020",
+			input: "// Copyright 2026 Google LLC\n",
+			want:  "// Copyright 2020 Google LLC\n",
+		},
+		{
+			name:  "empty year is no-op",
+			year:  "",
+			input: "// Copyright 2026 Google LLC\n",
+			want:  "// Copyright 2026 Google LLC\n",
+		},
+		{
+			name:  "no match is no-op",
+			year:  "2020",
+			input: "// No copyright here\n",
+			want:  "// No copyright here\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			srcDir := filepath.Join(outDir, "src")
+			if err := os.MkdirAll(srcDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			testFile := filepath.Join(srcDir, "index.ts")
+			if err := os.WriteFile(testFile, []byte(test.input), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := restoreCopyrightYear(outDir, test.year); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(testFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

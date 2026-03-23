@@ -26,6 +26,12 @@ const (
 
 // LibrarianConfig defines the contract for the config.yaml file.
 type LibrarianConfig struct {
+	// ReleaseOnlyMode describes whether a repository is in release only mode.
+	// If true, generate will fail.
+	// We set this value to true if we want to migrate a repository from legacylibrarian
+	// generate to librarian generate, but still want to use legacylibrarian to
+	// release the repository.
+	ReleaseOnlyMode      bool             `yaml:"release_only_mode,omitempty" json:"-"`
 	GlobalFilesAllowlist []*GlobalFile    `yaml:"global_files_allowlist,omitempty"`
 	Libraries            []*LibraryConfig `yaml:"libraries,omitempty"`
 	TagFormat            string           `yaml:"tag_format,omitempty"`

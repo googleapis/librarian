@@ -33,7 +33,7 @@ NAME:
 
 USAGE:
 
-	librarian add <apis...> [flags]
+	librarian add <apis...>
 
 OPTIONS:
 
@@ -51,7 +51,7 @@ NAME:
 
 USAGE:
 
-	librarian generate [library] [--all]
+	librarian generate <library>
 
 OPTIONS:
 
@@ -70,7 +70,7 @@ NAME:
 
 USAGE:
 
-	librarian bump [library] [--all] [--version=<version>]
+	librarian bump <library>
 
 DESCRIPTION:
 
@@ -86,10 +86,9 @@ DESCRIPTION:
 
 OPTIONS:
 
-	--all                             update all libraries in the workspace
-	--version string                  specific version to update to; not valid with --all
-	--legacylibrarian-pr-body string  a file to create with text to put in the body of the PR
-	--help, -h                        show help
+	--all             update all libraries in the workspace
+	--version string  specific version to update to; not valid with --all
+	--help, -h        show help
 
 GLOBAL OPTIONS:
 

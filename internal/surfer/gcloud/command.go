@@ -14,57 +14,6 @@
 
 package gcloud
 
-import (
-	"fmt"
-
-	"gopkg.in/yaml.v3"
-)
-
-// StringOrSlice is a custom type that represents a field that can be either a
-// single string or a list of strings in the gcloud YAML schema. This is
-// particularly common for 'collection' fields in the 'request' and 'async'
-// sections, where a single resource type is often represented as a string, but
-// multi-type resources are represented as a list of collections.
-type StringOrSlice []string
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface for StringOrSlice.
-// It allows the field to be parsed from either a YAML scalar (string) or a
-// YAML sequence (list of strings).
-func (s *StringOrSlice) UnmarshalYAML(value *yaml.Node) error {
-	// The gcloud command schema allows certain fields, like 'collection' in the
-	// 'request' and 'async' sections, to be either a single string or a list of
-	// strings. We handle both cases here by checking the YAML node kind.
-	switch value.Kind {
-	case yaml.ScalarNode:
-		var str string
-		if err := value.Decode(&str); err != nil {
-			return err
-		}
-		*s = []string{str}
-		return nil
-	case yaml.SequenceNode:
-		var slice []string
-		if err := value.Decode(&slice); err != nil {
-			return err
-		}
-		*s = slice
-		return nil
-	default:
-		return fmt.Errorf("cannot unmarshal %v into StringOrSlice", value.Tag)
-	}
-}
-
-// MarshalYAML implements the yaml.Marshaler interface for StringOrSlice.
-// To ensure that the generated YAML remains concise and compatible with existing
-// gcloud surfaces, it marshals a single-element slice as a scalar string,
-// and multiple elements as a sequence.
-func (s StringOrSlice) MarshalYAML() (any, error) {
-	if len(s) == 1 {
-		return s[0], nil
-	}
-	return []string(s), nil
-}
-
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is designed to be marshaled into a YAML file that the gcloud generator can
 // understand and use to generate a command-line interface.
@@ -285,7 +234,7 @@ type Request struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 	// Collection is the list of API collections that this command operates on.
 	// Origin: Constructed from the API service name and the resource's collection path.
-	Collection StringOrSlice `yaml:"collection,omitempty"`
+	Collection []string `yaml:"collection,omitempty"`
 	// Method is the name of the API method to call.
 	Method string `yaml:"method,omitempty"`
 }
@@ -295,7 +244,7 @@ type Request struct {
 type Async struct {
 	// Collection is the API collection for the long-running operation resource.
 	// Origin: Hardcoded to the standard operations collection for the service.
-	Collection StringOrSlice `yaml:"collection,omitempty"`
+	Collection []string `yaml:"collection,omitempty"`
 
 	// ExtractResourceResult indicates whether to extract the resource result from the LRO.
 	ExtractResourceResult bool `yaml:"extract_resource_result"`

@@ -37,3 +37,6 @@ go.work.sum
 
 # VSCode file
 .vscode/*
+
+# Gemini CLI credentials
+gha-creds-*.json

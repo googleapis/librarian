@@ -51,7 +51,7 @@ var (
 
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) error {
-	libraryDir := filepath.Join(library.Output, library.Name)
+	libraryDir := library.Output
 	keepSet, err := check(libraryDir, library.Keep)
 	if err != nil {
 		return err
@@ -129,12 +129,13 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		relClientPath := clientPathFromLibraryRoot(library, goAPI)
-		clientPath := filepath.Join(library.Output, relClientPath)
+		repoRoot := repoRootPath(libraryDir, library.Name)
+		relClientPath := clientPathFromRepoRoot(library, goAPI)
+		clientPath := filepath.Join(repoRoot, relClientPath)
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
-		snippetDir := snippetDirectory(library.Output, relClientPath)
+		snippetDir := snippetDirectory(repoRoot, relClientPath)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}
