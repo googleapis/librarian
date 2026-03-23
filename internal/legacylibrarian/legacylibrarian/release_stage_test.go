@@ -874,7 +874,6 @@ func TestStageRun(t *testing.T) {
 					workRoot:        os.TempDir(),
 					containerClient: containerClient,
 					state: &legacyconfig.LibrarianState{
-						ReleaseOnlyMode: true,
 						Libraries: []*legacyconfig.LibraryState{
 							{
 								ID:          "another-example-id",
@@ -921,11 +920,10 @@ func TestStageRun(t *testing.T) {
 						},
 					},
 					ghClient:        &mockGitHubClient{},
-					librarianConfig: &legacyconfig.LibrarianConfig{},
+					librarianConfig: &legacyconfig.LibrarianConfig{ReleaseOnlyMode: true},
 				}
 			},
 			want: &legacyconfig.LibrarianState{
-				ReleaseOnlyMode: true,
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:            "another-example-id",
@@ -1483,14 +1481,14 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 		},
 	} {
 		state := &legacyconfig.LibrarianState{
-			ReleaseOnlyMode: test.releaseOnlyMode,
 			Libraries: []*legacyconfig.LibraryState{
 				test.libraryState,
 			},
 		}
 		r := &stageRunner{
-			repo:  test.repo,
-			state: state,
+			repo:            test.repo,
+			state:           state,
+			librarianConfig: &legacyconfig.LibrarianConfig{ReleaseOnlyMode: test.releaseOnlyMode},
 		}
 		err := r.processLibrary(t.Context(), test.libraryState)
 		if err != nil {
