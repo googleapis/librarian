@@ -1,15 +1,15 @@
 config_version: v2.0
 service_name: hiddenfeature.googleapis.com
 apis:
-- name: HiddenFeature
-  api_version: v1
-  release_tracks:
-  - GA
-  hidden_features:
-    methods:
-    - hidden_feature.v1.HiddenFeature.GetVisibleResource
-    messages:
-    - hidden_feature.v1.HiddenResource
-    fields:
-    - hidden_feature.v1.VisibleResource.hidden_field
-    - hidden_feature.v1.VisibleResource.hidden_message_field
+  - name: HiddenFeature
+    api_version: v1
+    release_tracks:
+      - GA
+    hidden_features:
+      methods:
+        - hidden_feature.v1.HiddenFeature.GetVisibleResource
+      messages:
+        - hidden_feature.v1.HiddenResource
+      fields:
+        - hidden_feature.v1.VisibleResource.hidden_field
+        - hidden_feature.v1.VisibleResource.hidden_message_field

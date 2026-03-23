@@ -3,10 +3,10 @@ service_name: regionalendpoints.googleapis.com
 generate_operations: false
 regional_endpoint_compatibility: REQUIRED
 apis:
-- name: RegionalEndpoints
-  api_version: v1
-  release_tracks:
-  - GA
-  regional_endpoint_config:
-  - selector: regional_endpoints.v1.Resource
-    add_regional_endpoint_flag: true
+  - name: RegionalEndpoints
+    api_version: v1
+    release_tracks:
+      - GA
+    regional_endpoint_config:
+      - selector: regional_endpoints.v1.Resource
+        add_regional_endpoint_flag: true

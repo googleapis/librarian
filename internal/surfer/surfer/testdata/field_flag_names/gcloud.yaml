@@ -1,12 +1,12 @@
 config_version: v2.0
 service_name: fieldflagnames.googleapis.com
 apis:
-- name: FieldFlagNames
-  api_version: v1
-  release_tracks:
-  - GA
-  generated_flags:
-  - selector: field_flag_names.v1.Message.included
-    include_field_descriptor_in_flag_name: true
-  - selector: field_flag_names.v1.Message.excluded
-    include_field_descriptor_in_flag_name: false
+  - name: FieldFlagNames
+    api_version: v1
+    release_tracks:
+      - GA
+    generated_flags:
+      - selector: field_flag_names.v1.Message.included
+        include_field_descriptor_in_flag_name: true
+      - selector: field_flag_names.v1.Message.excluded
+        include_field_descriptor_in_flag_name: false

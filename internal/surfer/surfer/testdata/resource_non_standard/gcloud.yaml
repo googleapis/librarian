@@ -1,10 +1,10 @@
 config_version: v2.0
 service_name: resourcenonstandard.googleapis.com
 apis:
-- name: ResourceNonStandard
-  api_version: v1
-  release_tracks:
-  - GA
-  generated_commands:
-  - selector: resource_non_standard.v1.ApiLongResource
-    include_full_resource_name: true
+  - name: ResourceNonStandard
+    api_version: v1
+    release_tracks:
+      - GA
+    generated_commands:
+      - selector: resource_non_standard.v1.ApiLongResource
+        include_full_resource_name: true

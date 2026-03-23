@@ -2,9 +2,7 @@ type: google.api.Service
 config_version: 3
 name: hiddencommand.googleapis.com
 title: Standard Resource API
-
 apis:
-- name: hidden_command.v1.HiddenCommand
-
+  - name: hidden_command.v1.HiddenCommand
 documentation:
   summary: An API with documentation.

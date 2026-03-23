@@ -20,9 +20,6 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	if !*runAutogenComparison {
-		t.Skip("skipping test; use --run-with-autogen-comparison to enable")
-	}
 	for _, test := range []struct {
 		name    string
 		args    []string

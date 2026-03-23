@@ -2,41 +2,38 @@ type: google.api.Service
 config_version: 3
 name: regionalendpoints.googleapis.com
 title: Regional Endpoints Resource API
-
 apis:
-- name: google.longrunning.Operations
-- name: regional_endpoints.v1.RegionalEndpoints
-
+  - name: google.longrunning.Operations
+  - name: regional_endpoints.v1.RegionalEndpoints
 documentation:
   summary: An API with documentation.
-
 http:
   rules:
-  - selector: google.longrunning.Operations.CancelOperation
-    post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
-    body: '*'
-    additional_bindings:
-    - post: '/v1/{name=projects/*/regions/*/operations/*}:cancel'
+    - selector: google.longrunning.Operations.CancelOperation
+      post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
       body: '*'
-    - post: '/v1/{name=projects/*/zones/*/operations/*}:cancel'
-      body: '*'
-    - post: '/v1/{name=projects/*/operations/*}:cancel'
-      body: '*'
-  - selector: google.longrunning.Operations.DeleteOperation
-    delete: '/v1/{name=projects/*/locations/*/operations/*}'
-    additional_bindings:
-    - delete: '/v1/{name=projects/*/regions/*/operations/*}'
-    - delete: '/v1/{name=projects/*/zones/*/operations/*}'
-    - delete: '/v1/{name=projects/*/operations/*}'
-  - selector: google.longrunning.Operations.GetOperation
-    get: '/v1/{name=projects/*/locations/*/operations/*}'
-    additional_bindings:
-    - get: '/v1/{name=projects/*/regions/*/operations/*}'
-    - get: '/v1/{name=projects/*/zones/*/operations/*}'
-    - get: '/v1/{name=projects/*/operations/*}'
-  - selector: google.longrunning.Operations.ListOperations
-    get: '/v1/{name=projects/*/locations/*}/operations'
-    additional_bindings:
-    - get: '/v1/{name=projects/*/regions/*}/operations'
-    - get: '/v1/{name=projects/*/zones/*}/operations'
-    - get: '/v1/{name=projects/*}/operations'
+      additional_bindings:
+        - post: '/v1/{name=projects/*/regions/*/operations/*}:cancel'
+          body: '*'
+        - post: '/v1/{name=projects/*/zones/*/operations/*}:cancel'
+          body: '*'
+        - post: '/v1/{name=projects/*/operations/*}:cancel'
+          body: '*'
+    - selector: google.longrunning.Operations.DeleteOperation
+      delete: '/v1/{name=projects/*/locations/*/operations/*}'
+      additional_bindings:
+        - delete: '/v1/{name=projects/*/regions/*/operations/*}'
+        - delete: '/v1/{name=projects/*/zones/*/operations/*}'
+        - delete: '/v1/{name=projects/*/operations/*}'
+    - selector: google.longrunning.Operations.GetOperation
+      get: '/v1/{name=projects/*/locations/*/operations/*}'
+      additional_bindings:
+        - get: '/v1/{name=projects/*/regions/*/operations/*}'
+        - get: '/v1/{name=projects/*/zones/*/operations/*}'
+        - get: '/v1/{name=projects/*/operations/*}'
+    - selector: google.longrunning.Operations.ListOperations
+      get: '/v1/{name=projects/*/locations/*}/operations'
+      additional_bindings:
+        - get: '/v1/{name=projects/*/regions/*}/operations'
+        - get: '/v1/{name=projects/*/zones/*}/operations'
+        - get: '/v1/{name=projects/*}/operations'

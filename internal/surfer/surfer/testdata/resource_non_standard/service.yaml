@@ -2,9 +2,7 @@ type: google.api.Service
 config_version: 3
 name: resourcenonstandard.googleapis.com
 title: Standard Resource API
-
 apis:
-- name: resource_non_standard.v1.ResourceNonStandard
-
+  - name: resource_non_standard.v1.ResourceNonStandard
 documentation:
   summary: An API with documentation.

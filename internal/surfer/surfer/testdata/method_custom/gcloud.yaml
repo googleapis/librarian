@@ -1,7 +1,7 @@
 config_version: v2.0
 service_name: methodcustom.googleapis.com
 apis:
-- name: MethodCustom
-  api_version: v1
-  release_tracks:
-  - GA
+  - name: MethodCustom
+    api_version: v1
+    release_tracks:
+      - GA

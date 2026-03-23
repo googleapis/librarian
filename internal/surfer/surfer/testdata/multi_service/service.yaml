@@ -2,9 +2,7 @@ type: google.api.Service
 config_version: 3
 name: multiservice.googleapis.com
 title: Multi Service API
-
 apis:
-- name: multi_service.v1.SecondService
-
+  - name: multi_service.v1.SecondService
 documentation:
   summary: An API with more than one service interface.
