@@ -398,6 +398,15 @@ func parseReleaseLevel(path string) string {
 For progress output, `internal/command` provides a `Verbose` flag. When enabled
 by an application (e.g., via `-v`), all executed commands are printed.
 
+## Package-Specific Rules
+
+### `internal/config`
+
+The `internal/config` package is a direct 1:1 mapping with `librarian.yaml`. It
+contains only struct types and constants that mirror the YAML schema. Do not add
+functions or methods to this package. Any logic that operates on configuration
+values belongs in the package that uses them, not in `internal/config` itself.
+
 ## Need Help? Just Ask!
 
 This guide will continue to evolve. If something feels unclear or is missing,
