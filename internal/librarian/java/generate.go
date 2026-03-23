@@ -68,7 +68,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
-		return ErrExtractVersion
+		return fmt.Errorf("%s: %w", api.Path, ErrExtractVersion)
 	}
 	javaAPI := resolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -97,7 +97,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(apiProtos) == 0 {
-		return ErrNoProtos
+		return fmt.Errorf("%s: %w", api.Path, ErrNoProtos)
 	}
 	p.apiProtos = apiProtos
 
