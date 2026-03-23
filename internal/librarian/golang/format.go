@@ -16,8 +16,6 @@ package golang
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -25,35 +23,29 @@ import (
 
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
-	outDir, err := filepath.Abs(library.Output)
-	if err != nil {
-		return err
-	}
-	args, err := processArgs(outDir, library.Name)
-	if err != nil {
-		return err
-	}
-	if len(args) == 1 {
-		// No need to format the library if library directory doesn't exist,
-		// e.g., root-module.
+	// No need to format the root module because it does not
+	// have a dedicated output directory.
+	if library.Name == rootModule {
 		return nil
+	}
+	args, err := buildFormatArgs(library)
+	if err != nil {
+		return err
 	}
 	return command.Run(ctx, "goimports", args...)
 }
 
-func processArgs(outDir, libraryName string) ([]string, error) {
+func buildFormatArgs(library *config.Library) ([]string, error) {
 	args := []string{"-w"}
-	libraryDir := filepath.Join(outDir, libraryName)
-	if _, err := os.Stat(libraryDir); err == nil {
-		args = append(args, libraryDir)
-	} else if !os.IsNotExist(err) {
-		return nil, err
-	}
-	snippetDir := snippetDirectory(outDir, libraryName)
-	if _, err := os.Stat(snippetDir); err == nil {
-		args = append(args, snippetDir)
-	} else if !os.IsNotExist(err) {
-		return nil, err
+	args = append(args, library.Output)
+	for _, api := range library.APIs {
+		snippetDir, err := findSnippetDirectory(library, api.Path, library.Output)
+		if err != nil {
+			return nil, err
+		}
+		if snippetDir != "" {
+			args = append(args, snippetDir)
+		}
 	}
 	return args, nil
 }
