@@ -41,11 +41,11 @@ func TestTidy(t *testing.T) {
 			name: "library output unchanged because it doesn't match the library name",
 			library: &config.Library{
 				Name:   "secretmanager",
-				Output: "app/repo/libOutput",
+				Output: "app/repo/secret-manager",
 			},
 			want: &config.Library{
 				Name:   "secretmanager",
-				Output: "app/repo/libOutput",
+				Output: "app/repo/secret-manager",
 			},
 		},
 		{
