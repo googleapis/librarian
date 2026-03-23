@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/api/apitest"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/types/known/apipb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -2141,8 +2141,8 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 
 func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGeneratorRequest {
 	t.Helper()
-	src := sidekickconfig.SourceConfig{
-		Sources: sidekickconfig.Sources{
+	src := &sources.SourceConfig{
+		Sources: &sources.Sources{
 			Googleapis:  "../../testdata/googleapis",
 			ProtobufSrc: "testdata",
 		},

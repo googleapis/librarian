@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -68,7 +68,7 @@ func TestGenerateVeneer(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
@@ -173,7 +173,7 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 	if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
@@ -316,7 +316,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
@@ -380,7 +380,7 @@ func TestGenerate_Error(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 	t.Chdir(workspaceDir)
@@ -474,7 +474,7 @@ func TestGenerateLibrary(t *testing.T) {
 					},
 				},
 			}
-			sources := &sidekickconfig.Sources{
+			sources := &sources.Sources{
 				Googleapis: googleapisDir,
 			}
 			if err := Generate(t.Context(), &config.Config{Language: "rust", Repo: "google-cloud-rust"}, library, sources); err != nil {
@@ -635,7 +635,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 		},
 	}
-	sources := &sidekickconfig.Sources{
+	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
 
