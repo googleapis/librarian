@@ -1,4 +1,4 @@
-// Copyright 202[0-9] Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ func copyProtos(t *testing.T, src, dst string) {
 	}
 }
 
-func findProtos(t *testing.T, root string) []string {
+func findProtos(_ *testing.T, root string) []string {
 	var protos []string
 	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
