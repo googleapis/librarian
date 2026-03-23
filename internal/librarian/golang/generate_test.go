@@ -168,25 +168,23 @@ func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
 	t.Parallel()
 	for _, test := range []struct {
-		name         string
-		libraryName  string
-		apis         []*config.API
-		keep         []string
-		releaseLevel string
-		goModule     *config.GoModule
-		want         []string
-		removed      []string
+		name    string
+		library *config.Library
+		want    []string
+		removed []string
 	}{
 		{
-			name:        "basic",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
+			name: "basic",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
 				},
 			},
@@ -202,34 +200,38 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "v2 module",
-			libraryName: "dataproc",
-			apis:        []*config.API{{Path: "google/cloud/dataproc/v1"}},
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "dataproc",
-						ImportPath:    "dataproc/v2/apiv1",
-						Path:          "google/cloud/dataproc/v1",
+			name: "v2 module",
+			library: &config.Library{
+				Name: "dataproc",
+				APIs: []*config.API{{Path: "google/cloud/dataproc/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "dataproc",
+							ImportPath:    "dataproc/v2/apiv1",
+							Path:          "google/cloud/dataproc/v1",
+						},
 					},
+					ModulePathVersion: "v2",
 				},
-				ModulePathVersion: "v2",
 			},
 			want: []string{
 				"dataproc/apiv1/batch_controller_client.go",
 			},
 		},
 		{
-			name:        "delete paths",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			goModule: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
+			name: "delete paths",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
 				},
 			},
@@ -241,33 +243,17 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "with release level",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
-					},
-				},
-			},
-			releaseLevel: "ga",
-			want: []string{
-				"secretmanager/apiv1/secret_manager_client.go",
-			},
-		},
-		{
-			name:        "custom client directory",
-			libraryName: "cloudtasks",
-			apis:        []*config.API{{Path: "google/cloud/tasks/v2"}},
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "cloudtasks",
-						ImportPath:    "cloudtasks/apiv2",
-						Path:          "google/cloud/tasks/v2",
+			name: "custom client directory",
+			library: &config.Library{
+				Name: "cloudtasks",
+				APIs: []*config.API{{Path: "google/cloud/tasks/v2"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "cloudtasks",
+							ImportPath:    "cloudtasks/apiv2",
+							Path:          "google/cloud/tasks/v2",
+						},
 					},
 				},
 			},
@@ -276,16 +262,18 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "disable gapic",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ProtoOnly:     true,
-						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
+			name: "proto only",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ProtoOnly:     true,
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
 				},
 			},
@@ -297,18 +285,20 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "nested protos",
-			libraryName: "containeranalysis",
-			apis:        []*config.API{{Path: "google/devtools/containeranalysis/v1beta1"}},
-			keep:        []string{"apiv1beta1/grafeas/grafeaspb/grafeas.pb.go"},
-			goModule: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"google.golang.org"},
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "containeranalysis",
-						ImportPath:    "containeranalysis/apiv1beta1",
-						NestedProtos:  []string{"grafeas/grafeas.proto"},
-						Path:          "google/devtools/containeranalysis/v1beta1",
+			name: "nested protos",
+			library: &config.Library{
+				Name: "containeranalysis",
+				APIs: []*config.API{{Path: "google/devtools/containeranalysis/v1beta1"}},
+				Keep: []string{"apiv1beta1/grafeas/grafeaspb/grafeas.pb.go"},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"google.golang.org"},
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "containeranalysis",
+							ImportPath:    "containeranalysis/apiv1beta1",
+							NestedProtos:  []string{"grafeas/grafeas.proto"},
+							Path:          "google/devtools/containeranalysis/v1beta1",
+						},
 					},
 				},
 			},
@@ -318,8 +308,10 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:        "no api",
-			libraryName: "auth",
+			name: "no api",
+			library: &config.Library{
+				Name: "auth",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -328,18 +320,10 @@ func TestGenerateLibrary(t *testing.T) {
 			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 				t.Fatal(err)
 			}
-			library := &config.Library{
-				Name:         test.libraryName,
-				Version:      "1.0.0",
-				Output:       filepath.Join(repoRoot, test.libraryName),
-				APIs:         test.apis,
-				Keep:         test.keep,
-				ReleaseLevel: test.releaseLevel,
-				Go:           test.goModule,
-			}
-			for _, file := range library.Keep {
+			test.library.Output = filepath.Join(repoRoot, test.library.Name)
+			for _, file := range test.library.Keep {
 				src := filepath.Join("..", "..", "testdata/golang-generate", file)
-				dst := filepath.Join(repoRoot, test.libraryName, file)
+				dst := filepath.Join(test.library.Output, file)
 				if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 					t.Fatal(err)
 				}
@@ -347,7 +331,7 @@ func TestGenerateLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := Generate(t.Context(), library, googleapisDir); err != nil {
+			if err := Generate(t.Context(), test.library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
 			for _, path := range test.want {
