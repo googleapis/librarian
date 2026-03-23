@@ -29,13 +29,14 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates a Node.js client library.
-func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
@@ -50,7 +51,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	if err := runPostProcessor(ctx, library, googleapisDir, repoRoot, outdir); err != nil {
+	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
 	return nil
@@ -154,7 +155,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
-func runPostProcessor(ctx context.Context, library *config.Library, googleapisDir, repoRoot, outDir string) error {
+func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err == nil {
 		// Old way: use synthtool
@@ -218,6 +219,9 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 
 	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
 		return fmt.Errorf("failed to restore copyright year: %w", err)
+	}
+	if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
+		return fmt.Errorf("failed to write repo metadata: %w", err)
 	}
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
@@ -298,6 +302,22 @@ func restoreCopyrightYear(outDir, year string) error {
 		}
 		return os.WriteFile(path, updated, 0644)
 	})
+}
+
+// writeRepoMetadata generates .repo-metadata.json for the library.
+func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+	if err != nil {
+		return fmt.Errorf("failed to find API metadata: %w", err)
+	}
+	metadata := repometadata.FromAPI(cfg, api, library)
+	metadata.DistributionName = DerivePackageName(library)
+	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	metadata.LibraryType = repometadata.GAPICAutoLibraryType
+	return metadata.Write(outDir)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
