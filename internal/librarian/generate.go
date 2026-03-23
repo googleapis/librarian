@@ -173,7 +173,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			// Generation cannot be parallelized because protoc writes to a
 			// shared cloud.google.com/go directory tree under each library's
 			// output, and concurrent MoveAndMerge calls would race.
-			if err := golang.Generate(ctx, library, src.Googleapis); err != nil {
+			if err := golang.Generate(ctx, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
@@ -189,7 +189,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageJava:
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 			if err := java.Format(ctx, library); err != nil {
@@ -201,7 +201,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := nodejs.Generate(gctx, library, src.Googleapis); err != nil {
+				if err := nodejs.Generate(gctx, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				if err := nodejs.Format(gctx, library); err != nil {
@@ -215,7 +215,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		for _, library := range libraries {
 			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 			// generation and formatting for Python.
-			if err := python.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+			if err := python.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}

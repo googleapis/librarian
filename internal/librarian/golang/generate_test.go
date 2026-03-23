@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -91,7 +92,7 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, library.Name)
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, googleapisDir); err != nil {
+		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -153,7 +154,7 @@ func TestGenerate_Error(t *testing.T) {
 			outdir := t.TempDir()
 			test.library.Output = outdir
 
-			gotErr := Generate(t.Context(), test.library, googleapisDir)
+			gotErr := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir})
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -331,7 +332,7 @@ func TestGenerateLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := Generate(t.Context(), test.library, googleapisDir); err != nil {
+			if err := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 				t.Fatal(err)
 			}
 			for _, path := range test.want {

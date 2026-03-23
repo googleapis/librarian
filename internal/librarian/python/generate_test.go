@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -747,7 +748,7 @@ func TestGenerate_Multiple(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -877,7 +878,7 @@ func TestGenerate_Error(t *testing.T) {
 				Repo:     "googleapis/google-cloud-python",
 			}
 
-			gotErr := Generate(t.Context(), cfg, lib, absGoogleapisDir)
+			gotErr := Generate(t.Context(), cfg, lib, &sources.Sources{Googleapis: absGoogleapisDir})
 			// Not all errors are easy to specify. (Most come from other
 			// packages, and we're just testing they're propagated.)
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
@@ -949,7 +950,10 @@ func TestGenerate(t *testing.T) {
 					DefaultVersion: "v1",
 				},
 			}
-			if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+			srcs := &sources.Sources{
+				Googleapis: googleapisDir,
+			}
+			if err := Generate(t.Context(), cfg, library, srcs); err != nil {
 				t.Fatal(err)
 			}
 			gotMetadata, err := repometadata.Read(outdir)
@@ -1032,7 +1036,7 @@ func TestGenerate_APIOrder(t *testing.T) {
 			},
 		},
 	}
-	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 		t.Fatal(err)
 	}
 	setupContent, err := os.ReadFile(filepath.Join(outdir, "setup.py"))

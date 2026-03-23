@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -392,7 +393,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{Language: "java"}
-			err := Generate(t.Context(), cfg, test.library, googleapisDir)
+			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
 			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
