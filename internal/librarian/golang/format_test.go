@@ -162,7 +162,13 @@ func TestBuildFormatArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			library := createLibrary(t)
+			library := &config.Library{
+				Name:   "example",
+				Output: "repo/example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+			}
 			library.Go = test.goModule
 			got, err := buildFormatArgs(library)
 			if err != nil {
@@ -185,16 +191,5 @@ func TestBuildFormatArgs_Error(t *testing.T) {
 	_, err := buildFormatArgs(library)
 	if !errors.Is(err, errGoAPINotFound) {
 		t.Errorf("got %v, want errGoAPINotFound", err)
-	}
-}
-
-func createLibrary(t *testing.T) *config.Library {
-	t.Helper()
-	return &config.Library{
-		Name:   "example",
-		Output: "repo/example",
-		APIs: []*config.API{
-			{Path: "example/v1"},
-		},
 	}
 }
