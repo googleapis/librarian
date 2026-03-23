@@ -1334,13 +1334,12 @@ func TestLibraryChanged(t *testing.T) {
 			cfg:  &config.Config{Language: config.LanguageGo},
 			library: &config.Library{
 				Name:   "test-lib",
-				Output: "tmp/output",
+				Output: "tmp/output/test-lib",
 				Go:     &config.GoModule{NestedModule: "v2"},
 			},
 			filesChanges: []string{
 				"tmp/output/test-lib/v2/apiv1/example.go",
 			},
-			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
