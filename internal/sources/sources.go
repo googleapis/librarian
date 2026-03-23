@@ -52,6 +52,9 @@ func NewSourceConfig(sources *Sources, activeRoots []string) *SourceConfig {
 
 // Root returns the directory path for the given root name.
 func (c *SourceConfig) Root(name string) string {
+	if c == nil || c.Sources == nil {
+		return ""
+	}
 	switch name {
 	case "googleapis":
 		return c.Sources.Googleapis
