@@ -187,7 +187,7 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore deleted snippet directory after generation",
+			name: "ignore snippet directory which is configured to be deleted after generation",
 			initialFiles: map[string]string{
 				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
