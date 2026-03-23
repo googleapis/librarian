@@ -109,7 +109,6 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 }
 
 func repoRootPath(output, name string) string {
-	// Root module has this special setup.
 	if name == rootModule {
 		return output
 	}
