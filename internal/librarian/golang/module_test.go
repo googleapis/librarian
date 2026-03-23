@@ -907,7 +907,7 @@ func TestUpdateSnippetDirectory_Error(t *testing.T) {
 			}
 			err := updateSnippetDirectory(test.library, output, test.library.Version)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("updateSnippetDirectory() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
