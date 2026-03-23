@@ -24,7 +24,7 @@ import (
 // Format formats a generated Go library.
 func Format(ctx context.Context, library *config.Library) error {
 	// No need to format the root module because it does not
-	// have a dedicated output directory.
+	// have generated code.
 	if library.Name == rootModule {
 		return nil
 	}
