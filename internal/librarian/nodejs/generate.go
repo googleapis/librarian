@@ -16,6 +16,7 @@
 package nodejs
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -206,12 +208,14 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		}
 	}
 
-	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
-		return fmt.Errorf("copyMissingProtos: %w", err)
+	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
+		return fmt.Errorf("failed to restore copyright year: %w", err)
 	}
-
+	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy missing protos: %w", err)
+	}
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
-		return fmt.Errorf("compileProtos: %w", err)
+		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 
 	// librarian.js is a custom script some libraries use for post-processing.
@@ -254,6 +258,38 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
 	return nil
+}
+
+// restoreCopyrightYear replaces the copyright year in generated source files
+// with the original year from the library configuration.
+func restoreCopyrightYear(outDir, year string) error {
+	if year == "" {
+		return nil
+	}
+	srcDir := filepath.Join(outDir, "src")
+	re := regexp.MustCompile(`Copyright \d{4} Google`)
+	replacement := fmt.Sprintf("Copyright %s Google", year)
+	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		if ext != ".ts" && ext != ".js" {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", path, err)
+		}
+		updated := re.ReplaceAll(content, []byte(replacement))
+		if bytes.Equal(updated, content) {
+			return nil
+		}
+		return os.WriteFile(path, updated, 0644)
+	})
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
