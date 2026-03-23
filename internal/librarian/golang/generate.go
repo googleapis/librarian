@@ -320,7 +320,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		baseDir := snippetDirectory(output, clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil

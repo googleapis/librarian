@@ -361,6 +361,13 @@ func TestDefaultOutput(t *testing.T) {
 			want:       "packages/google-cloud-secretmanager-v1",
 		},
 		{
+			name:       "go",
+			language:   config.LanguageGo,
+			libName:    "secretmanager",
+			defaultOut: "path/to/repo",
+			want:       "path/to/repo/secretmanager",
+		},
+		{
 			name:       "rust",
 			language:   config.LanguageRust,
 			libName:    "google-cloud-secretmanager-v1",

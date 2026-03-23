@@ -45,7 +45,7 @@ func Bump(library *config.Library, output, version string) error {
 		if goAPI == nil {
 			return fmt.Errorf("could not find Go API associated with %s: %w", api.Path, errGoAPINotFound)
 		}
-		snippetDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		snippetDir := snippetDirectory(output, clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(snippetDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				// A client may not have snippets, e.g., proto-only clients,

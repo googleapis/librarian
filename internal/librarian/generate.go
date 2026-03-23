@@ -265,6 +265,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
+	case config.LanguageGo:
+		return golang.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
 		return nodejs.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
