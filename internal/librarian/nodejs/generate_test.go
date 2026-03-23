@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -899,20 +900,10 @@ func TestWriteRepoMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Language != config.LanguageNodejs {
-		t.Errorf("Language = %q, want %q", got.Language, config.LanguageNodejs)
-	}
-	if got.DistributionName != "@google-cloud/secretmanager" {
-		t.Errorf("DistributionName = %q, want %q", got.DistributionName, "@google-cloud/secretmanager")
-	}
-	if got.DefaultVersion != "v1" {
-		t.Errorf("DefaultVersion = %q, want %q", got.DefaultVersion, "v1")
-	}
-	if got.LibraryType != repometadata.GAPICAutoLibraryType {
-		t.Errorf("LibraryType = %q, want %q", got.LibraryType, repometadata.GAPICAutoLibraryType)
-	}
-	if got.Repo != "googleapis/google-cloud-node" {
-		t.Errorf("Repo = %q, want %q", got.Repo, "googleapis/google-cloud-node")
+	want := sample.RepoMetadata()
+	want.Language = config.LanguageNodejs
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
