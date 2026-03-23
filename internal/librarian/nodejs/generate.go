@@ -30,11 +30,13 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates a Node.js client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
+	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
@@ -206,6 +208,12 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		if err := os.Rename(src, filepath.Join(outDir, name)); err != nil {
 			return fmt.Errorf("failed to restore %s: %w", name, err)
 		}
+	}
+
+	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
+	// OwlBot so this file is no longer needed.
+	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to remove .OwlBot.yaml: %w", err)
 	}
 
 	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {

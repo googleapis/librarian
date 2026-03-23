@@ -102,10 +102,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 	if err := cleanLibraries(cfg.Language, libraries); err != nil {
 		return err
 	}
-	if err := generateLibraries(ctx, cfg, libraries, sources); err != nil {
-		return err
-	}
-	return postGenerate(ctx, cfg.Language, cfg)
+	return generateLibraries(ctx, cfg, libraries, sources)
 }
 
 // cleanLibraries iterates over all the given libraries sequentially,
@@ -170,12 +167,13 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
+		return fakePostGenerate()
 	case config.LanguageGo:
 		for _, library := range libraries {
 			// Generation cannot be parallelized because protoc writes to a
 			// shared cloud.google.com/go directory tree under each library's
 			// output, and concurrent MoveAndMerge calls would race.
-			if err := golang.Generate(ctx, library, src.Googleapis); err != nil {
+			if err := golang.Generate(ctx, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
@@ -191,18 +189,19 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return g.Wait()
 	case config.LanguageJava:
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 			if err := java.Format(ctx, library); err != nil {
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
+		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := nodejs.Generate(gctx, library, src.Googleapis); err != nil {
+				if err := nodejs.Generate(gctx, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				if err := nodejs.Format(gctx, library); err != nil {
@@ -216,7 +215,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		for _, library := range libraries {
 			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
 			// generation and formatting for Python.
-			if err := python.Generate(ctx, cfg, library, src.Googleapis); err != nil {
+			if err := python.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
@@ -240,25 +239,11 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
+		return rust.UpdateWorkspace(ctx)
 	default:
 		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}
 	return nil
-}
-
-// postGenerate performs repository-level actions after all individual
-// libraries have been generated.
-func postGenerate(ctx context.Context, language string, cfg *config.Config) error {
-	switch language {
-	case config.LanguageFake:
-		return fakePostGenerate()
-	case config.LanguageJava:
-		return java.PostGenerate(ctx, ".", cfg)
-	case config.LanguageRust:
-		return rust.UpdateWorkspace(ctx)
-	default:
-		return nil
-	}
 }
 
 func defaultOutput(language string, name, api, defaultOut string) string {

@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -42,7 +43,8 @@ var (
 )
 
 // Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
+	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return err
