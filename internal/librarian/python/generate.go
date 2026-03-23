@@ -78,7 +78,6 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 		}
 	}
 
-	// Conditionally README.rst to docs/README.rst
 	if library.Python == nil || !library.Python.SkipReadmeCopy {
 		if err := copyReadmeToDocsDir(outdir); err != nil {
 			return fmt.Errorf("failed to copy README to docs: %w", err)
