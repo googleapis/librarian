@@ -50,14 +50,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return postProcessLibrary(cfg, library, outdir, googleapisDir)
 }
 
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("failed to generate api: failed to extract version from api path %q", api.Path)
@@ -112,7 +112,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfg)
+	gapicOpts, err := resolveGAPICOptions(cfg, library, api, javaAPI, googleapisDir, apiCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve gapic options: %w", err)
 	}
@@ -128,6 +128,18 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+func deriveDistributionName(library *config.Library) string {
+	groupID := "com.google.cloud"
+	if library.Java != nil && library.Java.GroupID != "" {
+		groupID = library.Java.GroupID
+	}
+	artifactID := library.Name
+	if !strings.HasPrefix(artifactID, cloudPrefix) {
+		artifactID = cloudPrefix + artifactID
+	}
+	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {
@@ -164,10 +176,14 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicD
 	return args
 }
 
-func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
+func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
+
+	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
+	gapicOpts = append(gapicOpts, gapicOpt("artifact", deriveDistributionName(library)))
+
 	if apiCfgs != nil && apiCfgs.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
