@@ -53,6 +53,8 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	// TODO(https://github.com/googleapis/librarian/issues/4677), Group all operations for an API into
 	// a helper function.
 	for _, api := range library.APIs {
+		// TODO(https://github.com/googleapis/librarian/issues/4777): Generate APIs in a temp
+		// directory.
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
