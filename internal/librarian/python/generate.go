@@ -36,7 +36,7 @@ const (
 )
 
 // Generate generates a Python client library.
-func Generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
 	// Convert library.Output to absolute path since protoc runs from a
 	// different directory.
 	outdir, err := filepath.Abs(library.Output)
@@ -50,10 +50,21 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Some aspects of generation currently require the repo root. Compute it once here
-	// and pass it down.
+	// Some aspects of generation currently require the repo root. Compute it
+	// once here and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-	for _, api := range library.APIs {
+
+	// In order to make sure we generate google/cloud/firestore/v1 *after*
+	// google/cloud/firestore/admin/v1 (etc), sort the APIs in descending path
+	// length order before generation. This is pretty ghastly, but it works to
+	// minimize the diff during generation. (And it's deterministic.)
+	// TODO(https://github.com/googleapis/librarian/issues/4740): remove this
+	// sorting and just use library.APIs.
+	apisSortedByPathLength := slices.Clone(library.APIs)
+	slices.SortFunc(apisSortedByPathLength, func(a, b *config.API) int {
+		return len(b.Path) - len(a.Path)
+	})
+	for _, api := range apisSortedByPathLength {
 		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
@@ -62,7 +73,7 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 	// Construct the repo metadata in memory, then write it to disk. This has
 	// to be before post-processing, as the data in .repo-metadata.json is used
 	// by the post-processor, primarily for documentation.
-	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
+	repoMetadata, err := createRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
 	}
