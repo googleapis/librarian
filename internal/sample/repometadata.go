@@ -26,7 +26,6 @@ func RepoMetadata() *repometadata.RepoMetadata {
 		APIID:                "secretmanager.googleapis.com",
 		APIShortname:         APIName,
 		DefaultVersion:       "v1",
-		DistributionName:     "@google-cloud/secretmanager",
 		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		Name:                 APIName,
