@@ -185,6 +185,8 @@ func updateSnippetDirectory(library *config.Library, output, version string) err
 		if snippetDir == "" {
 			continue
 		}
+		// UpdateAllLibraryVersions searches recursively, but since Go APIs are not
+		// nested, this only updates the snippets for the current API.
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
 			return err
 		}
