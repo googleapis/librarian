@@ -561,6 +561,47 @@ func TestDeriveAPIPath(t *testing.T) {
 	}
 }
 
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		api           string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "typical api with google prefix",
+			api:           "google/cloud/secretmanager/v1",
+			defaultOutput: "src/generated",
+			want:          "src/generated/cloud/secretmanager/v1",
+		},
+		{
+			name:          "api without google prefix",
+			api:           "other/service/v1",
+			defaultOutput: "src/generated",
+			want:          "src/generated/other/service/v1",
+		},
+		{
+			name:          "empty api",
+			api:           "",
+			defaultOutput: "src/generated",
+			want:          "src/generated",
+		},
+		{
+			name:          "empty default output",
+			api:           "google/cloud/secretmanager/v1",
+			defaultOutput: "",
+			want:          "cloud/secretmanager/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.api, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFindModuleByOutput(t *testing.T) {
 	for _, test := range []struct {
 		name   string
