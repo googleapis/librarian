@@ -23,45 +23,33 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// ArgumentBuilder encapsulates the state required to generate the set of
-// arguments for a gcloud command.
+// ArgumentBuilder encapsulates the state required to generate a single
+// argument for a gcloud command.
 type ArgumentBuilder struct {
 	method    *api.Method
 	overrides *Config
 	model     *api.API
 	service   *api.Service
+	field     *api.Field
+	apiField  string
 }
 
 // NewArgumentBuilder constructs a new ArgumentBuilder.
-func NewArgumentBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *ArgumentBuilder {
+func NewArgumentBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service, field *api.Field, apiField string) *ArgumentBuilder {
 	return &ArgumentBuilder{
 		method:    method,
 		overrides: overrides,
 		model:     model,
 		service:   service,
+		field:     field,
+		apiField:  apiField,
 	}
-}
-
-// Build generates the set of arguments for a command by parsing the
-// fields of the method's request message.
-func (b *ArgumentBuilder) Build() ([]Argument, error) {
-	var args []Argument
-	if b.method.InputType == nil {
-		return args, nil
-	}
-
-	for _, field := range b.method.InputType.Fields {
-		if err := b.addFlattenedArguments(field, field.JSONName, &args); err != nil {
-			return nil, err
-		}
-	}
-	return args, nil
 }
 
 // isIgnored determines if a field should be excluded from the generated command arguments.
 // These are fields that are either implicit in the command context or handled
 // automatically by the gcloud framework.
-func (b *ArgumentBuilder) isIgnored(field *api.Field) bool {
+func isIgnored(field *api.Field, method *api.Method) bool {
 	// The "parent" field is usually implicit in the command context (handled by the primary resource or hierarchy).
 	if field.Name == "parent" {
 		return true
@@ -78,7 +66,7 @@ func (b *ArgumentBuilder) isIgnored(field *api.Field) bool {
 	}
 
 	// For List methods, standard pagination/filtering arguments are handled by gcloud.
-	if isList(b.method) {
+	if isList(method) {
 		switch field.Name {
 		case "page_size", "page_token", "filter", "order_by":
 			return true
@@ -91,111 +79,98 @@ func (b *ArgumentBuilder) isIgnored(field *api.Field) bool {
 	}
 
 	// For Update commands, fields marked as IMMUTABLE cannot be changed and should be hidden.
-	if isUpdate(b.method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if isUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
 		return true
 	}
 
 	return false
 }
 
-// addFlattenedArguments recursively processes a field and its sub-fields to generate
-// command-line flags. It uses a dispatch pattern to classify each field:
-//  1. Primary resource arguments (positional resource identifiers).
-//  2. Ignored fields (implicit or framework-handled).
-//  3. Nested messages (flattened into top-level flags).
-//  4. Standard arguments (scalars, maps, enums, resource references).
-//
-// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
-// handling strategy (Error vs Skip) and messaging.
-func (b *ArgumentBuilder) addFlattenedArguments(field *api.Field, prefix string, args *[]Argument) error {
-	// Primary resource args are checked first because fields like "parent"
-	// and "name" are primary resources in certain method types (e.g., List
-	// and Get/Delete/Update respectively) and must not be ignored.
-	if isPrimaryResource(field, b.method) {
-		*args = append(*args, b.newPrimaryResourceArgument(field))
-		return nil
-	}
-
-	if b.isIgnored(field) {
-		return nil
-	}
-
-	// Nested messages are flattened into top-level flags.
-	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
-	if field.MessageType != nil && !field.Map {
-		for _, f := range field.MessageType.Fields {
-			if err := b.addFlattenedArguments(f, fmt.Sprintf("%s.%s", prefix, f.JSONName), args); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	// Standard arguments: scalars, maps, enums, and resource references.
-	param, err := b.newArgument(field, prefix)
+// Build creates a single command-line argument (a `Argument` struct) from the builder's state.
+func (b *ArgumentBuilder) Build() (Argument, error) {
+	spec, params, err := b.resourceSpecAndParams()
 	if err != nil {
-		return err
+		return Argument{}, err
 	}
-	*args = append(*args, param)
-	return nil
+
+	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
+	arg := Argument{
+		ArgName:              strcase.ToKebab(b.field.Name),
+		APIField:             b.apiField,
+		Required:             b.field.DocumentAsRequired(),
+		Repeated:             b.isRepeated(),
+		Clearable:            b.isClearable(),
+		HelpText:             b.helpText(),
+		Type:                 b.argType(),
+		Choices:              b.choices(),
+		ResourceSpec:         spec,
+		ResourceMethodParams: params,
+		Spec:                 b.mapSpec(),
+	}
+	return arg, nil
 }
 
-// newArgument creates a single command-line argument (a `Argument` struct) from a proto field.
-func (b *ArgumentBuilder) newArgument(field *api.Field, apiField string) (Argument, error) {
-	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
-	param := Argument{
-		ArgName:  strcase.ToKebab(field.Name),
-		APIField: apiField,
-		Required: field.DocumentAsRequired(),
-		Repeated: field.Repeated,
-	}
+func (b *ArgumentBuilder) isRepeated() bool {
+	return b.field.Repeated || b.field.Map
+}
 
-	if field.ResourceReference != nil {
-		spec, err := b.newResourceReferenceSpec(field)
-		if err != nil {
-			return Argument{}, err
-		}
-		param.ResourceSpec = spec
-		param.ResourceMethodParams = map[string]string{
-			apiField: "{__relative_name__}",
-		}
-	} else if field.Map {
-		param.Repeated = true
-		param.Spec = []ArgSpec{
-			{APIField: "key"},
-			{APIField: "value"},
-		}
-	} else if field.EnumType != nil {
-		for _, v := range field.EnumType.Values {
-			// Skip the default "UNSPECIFIED" value.
-			if strings.HasSuffix(v.Name, "_UNSPECIFIED") {
-				continue
-			}
-			param.Choices = append(param.Choices, Choice{
+func (b *ArgumentBuilder) isClearable() bool {
+	return isUpdate(b.method) && b.isRepeated()
+}
+
+func (b *ArgumentBuilder) helpText() string {
+	if rule := findFieldHelpTextRule(b.field, b.overrides); rule != nil {
+		return rule.HelpText.Brief
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
+	return fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(b.field.Name))
+}
+
+func (b *ArgumentBuilder) argType() string {
+	if b.field.ResourceReference == nil && !b.field.Map && b.field.EnumType == nil {
+		return getGcloudType(b.field.Typez)
+	}
+	return ""
+}
+
+func (b *ArgumentBuilder) choices() []Choice {
+	if b.field.EnumType == nil {
+		return nil
+	}
+	var choices []Choice
+	for _, v := range b.field.EnumType.Values {
+		// Skip the default "UNSPECIFIED" value.
+		if !strings.HasSuffix(v.Name, "_UNSPECIFIED") {
+			choices = append(choices, Choice{
 				ArgValue:  strcase.ToKebab(v.Name),
 				EnumValue: v.Name,
 			})
 		}
-	} else {
-		param.Type = getGcloudType(field.Typez)
 	}
-
-	if isUpdate(b.method) && param.Repeated {
-		param.Clearable = true
-	}
-
-	if rule := findFieldHelpTextRule(field, b.overrides); rule != nil {
-		param.HelpText = rule.HelpText.Brief
-	} else {
-		// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-		param.HelpText = fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(field.Name))
-	}
-	return param, nil
+	return choices
 }
 
-// newPrimaryResourceArgument creates the main positional resource argument for a command.
+func (b *ArgumentBuilder) mapSpec() []ArgSpec {
+	if b.field.Map {
+		return []ArgSpec{{APIField: "key"}, {APIField: "value"}}
+	}
+	return nil
+}
+
+func (b *ArgumentBuilder) resourceSpecAndParams() (*ResourceSpec, map[string]string, error) {
+	if b.field.ResourceReference == nil {
+		return nil, nil, nil
+	}
+	spec, err := b.newResourceReferenceSpec()
+	if err != nil {
+		return nil, nil, err
+	}
+	return spec, map[string]string{b.apiField: "{__relative_name__}"}, nil
+}
+
+// BuildPrimaryResource creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument {
+func (b *ArgumentBuilder) BuildPrimaryResource() Argument {
 	resource := getResourceForMethod(b.method, b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
@@ -208,8 +183,8 @@ func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument 
 		segments = getParentFromSegments(segments)
 	}
 
-	resourceName := strings.TrimSuffix(field.Name, "_id")
-	if field.Name == "name" || isList(b.method) {
+	resourceName := strings.TrimSuffix(b.field.Name, "_id")
+	if b.field.Name == "name" || isList(b.method) {
 		resourceName = getSingularFromSegments(segments)
 	}
 
@@ -242,7 +217,7 @@ func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument 
 	}
 
 	if isCreate(b.method) {
-		param.RequestIDField = strcase.ToLowerCamel(field.Name)
+		param.RequestIDField = strcase.ToLowerCamel(b.field.Name)
 	}
 
 	return param
@@ -250,9 +225,9 @@ func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument 
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
 // another resource type (e.g., a `--network` flag).
-func (b *ArgumentBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSpec, error) {
+func (b *ArgumentBuilder) newResourceReferenceSpec() (*ResourceSpec, error) {
 	for _, def := range b.model.ResourceDefinitions {
-		if def.Type == field.ResourceReference.Type {
+		if def.Type == b.field.ResourceReference.Type {
 			if len(def.Patterns) == 0 {
 				return nil, fmt.Errorf("resource definition for %q has no patterns", def.Type)
 			}
@@ -281,7 +256,7 @@ func (b *ArgumentBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceS
 			}, nil
 		}
 	}
-	return nil, fmt.Errorf("resource definition not found for type %q", field.ResourceReference.Type)
+	return nil, fmt.Errorf("resource definition not found for type %q", b.field.ResourceReference.Type)
 }
 
 // newAttributesFromSegments parses a structured resource pattern and extracts the attributes

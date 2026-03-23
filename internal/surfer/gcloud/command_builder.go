@@ -46,7 +46,7 @@ func NewCommandBuilder(method *api.Method, overrides *Config, model *api.API, se
 // This function assembles all the necessary pieces: help text, arguments,
 // request details, and async configuration.
 func (b *CommandBuilder) Build() (*Command, error) {
-	args, err := NewArgumentBuilder(b.method, b.overrides, b.model, b.service).Build()
+	args, err := b.newArguments()
 	if err != nil {
 		return nil, err
 	}
@@ -113,31 +113,66 @@ func (b *CommandBuilder) releaseTracks() []string {
 	return []string{strings.ToUpper(inferredTrack)}
 }
 
-func (b *CommandBuilder) isHidden() bool {
-	if len(b.overrides.APIs) > 0 {
-		return b.overrides.APIs[0].RootIsHidden
+// newArguments generates the set of arguments for a command by parsing the
+// fields of the method's request message.
+func (b *CommandBuilder) newArguments() ([]Argument, error) {
+	var args []Argument
+	if b.method.InputType == nil {
+		return args, nil
 	}
-	// Default to hidden if no API overrides are provided.
-	return true
-}
 
-func (b *CommandBuilder) buildHelpText() HelpText {
-	rule := findHelpTextRule(b.method, b.overrides)
-	if rule != nil {
-		return HelpText{
-			Brief:       rule.HelpText.Brief,
-			Description: rule.HelpText.Description,
-			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
+	for _, field := range b.method.InputType.Fields {
+		fieldArgs, err := b.argumentsFromField(field, field.JSONName)
+		if err != nil {
+			return nil, err
 		}
+		args = append(args, fieldArgs...)
 	}
-	return HelpText{}
+	return args, nil
 }
 
-func (b *CommandBuilder) releaseTracks() []string {
-	// Infer default release track from proto package.
-	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
-	return []string{strings.ToUpper(inferredTrack)}
+// argumentsFromField recursively processes a field and its sub-fields to generate
+// command-line flags. It uses a dispatch pattern to classify each field:
+//  1. Primary resource arguments (positional resource identifiers).
+//  2. Ignored fields (implicit or framework-handled).
+//  3. Nested messages (flattened into top-level flags).
+//  4. Standard arguments (scalars, maps, enums, resource references).
+//
+// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
+// handling strategy (Error vs Skip) and messaging.
+func (b *CommandBuilder) argumentsFromField(field *api.Field, prefix string) ([]Argument, error) {
+	// Primary resource args are checked first because fields like "parent"
+	// and "name" are primary resources in certain method types (e.g., List
+	// and Get/Delete/Update respectively) and must not be ignored.
+	if isPrimaryResource(field, b.method) {
+		arg := NewArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).BuildPrimaryResource()
+		return []Argument{arg}, nil
+	}
+
+	if isIgnored(field, b.method) {
+		return nil, nil
+	}
+
+	// Nested messages are flattened into top-level flags.
+	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
+	if field.MessageType != nil && !field.Map {
+		var args []Argument
+		for _, f := range field.MessageType.Fields {
+			fieldArgs, err := b.argumentsFromField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, fieldArgs...)
+		}
+		return args, nil
+	}
+
+	// Standard arguments: scalars, maps, enums, and resource references.
+	param, err := NewArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).Build()
+	if err != nil {
+		return nil, err
+	}
+	return []Argument{param}, nil
 }
 
 // newRequest creates the `Request` part of the command definition.
