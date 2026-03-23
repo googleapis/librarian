@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -979,6 +980,59 @@ func TestGenerate(t *testing.T) {
 				t.Errorf("stat error on readme = %v, want %v", gotReadmeStatErr, wantReadmeStatErr)
 			}
 		})
+	}
+}
+
+// Separate test from TestGenerate as it tests a very specific situation with
+// very specific assertions. We want to end up with files that are oriented
+// around google/cloud/workflows, not google/cloud/workflows/executions.
+func TestGenerate_APIOrder(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Python code generation")
+	}
+
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	testhelper.RequireCommand(t, "ruff")
+	requireSynthtool(t)
+
+	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-workflows"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
+	library := &config.Library{
+		Name:         "google-cloud-workflows",
+		Output:       outdir,
+		ReleaseLevel: "stable",
+		APIs: []*config.API{
+			{Path: "google/cloud/workflows/v1"},
+			{Path: "google/cloud/workflows/executions/v1"},
+		},
+		Python: &config.PythonPackage{
+			PythonDefault: config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+		},
+	}
+	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+		t.Fatal(err)
+	}
+	setupContent, err := os.ReadFile(filepath.Join(outdir, "setup.py"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(setupContent), "executions") {
+		t.Errorf("wanted setup.py to not mention executions; got %s", string(setupContent))
 	}
 }
 

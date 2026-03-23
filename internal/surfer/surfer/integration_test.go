@@ -19,29 +19,27 @@ import (
 	"flag"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/testhelper"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 var (
-	coreGoogleapisPath   string
-	protocFound          bool
 	runAutogenComparison = flag.Bool("run-with-autogen-comparison", false, "if true, run integration tests that compare generated output with golden files")
 )
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-	// Look for protoc in PATH only.
-	if _, err := exec.LookPath("protoc"); err == nil {
-		protocFound = true
+func TestIntegration(t *testing.T) {
+	if !*runAutogenComparison {
+		t.Skip("skipping integration test; use --run-with-autogen-comparison to enable")
 	}
+	testhelper.RequireCommand(t, "protoc")
 
+	var coreGoogleapisPath string
 	// Locate core googleapis. Support SURFER_GOOGLEAPIS fallback.
 	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
 		coreGoogleapisPath = env
@@ -54,16 +52,6 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	os.Exit(m.Run())
-}
-
-func TestIntegration(t *testing.T) {
-	if !*runAutogenComparison {
-		t.Skip("skipping integration test; use --run-with-autogen-comparison to enable")
-	}
-	if !protocFound {
-		t.Skip("protoc not found in PATH")
-	}
 	if coreGoogleapisPath == "" {
 		t.Fatal("core googleapis not found via repo layout or SURFER_GOOGLEAPIS env var")
 	}
@@ -316,16 +304,17 @@ func compareFiles(t *testing.T, expected, got, rel string) bool {
 	gotContent, _ := os.ReadFile(got)
 
 	if filepath.Ext(expected) == ".yaml" {
-		var wantYAML, gotYAML interface{}
-		if err := yaml.Unmarshal(wantContent, &wantYAML); err != nil {
+		wantYAML, err := yaml.Unmarshal[any](wantContent)
+		if err != nil {
 			t.Errorf("%s: failed to unmarshal expected YAML: %v", rel, err)
 			return false
 		}
-		if err := yaml.Unmarshal(gotContent, &gotYAML); err != nil {
+		gotYAML, err := yaml.Unmarshal[any](gotContent)
+		if err != nil {
 			t.Errorf("%s: failed to unmarshal generated YAML: %v", rel, err)
 			return false
 		}
-		if diff := cmp.Diff(wantYAML, gotYAML, cmp.AllowUnexported()); diff != "" {
+		if diff := cmp.Diff(*wantYAML, *gotYAML, cmp.AllowUnexported()); diff != "" {
 			t.Errorf("%s mismatch (-want +got):\n%s", rel, diff)
 			return false
 		}

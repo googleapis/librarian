@@ -129,7 +129,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
-			test.library.Output = dir
+			test.library.Output = filepath.Join(dir, test.library.Name)
 
 			if err := generateClientVersionFile(test.library, test.apiPath); err != nil {
 				t.Fatal(err)
@@ -154,7 +154,7 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 	dir := t.TempDir()
 	library := &config.Library{
 		Name:   "alloydb",
-		Output: dir,
+		Output: filepath.Join(dir, "alloydb"),
 		Go: &config.GoModule{
 			GoAPIs: []*config.GoAPI{
 				{

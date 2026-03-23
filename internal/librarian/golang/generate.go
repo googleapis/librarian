@@ -23,14 +23,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -52,7 +50,11 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return err
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/4677), Group all operations for an API into
+	// a helper function.
 	for _, api := range library.APIs {
+		// TODO(https://github.com/googleapis/librarian/issues/4777): Generate APIs in a temp
+		// directory.
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
@@ -60,15 +62,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := moveGeneratedFiles(library, outdir); err != nil {
 		return err
 	}
-	moduleRoot := filepath.Join(outdir, library.Name)
-	absModuleRoot, err := filepath.Abs(moduleRoot)
-	if err != nil {
-		return err
-	}
-	if !strings.HasPrefix(absModuleRoot, outdir+string(filepath.Separator)) && absModuleRoot != outdir {
-		return fmt.Errorf("invalid library name: path traversal detected")
-	}
-	if err := generateInternalVersionFile(moduleRoot, library.Version); err != nil {
+	if err := generateInternalVersionFile(outdir, library.Version); err != nil {
 		return err
 	}
 	for i, api := range library.APIs {
@@ -85,17 +79,20 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 		if i != 0 {
 			continue
 		}
-		if err := generateREADME(library, api, moduleRoot); err != nil {
+		if err := generateREADME(library, api, outdir); err != nil {
 			return err
 		}
 	}
-	if err := updateSnippetMetadata(library, outdir); err != nil {
+	if err := updateSnippetDirectory(library, outdir, library.Version); err != nil {
 		return err
 	}
-	if _, err := os.Stat(filepath.Join(absModuleRoot, "go.mod")); err != nil {
+	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(outdir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// New client, init the module.
-			return initModule(ctx, absModuleRoot, modulePath(library))
+			return initModule(ctx, outdir, modulePath(library))
 		}
 		return err
 	}
@@ -187,18 +184,10 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	src := filepath.Join(outDir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("cannot access directory %q: %w", src, err)
-	}
-	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
+	if err := moveAPIDirectory(library, outDir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
-		return err
-	}
-
-	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
+	if err := moveSnippetDirectory(library, outDir); err != nil {
 		return err
 	}
 	if library.Go != nil {
@@ -211,42 +200,44 @@ func moveGeneratedFiles(library *config.Library, outDir string) error {
 	return nil
 }
 
-// fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
-func fixVersioning(outputDir, library, modPath string) error {
-	// parts is the module path split by "/".
-	// For example, "cloud.google.com/go/bigquery/v2" becomes:
-	// parts[0]: "cloud.google.com"
-	// parts[1]: "go"
-	// parts[2]: library ID (e.g., "bigquery")
-	// parts[3]: version (e.g., "v2")
-	parts := strings.Split(modPath, "/")
-	if len(parts) == 3 {
-		return nil
-	}
-	if len(parts) != 4 {
-		return fmt.Errorf("unexpected module path: %s", modPath)
-	}
-
-	name, version := parts[2], parts[3]
-	if library == name+"/"+version {
-		return nil
-	}
-
-	srcDir := filepath.Join(outputDir, name)
-	if err := filesystem.MoveAndMerge(filepath.Join(srcDir, version), srcDir); err != nil {
-		return err
-	}
-	if err := os.RemoveAll(filepath.Join(srcDir, version)); err != nil {
-		return err
-	}
-
-	snippetDir := filepath.Join(outputDir, "internal", "generated", "snippets", name)
-	snippetVersionDir := filepath.Join(snippetDir, version)
-	if _, err := os.Stat(snippetVersionDir); err == nil {
-		if err := filesystem.MoveAndMerge(snippetVersionDir, snippetDir); err != nil {
+func moveAPIDirectory(library *config.Library, outDir string) error {
+	libraryDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
+	for _, api := range library.APIs {
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("error finding Go package directory for API path %s: %w", api.Path, errGoAPINotFound)
+		}
+		librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
+		libraryDest := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
+		if err := os.MkdirAll(libraryDest, 0755); err != nil {
 			return err
 		}
-		if err := os.RemoveAll(snippetVersionDir); err != nil {
+		if err := filesystem.MoveAndMerge(librarySrc, libraryDest); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func moveSnippetDirectory(library *config.Library, outDir string) error {
+	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
+	for _, api := range library.APIs {
+		snippetDest, err := findSnippetDirectory(library, api.Path, outDir)
+		if err != nil {
+			return err
+		}
+		if snippetDest == "" {
+			continue
+		}
+		if err := os.MkdirAll(snippetDest, 0755); err != nil {
+			return err
+		}
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return fmt.Errorf("error finding Go package directory for API path %s: %w", api.Path, errGoAPINotFound)
+		}
+		snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
+		if err := filesystem.MoveAndMerge(snippetSrc, snippetDest); err != nil {
 			return err
 		}
 	}
@@ -307,31 +298,6 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
-}
-
-// updateSnippetMetadata updates the snippet metadata files with the correct library version.
-func updateSnippetMetadata(library *config.Library, output string) error {
-	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
-		if goAPI == nil {
-			return fmt.Errorf("error finding Go API %s: %w", api.Path, errGoAPINotFound)
-		}
-		// Proto-only client doesn't have generated snippets, skip updating.
-		if goAPI.ProtoOnly {
-			continue
-		}
-		baseDir := snippetDirectory(output, clientPathFromRepoRoot(library, goAPI))
-		if _, err := os.Stat(baseDir); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return nil
-			}
-			return err
-		}
-		if err := snippetmetadata.UpdateAllLibraryVersions(baseDir, library.Version); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func hasRESTNumericEnums(sc *serviceconfig.API) bool {

@@ -191,6 +191,18 @@ func TestFill(t *testing.T) {
 				Go:   &config.GoModule{},
 			},
 		},
+		{
+			name: "do not override output",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+			},
+			want: &config.Library{
+				Name:   "root-module",
+				Output: ".",
+				Go:     &config.GoModule{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)
