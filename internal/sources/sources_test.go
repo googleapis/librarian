@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package sources
 
 import (
 	"os"
@@ -23,17 +23,16 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	cfg := SourceConfig{
-		Sources: Sources{
+	cfg := &SourceConfig{
+		Sources: &Sources{
 			Googleapis: "googleapis-path",
 			Discovery:  "discovery-path",
 		},
 	}
 	for _, test := range []struct {
-		name    string
-		root    string
-		want    string
-		wantErr bool
+		name string
+		root string
+		want string
 	}{
 		{
 			name: "googleapis",
@@ -76,8 +75,8 @@ func TestResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg := SourceConfig{
-		Sources: Sources{
+	cfg := &SourceConfig{
+		Sources: &Sources{
 			Googleapis: googleapis,
 		},
 		ActiveRoots: []string{"googleapis"},
@@ -87,7 +86,6 @@ func TestResolve(t *testing.T) {
 		name    string
 		relPath string
 		want    string
-		wantErr bool
 	}{
 		{
 			name:    "found",
@@ -119,7 +117,7 @@ func TestResolve(t *testing.T) {
 }
 
 func TestNewSourceConfig(t *testing.T) {
-	sources := Sources{
+	srcs := &Sources{
 		Googleapis:  "ga-path",
 		Discovery:   "disco-path",
 		Conformance: "conf-path",
@@ -127,11 +125,11 @@ func TestNewSourceConfig(t *testing.T) {
 		Showcase:    "show-path",
 	}
 	activeRoots := []string{"googleapis", "discovery"}
-	want := SourceConfig{
-		Sources:     sources,
+	want := &SourceConfig{
+		Sources:     srcs,
 		ActiveRoots: activeRoots,
 	}
-	got := NewSourceConfig(sources, activeRoots)
+	got := NewSourceConfig(srcs, activeRoots)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("NewSourceConfig() mismatch (-want +got):\n%s", diff)
 	}

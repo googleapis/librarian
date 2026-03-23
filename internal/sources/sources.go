@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config provides configuration types and utilities for sidekick.
-package config
+// Package sources provides types for resolved source repository paths and
+// path resolution utilities.
+package sources
 
 import (
 	"os"
 	"path/filepath"
 )
 
-// Sources contains the directory paths for source repositories used by
-// sidekick.
+// Sources contains resolved directory paths for source repositories.
 type Sources struct {
 	Conformance string
 	Discovery   string
@@ -32,15 +32,15 @@ type Sources struct {
 
 // SourceConfig holds the configuration for source roots and path resolution.
 type SourceConfig struct {
-	Sources     Sources
+	Sources     *Sources
 	ActiveRoots []string
 	IncludeList []string
 }
 
 // NewSourceConfig creates a SourceConfig with the given sources and active roots.
 // If activeRoots is empty, it defaults to ["googleapis"].
-func NewSourceConfig(sources Sources, activeRoots []string) SourceConfig {
-	sc := SourceConfig{
+func NewSourceConfig(sources *Sources, activeRoots []string) *SourceConfig {
+	sc := &SourceConfig{
 		Sources:     sources,
 		ActiveRoots: activeRoots,
 	}
@@ -51,7 +51,7 @@ func NewSourceConfig(sources Sources, activeRoots []string) SourceConfig {
 }
 
 // Root returns the directory path for the given root name.
-func (c SourceConfig) Root(name string) string {
+func (c *SourceConfig) Root(name string) string {
 	switch name {
 	case "googleapis":
 		return c.Sources.Googleapis
@@ -64,17 +64,18 @@ func (c SourceConfig) Root(name string) string {
 	case "conformance":
 		return c.Sources.Conformance
 	default:
-		// Unknown root name
 		return ""
 	}
 }
 
 // Resolve returns an absolute path for the given relative path if it is found
 // within the active source roots. Otherwise, it returns the original path.
-func (c SourceConfig) Resolve(relPath string) string {
+func (c *SourceConfig) Resolve(relPath string) string {
+	if c == nil {
+		return relPath
+	}
 	for _, root := range c.ActiveRoots {
 		rootPath := c.Root(root)
-		// Ignore non-existent roots
 		if rootPath == "" {
 			continue
 		}
@@ -88,10 +89,12 @@ func (c SourceConfig) Resolve(relPath string) string {
 
 // ResolveDir returns the absolute path for the given relative path within the
 // active source roots, ensuring the result is a directory.
-func (c SourceConfig) ResolveDir(relPath string) string {
+func (c *SourceConfig) ResolveDir(relPath string) string {
+	if c == nil {
+		return relPath
+	}
 	for _, root := range c.ActiveRoots {
 		rootPath := c.Root(root)
-		// Ignore non-existent roots
 		if rootPath == "" {
 			continue
 		}

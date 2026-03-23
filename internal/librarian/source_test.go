@@ -20,14 +20,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestLoadSources(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		src     *config.Sources
-		want    *sidekickconfig.Sources
+		want    *sources.Sources
 		wantErr error
 	}{
 		{
@@ -39,7 +39,7 @@ func TestLoadSources(t *testing.T) {
 				Showcase:    &config.Source{Dir: "/path/to/showcase"},
 				ProtobufSrc: &config.Source{Dir: "/path/to/protobuf", Subpath: "src"},
 			},
-			want: &sidekickconfig.Sources{
+			want: &sources.Sources{
 				Googleapis:  "/path/to/googleapis",
 				Conformance: "/path/to/conformance",
 				Discovery:   "/path/to/discovery",
@@ -62,7 +62,7 @@ func TestLoadSources(t *testing.T) {
 			src: &config.Sources{
 				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
 			},
-			want: &sidekickconfig.Sources{
+			want: &sources.Sources{
 				Googleapis: "/tmp/googleapis",
 			},
 		},
@@ -72,7 +72,7 @@ func TestLoadSources(t *testing.T) {
 				Googleapis: &config.Source{Dir: "/tmp/googleapis"},
 				Discovery:  &config.Source{Dir: "/tmp/discovery"},
 			},
-			want: &sidekickconfig.Sources{
+			want: &sources.Sources{
 				Googleapis: "/tmp/googleapis",
 				Discovery:  "/tmp/discovery",
 			},

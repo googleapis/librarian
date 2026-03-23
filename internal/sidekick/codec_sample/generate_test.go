@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 var (
@@ -40,8 +40,8 @@ func TestFromProtobuf(t *testing.T) {
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 		SpecificationSource: "google/cloud/secretmanager/v1",
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				Googleapis: path.Join(testdataDir, "googleapis"),
 			},
 			ActiveRoots: []string{"googleapis"},
