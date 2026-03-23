@@ -15,8 +15,8 @@
 package gcloud
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,23 +30,24 @@ import (
 // for command definitions. This allows for sharing definitions across release tracks.
 const partialsHeader = "_PARTIALS_: true\n"
 
-// marshalCommandGroup executes the command group template and returns the bytes.
-func marshalCommandGroup(data CommandGroup) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := commandGroupTemplate.Execute(&buf, data); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+// renderCommandGroup executes the command group template directly into an [io.Writer].
+func renderCommandGroup(w io.Writer, data CommandGroup) error {
+	return commandGroupTemplate.Execute(w, data)
 }
 
 // writeCommandGroupFile writes the Python __init__.py required for a gcloud command group.
 func writeCommandGroupFile(dir string, data CommandGroup) error {
-	b, err := marshalCommandGroup(data)
+	path := filepath.Join(dir, "__init__.py")
+
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(dir, "__init__.py")
-	return os.WriteFile(path, b, 0644)
+	defer f.Close()
+
+	// We stream the template results directly into the file.
+	// No intermediate []byte slice is created.
+	return renderCommandGroup(f, data)
 }
 
 var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{
@@ -147,9 +148,9 @@ func mapCommandToYAML(c *Command) *yamlCommand {
 }
 
 func mapArgumentsToYAML(args []Argument) []yamlArgument {
-	var ya []yamlArgument
-	for _, p := range args {
-		ya = append(ya, yamlArgument{
+	ya := make([]yamlArgument, len(args))
+	for i, p := range args {
+		ya[i] = yamlArgument{
 			ArgName:              p.ArgName,
 			APIField:             p.APIField,
 			HelpText:             p.HelpText,
@@ -164,7 +165,7 @@ func mapArgumentsToYAML(args []Argument) []yamlArgument {
 			Choices:              mapChoicesToYAML(p.Choices),
 			Spec:                 mapArgSpecsToYAML(p.Spec),
 			ResourceMethodParams: p.ResourceMethodParams,
-		})
+		}
 	}
 	return ya
 }
