@@ -149,29 +149,6 @@ func mapCommandToYAML(c *Command) *yamlCommand {
 func mapArgumentsToYAML(args []Argument) []yamlArgument {
 	var ya []yamlArgument
 	for _, p := range args {
-		var spec []yamlArgSpec
-		for _, s := range p.Spec {
-			spec = append(spec, yamlArgSpec(s))
-		}
-		var choices []yamlChoice
-		for _, c := range p.Choices {
-			choices = append(choices, yamlChoice(c))
-		}
-		var rs *yamlResourceSpec
-		if p.ResourceSpec != nil {
-			var attrs []yamlAttribute
-			for _, a := range p.ResourceSpec.Attributes {
-				attrs = append(attrs, yamlAttribute(a))
-			}
-			rs = &yamlResourceSpec{
-				Name:                  p.ResourceSpec.Name,
-				PluralName:            p.ResourceSpec.PluralName,
-				Collection:            p.ResourceSpec.Collection,
-				Attributes:            attrs,
-				DisableAutoCompleters: p.ResourceSpec.DisableAutoCompleters,
-			}
-		}
-
 		ya = append(ya, yamlArgument{
 			ArgName:              p.ArgName,
 			APIField:             p.APIField,
@@ -179,17 +156,50 @@ func mapArgumentsToYAML(args []Argument) []yamlArgument {
 			IsPositional:         p.IsPositional,
 			IsPrimaryResource:    p.IsPrimaryResource,
 			RequestIDField:       p.RequestIDField,
-			ResourceSpec:         rs,
+			ResourceSpec:         mapResourceSpecToYAML(p.ResourceSpec),
 			Required:             p.Required,
 			Repeated:             p.Repeated,
 			Clearable:            p.Clearable,
 			Type:                 p.Type,
-			Choices:              choices,
-			Spec:                 spec,
+			Choices:              mapChoicesToYAML(p.Choices),
+			Spec:                 mapArgSpecsToYAML(p.Spec),
 			ResourceMethodParams: p.ResourceMethodParams,
 		})
 	}
 	return ya
+}
+
+func mapResourceSpecToYAML(spec *ResourceSpec) *yamlResourceSpec {
+	if spec == nil {
+		return nil
+	}
+	var attrs []yamlAttribute
+	for _, a := range spec.Attributes {
+		attrs = append(attrs, yamlAttribute(a))
+	}
+	return &yamlResourceSpec{
+		Name:                  spec.Name,
+		PluralName:            spec.PluralName,
+		Collection:            spec.Collection,
+		Attributes:            attrs,
+		DisableAutoCompleters: spec.DisableAutoCompleters,
+	}
+}
+
+func mapArgSpecsToYAML(specs []ArgSpec) []yamlArgSpec {
+	var yamlSpecs []yamlArgSpec
+	for _, s := range specs {
+		yamlSpecs = append(yamlSpecs, yamlArgSpec(s))
+	}
+	return yamlSpecs
+}
+
+func mapChoicesToYAML(choices []Choice) []yamlChoice {
+	var yamlChoices []yamlChoice
+	for _, c := range choices {
+		yamlChoices = append(yamlChoices, yamlChoice(c))
+	}
+	return yamlChoices
 }
 
 type yamlCommand struct {
