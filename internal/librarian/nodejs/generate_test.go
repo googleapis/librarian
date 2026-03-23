@@ -333,7 +333,7 @@ func TestRunPostProcessor_Owlbot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
@@ -451,7 +451,7 @@ func TestRunPostProcessor(t *testing.T) {
 		}
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -509,7 +509,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -610,7 +610,7 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, repoRoot, outDir); err != nil {
+	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 

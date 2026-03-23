@@ -67,3 +67,36 @@ members = []
 		})
 	}
 }
+
+func TestValidate(t *testing.T) {
+	testhelper.RequireCommand(t, "cargo")
+	testhelper.RequireCommand(t, "rustfmt")
+	testhelper.RequireCommand(t, "git")
+	t.Chdir(t.TempDir())
+	if err := cmdtest.Run(t.Context(), "git", "init"); err != nil {
+		t.Fatal(err)
+	}
+
+	workspaceCargo := `
+[workspace]
+members = []
+`
+	if err := os.WriteFile("Cargo.toml", []byte(workspaceCargo), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := cmdtest.Run(t.Context(), "cargo", "new", "--vcs", "none", "--lib", "testlib"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := validate(t.Context(), "testlib"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateError(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := validate(t.Context(), "nonexistent"); err == nil {
+		t.Error("expected error for nonexistent directory, got nil")
+	}
+}

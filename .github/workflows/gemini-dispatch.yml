@@ -1,0 +1,101 @@
+name: '🔀 Gemini Dispatch'
+on:
+  issue_comment:
+    types:
+      - 'created'
+defaults:
+  run:
+    shell: 'bash'
+jobs:
+  dispatch:
+    if: |-
+      github.event.sender.type == 'User' &&
+      startsWith(github.event.comment.body, '@gemini-cli') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    outputs:
+      command: '${{ steps.extract_command.outputs.command }}'
+      additional_context: '${{ steps.extract_command.outputs.additional_context }}'
+    steps:
+      - name: 'Extract command'
+        id: 'extract_command'
+        uses: 'actions/github-script@v8'
+        env:
+          REQUEST: '${{ github.event.comment.body }}'
+        with:
+          script: |
+            const request = process.env.REQUEST;
+            if (request.startsWith("@gemini-cli /approve")) {
+              core.setOutput('command', 'approve');
+            } else if (request.startsWith("@gemini-cli")) {
+              const additionalContext = request.replace(/^@gemini-cli/, '').trim();
+              core.setOutput('command', 'invoke');
+              core.setOutput('additional_context', additionalContext);
+            } else {
+              core.setOutput('command', 'fallthrough');
+            }
+      - name: 'Acknowledge request'
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN || github.token }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          MESSAGE: |-
+            🤖 Hi @${{ github.actor }}, I've received your request, and I'm working on it now! You can track my progress [in the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
+          REPOSITORY: '${{ github.repository }}'
+        run: |-
+          gh issue comment "${ISSUE_NUMBER}" \
+            --body "${MESSAGE}" \
+            --repo "${REPOSITORY}"
+  invoke:
+    needs: 'dispatch'
+    if: |-
+      ${{ needs.dispatch.outputs.command == 'invoke' }}
+    uses: './.github/workflows/gemini-invoke.yml'
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
+  plan-execute:
+    needs: 'dispatch'
+    if: |-
+      ${{ needs.dispatch.outputs.command == 'approve' }}
+    uses: './.github/workflows/gemini-plan-execute.yml'
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
+  fallthrough:
+    needs:
+      - 'dispatch'
+      - 'invoke'
+      - 'plan-execute'
+    if: |-
+      ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      issues: 'write'
+      pull-requests: 'write'
+    steps:
+      - name: 'Send failure comment'
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN || github.token }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          MESSAGE: |-
+            🤖 I'm sorry @${{ github.actor }}, but I was unable to process your request. Please [see the logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more details.
+          REPOSITORY: '${{ github.repository }}'
+        run: |-
+          gh issue comment "${ISSUE_NUMBER}" \
+            --body "${MESSAGE}" \
+            --repo "${REPOSITORY}"

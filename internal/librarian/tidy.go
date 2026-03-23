@@ -24,6 +24,8 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -94,6 +96,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
+	if cfg.Default != nil && lib.ReleaseLevel != "" && lib.ReleaseLevel == cfg.Default.ReleaseLevel {
+		lib.ReleaseLevel = ""
+	}
 	return tidyLanguageConfig(lib, cfg.Language)
 }
 
@@ -138,6 +143,7 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
 	config.LanguageGo:   golang.Tidy,
+	config.LanguageJava: java.Tidy,
 	config.LanguageRust: tidyRustConfig,
 }
 
@@ -184,9 +190,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 		return strings.Compare(a.Name, b.Name)
 	})
 	for _, lib := range cfg.Libraries {
-		slices.SortFunc(lib.APIs, func(a, b *config.API) int {
-			return strings.Compare(a.Path, b.Path)
-		})
+		serviceconfig.SortAPIs(lib.APIs)
 		if lib.Rust != nil {
 			slices.SortFunc(lib.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {
 				return strings.Compare(a.Name, b.Name)

@@ -866,6 +866,95 @@ func TestStageRun(t *testing.T) {
 			},
 		},
 		{
+			name:             "release stage has multiple libraries bumped in release only mode",
+			containerClient:  &mockContainerClient{},
+			dockerStageCalls: 1,
+			setupRunner: func(containerClient *mockContainerClient) *stageRunner {
+				return &stageRunner{
+					workRoot:        os.TempDir(),
+					containerClient: containerClient,
+					state: &legacyconfig.LibrarianState{
+						ReleaseOnlyMode: true,
+						Libraries: []*legacyconfig.LibraryState{
+							{
+								ID:          "another-example-id",
+								Version:     "1.0.0",
+								SourceRoots: []string{"dir1"},
+							},
+							{
+								ID:          "example-id",
+								Version:     "2.0.0",
+								SourceRoots: []string{"dir2"},
+							},
+							{
+								ID:          "no-bump",
+								Version:     "1.2.3",
+								SourceRoots: []string{"dir3"},
+							},
+						},
+					},
+					repo: &MockRepository{
+						Dir: t.TempDir(),
+						RemotesValue: []*legacygitrepo.Remote{
+							{
+								Name: "origin",
+								URLs: []string{"https://github.com/googleapis/librarian.git"},
+							},
+						},
+						ChangedFilesInCommitValueByHash: map[string][]string{
+							plumbing.NewHash("123456").String(): {"dir1/file.txt"},
+							plumbing.NewHash("654321").String(): {"dir2/file.txt"},
+						},
+						GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+							"another-example-id-1.0.0": {
+								{
+									Message: "chore: releasable",
+									Hash:    plumbing.NewHash("123456"),
+								},
+							},
+							"example-id-2.0.0": {
+								{
+									Message: "chore: any message",
+									Hash:    plumbing.NewHash("654321"),
+								},
+							},
+						},
+					},
+					ghClient:        &mockGitHubClient{},
+					librarianConfig: &legacyconfig.LibrarianConfig{},
+				}
+			},
+			want: &legacyconfig.LibrarianState{
+				ReleaseOnlyMode: true,
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "another-example-id",
+						Version:       "1.1.0", // version is bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir1"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "example-id",
+						Version:       "2.1.0", // version is bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir2"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "no-bump",
+						Version:       "1.2.3", // version is NOT bumped.
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"dir3"},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+		{
 			name:             "inputted library does not have a releasable unit, version is inputted",
 			containerClient:  &mockContainerClient{},
 			dockerStageCalls: 1,
@@ -1298,6 +1387,116 @@ func TestRunStageCommand(t *testing.T) {
 			return
 		}
 		if diff := cmp.Diff(test.want, r.state); diff != "" {
+			t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
+		}
+	}
+}
+
+func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		releaseOnlyMode bool
+		libraryState    *legacyconfig.LibraryState
+		repo            legacygitrepo.Repository
+		want            *legacyconfig.LibraryState
+	}{
+		{
+			name:            "libraries in repo with release only mode do not have changelogs",
+			releaseOnlyMode: true,
+			libraryState: &legacyconfig.LibraryState{
+				ID:          "one-id",
+				Version:     "1.2.3",
+				SourceRoots: []string{"one-id"},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+					"one-id-1.2.3": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "chore: one feat",
+						},
+						{
+							Hash:    plumbing.NewHash("654321"),
+							Message: "fix: another feat",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {"one-id/file1.txt", "one-id/file2.txt"},
+					plumbing.NewHash("654321").String(): {"one-id/file3.txt", "one-id/file4.txt"},
+				},
+			},
+			want: &legacyconfig.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "1.3.0",
+				SourceRoots:      []string{"one-id"},
+				ReleaseTriggered: true,
+			},
+		},
+		{
+			name: "libraries in repo with normal mode have changelogs",
+			libraryState: &legacyconfig.LibraryState{
+				ID:          "one-id",
+				Version:     "1.2.3",
+				SourceRoots: []string{"one-id"},
+			},
+			repo: &MockRepository{
+				GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
+					"one-id-1.2.3": {
+						{
+							Hash:    plumbing.NewHash("123456"),
+							Message: "feat: one feat",
+						},
+						{
+							Hash:    plumbing.NewHash("654321"),
+							Message: "feat: another feat",
+						},
+					},
+				},
+				ChangedFilesInCommitValueByHash: map[string][]string{
+					plumbing.NewHash("123456").String(): {"one-id/file1.txt", "one-id/file2.txt"},
+					plumbing.NewHash("654321").String(): {"one-id/file3.txt", "one-id/file4.txt"},
+				},
+			},
+			want: &legacyconfig.LibraryState{
+				ID:               "one-id",
+				PreviousVersion:  "1.2.3",
+				Version:          "1.3.0",
+				SourceRoots:      []string{"one-id"},
+				ReleaseTriggered: true,
+				Changes: []*legacyconfig.Commit{
+					{
+						Type:       "feat",
+						Subject:    "one feat",
+						CommitHash: "1234560000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+					{
+						Type:       "feat",
+						Subject:    "another feat",
+						CommitHash: "6543210000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+				},
+			},
+		},
+	} {
+		state := &legacyconfig.LibrarianState{
+			ReleaseOnlyMode: test.releaseOnlyMode,
+			Libraries: []*legacyconfig.LibraryState{
+				test.libraryState,
+			},
+		}
+		r := &stageRunner{
+			repo:  test.repo,
+			state: state,
+		}
+		err := r.processLibrary(t.Context(), test.libraryState)
+		if err != nil {
+			t.Error(err)
+		}
+		if diff := cmp.Diff(test.want, r.state.Libraries[0]); diff != "" {
 			t.Errorf("commit filter mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -1764,6 +1963,7 @@ func TestUpdateLibrary(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			r := &stageRunner{
+				state:          &legacyconfig.LibrarianState{},
 				library:        test.library,
 				libraryVersion: test.libraryVersion,
 			}
@@ -1906,6 +2106,7 @@ func TestDetermineNextVersion(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			runner := &stageRunner{
+				state:           &legacyconfig.LibrarianState{},
 				libraryVersion:  test.config.LibraryVersion,
 				librarianConfig: test.librarianConfig,
 				ghClient:        test.ghClient,

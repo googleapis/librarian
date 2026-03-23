@@ -52,35 +52,14 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return err
 	}
-
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 	}
-
-	src := filepath.Join(outdir, "cloud.google.com", "go")
-	if _, err := os.Stat(src); err != nil {
-		return fmt.Errorf("cannot access directory %q: %w", src, err)
-	}
-	if err := filesystem.MoveAndMerge(src, outdir); err != nil {
+	if err := moveGeneratedFiles(library, outdir); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(outdir, "cloud.google.com")); err != nil {
-		return err
-	}
-
-	if err := fixVersioning(outdir, library.Name, modulePath(library)); err != nil {
-		return err
-	}
-	if library.Go != nil {
-		for _, p := range library.Go.DeleteGenerationOutputPaths {
-			if err := os.RemoveAll(filepath.Join(outdir, p)); err != nil {
-				return err
-			}
-		}
-	}
-
 	moduleRoot := filepath.Join(outdir, library.Name)
 	absModuleRoot, err := filepath.Abs(moduleRoot)
 	if err != nil {
@@ -201,6 +180,37 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
+// moveGeneratedFiles restructures the generated files into the final module layout by moving the
+// generated package into the library directory, fixing version paths, and removing any paths configured
+// for deletion.
+func moveGeneratedFiles(library *config.Library, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
+	src := filepath.Join(outDir, "cloud.google.com", "go")
+	if _, err := os.Stat(src); err != nil {
+		return fmt.Errorf("cannot access directory %q: %w", src, err)
+	}
+	if err := filesystem.MoveAndMerge(src, outDir); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
+		return err
+	}
+
+	if err := fixVersioning(outDir, library.Name, modulePath(library)); err != nil {
+		return err
+	}
+	if library.Go != nil {
+		for _, p := range library.Go.DeleteGenerationOutputPaths {
+			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // fixVersioning moves {name}/{version}/* up to {name}/ for versioned modules.
 func fixVersioning(outputDir, library, modPath string) error {
 	// parts is the module path split by "/".
@@ -310,7 +320,7 @@ func updateSnippetMetadata(library *config.Library, output string) error {
 		if goAPI.ProtoOnly {
 			continue
 		}
-		baseDir := snippetDirectory(output, clientPathFromLibraryRoot(library, goAPI))
+		baseDir := snippetDirectory(output, clientPathFromRepoRoot(library, goAPI))
 		if _, err := os.Stat(baseDir); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				return nil

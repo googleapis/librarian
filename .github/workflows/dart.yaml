@@ -21,7 +21,7 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -39,4 +39,8 @@ jobs:
       - name: Run internal/sidekick/dart tests
         run: go test -race ./internal/sidekick/dart
       - name: Run internal/librarian/dart tests
-        run: go test -race ./internal/librarian/dart
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/dart
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

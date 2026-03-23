@@ -203,6 +203,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
@@ -242,6 +243,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:       "packages",
 					ReleaseLevel: "stable",
@@ -377,6 +379,12 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// The tests don't specify a version; ensure there is one, but
+			// then clear the field for further comparisons.
+			if got.Version == "" {
+				t.Errorf("expected non-empty version; was empty")
+			}
+			got.Version = ""
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -930,8 +938,8 @@ func TestBuildGoLibraries(t *testing.T) {
 				{
 					Name: "bigtable",
 					APIs: []*config.API{
-						{Path: "google/bigtable/admin/v2"},
 						{Path: "google/bigtable/v2"},
+						{Path: "google/bigtable/admin/v2"},
 					},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
@@ -1145,12 +1153,12 @@ func TestParseBazel_Error(t *testing.T) {
 
 func TestToAPIs(t *testing.T) {
 	legacyAPIs := []*legacyconfig.API{
-		{Path: "google/cloud/functions/v2"},
 		{Path: "google/cloud/functions/v1"},
+		{Path: "google/cloud/functions/v2"},
 	}
 	want := []*config.API{
-		{Path: "google/cloud/functions/v1"},
 		{Path: "google/cloud/functions/v2"},
+		{Path: "google/cloud/functions/v1"},
 	}
 	got := toAPIs(legacyAPIs)
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -1158,7 +1166,7 @@ func TestToAPIs(t *testing.T) {
 	}
 }
 
-func TestBlockLegacyGenerationAndRelease(t *testing.T) {
+func TestBlockLegacyGeneration(t *testing.T) {
 	tempDir := t.TempDir()
 	if err := os.Mkdir(filepath.Join(tempDir, librarianDir), 0755); err != nil {
 		t.Fatal(err)
@@ -1194,7 +1202,7 @@ func TestBlockLegacyGenerationAndRelease(t *testing.T) {
 			{Name: "migrated"},
 		},
 	}
-	if err := blockLegacyGenerationAndRelease(tempDir, migratedConfig); err != nil {
+	if err := blockLegacyGeneration(tempDir, migratedConfig); err != nil {
 		t.Fatal(err)
 	}
 	wantConfig := &legacyconfig.LibrarianConfig{
@@ -1210,18 +1218,15 @@ func TestBlockLegacyGenerationAndRelease(t *testing.T) {
 			{
 				LibraryID:       "migrated-already-generate-blocked",
 				GenerateBlocked: true,
-				ReleaseBlocked:  true,
 			},
 			{
 				LibraryID:       "migrated",
 				NextVersion:     "1.2.3",
 				GenerateBlocked: true,
-				ReleaseBlocked:  true,
 			},
 			{
 				LibraryID:       "not-previously-in-config",
 				GenerateBlocked: true,
-				ReleaseBlocked:  true,
 			},
 		},
 	}
@@ -1234,13 +1239,13 @@ func TestBlockLegacyGenerationAndRelease(t *testing.T) {
 	}
 }
 
-func TestBlockLegacyGenerationAndRelease_Error(t *testing.T) {
+func TestBlockLegacyGeneration_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	migratedConfig := &config.Config{}
-	gotErr := blockLegacyGenerationAndRelease(tempDir, migratedConfig)
+	gotErr := blockLegacyGeneration(tempDir, migratedConfig)
 	wantErr := os.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
-		t.Errorf("blockLegacyGenerationAndRelease error = %v, wantErr %v", gotErr, wantErr)
+		t.Errorf("blockLegacyGeneration error = %v, wantErr %v", gotErr, wantErr)
 	}
 }
 

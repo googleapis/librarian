@@ -22,7 +22,7 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -43,12 +43,16 @@ jobs:
       - name: Run sidekick tests
         run: go test -race ./internal/sidekick/...
       - name: Run internal/librarian/rust tests
-        run: go test -race ./internal/librarian/rust
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/rust
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -59,7 +63,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/install-taplo
       - name: Checkout google-cloud-rust
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: googleapis/google-cloud-rust
           path: google-cloud-rust

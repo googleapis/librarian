@@ -11,151 +11,152 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-- languages:
+- path: google/ads/admanager/v1
+  languages:
     - java
     - nodejs
     - python
-  path: google/ads/admanager/v1
   release_level:
     go: beta
   transports:
     all: rest
-- languages:
+- path: google/ads/datamanager/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/ads/datamanager/v1
   release_level:
     go: beta
-- languages:
+- path: google/ai/generativelanguage/v1
+  languages:
     - go
     - nodejs
     - python
-  path: google/ai/generativelanguage/v1
   release_level:
     go: beta
-- languages:
+- path: google/ai/generativelanguage/v1alpha
+  languages:
     - go
     - nodejs
     - python
-  path: google/ai/generativelanguage/v1alpha
   release_level:
     go: beta
-- languages:
+- path: google/ai/generativelanguage/v1beta
+  languages:
     - dart
     - go
     - nodejs
     - python
-  path: google/ai/generativelanguage/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/ai/generativelanguage/v1beta2
+  languages:
     - go
     - nodejs
     - python
-  path: google/ai/generativelanguage/v1beta2
   release_level:
     go: beta
-- languages:
+- path: google/ai/generativelanguage/v1beta3
+  languages:
     - nodejs
     - python
-  path: google/ai/generativelanguage/v1beta3
   release_level:
     go: beta
-- documentation_uri: https://developers.google.com/analytics/
+- path: google/analytics/admin/v1alpha
+  documentation_uri: https://developers.google.com/analytics/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  path: google/analytics/admin/v1alpha
   release_level:
     go: alpha
-- documentation_uri: https://developers.google.com/analytics/
+- path: google/analytics/admin/v1beta
+  documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  path: google/analytics/admin/v1beta
   release_level:
     go: beta
-- documentation_uri: https://developers.google.com/analytics/
+- path: google/analytics/data/v1alpha
+  documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  path: google/analytics/data/v1alpha
   release_level:
     go: beta
-- documentation_uri: https://developers.google.com/analytics/
+- path: google/analytics/data/v1beta
+  documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  path: google/analytics/data/v1beta
   release_level:
     go: beta
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/api
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/api
-- documentation_uri: https://cloud.google.com/api-keys/docs
+- path: google/api/apikeys/v2
+  documentation_uri: https://cloud.google.com/api-keys/docs
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/api/apikeys/v2
-- languages:
+- path: google/api/cloudquotas/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/api/cloudquotas/v1
-- languages:
+- path: google/api/cloudquotas/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/api/cloudquotas/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
+- path: google/api/servicecontrol/v1
+  documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/api/servicecontrol/v1
-- documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
+- path: google/api/servicecontrol/v2
+  documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/api/servicecontrol/v2
-- documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
+- path: google/api/servicemanagement/v1
+  documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/api/servicemanagement/v1
-- documentation_uri: https://cloud.google.com/service-usage
+- path: google/api/serviceusage/v1
+  documentation_uri: https://cloud.google.com/service-usage
   languages:
     - go
     - java
@@ -164,70 +165,70 @@
     - rust
   no_rest_numeric_enums:
     go: true
-  path: google/api/serviceusage/v1
-- languages:
+- path: google/api/serviceusage/v1beta1
+  languages:
     - java
     - nodejs
-  path: google/api/serviceusage/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/logging/docs/reference/v2/rpc/google.appengine.logging.v1
+- path: google/appengine/logging/v1
+  documentation_uri: https://cloud.google.com/logging/docs/reference/v2/rpc/google.appengine.logging.v1
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/appengine/logging/v1
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/appengine/docs/admin-api/
+- path: google/appengine/v1
+  documentation_uri: https://cloud.google.com/appengine/docs/admin-api/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/appengine/v1
-- documentation_uri: https://developers.google.com/chat
+- path: google/apps/card/v1
+  documentation_uri: https://developers.google.com/chat
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/card/v1
-- languages:
+- path: google/apps/events/subscriptions/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/apps/events/subscriptions/v1
   release_level:
     go: beta
-- languages:
+- path: google/apps/events/subscriptions/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/apps/events/subscriptions/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/apps/meet/v2
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/apps/meet/v2
   release_level:
     go: beta
-- languages:
+- path: google/apps/meet/v2beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/apps/meet/v2beta
   release_level:
     go: beta
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - java
@@ -236,11 +237,11 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type/calendar
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - python
@@ -248,24 +249,11 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type/calendar
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
-  languages:
-    - go
-    - java
-    - python
-    - rust
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  no_rest_numeric_enums:
-    python: true
-  path: google/apps/script/type/docs
-  title: Google Apps Script Types
-  transports:
-    python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type/docs
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - java
@@ -274,11 +262,11 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type/drive
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type/drive
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - java
@@ -287,11 +275,11 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type/gmail
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type/gmail
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - java
@@ -300,11 +288,11 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type/sheets
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://developers.google.com/apps-script/
+- path: google/apps/script/type/sheets
+  documentation_uri: https://developers.google.com/apps-script/
   languages:
     - go
     - java
@@ -313,42 +301,55 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/apps/script/type/slides
   title: Google Apps Script Types
   transports:
     python: grpc
-- documentation_uri: https://area120.google.com
+- path: google/apps/script/type/slides
+  documentation_uri: https://developers.google.com/apps-script/
+  languages:
+    - go
+    - java
+    - python
+    - rust
+  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
+  no_rest_numeric_enums:
+    python: true
+  title: Google Apps Script Types
+  transports:
+    python: grpc
+- path: google/area120/tables/v1alpha1
+  documentation_uri: https://area120.google.com
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/area120/tables/v1alpha1
   release_level:
     go: alpha
-- languages:
+- path: google/bigtable/admin/v2
+  languages:
     - go
     - python
     - rust
-  path: google/bigtable/admin/v2
   transports:
     csharp: grpc
     go: grpc
     java: grpc
     nodejs: grpc
     ruby: grpc
-- languages:
+- path: google/bigtable/v2
+  languages:
     - go
-  path: google/bigtable/v2
-- languages:
+- path: google/chat/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/chat/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/abuseevent/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -356,85 +357,85 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/abuseevent/logging/v1
-- languages:
+- path: google/cloud/accessapproval/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/accessapproval/v1
-- languages:
+- path: google/cloud/advisorynotifications/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/advisorynotifications/v1
-- languages:
+- path: google/cloud/aiplatform/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/aiplatform/v1
   transports:
     go: grpc
     java: grpc
     nodejs: grpc
-- languages:
+- path: google/cloud/aiplatform/v1/schema/predict/instance
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1/schema/predict/instance
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
     python: grpc
-- languages:
+- path: google/cloud/aiplatform/v1/schema/predict/params
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1/schema/predict/params
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
     python: grpc
-- languages:
+- path: google/cloud/aiplatform/v1/schema/predict/prediction
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1/schema/predict/prediction
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
     python: grpc
-- languages:
+- path: google/cloud/aiplatform/v1/schema/trainingjob/definition
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1/schema/trainingjob/definition
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
   transports:
     python: grpc
-- languages:
+- path: google/cloud/aiplatform/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/aiplatform/v1beta1
   release_level:
     go: beta
   service_config: google/cloud/aiplatform/v1beta1/aiplatform_v1beta1.yaml
   transports:
     java: grpc
-- languages:
+- path: google/cloud/aiplatform/v1beta1/schema/predict/instance
+  languages:
     - dart
     - go
     - java
@@ -442,8 +443,8 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1beta1/schema/predict/instance
-- languages:
+- path: google/cloud/aiplatform/v1beta1/schema/predict/params
+  languages:
     - dart
     - go
     - java
@@ -451,8 +452,8 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1beta1/schema/predict/params
-- languages:
+- path: google/cloud/aiplatform/v1beta1/schema/predict/prediction
+  languages:
     - dart
     - go
     - java
@@ -460,8 +461,8 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1beta1/schema/predict/prediction
-- languages:
+- path: google/cloud/aiplatform/v1beta1/schema/trainingjob/definition
+  languages:
     - dart
     - go
     - java
@@ -469,87 +470,86 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/aiplatform/v1beta1/schema/trainingjob/definition
-- languages:
+- path: google/cloud/alloydb/connectors/v1
+  languages:
     - go
     - java
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/alloydb/connectors/v1
-- languages:
+- path: google/cloud/alloydb/connectors/v1alpha
+  languages:
     - go
     - java
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/alloydb/connectors/v1alpha
-- languages:
+- path: google/cloud/alloydb/connectors/v1beta
+  languages:
     - go
     - java
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/alloydb/connectors/v1beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/alloydb/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/alloydb/v1alpha
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/alloydb/v1beta
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/api-gateway
+- path: google/cloud/alloydb/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/apigateway/v1
-- documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
+- path: google/cloud/alloydb/v1alpha
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/alloydb/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/apigateway/v1
+  documentation_uri: https://cloud.google.com/api-gateway
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/apigeeconnect/v1
+- path: google/cloud/apigeeconnect/v1
+  documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
   transports:
     go: ""
     python: grpc
-- documentation_uri: https://cloud.google.com/apigee/docs/api-hub/get-started-registry-api
+- path: google/cloud/apigeeregistry/v1
+  documentation_uri: https://cloud.google.com/apigee/docs/api-hub/get-started-registry-api
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/apigeeregistry/v1
   transports:
     go: ""
-- languages:
+- path: google/cloud/apihub/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/apihub/v1
   release_level:
     go: beta
   transports:
@@ -559,128 +559,129 @@
     nodejs: rest
     php: rest
     ruby: rest
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/apiregistry/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/apiregistry/v1beta
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/apphub/v1
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
+- path: google/cloud/apiregistry/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
+  release_level:
+    go: beta
+- path: google/cloud/apiregistry/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/apphub/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/asset/v1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
-  path: google/cloud/asset/v1
-- documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
+- path: google/cloud/asset/v1p1beta1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
-  path: google/cloud/asset/v1p1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
+- path: google/cloud/asset/v1p2beta1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
-  path: google/cloud/asset/v1p2beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
+- path: google/cloud/asset/v1p5beta1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
-  path: google/cloud/asset/v1p5beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/asset/v1p7beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/asset/v1p7beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/assured-workloads/
+- path: google/cloud/assuredworkloads/v1
+  documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/assuredworkloads/v1
-- documentation_uri: https://cloud.google.com/assured-workloads/
+- path: google/cloud/assuredworkloads/v1beta1
+  documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/assuredworkloads/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/logging/docs/audit
+- path: google/cloud/audit
+  documentation_uri: https://cloud.google.com/logging/docs/audit
   languages:
     - python
-  path: google/cloud/audit
-- languages:
+- path: google/cloud/auditmanager/v1
+  languages:
     - go
     - java
     - python
     - rust
-  path: google/cloud/auditmanager/v1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/automl/docs/
+- path: google/cloud/automl/v1
+  documentation_uri: https://cloud.google.com/automl/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
-  path: google/cloud/automl/v1
-- documentation_uri: https://cloud.google.com/automl/docs/
+- path: google/cloud/automl/v1beta1
+  documentation_uri: https://cloud.google.com/automl/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
-  path: google/cloud/automl/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/backupdr/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -688,111 +689,111 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/backupdr/logging/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/backupdr/v1
-- documentation_uri: https://cloud.google.com/bare-metal/docs
+- path: google/cloud/backupdr/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/baremetalsolution/v2
-- documentation_uri: https://cloud.google.com/batch/docs
+- path: google/cloud/baremetalsolution/v2
+  documentation_uri: https://cloud.google.com/bare-metal/docs
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/batch/v1
-- documentation_uri: https://cloud.google.com/batch/docs
+    - rust
+- path: google/cloud/batch/v1
+  documentation_uri: https://cloud.google.com/batch/docs
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+- path: google/cloud/batch/v1alpha
+  documentation_uri: https://cloud.google.com/batch/docs
   languages:
     - java
     - nodejs
     - python
-  path: google/cloud/batch/v1alpha
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/beyondcorp/
+- path: google/cloud/beyondcorp/appconnections/v1
+  documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/beyondcorp/appconnections/v1
   transports:
     csharp: grpc
     go: ""
     java: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/beyondcorp/
+- path: google/cloud/beyondcorp/appconnectors/v1
+  documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/beyondcorp/appconnectors/v1
   transports:
     csharp: grpc
     go: ""
     java: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/beyondcorp/
+- path: google/cloud/beyondcorp/appgateways/v1
+  documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/beyondcorp/appgateways/v1
   transports:
     csharp: grpc
     go: ""
     java: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/beyondcorp/
+- path: google/cloud/beyondcorp/clientconnectorservices/v1
+  documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/beyondcorp/clientconnectorservices/v1
   transports:
     csharp: grpc
     go: ""
     java: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/beyondcorp/
+- path: google/cloud/beyondcorp/clientgateways/v1
+  documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/beyondcorp/clientgateways/v1
   transports:
     csharp: grpc
     go: ""
     java: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/biglake/v1
+  languages:
     - go
     - java
     - python
     - rust
-  path: google/cloud/biglake/v1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/analytics-hub
+- path: google/cloud/bigquery/analyticshub/v1
+  documentation_uri: https://cloud.google.com/analytics-hub
   languages:
     - go
     - java
@@ -801,39 +802,39 @@
     - rust
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/analyticshub/v1
   transports:
     python: grpc
-- languages:
+- path: google/cloud/bigquery/biglake/v1
+  languages:
     - go
     - java
     - python
-  path: google/cloud/bigquery/biglake/v1
-- languages:
+- path: google/cloud/bigquery/biglake/v1alpha1
+  languages:
     - go
     - java
     - python
-  path: google/cloud/bigquery/biglake/v1alpha1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
+- path: google/cloud/bigquery/connection/v1
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/bigquery/connection/v1
-- languages:
+- path: google/cloud/bigquery/connection/v1beta1
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/cloud/bigquery/connection/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/bigquery/docs/analytics-hub-introduction
+- path: google/cloud/bigquery/dataexchange/v1beta1
+  documentation_uri: https://cloud.google.com/bigquery/docs/analytics-hub-introduction
   languages:
     - go
     - java
@@ -841,20 +842,20 @@
     - python
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/dataexchange/v1beta1
   release_level:
     go: beta
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
+- path: google/cloud/bigquery/datapolicies/v1
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/bigquery/datapolicies/v1
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
+- path: google/cloud/bigquery/datapolicies/v1beta1
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
   languages:
     - go
     - java
@@ -862,29 +863,29 @@
     - python
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/datapolicies/v1beta1
   release_level:
     go: beta
   transports:
     python: grpc
-- languages:
+- path: google/cloud/bigquery/datapolicies/v2
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/bigquery/datapolicies/v2
   release_level:
     go: beta
-- languages:
+- path: google/cloud/bigquery/datapolicies/v2beta1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/bigquery/datapolicies/v2beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/bigquery/transfer/
+- path: google/cloud/bigquery/datatransfer/v1
+  documentation_uri: https://cloud.google.com/bigquery/transfer/
   languages:
     - go
     - java
@@ -892,17 +893,17 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
-  path: google/cloud/bigquery/datatransfer/v1
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/auditlogs
+- path: google/cloud/bigquery/logging/v1
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/auditlogs
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/bigquery/logging/v1
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
+- path: google/cloud/bigquery/migration/v2
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
   languages:
     - go
     - java
@@ -912,12 +913,12 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/migration/v2
   transports:
     go: grpc
     nodejs: grpc
     python: grpc
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
+- path: google/cloud/bigquery/migration/v2alpha
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/migration/
   languages:
     - go
     - java
@@ -926,47 +927,47 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/migration/v2alpha
   release_level:
     go: alpha
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/bigquery/docs/reference/reservations
+- path: google/cloud/bigquery/reservation/v1
+  documentation_uri: https://cloud.google.com/bigquery/docs/reference/reservations
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/bigquery/reservation/v1
-- languages:
+- path: google/cloud/bigquery/storage/v1
+  languages:
     - go
     - python
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/storage/v1
   transports:
     go: grpc
     java: grpc
     nodejs: grpc
     python: grpc
-- languages:
+- path: google/cloud/bigquery/storage/v1alpha
+  languages:
     - go
     - python
-  path: google/cloud/bigquery/storage/v1alpha
   release_level:
     go: beta
   transports:
     all: grpc
-- languages:
+- path: google/cloud/bigquery/storage/v1beta
+  languages:
     - go
     - python
-  path: google/cloud/bigquery/storage/v1beta
   release_level:
     go: beta
   transports:
     all: grpc
-- languages:
+- path: google/cloud/bigquery/storage/v1beta1
+  languages:
     - dart
     - go
     - java
@@ -974,10 +975,10 @@
     - rust
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/bigquery/storage/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/bigquery/storage/v1beta2
+  languages:
     - go
     - python
   no_rest_numeric_enums:
@@ -987,39 +988,38 @@
     nodejs: true
     php: true
     python: true
-  path: google/cloud/bigquery/storage/v1beta2
   release_level:
     go: beta
   transports:
     java: grpc
     python: grpc
-- languages:
+- path: google/cloud/bigquery/v2
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     go: true
-  path: google/cloud/bigquery/v2
   release_level:
     go: alpha
   transports:
     python: rest
-- documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
+- path: google/cloud/billing/budgets/v1
+  documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559770
-  path: google/cloud/billing/budgets/v1
-- documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
+- path: google/cloud/billing/budgets/v1beta1
+  documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559770
-  path: google/cloud/billing/budgets/v1beta1
   release_level:
     go: beta
   transports:
@@ -1027,117 +1027,117 @@
     java: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/billing
+- path: google/cloud/billing/v1
+  documentation_uri: https://cloud.google.com/billing
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/billing/v1
-- documentation_uri: https://cloud.google.com/binary-authorization
+- path: google/cloud/binaryauthorization/v1
+  documentation_uri: https://cloud.google.com/binary-authorization
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/binaryauthorization/v1
-- documentation_uri: https://cloud.google.com/binary-authorization
+- path: google/cloud/binaryauthorization/v1beta1
+  documentation_uri: https://cloud.google.com/binary-authorization
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/binaryauthorization/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/blockchainnodeengine/v1
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/cloud/blockchainnodeengine/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/capacityplanner/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/capacityplanner/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/python/docs/reference/certificatemanager/latest
+- path: google/cloud/certificatemanager/v1
+  documentation_uri: https://cloud.google.com/python/docs/reference/certificatemanager/latest
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/certificatemanager/v1
-- languages:
-    - dart
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/ces/v1
-  release_level:
-    go: beta
-- languages:
+- path: google/cloud/ces/v1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/ces/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/channel/
+- path: google/cloud/ces/v1beta
+  languages:
+    - dart
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/channel/v1
+  documentation_uri: https://cloud.google.com/channel/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/channel/v1
   transports:
     python: grpc
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/chronicle/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/cloudcontrolspartner/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/cloudcontrolspartner/v1beta
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/database-migration/
+- path: google/cloud/chronicle/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/clouddms/v1
+  release_level:
+    go: beta
+- path: google/cloud/cloudcontrolspartner/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/cloudcontrolspartner/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/clouddms/v1
+  documentation_uri: https://cloud.google.com/database-migration/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
   transports:
     csharp: grpc
     go: grpc
@@ -1145,42 +1145,43 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/cloudsecuritycompliance/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/cloudsecuritycompliance/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/commerce/consumer/procurement/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/commerce/consumer/procurement/v1
-- documentation_uri: https://cloud.google.com/marketplace/docs/
+- path: google/cloud/commerce/consumer/procurement/v1alpha1
+  documentation_uri: https://cloud.google.com/marketplace/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues/new?component=1396141
-  path: google/cloud/commerce/consumer/procurement/v1alpha1
   release_level:
     go: alpha
-- languages:
+- path: google/cloud/common
+  languages:
     - dart
     - go
     - python
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/common
   transports:
     python: grpc
-- discovery: discoveries/compute.v1.json
+- path: google/cloud/compute/v1
+  discovery: discoveries/compute.v1.json
   documentation_uri: https://cloud.google.com/compute/
   languages:
     - go
@@ -1192,98 +1193,98 @@
   no_rest_numeric_enums:
     go: true
     python: true
-  path: google/cloud/compute/v1
   transports:
     csharp: rest
     go: rest
     java: rest
     php: rest
-- languages:
+- path: google/cloud/compute/v1beta
+  languages:
     - go
     - nodejs
     - python
   no_rest_numeric_enums:
     go: true
     python: true
-  path: google/cloud/compute/v1beta
   transports:
     go: rest
     java: rest
-- languages:
+- path: google/cloud/confidentialcomputing/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/confidentialcomputing/v1
-- languages:
+- path: google/cloud/confidentialcomputing/v1alpha1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/confidentialcomputing/v1alpha1
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/config/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/configdelivery/v1
-  release_level:
-    go: beta
-- languages:
-    - nodejs
-    - python
-  path: google/cloud/configdelivery/v1alpha
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/configdelivery/v1beta
-  release_level:
-    go: beta
-- languages:
-    - go
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/connectors/v1
-- documentation_uri: https://cloud.google.com/contact-center/insights/docs
+- path: google/cloud/config/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/contactcenterinsights/v1
-- documentation_uri: https://cloud.google.com/document-warehouse/
+- path: google/cloud/configdelivery/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/configdelivery/v1alpha
+  languages:
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/configdelivery/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/connectors/v1
+  languages:
+    - go
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/contactcenterinsights/v1
+  documentation_uri: https://cloud.google.com/contact-center/insights/docs
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/contentwarehouse/v1
+  documentation_uri: https://cloud.google.com/document-warehouse/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/cloud/contentwarehouse/v1
-- languages:
+- path: google/cloud/databasecenter/v1beta
+  languages:
     - java
     - python
-  path: google/cloud/databasecenter/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
+- path: google/cloud/datacatalog/lineage/v1
+  documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
   languages:
     - go
     - java
@@ -1293,72 +1294,71 @@
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     php: true
-  path: google/cloud/datacatalog/lineage/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  no_rest_numeric_enums:
-    all: true
-  path: google/cloud/datacatalog/v1
-  transports:
-    python: grpc
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  no_rest_numeric_enums:
-    all: true
-  path: google/cloud/datacatalog/v1beta1
-  release_level:
-    go: beta
-  transports:
-    python: grpc
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/dataform/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/dataform/v1beta1
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/data-fusion
+- path: google/cloud/datacatalog/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/datafusion/v1
-- languages:
+  no_rest_numeric_enums:
+    all: true
+  transports:
+    python: grpc
+- path: google/cloud/datacatalog/v1beta1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  no_rest_numeric_enums:
+    all: true
+  release_level:
+    go: beta
+  transports:
+    python: grpc
+- path: google/cloud/dataform/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/dataform/v1beta1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/datafusion/v1
+  documentation_uri: https://cloud.google.com/data-fusion
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/datafusion/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/datafusion/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/data-labeling/docs/
+- path: google/cloud/datalabeling/v1beta1
+  documentation_uri: https://cloud.google.com/data-labeling/docs/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/datalabeling/v1beta1
   release_level:
     go: beta
   transports:
@@ -1366,14 +1366,15 @@
     java: grpc
     python: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/dataplex/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/dataplex/v1
-- languages:
+- path: google/cloud/dataproc/logging
+  languages:
     - dart
     - go
     - java
@@ -1381,8 +1382,8 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/dataproc/logging
-- documentation_uri: https://cloud.google.com/dataproc
+- path: google/cloud/dataproc/v1
+  documentation_uri: https://cloud.google.com/dataproc
   languages:
     - go
     - java
@@ -1390,18 +1391,18 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559745
-  path: google/cloud/dataproc/v1
-- documentation_uri: https://cloud.google.com/bigquery/docs/dataqna
+- path: google/cloud/dataqna/v1alpha
+  documentation_uri: https://cloud.google.com/bigquery/docs/dataqna
   languages:
     - go
     - nodejs
     - python
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/dataqna/v1alpha
   release_level:
     go: alpha
-- languages:
+- path: google/cloud/datastream/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -1409,51 +1410,51 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/datastream/logging/v1
-- documentation_uri: https://cloud.google.com/datastream/
+- path: google/cloud/datastream/v1
+  documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/datastream/v1
-- documentation_uri: https://cloud.google.com/datastream/
+- path: google/cloud/datastream/v1alpha1
+  documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/datastream/v1alpha1
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/deploy/
+- path: google/cloud/deploy/v1
+  documentation_uri: https://cloud.google.com/deploy/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/deploy/v1
-- languages:
+- path: google/cloud/developerconnect/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/developerconnect/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/devicestreaming/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/devicestreaming/v1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/dialogflow/cx/docs
+- path: google/cloud/dialogflow/cx/v3
+  documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   languages:
     - go
     - java
@@ -1461,136 +1462,136 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
-  path: google/cloud/dialogflow/cx/v3
-- documentation_uri: https://cloud.google.com/dialogflow/cx/docs
+- path: google/cloud/dialogflow/cx/v3beta1
+  documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
-  path: google/cloud/dialogflow/cx/v3beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/dialogflow/v2
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/dialogflow/v2
-- languages:
+- path: google/cloud/dialogflow/v2beta1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/dialogflow/v2beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/discoveryengine/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/discoveryengine/v1
-- languages:
+- path: google/cloud/discoveryengine/v1alpha
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/discoveryengine/v1alpha
   release_level:
     go: beta
-- languages:
+- path: google/cloud/discoveryengine/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/discoveryengine/v1beta
   release_level:
     go: beta
-- discovery: discoveries/dns.v1.json
+- path: google/cloud/dns/v1
+  discovery: discoveries/dns.v1.json
   languages:
     - go
     - python
     - rust
-  path: google/cloud/dns/v1
   short_name: dns
   service_name: dns.googleapis.com
   title: Cloud DNS
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/documentai/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/documentai/v1beta3
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/domains
+- path: google/cloud/documentai/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/domains/v1
-- languages:
+- path: google/cloud/documentai/v1beta3
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/domains/v1
+  documentation_uri: https://cloud.google.com/domains
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/domains/v1alpha2
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/domains/v1alpha2
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/domains
+- path: google/cloud/domains/v1beta1
+  documentation_uri: https://cloud.google.com/domains
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/domains/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/distributed-cloud/edge
+- path: google/cloud/edgecontainer/v1
+  documentation_uri: https://cloud.google.com/distributed-cloud/edge
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/edgecontainer/v1
-- languages:
+- path: google/cloud/edgenetwork/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/edgenetwork/v1
-- documentation_uri: https://cloud.google.com/enterprise-knowledge-graph/
+- path: google/cloud/enterpriseknowledgegraph/v1
+  documentation_uri: https://cloud.google.com/enterprise-knowledge-graph/
   languages:
     - java
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/cloud/enterpriseknowledgegraph/v1
-- documentation_uri: https://cloud.google.com/resource-manager/docs/managing-notification-contacts/
+- path: google/cloud/essentialcontacts/v1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/managing-notification-contacts/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/essentialcontacts/v1
-- languages:
+- path: google/cloud/eventarc/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -1598,59 +1599,59 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/eventarc/logging/v1
-- documentation_uri: https://cloud.google.com/eventarc/docs
+- path: google/cloud/eventarc/publishing/v1
+  documentation_uri: https://cloud.google.com/eventarc/docs
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/eventarc/publishing/v1
-- documentation_uri: https://cloud.google.com/eventarc/
+- path: google/cloud/eventarc/v1
+  documentation_uri: https://cloud.google.com/eventarc/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/eventarc/v1
-- documentation_uri: https://cloud.google.com/filestore/
+- path: google/cloud/filestore/v1
+  documentation_uri: https://cloud.google.com/filestore/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/filestore/v1
-- languages:
+- path: google/cloud/filestore/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/filestore/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/financialservices/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/financialservices/v1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/functions/
+- path: google/cloud/functions/v1
+  documentation_uri: https://cloud.google.com/functions/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
-  path: google/cloud/functions/v1
-- documentation_uri: https://cloud.google.com/functions/
+- path: google/cloud/functions/v2
+  documentation_uri: https://cloud.google.com/functions/
   languages:
     - dart
     - go
@@ -1659,88 +1660,49 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
-  path: google/cloud/functions/v2
-- languages:
+- path: google/cloud/functions/v2alpha
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/functions/v2alpha
   release_level:
     go: alpha
-- languages:
+- path: google/cloud/functions/v2beta
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/functions/v2beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/gdchardwaremanagement/v1alpha
+  languages:
     - java
     - nodejs
     - python
-  path: google/cloud/gdchardwaremanagement/v1alpha
   release_level:
     go: beta
-- languages:
+- path: google/cloud/geminidataanalytics/v1alpha
+  languages:
     - nodejs
     - python
-  path: google/cloud/geminidataanalytics/v1alpha
   release_level:
     go: beta
-- languages:
+- path: google/cloud/geminidataanalytics/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/geminidataanalytics/v1beta
   release_level:
     go: beta
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkebackup/logging/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/gkebackup/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/gkeconnect/gateway/v1
-  release_level:
-    go: beta
-  transports:
-    all: rest
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  no_rest_numeric_enums:
-    all: true
-  path: google/cloud/gkeconnect/gateway/v1beta1
-  release_level:
-    go: beta
-  transports:
-    all: rest
-- languages:
+- path: google/cloud/gkebackup/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -1748,154 +1710,193 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/gkehub/policycontroller/v1beta
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/servicemesh/v1beta
-- documentation_uri: https://cloud.google.com/anthos/gke/docs/
+- path: google/cloud/gkebackup/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/gkehub/v1
-- languages:
-    - go
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1/configmanagement
-  title: GKE Hub Types
-  transports:
-    python: grpc
-- languages:
-    - go
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1/multiclusteringress
-  title: GKE Hub Types
-  transports:
-    python: grpc
-- languages:
-    - go
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1/rbacrolebindingactuation
-  title: GKE Hub Types
-- languages:
-    - dart
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/gkehub/v1alpha
-  release_level:
-    go: alpha
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1alpha/cloudauditlogging
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1alpha/configmanagement
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1alpha/metering
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1alpha/multiclusteringress
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1alpha/servicemesh
-- languages:
-    - dart
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/gkehub/v1beta
-  release_level:
-    go: beta
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1beta/configmanagement
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1beta/metering
-- languages:
-    - dart
-    - go
-    - java
-    - python
-    - rust
-  no_rest_numeric_enums:
-    python: true
-  path: google/cloud/gkehub/v1beta/multiclusteringress
-- documentation_uri: https://cloud.google.com/anthos/gke/docs/
+- path: google/cloud/gkeconnect/gateway/v1
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/gkehub/v1beta1
+    - rust
   release_level:
     go: beta
-- languages:
+  transports:
+    all: rest
+- path: google/cloud/gkeconnect/gateway/v1beta1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  no_rest_numeric_enums:
+    all: true
+  release_level:
+    go: beta
+  transports:
+    all: rest
+- path: google/cloud/gkehub/policycontroller/v1beta
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/servicemesh/v1beta
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1
+  documentation_uri: https://cloud.google.com/anthos/gke/docs/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/gkehub/v1/configmanagement
+  languages:
+    - go
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  title: GKE Hub Types
+  transports:
+    python: grpc
+- path: google/cloud/gkehub/v1/multiclusteringress
+  languages:
+    - go
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  title: GKE Hub Types
+  transports:
+    python: grpc
+- path: google/cloud/gkehub/v1/rbacrolebindingactuation
+  languages:
+    - go
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+  title: GKE Hub Types
+- path: google/cloud/gkehub/v1alpha
+  languages:
+    - dart
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: alpha
+- path: google/cloud/gkehub/v1alpha/cloudauditlogging
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1alpha/configmanagement
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1alpha/metering
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1alpha/multiclusteringress
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1alpha/servicemesh
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1beta
+  languages:
+    - dart
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/gkehub/v1beta/configmanagement
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1beta/metering
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1beta/multiclusteringress
+  languages:
+    - dart
+    - go
+    - java
+    - python
+    - rust
+  no_rest_numeric_enums:
+    python: true
+- path: google/cloud/gkehub/v1beta1
+  documentation_uri: https://cloud.google.com/anthos/gke/docs/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/gkemulticloud/v1
+  languages:
     - go
     - java
     - nodejs
@@ -1903,82 +1904,82 @@
     - rust
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/gkemulticloud/v1
   transports:
     go: grpc
     nodejs: grpc
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/gkerecommender/v1
-  release_level:
-    go: beta
-- documentation_uri: https://developers.google.com/workspace/add-ons/overview
+- path: google/cloud/gkerecommender/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/gsuiteaddons/v1
-- languages:
-    - dart
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/hypercomputecluster/v1
   release_level:
     go: beta
-- languages:
-    - dart
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/hypercomputecluster/v1alpha
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/hypercomputecluster/v1beta
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/iap
+- path: google/cloud/gsuiteaddons/v1
+  documentation_uri: https://developers.google.com/workspace/add-ons/overview
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/iap/v1
-- languages:
+- path: google/cloud/hypercomputecluster/v1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/iap/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/intrusion-detection-system/
+- path: google/cloud/hypercomputecluster/v1alpha
+  languages:
+    - dart
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/hypercomputecluster/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/iap/v1
+  documentation_uri: https://cloud.google.com/iap
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/ids/v1
-- languages:
+- path: google/cloud/iap/v1beta1
+  languages:
+    - dart
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/ids/v1
+  documentation_uri: https://cloud.google.com/intrusion-detection-system/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/integrations/v1alpha
+  languages:
     - dart
     - go
     - java
@@ -1986,15 +1987,15 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/integrations/v1alpha
-- languages:
+- path: google/cloud/kms/inventory/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/kms/inventory/v1
-- documentation_uri: https://cloud.google.com/kms
+- path: google/cloud/kms/v1
+  documentation_uri: https://cloud.google.com/kms
   languages:
     - go
     - java
@@ -2002,25 +2003,25 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5264932
-  path: google/cloud/kms/v1
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
-  path: google/cloud/language/v1
-- documentation_uri: https://cloud.google.com/natural-language/docs/
+- path: google/cloud/language/v1
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
-  path: google/cloud/language/v1beta2
+- path: google/cloud/language/v1beta2
+  documentation_uri: https://cloud.google.com/natural-language/docs/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559753
   release_level:
     go: beta
-- languages:
+- path: google/cloud/language/v2
+  languages:
     - dart
     - go
     - java
@@ -2028,76 +2029,75 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
-  path: google/cloud/language/v2
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/licensemanager/v1
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/life-sciences/
+- path: google/cloud/licensemanager/v1
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/lifesciences/v2beta
+    - rust
   release_level:
     go: beta
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/cloud/lifesciences/v2beta
+  documentation_uri: https://cloud.google.com/life-sciences/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/location
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/cloud/location
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/locationfinder/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/lustre/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/maintenance/api/v1
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/maintenance/api/v1beta
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/managed-microsoft-ad/
+- path: google/cloud/locationfinder/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/managedidentities/v1
+  release_level:
+    go: beta
+- path: google/cloud/lustre/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/maintenance/api/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/maintenance/api/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/managedidentities/v1
+  documentation_uri: https://cloud.google.com/managed-microsoft-ad/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
   transports:
     csharp: grpc
     go: grpc
@@ -2105,40 +2105,40 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/managedidentities/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/managedidentities/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/managedkafka/schemaregistry/v1
+  languages:
     - go
     - nodejs
     - python
     - rust
-  path: google/cloud/managedkafka/schemaregistry/v1
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/managedkafka/v1
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/media-translation
+- path: google/cloud/managedkafka/v1
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/mediatranslation/v1beta1
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/mediatranslation/v1beta1
+  documentation_uri: https://cloud.google.com/media-translation
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
   release_level:
     go: beta
   transports:
@@ -2148,102 +2148,103 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
+- path: google/cloud/memcache/v1
+  documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/memcache/v1
-- documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
+- path: google/cloud/memcache/v1beta2
+  documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/memcache/v1beta2
   release_level:
     go: beta
-- languages:
+- path: google/cloud/memorystore/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/memorystore/v1
-  release_level:
-    go: beta
-  transports:
-    all: rest
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/memorystore/v1beta
   release_level:
     go: beta
   transports:
     all: rest
-- documentation_uri: https://cloud.google.com/dataproc-metastore/
+- path: google/cloud/memorystore/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+  transports:
+    all: rest
+- path: google/cloud/metastore/v1
+  documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/metastore/v1
-- documentation_uri: https://cloud.google.com/dataproc-metastore/
+- path: google/cloud/metastore/v1alpha
+  documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/metastore/v1alpha
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/dataproc-metastore/
+- path: google/cloud/metastore/v1beta
+  documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/metastore/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/migrationcenter/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/migrationcenter/v1
-- languages:
+- path: google/cloud/modelarmor/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/modelarmor/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/modelarmor/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/modelarmor/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/netapp/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/netapp/v1
-- languages:
+- path: google/cloud/networkanalyzer/logging/v1
+  languages:
     - dart
     - go
     - java
@@ -2251,15 +2252,14 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/networkanalyzer/logging/v1
-- documentation_uri: https://cloud.google.com/network-connectivity/
+- path: google/cloud/networkconnectivity/v1
+  documentation_uri: https://cloud.google.com/network-connectivity/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networkconnectivity/v1
   transports:
     csharp: grpc
     go: grpc
@@ -2267,13 +2267,13 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/network-connectivity/
+- path: google/cloud/networkconnectivity/v1alpha1
+  documentation_uri: https://cloud.google.com/network-connectivity/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/networkconnectivity/v1alpha1
   release_level:
     go: alpha
   transports:
@@ -2281,206 +2281,207 @@
     java: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/network-connectivity/
+- path: google/cloud/networkconnectivity/v1beta
+  documentation_uri: https://cloud.google.com/network-connectivity/
   languages:
     - go
     - nodejs
     - python
-  path: google/cloud/networkconnectivity/v1beta
   release_level:
     go: beta
   transports:
     go: grpc
     python: grpc
-- documentation_uri: https://cloud.google.com/network-management
+- path: google/cloud/networkmanagement/v1
+  documentation_uri: https://cloud.google.com/network-management
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networkmanagement/v1
-- languages:
+- path: google/cloud/networkmanagement/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networkmanagement/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/traffic-director/docs/reference/network-security/rest
+- path: google/cloud/networksecurity/v1
+  documentation_uri: https://cloud.google.com/traffic-director/docs/reference/network-security/rest
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networksecurity/v1
   transports:
     csharp: grpc
     java: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/networksecurity/v1alpha1
+  languages:
     - nodejs
     - python
-  path: google/cloud/networksecurity/v1alpha1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/traffic-director/docs/reference/network-security/rest
+- path: google/cloud/networksecurity/v1beta1
+  documentation_uri: https://cloud.google.com/traffic-director/docs/reference/network-security/rest
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/networksecurity/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/networkservices/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networkservices/v1
-- languages:
+- path: google/cloud/networkservices/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/networkservices/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/ai-platform/notebooks/
+- path: google/cloud/notebooks/v1
+  documentation_uri: https://cloud.google.com/ai-platform/notebooks/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/notebooks/v1
   transports:
     go: grpc
     java: grpc
     nodejs: grpc
     python: grpc
-- documentation_uri: https://cloud.google.com/ai-platform/notebooks/
+- path: google/cloud/notebooks/v1beta1
+  documentation_uri: https://cloud.google.com/ai-platform/notebooks/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/notebooks/v1beta1
   release_level:
     go: beta
   transports:
     csharp: grpc
     java: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/notebooks/v2
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/notebooks/v2
-- documentation_uri: https://cloud.google.com/optimization/docs
+- path: google/cloud/optimization/v1
+  documentation_uri: https://cloud.google.com/optimization/docs
   languages:
     - go
     - java
     - python
     - rust
-  path: google/cloud/optimization/v1
-- languages:
+- path: google/cloud/oracledatabase/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/oracledatabase/v1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/composer/
+- path: google/cloud/orchestration/airflow/service/v1
+  documentation_uri: https://cloud.google.com/composer/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/orchestration/airflow/service/v1
-- documentation_uri: https://cloud.google.com/composer/
+- path: google/cloud/orchestration/airflow/service/v1beta1
+  documentation_uri: https://cloud.google.com/composer/
   languages:
     - java
     - nodejs
     - python
-  path: google/cloud/orchestration/airflow/service/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/resource-manager/docs/organization-policy/overview
+- path: google/cloud/orgpolicy/v1
+  documentation_uri: https://cloud.google.com/resource-manager/docs/organization-policy/overview
   languages:
     - go
     - java
     - python
     - rust
-  path: google/cloud/orgpolicy/v1
   title: Organization Policy Types
-- documentation_uri: https://cloud.google.com/resource-manager/docs/organization-policy/overview
+- path: google/cloud/orgpolicy/v2
+  documentation_uri: https://cloud.google.com/resource-manager/docs/organization-policy/overview
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/orgpolicy/v2
-- languages:
+- path: google/cloud/osconfig/agentendpoint/v1beta
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/cloud/osconfig/agentendpoint/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/compute/docs/manage-os
+- path: google/cloud/osconfig/v1
+  documentation_uri: https://cloud.google.com/compute/docs/manage-os
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/osconfig/v1
-- documentation_uri: https://cloud.google.com/compute/docs/manage-os
+- path: google/cloud/osconfig/v1alpha
+  documentation_uri: https://cloud.google.com/compute/docs/manage-os
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/osconfig/v1alpha
   release_level:
     go: alpha
-- languages:
+- path: google/cloud/osconfig/v1beta
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/cloud/osconfig/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/oslogin/common
+  languages:
     - go
     - python
     - rust
   no_rest_numeric_enums:
     csharp: true
     python: true
-  path: google/cloud/oslogin/common
   title: Cloud OS Login Common Types
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/compute/docs/oslogin/
+- path: google/cloud/oslogin/v1
+  documentation_uri: https://cloud.google.com/compute/docs/oslogin/
   languages:
     - go
     - java
@@ -2488,44 +2489,44 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559755
-  path: google/cloud/oslogin/v1
-- languages:
+- path: google/cloud/oslogin/v1beta
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/oslogin/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/parallelstore/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/parallelstore/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/parallelstore/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/parallelstore/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/parametermanager/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/parametermanager/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/paymentgateway/issuerswitch/v1
+  languages:
     - dart
     - go
     - java
@@ -2533,66 +2534,66 @@
     - rust
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/paymentgateway/issuerswitch/v1
-- documentation_uri: https://cloud.google.com/phishing-protection/docs/
+- path: google/cloud/phishingprotection/v1beta1
+  documentation_uri: https://cloud.google.com/phishing-protection/docs/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/phishingprotection/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/policysimulator/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/policysimulator/v1
-- languages:
+- path: google/cloud/policytroubleshooter/iam/v3
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/policytroubleshooter/iam/v3
-- languages:
+- path: google/cloud/policytroubleshooter/iam/v3beta
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/policytroubleshooter/iam/v3beta
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/policytroubleshooter/v1
-- documentation_uri: https://cloud.google.com/private-catalog/
+- path: google/cloud/policytroubleshooter/v1
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/privatecatalog/v1beta1
+    - rust
+- path: google/cloud/privatecatalog/v1beta1
+  documentation_uri: https://cloud.google.com/private-catalog/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
   release_level:
     go: beta
-- languages:
+- path: google/cloud/privilegedaccessmanager/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/privilegedaccessmanager/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/pubsublite/v1
+  languages:
     - go
     - python
     - rust
@@ -2603,25 +2604,24 @@
     nodejs: true
     python: true
     ruby: true
-  path: google/cloud/pubsublite/v1
   transports:
     go: grpc
     python: grpc
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/rapidmigrationassessment/v1
-- documentation_uri: https://cloud.google.com/recaptcha-enterprise
+- path: google/cloud/rapidmigrationassessment/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/recaptchaenterprise/v1
+- path: google/cloud/recaptchaenterprise/v1
+  documentation_uri: https://cloud.google.com/recaptcha-enterprise
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
   transports:
     csharp: grpc
     go: grpc
@@ -2629,76 +2629,77 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- languages:
+- path: google/cloud/recaptchaenterprise/v1beta1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/recaptchaenterprise/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/recommendations-ai/
+- path: google/cloud/recommendationengine/v1beta1
+  documentation_uri: https://cloud.google.com/recommendations-ai/
   languages:
     - go
     - java
     - python
-  path: google/cloud/recommendationengine/v1beta1
   release_level:
     go: beta
-- languages:
-    - go
-    - python
-    - rust
-  path: google/cloud/recommender/logging/v1
-- documentation_uri: https://cloud.google.com/recommender
+- path: google/cloud/recommender/logging/v1
   languages:
     - go
-    - java
-    - nodejs
     - python
     - rust
-  path: google/cloud/recommender/v1
-- documentation_uri: https://cloud.google.com/recommender
+- path: google/cloud/recommender/v1
+  documentation_uri: https://cloud.google.com/recommender
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/recommender/v1beta1
+    - rust
+- path: google/cloud/recommender/v1beta1
+  documentation_uri: https://cloud.google.com/recommender
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
   release_level:
     go: beta
-- languages:
+- path: google/cloud/redis/cluster/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/redis/cluster/v1
-- languages:
+- path: google/cloud/redis/cluster/v1beta1
+  languages:
     - java
     - nodejs
     - python
-  path: google/cloud/redis/cluster/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/redis/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/redis/v1
-- languages:
+- path: google/cloud/redis/v1beta1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/redis/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/resource-manager
+- path: google/cloud/resourcemanager/v3
+  documentation_uri: https://cloud.google.com/resource-manager
   languages:
     - go
     - java
@@ -2706,8 +2707,8 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
-  path: google/cloud/resourcemanager/v3
-- languages:
+- path: google/cloud/retail/logging
+  languages:
     - dart
     - go
     - java
@@ -2715,50 +2716,50 @@
     - rust
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/retail/logging
-- documentation_uri: https://cloud.google.com/retail/docs/
+- path: google/cloud/retail/v2
+  documentation_uri: https://cloud.google.com/retail/docs/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/retail/v2
-- documentation_uri: https://cloud.google.com/retail/docs/
+- path: google/cloud/retail/v2alpha
+  documentation_uri: https://cloud.google.com/retail/docs/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/retail/v2alpha
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/retail/docs/
+- path: google/cloud/retail/v2beta
+  documentation_uri: https://cloud.google.com/retail/docs/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/retail/v2beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/run/docs
+- path: google/cloud/run/v2
+  documentation_uri: https://cloud.google.com/run/docs
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/run/v2
-- languages:
+- path: google/cloud/saasplatform/saasservicemgmt/v1beta1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/saasplatform/saasservicemgmt/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/scheduler/docs
+- path: google/cloud/scheduler/v1
+  documentation_uri: https://cloud.google.com/scheduler/docs
   languages:
     - go
     - java
@@ -2766,18 +2767,18 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
-  path: google/cloud/scheduler/v1
-- documentation_uri: https://cloud.google.com/scheduler/docs
+- path: google/cloud/scheduler/v1beta1
+  documentation_uri: https://cloud.google.com/scheduler/docs
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
-  path: google/cloud/scheduler/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/secretmanager/v1
+  languages:
     - dart
     - go
     - java
@@ -2785,72 +2786,72 @@
     - python
     - rust
   open_api: testdata/secretmanager_openapi_v1.json
-  path: google/cloud/secretmanager/v1
-- languages:
+- path: google/cloud/secretmanager/v1beta2
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/secretmanager/v1beta2
   release_level:
     go: beta
-- languages:
+- path: google/cloud/secrets/v1beta1
+  languages:
     - python
     - java
-  path: google/cloud/secrets/v1beta1
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/securesourcemanager/v1
-- documentation_uri: https://cloud.google.com/certificate-authority-service
+- path: google/cloud/securesourcemanager/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/security/privateca/v1
-- documentation_uri: https://cloud.google.com/certificate-authority-service
+- path: google/cloud/security/privateca/v1
+  documentation_uri: https://cloud.google.com/certificate-authority-service
   languages:
-    - java
-    - nodejs
-    - python
-  path: google/cloud/security/privateca/v1beta1
-  release_level:
-    go: beta
-- languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/security/publicca/v1
+- path: google/cloud/security/privateca/v1beta1
+  documentation_uri: https://cloud.google.com/certificate-authority-service
+  languages:
+    - java
+    - nodejs
+    - python
   release_level:
     go: beta
-- languages:
+- path: google/cloud/security/publicca/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/security/publicca/v1alpha1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/security/publicca/v1alpha1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/security/publicca/v1beta1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/security/publicca/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/securitycenter/settings/v1beta1
+  languages:
     - dart
     - go
     - java
@@ -2858,110 +2859,110 @@
     - rust
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/securitycenter/settings/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/securitycenter/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/securitycenter/v1
-- documentation_uri: https://cloud.google.com/security-command-center
+- path: google/cloud/securitycenter/v1beta1
+  documentation_uri: https://cloud.google.com/security-command-center
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
-  path: google/cloud/securitycenter/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/security-command-center
+- path: google/cloud/securitycenter/v1p1beta1
+  documentation_uri: https://cloud.google.com/security-command-center
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
-  path: google/cloud/securitycenter/v1p1beta1
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/securitycenter/v2
-  release_level:
-    go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/securitycentermanagement/v1
-- languages:
-    - go
-    - java
-    - python
-    - rust
-  path: google/cloud/securityposture/v1
-  release_level:
-    go: beta
-- documentation_uri: https://cloud.google.com/service-directory/
+- path: google/cloud/securitycenter/v2
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/servicedirectory/v1
-- documentation_uri: https://cloud.google.com/service-directory/
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-  path: google/cloud/servicedirectory/v1beta1
   release_level:
     go: beta
-- languages:
-    - go
-    - java
-    - nodejs
-    - python
-    - rust
-  path: google/cloud/servicehealth/v1
-- documentation_uri: https://cloud.google.com/shell/
+- path: google/cloud/securitycentermanagement/v1
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/shell/v1
-- documentation_uri: https://cloud.google.com/speech-to-text/docs/
+- path: google/cloud/securityposture/v1
+  languages:
+    - go
+    - java
+    - python
+    - rust
+  release_level:
+    go: beta
+- path: google/cloud/servicedirectory/v1
+  documentation_uri: https://cloud.google.com/service-directory/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/servicedirectory/v1beta1
+  documentation_uri: https://cloud.google.com/service-directory/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+- path: google/cloud/servicehealth/v1
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/shell/v1
+  documentation_uri: https://cloud.google.com/shell/
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
+- path: google/cloud/speech/v1
+  documentation_uri: https://cloud.google.com/speech-to-text/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
-  path: google/cloud/speech/v1
-- documentation_uri: https://cloud.google.com/speech-to-text/docs/
+- path: google/cloud/speech/v1p1beta1
+  documentation_uri: https://cloud.google.com/speech-to-text/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
-  path: google/cloud/speech/v1p1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/speech-to-text/docs/
+- path: google/cloud/speech/v2
+  documentation_uri: https://cloud.google.com/speech-to-text/docs/
   languages:
     - go
     - java
@@ -2969,57 +2970,57 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
-  path: google/cloud/speech/v2
-- languages:
+- path: google/cloud/sql/v1
+  languages:
     - go
     - nodejs
     - python
     - rust
-  path: google/cloud/sql/v1
   transports:
     python: grpc
-- languages:
+- path: google/cloud/sql/v1beta4
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/sql/v1beta4
   release_level:
     go: beta
-- languages:
+- path: google/cloud/storagebatchoperations/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/storagebatchoperations/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/storageinsights/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/storageinsights/v1
-- languages:
+- path: google/cloud/support/v2
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/support/v2
-- languages:
+- path: google/cloud/support/v2beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/support/v2beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/solutions/talent-solution/
+- path: google/cloud/talent/v4
+  documentation_uri: https://cloud.google.com/solutions/talent-solution/
   languages:
     - go
     - java
@@ -3027,18 +3028,18 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559664
-  path: google/cloud/talent/v4
-- documentation_uri: https://cloud.google.com/solutions/talent-solution/
+- path: google/cloud/talent/v4beta1
+  documentation_uri: https://cloud.google.com/solutions/talent-solution/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559664
-  path: google/cloud/talent/v4beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/tasks/docs/
+- path: google/cloud/tasks/v2
+  documentation_uri: https://cloud.google.com/tasks/docs/
   languages:
     - go
     - java
@@ -3046,42 +3047,42 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
-  path: google/cloud/tasks/v2
-- documentation_uri: https://cloud.google.com/tasks/docs/
+- path: google/cloud/tasks/v2beta2
+  documentation_uri: https://cloud.google.com/tasks/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
-  path: google/cloud/tasks/v2beta2
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/tasks/docs/
+- path: google/cloud/tasks/v2beta3
+  documentation_uri: https://cloud.google.com/tasks/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
-  path: google/cloud/tasks/v2beta3
   release_level:
     go: beta
-- languages:
+- path: google/cloud/telcoautomation/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/telcoautomation/v1
-- languages:
+- path: google/cloud/telcoautomation/v1alpha1
+  languages:
     - java
     - nodejs
     - python
-  path: google/cloud/telcoautomation/v1alpha1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/text-to-speech
+- path: google/cloud/texttospeech/v1
+  documentation_uri: https://cloud.google.com/text-to-speech
   languages:
     - go
     - java
@@ -3091,8 +3092,8 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/texttospeech/v1
-- documentation_uri: https://cloud.google.com/text-to-speech
+- path: google/cloud/texttospeech/v1beta1
+  documentation_uri: https://cloud.google.com/text-to-speech
   languages:
     - java
     - nodejs
@@ -3100,21 +3101,20 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/texttospeech/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/timeseriesinsights/v1
+  languages:
     - go
     - python
     - rust
-  path: google/cloud/timeseriesinsights/v1
-- documentation_uri: https://cloud.google.com/tpu/
+- path: google/cloud/tpu/v1
+  documentation_uri: https://cloud.google.com/tpu/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/tpu/v1
   transports:
     csharp: grpc
     go: grpc
@@ -3122,22 +3122,22 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/tpu/
+- path: google/cloud/tpu/v2
+  documentation_uri: https://cloud.google.com/tpu/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/tpu/v2
-- documentation_uri: https://cloud.google.com/tpu/
+- path: google/cloud/tpu/v2alpha1
+  documentation_uri: https://cloud.google.com/tpu/
   languages:
     - java
     - nodejs
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/cloud/tpu/v2alpha1
   release_level:
     go: alpha
   transports:
@@ -3147,7 +3147,8 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/translate/docs/
+- path: google/cloud/translate/v3
+  documentation_uri: https://cloud.google.com/translate/docs/
   languages:
     - go
     - java
@@ -3155,74 +3156,74 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
-  path: google/cloud/translate/v3
-- documentation_uri: https://cloud.google.com/translate/docs/
+- path: google/cloud/translate/v3beta1
+  documentation_uri: https://cloud.google.com/translate/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
-  path: google/cloud/translate/v3beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/universalledger/v1
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/cloud/universalledger/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/vectorsearch/v1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/vectorsearch/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/vectorsearch/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/vectorsearch/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/livestream/docs
+- path: google/cloud/video/livestream/v1
+  documentation_uri: https://cloud.google.com/livestream/docs
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/video/livestream/v1
-- documentation_uri: https://cloud.google.com/video-stitcher
+- path: google/cloud/video/stitcher/v1
+  documentation_uri: https://cloud.google.com/video-stitcher
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/video/stitcher/v1
   transports:
     csharp: grpc
     go: grpc
     java: grpc
     nodejs: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/transcoder
+- path: google/cloud/video/transcoder/v1
+  documentation_uri: https://cloud.google.com/transcoder
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/video/transcoder/v1
-- documentation_uri: https://cloud.google.com/video-intelligence/docs/
+- path: google/cloud/videointelligence/v1
+  documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
     - go
     - java
@@ -3230,48 +3231,48 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
-  path: google/cloud/videointelligence/v1
-- documentation_uri: https://cloud.google.com/video-intelligence/docs/
+- path: google/cloud/videointelligence/v1beta2
+  documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
-  path: google/cloud/videointelligence/v1beta2
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/video-intelligence/docs/
+- path: google/cloud/videointelligence/v1p1beta1
+  documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
-  path: google/cloud/videointelligence/v1p1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/video-intelligence/docs/
+- path: google/cloud/videointelligence/v1p2beta1
+  documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
-  path: google/cloud/videointelligence/v1p2beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/video-intelligence/docs/
+- path: google/cloud/videointelligence/v1p3beta1
+  documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
-  path: google/cloud/videointelligence/v1p3beta1
   release_level:
     go: beta
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/vision/docs/
+- path: google/cloud/vision/v1
+  documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - go
     - java
@@ -3279,67 +3280,67 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
-  path: google/cloud/vision/v1
-- documentation_uri: https://cloud.google.com/vision/docs/
+- path: google/cloud/vision/v1p1beta1
+  documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
-  path: google/cloud/vision/v1p1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/vision/docs/
+- path: google/cloud/vision/v1p2beta1
+  documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
-  path: google/cloud/vision/v1p2beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/vision/docs/
+- path: google/cloud/vision/v1p3beta1
+  documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
-  path: google/cloud/vision/v1p3beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/vision/docs/
+- path: google/cloud/vision/v1p4beta1
+  documentation_uri: https://cloud.google.com/vision/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
-  path: google/cloud/vision/v1p4beta1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/visionai/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/visionai/v1
-- documentation_uri: https://cloud.google.com/vision-ai/docs
+- path: google/cloud/visionai/v1alpha1
+  documentation_uri: https://cloud.google.com/vision-ai/docs
   languages:
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187174&pli=1&template=1161261
-  path: google/cloud/visionai/v1alpha1
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/migrate/compute-engine/docs
+- path: google/cloud/vmmigration/v1
+  documentation_uri: https://cloud.google.com/migrate/compute-engine/docs
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/vmmigration/v1
-- documentation_uri: https://cloud.google.com/vmware-engine/
+- path: google/cloud/vmwareengine/v1
+  documentation_uri: https://cloud.google.com/vmware-engine/
   languages:
     - go
     - java
@@ -3347,33 +3348,33 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/cloud/vmwareengine/v1
-- documentation_uri: https://cloud.google.com/vpc/
+- path: google/cloud/vpcaccess/v1
+  documentation_uri: https://cloud.google.com/vpc/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/vpcaccess/v1
-- documentation_uri: https://cloud.google.com/web-risk/docs/
+- path: google/cloud/webrisk/v1
+  documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/webrisk/v1
-- documentation_uri: https://cloud.google.com/web-risk/docs/
+- path: google/cloud/webrisk/v1beta1
+  documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/webrisk/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/security-scanner/docs/
+- path: google/cloud/websecurityscanner/v1
+  documentation_uri: https://cloud.google.com/security-scanner/docs/
   languages:
     - go
     - java
@@ -3381,26 +3382,26 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
-  path: google/cloud/websecurityscanner/v1
-- documentation_uri: https://cloud.google.com/security-scanner/docs/
+- path: google/cloud/websecurityscanner/v1alpha
+  documentation_uri: https://cloud.google.com/security-scanner/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
-  path: google/cloud/websecurityscanner/v1alpha
   release_level:
     go: alpha
-- documentation_uri: https://cloud.google.com/security-scanner/docs/
+- path: google/cloud/websecurityscanner/v1beta
+  documentation_uri: https://cloud.google.com/security-scanner/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
-  path: google/cloud/websecurityscanner/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/workflows/
+- path: google/cloud/workflows/executions/v1
+  documentation_uri: https://cloud.google.com/workflows/
   languages:
     - go
     - java
@@ -3410,12 +3411,12 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/workflows/executions/v1
   transports:
     go: grpc
     nodejs: grpc
     python: grpc
-- documentation_uri: https://cloud.google.com/workflows/
+- path: google/cloud/workflows/executions/v1beta
+  documentation_uri: https://cloud.google.com/workflows/
   languages:
     - go
     - java
@@ -3424,12 +3425,12 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   no_rest_numeric_enums:
     all: true
-  path: google/cloud/workflows/executions/v1beta
   release_level:
     go: beta
   transports:
     python: grpc
-- documentation_uri: https://cloud.google.com/workflows/
+- path: google/cloud/workflows/v1
+  documentation_uri: https://cloud.google.com/workflows/
   languages:
     - go
     - java
@@ -3437,43 +3438,43 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
-  path: google/cloud/workflows/v1
-- documentation_uri: https://cloud.google.com/workflows/
+- path: google/cloud/workflows/v1beta
+  documentation_uri: https://cloud.google.com/workflows/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
-  path: google/cloud/workflows/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/cloud/workloadmanager/v1
+  languages:
     - dart
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/workloadmanager/v1
   release_level:
     go: beta
-- languages:
+- path: google/cloud/workstations/v1
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/cloud/workstations/v1
-- languages:
+- path: google/cloud/workstations/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/cloud/workstations/v1beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/kubernetes-engine/
+- path: google/container/v1
+  documentation_uri: https://cloud.google.com/kubernetes-engine/
   languages:
     - go
     - java
@@ -3481,14 +3482,13 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559746
-  path: google/container/v1
-- documentation_uri: https://cloud.google.com/kubernetes-engine/
+- path: google/container/v1beta1
+  documentation_uri: https://cloud.google.com/kubernetes-engine/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559746
-  path: google/container/v1beta1
   release_level:
     go: beta
   transports:
@@ -3498,42 +3498,43 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/dataflow/
+- path: google/dataflow/v1beta3
+  documentation_uri: https://cloud.google.com/dataflow/
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/dataflow/v1beta3
   release_level:
     go: beta
-- languages:
+- path: google/datastore/admin/v1
+  languages:
     - go
     - python
     - rust
-  path: google/datastore/admin/v1
-- languages:
+- path: google/datastore/v1
+  languages:
     - go
     - python
-  path: google/datastore/v1
-- documentation_uri: https://cloud.google.com/artifact-registry
+- path: google/devtools/artifactregistry/v1
+  documentation_uri: https://cloud.google.com/artifact-registry
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/devtools/artifactregistry/v1
-- documentation_uri: https://cloud.google.com/artifact-registry
+- path: google/devtools/artifactregistry/v1beta2
+  documentation_uri: https://cloud.google.com/artifact-registry
   languages:
     - go
     - java
     - nodejs
     - python
-  path: google/devtools/artifactregistry/v1beta2
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/cloud-build/docs/
+- path: google/devtools/cloudbuild/v1
+  documentation_uri: https://cloud.google.com/cloud-build/docs/
   languages:
     - go
     - java
@@ -3543,8 +3544,8 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
   no_rest_numeric_enums:
     php: true
-  path: google/devtools/cloudbuild/v1
-- documentation_uri: https://cloud.google.com/cloud-build/docs/
+- path: google/devtools/cloudbuild/v2
+  documentation_uri: https://cloud.google.com/cloud-build/docs/
   languages:
     - go
     - java
@@ -3552,46 +3553,46 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
-  path: google/devtools/cloudbuild/v2
-- documentation_uri: https://cloud.google.com/error-reporting
+- path: google/devtools/clouderrorreporting/v1beta1
+  documentation_uri: https://cloud.google.com/error-reporting
   languages:
     - go
     - java
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559780
-  path: google/devtools/clouderrorreporting/v1beta1
   release_level:
     go: beta
-- languages:
+- path: google/devtools/cloudprofiler/v2
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/devtools/cloudprofiler/v2
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/trace/docs
+- path: google/devtools/cloudtrace/v1
+  documentation_uri: https://cloud.google.com/trace/docs
   languages:
     - go
     - java
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559776
-  path: google/devtools/cloudtrace/v1
   title: Cloud Trace API
-- documentation_uri: https://cloud.google.com/trace/docs
+- path: google/devtools/cloudtrace/v2
+  documentation_uri: https://cloud.google.com/trace/docs
   languages:
     - go
     - java
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559776
-  path: google/devtools/cloudtrace/v2
   release_level:
     go: beta
   title: Cloud Trace API
-- documentation_uri: https://cloud.google.com/container-registry/docs/container-analysis
+- path: google/devtools/containeranalysis/v1
+  documentation_uri: https://cloud.google.com/container-registry/docs/container-analysis
   languages:
     - go
     - java
@@ -3599,53 +3600,52 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559777
-  path: google/devtools/containeranalysis/v1
-- languages:
+- path: google/devtools/containeranalysis/v1beta1
+  languages:
     - go
     - java
     - nodejs
-  path: google/devtools/containeranalysis/v1beta1
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com
+- path: google/devtools/source/v1
+  documentation_uri: https://cloud.google.com
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/devtools/source/v1
   transports:
     python: grpc
-- languages:
+- path: google/firestore/admin/v1
+  languages:
     - go
     - python
     - rust
-  path: google/firestore/admin/v1
-- languages:
+- path: google/firestore/bundle
+  languages:
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/firestore/bundle
   title: Cloud Firestore API
-- languages:
+- path: google/firestore/v1
+  languages:
     - go
     - python
     - rust
-  path: google/firestore/v1
   title: Cloud Firestore API
-- languages:
+- path: google/geo/type
+  languages:
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/geo/type
   transports:
     python: grpc
-- languages:
+- path: google/iam/admin/v1
+  languages:
     - go
     - java
     - python
     - rust
-  path: google/iam/admin/v1
   transports:
     csharp: grpc
     go: grpc
@@ -3653,7 +3653,8 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/iam/docs/
+- path: google/iam/credentials/v1
+  documentation_uri: https://cloud.google.com/iam/docs/
   languages:
     - go
     - java
@@ -3661,8 +3662,8 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
-  path: google/iam/credentials/v1
-- documentation_uri: https://cloud.google.com/iam/docs/
+- path: google/iam/v1
+  documentation_uri: https://cloud.google.com/iam/docs/
   languages:
     - dart
     - go
@@ -3673,21 +3674,21 @@
   no_rest_numeric_enums:
     csharp: true
     ruby: true
-  path: google/iam/v1
-- documentation_uri: https://cloud.google.com/iam/docs/audit-logging
+- path: google/iam/v1/logging
+  documentation_uri: https://cloud.google.com/iam/docs/audit-logging
   languages:
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
-  path: google/iam/v1/logging
   transports:
     python: grpc
-- languages:
+- path: google/iam/v1beta
+  languages:
     - java
     - nodejs
-  path: google/iam/v1beta
-- documentation_uri: https://cloud.google.com/iam/docs/
+- path: google/iam/v2
+  documentation_uri: https://cloud.google.com/iam/docs/
   languages:
     - go
     - java
@@ -3695,45 +3696,45 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
-  path: google/iam/v2
-- documentation_uri: https://cloud.google.com/iam/docs/
+- path: google/iam/v2beta
+  documentation_uri: https://cloud.google.com/iam/docs/
   languages:
     - java
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
-  path: google/iam/v2beta
   transports:
     go: grpc
     nodejs: grpc
     python: grpc
-- languages:
+- path: google/iam/v3
+  languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/iam/v3
   release_level:
     go: beta
-- languages:
+- path: google/iam/v3beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/iam/v3beta
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
+- path: google/identity/accesscontextmanager/type
+  documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
   languages:
     - go
     - java
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/identity/accesscontextmanager/type
   title: Access Context Manager Types
-- documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
+- path: google/identity/accesscontextmanager/v1
+  documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
   languages:
     - go
     - java
@@ -3741,30 +3742,30 @@
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/identity/accesscontextmanager/v1
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/logging/type
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/logging/type
   title: Logging types
-- languages:
+- path: google/logging/v2
+  languages:
     - dart
     - go
     - java
     - python
     - rust
-  path: google/logging/v2
   transports:
     csharp: grpc
     java: grpc
     nodejs: grpc
     python: grpc
     ruby: grpc
-- languages:
+- path: google/longrunning
+  languages:
     - dart
     - go
     - python
@@ -3773,91 +3774,92 @@
     csharp: true
     go: true
     php: true
-  path: google/longrunning
-- documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
+- path: google/maps/addressvalidation/v1
+  documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/maps/addressvalidation/v1
   transports:
     csharp: grpc
     ruby: grpc
-- languages:
+- path: google/maps/areainsights/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/areainsights/v1
   release_level:
     go: beta
-- languages:
+- path: google/maps/fleetengine/delivery/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/fleetengine/delivery/v1
-- languages:
+- path: google/maps/fleetengine/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/fleetengine/v1
   transports:
     go: grpc
     java: grpc
     nodejs: grpc
     python: grpc
-- languages:
+- path: google/maps/mapsplatformdatasets/v1
+  languages:
     - java
     - nodejs
     - python
-  path: google/maps/mapsplatformdatasets/v1
   release_level:
     go: beta
-- languages:
+- path: google/maps/navconnect/v1
+  languages:
     - nodejs
-  path: google/maps/navconnect/v1
-- languages:
+    - python
+- path: google/maps/places/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/places/v1
   release_level:
     go: beta
-- languages:
+- path: google/maps/routeoptimization/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/routeoptimization/v1
   release_level:
     go: beta
-- documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
+- path: google/maps/routing/v2
+  documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
   languages:
     - go
     - java
     - nodejs
     - python
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/maps/routing/v2
-- languages:
+- path: google/maps/solar/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/maps/solar/v1
-- languages:
+- path: google/marketingplatform/admin/v1alpha
+  languages:
     - java
     - nodejs
     - python
-  path: google/marketingplatform/admin/v1alpha
   release_level:
     go: beta
-- documentation_uri: https://cloud.google.com/monitoring/dashboards/
+- path: google/monitoring/dashboard/v1
+  documentation_uri: https://cloud.google.com/monitoring/dashboards/
   languages:
     - go
     - java
@@ -3865,15 +3867,14 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
-  path: google/monitoring/dashboard/v1
-- documentation_uri: https://cloud.google.com/monitoring/docs
+- path: google/monitoring/metricsscope/v1
+  documentation_uri: https://cloud.google.com/monitoring/docs
   languages:
     - go
     - java
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
-  path: google/monitoring/metricsscope/v1
   transports:
     csharp: grpc
     go: grpc
@@ -3881,7 +3882,8 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/monitoring/docs
+- path: google/monitoring/v3
+  documentation_uri: https://cloud.google.com/monitoring/docs
   languages:
     - go
     - java
@@ -3889,7 +3891,6 @@
     - python
     - rust
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
-  path: google/monitoring/v3
   release_level:
     go: beta
   transports:
@@ -3899,334 +3900,336 @@
     nodejs: grpc
     python: grpc
     ruby: grpc
-- documentation_uri: https://cloud.google.com/dlp/docs/
+- path: google/privacy/dlp/v2
+  documentation_uri: https://cloud.google.com/dlp/docs/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/privacy/dlp/v2
-- languages:
+- path: google/protobuf
+  languages:
     - rust
     - dart
-  path: google/protobuf
-- languages:
+- path: google/pubsub/v1
+  languages:
     - go
     - python
     - rust
-  path: google/pubsub/v1
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/rpc
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/rpc
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/rpc/context
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/rpc/context
   title: RPC Audit and Logging Attributes
-- languages:
+- path: google/shopping/css/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/css/v1
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/accounts/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/accounts/v1
-- languages:
+- path: google/shopping/merchant/accounts/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/accounts/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/conversions/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/conversions/v1
-- languages:
+- path: google/shopping/merchant/conversions/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/conversions/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/datasources/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/datasources/v1
-- languages:
+- path: google/shopping/merchant/datasources/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/datasources/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/inventories/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/inventories/v1
-- languages:
+- path: google/shopping/merchant/inventories/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/inventories/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/issueresolution/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/issueresolution/v1
-- languages:
+- path: google/shopping/merchant/issueresolution/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/issueresolution/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/lfp/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/lfp/v1
-- languages:
+- path: google/shopping/merchant/lfp/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/lfp/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/notifications/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/notifications/v1
-- languages:
+- path: google/shopping/merchant/notifications/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/notifications/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/ordertracking/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/ordertracking/v1
-- languages:
+- path: google/shopping/merchant/ordertracking/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/ordertracking/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/products/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/products/v1
-- languages:
+- path: google/shopping/merchant/products/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/products/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/productstudio/v1alpha
+  languages:
     - go
     - java
     - python
-  path: google/shopping/merchant/productstudio/v1alpha
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/promotions/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/promotions/v1
-- languages:
+- path: google/shopping/merchant/promotions/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/promotions/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/quota/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/quota/v1
-- languages:
+- path: google/shopping/merchant/quota/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/quota/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/reports/v1
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/reports/v1
-- languages:
+- path: google/shopping/merchant/reports/v1alpha
+  languages:
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/reports/v1alpha
   release_level:
     go: alpha
-- languages:
+- path: google/shopping/merchant/reports/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/reports/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/merchant/reviews/v1
+  languages:
     - python
-  path: google/shopping/merchant/reviews/v1
-- languages:
+- path: google/shopping/merchant/reviews/v1beta
+  languages:
     - go
     - java
     - nodejs
     - python
-  path: google/shopping/merchant/reviews/v1beta
   release_level:
     go: beta
-- languages:
+- path: google/shopping/type
+  languages:
     - go
     - python
   no_rest_numeric_enums:
     python: true
-  path: google/shopping/type
-- languages:
+- path: google/spanner/adapter/v1
+  languages:
     - go
     - java
-  path: google/spanner/adapter/v1
   release_level:
     go: beta
-- languages:
+- path: google/spanner/admin/database/v1
+  languages:
     - go
     - python
     - rust
-  path: google/spanner/admin/database/v1
-- languages:
+- path: google/spanner/admin/instance/v1
+  languages:
     - go
     - python
     - rust
-  path: google/spanner/admin/instance/v1
-- languages:
+- path: google/spanner/executor/v1
+  languages:
     - go
-  path: google/spanner/executor/v1
   release_level:
     go: beta
-- languages:
+  transports:
+    go: grpc
+- path: google/spanner/v1
+  languages:
     - go
     - python
     - rust
-  path: google/spanner/v1
-- languages:
+- path: google/storage/control/v2
+  languages:
     - go
     - nodejs
     - python
     - rust
-  path: google/storage/control/v2
-- languages:
+- path: google/storage/v2
+  languages:
     - go
     - python
     - rust
-  path: google/storage/v2
   transports:
     go: grpc
     java: grpc
     nodejs: grpc
     python: grpc
-- documentation_uri: https://cloud.google.com/storage-transfer/
+- path: google/storagetransfer/v1
+  documentation_uri: https://cloud.google.com/storage-transfer/
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: google/storagetransfer/v1
-- languages:
+- path: google/streetview/publish/v1
+  languages:
     - go
     - nodejs
-  path: google/streetview/publish/v1
   release_level:
     go: beta
-- documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
+- path: google/type
+  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - dart
     - go
     - python
     - rust
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
-  path: google/type
-- documentation_uri: https://grafeas.io
+- path: grafeas/v1
+  documentation_uri: https://grafeas.io
   languages:
     - go
     - java
     - nodejs
     - python
     - rust
-  path: grafeas/v1
   transports:
     csharp: grpc
     go: grpc
     java: grpc
     nodejs: grpc
     ruby: grpc
-- languages:
+- path: schema/google/showcase/v1beta1
+  languages:
     - dart
     - go
     - python
     - rust
-  path: schema/google/showcase/v1beta1
   service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
-- languages:
+- path: src/google/protobuf
+  languages:
     - dart
     - go
     - python
     - rust
-  path: src/google/protobuf

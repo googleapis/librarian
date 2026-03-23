@@ -133,11 +133,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.HasVariablePath}}
             let path = "{{Codec.PathFmt}}".to_string();
             {{/Codec.HasVariablePath}}
-
             {{#Codec.DetailedTracingAttributes}}
-            let _path_template = "{{Codec.PathTemplate}}";
-
+            let path_template = "{{Codec.PathTemplate}}";
             {{/Codec.DetailedTracingAttributes}}
+
             {{#Codec.HasResourceNameGeneration}}
             {{#Codec.ResourceNameTemplate}}
             let resource_name = format!(
@@ -150,7 +149,6 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{^Codec.ResourceNameTemplate}}
             let resource_name = String::new();
             {{/Codec.ResourceNameTemplate}}
-
             {{/Codec.HasResourceNameGeneration}}
             let builder = self.inner.builder(Method::{{Verb}}, path);
             {{#Codec.QueryParamsCanFail}}
@@ -169,7 +167,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.QueryParamsCanFail}}
             {{#Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}
-            Some(builder.map(|b| (b, Method::{{Verb}}, _path_template, resource_name)))
+            Some(builder.map(|b| (b, Method::{{Verb}}, path_template, resource_name)))
             {{/Codec.DetailedTracingAttributes}}
             {{^Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}}, resource_name)))
@@ -177,7 +175,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
             {{/Codec.HasResourceNameGeneration}}
             {{^Codec.HasResourceNameGeneration}}
             {{#Codec.DetailedTracingAttributes}}
-            Some(builder.map(|b| (b, Method::{{Verb}}, _path_template)))
+            Some(builder.map(|b| (b, Method::{{Verb}}, path_template)))
             {{/Codec.DetailedTracingAttributes}}
             {{^Codec.DetailedTracingAttributes}}
             Some(builder.map(|b| (b, Method::{{Verb}})))

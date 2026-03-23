@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 var (
@@ -33,8 +33,8 @@ const (
 
 func TestBasic(t *testing.T) {
 	source := sourceDir
-	cfg := config.SourceConfig{
-		Sources: config.Sources{
+	cfg := &sources.SourceConfig{
+		Sources: &sources.Sources{
 			Googleapis: testdataDir,
 		},
 		ActiveRoots: []string{"googleapis"},
@@ -57,8 +57,8 @@ func TestBasic(t *testing.T) {
 
 func TestIncludeList(t *testing.T) {
 	source := sourceDir
-	cfg := config.SourceConfig{
-		Sources: config.Sources{
+	cfg := &sources.SourceConfig{
+		Sources: &sources.Sources{
 			Googleapis: testdataDir,
 		},
 		ActiveRoots: []string{"googleapis"},

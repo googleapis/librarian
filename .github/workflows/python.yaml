@@ -21,7 +21,7 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -54,4 +54,8 @@ jobs:
       - name: Verify git is available
         run: git --version
       - name: Run internal/librarian/python tests
-        run: go test -race ./internal/librarian/python
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/python
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

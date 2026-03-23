@@ -39,6 +39,15 @@ const (
 
 // API describes an API path and its availability across languages.
 type API struct {
+	// Note: Properties should typically be added in alphabetical order, but
+	// because this order impacts YAML serialization, we keep Path at the top
+	// for ease of consumption in file-form.
+
+	// Path is the proto directory path in github.com/googleapis/googleapis.
+	// If ServiceConfig is empty, the service config is assumed to live at this
+	// path.
+	Path string `yaml:"path,omitempty"`
+
 	// Description provides the information for describing an API.
 	Description string `yaml:"description,omitempty"`
 
@@ -75,10 +84,6 @@ type API struct {
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
 	OpenAPI string `yaml:"open_api,omitempty"`
-
-	// Path is the proto directory path in github.com/googleapis/googleapis.
-	// If ServiceConfig is empty, the service config is assumed to live at this path.
-	Path string `yaml:"path,omitempty"`
 
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").

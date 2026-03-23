@@ -337,7 +337,7 @@ func TestDefaultImportPathAndClientPkg(t *testing.T) {
 	}
 }
 
-func TestClientPathFromLibraryRoot(t *testing.T) {
+func TestClientPathFromRepoRoot(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -416,7 +416,7 @@ func TestClientPathFromLibraryRoot(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := clientPathFromLibraryRoot(test.library, test.goAPI)
+			got := clientPathFromRepoRoot(test.library, test.goAPI)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -431,6 +431,112 @@ func TestSnippetDirectory(t *testing.T) {
 	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRepoRootPath(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		output      string
+		want        string
+	}{
+		{
+			name:        "no prefix on library output",
+			libraryName: "secretmanager",
+			output:      "secretmanager",
+			want:        ".",
+		},
+		{
+			name:        "prefix on library output",
+			libraryName: "secretmanager",
+			output:      "tmp/secretmanager",
+			want:        "tmp",
+		},
+		{
+			name:        "nested major version",
+			libraryName: "bigquery/v2",
+			output:      "bigquery/v2",
+			want:        ".",
+		},
+		{
+			name:        "prefix with nested major version",
+			libraryName: "bigquery/v2",
+			output:      "tmp/bigquery/v2",
+			want:        "tmp",
+		},
+		{
+			name:        "root module",
+			libraryName: "root-module",
+			output:      ".",
+			want:        ".",
+		},
+		{
+			name:        "root module has an absolute output path",
+			libraryName: "root-module",
+			output:      "/home/anyone/repo",
+			want:        "/home/anyone/repo",
+		},
+		{
+			name:        "library output has an absolute output path",
+			libraryName: "library-name",
+			output:      "/home/anyone/repo/lib",
+			want:        "/home/anyone/repo",
+		},
+		{
+			name:        "nested library output has an absolute output path",
+			libraryName: "bigquery/v2",
+			output:      "/home/anyone/repo/lib/v2",
+			want:        "/home/anyone/repo",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := repoRootPath(test.output, test.libraryName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		defaultOut  string
+		libraryName string
+		want        string
+	}{
+		{
+			name:        "no prefix",
+			defaultOut:  "",
+			libraryName: "secretmanager",
+			want:        "secretmanager",
+		},
+		{
+			name:        "no prefix",
+			defaultOut:  "prefix",
+			libraryName: "secretmanager",
+			want:        "prefix/secretmanager",
+		},
+		{
+			name:        "library name with slashes",
+			defaultOut:  "",
+			libraryName: "bigquery/v2",
+			want:        "bigquery/v2",
+		},
+		{
+			name:        "prefix and library name with slashes",
+			defaultOut:  "app/repo",
+			libraryName: "bigquery/v2",
+			want:        "app/repo/bigquery/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libraryName, test.defaultOut)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

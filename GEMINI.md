@@ -29,7 +29,7 @@ Before submitting changes, run the full test suite:
 - `go.mod`: **NO NEW DEPENDENCIES.** Use only what is already available.
 - `cmd/`: Main entrypoint to CLI commands.
 - `internal/command`: Use `command.Run` for execution. `os/exec` is permitted for other tasks.
-- `internal/config`: Structs here have a 1:1 correlation with `librarian.yaml`.
+- `internal/config`: **Pure data types only.** Structs and constants here are a direct 1:1 mapping with `librarian.yaml`. Do not add functions or methods to this package.
 - `internal/testhelper`: **ALWAYS** check here for existing utilities before creating new test tools.
 - `internal/yaml`: **ALWAYS** use this package instead of `gopkg.in/yaml.v3`.
 
