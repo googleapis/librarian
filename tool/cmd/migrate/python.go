@@ -317,7 +317,6 @@ func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Library) (*config.Library, error) {
 	defaultTitle := ""
 	defaultDocumentationURI := ""
-	defaultDefaultVersion := ""
 	defaultIssueTracker := ""
 	defaultAPIShortname := ""
 	defaultAPIID := ""
@@ -331,7 +330,6 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		}
 		defaultTitle = strings.TrimSuffix(strings.TrimSpace(apiInfo.Title), " API")
 		defaultDocumentationURI = apiInfo.DocumentationURI
-		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
 		defaultIssueTracker = apiInfo.NewIssueURI
 		defaultAPIShortname = apiInfo.ShortName
 		defaultAPIID = apiInfo.ServiceName
@@ -365,9 +363,6 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.Name != library.Name {
 		library.Python.MetadataNameOverride = repoMetadata.Name
 	}
-	if repoMetadata.DefaultVersion != defaultDefaultVersion {
-		library.Python.DefaultVersion = repoMetadata.DefaultVersion
-	}
 	if repoMetadata.LibraryType != pythonDefaultLibraryType {
 		library.Python.LibraryType = repoMetadata.LibraryType
 	}
@@ -383,6 +378,15 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.APIID != defaultAPIID {
 		library.Python.APIIDOverride = repoMetadata.APIID
 	}
+	// Always populate the DefaultVersion field, even if we could have inferred
+	// it. The default version affects the final code, and changes to it should
+	// be explicit - if adding a new version of an API changes the inferred
+	// default version, that would cause compatibility issues. This in itself is
+	// far from ideal; keeping the default version is "safe" but toilsome
+	// operationally.
+	// TODO(https://github.com/googleapis/librarian/issues/4772): design away
+	// from default versions.
+	library.Python.DefaultVersion = repoMetadata.DefaultVersion
 
 	return library, nil
 }
