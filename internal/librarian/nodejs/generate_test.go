@@ -446,7 +446,8 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, ".OwlBot.yaml")); !errors.Is(err, os.ErrNotExist) {
