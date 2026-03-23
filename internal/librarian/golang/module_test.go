@@ -793,7 +793,7 @@ func TestUpdateSnippetDirectory_Skipped(t *testing.T) {
 			}
 			s := string(content)
 			if !strings.Contains(s, "$VERSION") {
-				t.Errorf("want version in snippet metadata, got:\n%s", s)
+				t.Errorf("want unchanged snippet metadata file, got:\n%s", s)
 			}
 		})
 	}
