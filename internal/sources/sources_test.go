@@ -25,8 +25,11 @@ import (
 func TestRoot(t *testing.T) {
 	cfg := &SourceConfig{
 		Sources: &Sources{
-			Googleapis: "googleapis-path",
-			Discovery:  "discovery-path",
+			Conformance: "conformance-path",
+			Discovery:   "discovery-path",
+			Googleapis:  "googleapis-path",
+			ProtobufSrc: "protobuf-path",
+			Showcase:    "showcase-path",
 		},
 	}
 	for _, test := range []struct {
@@ -34,26 +37,17 @@ func TestRoot(t *testing.T) {
 		root string
 		want string
 	}{
-		{
-			name: "googleapis",
-			root: "googleapis",
-			want: "googleapis-path",
-		},
-		{
-			name: "discovery",
-			root: "discovery",
-			want: "discovery-path",
-		},
-		{
-			name: "unknown",
-			root: "unknown",
-			want: "",
-		},
+		{"googleapis", "googleapis", "googleapis-path"},
+		{"discovery", "discovery", "discovery-path"},
+		{"showcase", "showcase", "showcase-path"},
+		{"protobuf-src", "protobuf-src", "protobuf-path"},
+		{"conformance", "conformance", "conformance-path"},
+		{"unknown", "unknown", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cfg.Root(test.root)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Root(%q) mismatch (-want +got):\n%s", test.root, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -75,42 +69,108 @@ func TestResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg := &SourceConfig{
-		Sources: &Sources{
-			Googleapis: googleapis,
-		},
-		ActiveRoots: []string{"googleapis"},
-	}
-
 	for _, test := range []struct {
 		name    string
+		cfg     *SourceConfig
 		relPath string
 		want    string
 	}{
 		{
-			name:    "found",
+			name: "found",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"googleapis"},
+			},
 			relPath: specPath,
 			want:    fullPath,
 		},
 		{
-			name:    "not found",
+			name: "not found",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"googleapis"},
+			},
 			relPath: "not/found",
 			want:    "not/found",
 		},
 		{
-			name:    "unknown root",
+			name: "unknown root",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"unknown"},
+			},
 			relPath: specPath,
 			want:    specPath,
 		},
+		{
+			name:    "nil receiver",
+			cfg:     nil,
+			relPath: "some/path",
+			want:    "some/path",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.name == "unknown root" {
-				cfg.ActiveRoots = []string{"unknown"}
-			}
-			got := cfg.Resolve(test.relPath)
-
+			got := test.cfg.Resolve(test.relPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("Resolve(%q) mismatch (-want +got):\n%s", test.relPath, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResolveDir(t *testing.T) {
+	tempDir := t.TempDir()
+	googleapis := filepath.Join(tempDir, "googleapis")
+	dirPath := "google/cloud/secretmanager/v1"
+	fullDir := filepath.Join(googleapis, dirPath)
+	if err := os.MkdirAll(fullDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *SourceConfig
+		relPath string
+		want    string
+	}{
+		{
+			name: "found",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"googleapis"},
+			},
+			relPath: dirPath,
+			want:    fullDir,
+		},
+		{
+			name: "not found",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"googleapis"},
+			},
+			relPath: "not/found",
+			want:    "not/found",
+		},
+		{
+			name: "unknown root",
+			cfg: &SourceConfig{
+				Sources:     &Sources{Googleapis: googleapis},
+				ActiveRoots: []string{"unknown"},
+			},
+			relPath: dirPath,
+			want:    dirPath,
+		},
+		{
+			name:    "nil receiver",
+			cfg:     nil,
+			relPath: "some/path",
+			want:    "some/path",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cfg.ResolveDir(test.relPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -124,13 +184,33 @@ func TestNewSourceConfig(t *testing.T) {
 		ProtobufSrc: "pb-path",
 		Showcase:    "show-path",
 	}
-	activeRoots := []string{"googleapis", "discovery"}
-	want := &SourceConfig{
-		Sources:     srcs,
-		ActiveRoots: activeRoots,
-	}
-	got := NewSourceConfig(srcs, activeRoots)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("NewSourceConfig() mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name        string
+		activeRoots []string
+		want        *SourceConfig
+	}{
+		{
+			name:        "with roots",
+			activeRoots: []string{"googleapis", "discovery"},
+			want: &SourceConfig{
+				Sources:     srcs,
+				ActiveRoots: []string{"googleapis", "discovery"},
+			},
+		},
+		{
+			name:        "empty roots defaults to googleapis",
+			activeRoots: nil,
+			want: &SourceConfig{
+				Sources:     srcs,
+				ActiveRoots: []string{"googleapis"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := NewSourceConfig(srcs, test.activeRoots)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
