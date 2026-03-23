@@ -42,6 +42,15 @@ option (google.api.resource_definition) = {
   type: "example.googleapis.com/GlobalReference"
   pattern: "projects/{project}/parents/{parent}/global/globalReferences/{globalReference}"
 };
+option (google.api.resource_definition) = {
+  type: "example.googleapis.com/AnotherReference"
+  pattern: "projects/{project}/anotherReferences/{another_reference}"
+};
+option (google.api.resource_definition) = {
+  type: "example.googleapis.com/AnotherMultiReference"
+  pattern: "projects/{project}/anotherMultiReferences/{another_multi_reference}"
+  pattern: "projects/{project}/locations/{location}/anotherMultiReferences/{another_multi_reference}"
+};
 
 message ChildResource {
   option (google.api.resource) = {

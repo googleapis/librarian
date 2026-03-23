@@ -23,6 +23,10 @@ import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "google.golang.org/genproto/googleapis/method_custom/v1;method_custom";
+option (google.api.resource_definition) = {
+  type: "example.googleapis.com/ServiceAccount"
+  pattern: "projects/{project}/serviceAccounts/{service_account}"
+};
 
 message Resource {
   option (google.api.resource) = {
