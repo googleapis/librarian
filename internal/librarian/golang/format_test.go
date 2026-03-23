@@ -144,10 +144,11 @@ func TestBuildFormatArgs(t *testing.T) {
 			name: "library with a proto only API",
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
-					{Path: "example/v1", ProtoOnly: true},
+					{Path: "example/v1", ImportPath: "example/apiv1"},
+					{Path: "example/common", ProtoOnly: true},
 				},
 			},
-			want: []string{"-w", "repo/example"},
+			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
 		},
 		{
 			name: "snippet directory is one of the deleted path after generation",
