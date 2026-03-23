@@ -759,25 +759,26 @@ func TestCopySamplesFromStaging(t *testing.T) {
 	stagingDir := t.TempDir()
 	outDir := t.TempDir()
 
-	// Create v1 with a sample .js file and a snippet_metadata_ file.
-	v1SamplesDir := filepath.Join(stagingDir, "v1", "samples", "generated", "v1")
-	if err := os.MkdirAll(v1SamplesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(v1SamplesDir, "sample.js"), []byte("console.log('v1');"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(v1SamplesDir, "snippet_metadata_google.cloud.test.v1.json"), []byte(`{"snippets":[]}`), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create v1beta1 with a snippet_metadata_ file.
-	v1beta1SamplesDir := filepath.Join(stagingDir, "v1beta1", "samples", "generated", "v1beta1")
-	if err := os.MkdirAll(v1beta1SamplesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(v1beta1SamplesDir, "snippet_metadata_google.cloud.test.v1beta1.json"), []byte(`{"snippets":["beta"]}`), 0644); err != nil {
-		t.Fatal(err)
+	for _, v := range []struct {
+		version         string
+		sampleContent   string
+		metadataContent string
+	}{
+		{version: "v1", sampleContent: "console.log('v1');", metadataContent: `{"snippets":[]}`},
+		{version: "v1beta1", metadataContent: `{"snippets":["beta"]}`},
+	} {
+		samplesDir := filepath.Join(stagingDir, v.version, "samples", "generated", v.version)
+		if err := os.MkdirAll(samplesDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if v.sampleContent != "" {
+			if err := os.WriteFile(filepath.Join(samplesDir, "sample.js"), []byte(v.sampleContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := os.WriteFile(filepath.Join(samplesDir, "snippet_metadata_google.cloud.test."+v.version+".json"), []byte(v.metadataContent), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {

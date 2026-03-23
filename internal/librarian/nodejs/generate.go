@@ -371,7 +371,10 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 func copySamplesFromStaging(stagingDir, outDir string) error {
 	versions, err := os.ReadDir(stagingDir)
 	if err != nil {
-		return nil // staging dir may not exist
+		if errors.Is(err, os.ErrNotExist) {
+			return nil // staging dir may not exist
+		}
+		return err
 	}
 	for _, v := range versions {
 		if !v.IsDir() {
@@ -379,10 +382,16 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 		samplesDir := filepath.Join(stagingDir, v.Name(), "samples")
 		if _, err := os.Stat(samplesDir); err != nil {
-			continue
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return err
 		}
 		if err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
 				return nil
 			}
 			rel, err := filepath.Rel(samplesDir, path)
