@@ -187,7 +187,7 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore non existent snippet directory",
+			name: "ignore deleted snippet directory after generation",
 			initialFiles: map[string]string{
 				"secretmanager/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
@@ -197,6 +197,9 @@ func TestBump(t *testing.T) {
 					{
 						Path: "google/cloud/secretmanager/v1",
 					},
+				},
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/secretmanager/apiv1"},
 				},
 			},
 			version: "0.2.0",
@@ -225,7 +228,7 @@ func TestBump(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			err := Bump(test.library, output, test.version)
+			err := Bump(test.library, libraryDir, test.version)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -335,7 +338,7 @@ func TestBump_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, output)
 			}
-			err := Bump(test.library, output, test.version)
+			err := Bump(test.library, libraryDir, test.version)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Bump() error = %v, wantErr %v", err, test.wantErr)
 			}

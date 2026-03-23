@@ -28,6 +28,39 @@ func TestTidy(t *testing.T) {
 		want    *config.Library
 	}{
 		{
+			name: "library output is removed",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "secretmanager",
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
+			name: "root module does not change",
+			library: &config.Library{
+				Name:   "root-module",
+				Output: "/home/repo",
+				Keep:   []string{"README.md", "internal/version.go"},
+			},
+			want: &config.Library{
+				Name:   "root-module",
+				Output: "/home/repo",
+				Keep:   []string{"README.md", "internal/version.go"},
+			},
+		},
+		{
+			name: "nested module suffix is removed",
+			library: &config.Library{
+				Name:   "bigquery/v2",
+				Output: "bigquery/v2",
+			},
+			want: &config.Library{
+				Name: "bigquery/v2",
+			},
+		},
+		{
 			name: "Go config is nil",
 			library: &config.Library{
 				Name: "test-lib",

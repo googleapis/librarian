@@ -24,8 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -40,15 +40,14 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
-	outDir := t.TempDir()
+	repoRoot := t.TempDir()
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	libraries := []*config.Library{
 		{
-			Name:          "google-cloud-secretmanager-v1",
+			Name:          "secretmanager",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -68,7 +67,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			Name:          "google-cloud-configdelivery-v1",
+			Name:          "configdelivery",
 			Version:       "0.1.0",
 			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
@@ -89,7 +88,7 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = outDir
+		library.Output = filepath.Join(repoRoot, library.Name)
 	}
 	for _, library := range libraries {
 		if err := Generate(t.Context(), library, googleapisDir); err != nil {
@@ -98,7 +97,7 @@ func TestGenerate(t *testing.T) {
 	}
 	// Just check that a README.md file has been created for each library.
 	for _, library := range libraries {
-		expectedReadme := filepath.Join(library.Output, library.Name, "README.md")
+		expectedReadme := filepath.Join(library.Output, "README.md")
 		_, err := os.Stat(expectedReadme)
 		if err != nil {
 			t.Errorf("Stat(%s) returned error: %v", expectedReadme, err)
@@ -167,10 +166,12 @@ func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go")
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		libraryName  string
 		apis         []*config.API
+		keep         []string
 		releaseLevel string
 		goModule     *config.GoModule
 		want         []string
@@ -202,19 +203,20 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 		{
 			name:        "v2 module",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			libraryName: "dataproc",
+			apis:        []*config.API{{Path: "google/cloud/dataproc/v1"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/v2/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
+						ClientPackage: "dataproc",
+						ImportPath:    "dataproc/v2/apiv1",
+						Path:          "google/cloud/dataproc/v1",
 					},
 				},
+				ModulePathVersion: "v2",
 			},
 			want: []string{
-				"secretmanager/v2/apiv1/secret_manager_client.go",
+				"dataproc/apiv1/batch_controller_client.go",
 			},
 		},
 		{
@@ -222,7 +224,7 @@ func TestGenerateLibrary(t *testing.T) {
 			libraryName: "secretmanager",
 			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			goModule: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"secretmanager/apiv1/secret_manager_client.go"},
+				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
 				GoAPIs: []*config.GoAPI{
 					{
 						ClientPackage: "secretmanager",
@@ -258,19 +260,19 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 		{
 			name:        "custom client directory",
-			libraryName: "secretmanager",
-			apis:        []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			libraryName: "cloudtasks",
+			apis:        []*config.API{{Path: "google/cloud/tasks/v2"}},
 			goModule: &config.GoModule{
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "customdir/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
+						ClientPackage: "cloudtasks",
+						ImportPath:    "cloudtasks/apiv2",
+						Path:          "google/cloud/tasks/v2",
 					},
 				},
 			},
 			want: []string{
-				"customdir/apiv1/secret_manager_client.go",
+				"cloudtasks/apiv2/cloud_tasks_client.go",
 			},
 		},
 		{
@@ -296,25 +298,23 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 		{
 			name:        "nested protos",
-			libraryName: "gkehub",
-			apis:        []*config.API{{Path: "google/cloud/gkehub/v1"}},
+			libraryName: "containeranalysis",
+			apis:        []*config.API{{Path: "google/devtools/containeranalysis/v1beta1"}},
+			keep:        []string{"apiv1beta1/grafeas/grafeaspb/grafeas.pb.go"},
 			goModule: &config.GoModule{
+				DeleteGenerationOutputPaths: []string{"google.golang.org"},
 				GoAPIs: []*config.GoAPI{
 					{
-						ClientPackage: "gkehub",
-						ImportPath:    "gkehub/apiv1",
-						NestedProtos: []string{
-							"configmanagement/configmanagement.proto",
-							"multiclusteringress/multiclusteringress.proto",
-						},
-						Path: "google/cloud/gkehub/v1",
+						ClientPackage: "containeranalysis",
+						ImportPath:    "containeranalysis/apiv1beta1",
+						NestedProtos:  []string{"grafeas/grafeas.proto"},
+						Path:          "google/devtools/containeranalysis/v1beta1",
 					},
 				},
 			},
 			want: []string{
-				"gkehub/apiv1/gke_hub_client.go",
-				"gkehub/configmanagement/apiv1/configmanagementpb/configmanagement.pb.go",
-				"gkehub/multiclusteringress/apiv1/multiclusteringresspb/multiclusteringress.pb.go",
+				"containeranalysis/apiv1beta1/container_analysis_v1_beta1_client.go",
+				"containeranalysis/apiv1beta1/grafeas/grafeaspb/grafeas.pb.go",
 			},
 		},
 		{
@@ -323,27 +323,40 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			outdir := t.TempDir()
+			t.Parallel()
+			repoRoot := t.TempDir()
+			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
+				t.Fatal(err)
+			}
 			library := &config.Library{
 				Name:         test.libraryName,
 				Version:      "1.0.0",
-				Output:       outdir,
+				Output:       filepath.Join(repoRoot, test.libraryName),
 				APIs:         test.apis,
+				Keep:         test.keep,
 				ReleaseLevel: test.releaseLevel,
 				Go:           test.goModule,
 			}
-
+			for _, file := range library.Keep {
+				src := filepath.Join("..", "..", "testdata/golang-generate", file)
+				dst := filepath.Join(repoRoot, test.libraryName, file)
+				if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+					t.Fatal(err)
+				}
+				if err := filesystem.CopyFile(src, dst); err != nil {
+					t.Fatal(err)
+				}
+			}
 			if err := Generate(t.Context(), library, googleapisDir); err != nil {
 				t.Fatal(err)
 			}
-
 			for _, path := range test.want {
-				if _, err := os.Stat(filepath.Join(outdir, path)); err != nil {
+				if _, err := os.Stat(filepath.Join(repoRoot, path)); err != nil {
 					t.Errorf("missing %s", path)
 				}
 			}
 			for _, path := range test.removed {
-				if _, err := os.Stat(filepath.Join(outdir, path)); err == nil {
+				if _, err := os.Stat(filepath.Join(repoRoot, path)); err == nil {
 					t.Errorf("%s should not exist", path)
 				}
 			}
@@ -409,293 +422,6 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 	// README doesn't exist because the generation is skipped.
 	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("want README.md to not exist, got: %v", err)
-	}
-}
-
-func TestUpdateSnippetMetadata(t *testing.T) {
-	library := &config.Library{
-		Name:    "accessapproval",
-		Version: "1.2.3",
-		APIs:    []*config.API{{Path: "google/cloud/accessapproval/v1"}},
-		Go: &config.GoModule{
-			GoAPIs: []*config.GoAPI{
-				{
-					ImportPath: "accessapproval/apiv1",
-					Path:       "google/cloud/accessapproval/v1",
-				},
-			},
-		},
-	}
-
-	tmpDir := t.TempDir()
-	metadataDir := filepath.Join(tmpDir, "internal", "generated", "snippets", "accessapproval", "apiv1")
-	err := os.MkdirAll(metadataDir, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.accessapproval.v1.json")
-	before := `{ 
- "clientLibrary": {
-    "name": "cloud.google.com/go/accessapproval/apiv1",
-    "version": "$VERSION",
-    "language": "GO",
-    "apis": [
-      {
-        "id": "google.cloud.accessapproval.v1",
-        "version": "v1"
-      }
-    ]
- }
-}
-`
-	// json is reformated.
-	after := `{
-  "clientLibrary": {
-    "apis": [
-      {
-        "id": "google.cloud.accessapproval.v1",
-        "version": "v1"
-      }
-    ],
-    "language": "GO",
-    "name": "cloud.google.com/go/accessapproval/apiv1",
-    "version": "1.2.3"
-  }
-}`
-	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
-		return
-	}
-	if err := updateSnippetMetadata(library, tmpDir); err != nil {
-		t.Fatal(err)
-	}
-
-	content, err := os.ReadFile(metadataFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(content)
-	if diff := cmp.Diff(after, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestUpdateSnippetMetadata_Skipped(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		protoOnly bool
-		path      string
-		fileName  string
-		setup     func(base, path, data, fileName string)
-	}{
-		{
-			name:     "skip non import path",
-			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "v2", "apiv2"),
-			fileName: "snippet_metadata.google.cloud.bigquery.v2.json",
-			setup: func(base, path, data, fileName string) {
-				// We need to create this directory because snippets directory should exist before updating.
-				if err := os.MkdirAll(filepath.Join(base, "internal/generated/snippets/bigquery/storage/apiv1"), 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
-					t.Fatal(err)
-				}
-				metadataFile := filepath.Join(base, path, fileName)
-				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:     "skip non-snippets file",
-			path:     filepath.Join("internal", "generated", "snippets", "bigquery", "storage", "apiv1"),
-			fileName: "non_metadata.google.cloud.bigquery.v1.json",
-			setup: func(base, path, data, fileName string) {
-				if err := os.MkdirAll(filepath.Join(base, path), 0755); err != nil {
-					t.Fatal(err)
-				}
-				metadataFile := filepath.Join(base, path, fileName)
-				if err := os.WriteFile(metadataFile, []byte(data), 0755); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:      "skip proto-only clients",
-			protoOnly: true,
-			// Do not create snippet directory to verify the function returns before
-			// checking the existence of the directory.
-		},
-		{
-			name: "snippet directory does not exist",
-			// Do not create snippet directory to verify the function doesn't
-			// return error in such ase.
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			library := &config.Library{
-				Name:    "bigquery",
-				Output:  tmpDir,
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-							ProtoOnly:  test.protoOnly,
-						},
-					},
-				},
-			}
-			data := `{ 
- "clientLibrary": {
-    "name": "cloud.google.com/go/bigquery/v2/apiv2",
-    "version": "$VERSION",
-    "language": "GO",
-    "apis": [
-      {
-        "id": "google.cloud.bigquery.v2",
-        "version": "v2"
-      }
-    ]
- }
-}
-`
-			if test.setup != nil {
-				test.setup(tmpDir, test.path, data, test.fileName)
-			}
-			if err := updateSnippetMetadata(library, tmpDir); err != nil {
-				t.Fatal(err)
-			}
-			if test.setup == nil {
-				// No need to check the content if the metadata file is not
-				// created during setup function.
-				return
-			}
-			metadataFile := filepath.Join(tmpDir, test.path, test.fileName)
-			content, err := os.ReadFile(metadataFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-			s := string(content)
-			if !strings.Contains(s, "$VERSION") {
-				t.Errorf("want version in snippet metadata, got:\n%s", s)
-			}
-		})
-	}
-}
-
-func TestUpdateSnippetMetadata_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		setup   func(dir string)
-		wantErr error
-	}{
-		{
-			name: "no go api",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-			},
-			wantErr: errGoAPINotFound,
-		},
-		{
-			name: "no permission to read snippet directory",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			setup: func(dir string) {
-				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
-				// Do not have the read permission.
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0333); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErr: syscall.EACCES,
-		},
-		{
-			name: "no client library field",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			setup: func(dir string) {
-				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
-				if err := os.WriteFile(snippetFile, []byte("{}"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErr: snippetmetadata.ErrNoClientLibraryField,
-		},
-		{
-			name: "no permission to update snippet directory",
-			library: &config.Library{
-				Name:    "bigquery",
-				Version: "1.2.3",
-				APIs:    []*config.API{{Path: "google/cloud/bigquery/storage/v1"}},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "bigquery/storage/apiv1",
-							Path:       "google/cloud/bigquery/storage/v1",
-						},
-					},
-				},
-			},
-			setup: func(dir string) {
-				snippetDir := filepath.Join(dir, "internal", "generated", "snippets", "bigquery", "storage", "apiv1")
-				if err := os.MkdirAll(snippetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				snippetFile := filepath.Join(snippetDir, "snippet_metadata.json")
-				// Do not have the write permission.
-				if err := os.WriteFile(snippetFile, []byte("{\"clientLibrary\": {\"language\": \"GO\"}}"), 0555); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErr: syscall.EACCES,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			if test.setup != nil {
-				test.setup(tmpDir)
-			}
-			err := updateSnippetMetadata(test.library, tmpDir)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
 	}
 }
 
@@ -1011,6 +737,174 @@ func TestBuildGAPICOpts(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMoveGeneratedFiles(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, tmpDir string) (outDir, apiDir, snippetDir string, lib *config.Library)
+	}{
+		{
+			name: "moves files successfully",
+			setup: func(t *testing.T, tmpDir string) (string, string, string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib")
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "apiv1")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				lib := &config.Library{
+					Name: "lib",
+					APIs: []*config.API{{Path: "lib/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{{Path: "lib/v1", ImportPath: "lib/apiv1"}},
+					},
+				}
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib
+			},
+		},
+		{
+			name: "nested major version",
+			setup: func(t *testing.T, tmpDir string) (string, string, string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib", "v2")
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "v2", "apiv2")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "v2", "apiv2")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				lib := &config.Library{
+					Name: "lib/v2",
+					APIs: []*config.API{{Path: "lib/v2"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "lib/v2", ImportPath: "lib/v2/apiv2"},
+						},
+					},
+				}
+				return outDir, filepath.Join(outDir, "apiv2"), filepath.Join(repoRoot, snippetDirSuffix), lib
+			},
+		},
+		{
+			name: "library configured with a versioned module path",
+			setup: func(t *testing.T, tmpDir string) (string, string, string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib")
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "v2", "apiv1")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "v2", "apiv1")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				lib := &config.Library{
+					Name: "lib",
+					APIs: []*config.API{{Path: "lib/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{Path: "lib/v1", ImportPath: "lib/v2/apiv1"},
+						},
+						ModulePathVersion: "v2",
+					},
+				}
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, "internal", "generated", "snippets", "lib", "apiv1"), lib
+			},
+		},
+		{
+			name: "library configured paths to delete after generation",
+			setup: func(t *testing.T, tmpDir string) (string, string, string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib")
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "apiv1")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
+				snippetDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
+				if err := os.MkdirAll(snippetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				pathToDeletes := []string{"delete", "../internal/generated/snippets/lib/apiv2"}
+				for _, path := range pathToDeletes {
+					pathToDelete := filepath.Join(outDir, path)
+					if err := os.MkdirAll(pathToDelete, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+
+				lib := &config.Library{
+					Name:   "lib",
+					APIs:   []*config.API{{Path: "lib/v1"}},
+					Output: outDir,
+					Go: &config.GoModule{
+						DeleteGenerationOutputPaths: pathToDeletes,
+						GoAPIs: []*config.GoAPI{
+							{Path: "lib/v1", ImportPath: "lib/apiv1"},
+						},
+					},
+				}
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
+			err := moveGeneratedFiles(lib, outDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(apiDir, "main.go")); err != nil {
+				t.Errorf("expected main.go to exist, got err: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); err != nil {
+				t.Errorf("expected snippet.go to exist, got err: %v", err)
+			}
+			if lib.Go == nil || len(lib.Go.DeleteGenerationOutputPaths) == 0 {
+				return
+			}
+			for _, path := range lib.Go.DeleteGenerationOutputPaths {
+				if _, err := os.Stat(filepath.Join(outDir, path)); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("expected %v to be deleted", path)
+				}
 			}
 		})
 	}
