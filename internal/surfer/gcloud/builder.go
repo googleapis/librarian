@@ -461,7 +461,6 @@ func newOutputFormat(method *api.Method) string {
 	if resourceMsg == nil {
 		return ""
 	}
-
 	return newFormat(resourceMsg)
 }
 
