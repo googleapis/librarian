@@ -185,6 +185,8 @@ func updateSnippetDirectory(library *config.Library, output, version string) err
 		if snippetDir == "" {
 			continue
 		}
+		// UpdateAllLibraryVersions searches recursively, but since Go APIs are not
+		// nested, this only updates the snippets for the current API.
 		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
 			return err
 		}
@@ -204,17 +206,13 @@ func findSnippetDirectory(library *config.Library, apiPath, output string) (stri
 		return "", nil
 	}
 	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
-	skip := false
 	// No need to format the snippet directory if the directory is within one of
 	// paths to delete after generation. The snippet directory does not exist.
 	for _, path := range library.Go.DeleteGenerationOutputPaths {
 		pathToDelete := filepath.Join(output, path)
 		if strings.HasPrefix(snippetDir, pathToDelete) {
-			skip = true
+			return "", nil
 		}
-	}
-	if skip {
-		return "", nil
 	}
 	return snippetDir, nil
 }

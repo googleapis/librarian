@@ -685,7 +685,7 @@ func TestUpdateSnippetDirectory(t *testing.T) {
   }
 }`
 	if err := os.WriteFile(metadataFile, []byte(before), 0755); err != nil {
-		return
+		t.Fatal(err)
 	}
 	if err := updateSnippetDirectory(library, library.Output, library.Version); err != nil {
 		t.Fatal(err)
@@ -805,13 +805,13 @@ func TestUpdateSnippetDirectory_Skipped(t *testing.T) {
 			}
 			s := string(content)
 			if !strings.Contains(s, "$VERSION") {
-				t.Errorf("want version in snippet metadata, got:\n%s", s)
+				t.Errorf("want unchanged snippet metadata file, got:\n%s", s)
 			}
 		})
 	}
 }
 
-func TestUpdateSnippetMetadata_Error(t *testing.T) {
+func TestUpdateSnippetDirectory_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -919,7 +919,7 @@ func TestUpdateSnippetMetadata_Error(t *testing.T) {
 			}
 			err := updateSnippetDirectory(test.library, output, test.library.Version)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("updateSnippetMetadata() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("updateSnippetDirectory() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

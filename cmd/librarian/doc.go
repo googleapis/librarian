@@ -86,10 +86,9 @@ DESCRIPTION:
 
 OPTIONS:
 
-	--all                             update all libraries in the workspace
-	--version string                  specific version to update to; not valid with --all
-	--legacylibrarian-pr-body string  a file to create with text to put in the body of the PR
-	--help, -h                        show help
+	--all             update all libraries in the workspace
+	--version string  specific version to update to; not valid with --all
+	--help, -h        show help
 
 GLOBAL OPTIONS:
 

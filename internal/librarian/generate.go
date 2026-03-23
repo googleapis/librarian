@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -145,7 +145,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 // generateLibraries generates and formats all the given libraries,
 // delegating to language-specific code. Each language chooses its own
 // concurrency strategy for these two steps.
-func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sidekickconfig.Sources) error {
+func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*config.Library, src *sources.Sources) error {
 	switch cfg.Language {
 	case config.LanguageDart:
 		g, gctx := errgroup.WithContext(ctx)
