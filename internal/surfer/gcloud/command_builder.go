@@ -44,7 +44,9 @@ func NewCommandBuilder(method *api.Method, overrides *Config, model *api.API, se
 
 // Build constructs a single gcloud command definition from an API method.
 // This function assembles all the necessary pieces: help text, arguments,
-// request details, and async configuration.
+// request details, and async configuration. It takes no parameters, relying
+// on the CommandBuilder's state, and returns the constructed Command and
+// any error encountered during assembly.
 func (b *CommandBuilder) Build() (*Command, error) {
 	args, err := NewArgumentBuilder(b.method, b.overrides, b.model, b.service).Build()
 	if err != nil {

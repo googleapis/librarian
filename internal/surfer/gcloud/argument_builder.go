@@ -43,7 +43,8 @@ func NewArgumentBuilder(method *api.Method, overrides *Config, model *api.API, s
 }
 
 // Build generates the set of arguments for a command by parsing the
-// fields of the method's request message.
+// fields of the method's request message. It returns the generated slice
+// of Arguments and an error if argument generation fails.
 func (b *ArgumentBuilder) Build() ([]Argument, error) {
 	var args []Argument
 	if b.method.InputType == nil {
