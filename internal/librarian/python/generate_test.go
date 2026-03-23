@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -896,9 +897,110 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "nox")
 	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
+
+	for _, test := range []struct {
+		name           string
+		skipReadmeCopy bool
+	}{
+		{
+			name:           "copy readme",
+			skipReadmeCopy: false,
+		},
+		{
+			name:           "skip readme copy",
+			skipReadmeCopy: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			createReplacementScripts(t, repoRoot)
+			outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			cfg := &config.Config{
+				Language: config.LanguagePython,
+				Repo:     "googleapis/google-cloud-python",
+			}
+
+			library := &config.Library{
+				Name:                "google-cloud-secret-manager",
+				Output:              outdir,
+				ReleaseLevel:        "stable",
+				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+				Python: &config.PythonPackage{
+					MetadataNameOverride: "secretmanager",
+					PythonDefault: config.PythonDefault{
+						LibraryType: "GAPIC_AUTO",
+					},
+					SkipReadmeCopy: test.skipReadmeCopy,
+				},
+			}
+			if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
+				t.Fatal(err)
+			}
+			gotMetadata, err := repometadata.Read(outdir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantMetadata := &repometadata.RepoMetadata{
+				// Fields set by repometadata.FromLibrary.
+				Name:                 "secretmanager",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ReleaseLevel:         "stable",
+				Language:             config.LanguagePython,
+				Repo:                 "googleapis/google-cloud-python",
+				DistributionName:     "google-cloud-secret-manager",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
+				APIDescription:       "Stores, manages, and secures access to application secrets.",
+				// Fields set by Generate.
+				LibraryType:         "GAPIC_AUTO",
+				ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+				DefaultVersion:      "v1",
+			}
+			if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
+				t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
+			}
+
+			_, gotReadmeStatErr := os.Stat(filepath.Join(outdir, "docs", "README.rst"))
+			var wantReadmeStatErr error
+			if test.skipReadmeCopy {
+				wantReadmeStatErr = os.ErrNotExist
+			}
+			if !errors.Is(gotReadmeStatErr, wantReadmeStatErr) {
+				t.Errorf("stat error on readme = %v, want %v", gotReadmeStatErr, wantReadmeStatErr)
+			}
+		})
+	}
+}
+
+// Separate test from TestGenerate as it tests a very specific situation with
+// very specific assertions. We want to end up with files that are oriented
+// around google/cloud/workflows, not google/cloud/workflows/executions.
+func TestGenerate_APIOrder(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Python code generation")
+	}
+
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
+	testhelper.RequireCommand(t, "python3")
+	testhelper.RequireCommand(t, "nox")
+	testhelper.RequireCommand(t, "ruff")
+	requireSynthtool(t)
+
 	repoRoot := t.TempDir()
 	createReplacementScripts(t, repoRoot)
-	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-workflows"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -909,17 +1011,14 @@ func TestGenerate(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:                "google-cloud-secret-manager",
-		Output:              outdir,
-		ReleaseLevel:        "stable",
-		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+		Name:         "google-cloud-workflows",
+		Output:       outdir,
+		ReleaseLevel: "stable",
 		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			{Path: "google/cloud/workflows/v1"},
+			{Path: "google/cloud/workflows/executions/v1"},
 		},
 		Python: &config.PythonPackage{
-			MetadataNameOverride: "secretmanager",
 			PythonDefault: config.PythonDefault{
 				LibraryType: "GAPIC_AUTO",
 			},
@@ -928,30 +1027,12 @@ func TestGenerate(t *testing.T) {
 	if err := Generate(t.Context(), cfg, library, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
-	gotMetadata, err := repometadata.Read(outdir)
+	setupContent, err := os.ReadFile(filepath.Join(outdir, "setup.py"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantMetadata := &repometadata.RepoMetadata{
-		// Fields set by repometadata.FromLibrary.
-		Name:                 "secretmanager",
-		NamePretty:           "Secret Manager",
-		ProductDocumentation: "https://cloud.google.com/secret-manager/",
-		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-		ReleaseLevel:         "stable",
-		Language:             config.LanguagePython,
-		Repo:                 "googleapis/google-cloud-python",
-		DistributionName:     "google-cloud-secret-manager",
-		APIID:                "secretmanager.googleapis.com",
-		APIShortname:         "secretmanager",
-		APIDescription:       "Stores, manages, and secures access to application secrets.",
-		// Fields set by Generate.
-		LibraryType:         "GAPIC_AUTO",
-		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-		DefaultVersion:      "v1",
-	}
-	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
-		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
+	if strings.Contains(string(setupContent), "executions") {
+		t.Errorf("wanted setup.py to not mention executions; got %s", string(setupContent))
 	}
 }
 

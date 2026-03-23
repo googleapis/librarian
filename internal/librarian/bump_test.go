@@ -32,7 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// testUnusedStringParam is used to fill the spot of a string parameter that
+// testUnusedStringParam is used to fill the spot with a string parameter that
 // won't be provided in the test, because the test does not exercise the
 // functionality related to said parameter. It is an intentional signal
 // rather than an ambiguous empty string.
@@ -1296,7 +1296,7 @@ func TestLibraryChanged(t *testing.T) {
 			},
 		},
 		{
-			name: "Go library",
+			name: "Go library with default output",
 			cfg:  &config.Config{Language: config.LanguageGo},
 			library: &config.Library{
 				Name: "test-lib",
@@ -1330,7 +1330,7 @@ func TestLibraryChanged(t *testing.T) {
 			},
 		},
 		{
-			name: "Go library with non default output",
+			name: "Go library with nested module and non default output",
 			cfg:  &config.Config{Language: config.LanguageGo},
 			library: &config.Library{
 				Name:   "test-lib",
@@ -1338,9 +1338,8 @@ func TestLibraryChanged(t *testing.T) {
 				Go:     &config.GoModule{NestedModule: "v2"},
 			},
 			filesChanges: []string{
-				"tmp/output/test-lib/v2/apiv1/example.go",
+				"tmp/output/v2/apiv1/example.go",
 			},
-			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -89,7 +89,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
-	metadata, err := repometadata.FromLibrary(cfg, library, sources)
+	googleapisDir := sources.Googleapis
+	if len(library.APIs) > 0 && library.APIs[0].Path == "schema/google/showcase/v1beta1" {
+		googleapisDir = sources.Showcase
+	}
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return nil, err
 	}
