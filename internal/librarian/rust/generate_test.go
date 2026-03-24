@@ -129,6 +129,14 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "nosvc library without rust modules",
+			lib: &config.Library{
+				Name:   "google-cloud-oslogin-common",
+				Output: "src/generated/cloud/oslogin/common",
+			},
+			want: false,
+		},
+		{
 			name: "output with api",
 			lib: &config.Library{
 				Name: "google-cloud-api",
@@ -138,6 +146,14 @@ func TestIsVeneer(t *testing.T) {
 				Output: "src/generated/api/types",
 			},
 			want: false,
+		},
+		{
+			name: "handwritten library not in sdk.yaml",
+			lib: &config.Library{
+				Name:   "google-cloud-auth",
+				Output: "src/auth",
+			},
+			want: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

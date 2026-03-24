@@ -27,6 +27,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -300,7 +302,11 @@ func TestRunPostProcessor_Owlbot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
@@ -397,7 +403,11 @@ func TestRunPostProcessor(t *testing.T) {
 
 	createStagingFixture(t, repoRoot, library.Name, []string{"v1", "v1beta1"})
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -436,7 +446,8 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, ".OwlBot.yaml")); !errors.Is(err, os.ErrNotExist) {
@@ -451,7 +462,10 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "npx")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-secretmanager"}
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		Keep: []string{"librarian.js", ".readme-partials.yaml", "README.md"},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -493,7 +507,11 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
@@ -561,7 +579,10 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
+	library := &config.Library{
+		Name: "google-cloud-test",
+		Keep: []string{"README.md", ".readme-partials.yaml", "system-test/.eslintrc.yml"},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -577,8 +598,20 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(outDir, ".readme-partials.yaml"), []byte(partialsContent), 0644); err != nil {
 		t.Fatal(err)
 	}
+	eslintContent := "extends: eslint:recommended"
+	eslintDir := filepath.Join(outDir, "system-test")
+	if err := os.MkdirAll(eslintDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(eslintDir, ".eslintrc.yml"), []byte(eslintContent), 0644); err != nil {
+		t.Fatal(err)
+	}
 
-	if err := runPostProcessor(t.Context(), library, "", repoRoot, outDir); err != nil {
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -592,29 +625,47 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(outDir, ".readme-partials.yaml")); err != nil {
 		t.Errorf("expected .readme-partials.yaml to be preserved: %v", err)
 	}
+	gotEslint, err := os.ReadFile(filepath.Join(outDir, "system-test", ".eslintrc.yml"))
+	if err != nil {
+		t.Fatalf("expected system-test/.eslintrc.yml to be preserved: %v", err)
+	}
+	if string(gotEslint) != eslintContent {
+		t.Errorf("system-test/.eslintrc.yml content = %q, want %q", string(gotEslint), eslintContent)
+	}
 }
 
 func TestRestoreCopyrightYear(t *testing.T) {
 	for _, test := range []struct {
 		name  string
+		dir   string
 		year  string
 		input string
 		want  string
 	}{
 		{
-			name:  "replaces year",
+			name:  "replaces year in src",
+			dir:   "src",
 			year:  "2020",
 			input: "// Copyright 2026 Google LLC\n",
 			want:  "// Copyright 2020 Google LLC\n",
 		},
 		{
+			name:  "replaces year in test",
+			dir:   "test",
+			year:  "2019",
+			input: "// Copyright 2026 Google LLC\n",
+			want:  "// Copyright 2019 Google LLC\n",
+		},
+		{
 			name:  "empty year is no-op",
+			dir:   "src",
 			year:  "",
 			input: "// Copyright 2026 Google LLC\n",
 			want:  "// Copyright 2026 Google LLC\n",
 		},
 		{
 			name:  "no match is no-op",
+			dir:   "src",
 			year:  "2020",
 			input: "// No copyright here\n",
 			want:  "// No copyright here\n",
@@ -622,18 +673,18 @@ func TestRestoreCopyrightYear(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			srcDir := filepath.Join(outDir, "src")
-			if err := os.MkdirAll(srcDir, 0755); err != nil {
+			dir := filepath.Join(outDir, test.dir)
+			if err := os.MkdirAll(dir, 0755); err != nil {
 				t.Fatal(err)
 			}
-			testFile := filepath.Join(srcDir, "index.ts")
-			if err := os.WriteFile(testFile, []byte(test.input), 0644); err != nil {
+			file := filepath.Join(dir, "index.ts")
+			if err := os.WriteFile(file, []byte(test.input), 0644); err != nil {
 				t.Fatal(err)
 			}
 			if err := restoreCopyrightYear(outDir, test.year); err != nil {
 				t.Fatal(err)
 			}
-			got, err := os.ReadFile(testFile)
+			got, err := os.ReadFile(file)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -641,6 +692,13 @@ func TestRestoreCopyrightYear(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestRestoreCopyrightYear_SkipsMissingDirs(t *testing.T) {
+	outDir := t.TempDir()
+	if err := restoreCopyrightYear(outDir, "2020"); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -677,8 +735,12 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, "packages", library.Name)
 	}
 
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
+		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -752,6 +814,81 @@ func TestCopyMissingProtos(t *testing.T) {
 	}
 	if diff := cmp.Diff("existing", string(existingContent)); diff != "" {
 		t.Errorf("existing proto should not be overwritten (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopySamplesFromStaging(t *testing.T) {
+	stagingDir := t.TempDir()
+	outDir := t.TempDir()
+
+	for _, v := range []struct {
+		version         string
+		sampleContent   string
+		metadataContent string
+	}{
+		{version: "v1", sampleContent: "console.log('v1');", metadataContent: `{"snippets":[]}`},
+		{version: "v1beta1", metadataContent: `{"snippets":["beta"]}`},
+	} {
+		samplesDir := filepath.Join(stagingDir, v.version, "samples", "generated", v.version)
+		if err := os.MkdirAll(samplesDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if v.sampleContent != "" {
+			if err := os.WriteFile(filepath.Join(samplesDir, "sample.js"), []byte(v.sampleContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := os.WriteFile(filepath.Join(samplesDir, "snippet_metadata_google.cloud.test."+v.version+".json"), []byte(v.metadataContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "v1 sample file",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "sample.js"),
+			want: "console.log('v1');",
+		},
+		{
+			name: "v1 renamed metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata.google.cloud.test.v1.json"),
+			want: `{"snippets":[]}`,
+		},
+		{
+			name: "v1beta1 renamed metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata.google.cloud.test.v1beta1.json"),
+			want: `{"snippets":["beta"]}`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := os.ReadFile(test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+	// Verify the old underscore-prefixed names do not exist.
+	oldV1 := filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json")
+	if _, err := os.Stat(oldV1); !errors.Is(err, os.ErrNotExist) {
+		t.Error("expected snippet_metadata_ file to be renamed, but old name still exists")
+	}
+}
+
+func TestCopySamplesFromStaging_NonExistentDir(t *testing.T) {
+	if err := copySamplesFromStaging(filepath.Join(t.TempDir(), "does-not-exist"), t.TempDir()); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -853,5 +990,44 @@ func createStagingFixture(t *testing.T, repoRoot, libName string, versions []str
 		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestWriteRepoMetadata(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	library := &config.Library{
+		Name:         "google-cloud-secretmanager",
+		ReleaseLevel: "stable",
+		APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
+	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repometadata.Read(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := sample.RepoMetadata()
+	want.DistributionName = "@google-cloud/secretmanager"
+	want.Language = cfg.Language
+	want.Repo = cfg.Repo
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWriteRepoMetadata_NoAPIs(t *testing.T) {
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	library := &config.Library{Name: "google-cloud-test"}
+	if err := writeRepoMetadata(cfg, library, "", t.TempDir()); err != nil {
+		t.Errorf("expected nil error for library with no APIs, got: %v", err)
 	}
 }
