@@ -186,7 +186,7 @@ func moveGeneratedFiles(library *config.Library, goAPI *config.GoAPI, outDir str
 	if err := moveAPIDirectory(library, goAPI, outDir); err != nil {
 		return err
 	}
-	return moveSnippetDirectory(library, goAPI, outDir)
+	return moveAndUpdateSnippets(library, goAPI, outDir)
 }
 
 // moveAPIDirectory moves the generated API directory from the temporary location to its
@@ -201,7 +201,9 @@ func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, outDir strin
 	return filesystem.MoveAndMerge(librarySrc, libraryDest)
 }
 
-func moveSnippetDirectory(library *config.Library, goAPI *config.GoAPI, outDir string) error {
+// moveAndUpdateSnippets moves the generated snippets from the temporary location to their final
+// destination and updates their library versions.
+func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, outDir string) error {
 	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
 	snippetDest := findSnippetDirectory(library, goAPI, outDir)
 	if snippetDest == "" {
