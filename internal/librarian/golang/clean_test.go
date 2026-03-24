@@ -188,7 +188,7 @@ func TestClean_Error(t *testing.T) {
 			},
 			outputFiles:  []string{"testlib/apiv1/file2.go"},
 			snippetFiles: []string{"internal/generated/snippets/testlib/apiv1/snippet1.go"},
-			wantErr:      errGoAPINotFound,
+			wantErr:      &errGoAPINotFound{path: "google/example/v1"},
 		},
 		{
 			name: "no permission to remove root files",

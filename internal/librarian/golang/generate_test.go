@@ -147,7 +147,7 @@ func TestGenerate_Error(t *testing.T) {
 				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 			},
-			wantErr: errGoAPINotFound,
+			wantErr: &errGoAPINotFound{path: "google/cloud/secretmanager/v1"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
