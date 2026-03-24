@@ -243,6 +243,7 @@ func TestRunCommandWithStreamingOutput_Error(t *testing.T) {
 }
 
 func captureStdoutAndStderr(t *testing.T, fn func()) (string, string) {
+	t.Helper()
 	stdout := os.Stdout
 	stderr := os.Stderr
 	outReader, outWriter, err := os.Pipe()
