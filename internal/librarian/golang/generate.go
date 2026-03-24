@@ -180,9 +180,8 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 		goAPI.ImportPath, goAPI.ClientPackage)
 }
 
-// moveGeneratedFiles restructures the generated files into the final module layout by moving the
-// generated package into the library directory, fixing version paths, and removing any paths configured
-// for deletion.
+// moveGeneratedFiles moves generated API and snippet files from the protoc output
+// directory to their destination in the repository.
 func moveGeneratedFiles(library *config.Library, goAPI *config.GoAPI, outDir string) error {
 	if err := moveAPIDirectory(library, goAPI, outDir); err != nil {
 		return err
@@ -190,6 +189,8 @@ func moveGeneratedFiles(library *config.Library, goAPI *config.GoAPI, outDir str
 	return moveSnippetDirectory(library, goAPI, outDir)
 }
 
+// moveAPIDirectory moves the generated API directory from the temporary location to its
+// final destination in the repository.
 func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, outDir string) error {
 	libraryDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
 	librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
