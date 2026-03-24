@@ -206,6 +206,8 @@ func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument 
 
 	// For List methods, the primary resource is the parent of the method's resource.
 	if isList(b.method) {
+		segments = getParentFromSegments(segments)
+	}
 	resourceName := strings.TrimSuffix(field.Name, "_id")
 	if field.Name == "name" || isList(b.method) {
 		resourceName = getSingularFromSegments(segments)
