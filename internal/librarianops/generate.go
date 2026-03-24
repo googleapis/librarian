@@ -209,7 +209,7 @@ func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, 
 	if verbose {
 		args = append([]string{"-v"}, args...)
 	}
-	return command.RunWithStreamingOutput(ctx, "go",
+	return command.RunStreaming(ctx, "go",
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
 }
 
@@ -245,7 +245,7 @@ func runLibrarianInDocker(ctx context.Context, language, version string, verbose
 		"/repo",
 		dockerImage,
 	}
-	return command.RunWithStreamingOutput(ctx, "docker", append(dockerArgs, args...)...)
+	return command.RunStreaming(ctx, "docker", append(dockerArgs, args...)...)
 }
 
 // runLibrarianBin runs a pre-built librarian binary with the given arguments.
@@ -253,7 +253,7 @@ func runLibrarianBin(ctx context.Context, bin string, verbose bool, args ...stri
 	if verbose {
 		args = append([]string{"-v"}, args...)
 	}
-	return command.RunWithStreamingOutput(ctx, bin, args...)
+	return command.RunStreaming(ctx, bin, args...)
 }
 
 func sourcesToUpdate(cfg *config.Config) []string {

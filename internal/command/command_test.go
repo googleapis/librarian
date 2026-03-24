@@ -185,7 +185,7 @@ func TestVerbose(t *testing.T) {
 	}
 }
 
-func TestRunCommandWithStreamingOutput(t *testing.T) {
+func TestRunStreaming(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		command string
@@ -215,7 +215,7 @@ func TestRunCommandWithStreamingOutput(t *testing.T) {
 			})
 			Verbose = test.verbose
 			gotOut, gotErr := captureStdoutAndStderr(t, func() {
-				RunWithStreamingOutput(t.Context(), test.command, test.args...)
+				RunStreaming(t.Context(), test.command, test.args...)
 			})
 			if diff := cmp.Diff(test.wantOut, gotOut); diff != "" {
 				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
@@ -227,8 +227,8 @@ func TestRunCommandWithStreamingOutput(t *testing.T) {
 	}
 }
 
-func TestRunCommandWithStreamingOutput_Error(t *testing.T) {
-	err := RunWithStreamingOutput(t.Context(), "go", invalidSubcommand)
+func TestRunStreaming_Error(t *testing.T) {
+	err := RunStreaming(t.Context(), "go", invalidSubcommand)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
