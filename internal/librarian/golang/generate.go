@@ -23,7 +23,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -54,10 +53,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
-	slices.SortFunc(library.APIs, func(a, b *config.API) int {
-		return len(b.Path) - len(a.Path)
-	})
-	for _, api := range library.APIs {
+	for i, api := range library.APIs {
 		// TODO(https://github.com/googleapis/librarian/issues/4777): Generate APIs in a temp
 		// directory.
 		goAPI := findGoAPI(library, api.Path)
@@ -80,11 +76,14 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateRepoMetadata(api, library, goAPI); err != nil {
 			return err
 		}
+		if i != 0 {
+			continue
+		}
+		if err := generateREADME(library, api, outDir); err != nil {
+			return err
+		}
 	}
 	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
-		return err
-	}
-	if err := generateREADME(library, googleapisDir, outDir); err != nil {
 		return err
 	}
 	if library.Go != nil {
@@ -245,15 +244,7 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 	return files, nil
 }
 
-func generateREADME(library *config.Library, googleapisDir, moduleRoot string) error {
-	if len(library.APIs) == 0 {
-		return nil
-	}
-	serviceconfig.SortAPIs(library.APIs)
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
-	if err != nil {
-		return err
-	}
+func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot string) error {
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.

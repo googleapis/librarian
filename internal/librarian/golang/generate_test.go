@@ -309,6 +309,34 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
+			name: "nested import paths",
+			library: &config.Library{
+				Name: "firestore",
+				APIs: []*config.API{
+					{Path: "google/firestore/v1"},
+					{Path: "google/firestore/admin/v1"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "firestore",
+							ImportPath:    "firestore/apiv1",
+							Path:          "google/firestore/v1",
+						},
+						{
+							ClientPackage: "apiv1",
+							ImportPath:    "firestore/apiv1/admin",
+							Path:          "google/firestore/admin/v1",
+						},
+					},
+				},
+			},
+			want: []string{
+				"firestore/apiv1/firestorepb/firestore.pb.go",
+				"firestore/apiv1/admin/adminpb/firestore_admin.pb.go",
+			},
+		},
+		{
 			name: "no api",
 			library: &config.Library{
 				Name: "auth",
@@ -361,11 +389,13 @@ func TestGenerateREADME(t *testing.T) {
 		Output: dir,
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
-
-	if err := generateREADME(library, googleapisDir, moduleRoot); err != nil {
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
+	if err != nil {
 		t.Fatal(err)
 	}
-
+	if err := generateREADME(library, api, moduleRoot); err != nil {
+		t.Fatal(err)
+	}
 	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
 	if err != nil {
 		t.Fatal(err)
@@ -392,8 +422,11 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Keep:   []string{"README.md"},
 	}
-
-	if err := generateREADME(library, googleapisDir, moduleRoot); err != nil {
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := generateREADME(library, api, moduleRoot); err != nil {
 		t.Fatal(err)
 	}
 	// README doesn't exist because the generation is skipped.
