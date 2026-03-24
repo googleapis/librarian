@@ -1,7 +1,7 @@
 # Librarian on-call rotation
 
-As a librarian on-call, you need to perform library boarding, code generation and release for SDKs that have onboarded
-librarian tool.
+As a librarian on-call, you need to perform library boarding, code generation, and release for SDKs that have onboarded
+the librarian tool.
 
 Each SDK has its own generation and release cadence. See SDK sections for more details.
 
@@ -10,24 +10,24 @@ Create a new section in the [on-call playbook](https://docs.google.com/document/
 by copying the template.
 Update your LDAP and rotation dates.
 
-Record commands you need to execute during the rotation.
+Write down commands you need to execute during the rotation.
 In addition, write down what you think are working well and what should be improved.
 
 We can use this data to improve the rotation experience.
 
-# Rust
+## Rust
 
-## Regenerate Rust SDK
+### Regenerate Rust SDK
 
 Regenerate SDK once a week.
 
-### Install protoc
+#### Install protoc
 1. Check the [protoc version](https://github.com/googleapis/google-cloud-rust/blob/main/.gcb/scripts/regenerate.sh#L19)
 in GCB workflow.
 2. Download the protoc binary from [protobuf releases](https://github.com/protocolbuffers/protobuf/releases).
 3. Run `protoc --version` to verify the version.
 
-### Update librarian version
+#### Update librarian version
 ```shell
 # In google-cloud-rust repository root directory, assuming you are using a fork.
 git checkout main
@@ -40,7 +40,7 @@ git add . && git commit -m "chore: update librarian version"
 ```
 Create a pull request and merge it.
 
-### Update source and regenerate all Rust libraries
+#### Update source and regenerate all Rust libraries
 ```shell
 # In google-cloud-rust repository root directory, assuming you are using a fork.
 git checkout main
@@ -57,7 +57,7 @@ git add . && git commit -m "chore: update sources and regenerate"
 ```
 Create a pull request and merge it.
 
-## Release
+### Release
 
 Release Rust SDK once a month, subscribe [SDK release calendar](https://calendar.google.com/calendar/u/0?cid=Y184ZmNlZjVkZmUwMzM1NTFhNjg2ZTU4MWY2NWRlYTMyZjIxMDcxZWQyNDNkZjBkYWViNGViMzAzZjJkMWI4NzM4QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20)
 for more details.
