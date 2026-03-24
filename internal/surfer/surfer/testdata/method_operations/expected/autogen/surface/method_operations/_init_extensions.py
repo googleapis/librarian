@@ -22,11 +22,9 @@ class MethodOperationsAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class MethodOperationsBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class MethodOperationsGa(base.Group):
   """Optional no-auto-generated code for GA."""

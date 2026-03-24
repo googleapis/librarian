@@ -22,11 +22,9 @@ class MethodMinimalListAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class MethodMinimalListBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class MethodMinimalListGa(base.Group):
   """Optional no-auto-generated code for GA."""

@@ -22,11 +22,9 @@ class ResourceStandardAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class ResourceStandardBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class ResourceStandardGa(base.Group):
   """Optional no-auto-generated code for GA."""

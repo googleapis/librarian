@@ -22,11 +22,9 @@ class HiddenFeatureAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class HiddenFeatureBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class HiddenFeatureGa(base.Group):
   """Optional no-auto-generated code for GA."""

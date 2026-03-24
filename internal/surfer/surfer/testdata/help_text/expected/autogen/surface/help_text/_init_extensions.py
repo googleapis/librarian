@@ -22,11 +22,9 @@ class HelpTextAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class HelpTextBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class HelpTextGa(base.Group):
   """Optional no-auto-generated code for GA."""

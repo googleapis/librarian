@@ -22,11 +22,9 @@ class MultiServiceAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class MultiServiceBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class MultiServiceGa(base.Group):
   """Optional no-auto-generated code for GA."""

@@ -21,10 +21,8 @@ from googlecloudsdk.calliope import base
 class DeepsAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 
-
 class DeepsBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
-
 
 class DeepsGa(base.Group):
   """Optional no-auto-generated code for GA."""

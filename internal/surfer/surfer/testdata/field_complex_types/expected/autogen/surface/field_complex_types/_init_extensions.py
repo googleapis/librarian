@@ -22,11 +22,9 @@ class FieldComplexTypesAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class FieldComplexTypesBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class FieldComplexTypesGa(base.Group):
   """Optional no-auto-generated code for GA."""

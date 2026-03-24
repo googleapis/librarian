@@ -21,10 +21,8 @@ from googlecloudsdk.calliope import base
 class ResourcesAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 
-
 class ResourcesBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
-
 
 class ResourcesGa(base.Group):
   """Optional no-auto-generated code for GA."""

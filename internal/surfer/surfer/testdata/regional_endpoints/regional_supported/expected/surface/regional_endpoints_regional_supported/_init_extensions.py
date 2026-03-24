@@ -22,11 +22,9 @@ class RegionalEndpointsRegionalSupportedAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class RegionalEndpointsRegionalSupportedBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class RegionalEndpointsRegionalSupportedGa(base.Group):
   """Optional no-auto-generated code for GA."""

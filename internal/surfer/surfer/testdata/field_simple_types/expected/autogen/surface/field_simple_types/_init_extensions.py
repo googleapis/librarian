@@ -22,11 +22,9 @@ class FieldSimpleTypesAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class FieldSimpleTypesBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class FieldSimpleTypesGa(base.Group):
   """Optional no-auto-generated code for GA."""

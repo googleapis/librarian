@@ -22,11 +22,9 @@ class FieldOneofAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class FieldOneofBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class FieldOneofGa(base.Group):
   """Optional no-auto-generated code for GA."""

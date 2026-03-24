@@ -22,11 +22,9 @@ class FilteredCommandAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class FilteredCommandBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class FilteredCommandGa(base.Group):
   """Optional no-auto-generated code for GA."""

@@ -175,12 +175,8 @@ func TestGolden(t *testing.T) {
 
 			t.Run("surfer", func(t *testing.T) {
 				surferExpectedRoot := filepath.Join(scenarioPath, "expected", "surfer", "surface")
-				expectedServiceDir := findMatchingExpectedServiceDir(surferExpectedRoot, gotServiceName)
-				if expectedServiceDir == "" {
-					expectedServiceDir = filepath.Join(surferExpectedRoot, gotServiceName)
-				}
-
 				if *updateGolden {
+					expectedServiceDir := resolveExpectedServiceDir(surferExpectedRoot, gotServiceName, true)
 					if err := os.RemoveAll(surferExpectedRoot); err != nil && !os.IsNotExist(err) {
 						t.Fatal(err)
 					}
@@ -194,12 +190,8 @@ func TestGolden(t *testing.T) {
 					if _, err := os.Stat(surferExpectedRoot); os.IsNotExist(err) {
 						t.Fatalf("expected surfer output directory not found in scenario directory: %s", surferExpectedRoot)
 					}
-					// Find matching again in case it's actually in root
-					actualExpectedServiceDir := findMatchingExpectedServiceDir(surferExpectedRoot, gotServiceName)
-					if actualExpectedServiceDir == "" {
-						actualExpectedServiceDir = surferExpectedRoot
-					}
-					if !compareDirectories(t, actualExpectedServiceDir, gotServiceDir) {
+					expectedServiceDir := resolveExpectedServiceDir(surferExpectedRoot, gotServiceName, false)
+					if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
 						t.Logf("Generated directory tree for %s:\n%s", test.name, getDirTree(gotServiceDir))
 					}
 				}
@@ -213,10 +205,7 @@ func TestGolden(t *testing.T) {
 				if _, err := os.Stat(autogenExpectedRoot); os.IsNotExist(err) {
 					t.Fatalf("expected autogen output directory not found in scenario directory: %s", autogenExpectedRoot)
 				}
-				expectedServiceDir := findMatchingExpectedServiceDir(autogenExpectedRoot, gotServiceName)
-				if expectedServiceDir == "" {
-					expectedServiceDir = autogenExpectedRoot
-				}
+				expectedServiceDir := resolveExpectedServiceDir(autogenExpectedRoot, gotServiceName, false)
 
 				if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
 					t.Logf("Generated directory tree for %s:\n%s", test.name, getDirTree(gotServiceDir))
@@ -262,7 +251,7 @@ func copyProtos(t *testing.T, src, dst string) {
 	}
 	entries, err := os.ReadDir(src)
 	if err != nil {
-		return
+		t.Fatalf("failed to read directory %q: %v", src, err)
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -352,6 +341,16 @@ func findMatchingExpectedServiceDir(root, targetName string) string {
 	return ""
 }
 
+func resolveExpectedServiceDir(root, targetName string, isUpdate bool) string {
+	if dir := findMatchingExpectedServiceDir(root, targetName); dir != "" {
+		return dir
+	}
+	if isUpdate {
+		return filepath.Join(root, targetName)
+	}
+	return root
+}
+
 func normalize(s string) string {
 	return strings.ReplaceAll(strings.ToLower(s), "_", "")
 }
@@ -384,6 +383,26 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 		}
 		return nil
 	})
+
+	filepath.WalkDir(gotDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(gotDir, path)
+		basename := filepath.Base(relPath)
+		if basename == "__init__.py" || basename == "_init_extensions.py" {
+			return nil
+		}
+
+		expectedPath := filepath.Join(expectedDir, relPath)
+		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+			t.Errorf("%s: extra file generated in output", relPath)
+			allPass = false
+		}
+		return nil
+	})
+
 	return allPass
 }
 
@@ -391,13 +410,11 @@ func compareFiles(t *testing.T, expected, got, rel string) bool {
 	t.Helper()
 	wantContent, err := os.ReadFile(expected)
 	if err != nil {
-		t.Errorf("%s: failed to read expected file: %v", rel, err)
-		return false
+		t.Fatalf("%s: failed to read expected file: %v", rel, err)
 	}
 	gotContent, err := os.ReadFile(got)
 	if err != nil {
-		t.Errorf("%s: failed to read generated file: %v", rel, err)
-		return false
+		t.Fatalf("%s: failed to read generated file: %v", rel, err)
 	}
 
 	if filepath.Ext(expected) == ".yaml" {

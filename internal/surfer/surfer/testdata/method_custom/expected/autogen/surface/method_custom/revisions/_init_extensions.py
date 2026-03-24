@@ -21,10 +21,8 @@ from googlecloudsdk.calliope import base
 class RevisionsAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 
-
 class RevisionsBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
-
 
 class RevisionsGa(base.Group):
   """Optional no-auto-generated code for GA."""

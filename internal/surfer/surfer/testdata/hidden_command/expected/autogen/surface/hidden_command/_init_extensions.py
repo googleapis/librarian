@@ -22,11 +22,9 @@ class HiddenCommandAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
 
-
 class HiddenCommandBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
   category = base.UNCATEGORIZED_CATEGORY
-
 
 class HiddenCommandGa(base.Group):
   """Optional no-auto-generated code for GA."""
