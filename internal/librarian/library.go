@@ -167,6 +167,9 @@ func isVeneer(language string, lib *config.Library) bool {
 	if language == config.LanguageRust {
 		return rust.IsVeneer(lib)
 	}
+	if language == config.LanguageNodejs {
+		return lib.Output != "" && len(lib.APIs) == 0
+	}
 	return false
 }
 
