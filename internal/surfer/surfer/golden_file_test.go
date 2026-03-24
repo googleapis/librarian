@@ -45,7 +45,10 @@ func TestGolden(t *testing.T) {
 		// Try relative path from this directory.
 		relPath := "../../testdata/googleapis"
 		if _, err := os.Stat(relPath); err == nil {
-			abs, _ := filepath.Abs(relPath)
+			abs, err := filepath.Abs(relPath)
+			if err != nil {
+				t.Fatalf("failed to get absolute path for %q: %v", relPath, err)
+			}
 			coreGoogleapisPath = abs
 		}
 	}
@@ -253,7 +256,10 @@ func findGcloudConfig(dir string) string {
 
 func copyProtos(t *testing.T, src, dst string) {
 	t.Helper()
-	absSrc, _ := filepath.Abs(src)
+	absSrc, err := filepath.Abs(src)
+	if err != nil {
+		t.Fatalf("failed to get absolute path for %q: %v", src, err)
+	}
 	entries, err := os.ReadDir(src)
 	if err != nil {
 		return
@@ -267,9 +273,13 @@ func copyProtos(t *testing.T, src, dst string) {
 		}
 		if filepath.Ext(entry.Name()) == ".proto" {
 			target := filepath.Join(dst, entry.Name())
-			os.MkdirAll(filepath.Dir(target), 0755)
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				t.Fatalf("failed to create directory %q: %v", filepath.Dir(target), err)
+			}
 			if _, err := os.Stat(target); os.IsNotExist(err) {
-				os.Symlink(filepath.Join(absSrc, entry.Name()), target)
+				if err := os.Symlink(filepath.Join(absSrc, entry.Name()), target); err != nil {
+					t.Fatalf("failed to create symlink for %q: %v", target, err)
+				}
 			}
 		}
 	}
@@ -379,8 +389,16 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 
 func compareFiles(t *testing.T, expected, got, rel string) bool {
 	t.Helper()
-	wantContent, _ := os.ReadFile(expected)
-	gotContent, _ := os.ReadFile(got)
+	wantContent, err := os.ReadFile(expected)
+	if err != nil {
+		t.Errorf("%s: failed to read expected file: %v", rel, err)
+		return false
+	}
+	gotContent, err := os.ReadFile(got)
+	if err != nil {
+		t.Errorf("%s: failed to read generated file: %v", rel, err)
+		return false
+	}
 
 	if filepath.Ext(expected) == ".yaml" {
 		wantYAML, err := yaml.Unmarshal[any](wantContent)

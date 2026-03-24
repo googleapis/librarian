@@ -18,7 +18,6 @@
 """File to add optional custom code to extend __init__.py."""
 from googlecloudsdk.calliope import base
 
-
 class RegionalEndpointsRegionalRequiredAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
   category = base.UNCATEGORIZED_CATEGORY
