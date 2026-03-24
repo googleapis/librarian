@@ -13,7 +13,9 @@
 # limitations under the License.
 codecov:
   notify:
-    # This should be updated if number of test jobs changes
+    # This number corresponds to the number of times GitHub Actions in
+    # .github/workflows attempt to upload coverage to Codecov. It should be
+    # updated if that number changes.
     after_n_builds: 7
 coverage:
   status:
