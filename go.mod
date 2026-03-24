@@ -281,6 +281,8 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.266.0 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
+	// Downgrade to v1.3.0 to use the same version defined in legacylibrarian
+	// Dockerfile.
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
