@@ -16,6 +16,7 @@ package golang
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -38,10 +39,11 @@ func Format(ctx context.Context, library *config.Library) error {
 func buildFormatArgs(library *config.Library) ([]string, error) {
 	args := []string{"-w", library.Output}
 	for _, api := range library.APIs {
-		snippetDir, err := findSnippetDirectory(library, api.Path, library.Output)
-		if err != nil {
-			return nil, err
+		goAPI := findGoAPI(library, api.Path)
+		if goAPI == nil {
+			return nil, fmt.Errorf("unable to find Go API for %s", api.Path)
 		}
+		snippetDir := findSnippetDirectory(library, goAPI, library.Output)
 		if snippetDir != "" {
 			args = append(args, snippetDir)
 		}
