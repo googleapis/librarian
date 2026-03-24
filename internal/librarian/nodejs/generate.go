@@ -465,35 +465,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 	return nil
 }
 
-// Format runs gts (npm run fix) on the library directory.
-func Format(ctx context.Context, library *config.Library) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-
-	// ESLint exit codes:
-	//   0: No issues found.
-	//   1: Lint issues found (warnings or unfixable errors).
-	//   2: Configuration or fatal error.
-	//
-	// Exit code 1 is tolerated because generated code may contain expected,
-	// unfixable warnings (e.g., @typescript-eslint/no-explicit-any).
-	err := command.RunInDir(ctx, library.Output, "eslint",
-		"--fix",
-		"--ignore-pattern", "node_modules/",
-		"--no-error-on-unmatched-pattern",
-		"src/**/*.ts", "src/**/*.js")
-
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return nil
-		}
-		return fmt.Errorf("eslint failed: %w", err)
-	}
-	return nil
-}
-
 // DerivePackageName returns the npm package name for a library. It uses
 // nodejs.package_name if set, otherwise derives it by splitting the library
 // name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
