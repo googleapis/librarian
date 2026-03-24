@@ -41,7 +41,7 @@ func buildFormatArgs(library *config.Library) ([]string, error) {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return nil, fmt.Errorf("unable to find Go API for %s", api.Path)
+			return nil, fmt.Errorf("error finding goAPI associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetDir := findSnippetDirectory(library, goAPI, library.Output)
 		if snippetDir != "" {
