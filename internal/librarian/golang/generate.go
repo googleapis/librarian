@@ -81,19 +81,18 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return err
 		}
 	}
+	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
+		return err
+	}
+	if err := generateREADME(library, googleapisDir, outDir); err != nil {
+		return err
+	}
 	if library.Go != nil {
 		for _, p := range library.Go.DeleteGenerationOutputPaths {
 			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
 				return err
 			}
 		}
-	}
-
-	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
-		return err
-	}
-	if err := generateREADME(library, googleapisDir, outDir); err != nil {
-		return err
 	}
 	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
 		return err
