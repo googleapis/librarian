@@ -49,6 +49,28 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 	return err
 }
 
+// RunWithStreamingOutput runs the given binary with the specified args,
+// setting its output and errors streams to those of the current process. The
+// output is not otherwise captured. This is primarily for use in tools which
+// call potentially long-running commands. It should not be used within
+// librarian itself, where the Run and Output functions are generally preferred,
+// as those observe the Verbose flag for output. The Verbose flag only affects
+// the behavior of this function in terms of whether the command being executed
+// is first written to stdout.
+func RunWithStreamingOutput(ctx context.Context, command string, arg ...string) error {
+	cmd := exec.CommandContext(ctx, command, arg...)
+	if Verbose {
+		fmt.Fprintf(os.Stdout, "%s\n", cmd.String())
+	}
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("%s: %w", cmd, err)
+	}
+	return nil
+}
+
 // Output executes a program (with arguments) and returns stdout. It is a
 // convenience wrapper around OutputWithEnv.
 func Output(ctx context.Context, command string, arg ...string) (string, error) {

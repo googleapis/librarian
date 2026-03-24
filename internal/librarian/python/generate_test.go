@@ -1294,7 +1294,6 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func requireSynthtool(t *testing.T) {

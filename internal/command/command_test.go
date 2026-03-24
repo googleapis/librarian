@@ -166,7 +166,7 @@ func TestVerbose(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			Verbose = test.verbose
 
-			got := captureStdout(t, func() {
+			got, _ := captureStdoutAndStderr(t, func() {
 				if err := Run(t.Context(), "go", "version"); err != nil {
 					t.Fatal(err)
 				}
@@ -185,23 +185,92 @@ func TestVerbose(t *testing.T) {
 	}
 }
 
-func captureStdout(t *testing.T, fn func()) string {
+func TestRunCommandWithStreamingOutput(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		command string
+		args    []string
+		verbose bool
+		wantOut string
+		wantErr string
+	}{
+		{
+			name:    "simple output and err",
+			command: "/usr/bin/sh",
+			args:    []string{"-c", "echo test-output && echo >&2 test-error"},
+			wantOut: "test-output\n",
+			wantErr: "test-error\n",
+		},
+		{
+			name:    "verbose output",
+			command: "/usr/bin/sh",
+			args:    []string{"-c", "echo test-output"},
+			verbose: true,
+			wantOut: "/usr/bin/sh -c echo test-output\ntest-output\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				Verbose = false
+			})
+			Verbose = test.verbose
+			gotOut, gotErr := captureStdoutAndStderr(t, func() {
+				RunWithStreamingOutput(t.Context(), test.command, test.args...)
+			})
+			if diff := cmp.Diff(test.wantOut, gotOut); diff != "" {
+				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantErr, gotErr); diff != "" {
+				t.Errorf("mismatch of stderr (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRunCommandWithStreamingOutput_Error(t *testing.T) {
+	err := RunWithStreamingOutput(t.Context(), "go", invalidSubcommand)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("RunWithStreamingOutput() error = %v, want type *exec.ExitError", err)
+	}
+	if !strings.Contains(string(err.Error()), invalidSubcommand) {
+		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
+	}
+}
+
+func captureStdoutAndStderr(t *testing.T, fn func()) (string, string) {
 	stdout := os.Stdout
-	r, w, err := os.Pipe()
+	stderr := os.Stderr
+	outReader, outWriter, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Stdout = w
+	os.Stdout = outWriter
+	errReader, errWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = errWriter
 	t.Cleanup(func() {
 		os.Stdout = stdout
+		os.Stderr = stderr
 	})
 
 	fn()
-	w.Close()
+	outWriter.Close()
+	errWriter.Close()
 
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(r); err != nil {
+	var outBuf bytes.Buffer
+	if _, err := outBuf.ReadFrom(outReader); err != nil {
 		t.Fatal(err)
 	}
-	return buf.String()
+	var errBuf bytes.Buffer
+	if _, err := errBuf.ReadFrom(errReader); err != nil {
+		t.Fatal(err)
+	}
+	return outBuf.String(), errBuf.String()
 }
