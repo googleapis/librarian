@@ -42,7 +42,7 @@ func Bump(library *config.Library, output, version string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return fmt.Errorf("could not find Go API: %s", api.Path)
+			return fmt.Errorf("error finding goAPI associated with %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetDir := findSnippetDirectory(library, goAPI, output)
 		if snippetDir == "" {
