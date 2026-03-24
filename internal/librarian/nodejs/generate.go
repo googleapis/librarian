@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -234,8 +235,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
 		return fmt.Errorf("failed to restore copyright year: %w", err)
 	}
-	if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
-		return fmt.Errorf("failed to write repo metadata: %w", err)
+	if !slices.Contains(library.Keep, ".repo-metadata.json") {
+		if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to write repo metadata: %w", err)
+		}
 	}
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
@@ -340,11 +343,10 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
-		return fmt.Errorf("failed to find API metadata: %w", err)
+		return err
 	}
-	metadata := repometadata.FromAPI(cfg, api, library)
 	metadata.DistributionName = DerivePackageName(library)
 	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
@@ -461,35 +463,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-// Format runs gts (npm run fix) on the library directory.
-func Format(ctx context.Context, library *config.Library) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-
-	// ESLint exit codes:
-	//   0: No issues found.
-	//   1: Lint issues found (warnings or unfixable errors).
-	//   2: Configuration or fatal error.
-	//
-	// Exit code 1 is tolerated because generated code may contain expected,
-	// unfixable warnings (e.g., @typescript-eslint/no-explicit-any).
-	err := command.RunInDir(ctx, library.Output, "eslint",
-		"--fix",
-		"--ignore-pattern", "node_modules/",
-		"--no-error-on-unmatched-pattern",
-		"src/**/*.ts", "src/**/*.js")
-
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return nil
-		}
-		return fmt.Errorf("eslint failed: %w", err)
 	}
 	return nil
 }

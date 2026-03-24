@@ -121,11 +121,11 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to find API for path %s: %w", firstAPIPath, err)
 	}
-	return FromAPI(cfg, api, library), nil
+	return fromAPI(cfg, api, library), nil
 }
 
-// FromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
-func FromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
+// fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
+func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	apiDescription := api.Description
 	if library.DescriptionOverride != "" {
 		apiDescription = library.DescriptionOverride
