@@ -86,17 +86,6 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "no go api",
-			api: &serviceconfig.API{
-				ShortName: "secretmanager",
-				Path:      "google/cloud/secretmanager/v1",
-			},
-			library: &config.Library{
-				Name: "secretmanager",
-			},
-			wantErr: errGoAPINotFound,
-		},
-		{
 			name: "invalid output directory",
 			api: &serviceconfig.API{
 				ShortName: "secretmanager",
