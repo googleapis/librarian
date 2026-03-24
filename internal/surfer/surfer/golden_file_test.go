@@ -149,7 +149,7 @@ func TestGolden(t *testing.T) {
 				copyProtos(t, parent, protoRoot)
 			}
 
-			protoFiles := findProtos(t, protoRoot)
+			protoFiles := findProtos(protoRoot)
 			if len(protoFiles) == 0 {
 				t.Fatal("no proto files found for scenario")
 			}
@@ -274,7 +274,7 @@ func copyProtos(t *testing.T, src, dst string) {
 	}
 }
 
-func findProtos(_ *testing.T, root string) []string {
+func findProtos(root string) []string {
 	var protos []string
 	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -364,10 +364,6 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 		}
 
 		relPath, _ := filepath.Rel(expectedDir, path)
-		basename := filepath.Base(relPath)
-		if basename == "__init__.py" || basename == "_init_extensions.py" {
-			return nil
-		}
 
 		gotPath := filepath.Join(gotDir, relPath)
 		if _, err := os.Stat(gotPath); os.IsNotExist(err) {
@@ -390,10 +386,6 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 		}
 
 		relPath, _ := filepath.Rel(gotDir, path)
-		basename := filepath.Base(relPath)
-		if basename == "__init__.py" || basename == "_init_extensions.py" {
-			return nil
-		}
 
 		expectedPath := filepath.Join(expectedDir, relPath)
 		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
