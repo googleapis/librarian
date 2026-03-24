@@ -22,7 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestNewOutputFormat(t *testing.T) {
+func TestOutputFormat(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -49,15 +49,15 @@ func TestNewOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := NewCommandBuilder(test.method, nil, nil, nil).newOutputFormat()
+			got := NewCommandBuilder(test.method, nil, nil, nil).outputFormat()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newOutputFormat() mismatch (-want +got):\n%s", diff)
+				t.Errorf("outputFormat() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestNewOutputFormat_Error(t *testing.T) {
+func TestOutputFormat_Error(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -78,47 +78,39 @@ func TestNewOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := NewCommandBuilder(test.method, nil, nil, nil).newOutputFormat(); got != "" {
-				t.Errorf("newOutputFormat() = %v, want empty string", got)
+			if got := NewCommandBuilder(test.method, nil, nil, nil).outputFormat(); got != "" {
+				t.Errorf("outputFormat() = %v, want empty string", got)
 			}
 		})
 	}
 }
 
-func TestNewRequest(t *testing.T) {
+func TestRequestMethod(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		method *api.Method
-		want   *Request
+		want   string
 	}{
 		{
 			name: "Standard Create",
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 			),
-			want: &Request{
-				Collection: []string{"test.projects.things"},
-			},
+			want: "",
 		},
 		{
 			name: "Custom Method with Verb",
 			method: api.NewTestMethod("ImportData").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
 			),
-			want: &Request{
-				Collection: []string{"test.projects"},
-				Method:     "importData",
-			},
+			want: "importData",
 		},
 		{
 			name: "Custom Method without Verb (fallback to camelCase name)",
 			method: api.NewTestMethod("ExportData").WithVerb("POST").WithPathTemplate(
 				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
 			),
-			want: &Request{
-				Collection: []string{"test.projects"},
-				Method:     "exportData",
-			},
+			want: "exportData",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -127,15 +119,15 @@ func TestNewRequest(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := NewCommandBuilder(test.method, &Config{}, nil, service).newRequest()
+			got := NewCommandBuilder(test.method, &Config{}, nil, service).requestMethod()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newRequest() mismatch (-want +got):\n%s", diff)
+				t.Errorf("requestMethod() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestNewAsync(t *testing.T) {
+func TestAsync(t *testing.T) {
 	service := api.NewTestService("TestService")
 
 	for _, test := range []struct {
@@ -221,15 +213,15 @@ func TestNewAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := NewCommandBuilder(test.method, nil, model, service).newAsync()
+			got := NewCommandBuilder(test.method, nil, model, service).async()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newAsync() mismatch (-want +got):\n%s", diff)
+				t.Errorf("async() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestNewCollectionPath(t *testing.T) {
+func TestCollectionPath(t *testing.T) {
 	service := &api.Service{
 		DefaultHost: "test.googleapis.com",
 	}
@@ -312,9 +304,9 @@ func TestNewCollectionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := NewCommandBuilder(test.method, nil, nil, service).newCollectionPath(test.isAsync)
+			got := NewCommandBuilder(test.method, nil, nil, service).collectionPath(test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newCollectionPath() mismatch (-want +got):\n%s", diff)
+				t.Errorf("collectionPath() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -571,7 +563,7 @@ func TestNewCommand(t *testing.T) {
 
 			// Compare the important pieces that are shaped uniquely by NewCommand
 			// to avoid asserting on deeply nested auto-generated boilerplate like Arguments.
-			opts := cmpopts.IgnoreFields(Command{}, "ReleaseTracks", "Arguments", "Request", "HelpText")
+			opts := cmpopts.IgnoreFields(Command{}, "ReleaseTracks", "Arguments", "APIVersion", "Collection", "Method", "HelpText")
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
 				t.Errorf("NewCommand() mismatch (-want +got):\n%s", diff)
 			}
@@ -579,7 +571,7 @@ func TestNewCommand(t *testing.T) {
 	}
 }
 
-func TestNewFormat(t *testing.T) {
+func TestTableFormat(t *testing.T) {
 	tests := []struct {
 		name    string
 		message *api.Message
@@ -618,9 +610,9 @@ func TestNewFormat(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := newFormat(test.message)
+			got := tableFormat(test.message)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newFormat() mismatch (-want +got):\n%s", diff)
+				t.Errorf("tableFormat() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

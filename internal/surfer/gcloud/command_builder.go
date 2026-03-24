@@ -54,10 +54,12 @@ func (b *CommandBuilder) Build() (*Command, error) {
 	}
 
 	return &Command{
-		Hidden:           b.isHidden(),
-		HelpText:         b.buildHelpText(),
+		Hidden:           b.hidden(),
+		HelpText:         b.helpText(),
 		ReleaseTracks:    b.releaseTracks(),
-		Request:          b.newRequest(),
+		APIVersion:       apiVersion(b.overrides),
+		Collection:       b.collectionPath(false),
+		Method:           b.requestMethod(),
 		Arguments:        args,
 		ResponseIDField:  b.responseIDField(),
 		OutputFormat:     b.outputFormat(),
@@ -74,71 +76,28 @@ func (b *CommandBuilder) responseIDField() string {
 	return ""
 }
 
+// outputFormat generates the string output format for List commands.
 func (b *CommandBuilder) outputFormat() string {
-	if isList(b.method) {
-		return b.newOutputFormat()
+	if !isList(b.method) {
+		return ""
 	}
-	return ""
+
+	resourceMsg := findResourceMessage(b.method.OutputType)
+	if resourceMsg == nil {
+		return ""
+	}
+
+	return tableFormat(resourceMsg)
 }
 
+// async creates the `Async` part of the command definition for long-running operations.
 func (b *CommandBuilder) async() *Async {
-	if b.method.OperationInfo != nil {
-		return b.newAsync()
-	}
-	return nil
-}
-
-func (b *CommandBuilder) isHidden() bool {
-	if len(b.overrides.APIs) > 0 {
-		return b.overrides.APIs[0].RootIsHidden
-	}
-	// Default to hidden if no API overrides are provided.
-	return true
-}
-
-func (b *CommandBuilder) buildHelpText() HelpText {
-	rule := findHelpTextRule(b.method, b.overrides)
-	if rule != nil {
-		return HelpText{
-			Brief:       rule.HelpText.Brief,
-			Description: rule.HelpText.Description,
-			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
-		}
-	}
-	return HelpText{}
-}
-
-func (b *CommandBuilder) releaseTracks() []string {
-	// Infer default release track from proto package.
-	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
-	return []string{strings.ToUpper(inferredTrack)}
-}
-
-// newRequest creates the `Request` part of the command definition.
-func (b *CommandBuilder) newRequest() *Request {
-	req := &Request{
-		APIVersion: apiVersion(b.overrides),
-		Collection: b.newCollectionPath(false),
+	if b.method.OperationInfo == nil {
+		return nil
 	}
 
-	// For custom methods (AIP-136), the `method` field in the request configuration
-	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		req.Method = *b.method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !isStandardMethod(b.method) {
-		commandName, _ := getCommandName(b.method)
-		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
-		req.Method = strcase.ToLowerCamel(commandName)
-	}
-
-	return req
-}
-
-// newAsync creates the `Async` part of the command definition for long-running operations.
-func (b *CommandBuilder) newAsync() *Async {
 	async := &Async{
-		Collection: b.newCollectionPath(true),
+		Collection: b.collectionPath(true),
 	}
 
 	// Extract the resource result if the LRO response type matches the
@@ -160,17 +119,57 @@ func (b *CommandBuilder) newAsync() *Async {
 	singular := getSingularResourceNameForMethod(b.method, b.model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
-	} else {
-		async.ExtractResourceResult = false
 	}
 
 	return async
 }
 
-// newCollectionPath constructs the gcloud collection path(s) for a request or async operation.
+func (b *CommandBuilder) hidden() bool {
+	if len(b.overrides.APIs) > 0 {
+		return b.overrides.APIs[0].RootIsHidden
+	}
+	// Default to hidden if no API overrides are provided.
+	return true
+}
+
+func (b *CommandBuilder) helpText() HelpText {
+	rule := findHelpTextRule(b.method, b.overrides)
+	if rule != nil {
+		return HelpText{
+			Brief:       rule.HelpText.Brief,
+			Description: rule.HelpText.Description,
+			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
+		}
+	}
+	return HelpText{}
+}
+
+func (b *CommandBuilder) releaseTracks() []string {
+	// Infer default release track from proto package.
+	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
+	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
+	return []string{strings.ToUpper(inferredTrack)}
+}
+
+// requestMethod determines the API method name for the command execution.
+func (b *CommandBuilder) requestMethod() string {
+	// For custom methods (AIP-136), the `method` field in the request configuration
+	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
+	if b.method.PathInfo != nil && len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		return *b.method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !isStandardMethod(b.method) {
+		commandName, _ := getCommandName(b.method)
+		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
+		return strcase.ToLowerCamel(commandName)
+	}
+
+	return ""
+}
+
+// collectionPath constructs the gcloud collection path(s) for a request or async operation.
 // It follows AIP-127 and AIP-132 by extracting the collection structure directly from
 // the method's HTTP annotation (PathInfo).
-func (b *CommandBuilder) newCollectionPath(isAsync bool) []string {
+func (b *CommandBuilder) collectionPath(isAsync bool) []string {
 	var collections []string
 	hostParts := strings.Split(b.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
@@ -208,22 +207,8 @@ func (b *CommandBuilder) newCollectionPath(isAsync bool) []string {
 	return slices.Compact(collections)
 }
 
-// newOutputFormat generates the string output format for List commands.
-func (b *CommandBuilder) newOutputFormat() string {
-	if !isList(b.method) {
-		return ""
-	}
-
-	resourceMsg := findResourceMessage(b.method.OutputType)
-	if resourceMsg == nil {
-		return ""
-	}
-
-	return newFormat(resourceMsg)
-}
-
-// newFormat generates a gcloud table format string from a message definition.
-func newFormat(message *api.Message) string {
+// tableFormat generates a gcloud table format string from a message definition.
+func tableFormat(message *api.Message) string {
 	var sb strings.Builder
 	first := true
 
