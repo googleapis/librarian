@@ -164,13 +164,17 @@ func TestVerbose(t *testing.T) {
 		{"verbose disabled", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			Verbose = test.verbose
-
-			got, _ := captureStdoutAndStderr(t, func() {
-				if err := Run(t.Context(), "go", "version"); err != nil {
-					t.Fatal(err)
-				}
+			t.Cleanup(func() {
+				Verbose = false
+				stdout = os.Stdout
 			})
+			Verbose = test.verbose
+			var outBuf bytes.Buffer
+			stdout = &outBuf
+			if err := Run(t.Context(), "go", "version"); err != nil {
+				t.Fatal(err)
+			}
+			got := outBuf.String()
 
 			if test.verbose {
 				if !strings.Contains(got, "go version") {
@@ -212,15 +216,21 @@ func TestRunStreaming(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Cleanup(func() {
 				Verbose = false
+				stdout = os.Stdout
+				stderr = os.Stderr
 			})
 			Verbose = test.verbose
-			gotOut, gotErr := captureStdoutAndStderr(t, func() {
-				RunStreaming(t.Context(), test.command, test.args...)
-			})
-			if diff := cmp.Diff(test.wantOut, gotOut); diff != "" {
+			var outBuf, errBuf bytes.Buffer
+			stdout = &outBuf
+			stderr = &errBuf
+			err := RunStreaming(t.Context(), test.command, test.args...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantOut, outBuf.String()); diff != "" {
 				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantErr, gotErr); diff != "" {
+			if diff := cmp.Diff(test.wantErr, errBuf.String()); diff != "" {
 				t.Errorf("mismatch of stderr (-want +got):\n%s", diff)
 			}
 		})
@@ -240,38 +250,4 @@ func TestRunStreaming_Error(t *testing.T) {
 	if !strings.Contains(string(err.Error()), invalidSubcommand) {
 		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
 	}
-}
-
-func captureStdoutAndStderr(t *testing.T, fn func()) (string, string) {
-	t.Helper()
-	stdout := os.Stdout
-	stderr := os.Stderr
-	outReader, outWriter, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Stdout = outWriter
-	errReader, errWriter, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Stderr = errWriter
-	t.Cleanup(func() {
-		os.Stdout = stdout
-		os.Stderr = stderr
-	})
-
-	fn()
-	outWriter.Close()
-	errWriter.Close()
-
-	var outBuf bytes.Buffer
-	if _, err := outBuf.ReadFrom(outReader); err != nil {
-		t.Fatal(err)
-	}
-	var errBuf bytes.Buffer
-	if _, err := errBuf.ReadFrom(errReader); err != nil {
-		t.Fatal(err)
-	}
-	return outBuf.String(), errBuf.String()
 }

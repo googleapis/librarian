@@ -19,15 +19,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 )
 
-// Verbose controls whether commands are printed to stderr before execution.
-//
-// TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
-// config.
-var Verbose bool
+var (
+	// Verbose controls whether commands are printed to stderr before execution.
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
+	// config.
+	Verbose bool
+	// stdout is the writer to use when streaming output or writing verbose
+	// output directly. It is expected to be os.Stdout except for during tests.
+	stdout io.Writer = os.Stdout
+	// stderr is the writer to use when streaming error messages. It is expected
+	// to be os.Stderr except for during tests.
+	stderr io.Writer = os.Stderr
+)
 
 // Run executes a program (with arguments). On error, stderr is included in the
 // error message. It is a convenience wrapper around RunWithEnv.
@@ -59,8 +68,8 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 // is first written to stdout.
 func RunStreaming(ctx context.Context, command string, arg ...string) error {
 	cmd := buildCmd(ctx, "", nil, command, arg...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.Stderr = stderr
+	cmd.Stdout = stdout
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("%s: %w", cmd, err)
@@ -94,7 +103,7 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 		}
 	}
 	if Verbose {
-		fmt.Fprintf(os.Stdout, "%s\n", cmd.String())
+		fmt.Fprintf(stdout, "%s\n", cmd.String())
 	}
 	return cmd
 }
