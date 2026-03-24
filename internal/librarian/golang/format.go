@@ -16,6 +16,7 @@ package golang
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -40,7 +41,7 @@ func buildFormatArgs(library *config.Library) ([]string, error) {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return nil, &errGoAPINotFound{path: api.Path}
+			return nil, fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetDir := findSnippetDirectory(library, goAPI, library.Output)
 		if snippetDir != "" {

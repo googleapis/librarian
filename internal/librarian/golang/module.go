@@ -32,26 +32,10 @@ const (
 )
 
 var (
+	errGoAPINotFound         = errors.New("go API not found")
 	errImportPathNotFound    = errors.New("import path not found")
 	errClientPackageNotFound = errors.New("client package not found")
 )
-
-type errGoAPINotFound struct {
-	path string
-}
-
-func (err *errGoAPINotFound) Error() string {
-	return fmt.Sprintf("error finding goAPI associated with API path: %s", err.path)
-}
-
-func (err *errGoAPINotFound) Is(target error) bool {
-	var t *errGoAPINotFound
-	ok := errors.As(target, &t)
-	if !ok {
-		return false
-	}
-	return err.path == t.path
-}
 
 // Fill populates empty Go-specific fields from the api path.
 // Library configurations takes precedence.

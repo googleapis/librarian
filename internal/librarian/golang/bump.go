@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -41,7 +42,7 @@ func Bump(library *config.Library, output, version string) error {
 	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
-			return &errGoAPINotFound{path: api.Path}
+			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
 		snippetDir := findSnippetDirectory(library, goAPI, output)
 		if snippetDir == "" {
