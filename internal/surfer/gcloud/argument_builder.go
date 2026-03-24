@@ -23,18 +23,18 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// ArgumentBuilder encapsulates the state required to generate the set of
+// argumentBuilder encapsulates the state required to generate the set of
 // arguments for a gcloud command.
-type ArgumentBuilder struct {
+type argumentBuilder struct {
 	method    *api.Method
 	overrides *Config
 	model     *api.API
 	service   *api.Service
 }
 
-// NewArgumentBuilder constructs a new ArgumentBuilder.
-func NewArgumentBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *ArgumentBuilder {
-	return &ArgumentBuilder{
+// newArgumentBuilder constructs a new argumentBuilder.
+func newArgumentBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *argumentBuilder {
+	return &argumentBuilder{
 		method:    method,
 		overrides: overrides,
 		model:     model,
@@ -45,7 +45,7 @@ func NewArgumentBuilder(method *api.Method, overrides *Config, model *api.API, s
 // Build generates the set of arguments for a command by parsing the
 // fields of the method's request message. It returns the generated slice
 // of Arguments and an error if argument generation fails.
-func (b *ArgumentBuilder) Build() ([]Argument, error) {
+func (b *argumentBuilder) build() ([]Argument, error) {
 	var args []Argument
 	if b.method.InputType == nil {
 		return args, nil
@@ -62,7 +62,7 @@ func (b *ArgumentBuilder) Build() ([]Argument, error) {
 // isIgnored determines if a field should be excluded from the generated command arguments.
 // These are fields that are either implicit in the command context or handled
 // automatically by the gcloud framework.
-func (b *ArgumentBuilder) isIgnored(field *api.Field) bool {
+func (b *argumentBuilder) isIgnored(field *api.Field) bool {
 	// The "parent" field is usually implicit in the command context (handled by the primary resource or hierarchy).
 	if field.Name == "parent" {
 		return true
@@ -108,7 +108,7 @@ func (b *ArgumentBuilder) isIgnored(field *api.Field) bool {
 //
 // TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
 // handling strategy (Error vs Skip) and messaging.
-func (b *ArgumentBuilder) addFlattenedArguments(field *api.Field, prefix string, args *[]Argument) error {
+func (b *argumentBuilder) addFlattenedArguments(field *api.Field, prefix string, args *[]Argument) error {
 	// Primary resource args are checked first because fields like "parent"
 	// and "name" are primary resources in certain method types (e.g., List
 	// and Get/Delete/Update respectively) and must not be ignored.
@@ -142,7 +142,7 @@ func (b *ArgumentBuilder) addFlattenedArguments(field *api.Field, prefix string,
 }
 
 // newArgument creates a single command-line argument (a `Argument` struct) from a proto field.
-func (b *ArgumentBuilder) newArgument(field *api.Field, apiField string) (Argument, error) {
+func (b *argumentBuilder) newArgument(field *api.Field, apiField string) (Argument, error) {
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	param := Argument{
 		ArgName:  strcase.ToKebab(field.Name),
@@ -196,7 +196,7 @@ func (b *ArgumentBuilder) newArgument(field *api.Field, apiField string) (Argume
 
 // newPrimaryResourceArgument creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument {
+func (b *argumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument {
 	resource := getResourceForMethod(b.method, b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
@@ -250,7 +250,7 @@ func (b *ArgumentBuilder) newPrimaryResourceArgument(field *api.Field) Argument 
 
 // newResourceReferenceSpec creates a ResourceSpec for a field that references
 // another resource type (e.g., a `--network` flag).
-func (b *ArgumentBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSpec, error) {
+func (b *argumentBuilder) newResourceReferenceSpec(field *api.Field) (*ResourceSpec, error) {
 	for _, def := range b.model.ResourceDefinitions {
 		if def.Type == field.ResourceReference.Type {
 			if len(def.Patterns) == 0 {

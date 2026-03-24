@@ -49,7 +49,7 @@ func TestOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := NewCommandBuilder(test.method, nil, nil, nil).outputFormat()
+			got := newCommandBuilder(test.method, nil, nil, nil).outputFormat()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("outputFormat() mismatch (-want +got):\n%s", diff)
 			}
@@ -78,7 +78,7 @@ func TestOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := NewCommandBuilder(test.method, nil, nil, nil).outputFormat(); got != "" {
+			if got := newCommandBuilder(test.method, nil, nil, nil).outputFormat(); got != "" {
 				t.Errorf("outputFormat() = %v, want empty string", got)
 			}
 		})
@@ -119,7 +119,7 @@ func TestRequestMethod(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := NewCommandBuilder(test.method, &Config{}, nil, service).requestMethod()
+			got := newCommandBuilder(test.method, &Config{}, nil, service).requestMethod()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("requestMethod() mismatch (-want +got):\n%s", diff)
 			}
@@ -213,7 +213,7 @@ func TestAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := NewCommandBuilder(test.method, nil, model, service).async()
+			got := newCommandBuilder(test.method, nil, model, service).async()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("async() mismatch (-want +got):\n%s", diff)
 			}
@@ -304,7 +304,7 @@ func TestCollectionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := NewCommandBuilder(test.method, nil, nil, service).collectionPath(test.isAsync)
+			got := newCommandBuilder(test.method, nil, nil, service).collectionPath(test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("collectionPath() mismatch (-want +got):\n%s", diff)
 			}
@@ -556,7 +556,7 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := NewCommandBuilder(test.method, test.overrides, model, service).Build()
+			got, err := newCommandBuilder(test.method, test.overrides, model, service).build()
 			if err != nil {
 				t.Fatalf("NewCommand() unexpected error = %v", err)
 			}

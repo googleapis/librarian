@@ -23,18 +23,18 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// CommandBuilder encapsulates the state required to build a gcloud command
+// commandBuilder encapsulates the state required to build a gcloud command
 // definition from an API method.
-type CommandBuilder struct {
+type commandBuilder struct {
 	method    *api.Method
 	overrides *Config
 	model     *api.API
 	service   *api.Service
 }
 
-// NewCommandBuilder constructs a new CommandBuilder for a specific method execution.
-func NewCommandBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *CommandBuilder {
-	return &CommandBuilder{
+// newCommandBuilder constructs a new commandBuilder for a specific method execution.
+func newCommandBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *commandBuilder {
+	return &commandBuilder{
 		method:    method,
 		overrides: overrides,
 		model:     model,
@@ -45,10 +45,10 @@ func NewCommandBuilder(method *api.Method, overrides *Config, model *api.API, se
 // Build constructs a single gcloud command definition from an API method.
 // This function assembles all the necessary pieces: help text, arguments,
 // request details, and async configuration. It takes no parameters, relying
-// on the CommandBuilder's state, and returns the constructed Command and
+// on the commandBuilder's state, and returns the constructed Command and
 // any error encountered during assembly.
-func (b *CommandBuilder) Build() (*Command, error) {
-	args, err := NewArgumentBuilder(b.method, b.overrides, b.model, b.service).Build()
+func (b *commandBuilder) build() (*Command, error) {
+	args, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service).build()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (b *CommandBuilder) Build() (*Command, error) {
 	}, nil
 }
 
-func (b *CommandBuilder) responseIDField() string {
+func (b *commandBuilder) responseIDField() string {
 	if isList(b.method) {
 		// List commands should have an id_field to enable the --uri flag.
 		return "name"
@@ -77,7 +77,7 @@ func (b *CommandBuilder) responseIDField() string {
 }
 
 // outputFormat generates the string output format for List commands.
-func (b *CommandBuilder) outputFormat() string {
+func (b *commandBuilder) outputFormat() string {
 	if !isList(b.method) {
 		return ""
 	}
@@ -91,7 +91,7 @@ func (b *CommandBuilder) outputFormat() string {
 }
 
 // async creates the `Async` part of the command definition for long-running operations.
-func (b *CommandBuilder) async() *Async {
+func (b *commandBuilder) async() *Async {
 	if b.method.OperationInfo == nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func (b *CommandBuilder) async() *Async {
 	return async
 }
 
-func (b *CommandBuilder) hidden() bool {
+func (b *commandBuilder) hidden() bool {
 	if len(b.overrides.APIs) > 0 {
 		return b.overrides.APIs[0].RootIsHidden
 	}
@@ -132,7 +132,7 @@ func (b *CommandBuilder) hidden() bool {
 	return true
 }
 
-func (b *CommandBuilder) helpText() HelpText {
+func (b *commandBuilder) helpText() HelpText {
 	rule := findHelpTextRule(b.method, b.overrides)
 	if rule != nil {
 		return HelpText{
@@ -144,7 +144,7 @@ func (b *CommandBuilder) helpText() HelpText {
 	return HelpText{}
 }
 
-func (b *CommandBuilder) releaseTracks() []string {
+func (b *commandBuilder) releaseTracks() []string {
 	// Infer default release track from proto package.
 	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
 	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
@@ -152,7 +152,7 @@ func (b *CommandBuilder) releaseTracks() []string {
 }
 
 // requestMethod determines the API method name for the command execution.
-func (b *CommandBuilder) requestMethod() string {
+func (b *commandBuilder) requestMethod() string {
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
 	if b.method.PathInfo != nil && len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
@@ -169,7 +169,7 @@ func (b *CommandBuilder) requestMethod() string {
 // collectionPath constructs the gcloud collection path(s) for a request or async operation.
 // It follows AIP-127 and AIP-132 by extracting the collection structure directly from
 // the method's HTTP annotation (PathInfo).
-func (b *CommandBuilder) collectionPath(isAsync bool) []string {
+func (b *commandBuilder) collectionPath(isAsync bool) []string {
 	var collections []string
 	hostParts := strings.Split(b.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
