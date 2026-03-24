@@ -31,10 +31,11 @@ var (
 	// config.
 	Verbose bool
 	// stdout is the writer to use when streaming output or writing verbose
-	// output directly. It is expected to be os.Stdout except for during tests.
+	// output directly. It is expected to be [os.Stdout] except for during
+	// tests.
 	stdout io.Writer = os.Stdout
 	// stderr is the writer to use when streaming error messages. It is expected
-	// to be os.Stderr except for during tests.
+	// to be [os.Stderr] except for during tests.
 	stderr io.Writer = os.Stderr
 )
 
