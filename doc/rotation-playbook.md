@@ -61,5 +61,6 @@ Create a pull request and merge it.
 
 Release Rust SDK once a month, subscribe [SDK release calendar](https://calendar.google.com/calendar/u/0?cid=Y184ZmNlZjVkZmUwMzM1NTFhNjg2ZTU4MWY2NWRlYTMyZjIxMDcxZWQyNDNkZjBkYWViNGViMzAzZjJkMWI4NzM4QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20)
 for more details.
+You don't need to release Rust SDK if no release scheduled during your rotation period.
 
 Follow instructions in go/cloud-rust:release-playbook
