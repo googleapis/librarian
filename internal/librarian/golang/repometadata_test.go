@@ -63,7 +63,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 	if err := os.MkdirAll(metadataDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := generateRepoMetadata(api, library); err != nil {
+	if err := generateRepoMetadata(api, library, library.Go.GoAPIs[0]); err != nil {
 		t.Fatal(err)
 	}
 
@@ -135,7 +135,7 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(test.library, test.api, tempDir)
 			}
-			err := generateRepoMetadata(test.api, test.library)
+			err := generateRepoMetadata(test.api, test.library, test.library.Go.GoAPIs[0])
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("metadataReleaseLevel() error = %v, wantErr %v", err, test.wantErr)
 			}
