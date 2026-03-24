@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -234,8 +235,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
 		return fmt.Errorf("failed to restore copyright year: %w", err)
 	}
-	if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
-		return fmt.Errorf("failed to write repo metadata: %w", err)
+	if !slices.Contains(library.Keep, ".repo-metadata.json") {
+		if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to write repo metadata: %w", err)
+		}
 	}
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
@@ -340,11 +343,10 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
-		return fmt.Errorf("failed to find API metadata: %w", err)
+		return err
 	}
-	metadata := repometadata.FromAPI(cfg, api, library)
 	metadata.DistributionName = DerivePackageName(library)
 	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType

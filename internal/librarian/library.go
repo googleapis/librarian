@@ -167,7 +167,7 @@ func isVeneer(language string, lib *config.Library) bool {
 	if language == config.LanguageRust {
 		return rust.IsVeneer(lib)
 	}
-	return lib.Veneer
+	return false
 }
 
 // libraryOutput returns the output path for a library. If the library has an
