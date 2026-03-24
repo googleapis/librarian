@@ -247,7 +247,7 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 
 func generateREADME(library *config.Library, googleapisDir, moduleRoot string) error {
 	if len(library.APIs) == 0 {
-		return fmt.Errorf("no APIs configured")
+		return nil
 	}
 	serviceconfig.SortAPIs(library.APIs)
 	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
