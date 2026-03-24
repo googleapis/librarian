@@ -295,15 +295,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 
 	// distribution_name default for Java is groupId:artifactId
 	if !strings.Contains(metadata.DistributionName, ":") {
-		groupID := "com.google.cloud"
-		if library.Java != nil && library.Java.GroupID != "" {
-			groupID = library.Java.GroupID
-		}
-		artifactID := library.Name
-		if !strings.HasPrefix(artifactID, cloudPrefix) {
-			artifactID = cloudPrefix + artifactID
-		}
-		metadata.DistributionName = fmt.Sprintf("%s:%s", groupID, artifactID)
+		metadata.DistributionName = deriveDistributionName(library)
 	}
 	// Default ClientDocumentation uses artifact ID
 	if metadata.ClientDocumentation == "" {
