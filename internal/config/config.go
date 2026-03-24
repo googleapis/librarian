@@ -198,10 +198,6 @@ type Library struct {
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
 
-	// Veneer indicates this library has handwritten code. A veneer may
-	// contain generated libraries.
-	Veneer bool `yaml:"veneer,omitempty"`
-
 	// Language-specific fields are below.
 
 	// Dotnet contains .NET-specific library configuration.

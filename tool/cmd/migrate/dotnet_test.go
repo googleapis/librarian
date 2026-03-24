@@ -111,7 +111,6 @@ func TestBuildDotnetConfig(t *testing.T) {
 				{
 					Name:    "Google.Cloud.Storage.V2",
 					Version: "4.0.0",
-					Veneer:  true,
 				},
 			}),
 		},
