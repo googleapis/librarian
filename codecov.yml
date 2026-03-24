@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+codecov:
+  notify:
+    # This should be updated if number of test jobs changes
+    after_n_builds: 7
 coverage:
   status:
     project:
