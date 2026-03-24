@@ -164,13 +164,17 @@ func TestVerbose(t *testing.T) {
 		{"verbose disabled", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			Verbose = test.verbose
-
-			got := captureStdout(t, func() {
-				if err := Run(t.Context(), "go", "version"); err != nil {
-					t.Fatal(err)
-				}
+			t.Cleanup(func() {
+				Verbose = false
+				stdout = os.Stdout
 			})
+			Verbose = test.verbose
+			var outBuf bytes.Buffer
+			stdout = &outBuf
+			if err := Run(t.Context(), "go", "version"); err != nil {
+				t.Fatal(err)
+			}
+			got := outBuf.String()
 
 			if test.verbose {
 				if !strings.Contains(got, "go version") {
@@ -185,23 +189,65 @@ func TestVerbose(t *testing.T) {
 	}
 }
 
-func captureStdout(t *testing.T, fn func()) string {
-	stdout := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
+func TestRunStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		command string
+		args    []string
+		verbose bool
+		wantOut string
+		wantErr string
+	}{
+		{
+			name:    "simple output and err",
+			command: "/usr/bin/sh",
+			args:    []string{"-c", "echo test-output && echo >&2 test-error"},
+			wantOut: "test-output\n",
+			wantErr: "test-error\n",
+		},
+		{
+			name:    "verbose output",
+			command: "/usr/bin/sh",
+			args:    []string{"-c", "echo test-output"},
+			verbose: true,
+			wantOut: "/usr/bin/sh -c echo test-output\ntest-output\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				Verbose = false
+				stdout = os.Stdout
+				stderr = os.Stderr
+			})
+			Verbose = test.verbose
+			var outBuf, errBuf bytes.Buffer
+			stdout = &outBuf
+			stderr = &errBuf
+			err := RunStreaming(t.Context(), test.command, test.args...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantOut, outBuf.String()); diff != "" {
+				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantErr, errBuf.String()); diff != "" {
+				t.Errorf("mismatch of stderr (-want +got):\n%s", diff)
+			}
+		})
 	}
-	os.Stdout = w
-	t.Cleanup(func() {
-		os.Stdout = stdout
-	})
+}
 
-	fn()
-	w.Close()
-
-	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(r); err != nil {
-		t.Fatal(err)
+func TestRunStreaming_Error(t *testing.T) {
+	err := RunStreaming(t.Context(), "go", invalidSubcommand)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
-	return buf.String()
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("RunWithStreamingOutput() error = %v, want type *exec.ExitError", err)
+	}
+	if !strings.Contains(string(err.Error()), invalidSubcommand) {
+		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
+	}
 }
