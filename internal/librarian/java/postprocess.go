@@ -237,14 +237,10 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 // information from the primary service configuration and library-level overrides.
 func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repoMetadata, error) {
 	serviceconfig.SortAPIs(library.APIs)
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
+	sharedMetadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find primary API for path %s: %w", library.APIs[0].Path, err)
+		return nil, err
 	}
-	if api == nil {
-		return nil, fmt.Errorf("failed to find primary API for path %s: not found", library.APIs[0].Path)
-	}
-	sharedMetadata := repometadata.FromAPI(cfg, api, library)
 
 	metadata := &repoMetadata{
 		APIShortname:         sharedMetadata.APIShortname,
@@ -299,15 +295,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 
 	// distribution_name default for Java is groupId:artifactId
 	if !strings.Contains(metadata.DistributionName, ":") {
-		groupID := "com.google.cloud"
-		if library.Java != nil && library.Java.GroupID != "" {
-			groupID = library.Java.GroupID
-		}
-		artifactID := library.Name
-		if !strings.HasPrefix(artifactID, cloudPrefix) {
-			artifactID = cloudPrefix + artifactID
-		}
-		metadata.DistributionName = fmt.Sprintf("%s:%s", groupID, artifactID)
+		metadata.DistributionName = deriveDistributionName(library)
 	}
 	// Default ClientDocumentation uses artifact ID
 	if metadata.ClientDocumentation == "" {
@@ -316,7 +304,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
 	// transport
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find api config: %w", err)
 	}

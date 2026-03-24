@@ -15,7 +15,6 @@
 package nodejs
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -535,45 +534,6 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	}
 }
 
-func TestFormat(t *testing.T) {
-	testhelper.RequireCommand(t, "eslint")
-	outDir := t.TempDir()
-	srcDir := filepath.Join(outDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	eslintConfig := `{
-		"rules": {
-			"semi": ["error", "always"]
-		},
-		"parserOptions": {
-			"ecmaVersion": 2020,
-			"sourceType": "module"
-		}
-	}`
-	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
-		t.Fatal(err)
-	}
-	testFile := filepath.Join(srcDir, "index.ts")
-	if err := os.WriteFile(testFile, []byte("export const foo = 'bar'"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	library := &config.Library{
-		Name:   "google-cloud-test",
-		Output: outDir,
-	}
-	if err := Format(t.Context(), library); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(testFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(got), "bar';") {
-		t.Errorf("expected fixed content with semicolon, got: %q", string(got))
-	}
-}
-
 func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
@@ -888,61 +848,6 @@ func TestCopySamplesFromStaging(t *testing.T) {
 
 func TestCopySamplesFromStaging_NonExistentDir(t *testing.T) {
 	if err := copySamplesFromStaging(filepath.Join(t.TempDir(), "does-not-exist"), t.TempDir()); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestFormat_CanceledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-
-	library := &config.Library{
-		Name:   "google-cloud-test",
-		Output: t.TempDir(),
-	}
-	err := Format(ctx, library)
-	if err == nil {
-		t.Fatal("expected error from canceled context, got nil")
-	}
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("expected context.Canceled, got: %v", err)
-	}
-}
-
-func TestFormat_ExitCode1(t *testing.T) {
-	testhelper.RequireCommand(t, "eslint")
-
-	outDir := t.TempDir()
-	srcDir := filepath.Join(outDir, "src")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Configure eslint with an "error" rule that cannot be auto-fixed.
-	// eslint exits 1 when unfixable errors remain after --fix.
-	eslintConfig := `{
-		"rules": {
-			"no-eval": "error"
-		},
-		"parserOptions": {
-			"ecmaVersion": 2020,
-			"sourceType": "module"
-		}
-	}`
-	if err := os.WriteFile(filepath.Join(outDir, ".eslintrc.json"), []byte(eslintConfig), 0644); err != nil {
-		t.Fatal(err)
-	}
-	// eval() triggers no-eval warning which --fix cannot remove.
-	if err := os.WriteFile(filepath.Join(srcDir, "index.js"), []byte("eval('1+1');\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:   "google-cloud-test",
-		Output: outDir,
-	}
-	// Format should tolerate exit code 1 (lint warnings).
-	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
 	}
 }

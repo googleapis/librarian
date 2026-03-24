@@ -41,7 +41,6 @@ func TestGenerateVeneer(t *testing.T) {
 
 	library := &config.Library{
 		Name:          "test-veneer",
-		Veneer:        true,
 		Output:        outDir,
 		CopyrightYear: "2025",
 		Rust: &config.RustCrate{
@@ -176,7 +175,6 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 
 	library := &config.Library{
 		Name:          "test-veneer",
-		Veneer:        true,
 		Output:        outDir,
 		CopyrightYear: "2025",
 		Rust: &config.RustCrate{
@@ -238,7 +236,6 @@ func TestKeepVeneer(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Veneer: true,
 		Output: dir,
 		Rust: &config.RustCrate{
 			Modules: []*config.RustModule{

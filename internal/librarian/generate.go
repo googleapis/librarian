@@ -204,9 +204,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
-				if err := nodejs.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
 				return nil
 			})
 		}
