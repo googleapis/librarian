@@ -199,7 +199,8 @@ func TestBuildFormatArgs_Error(t *testing.T) {
 		},
 	}
 	_, err := buildFormatArgs(library)
-	if !errors.Is(err, &errGoAPINotFound{"example/v1"}) {
+	var target *errGoAPINotFound
+	if !errors.As(err, &target) {
 		t.Errorf("got %v, want errGoAPINotFound", err)
 	}
 }
