@@ -1,12 +1,12 @@
-# Librarian on-call rotation
+# Librarian rotation playbook
 
 As a librarian on-call, you need to perform library boarding, code generation, and release for SDKs that have onboarded
 the librarian tool.
 
-Each SDK has its own generation and release cadence. See SDK sections for more details.
+Each SDK has its own generation and release cadence. See each SDK section for more details.
 
 ## Keep on-call records
-Create a new section in the [on-call playbook](https://docs.google.com/document/d/1moP7zq3Qy7xqjdKSpTJhHbhpX7dSG9Wo38f9nlEpcLQ/edit?resourcekey=0-p1YPSwMTMGFYRgr4jegcOw&tab=t.eor0pn4ku93s)
+Create a new section in the [on-call notes](https://docs.google.com/document/d/1moP7zq3Qy7xqjdKSpTJhHbhpX7dSG9Wo38f9nlEpcLQ/edit?resourcekey=0-p1YPSwMTMGFYRgr4jegcOw&tab=t.eor0pn4ku93s)
 by copying the template.
 Update your LDAP and rotation dates.
 
