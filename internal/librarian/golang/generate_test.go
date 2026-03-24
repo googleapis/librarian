@@ -221,7 +221,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "delete paths",
+			name: "delete paths after generation",
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
