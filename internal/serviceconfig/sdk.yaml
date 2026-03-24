@@ -3323,6 +3323,7 @@
     - java
     - nodejs
     - python
+    - rust
 - path: google/cloud/visionai/v1alpha1
   documentation_uri: https://cloud.google.com/vision-ai/docs
   languages:
