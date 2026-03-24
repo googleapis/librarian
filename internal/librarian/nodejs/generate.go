@@ -340,11 +340,10 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
-		return fmt.Errorf("failed to find API metadata: %w", err)
+		return err
 	}
-	metadata := repometadata.FromAPI(cfg, api, library)
 	metadata.DistributionName = DerivePackageName(library)
 	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
