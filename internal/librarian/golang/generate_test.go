@@ -865,7 +865,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
-			err := moveGeneratedFiles(lib, outDir)
+			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir)
 			if err != nil {
 				t.Fatal(err)
 			}
