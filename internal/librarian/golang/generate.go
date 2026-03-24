@@ -66,7 +66,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := moveGeneratedFiles(library, goAPI, outDir); err != nil {
 			return err
 		}
-		if err := generateClientVersionFile(library, api.Path); err != nil {
+		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return err
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
