@@ -309,6 +309,10 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
+			// This test verifies that a library with nested import paths can be
+			// generated correctly.
+			// In this case, the import path, firestore/apiv1/admin, is nested in
+			// the other import path, firestore/apiv1.
 			name: "nested import paths",
 			library: &config.Library{
 				Name: "firestore",
