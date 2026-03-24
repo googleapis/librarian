@@ -24,7 +24,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/snippetmetadata"
 )
 
 const (
@@ -174,36 +173,12 @@ func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
 }
 
-// updateSnippetDirectory updates the library version in all snippet metadata files
-// for the given library.
-func updateSnippetDirectory(library *config.Library, output, version string) error {
-	for _, api := range library.APIs {
-		snippetDir, err := findSnippetDirectory(library, api.Path, output)
-		if err != nil {
-			return err
-		}
-		if snippetDir == "" {
-			continue
-		}
-		// UpdateAllLibraryVersions searches recursively, but since Go APIs are not
-		// nested, this only updates the snippets for the current API.
-		if err := snippetmetadata.UpdateAllLibraryVersions(snippetDir, version); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // findSnippetDirectory returns the path to the snippet directory for the given API path and library output directory.
 // It returns an empty string if the API is proto-only or if the snippet directory is in a path marked for deletion
 // after generation.
-func findSnippetDirectory(library *config.Library, apiPath, output string) (string, error) {
-	goAPI := findGoAPI(library, apiPath)
-	if goAPI == nil {
-		return "", errGoAPINotFound
-	}
+func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output string) string {
 	if goAPI.ProtoOnly {
-		return "", nil
+		return ""
 	}
 	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
 	// No need to format the snippet directory if the directory is within one of
@@ -211,8 +186,8 @@ func findSnippetDirectory(library *config.Library, apiPath, output string) (stri
 	for _, path := range library.Go.DeleteGenerationOutputPaths {
 		pathToDelete := filepath.Join(output, path)
 		if strings.HasPrefix(snippetDir, pathToDelete) {
-			return "", nil
+			return ""
 		}
 	}
-	return snippetDir, nil
+	return snippetDir
 }
