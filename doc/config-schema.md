@@ -210,7 +210,6 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `no_samples` | bool | Determines whether to generate samples for the API. |
 | `path` | string | Is the source path. |
-| `no_rest_numeric_enums` | bool | Determines whether to use numeric enums in REST requests for the API. |
 
 ## JavaModule Configuration
 
