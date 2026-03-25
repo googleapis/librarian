@@ -899,8 +899,7 @@ func TestGenerateScenarios(t *testing.T) {
 		{
 			name: "generate in release only mode returns error",
 			state: &legacyconfig.LibrarianState{
-				Image:           "gcr.io/test/image:v1.2.3",
-				ReleaseOnlyMode: true,
+				Image: "gcr.io/test/image:v1.2.3",
 				Libraries: []*legacyconfig.LibraryState{
 					{
 						ID:   "some-library",
@@ -910,6 +909,9 @@ func TestGenerateScenarios(t *testing.T) {
 						LastGeneratedCommit: "LastGeneratedCommit",
 					},
 				},
+			},
+			librarianConfig: &legacyconfig.LibrarianConfig{
+				ReleaseOnlyMode: true,
 			},
 			wantErr:    true,
 			wantErrMsg: "generate in release only mode",

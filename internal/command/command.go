@@ -19,15 +19,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 )
 
-// Verbose controls whether commands are printed to stderr before execution.
-//
-// TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
-// config.
-var Verbose bool
+var (
+	// Verbose controls whether commands are printed to stderr before execution.
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/3687): pass in as
+	// config.
+	Verbose bool
+	// stdout is the writer to use when streaming output or writing verbose
+	// output directly. It is expected to be [os.Stdout] except for during
+	// tests.
+	stdout io.Writer = os.Stdout
+	// stderr is the writer to use when streaming error messages. It is expected
+	// to be [os.Stderr] except for during tests.
+	stderr io.Writer = os.Stderr
+)
 
 // Run executes a program (with arguments). On error, stderr is included in the
 // error message. It is a convenience wrapper around RunWithEnv.
@@ -49,6 +59,25 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 	return err
 }
 
+// RunStreaming runs the given binary with the specified args,
+// setting its output and errors streams to those of the current process. The
+// output is not otherwise captured. This is primarily for use in tools which
+// call potentially long-running commands. It should not be used within
+// librarian itself, where the Run and Output functions are generally preferred,
+// as those observe the Verbose flag for output. The Verbose flag only affects
+// the behavior of this function in terms of whether the command being executed
+// is first written to stdout.
+func RunStreaming(ctx context.Context, command string, arg ...string) error {
+	cmd := buildCmd(ctx, "", nil, command, arg...)
+	cmd.Stderr = stderr
+	cmd.Stdout = stdout
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("%s: %w", cmd, err)
+	}
+	return nil
+}
+
 // Output executes a program (with arguments) and returns stdout. It is a
 // convenience wrapper around OutputWithEnv.
 func Output(ctx context.Context, command string, arg ...string) (string, error) {
@@ -63,7 +92,7 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 	return runCmd(ctx, "", env, command, arg...)
 }
 
-func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
+func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, command, arg...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -75,8 +104,13 @@ func runCmd(ctx context.Context, dir string, env map[string]string, command stri
 		}
 	}
 	if Verbose {
-		fmt.Fprintf(os.Stdout, "%s\n", cmd.String())
+		fmt.Fprintf(stdout, "%s\n", cmd.String())
 	}
+	return cmd
+}
+
+func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
+	cmd := buildCmd(ctx, dir, env, command, arg...)
 	output, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError

@@ -1,0 +1,62 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package google.cloud.tasks.v2;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/cloud/tasks/v2/queue.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+
+option go_package = "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb;cloudtaskspb";
+option java_multiple_files = true;
+option java_outer_classname = "CloudTasksProto";
+option java_package = "com.google.cloud.tasks.v2";
+option objc_class_prefix = "TASKS";
+
+service CloudTasks {
+  option (google.api.default_host) = "cloudtasks.googleapis.com";
+  option (google.api.oauth_scopes) =
+      "https://www.googleapis.com/auth/cloud-platform";
+
+  rpc ListQueues(ListQueuesRequest) returns (ListQueuesResponse) {
+    option (google.api.http) = {
+      get: "/v2/{parent=projects/*/locations/*}/queues"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+}
+
+message ListQueuesRequest {
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      child_type: "cloudtasks.googleapis.com/Queue"
+    }
+  ];
+
+  string filter = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListQueuesResponse {
+  repeated Queue queues = 1;
+  string next_page_token = 2;
+}

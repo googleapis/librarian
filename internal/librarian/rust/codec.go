@@ -21,20 +21,20 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
-func libraryToModelConfig(library *config.Library, ch *config.API, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
+func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
 	specFormat := config.SpecProtobuf
 	if library.SpecificationFormat != "" {
 		specFormat = library.SpecificationFormat
 	}
 
-	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
-	root := sources.Googleapis
+	src := sources.NewSourceConfig(srcs, library.Roots)
+	root := srcs.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
-		root = sources.Showcase
+		root = srcs.Showcase
 	}
 	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageRust)
 	if err != nil {
@@ -222,13 +222,13 @@ func formatPackageDependency(dep *config.RustPackageDependency) string {
 	return strings.Join(parts, ",")
 }
 
-func moduleToModelConfig(library *config.Library, module *config.RustModule, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
-	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
+func moduleToModelConfig(library *config.Library, module *config.RustModule, srcs *sources.Sources) (*parser.ModelConfig, error) {
+	src := sources.NewSourceConfig(srcs, library.Roots)
 	var title string
 	if module.APIPath != "" && len(src.ActiveRoots) == 1 && src.ActiveRoots[0] == "googleapis" {
-		root := sources.Googleapis
+		root := srcs.Googleapis
 		if module.APIPath == "schema/google/showcase/v1beta1" {
-			root = sources.Showcase
+			root = srcs.Showcase
 		}
 		api, err := serviceconfig.Find(root, module.APIPath, config.LanguageRust)
 		if err != nil {

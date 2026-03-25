@@ -19,6 +19,8 @@ package serviceconfig
 import (
 	_ "embed"
 	"fmt"
+	"slices"
+	"sync"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -142,6 +144,27 @@ var (
 	//    the file as per repository conventions.
 	APIs = unmarshalAPIsOrPanic()
 )
+
+var (
+	apisByPath     map[string]*API
+	apisByPathOnce sync.Once
+)
+
+// HasAPIPath reports whether path matches the Path field of any API in
+// sdk.yaml that is available for the given language.
+func HasAPIPath(path, language string) bool {
+	apisByPathOnce.Do(func() {
+		apisByPath = make(map[string]*API, len(APIs))
+		for i := range APIs {
+			apisByPath[APIs[i].Path] = &APIs[i]
+		}
+	})
+	api, ok := apisByPath[path]
+	if !ok {
+		return false
+	}
+	return len(api.Languages) == 0 || slices.Contains(api.Languages, language)
+}
 
 func unmarshalAPIsOrPanic() []API {
 	apis, err := yaml.Unmarshal[[]API](sdkYaml)

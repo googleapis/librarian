@@ -205,7 +205,6 @@ type RustCrate struct {
 
 	// Modules specifies generation targets for veneer crates. Each module
 	// defines a source proto path, output location, and template to use.
-	// This is only used when the library has veneer: true.
 	Modules []*RustModule `yaml:"modules,omitempty"`
 
 	// PerServiceFeatures enables per-service feature flags.
@@ -393,6 +392,12 @@ type PythonPackage struct {
 	// DefaultVersion is the default version of the API to use. When omitted,
 	// the version in the first API path is used.
 	DefaultVersion string `yaml:"default_version,omitempty"`
+
+	// SkipReadmeCopy prevents generation from copying README.rst from the root
+	// directory to the docs directory.
+	// TODO(https://github.com/googleapis/librarian/issues/4738): revisit
+	// whether or not this field should exist after migration.
+	SkipReadmeCopy bool `yaml:"skip_readme_copy,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.

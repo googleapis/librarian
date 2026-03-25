@@ -27,9 +27,9 @@ type Config struct {
 	Version string `yaml:"version,omitempty"`
 
 	// Repo is the repository name, such as "googleapis/google-cloud-python".
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/3003): Remove this
-	// field when .repo-metadata.json generation is removed.
+	// It is used for:
+	// - Providing to the Java GAPIC generator for observability features.
+	// - Generating the .repo-metadata.json.
 	Repo string `yaml:"repo,omitempty"`
 
 	// Sources references external source repositories.
@@ -197,10 +197,6 @@ type Library struct {
 	// SpecificationFormat specifies the API specification format. Valid values
 	// are "protobuf" (default) or "discovery".
 	SpecificationFormat string `yaml:"specification_format,omitempty"`
-
-	// Veneer indicates this library has handwritten code. A veneer may
-	// contain generated libraries.
-	Veneer bool `yaml:"veneer,omitempty"`
 
 	// Language-specific fields are below.
 

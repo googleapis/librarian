@@ -64,6 +64,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 						APIShortnameOverride:         "secretmanager",
 						APIIDOverride:                "secretmanager.googleapis.com",
 						ProductDocumentationOverride: "https://cloud.google.com/secret-manager/",
+						DefaultVersion:               "v1",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/secretmanager/v1": {"warehouse-package-name=google-cloud-secret-manager"},
 						},
@@ -91,6 +92,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
 					Python: &config.PythonPackage{
+						DefaultVersion:       "v1",
 						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
 					},
 				},
@@ -135,6 +137,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 					ReleaseLevel: "preview",
 					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
 					Python: &config.PythonPackage{
+						DefaultVersion:       "v1",
 						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
 					},
 				},
@@ -209,6 +212,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 								"rest-numeric-enums=False",
 							},
 						},
+						DefaultVersion: "v1",
 					},
 				},
 			},
@@ -234,6 +238,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 							LibraryType: "CORE",
 						},
 						NamePrettyOverride: "Google API client core library",
+						SkipReadmeCopy:     true,
 					},
 				},
 			},

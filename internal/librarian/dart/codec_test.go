@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestBuildCodec(t *testing.T) {
@@ -312,8 +312,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -334,8 +334,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -360,8 +360,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -406,8 +406,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -445,8 +445,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -469,8 +469,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -492,8 +492,8 @@ func TestToModelConfig(t *testing.T) {
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "schema/google/showcase/v1beta1",
 				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 						Showcase:   showcaseDir,
 					},
@@ -517,8 +517,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis", "extra-root"},
@@ -540,7 +540,7 @@ func TestToModelConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &sidekickconfig.Sources{
+			sources := &sources.Sources{
 				Googleapis: test.googleapisDir,
 			}
 			if test.showcaseDir != "" {

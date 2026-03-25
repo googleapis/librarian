@@ -174,8 +174,6 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/4276): Remove veneer field
-	lib.Veneer = false
 	return lib
 }
 

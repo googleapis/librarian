@@ -34,12 +34,6 @@ const (
 type LibrarianState struct {
 	// The name and tag of the generator image to use. tag is required.
 	Image string `yaml:"image" json:"image"`
-	// ReleaseOnlyMode describes whether a repository is in release only mode.
-	// If true, generate will fail.
-	// We set this value to true if we want to migrate a repository from legacylibrarian
-	// generate to librarian generate, but still want to use legacylibrarian to
-	// release the repository.
-	ReleaseOnlyMode bool `yaml:"release_only_mode,omitempty" json:"-"`
 	// A list of library configurations.
 	Libraries []*LibraryState `yaml:"libraries" json:"libraries"`
 }

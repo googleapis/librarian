@@ -29,11 +29,7 @@ const (
 	repoMetadataReleaseLevelPreview = "preview"
 )
 
-func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error {
-	goAPI := findGoAPI(library, api.Path)
-	if goAPI == nil {
-		return errGoAPINotFound
-	}
+func generateRepoMetadata(api *serviceconfig.API, library *config.Library, goAPI *config.GoAPI) error {
 	level := metadataReleaseLevel(api)
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
@@ -45,7 +41,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library) error
 		LibraryType:         repometadata.GAPICAutoLibraryType,
 		ReleaseLevel:        level,
 	}
-	return metadata.Write(filepath.Join(library.Output, clientPathFromLibraryRoot(library, goAPI)))
+	return metadata.Write(filepath.Join(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI)))
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.

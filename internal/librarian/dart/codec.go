@@ -21,25 +21,25 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
 
-func toModelConfig(library *config.Library, ch *config.API, sources *sidekickconfig.Sources) (*parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
 		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
 
-	src := sidekickconfig.NewSourceConfig(*sources, library.Roots)
+	src := sources.NewSourceConfig(srcs, library.Roots)
 
 	if library.Dart != nil && library.Dart.IncludeList != nil {
 		src.IncludeList = library.Dart.IncludeList
 	}
-	root := sources.Googleapis
+	root := srcs.Googleapis
 	if ch.Path == "schema/google/showcase/v1beta1" {
-		root = sources.Showcase
+		root = srcs.Showcase
 		src.ActiveRoots = append(src.ActiveRoots, "showcase")
 	}
 	svcConfig, err := serviceconfig.Find(root, ch.Path, config.LanguageDart)

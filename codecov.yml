@@ -11,11 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+codecov:
+  notify:
+    # This number corresponds to the number of times GitHub Actions in
+    # .github/workflows attempt to upload coverage to Codecov. It should be
+    # updated if that number changes.
+    after_n_builds: 7
 coverage:
   status:
     project:
       default:
-        target: 79%
+        target: 80%
         threshold: 0%
         if_ci_failed: error
       sidekick:
@@ -39,7 +45,7 @@ coverage:
       librarian-golang:
         # TODO(https://github.com/googleapis/librarian/issues/4662): fix
         # coverage back to 80%
-        target: 60%
+        target: 78%
         threshold: 0%
         if_ci_failed: error
         paths:
@@ -47,7 +53,7 @@ coverage:
       librarian-java:
         # TODO(https://github.com/googleapis/librarian/issues/4663): fix
         # coverage back to 80%
-        target: 69%
+        target: 74%
         threshold: 0%
         if_ci_failed: error
         paths:
@@ -55,7 +61,7 @@ coverage:
       librarian-nodejs:
         # TODO(https://github.com/googleapis/librarian/issues/4664): fix
         # coverage back to 80%
-        target: 10%
+        target: 58%
         threshold: 0%
         if_ci_failed: error
         paths:

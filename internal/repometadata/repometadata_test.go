@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 )
 
 func TestFromLibrary(t *testing.T) {
@@ -101,10 +100,7 @@ func TestFromLibrary(t *testing.T) {
 				Repo:     "googleapis/google-cloud-python",
 			}
 
-			sources := &sidekickconfig.Sources{
-				Googleapis: "../testdata/googleapis",
-			}
-			got, err := FromLibrary(cfg, test.library, sources)
+			got, err := FromLibrary(cfg, test.library, "../testdata/googleapis")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -142,10 +138,7 @@ func TestFromLibrary_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Language: config.LanguagePython}
-			sources := &sidekickconfig.Sources{
-				Googleapis: "../testdata/googleapis",
-			}
-			_, gotErr := FromLibrary(cfg, test.library, sources)
+			_, gotErr := FromLibrary(cfg, test.library, "../testdata/googleapis")
 			if gotErr == nil {
 				t.Fatal("expected error, got nil")
 			}

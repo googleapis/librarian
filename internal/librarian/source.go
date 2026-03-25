@@ -22,7 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -37,12 +37,12 @@ const (
 var ErrMissingGoogleapisSource = errors.New("must specify googleapis source")
 
 // LoadSources fetches all source repositories needed for generation in parallel.
-// It returns a *sidekickconfig.Sources struct with all directories populated.
-func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sources, error) {
+// It returns a *sources.Sources struct with all directories populated.
+func LoadSources(ctx context.Context, src *config.Sources) (*sources.Sources, error) {
 	if src == nil || src.Googleapis == nil {
 		return nil, ErrMissingGoogleapisSource
 	}
-	sources := &sidekickconfig.Sources{}
+	srcs := &sources.Sources{}
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		dir, err := fetchSource(ctx, src.Googleapis, googleapisRepo)
@@ -52,7 +52,7 @@ func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sour
 		if dir == "" {
 			return ErrMissingGoogleapisSource
 		}
-		sources.Googleapis = dir
+		srcs.Googleapis = dir
 		return nil
 	})
 	g.Go(func() error {
@@ -60,7 +60,7 @@ func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sour
 		if err != nil {
 			return err
 		}
-		sources.Conformance = dir
+		srcs.Conformance = dir
 		return nil
 	})
 	g.Go(func() error {
@@ -68,7 +68,7 @@ func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sour
 		if err != nil {
 			return err
 		}
-		sources.Discovery = dir
+		srcs.Discovery = dir
 		return nil
 	})
 	g.Go(func() error {
@@ -76,7 +76,7 @@ func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sour
 		if err != nil {
 			return err
 		}
-		sources.Showcase = dir
+		srcs.Showcase = dir
 		return nil
 	})
 	if src.ProtobufSrc != nil {
@@ -85,14 +85,14 @@ func LoadSources(ctx context.Context, src *config.Sources) (*sidekickconfig.Sour
 			if err != nil {
 				return err
 			}
-			sources.ProtobufSrc = filepath.Join(dir, src.ProtobufSrc.Subpath)
+			srcs.ProtobufSrc = filepath.Join(dir, src.ProtobufSrc.Subpath)
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	return sources, nil
+	return srcs, nil
 }
 
 func fetchSource(ctx context.Context, source *config.Source, repo string) (string, error) {
