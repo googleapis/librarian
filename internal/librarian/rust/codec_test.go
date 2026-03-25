@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
@@ -103,12 +104,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with version and release level",
+			name: "with version",
 			library: &config.Library{
-				Name:         "google-cloud-secretmanager",
-				Version:      "0.1.0",
-				ReleaseLevel: "preview",
-				Roots:        []string{"googleapis"},
+				Name:    "google-cloud-secretmanager",
+				Version: "0.1.0",
+				Roots:   []string{"googleapis"},
 			},
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
@@ -597,7 +597,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 			if test.want.Codec == nil {
-				test.want.Codec = buildCodec(test.library)
+				test.want.Codec = buildCodec(test.library, "stable")
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -1316,6 +1316,7 @@ func TestBuildCodec(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		sc      *serviceconfig.API
 		want    map[string]string
 	}{
 		{
@@ -1325,6 +1326,7 @@ func TestBuildCodec(t *testing.T) {
 			},
 			want: map[string]string{
 				"package-name-override": "google-cloud-secretmanager",
+				"release-level":         "stable",
 			},
 		},
 		{
@@ -1332,7 +1334,6 @@ func TestBuildCodec(t *testing.T) {
 			library: &config.Library{
 				Name:          "google-cloud-secretmanager",
 				Version:       "0.1.0",
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2024",
 				SkipRelease:   true,
 				Keep:          []string{"src/mod1.rs", "src/mod2.rs", "other.txt"},
@@ -1340,10 +1341,23 @@ func TestBuildCodec(t *testing.T) {
 			want: map[string]string{
 				"package-name-override": "google-cloud-secretmanager",
 				"version":               "0.1.0",
-				"release-level":         "preview",
 				"copyright-year":        "2024",
 				"not-for-publication":   "true",
 				"extra-modules":         "mod1,mod2",
+				"release-level":         "stable",
+			},
+		},
+		{
+			name: "with release level from service config",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			sc: &serviceconfig.API{
+				ReleaseLevels: map[string]string{"rust": "preview"},
+			},
+			want: map[string]string{
+				"package-name-override": "google-cloud-secretmanager",
+				"release-level":         "preview",
 			},
 		},
 		{
@@ -1398,13 +1412,18 @@ func TestBuildCodec(t *testing.T) {
 				"default-features":            "feature1,feature2",
 				"disabled-rustdoc-warnings":   "warning1,warning2",
 				"disabled-clippy-warnings":    "clippy1,clippy2",
+				"release-level":               "stable",
 				"package:dep1":                "package=pkg1,source=1.0",
 				"package:dep2":                "feature=feat2,ignore=true",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildCodec(test.library)
+			sc := test.sc
+			if sc == nil {
+				sc = &serviceconfig.API{}
+			}
+			got := buildCodec(test.library, sc.ReleaseLevel(config.LanguageRust))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

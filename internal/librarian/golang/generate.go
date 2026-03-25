@@ -33,10 +33,6 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-const (
-	releaseLevelGA = "ga"
-)
-
 var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
@@ -170,8 +166,7 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 	if trans := transport(sc); trans != "" {
 		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
-	level := releaseLevel(sc)
-	opts = append(opts, "release-level="+level)
+	opts = append(opts, "release-level="+sc.ReleaseLevel(config.LanguageGo))
 	return opts, nil
 }
 
@@ -272,14 +267,6 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
-}
-
-// releaseLevel determines the release level for an API.
-func releaseLevel(sc *serviceconfig.API) string {
-	if rl, ok := sc.ReleaseLevels[config.LanguageGo]; ok {
-		return rl
-	}
-	return releaseLevelGA
 }
 
 // transport get transport from serviceconfig.API for language Go.

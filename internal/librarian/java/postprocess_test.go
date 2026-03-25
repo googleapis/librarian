@@ -341,7 +341,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 		ProductDocumentation: "https://custom.docs",
 		APIDescription:       "Custom description",
 		ClientDocumentation:  "https://custom.client.docs",
-		ReleaseLevel:         "",
+		ReleaseLevel:         "stable",
 		Transport:            "both",
 		Language:             "java",
 		Repo:                 "googleapis/google-cloud-java",

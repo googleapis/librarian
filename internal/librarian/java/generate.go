@@ -122,7 +122,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(cfg, library, api, javaAPI, googleapisDir, apiCfg)
+	gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve gapic options: %w", err)
 	}
@@ -186,7 +186,7 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicD
 	return args
 }
 
-func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
+func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
@@ -228,7 +228,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	if !javaAPI.NoRestNumericEnums {
+	if apiCfgs == nil || apiCfgs.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 	return gapicOpts, nil

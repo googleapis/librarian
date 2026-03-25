@@ -129,9 +129,8 @@ func TestBuildDotnetConfig(t *testing.T) {
 			},
 			want: wantConfig([]*config.Library{
 				{
-					Name:         "Google.Cloud.Foo.V1Beta1",
-					Version:      "1.0.0-beta05",
-					ReleaseLevel: "preview",
+					Name:    "Google.Cloud.Foo.V1Beta1",
+					Version: "1.0.0-beta05",
 					APIs: []*config.API{
 						{Path: "google/cloud/foo/v1beta1"},
 					},

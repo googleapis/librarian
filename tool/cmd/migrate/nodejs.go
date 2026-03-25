@@ -116,8 +116,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 			Googleapis: src,
 		},
 		Default: &config.Default{
-			Output:       "packages",
-			ReleaseLevel: "stable",
+			Output: "packages",
 		},
 		Libraries: libraries,
 	}
