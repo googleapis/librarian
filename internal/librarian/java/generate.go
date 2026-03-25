@@ -228,7 +228,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	if apiCfgs == nil || !apiCfgs.NoRESTNumericEnums[config.LanguageJava] {
+	if apiCfgs == nil || apiCfgs.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 	return gapicOpts, nil
