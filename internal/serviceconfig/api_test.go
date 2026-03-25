@@ -62,6 +62,53 @@ func TestHasAPIPath(t *testing.T) {
 	}
 }
 
+func TestHasRESTNumericEnums(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *API
+		lang string
+		want bool
+	}{
+		{
+			name: "empty map enables numeric enums",
+			sc:   &API{},
+			lang: config.LanguageGo,
+			want: true,
+		},
+		{
+			name: "nil map enables numeric enums",
+			sc:   &API{NoRESTNumericEnums: nil},
+			lang: config.LanguageNodejs,
+			want: true,
+		},
+		{
+			name: "disabled for all languages",
+			sc:   &API{NoRESTNumericEnums: map[string]bool{config.LanguageAll: true}},
+			lang: config.LanguageGo,
+			want: false,
+		},
+		{
+			name: "disabled for specific language",
+			sc:   &API{NoRESTNumericEnums: map[string]bool{config.LanguageNodejs: true}},
+			lang: config.LanguageNodejs,
+			want: false,
+		},
+		{
+			name: "disabled for other language only",
+			sc:   &API{NoRESTNumericEnums: map[string]bool{"python": true}},
+			lang: config.LanguageGo,
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.HasRESTNumericEnums(test.lang)
+			if got != test.want {
+				t.Errorf("HasRESTNumericEnums(%q) = %v, want %v", test.lang, got, test.want)
+			}
+		})
+	}
+}
+
 func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string
