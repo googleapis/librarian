@@ -110,9 +110,7 @@ func buildCodec(library *config.Library, sc *serviceconfig.API) map[string]strin
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
-	if rl := sc.ReleaseLevel(config.LanguageRust); rl != "" {
-		codec["release-level"] = rl
-	}
+	codec["release-level"] = sc.ReleaseLevel(config.LanguageRust)
 	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}
