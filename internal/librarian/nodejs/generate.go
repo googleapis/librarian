@@ -493,7 +493,7 @@ func updateSnippetMetadataVersion(outDir, version string) error {
 }
 
 // snippetMetadata is a minimal representation of a snippet metadata JSON file.
-// The Snippets field uses json.RawMessage to avoid reformatting the array.
+// The Snippets field uses [json.RawMessage] to avoid reformatting the array.
 type snippetMetadata struct {
 	ClientLibrary snippetClientLibrary `json:"clientLibrary"`
 	Snippets      json.RawMessage      `json:"snippets"`
