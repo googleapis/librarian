@@ -181,7 +181,7 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 		},
 		{
-			name: "bigquery connection (no transport, rest_numeric_enums=False)",
+			name: "bigquery connection (no transport)",
 			input: &MigrationInput{
 				repoPath: "testdata/google-cloud-python",
 				librarianState: &legacyconfig.LibrarianState{
@@ -209,7 +209,6 @@ func TestBuildPythonLibraries(t *testing.T) {
 							"google/cloud/bigquery/connection/v1": {
 								"python-gapic-namespace=google.cloud",
 								"python-gapic-name=bigquery_connection",
-								"rest-numeric-enums=False",
 							},
 						},
 						DefaultVersion: "v1",

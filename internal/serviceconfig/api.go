@@ -127,6 +127,22 @@ func (api *API) Transport(language string) Transport {
 	return GRPCRest
 }
 
+// HasRESTNumericEnums reports whether the generator should pass the
+// rest-numeric-enums option for the given language. The default (when
+// NoRESTNumericEnums is empty) is true.
+func (api *API) HasRESTNumericEnums(language string) bool {
+	if len(api.NoRESTNumericEnums) == 0 {
+		return true
+	}
+	if _, ok := api.NoRESTNumericEnums[config.LanguageAll]; ok {
+		return false
+	}
+	if _, ok := api.NoRESTNumericEnums[language]; ok {
+		return false
+	}
+	return true
+}
+
 var (
 	//go:embed sdk.yaml
 	sdkYaml []byte

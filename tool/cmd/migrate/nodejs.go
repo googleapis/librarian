@@ -223,11 +223,13 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 				library.Keep = append(library.Keep, name)
 			}
 		}
-		samplesKeep, err := nodejsSamplesKeep(pkgDir)
-		if err != nil {
-			return nil, fmt.Errorf("collecting samples for %s: %w", libraryName, err)
+		for _, dir := range []string{"samples", "system-test"} {
+			dirKeep, err := nodejsSubdirKeep(pkgDir, dir)
+			if err != nil {
+				return nil, fmt.Errorf("collecting %s for %s: %w", dir, libraryName, err)
+			}
+			library.Keep = append(library.Keep, dirKeep...)
 		}
-		library.Keep = append(library.Keep, samplesKeep...)
 
 		libraries = append(libraries, library)
 	}
@@ -361,24 +363,24 @@ func extractCopyrightYear(pkgDir string) string {
 	return ""
 }
 
-// nodejsSamplesKeep walks the samples/ directory under pkgDir and returns
-// all file paths relative to pkgDir, excluding anything under
-// samples/generated/. Returns nil if the samples/ directory does not exist.
-func nodejsSamplesKeep(pkgDir string) ([]string, error) {
-	samplesDir := filepath.Join(pkgDir, "samples")
-	if _, err := os.Stat(samplesDir); err != nil {
+// nodejsSubdirKeep walks the named subdirectory under pkgDir and returns all
+// file paths relative to pkgDir, excluding anything under a generated/
+// subdirectory. Returns nil if the subdirectory does not exist.
+func nodejsSubdirKeep(pkgDir, subdir string) ([]string, error) {
+	dir := filepath.Join(pkgDir, subdir)
+	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	var paths []string
-	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
-			if filepath.Base(path) == "generated" && filepath.Dir(path) == samplesDir {
+			if filepath.Base(path) == "generated" {
 				return filepath.SkipDir
 			}
 			return nil

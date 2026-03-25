@@ -74,8 +74,7 @@ type pythonGapicInfo struct {
 	transport string
 
 	// optArgs is the value of the opt_args attribute in the BUILD.bazel file,
-	// if any. If a rest_numeric_enums attribute is specified as False, this is
-	// included in optArgs as rest-numeric-enums.
+	// if any.
 	optArgs []string
 }
 
@@ -417,9 +416,6 @@ func parseBazelPythonInfo(googleapisDir, apiDir string) (*pythonGapicInfo, error
 	}
 	rule := rules[0]
 	optArgs := rule.AttrStrings("opt_args")
-	if rule.AttrLiteral("rest_numeric_enums") == "False" {
-		optArgs = append(optArgs, "rest-numeric-enums=False")
-	}
 	transport := rule.AttrString("transport")
 	if transport == "" {
 		transport = "grpc+rest"
