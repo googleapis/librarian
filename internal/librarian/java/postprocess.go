@@ -26,8 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
-	"github.com/googleapis/librarian/internal/repometadata"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 type postProcessParams struct {
@@ -218,11 +216,9 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 	return nil
 }
 
-// postProcessLibrary coordinates all library-level post-processing tasks,
+// generateRepoMetadata coordinates all library-level post-processing tasks,
 // such as generating .repo-metadata.json.
-func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
-	// TODO(https://github.com/googleapis/librarian/issues/4217): update pom files.
-	// TODO(https://github.com/googleapis/librarian/issues/4218): generate README.md
+func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
 	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to derive repo metadata: %w", err)
@@ -231,94 +227,4 @@ func postProcessLibrary(cfg *config.Config, library *config.Library, outDir, goo
 		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
 	}
 	return nil
-}
-
-// deriveRepoMetadata constructs the repoMetadata for a Java library using
-// information from the primary service configuration and library-level overrides.
-func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repoMetadata, error) {
-	serviceconfig.SortAPIs(library.APIs)
-	sharedMetadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
-	if err != nil {
-		return nil, err
-	}
-
-	metadata := &repoMetadata{
-		APIShortname:         sharedMetadata.APIShortname,
-		NamePretty:           sharedMetadata.NamePretty,
-		ProductDocumentation: sharedMetadata.ProductDocumentation,
-		APIDescription:       sharedMetadata.APIDescription,
-		ReleaseLevel:         sharedMetadata.ReleaseLevel,
-		Language:             config.LanguageJava,
-		Repo:                 sharedMetadata.Repo,
-		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
-		DistributionName:     sharedMetadata.DistributionName,
-		APIID:                sharedMetadata.APIID,
-		LibraryType:          repometadata.GAPICAutoLibraryType,
-		RequiresBilling:      true,
-	}
-
-	// Java-specific overrides and optional fields
-	if library.Java.APIIDOverride != "" {
-		metadata.APIID = library.Java.APIIDOverride
-	}
-	if library.Java.APIDescriptionOverride != "" {
-		metadata.APIDescription = library.Java.APIDescriptionOverride
-	}
-	if library.Java.DistributionNameOverride != "" {
-		metadata.DistributionName = library.Java.DistributionNameOverride
-	}
-	if library.Java.IssueTrackerOverride != "" {
-		metadata.IssueTracker = library.Java.IssueTrackerOverride
-	}
-	if library.Java.LibraryTypeOverride != "" {
-		metadata.LibraryType = library.Java.LibraryTypeOverride
-	}
-	if library.Java.NamePrettyOverride != "" {
-		metadata.NamePretty = library.Java.NamePrettyOverride
-	}
-	if library.Java.ProductDocumentationOverride != "" {
-		metadata.ProductDocumentation = library.Java.ProductDocumentationOverride
-	}
-	if library.Java.ClientDocumentationOverride != "" {
-		metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
-	}
-	metadata.RequiresBilling = !library.Java.BillingNotRequired
-	// Java only fields
-	metadata.CodeownerTeam = library.Java.CodeownerTeam
-	metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-	metadata.ExcludedDependencies = library.Java.ExcludedDependencies
-	metadata.ExcludedPoms = library.Java.ExcludedPoms
-	metadata.MinJavaVersion = library.Java.MinJavaVersion
-	metadata.RecommendedPackage = library.Java.RecommendedPackage
-	metadata.RestDocumentation = library.Java.RestDocumentation
-	metadata.RpcDocumentation = library.Java.RpcDocumentation
-
-	// distribution_name default for Java is groupId:artifactId
-	if !strings.Contains(metadata.DistributionName, ":") {
-		metadata.DistributionName = deriveDistributionName(library)
-	}
-	// Default ClientDocumentation uses artifact ID
-	if metadata.ClientDocumentation == "" {
-		parts := strings.Split(metadata.DistributionName, ":")
-		artifactID := parts[len(parts)-1]
-		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
-	}
-	// transport
-	apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-	transport := serviceconfig.GRPCRest
-	if apiCfg != nil {
-		transport = apiCfg.Transport(config.LanguageJava)
-	}
-	switch transport {
-	case "grpc":
-		metadata.Transport = "grpc"
-	case "rest":
-		metadata.Transport = "http"
-	default:
-		metadata.Transport = "both"
-	}
-	return metadata, nil
 }

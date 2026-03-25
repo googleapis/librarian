@@ -64,7 +64,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	return postProcessLibrary(cfg, library, outdir, googleapisDir)
+	if err := generateRepoMetadata(cfg, library, outdir, googleapisDir); err != nil {
+		return fmt.Errorf("failed to post process library: %w", err)
+	}
+	return nil
 }
 
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {
