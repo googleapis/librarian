@@ -1,0 +1,29 @@
+type: google.api.Service
+config_version: 3
+name: multiversiontrack.googleapis.com
+title: Multi Version Multi Track Service API
+apis:
+  - name: google.longrunning.Operations
+  - name: multi_version_multi_track.v1.ServiceOne
+documentation:
+  summary: An API with more than one service interface.
+http:
+  rules:
+    - selector: google.longrunning.Operations.CancelOperation
+      post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+      body: '*'
+      additional_bindings:
+        - post: '/v1alpha/{name=projects/*/locations/*/operations/*}:cancel'
+          body: '*'
+    - selector: google.longrunning.Operations.DeleteOperation
+      delete: '/v1/{name=projects/*/locations/*/operations/*}'
+      additional_bindings:
+        - delete: '/v1alpha/{name=projects/*/locations/*/operations/*}'
+    - selector: google.longrunning.Operations.GetOperation
+      get: '/v1/{name=projects/*/locations/*/operations/*}'
+      additional_bindings:
+        - get: '/v1alpha/{name=projects/*/locations/*/operations/*}'
+    - selector: google.longrunning.Operations.ListOperations
+      get: '/v1/{name=projects/*/locations/*}/operations'
+      additional_bindings:
+        - get: '/v1alpha/{name=projects/*/locations/*}/operations'

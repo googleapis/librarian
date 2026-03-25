@@ -149,7 +149,7 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 	if goAPI == nil || !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
-	if hasRESTNumericEnums(sc) {
+	if sc != nil && sc.HasRESTNumericEnums(config.LanguageGo) {
 		opts = append(opts, "rest-numeric-enums")
 	}
 	if goAPI != nil && goAPI.DIREGAPIC {
@@ -272,19 +272,6 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 		return err
 	}
 	return cerr
-}
-
-func hasRESTNumericEnums(sc *serviceconfig.API) bool {
-	if len(sc.NoRESTNumericEnums) == 0 {
-		return true
-	}
-	if _, ok := sc.NoRESTNumericEnums[config.LanguageAll]; ok {
-		return false
-	}
-	if _, ok := sc.NoRESTNumericEnums[config.LanguageGo]; ok {
-		return false
-	}
-	return true
 }
 
 // releaseLevel determines the release level for an API.

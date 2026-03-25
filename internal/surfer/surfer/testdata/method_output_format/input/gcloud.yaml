@@ -1,0 +1,13 @@
+config_version: v2.0
+service_name: methodoutputformat.googleapis.com
+apis:
+  - name: MethodOutputFormat
+    api_version: v1
+    release_tracks:
+      - GA
+    output_formatting:
+      - selector: method_output_format.v1.MethodOutputFormat.ListResources
+        format: |-
+          table(name,
+                createTime,
+                updateTime)

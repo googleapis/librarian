@@ -1,0 +1,215 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The resource to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          name: resource
+          plural_name: resources
+          collection: fieldcomplextypes.projects.locations.resources
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: resourcesId
+              attribute_name: resource
+              help: The resource id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: my-enum
+        api_field: resource.myEnum
+        help_text: Value for the `my-enum` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        choices:
+          - arg_value: default
+            enum_value: DEFAULT
+          - arg_value: one
+            enum_value: ONE
+          - arg_value: two
+            enum_value: TWO
+      - arg_name: string-field
+        api_field: resource.myMessage.stringField
+        help_text: Value for the `string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: int-field
+        api_field: resource.myMessage.intField
+        help_text: Value for the `int-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: int
+      - arg_name: bool-field
+        api_field: resource.myMessage.boolField
+        help_text: Value for the `bool-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: file-field
+        api_field: resource.myMessage.fileField
+        help_text: Value for the `file-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: string-field
+        api_field: resource.myMessage.nestedMessage.stringField
+        help_text: Value for the `string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: repeated-field
+        api_field: resource.repeatedField
+        help_text: Value for the `repeated-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        type: str
+      - arg_name: repeated-file-field
+        api_field: resource.repeatedFileField
+        help_text: Value for the `repeated-file-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        type: str
+      - arg_name: string-field
+        api_field: resource.repeatedMessage.stringField
+        help_text: Value for the `string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: int-field
+        api_field: resource.repeatedMessage.intField
+        help_text: Value for the `int-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: int
+      - arg_name: bool-field
+        api_field: resource.repeatedMessage.boolField
+        help_text: Value for the `bool-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: file-field
+        api_field: resource.repeatedMessage.fileField
+        help_text: Value for the `file-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: string-field
+        api_field: resource.repeatedMessage.nestedMessage.stringField
+        help_text: Value for the `string-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: map-field
+        api_field: resource.mapField
+        help_text: Value for the `map-field` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: labels
+        api_field: resource.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: map-output-only-message
+        api_field: resource.mapOutputOnlyMessage
+        help_text: Value for the `map-output-only-message` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: complex-map
+        api_field: resource.complexMap
+        help_text: Value for the `complex-map` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: etag
+        api_field: etag
+        help_text: Value for the `etag` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+      - arg_name: validate-only
+        api_field: validateOnly
+        help_text: Value for the `validate-only` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+  request:
+    api_version: v1
+    collection:
+      - fieldcomplextypes.projects.locations.resources
+  update:
+    read_modify_update: true

@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: hiddenfeature.googleapis.com
+title: Standard Resource API
+apis:
+  - name: hidden_feature.v1.HiddenFeature
+documentation:
+  summary: An API with documentation.

@@ -42,6 +42,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 				"samples/README.md",
 				"samples/quickstart.js",
 				"samples/test/quickstart.test.js",
+				"system-test/.eslintrc.yml",
 			},
 			Nodejs: &config.NodejsPackage{
 				ExtraProtocParameters: []string{"metadata"},

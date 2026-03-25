@@ -1,0 +1,35 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The project and location for which to retrieve projects information.
+        is_positional: false
+        is_primary_resource: true
+        resource_spec:
+          name: project
+          plural_name: projects
+          collection: resourcestandard.projects
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+          disable_auto_completers: false
+        required: true
+        repeated: false
+  request:
+    api_version: v1
+    collection:
+      - resourcestandard.projects.zones
+  response:
+    id_field: name
+  output:
+    format: |-
+      table(
+      name,
+      createTime,
+      updateTime)

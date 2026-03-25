@@ -113,8 +113,6 @@ class InstancesBeta(base.Group):
 @base.Hidden
 class InstancesGa(base.Group):
   """Manage Compute Engine Instance resources."""
-
-
 `
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("renderCommandGroup() mismatch (-want +got):\n%s", diff)

@@ -130,7 +130,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	if transport != serviceconfig.GRPCRest {
 		args = append(args, "--transport", string(transport))
 	}
-
+	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguageNodejs) {
+		args = append(args, "--rest-numeric-enums")
+	}
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
 			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))

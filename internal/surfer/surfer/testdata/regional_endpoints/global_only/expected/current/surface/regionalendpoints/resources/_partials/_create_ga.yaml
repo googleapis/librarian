@@ -1,0 +1,70 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The resource to create.
+        is_positional: true
+        is_primary_resource: true
+        request_id_field: resourceId
+        resource_spec:
+          name: resource
+          plural_name: resources
+          collection: regionalendpoints.projects.locations.resources
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: resourcesId
+              attribute_name: resource
+              help: The resource id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+      - arg_name: labels
+        api_field: resource.labels
+        help_text: Value for the `labels` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        spec:
+          - api_field: key
+          - api_field: value
+      - arg_name: validate-only
+        api_field: validateOnly
+        help_text: Value for the `validate-only` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: bool
+      - arg_name: request-id
+        api_field: requestId
+        help_text: Value for the `request-id` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
+  request:
+    api_version: v1
+    collection:
+      - regionalendpoints.projects.locations.resources
+      - regionalendpoints.projects.regions.resources
+      - regionalendpoints.projects.resources
+      - regionalendpoints.projects.zones.resources
+  async:
+    collection:
+      - regionalendpoints.projects.locations.operations
+      - regionalendpoints.projects.operations
+      - regionalendpoints.projects.regions.operations
+      - regionalendpoints.projects.zones.operations
+    extract_resource_result: true

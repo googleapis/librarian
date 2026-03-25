@@ -1,0 +1,7 @@
+config_version: v2.0
+service_name: methodminimallist.googleapis.com
+apis:
+  - name: MethodMinimalList
+    api_version: v1
+    release_tracks:
+      - GA

@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: fieldoneof.googleapis.com
+title: Standard Resource API
+apis:
+  - name: field_oneof.v1.FieldOneof
+documentation:
+  summary: An API with documentation.

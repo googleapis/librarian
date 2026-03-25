@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: fieldattributes.googleapis.com
+title: Standard Resource API
+apis:
+  - name: field_attributes.v1.FieldAttributes
+documentation:
+  summary: An API with documentation.

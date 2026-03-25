@@ -1,0 +1,16 @@
+config_version: v2.0
+service_name: filteredcommand.googleapis.com
+apis:
+  - name: FilteredCommand
+    api_version: v1
+    release_tracks:
+      - GA
+    method_generation_filters:
+      - selector: filtered_command.v1.FilteredCommand.ListResources
+      - selector: filtered_command.v1.FilteredCommand.DeleteResource
+      - selector: filtered_command.v1.FilteredCommand.UpdateResource
+    resource_generation_filters:
+      - selector: filtered_command.v1.FilteredResource
+    field_generation_filters:
+      - selector: filtered_command.v1.Resource.filtered_string_field
+      - selector: filtered_command.v1.Resource.filtered_resource_message

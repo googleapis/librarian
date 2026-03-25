@@ -1,0 +1,26 @@
+config_version: v2.0
+service_name: multiversionmultitrack.googleapis.com
+generate_operations: true
+apis:
+  - name: ServiceOne
+    api_version: v1
+    release_tracks:
+      - GA
+  - name: ServiceOne
+    api_version: v1alpha
+    release_tracks:
+      - ALPHA
+  - name: ServiceTwo
+    api_version: v1alpha
+    release_tracks:
+      - ALPHA
+  - name: Operations
+    api_version: v1
+    root_is_hidden: true
+    release_tracks:
+      - GA
+  - name: Operations
+    api_version: v1alpha
+    root_is_hidden: true
+    release_tracks:
+      - ALPHA

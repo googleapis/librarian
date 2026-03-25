@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: methodoutputformat.googleapis.com
+title: Minimal output format method API
+apis:
+  - name: method_output_format.v1.MethodOutputFormat
+documentation:
+  summary: An API with documentation.
