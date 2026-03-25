@@ -49,6 +49,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
   integration:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
