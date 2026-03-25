@@ -352,7 +352,7 @@ func ensureNodejsPackage(l *config.Library) *config.NodejsPackage {
 var copyrightYearRegex = regexp.MustCompile(`Copyright (\d{4}) Google`)
 
 // versionDirRegex matches versioned directory names like v1, v2, v1beta1.
-var versionDirRegex = regexp.MustCompile(`^v\d+`)
+var versionDirRegex = regexp.MustCompile(`^v\d[a-z0-9]*`)
 
 // extractCopyrightYear reads the copyright year from a versioned subdirectory
 // of src/ (e.g. src/v1/index.ts), falling back to src/index.ts if no versioned
