@@ -38,7 +38,7 @@ func TestGolden(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 
 	var coreGoogleapisPath string
-	// Locate core googleapis. Support SURFER_GOOGLEAPIS fallback.
+	// Locate core googleapis, prioritizing SURFER_GOOGLEAPIS env var.
 	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
 		coreGoogleapisPath = env
 	} else {
@@ -61,56 +61,31 @@ func TestGolden(t *testing.T) {
 		name string
 		skip string // Reason for skipping.
 	}{
-		// https://github.com/googleapis/librarian/issues/3553
 		{name: "confirmation_prompt"},
 		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
-		// https://github.com/googleapis/librarian/issues/4522
 		{name: "field_attributes"},
-		// https://github.com/googleapis/librarian/issues/4525
 		{name: "field_complex_types"},
-		// https://github.com/googleapis/librarian/issues/3288
 		{name: "field_flag_names"},
-		// https://github.com/googleapis/librarian/issues/3553
 		{name: "field_oneof"},
-		// https://github.com/googleapis/librarian/issues/3553
 		{name: "field_simple_types"},
-		// https://github.com/googleapis/librarian/issues/4529
 		{name: "filtered_command"},
-		// https://github.com/googleapis/librarian/issues/3033
 		{name: "help_text"},
-		// https://github.com/googleapis/librarian/issues/4532
 		{name: "hidden_command"},
-		// https://github.com/googleapis/librarian/issues/4528
 		{name: "hidden_feature"},
-		// https://github.com/googleapis/librarian/issues/3417
 		{name: "method_async"},
-		// https://github.com/googleapis/librarian/issues/4523
 		{name: "method_custom"},
-		// https://github.com/googleapis/librarian/issues/3393
 		{name: "method_minimal_list"},
-		// https://github.com/googleapis/librarian/issues/4526
 		{name: "method_operations"},
-		// https://github.com/googleapis/librarian/issues/4532
 		{name: "method_output_format"},
-		// https://github.com/googleapis/librarian/issues/3291
-		{name: "multi_service", skip: "https://github.com/googleapis/librarian/issues/3291"},
-		// https://github.com/googleapis/librarian/issues/4530
-		{name: "multi_version_multi_track", skip: "https://github.com/googleapis/librarian/issues/4530"},
-		// https://github.com/googleapis/librarian/issues/4526
+		{name: "multi_service", skip: "fails against autogen target"},
+		{name: "multi_version_multi_track", skip: "fails against autogen target"},
 		{name: "regional_endpoints/global_only"},
-		// https://github.com/googleapis/librarian/issues/4526
 		{name: "regional_endpoints/regional_required"},
-		// https://github.com/googleapis/librarian/issues/4526
 		{name: "regional_endpoints/regional_supported"},
-		// https://github.com/googleapis/librarian/issues/4617
 		{name: "resource_multitype"},
-		// https://github.com/googleapis/librarian/issues/3258
 		{name: "resource_non_standard"},
-		// https://github.com/googleapis/librarian/issues/3363
 		{name: "resource_reference"},
-		// https://github.com/googleapis/librarian/issues/4641
 		{name: "resource_standard"},
-		// https://github.com/googleapis/librarian/issues/3553
 		{name: "update_mask"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -120,98 +95,122 @@ func TestGolden(t *testing.T) {
 			}
 
 			scenarioPath := filepath.Join("testdata", test.name)
-			configFile := findGcloudConfig(scenarioPath)
-			if configFile == "" {
-				t.Fatal("gcloud configuration file not found in scenario directory")
-			}
 
-			// The expected output will be validated inside the subtests.
+			// 1. Arrange: Build the complex virtual filesystem
+			inputDir := filepath.Join(scenarioPath, "input")
+			configFile := filepath.Join(inputDir, "gcloud.yaml")
+			if _, err := os.Stat(configFile); os.IsNotExist(err) {
+				t.Fatalf("gcloud.yaml not found in scenario input directory: %s", configFile)
+			}
 
 			// Set a timeout per scenario.
 			ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
 			defer cancel()
 
 			tmpDir := t.TempDir()
-			outDir := filepath.Join(tmpDir, "out")
-			protoRoot := filepath.Join(tmpDir, "proto_root")
-			if err := os.MkdirAll(protoRoot, 0755); err != nil {
-				t.Fatal(err)
-			}
+			protoRoot, outDir := setupVirtualEnvironment(t, inputDir, coreGoogleapisPath, tmpDir)
 
-			// Symlink core googleapis
-			if err := os.Symlink(filepath.Join(coreGoogleapisPath, "google"), filepath.Join(protoRoot, "google")); err != nil {
-				t.Fatal(err)
-			}
-
-			// Symlink scenario protos
-			copyProtos(t, scenarioPath, protoRoot)
+			// Symlink common parent protos if necessary (e.g., for regional_endpoints nested scenarios)
 			if parent := filepath.Dir(scenarioPath); parent != "testdata" {
-				copyProtos(t, parent, protoRoot)
+				parentInputDir := filepath.Join(parent, "input")
+				if _, err := os.Stat(parentInputDir); err == nil {
+					copyProtos(t, parentInputDir, protoRoot)
+				}
 			}
 
-			protoFiles := findProtos(protoRoot)
-			if len(protoFiles) == 0 {
-				t.Fatal("no proto files found for scenario")
-			}
+			// 2. Act: Execute the CLI compiler
+			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, protoRoot, outDir)
 
-			args := []string{
-				"surfer",
-				"generate",
-				configFile,
-				"--googleapis", protoRoot,
-				"--proto-files-include-list", strings.Join(protoFiles, ","),
-				"--out", outDir,
-			}
-
-			if err := Run(ctx, args...); err != nil {
-				t.Fatalf("surfer generation failed: %v", err)
-			}
-
-			// Find actual generated service directory.
-			gotServiceDir, gotServiceName := findFirstSubdir(outDir)
-			if gotServiceDir == "" {
-				t.Fatalf("no output generated in %s", outDir)
-			}
-
-			t.Run("surfer", func(t *testing.T) {
-				surferExpectedRoot := filepath.Join(scenarioPath, "expected", "surfer", "surface")
+			// 3. Assert: Validate the outputs against the goldens
+			t.Run("current", func(t *testing.T) {
+				currentExpectedRoot := filepath.Join(scenarioPath, "expected", "current", "surface")
 				if *updateGolden {
-					expectedServiceDir := resolveExpectedServiceDir(surferExpectedRoot, gotServiceName, true)
-					if err := os.RemoveAll(surferExpectedRoot); err != nil && !os.IsNotExist(err) {
-						t.Fatal(err)
-					}
-					if err := os.MkdirAll(expectedServiceDir, 0755); err != nil {
-						t.Fatal(err)
-					}
-					if err := updateGoldenDir(expectedServiceDir, gotServiceDir); err != nil {
-						t.Fatal(err)
-					}
+					updateGoldenOutputs(t, currentExpectedRoot, gotServiceDir, gotServiceName)
 				} else {
-					if _, err := os.Stat(surferExpectedRoot); os.IsNotExist(err) {
-						t.Fatalf("expected surfer output directory not found in scenario directory: %s", surferExpectedRoot)
-					}
-					expectedServiceDir := resolveExpectedServiceDir(surferExpectedRoot, gotServiceName, false)
-					if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
-						t.Logf("Generated directory tree for %s:\n%s", test.name, getDirTree(gotServiceDir))
-					}
+					verifyGoldenOutputs(t, currentExpectedRoot, gotServiceDir, gotServiceName, test.name)
 				}
 			})
 
-			t.Run("autogen", func(t *testing.T) {
+			t.Run("target", func(t *testing.T) {
 				if !*runAutogenComparison {
 					t.Skip("skipping autogen comparison; use --run-with-autogen-comparison to enable")
 				}
-				autogenExpectedRoot := filepath.Join(scenarioPath, "expected", "autogen", "surface")
-				if _, err := os.Stat(autogenExpectedRoot); os.IsNotExist(err) {
-					t.Fatalf("expected autogen output directory not found in scenario directory: %s", autogenExpectedRoot)
-				}
-				expectedServiceDir := resolveExpectedServiceDir(autogenExpectedRoot, gotServiceName, false)
-
-				if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
-					t.Logf("Generated directory tree for %s:\n%s", test.name, getDirTree(gotServiceDir))
-				}
+				targetExpectedRoot := filepath.Join(scenarioPath, "expected", "target", "surface")
+				verifyGoldenOutputs(t, targetExpectedRoot, gotServiceDir, gotServiceName, test.name)
 			})
 		})
+	}
+}
+
+func setupVirtualEnvironment(t *testing.T, inputDir, coreGoogleapisPath, tmpDir string) (string, string) {
+	t.Helper()
+	outDir := filepath.Join(tmpDir, "out")
+	protoRoot := filepath.Join(tmpDir, "proto_root")
+	if err := os.MkdirAll(protoRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Symlink core googleapis
+	if err := os.Symlink(filepath.Join(coreGoogleapisPath, "google"), filepath.Join(protoRoot, "google")); err != nil {
+		t.Fatal(err)
+	}
+
+	// Symlink scenario protos
+	copyProtos(t, inputDir, protoRoot)
+
+	return protoRoot, outDir
+}
+
+func runSurferGenerator(ctx context.Context, t *testing.T, configFile, protoRoot, outDir string) (string, string) {
+	t.Helper()
+	protoFiles := findProtos(protoRoot)
+	if len(protoFiles) == 0 {
+		t.Fatal("no proto files found for scenario")
+	}
+
+	args := []string{
+		"surfer",
+		"generate",
+		configFile,
+		"--googleapis", protoRoot,
+		"--proto-files-include-list", strings.Join(protoFiles, ","),
+		"--out", outDir,
+	}
+
+	if err := Run(ctx, args...); err != nil {
+		t.Fatalf("surfer generation failed: %v", err)
+	}
+
+	// Find actual generated service directory.
+	gotServiceDir, gotServiceName := findFirstSubdir(outDir)
+	if gotServiceDir == "" {
+		t.Fatalf("no output generated in %s", outDir)
+	}
+	return gotServiceDir, gotServiceName
+}
+
+func updateGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceName string) {
+	t.Helper()
+	expectedServiceDir := resolveExpectedServiceDir(expectedRoot, gotServiceName, true)
+	if err := os.RemoveAll(expectedRoot); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(expectedServiceDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := updateGoldenDir(expectedServiceDir, gotServiceDir); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func verifyGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceName, testName string) {
+	t.Helper()
+	if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
+		t.Fatalf("expected output directory not found in scenario directory: %s", expectedRoot)
+	}
+	expectedServiceDir := resolveExpectedServiceDir(expectedRoot, gotServiceName, false)
+	if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
+		t.Logf("Generated directory tree for %s:\n%s", testName, getDirTree(gotServiceDir))
 	}
 }
 
@@ -231,16 +230,6 @@ func updateGoldenDir(dest string, src string) error {
 		}
 		return os.WriteFile(target, data, 0644)
 	})
-}
-
-func findGcloudConfig(dir string) string {
-	for _, name := range []string{"gcloud.yaml", "gcloud_config.yaml"} {
-		path := filepath.Join(dir, name)
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	return ""
 }
 
 func copyProtos(t *testing.T, src, dst string) {

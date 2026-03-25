@@ -46,7 +46,6 @@ func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	// we don't use all the functionality of post-processing of CreateModel, so depending
 	// on our needs, if we don't find ourselves needing the additional post-processing
 	// functionality, we could write our own simpler `CreateModel` function
-	// TODO(https://github.com/googleapis/librarian/issues/4298): Update IncludeList to be a list of strings, rather than comma-separated.
 	model, err := parser.CreateModel(parserConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API model: %w", err)

@@ -47,9 +47,7 @@ type API struct {
 
 	// RootIsHidden applies the gcloud 'hidden' flag to the root command group
 	// of the generated surface.  When true, the top-level command group for
-	// this API will not appear in `--help` output by default.  See
-	// gcloud documentation for hiding commands and command groups for more
-	// details.
+	// this API will not appear in `--help` output by default.
 	RootIsHidden bool `yaml:"root_is_hidden"`
 
 	// ReleaseTracks are the gcloud release tracks this surface should appear
