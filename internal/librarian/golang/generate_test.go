@@ -50,7 +50,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "secretmanager",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -70,7 +69,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "configdelivery",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -123,7 +121,6 @@ func TestGenerate_Error(t *testing.T) {
 				APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
 				Output:        t.TempDir(),
 				Version:       "0.1.0",
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
@@ -144,7 +141,6 @@ func TestGenerate_Error(t *testing.T) {
 				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				Output:        t.TempDir(),
 				Version:       "0.1.0",
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 			},
 			wantErr: errGoAPINotFound,
@@ -466,48 +462,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildGAPICImportPath(test.goAPI)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		sc   *serviceconfig.API
-		want string
-	}{
-		{
-			name: "empty release levels",
-			sc:   &serviceconfig.API{},
-			want: "ga",
-		},
-		{
-			name: "release levels do not have go",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguagePython: "beta"},
-			},
-			want: "ga",
-		},
-		{
-			name: "alpha",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
-			},
-			want: "alpha",
-		},
-		{
-			name: "beta",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
-			},
-			want: "beta",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := releaseLevel(test.sc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

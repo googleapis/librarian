@@ -217,7 +217,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 		wantNumLibs             int
 		wantNumAPIs             int
 		wantSpecificationFormat string
-		wantReleaseLevel        string
 	}{
 		{
 			name: "derivable fields removed",
@@ -298,23 +297,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 			wantNumLibs: 1,
 			wantNumAPIs: 1,
 		},
-		{
-			name: "release level removed if same as default",
-			config: &config.Config{
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name:         "google-cloud-secretmanager-v1",
-						ReleaseLevel: "preview",
-					},
-				},
-			},
-			wantNumLibs:      1,
-			wantReleaseLevel: "",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -341,9 +323,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 			}
 			if lib.SpecificationFormat != test.wantSpecificationFormat {
 				t.Errorf("specification_format = %q, want %q", lib.SpecificationFormat, test.wantSpecificationFormat)
-			}
-			if lib.ReleaseLevel != test.wantReleaseLevel {
-				t.Errorf("release_level = %q, want %q", lib.ReleaseLevel, test.wantReleaseLevel)
 			}
 		})
 	}

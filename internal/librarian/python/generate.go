@@ -142,8 +142,8 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 			Name:             library.Name,
 			DistributionName: library.Name,
 			Language:         cfg.Language,
+			ReleaseLevel:     "stable",
 			Repo:             cfg.Repo,
-			ReleaseLevel:     library.ReleaseLevel,
 			// Allow even handwritten libraries to specify a default value in
 			// the package options if they want to. This would be unusual, but
 			// if it's specified, we should honor it.

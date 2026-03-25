@@ -53,9 +53,8 @@ func TestRustRead(t *testing.T) {
 			},
 		},
 		Default: &Default{
-			Output:       "src/generated/",
-			ReleaseLevel: "stable",
-			TagFormat:    "{name}/v{version}",
+			Output:    "src/generated/",
+			TagFormat: "{name}/v{version}",
 			Rust: &RustDefault{
 				DisabledRustdocWarnings: []string{
 					"redundant_explicit_links",
@@ -261,9 +260,8 @@ func TestNodejsRead(t *testing.T) {
 			},
 		},
 		Default: &Default{
-			Output:       "packages",
-			Keep:         []string{"CHANGELOG.md"},
-			ReleaseLevel: "stable",
+			Output: "packages",
+			Keep:   []string{"CHANGELOG.md"},
 		},
 		Libraries: []*Library{
 			{

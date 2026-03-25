@@ -228,6 +228,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to copy samples from staging: %w", err)
 	}
 
+	if err := updateSnippetMetadataVersion(outDir, library.Version); err != nil {
+		return fmt.Errorf("failed to update snippet metadata version: %w", err)
+	}
+
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
 	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -467,6 +471,64 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
+}
+
+// updateSnippetMetadataVersion updates the clientLibrary.version field in
+// snippet metadata JSON files under outDir/samples/generated/. The
+// gapic-generator-typescript hardcodes version "0.1.0"; this function replaces
+// it with the library's actual version.
+func updateSnippetMetadataVersion(outDir, version string) error {
+	if version == "" {
+		return nil
+	}
+	pattern := filepath.Join(outDir, "samples", "generated", "*", "snippet_metadata*.json")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("failed to glob snippet metadata files: %w", err)
+	}
+	for _, path := range matches {
+		if err := updateVersionInFile(path, version); err != nil {
+			return fmt.Errorf("failed to update %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// snippetMetadata is a minimal representation of a snippet metadata JSON file.
+// The Snippets field uses [json.RawMessage] to avoid reformatting the array.
+type snippetMetadata struct {
+	ClientLibrary snippetClientLibrary `json:"clientLibrary"`
+	Snippets      json.RawMessage      `json:"snippets"`
+}
+
+type snippetClientLibrary struct {
+	Name     string          `json:"name"`
+	Version  string          `json:"version"`
+	Language string          `json:"language"`
+	APIs     json.RawMessage `json:"apis"`
+}
+
+// updateVersionInFile reads a snippet metadata JSON file, sets the
+// clientLibrary.version field to version, and writes it back.
+func updateVersionInFile(path, version string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var metadata snippetMetadata
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return err
+	}
+	metadata.ClientLibrary.Version = version
+
+	// Re-marshal with 2-space indent to match generator output.
+	out, err := json.MarshalIndent(metadata, "", "  ")
+	if err != nil {
+		return err
+	}
+	// Append trailing newline to match convention.
+	out = append(out, '\n')
+	return os.WriteFile(path, out, 0644)
 }
 
 // DerivePackageName returns the npm package name for a library. It uses

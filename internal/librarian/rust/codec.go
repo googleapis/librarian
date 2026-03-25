@@ -57,7 +57,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 		SpecificationSource: specSource,
 		Source:              src,
 		ServiceConfig:       svcConfig.ServiceConfig,
-		Codec:               buildCodec(library),
+		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust)),
 		Override: api.ModelOverride{
 			Description: library.DescriptionOverride,
 			Title:       svcConfig.Title,
@@ -105,14 +105,12 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 	return modelCfg, nil
 }
 
-func buildCodec(library *config.Library) map[string]string {
+func buildCodec(library *config.Library, releaseLevel string) map[string]string {
 	codec := newLibraryCodec(library)
 	if library.Version != "" {
 		codec["version"] = library.Version
 	}
-	if library.ReleaseLevel != "" {
-		codec["release-level"] = library.ReleaseLevel
-	}
+	codec["release-level"] = releaseLevel
 	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
 	}

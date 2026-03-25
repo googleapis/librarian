@@ -88,9 +88,8 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name:         "google-cloud-workstations",
-					ReleaseLevel: "preview",
-					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Name: "google-cloud-workstations",
+					APIs: []*config.API{{Path: "google/cloud/workstations/v1"}},
 					Python: &config.PythonPackage{
 						DefaultVersion:       "v1",
 						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",
@@ -118,9 +117,8 @@ func TestBuildPythonLibraries(t *testing.T) {
 			},
 			want: []*config.Library{
 				{
-					Name:         "google-cloud-audit-log",
-					APIs:         []*config.API{{Path: "google/cloud/audit"}},
-					ReleaseLevel: "preview",
+					Name: "google-cloud-audit-log",
+					APIs: []*config.API{{Path: "google/cloud/audit"}},
 					Python: &config.PythonPackage{
 						NamePrettyOverride:           "Audit Log API",
 						ProductDocumentationOverride: "https://cloud.google.com/logging/docs/audit",
@@ -133,9 +131,8 @@ func TestBuildPythonLibraries(t *testing.T) {
 					},
 				},
 				{
-					Name:         "google-cloud-workstations",
-					ReleaseLevel: "preview",
-					APIs:         []*config.API{{Path: "google/cloud/workstations/v1"}},
+					Name: "google-cloud-workstations",
+					APIs: []*config.API{{Path: "google/cloud/workstations/v1"}},
 					Python: &config.PythonPackage{
 						DefaultVersion:       "v1",
 						IssueTrackerOverride: "https://github.com/googleapis/google-cloud-python/issues",

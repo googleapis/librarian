@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -90,6 +91,10 @@ type API struct {
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, the generator default is used.
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
+	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
+	// standardize release level vocabulary across lanaguages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
@@ -141,6 +146,45 @@ func (api *API) HasRESTNumericEnums(language string) bool {
 		return false
 	}
 	return true
+}
+
+// ReleaseLevel gets the release level for a given language.
+//
+// If language-specific release level is not defined, it falls back to the "all" language setting,
+// and then to "stable".
+func (api *API) ReleaseLevel(language string) string {
+	if rl, ok := api.ReleaseLevels[language]; ok {
+		return rl
+	}
+	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
+		return rl
+	}
+	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
+	// release level vocabulary across lanaguages.
+	if language == config.LanguageGo {
+		return "ga"
+	}
+	return "stable"
+}
+
+// RepoMetadataReleaseLevel returns the release level for repo metadata.
+//
+// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
+// function once the issue is resolved.
+// For Go, it maps the raw release level to "stable" or "preview".
+// For other languages, it returns the raw release level.
+func (api *API) RepoMetadataReleaseLevel(language string) string {
+	if language == config.LanguageGo {
+		version := ExtractVersion(api.Path)
+		if strings.Contains(version, "alpha") || strings.Contains(version, "beta") {
+			return "preview"
+		}
+		if api.ReleaseLevel(language) != "ga" {
+			return "preview"
+		}
+		return "stable"
+	}
+	return api.ReleaseLevel(language)
 }
 
 var (

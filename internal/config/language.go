@@ -564,9 +564,6 @@ type JavaAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
-
-	// NoRestNumericEnums determines whether to use numeric enums in REST requests for the API.
-	NoRestNumericEnums bool `yaml:"no_rest_numeric_enums,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

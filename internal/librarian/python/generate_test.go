@@ -918,7 +918,6 @@ func TestGenerate(t *testing.T) {
 			library := &config.Library{
 				Name:                "google-cloud-secret-manager",
 				Output:              outdir,
-				ReleaseLevel:        "stable",
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 				APIs: []*config.API{
 					{
@@ -1006,9 +1005,8 @@ func TestGenerate_APIOrder(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:         "google-cloud-workflows",
-		Output:       outdir,
-		ReleaseLevel: "stable",
+		Name:   "google-cloud-workflows",
+		Output: outdir,
 		APIs: []*config.API{
 			{Path: "google/cloud/workflows/v1"},
 			{Path: "google/cloud/workflows/executions/v1"},
@@ -1070,8 +1068,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "no overrides",
 			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				ReleaseLevel: "stable",
+				Name: "google-cloud-secret-manager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secrets/v1beta1"},
@@ -1105,8 +1102,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "non-cloud API",
 			library: &config.Library{
-				Name:         "google-apps-meet",
-				ReleaseLevel: "stable",
+				Name: "google-apps-meet",
 				APIs: []*config.API{
 					{
 						Path: "google/apps/meet/v2",
@@ -1140,7 +1136,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 			name: "all overrides present",
 			library: &config.Library{
 				Name:                "google-cloud-secret-manager",
-				ReleaseLevel:        "stable",
 				DescriptionOverride: "overridden description",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
@@ -1180,8 +1175,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "handwritten library",
 			library: &config.Library{
-				Name:         "google-auth",
-				ReleaseLevel: "stable",
+				Name: "google-auth",
 				Python: &config.PythonPackage{
 					PythonDefault: config.PythonDefault{
 						LibraryType: "AUTH",
@@ -1201,8 +1195,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "handwritten library with default version",
 			library: &config.Library{
-				Name:         "google-auth",
-				ReleaseLevel: "stable",
+				Name: "google-auth",
 				Python: &config.PythonPackage{
 					DefaultVersion: "oauth2",
 					PythonDefault: config.PythonDefault{
@@ -1247,18 +1240,16 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 		{
 			name: "invalid API path",
 			library: &config.Library{
-				Name:         "android-library",
-				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "android/notallowed/v1"}},
-				Python:       &config.PythonPackage{DefaultVersion: "v1"},
+				Name:   "android-library",
+				APIs:   []*config.API{{Path: "android/notallowed/v1"}},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 		},
 		{
 			name: "generated library with no default version",
 			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Name: "google-cloud-secret-manager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			wantErr: errNoDefaultVersion,
 		},
