@@ -161,10 +161,10 @@ func (api *API) ReleaseLevel(language string) string {
 	return "stable"
 }
 
+// RepoMetadataReleaseLevel returns the release level for repo metadata.
+//
 // TODO(https://github.com/googleapis/librarian/issues/4834): delete this
 // function once the issue is resolved.
-//
-// RepoMetadataReleaseLevel returns the release level for repo metadata.
 // For Go, it maps the raw release level to "stable" or "preview".
 // For other languages, it returns the raw release level.
 func (api *API) RepoMetadataReleaseLevel(language string) string {
