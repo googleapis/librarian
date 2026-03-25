@@ -165,6 +165,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
+				"--rest-numeric-enums",
 			},
 		},
 		{
@@ -186,6 +187,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/access-approval",
 				"--metadata",
+				"--rest-numeric-enums",
 			},
 		},
 		{
@@ -211,6 +213,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/translate",
 				"--metadata",
+				"--rest-numeric-enums",
 				"--bundle-config", filepath.Join(absGoogleapisDir, "google/cloud/translate/v3/translate_gapic.yaml"),
 				"--auto-populate-field-oauth-scope",
 				"--handwritten-layer",
@@ -233,6 +236,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
 				"--package-name", "@google-cloud/apigeeconnect",
 				"--metadata",
+				"--rest-numeric-enums",
 			},
 		},
 		{
@@ -249,6 +253,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--output-dir", "staging",
 				"--package-name", "@google-cloud/fakefoo",
 				"--metadata",
+				"--rest-numeric-enums",
 			},
 		},
 		{
@@ -270,6 +275,7 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
+				"--rest-numeric-enums",
 				"--some-other-param",
 			},
 		},

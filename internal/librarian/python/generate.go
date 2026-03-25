@@ -290,22 +290,16 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePython)
 	}
-	restNumericEnums := true
+	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
+		opts = append(opts, "rest-numeric-enums")
+	}
+
 	addTransport := true
 	for _, opt := range opts {
-		if strings.HasPrefix(opt, "rest-numeric-enums") {
-			restNumericEnums = false
-		}
 		if strings.HasPrefix(opt, "transport=") {
 			addTransport = false
 		}
 	}
-
-	// Add rest-numeric-enums, if we haven't already got it.
-	if restNumericEnums {
-		opts = append(opts, "rest-numeric-enums")
-	}
-
 	// Add transport option, if we haven't already got it.
 	if addTransport {
 		opts = append(opts, fmt.Sprintf("transport=%s", transport))
