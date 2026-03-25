@@ -347,7 +347,12 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
 	err := generateAPI(
 		t.Context(),
@@ -379,7 +384,12 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	outdir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
 
 	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir)

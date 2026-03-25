@@ -28,7 +28,11 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-const invalidSubcommand = "invalid-subcommand"
+const (
+	invalidSubcommand = "invalid-subcommand"
+	envVarName        = "LIBRARIAN_TEST_VAR"
+	envVarValue       = "value"
+)
 
 func TestRun(t *testing.T) {
 	if err := Run(t.Context(), "go", "version"); err != nil {
@@ -56,14 +60,22 @@ func TestRunInDir(t *testing.T) {
 	}
 }
 
+func TestRunInDirWithEnv(t *testing.T) {
+	dir := t.TempDir()
+	script := fmt.Sprintf("if [ \"$%s\" = \"%s\" ]; then touch success; fi", envVarName, envVarValue)
+	err := RunInDirWithEnv(t.Context(), dir, map[string]string{envVarName: envVarValue}, "sh", "-c", script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "success")); err != nil {
+		t.Errorf("expected file 'success' to be created in %s: %v", dir, err)
+	}
+}
+
 func TestRunWithEnv_SetsAndVerifiesVariable(t *testing.T) {
 	ctx := t.Context()
-	const (
-		name  = "LIBRARIAN_TEST_VAR"
-		value = "value"
-	)
-	err := RunWithEnv(ctx, map[string]string{name: value},
-		"sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
+	err := RunWithEnv(ctx, map[string]string{envVarName: envVarValue},
+		"sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", envVarName, envVarValue))
 	if err != nil {
 		t.Fatalf("RunWithEnv() = %v, want %v", err, nil)
 	}
@@ -71,11 +83,7 @@ func TestRunWithEnv_SetsAndVerifiesVariable(t *testing.T) {
 
 func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 	ctx := t.Context()
-	const (
-		name  = "LIBRARIAN_TEST_VAR"
-		value = "value"
-	)
-	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", name, value))
+	err := RunWithEnv(ctx, map[string]string{}, "sh", "-c", fmt.Sprintf("test \"$%s\" = \"%s\"", envVarName, envVarValue))
 	if err == nil {
 		t.Fatalf("RunWithEnv() = %v, want non-nil", err)
 	}

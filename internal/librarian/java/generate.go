@@ -78,15 +78,24 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
 	javaAPI := resolveJavaAPI(library, api)
+	bomVersion := ""
+	if cfg.Default != nil && cfg.Default.Java != nil {
+		bomVersion = cfg.Default.Java.LibrariesBomVersion
+	}
+	if library.Java != nil && library.Java.LibrariesBomVersion != "" {
+		bomVersion = library.Java.LibrariesBomVersion
+	}
 	p := postProcessParams{
-		outDir:         outdir,
-		libraryName:    library.Name,
-		version:        version,
-		googleapisDir:  googleapisDir,
-		includeSamples: !javaAPI.NoSamples,
-		gapicDir:       filepath.Join(outdir, version, "gapic"),
-		grpcDir:        filepath.Join(outdir, version, "grpc"),
-		protoDir:       filepath.Join(outdir, version, "proto"),
+		outDir:              outdir,
+		libraryName:         library.Name,
+		libraryVersion:      library.Version,
+		librariesBomVersion: bomVersion,
+		version:             version,
+		googleapisDir:       googleapisDir,
+		includeSamples:      !javaAPI.NoSamples,
+		gapicDir:            filepath.Join(outdir, version, "gapic"),
+		grpcDir:             filepath.Join(outdir, version, "grpc"),
+		protoDir:            filepath.Join(outdir, version, "proto"),
 	}
 	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
