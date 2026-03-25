@@ -729,11 +729,11 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 		},
 		{
 			name:    "api not allowed for go",
-			apiPath: "google/cloud/asset/v1p1beta1",
+			apiPath: "google/ads/admanager/v1",
 			goAPI: &config.GoAPI{
-				ClientPackage: "asset",
-				ImportPath:    "asset/apiv1p1beta1",
-				Path:          "google/cloud/asset/v1p1beta1",
+				ClientPackage: "admanager",
+				ImportPath:    "admanager/apiv1",
+				Path:          "google/ads/admanager/v1",
 			},
 			googleapisDir: googleapisDir,
 		},
