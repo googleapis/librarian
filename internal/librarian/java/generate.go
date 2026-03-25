@@ -60,7 +60,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
 	// generate repo metadata prior to client because info is needed for
-	// owlbot.py to generete README.md
+	// owlbot.py to generate README.md
 	if err := generateRepoMetadata(cfg, library, outdir, googleapisDir); err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
