@@ -58,7 +58,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
-| `release_level` | string | Is either "stable" or "preview". |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
@@ -77,7 +76,6 @@ This document describes the schema for the librarian.yaml.
 | `description_override` | string | Overrides the library description. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
-| `release_level` | string | Is the release level, such as "stable" or "preview". This overrides Default.ReleaseLevel. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
