@@ -469,48 +469,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 	}
 }
 
-func TestReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		sc   *serviceconfig.API
-		want string
-	}{
-		{
-			name: "empty release levels",
-			sc:   &serviceconfig.API{},
-			want: "ga",
-		},
-		{
-			name: "release levels do not have go",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguagePython: "beta"},
-			},
-			want: "ga",
-		},
-		{
-			name: "alpha",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
-			},
-			want: "alpha",
-		},
-		{
-			name: "beta",
-			sc: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
-			},
-			want: "beta",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := releaseLevel(test.sc)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGetTransport(t *testing.T) {
 	for _, test := range []struct {
 		name string

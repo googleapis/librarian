@@ -154,6 +154,11 @@ func (api *API) ReleaseLevel(language string) string {
 	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
 		return rl
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/4834): move this
+	// language-specific logic to sdk.yaml.
+	if language == config.LanguageGo {
+		return "ga"
+	}
 	return "stable"
 }
 

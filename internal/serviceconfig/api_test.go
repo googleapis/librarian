@@ -62,6 +62,70 @@ func TestHasAPIPath(t *testing.T) {
 	}
 }
 
+func TestReleaseLevel(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		sc       *API
+		language string
+		want     string
+	}{
+		{
+			name:     "empty release levels defaults to stable",
+			sc:       &API{},
+			language: config.LanguageRust,
+			want:     "stable",
+		},
+		{
+			name:     "go defaults to ga",
+			sc:       &API{},
+			language: config.LanguageGo,
+			want:     "ga",
+		},
+		{
+			name: "language-specific level",
+			sc: &API{
+				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
+			},
+			language: config.LanguageGo,
+			want:     "alpha",
+		},
+		{
+			name: "falls back to all",
+			sc: &API{
+				ReleaseLevels: map[string]string{config.LanguageAll: "beta"},
+			},
+			language: config.LanguageRust,
+			want:     "beta",
+		},
+		{
+			name: "language-specific overrides all",
+			sc: &API{
+				ReleaseLevels: map[string]string{
+					config.LanguageAll: "beta",
+					config.LanguageGo:  "alpha",
+				},
+			},
+			language: config.LanguageGo,
+			want:     "alpha",
+		},
+		{
+			name: "other language not affected by go default",
+			sc: &API{
+				ReleaseLevels: map[string]string{config.LanguagePython: "beta"},
+			},
+			language: config.LanguageRust,
+			want:     "stable",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.ReleaseLevel(test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestHasRESTNumericEnums(t *testing.T) {
 	for _, test := range []struct {
 		name string
