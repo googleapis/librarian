@@ -116,13 +116,11 @@ func mapCommandToYAML(c *Command) *yamlCommand {
 		Arguments: yamlArguments{
 			Params: mapArgumentsToYAML(c.Arguments),
 		},
-	}
-	if c.Request != nil {
-		y.Request = &yamlRequest{
-			APIVersion: c.Request.APIVersion,
-			Collection: c.Request.Collection,
-			Method:     c.Request.Method,
-		}
+		Request: yamlRequest{
+			APIVersion: c.APIVersion,
+			Collection: c.Collection,
+			Method:     c.Method,
+		},
 	}
 	if c.Async != nil {
 		y.Async = &yamlAsync{
@@ -207,7 +205,7 @@ type yamlCommand struct {
 	Hidden        bool              `yaml:"hidden,omitempty"`
 	HelpText      yamlHelpText      `yaml:"help_text"`
 	Arguments     yamlArguments     `yaml:"arguments"`
-	Request       *yamlRequest      `yaml:"request,omitempty"`
+	Request       yamlRequest       `yaml:"request"`
 	Async         *yamlAsync        `yaml:"async,omitempty"`
 	Response      *yamlResponse     `yaml:"response,omitempty"`
 	Update        *yamlUpdateConfig `yaml:"update,omitempty"`

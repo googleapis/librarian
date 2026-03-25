@@ -151,6 +151,7 @@ func TestMarshalCommand(t *testing.T) {
         required: false
         repeated: false
         type: string
+  request: {}
 `
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("marshalCommand() mismatch (-want +got):\n%s", diff)
@@ -217,11 +218,9 @@ func TestMapCommandToYAML(t *testing.T) {
 			Description: "desc",
 			Examples:    "ex",
 		},
-		Request: &Request{
-			Collection: []string{"c"},
-			APIVersion: "v1",
-			Method:     "m",
-		},
+		Collection: []string{"c"},
+		APIVersion: "v1",
+		Method:     "m",
 		Async: &Async{
 			Collection:            []string{"ac"},
 			ExtractResourceResult: true,
@@ -262,7 +261,7 @@ func TestMapCommandToYAML(t *testing.T) {
 			Description: "desc",
 			Examples:    "ex",
 		},
-		Request: &yamlRequest{
+		Request: yamlRequest{
 			Collection: []string{"c"},
 			APIVersion: "v1",
 			Method:     "m",
